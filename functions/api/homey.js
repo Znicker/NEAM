@@ -374,11 +374,35 @@ export async function onRequestPost({ request, env }){
     if(!inn.sdp)  return svar({ ok:false, feil:'Mangler tilbud' });
 
     const sti = '/api/manager/videos/video/' + encodeURIComponent(id) + '/offer';
-    const r = await motHomey(env, epost, sti,
-                             { method:'POST', tekst:String(inn.sdp), svarTekst:true });
+
+    /* Homey vil ha tilbudet i et FELT som heter `offer`, ikke som ren
+       tekst - den svarte «Missing Parameter: offer» paa raa SDP
+       (maalt 11. september 2026). Ren tekst er likevel beholdt som
+       reserve: nettverksloggen fra Homeys egen webapp viste raa SDP i
+       kroppen, saa formen kan variere med versjon. JSON foerst,
+       tekst hvis den avvises. */
+    let r = await motHomey(env, epost, sti,
+                           { method:'POST', body:{ offer:String(inn.sdp) }, svarTekst:true });
+
+    if(r.feil && /Missing Parameter|400/i.test(r.feil)){
+      r = await motHomey(env, epost, sti,
+                         { method:'POST', tekst:String(inn.sdp), svarTekst:true });
+    }
+
     if(r.feil) return svar({ ok:false, feil:r.feil, maaGodkjenne: !!r.maaGodkjenne });
     if(!r.tekst) return svar({ ok:false, feil:'Homey svarte uten innhold' });
-    return svar({ ok:true, sdp:r.tekst });
+
+    /* Svaret kan komme som ren SDP eller som JSON med svaret i et felt.
+       Vi tar begge; sida skal bare ha strengen. */
+    let sdp = r.tekst;
+    const t = sdp.trim();
+    if(t.charAt(0) === '{'){
+      try{
+        const d = JSON.parse(t);
+        sdp = d.answer || d.sdp || d.answerSdp || sdp;
+      }catch(e){}
+    }
+    return svar({ ok:true, sdp:sdp });
   }
 
   return svar({ ok:false, feil:'Ukjent hva: ' + hva });
