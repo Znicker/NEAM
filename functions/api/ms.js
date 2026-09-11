@@ -67,9 +67,52 @@ function svar(obj){
   });
 }
 
+/* Access gir identiteten paa tre maater, og hvilke som finnes varierer
+   med hvordan applikasjonen er satt opp. Maalt 11. september 2026:
+   `Cf-Access-Authenticated-User-Email` kom IKKE fram til en Pages
+   Function hos oss, mens beviset gjorde det. Derfor tre kilder, i
+   synkende rekkefoelge etter hvor enkle de er:
+
+     1. Cf-Access-Authenticated-User-Email   - ferdig utpakket
+     2. Cf-Access-Jwt-Assertion              - beviset som header
+     3. CF_Authorization-cookien             - samme bevis, som cookie
+
+   Beviset er signert av Access. Vi leser bare innholdet uten aa sjekke
+   signaturen, og det holder fordi det ikke er beviset som slipper noen
+   inn - Access har allerede gjort jobben foer forespoerselen naar oss,
+   og portvakten (_middleware.js) stenger den ene veien utenom. Skulle
+   noen en dag naa denne funksjonen UTEN aa gaa gjennom Access, er en
+   usignert kontroll ikke nok; da maa signaturen verifiseres mot
+   https://<team>.cloudflareaccess.com/cdn-cgi/access/certs. */
+function jwtEpost(tok){
+  try{
+    const deler = String(tok || '').split('.');
+    if(deler.length < 2) return '';
+    let b = deler[1].replace(/-/g, '+').replace(/_/g, '/');
+    while(b.length % 4) b += '=';
+    const d = JSON.parse(atob(b));
+    return String((d && (d.email || d.sub_email)) || '').trim().toLowerCase();
+  }catch(e){ return ''; }
+}
+
+function cookieAv(request, navn){
+  const raa = request.headers.get('Cookie') || '';
+  for(const bit of raa.split(';')){
+    const i = bit.indexOf('=');
+    if(i === -1) continue;
+    if(bit.slice(0, i).trim() === navn) return bit.slice(i + 1).trim();
+  }
+  return '';
+}
+
 function epostAv(request){
-  const e = request.headers.get('Cf-Access-Authenticated-User-Email') || '';
-  return e.trim().toLowerCase();
+  const rett = (request.headers.get('Cf-Access-Authenticated-User-Email') || '').trim().toLowerCase();
+  if(rett) return rett;
+
+  const fraHeader = jwtEpost(request.headers.get('Cf-Access-Jwt-Assertion'));
+  if(fraHeader) return fraHeader;
+
+  return jwtEpost(cookieAv(request, 'CF_Authorization'));
 }
 
 /* Adressen Microsoft skal sende brukeren tilbake til. Den kommer fra
@@ -206,14 +249,36 @@ export async function onRequestPost({ request, env }){
   return svar({ ok:false, feil:'Ukjent hva: ' + hva });
 }
 
-/* GET brukes til én ting: si om det finnes en oekt, uten aa hente noe.
-   Sida spoer ved oppstart for aa vite om den skal vise porten eller
-   vente paa et token. Svarer aldri med noe av innholdet. */
+/* GET: finnes det en oekt? Sida spoer ved oppstart for aa vite om den
+   skal vise porten eller vente paa et token. Svarer aldri med noe av
+   innholdet i oekta.
+
+   `?hvem=1` legger ved hvilke identitetskilder som finnes. Det er en
+   diagnose, ikke en hemmelighet: den sier bare JA eller NEI per kilde,
+   aldri hva som staar i dem. Uten den er «Ingen Access-identitet» en
+   blindvei - man ser at det mangler, men ikke hvorfor. */
 export async function onRequestGet({ request, env }){
   const epost = epostAv(request);
-  if(!epost || !env.FAMILIE_KV) return svar({ ok:true, oekt:false });
+  /* Adressen skal alltid finnes, men diagnosen skal ikke kunne vaere
+     grunnen til at innloggingen ryker. */
+  let vilHaDiagnose = false;
+  try{ vilHaDiagnose = !!new URL(request.url).searchParams.get('hvem'); }catch(e){}
+
+  const ut = { ok:true, oekt:false };
+
+  if(vilHaDiagnose){
+    ut.kilder = {
+      epostHeader: !!request.headers.get('Cf-Access-Authenticated-User-Email'),
+      jwtHeader:   !!request.headers.get('Cf-Access-Jwt-Assertion'),
+      cookie:      !!cookieAv(request, 'CF_Authorization')
+    };
+    ut.fant = epost ? epost.replace(/^(.).*(@.*)$/, '$1***$2') : '';
+  }
+
+  if(!epost || !env.FAMILIE_KV) return svar(ut);
   const raa = await env.FAMILIE_KV.get(nokkel(epost));
-  return svar({ ok:true, oekt: !!raa, epost: epost });
+  ut.oekt = !!raa;
+  return svar(ut);
 }
 
 export async function onRequest({ request }){
