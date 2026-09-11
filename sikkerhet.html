@@ -2,105 +2,334 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Sikkerhet">
+<meta name="theme-color" content="#F5F5F5">
 <meta name="robots" content="noindex, nofollow">
 <title>Sikkerhet – Neam</title>
+<link rel="apple-touch-icon" href="/bilder/neam-robot.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/felles-rot.css?v=5">
+<link rel="stylesheet" href="/felles-dialog.css?v=1">
+<link rel="stylesheet" href="/felles-neam.css?v=51">
 <style>
 /* ============================================================
-   MIDLERTIDIG. Dette er ikke sikkerhetssida - det er et vindu inn
-   i hva Homey faktisk melder inn, slik at den ekte sida kan tegnes
-   mot virkeligheten og ikke mot en antakelse.
+   NEAM – Sikkerhet
+   Bygget 11. september 2026.
 
-   Den skal byttes ut i sin helhet. Derfor er den ustylet med vilje:
-   ingenting her skal kunne bli sittende igjen ved et uhell.
+   Kameraet oeverst, alltid synlig. Enhetene under, som merker:
+   fargen ER tilstanden, saa man ser huset uten aa lese noe.
+   Trykk paa en enhet gir valgene den faktisk stoetter - de bygges
+   av `setable` paa kapabilitetene, ikke av en liste vi maa holde
+   ved like.
+
+   VEIEN TIL HOMEY: /api/homey. Homey staar paa hjemmenettet og kan
+   ikke naas herfra; alt gaar gjennom Athoms sky. Se
+   functions/api/homey.js.
    ============================================================ */
-*{box-sizing:border-box}
+
+:root{ --merke-h:96px; }
+@media(min-width:700px){ :root{ --merke-h:118px; } }
+
+*{ box-sizing:border-box; }
+[hidden]{ display:none !important; }
+html,body{ margin:0; }
 body{
-  margin:0; padding:24px 20px 60px;
-  font-family:'Archivo',system-ui,sans-serif; color:var(--ink);
-  max-width:1100px; margin:0 auto;
+  font-family:'Archivo',system-ui,-apple-system,sans-serif;
+  color:var(--ink); background:var(--side-bakgrunn);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden; overflow-x:clip;
 }
-h1{ font-size:26px; margin:0 0 4px; }
-.sub{ color:var(--ink-soft); font-weight:600; font-size:var(--t-meta); margin:0 0 20px; }
-button{
-  font-family:inherit; font-size:var(--t-brod); font-weight:700;
-  padding:12px 20px; border-radius:999px; cursor:pointer;
+button{ font-family:inherit; color:inherit; cursor:pointer;
+        -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-offset:2px; }
+
+.skjerm{
+  min-height:100vh; min-height:100dvh; max-width:1240px; margin:0 auto;
+  display:flex; flex-direction:column; gap:18px;
+  padding:max(16px, env(safe-area-inset-top)) 20px
+          calc(120px + env(safe-area-inset-bottom));
+}
+@media(min-width:700px){ .skjerm{ padding-left:28px; padding-right:28px; } }
+
+/* ---------- Toppen ---------- */
+.topp{ display:flex; align-items:center; gap:14px; flex-shrink:0; }
+.merke{ display:block; width:76px; height:76px; flex-shrink:0; }
+.merke img{ width:100%; height:100%; object-fit:contain; display:block; }
+.tittel{ margin:0; font-size:var(--t-stor); font-weight:700;
+         text-transform:uppercase; letter-spacing:.05em; line-height:1.15; }
+.status{ margin:3px 0 0; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+@media(min-width:700px){ .merke{ width:104px; height:104px; } }
+
+/* ---------- Kameraene ----------
+   Ett i dag, flere senere. `auto-fit` gjoer at ett kamera fyller
+   bredden og fire deler den, uten at noe maa endres her. */
+/* Taket paa 460px er ikke pynt: uten det fyller ETT kamera hele
+   bredden, og paa iPad blir bildet 663px hoeyt - da er enhetene under
+   skjermkanten, og sida aapner paa noe man ikke kan handle paa.
+   Med taket legger to kameraer seg ved siden av hverandre av seg selv,
+   og fire fyller raden. */
+.kameraer{
+  display:grid; gap:14px; justify-content:start;
+  grid-template-columns:repeat(auto-fit, minmax(280px, 460px));
+}
+.kamera{
+  position:relative; border-radius:var(--radius); overflow:hidden;
+  background:#1A1D21; border:2px solid #B8873A;
+  box-shadow:var(--shadow); aspect-ratio:16/9; width:100%;
+  padding:0; display:block;
+}
+.kamera video{ width:100%; height:100%; object-fit:cover; display:block; background:#1A1D21; }
+.kamera-navn{
+  position:absolute; left:0; right:0; bottom:0; padding:22px 14px 10px;
+  background:linear-gradient(transparent, rgba(0,0,0,.72));
+  color:#fff; font-size:var(--t-brod); font-weight:700; text-align:left;
+  text-shadow:0 1px 3px rgba(0,0,0,.6); pointer-events:none;
+}
+.kamera-melding{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  padding:18px; text-align:center;
+  color:#E8E2D6; font-size:var(--t-meta); font-weight:600; line-height:1.5;
+}
+/* Direktemerket. Prikken pulserer bare naar bildet faktisk gaar. */
+.direkte{
+  position:absolute; top:10px; left:12px; display:flex; align-items:center; gap:6px;
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.7);
+}
+.direkte::before{
+  content:''; width:9px; height:9px; border-radius:50%; background:#E03131;
+  animation:puls 2s ease-in-out infinite;
+}
+@keyframes puls{ 50%{ opacity:.35; } }
+
+/* Fullskjerm. Nettleserens egen brukes der den finnes; dette er
+   reserven, og den som gjelder paa iPhone der Safari bare gir
+   fullskjerm til selve videoelementet. */
+.kamera.stor{
+  position:fixed; inset:0; z-index:150; aspect-ratio:auto;
+  border-radius:0; border:none; width:100vw; height:100dvh;
+}
+.kamera.stor video{ object-fit:contain; }
+.lukk-stor{
+  position:absolute; top:calc(12px + env(safe-area-inset-top)); right:14px;
+  z-index:2; width:44px; height:44px; border-radius:50%;
+  background:rgba(0,0,0,.55); color:#fff; border:none;
+  font-size:26px; line-height:1; display:none;
+}
+.kamera.stor .lukk-stor{ display:block; }
+
+/* ---------- Enhetene ---------- */
+.bolk-tittel{
+  margin:6px 0 0; font-size:var(--t-meta); font-weight:700;
+  text-transform:uppercase; letter-spacing:.1em; color:var(--ink-soft);
+}
+.enheter{
+  display:grid; gap:12px;
+  grid-template-columns:repeat(auto-fill, minmax(128px, 1fr));
+}
+.enhet{
+  background:none; border:none; padding:6px 2px 10px;
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  border-radius:14px;
+}
+.enhet:active{ transform:scale(.96); }
+/* HOEYDEN settes, ikke bredden: merkene er tegnet med litt ulike
+   proporsjoner, og med fast bredde ble de ujevne i hoeyden og lista
+   saa skjev ut. */
+.enhet img{ height:var(--merke-h); width:auto; max-width:100%; display:block; }
+/* Faller merket bort, skal enheten fortsatt kunne leses og trykkes -
+   aldri et brutt bildeikon. */
+.enhet .reserve{
+  display:none; height:var(--merke-h); aspect-ratio:1;
+  border-radius:50%; border:3px solid #B8873A;
+  align-items:center; justify-content:center; text-align:center;
+  padding:10px; font-size:var(--t-meta); font-weight:700;
+}
+.enhet.uten-bilde img{ display:none; }
+.enhet.uten-bilde .reserve{ display:flex; }
+.enhet-under{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; text-align:center; }
+
+/* ---------- Dialogen for én enhet ---------- */
+.ark-bak{
+  position:fixed; inset:0; z-index:140; background:rgba(26,29,33,.45);
+  display:flex; align-items:flex-end; justify-content:center;
+}
+@media(min-width:700px){ .ark-bak{ align-items:center; } }
+.ark{
+  background:var(--paper); width:100%; max-width:520px;
+  border-radius:20px 20px 0 0; padding:20px 20px calc(24px + env(safe-area-inset-bottom));
+  box-shadow:0 -4px 30px rgba(44,62,80,.22);
+  max-height:86dvh; overflow-y:auto;
+}
+@media(min-width:700px){ .ark{ border-radius:20px; padding-bottom:24px; } }
+.ark-topp{ display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+.ark-topp img{ width:72px; height:auto; flex-shrink:0; }
+.ark-navn{ font-size:var(--t-stor); font-weight:700; line-height:1.2; }
+.ark-sted{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.ark-lukk{
+  margin-left:auto; align-self:flex-start; width:36px; height:36px; border-radius:50%;
+  border:1px solid var(--line); background:var(--paper); font-size:20px; line-height:1; color:var(--ink-soft);
+}
+.maalt{ list-style:none; margin:0 0 16px; padding:0; display:grid; gap:1px;
+        background:var(--line); border-radius:12px; overflow:hidden; }
+.maalt li{
+  display:flex; justify-content:space-between; gap:14px; align-items:baseline;
+  padding:11px 14px; background:var(--boks-mild);
+  font-size:var(--t-brod); font-weight:600;
+}
+.maalt .verdi{ font-weight:700; font-variant-numeric:tabular-nums; }
+.handlinger{ display:grid; gap:10px; }
+.handling{
+  border-radius:999px; padding:15px 20px; font-size:var(--t-brod); font-weight:700;
+  border:1px solid var(--line); background:var(--paper); color:var(--ink); text-align:center;
+}
+.handling.paa{ background:var(--handling-ny); border-color:var(--handling-ny); color:#fff; }
+.handling.av{ background:var(--danger); border-color:var(--danger); color:#fff; }
+.handling:disabled{ opacity:.5; }
+.ingen-handling{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; margin:0; }
+
+/* ---------- Porten ---------- */
+.port{
+  margin:auto; text-align:center; background:var(--paper); border-radius:var(--radius);
+  padding:32px 26px; box-shadow:var(--shadow); max-width:420px;
+}
+.port img{ width:120px; height:auto; margin-bottom:14px; }
+.port h2{ margin:0 0 8px; font-size:var(--t-stor); }
+.port p{ margin:0 0 20px; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; line-height:1.5; }
+.knapp-blaa{
   background:var(--aksent); color:#fff; border:1px solid var(--aksent);
+  border-radius:999px; padding:14px 26px; font-size:var(--t-brod); font-weight:700;
 }
-button.mild{ background:var(--paper); color:var(--ink); border-color:var(--line); }
-.rad{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
-.melding{
-  padding:12px 16px; border-radius:12px; background:var(--boks-mild);
-  border:1px solid var(--boks-kant); font-size:var(--t-meta); font-weight:600;
-  margin-bottom:18px; white-space:pre-wrap;
+.feil{
+  background:#FBEDEA; border:1px solid var(--danger); color:var(--danger);
+  border-radius:12px; padding:12px 16px; font-size:var(--t-meta); font-weight:600;
 }
-.kort{
-  background:var(--paper); border:1px solid var(--line); border-radius:14px;
-  padding:14px 16px; margin-bottom:10px;
-}
-.navn{ font-weight:700; font-size:var(--t-brod); }
-.meta{ color:var(--ink-soft); font-size:var(--t-meta); font-weight:600; margin-top:2px; }
-.kap{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
-.k{
-  font-family:'IBM Plex Mono',monospace; font-size:var(--t-etikett);
-  background:var(--bg-2); border:1px solid var(--line);
-  border-radius:8px; padding:4px 8px;
-}
-.k.settbar{ border-color:var(--handling-ny); color:var(--handling-ny); }
-.k.video{ border-color:var(--handling-tvers); color:var(--handling-tvers); }
-h2{ font-size:var(--t-stor); margin:26px 0 10px; }
-pre{
-  background:var(--bg-2); border:1px solid var(--line); border-radius:12px;
-  padding:14px; overflow:auto; font-size:11px; line-height:1.45; max-height:420px;
-}
+@media(prefers-reduced-motion:reduce){ *{ animation:none !important; transition:none !important; } }
 </style>
 </head>
 <body>
 
-<h1>Sikkerhet</h1>
-<p class="sub">Midlertidig oppkobling mot Homey. Denne sida blir byttet ut.</p>
+<div class="skjerm">
 
-<div class="rad">
-  <button id="koble">Koble til Homey</button>
-  <button class="mild" id="hent">Hent enheter</button>
-  <button class="mild" id="glem">Glem tilkoblingen</button>
+  <header class="topp">
+    <a class="merke" href="/" aria-label="Til forsiden">
+      <img src="/bilder/merke-neam.png?v=2" alt="Neam" width="512" height="512">
+    </a>
+    <div>
+      <h1 class="tittel">Sikkerhet</h1>
+      <p class="status" id="status">Kobler til …</p>
+    </div>
+  </header>
+
+  <div class="feil" id="feilboks" hidden></div>
+
+  <!-- Porten: vises bare foer Homey er godkjent. -->
+  <section class="port" id="port" hidden>
+    <img src="/bilder/sikkerhet/laas-ytterdor-blaa.webp?v=1" alt="">
+    <h2>Koble til Homey</h2>
+    <p>Neam må få lov av Homey én gang. Etterpå husker den det.</p>
+    <button class="knapp-blaa" id="koble">Koble til Homey</button>
+  </section>
+
+  <div class="kameraer" id="kameraer"></div>
+
+  <p class="bolk-tittel" id="bolkTittel" hidden>Huset</p>
+  <div class="enheter" id="enheter"></div>
+
 </div>
 
-<div class="melding" id="melding">Sjekker …</div>
-
-<div id="ut"></div>
-
+<script src="/felles-dialog.js?v=1"></script>
+<script src="/felles-neam.js?v=64"></script>
 <script>
 'use strict';
 
 const KLIENT_ID = '6aa482381886c16fbed1f999';
 /* Godkjenningen maa returnere til en adresse som staar registrert hos
-   Athom. Cloudflare serverer sida uten .html, saa begge former er meldt
-   inn - men vi bruker ALLTID den samme her, saa det ikke avhenger av
-   hvordan sida ble aapnet. */
+   Athom. Vi bruker ALLTID den samme, uansett hvordan sida ble aapnet -
+   Cloudflare serverer den baade med og uten .html. */
 const RETUR = 'https://neam.no/sikkerhet.html';
 
-const $ = function(id){ return document.getElementById(id); };
-function si(t){ $('melding').textContent = t; }
+/* HET `MERKE_V` til det ble prøvd i nettleser: navnet er allerede
+   erklært i felles-neam.js, og to `const` med samme navn er en
+   SyntaxError som tar ned HELE skriptet i sida - uten at noe peker på
+   årsaken. Samme felle som `UKEDAGER` i felles-data.js og `.tom` i
+   mattespillet. En side som laster fire fellesfiler må regne med at
+   alle de nærliggende navnene er tatt. */
+const SIK_MERKE_V = 1;
 
-async function api(sti, valg){
-  const r = await fetch('/api/homey' + sti, Object.assign({ cache:'no-store' }, valg || {}));
-  const t = await r.text();
-  try{ return JSON.parse(t); }
-  catch(e){ return { ok:false, feil:'Uventet svar: ' + t.slice(0,200) }; }
+/* ============================================================
+   Hvilke enheter sida viser, og hvilket merke de baerer.
+
+   Id-ene er Homeys egne. En fast liste er riktig her, ikke en
+   begrensning: merkene er TEGNET for disse enhetene, med navnet i
+   baandet. Kommer en femte roykvarsler, trengs et nytt merke uansett,
+   og da er denne lista stedet man husker det.
+   ============================================================ */
+const VISES = [
+  { id:'c692ccf9-7754-4287-8617-953ab771ef8b', art:'kamera', merke:'kamera-tunet' },
+  { id:'35ee6477-1a07-4952-bdc6-c10b404e8bb4', art:'laas',   merke:'laas-ytterdor' },
+  { id:'3c1c7f3d-6774-4027-9894-60d9289d4c55', art:'royk',   merke:'royk-andrea-stue' },
+  { id:'97a05d1c-8887-4d90-9e9e-bfe602c68497', art:'royk',   merke:'royk-andrea-soverom' },
+  { id:'c9d5679b-a330-4226-8cb8-a0978ce041da', art:'royk',   merke:'royk-hovedsoverom' },
+  { id:'3512e7eb-5829-44ac-b66a-905c3ba4f29d', art:'royk',   merke:'royk-gang-1-etasje' }
+];
+
+/* Kapabiliteter vi IKKE viser - de sier ingenting for et menneske som
+   staar og lurer paa om huset er i orden. */
+const SKJULES = ['alarm_mqtt_connected', 'measure_rf_level', 'button.refresh_battery',
+                 'has_doorbell', 'measure_last_seen', 'measure_signal_strength'];
+
+/* Homeys egne titler er paa engelsk. */
+const NAVN = {
+  locked:'Låst', lock_unlock_open:'Låsen', alarm_contact:'Dør',
+  secure_lock:'Sikkerhetslås', alarm_battery:'Batterivarsel',
+  alarm_smoke:'Røyk', measure_smoke_status:'Tilstand',
+  measure_battery:'Batteri', alarm_muted:'Dempet', alarm_motion:'Bevegelse',
+  measure_temperature:'Temperatur'
+};
+const ENHET = { measure_battery:' %', measure_temperature:' °C' };
+
+let enheter = {};
+let soner = {};
+let aapen = null;
+
+const $ = function(id){ return document.getElementById(id); };
+function esc(t){
+  return String(t).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function si(t){ $('status').textContent = t; }
+function feil(t){
+  const b = $('feilboks');
+  if(!t){ b.hidden = true; return; }
+  b.textContent = t; b.hidden = false;
 }
 
+async function api(sti, valg){
+  const r = await fetch('/api/homey' + (sti || ''),
+                        Object.assign({ cache:'no-store' }, valg || {}));
+  const t = await r.text();
+  try{ return JSON.parse(t); }
+  catch(e){ return { ok:false, feil:'Uventet svar fra Homey-koblingen' }; }
+}
+function post(kropp){
+  return api('', { method:'POST', headers:{'Content-Type':'application/json'},
+                   body: JSON.stringify(kropp) });
+}
+
+/* ============================================================
+   Godkjenningen mot Athom
+   ============================================================ */
 function godkjenn(){
-  /* BEGGE navnene sendes. Athoms spesifikasjon sier
-     `authorization_type`, men tjeneren avviste kallet med
-     «response_type: Invalid value» - den vil ha standardnavnet.
-     Maalt 11. september 2026. De koster ingenting sammen, og vi
-     slipper aa vite hvilken av dem som gjelder til enhver tid. */
   const p = new URLSearchParams({
+    /* BEGGE navnene: Athoms spesifikasjon sier `authorization_type`,
+       men tjeneren avviste med «response_type: Invalid value». */
     response_type: 'code',
     authorization_type: 'code',
     client_id: KLIENT_ID,
@@ -116,103 +345,406 @@ async function taImotKode(){
   if(!kode) return false;
   history.replaceState({}, '', RETUR);
   si('Fullfører tilkoblingen …');
-  const d = await api('', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ hva:'kode', code: kode, redirect: RETUR })
-  });
-  si(d.ok ? 'Tilkoblet.' : ('Fikk ikke koblet til: ' + d.feil));
-  return true;
+  const d = await post({ hva:'kode', code:kode, redirect:RETUR });
+  if(!d.ok) feil('Fikk ikke koblet til Homey: ' + d.feil);
+  return !!d.ok;
 }
 
-/* Kapabiliteter med `setable` kan styres; resten kan bare leses. Det er
-   den opplysningen den ekte sida skal bygge valgene sine av. */
-function kapListe(d){
-  const o = d.capabilitiesObj || {};
-  const navn = Object.keys(o).length ? Object.keys(o) : (d.capabilities || []);
-  return navn.map(function(k){
-    const c = o[k] || {};
-    const settbar = !!c.setable;
-    const verdi = (c.value !== undefined && c.value !== null) ? String(c.value) : '–';
-    return '<span class="k' + (settbar ? ' settbar' : '') + '">'
-         + k + ' = ' + verdi + (settbar ? ' ✎' : '') + '</span>';
+/* ============================================================
+   Tilstand: fargen paa merket
+   ------------------------------------------------------------
+   Rekkefoelgen er viktig. Verst foerst: en roykvarsler i alarm skal
+   vaere roed selv om batteriet ogsaa er lavt.
+   ============================================================ */
+function verdi(d, kap){
+  const o = (d && d.capabilitiesObj) || {};
+  return o[kap] ? o[kap].value : undefined;
+}
+function utilgjengelig(d){ return !d || d.available === false; }
+
+function tilstand(d, art){
+  if(utilgjengelig(d)) return 'oransje';
+
+  if(art === 'laas'){
+    /* En aapen doer slaar alt: den er aapen uansett hva laasen mener
+       om saken. */
+    if(verdi(d,'alarm_contact') === true) return 'rod';
+    if(verdi(d,'locked') === true) return 'gronn';
+    return 'blaa';
+  }
+
+  if(art === 'royk'){
+    if(verdi(d,'alarm_smoke') === true) return 'rod';
+    const st = verdi(d,'measure_smoke_status');
+    if(st !== undefined && st !== null && String(st).toUpperCase() !== 'OK') return 'rod';
+    if(verdi(d,'alarm_battery') === true) return 'oransje';
+    const b = verdi(d,'measure_battery');
+    if(typeof b === 'number' && b <= 20) return 'oransje';
+    return 'gronn';
+  }
+
+  return 'blaa';
+}
+
+function merkeUrl(m, t){
+  return '/bilder/sikkerhet/' + m + (t ? '-' + t : '') + '.webp?v=' + SIK_MERKE_V;
+}
+
+/* Én kort linje under merket: det ene som er verdt aa se uten aa
+   trykke. Ingenting naar det ikke er noe aa si - et tomt felt er verre
+   enn ingen linje. */
+function underTekst(d, art){
+  if(utilgjengelig(d)) return 'Ingen kontakt';
+  if(art === 'laas'){
+    if(verdi(d,'alarm_contact') === true) return 'Døren står åpen';
+    return verdi(d,'locked') === true ? 'Låst' : 'Ulåst';
+  }
+  if(art === 'royk'){
+    if(verdi(d,'alarm_smoke') === true) return 'RØYK';
+    const b = verdi(d,'measure_battery');
+    if(typeof b === 'number' && b <= 20) return 'Batteri ' + b + ' %';
+    const t = verdi(d,'measure_temperature');
+    if(typeof t === 'number') return t.toFixed(1).replace('.', ',') + ' °C';
+    return '';
+  }
+  return '';
+}
+
+/* ============================================================
+   Tegning
+   ============================================================ */
+function tegn(){
+  const kam = VISES.filter(function(v){ return v.art === 'kamera'; });
+  const res = VISES.filter(function(v){ return v.art !== 'kamera'; });
+
+  $('kameraer').innerHTML = kam.map(function(v){
+    const d = enheter[v.id];
+    const navn = (d && d.name) || 'Kamera';
+    return '<button class="kamera" data-kamera="' + esc(v.id) + '">'
+      +   '<video id="vid-' + esc(v.id) + '" playsinline autoplay muted></video>'
+      +   '<span class="direkte" id="dir-' + esc(v.id) + '" hidden>Direkte</span>'
+      +   '<span class="kamera-melding" id="kmeld-' + esc(v.id) + '">Kobler til kameraet …</span>'
+      +   '<span class="kamera-navn">' + esc(navn) + '</span>'
+      +   '<span class="lukk-stor" role="button" aria-label="Lukk">&times;</span>'
+      + '</button>';
+  }).join('');
+
+  $('bolkTittel').hidden = !res.length;
+  $('enheter').innerHTML = res.map(function(v){
+    const d = enheter[v.id];
+    const t = tilstand(d, v.art);
+    const navn = (d && d.name) || v.merke;
+    const under = underTekst(d, v.art);
+    return '<button class="enhet" data-enhet="' + esc(v.id) + '">'
+      +   '<img src="' + merkeUrl(v.merke, t) + '" alt="' + esc(navn) + '"'
+      +     ' onerror="this.closest(\'.enhet\').classList.add(\'uten-bilde\')">'
+      +   '<span class="reserve">' + esc(navn) + '</span>'
+      +   (under ? '<span class="enhet-under">' + esc(under) + '</span>' : '')
+      + '</button>';
   }).join('');
 }
 
-async function hent(){
-  si('Henter …');
-  const [e, s] = await Promise.all([api('?hva=enheter'), api('?hva=soner')]);
-  if(!e.ok){
-    si('Fikk ikke enhetene: ' + e.feil + (e.maaGodkjenne ? '\nTrykk «Koble til Homey».' : ''));
+/* ============================================================
+   Dialogen for én enhet
+   ------------------------------------------------------------
+   Valgene bygges av kapabilitetene som er `setable`. Vi holder ingen
+   liste over hva en laas kan - Homey vet det, og en ny enhet faar
+   riktige knapper uten at noe her endres.
+   ============================================================ */
+function lesbar(kap, v){
+  if(v === true || v === false){
+    if(kap === 'alarm_contact') return v ? 'Åpen' : 'Lukket';
+    if(kap === 'locked')        return v ? 'Låst' : 'Ulåst';
+    if(kap.indexOf('alarm_') === 0) return v ? 'Ja' : 'Nei';
+    return v ? 'På' : 'Av';
+  }
+  if(typeof v === 'number'){
+    const n = Math.round(v * 10) / 10;
+    return String(n).replace('.', ',') + (ENHET[kap] || '');
+  }
+  if(v === null || v === undefined || v === '') return '–';
+  return String(v);
+}
+
+function aapneEnhet(id){
+  const v = VISES.filter(function(x){ return x.id === id; })[0];
+  const d = enheter[id];
+  if(!v || !d) return;
+  aapen = id;
+
+  const o = d.capabilitiesObj || {};
+  const maalt = Object.keys(o).filter(function(k){
+    return SKJULES.indexOf(k) === -1 && o[k].getable !== false
+        && o[k].value !== null && o[k].value !== undefined;
+  });
+  const settbare = Object.keys(o).filter(function(k){
+    return o[k].setable === true && o[k].type === 'boolean'
+        && SKJULES.indexOf(k) === -1;
+  });
+
+  let h = '<div class="ark-bak" id="arkBak"><div class="ark" role="dialog" aria-modal="true">'
+    + '<div class="ark-topp">'
+    +   '<img src="' + merkeUrl(v.merke, tilstand(d, v.art)) + '" alt="" onerror="this.hidden=true">'
+    +   '<div><div class="ark-navn">' + esc(d.name || '') + '</div>'
+    +   '<div class="ark-sted">' + esc(soner[d.zone] || '') + '</div></div>'
+    +   '<button class="ark-lukk" id="arkLukk" aria-label="Lukk">&times;</button>'
+    + '</div>';
+
+  if(utilgjengelig(d)){
+    h += '<div class="feil">Neam får ikke kontakt med denne enheten akkurat nå.</div>';
+  }
+
+  if(maalt.length){
+    h += '<ul class="maalt">' + maalt.map(function(k){
+      return '<li><span>' + esc(NAVN[k] || o[k].title || k) + '</span>'
+           + '<span class="verdi">' + esc(lesbar(k, o[k].value)) + '</span></li>';
+    }).join('') + '</ul>';
+  }
+
+  if(settbare.length){
+    h += '<div class="handlinger">' + settbare.map(function(k){
+      const paa = o[k].value === true;
+      const tekst = k === 'locked' ? (paa ? 'Lås opp' : 'Lås')
+                  : (paa ? 'Slå av ' + (NAVN[k] || k).toLowerCase()
+                         : 'Slå på ' + (NAVN[k] || k).toLowerCase());
+      const klasse = k === 'locked' ? (paa ? 'av' : 'paa') : '';
+      return '<button class="handling ' + klasse + '" data-sett="' + esc(k)
+           + '" data-verdi="' + (!paa) + '">' + esc(tekst) + '</button>';
+    }).join('') + '</div>';
+  }else{
+    h += '<p class="ingen-handling">Denne enheten kan bare leses av.</p>';
+  }
+
+  h += '</div></div>';
+  document.body.insertAdjacentHTML('beforeend', h);
+
+  $('arkLukk').onclick = lukkEnhet;
+  $('arkBak').onclick = function(ev){ if(ev.target === $('arkBak')) lukkEnhet(); };
+  document.querySelectorAll('.handling').forEach(function(b){
+    b.onclick = function(){ sett(id, b.dataset.sett, b.dataset.verdi === 'true', b); };
+  });
+}
+
+function lukkEnhet(){
+  const b = $('arkBak');
+  if(b) b.remove();
+  aapen = null;
+}
+
+/* En laas som aapnes spoer alltid. Grensen ellers i huset er at en feil
+   som er lett aa se og lett aa rette ikke trenger dialog - men en
+   ytterdoer som staar ulaast er ingen av delene: man ser den ikke, og
+   man retter den ikke foer man er hjemme. */
+async function sett(id, kap, nyVerdi, knapp){
+  if(kap === 'locked' && nyVerdi === false){
+    const ja = await bekreft('Låse opp ytterdøra?', { jaTekst:'Lås opp', fare:true });
+    if(!ja) return;
+  }
+  const gammel = knapp.textContent;
+  knapp.disabled = true;
+  knapp.textContent = 'Sender …';
+  const d = await post({ hva:'sett', enhet:id, kapabilitet:kap, verdi:nyVerdi });
+  if(!d.ok){
+    knapp.disabled = false; knapp.textContent = gammel;
+    varsle('Fikk ikke gjort det: ' + d.feil);
     return;
   }
-  const soner = {};
-  if(s.ok && s.soner) for(const id in s.soner) soner[id] = s.soner[id].name;
+  lukkEnhet();
+  /* Homey bruker et oeyeblikk paa aa melde tilbake den nye verdien. */
+  setTimeout(hentEnheter, 1200);
+  setTimeout(hentEnheter, 4000);
+}
 
-  const liste = Object.values(e.enheter || {});
-  liste.sort(function(a, b){
-    return (soner[a.zone] || '').localeCompare(soner[b.zone] || '')
-        || String(a.name || '').localeCompare(String(b.name || ''));
-  });
+/* ============================================================
+   Henting og oppfriskning
+   ============================================================ */
+let henter = false;
+async function hentEnheter(){
+  if(henter || document.hidden) return;
+  henter = true;
+  try{
+    const e = await api('?hva=enheter');
+    if(!e.ok){
+      if(e.maaGodkjenne){ visPort(); return; }
+      feil('Fikk ikke hentet fra Homey: ' + e.feil);
+      return;
+    }
+    feil('');
+    enheter = e.enheter || {};
+    if(!Object.keys(soner).length){
+      const s = await api('?hva=soner');
+      if(s.ok && s.soner){
+        for(const id in s.soner) soner[id] = s.soner[id].name;
+      }
+    }
+    /* Staar en dialog aapen, skal ikke sida rykke bort under fingeren. */
+    if(!aapen) tegn();
+    si('Oppdatert ' + new Date().toLocaleTimeString('nb-NO',
+        { hour:'2-digit', minute:'2-digit' }));
+  }finally{ henter = false; }
+}
 
-  si('Fant ' + liste.length + ' enheter.');
+function visPort(){
+  $('port').hidden = false;
+  $('kameraer').innerHTML = '';
+  $('enheter').innerHTML = '';
+  $('bolkTittel').hidden = true;
+  si('Ikke koblet til Homey');
+}
 
-  let html = '';
-  liste.forEach(function(d){
-    /* Video er det ene som avgjoer om kameraene kan vises i nettleseren.
-       Vi merker den saerskilt saa den ikke forsvinner i lista. */
-    const harVideo = !!(d.videos && Object.keys(d.videos).length)
-                  || !!(d.images && Object.keys(d.images).length)
-                  || d.class === 'camera';
-    html += '<div class="kort">'
-      + '<div class="navn">' + esc(d.name || '(uten navn)')
-      + (harVideo ? ' <span class="k video">kamera</span>' : '') + '</div>'
-      + '<div class="meta">' + esc(soner[d.zone] || 'ukjent sone')
-      + ' · klasse: ' + esc(d.class || '?')
-      + ' · id: ' + esc(d.id || '') + '</div>'
-      + '<div class="kap">' + kapListe(d) + '</div>'
-      + '</div>';
-  });
+/* ============================================================
+   Kameraet – WebRTC
+   ------------------------------------------------------------
+   Nettleseren lager et tilbud, /api/homey sender det til Homey, og
+   svaret kommer tilbake. Deretter gaar selve stroemmen DIREKTE mellom
+   nettleseren og kameraet - bare utvekslingen gaar gjennom oss.
 
-  /* Raa data for de enhetene som ser ut som kameraer - der trenger vi
-     aa se nøyaktig hva som meldes inn for aa vite om strøm er mulig. */
-  const kameraer = liste.filter(function(d){
-    return d.class === 'camera' || (d.videos && Object.keys(d.videos).length)
-        || (d.images && Object.keys(d.images).length);
-  });
-  if(kameraer.length){
-    html += '<h2>Kameraene, i sin helhet</h2><pre>'
-          + esc(JSON.stringify(kameraer, null, 2)) + '</pre>';
+   Alle ICE-kandidatene samles FOER tilbudet sendes: Homey tar ikke imot
+   dem etterpaa (ingen trickle), saa et halvferdig tilbud gir en
+   forbindelse som aldri kobler seg opp.
+   ============================================================ */
+const stroemmer = {};
+
+function kmeld(id, t){
+  const el = $('kmeld-' + id);
+  if(!el) return;
+  el.textContent = t || '';
+  el.hidden = !t;
+}
+
+async function startKamera(v){
+  const d = enheter[v.id];
+  const video = (d && d.videos && d.videos[0]) || null;
+  const videoId = video && video.videoObj && video.videoObj.id;
+  if(!videoId){ kmeld(v.id, 'Dette kameraet melder ingen strøm.'); return; }
+
+  kmeld(v.id, 'Kobler til kameraet …');
+  let pc = null;
+  try{
+    pc = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+    stroemmer[v.id] = pc;
+
+    /* Vi tar imot, sender ingenting. Datakanalen er med fordi Homey
+       setter den opp for WebRTC-stroemmer som standard. */
+    pc.addTransceiver('video', { direction:'recvonly' });
+    pc.addTransceiver('audio', { direction:'recvonly' });
+    pc.createDataChannel('neam');
+
+    pc.ontrack = function(ev){
+      const el = $('vid-' + v.id);
+      if(el && ev.streams[0] && el.srcObject !== ev.streams[0]){
+        el.srcObject = ev.streams[0];
+        el.play().catch(function(){});
+      }
+    };
+    pc.onconnectionstatechange = function(){
+      const s = pc.connectionState;
+      const dir = $('dir-' + v.id);
+      if(s === 'connected'){ kmeld(v.id, ''); if(dir) dir.hidden = false; }
+      else if(s === 'failed' || s === 'disconnected' || s === 'closed'){
+        if(dir) dir.hidden = true;
+        kmeld(v.id, 'Mistet kontakten med kameraet.');
+      }
+    };
+
+    const tilbud = await pc.createOffer();
+    await pc.setLocalDescription(tilbud);
+
+    /* Med et tak, saa en kandidat som aldri kommer ikke stopper hele
+       oppkoblingen. */
+    await new Promise(function(ok){
+      if(pc.iceGatheringState === 'complete') return ok();
+      const tid = setTimeout(ok, 3000);
+      pc.onicegatheringstatechange = function(){
+        if(pc.iceGatheringState === 'complete'){ clearTimeout(tid); ok(); }
+      };
+    });
+
+    const svar = await post({ hva:'tilbud', video:videoId,
+                              sdp: pc.localDescription.sdp });
+    if(!svar.ok){ kmeld(v.id, 'Fikk ikke bilde: ' + svar.feil); return; }
+
+    await pc.setRemoteDescription({ type:'answer', sdp: svar.sdp });
+  }catch(e){
+    kmeld(v.id, 'Fikk ikke bilde: ' + (e && e.message ? e.message : 'ukjent feil'));
+    if(pc){ try{ pc.close(); }catch(_){} }
+    delete stroemmer[v.id];
   }
-
-  $('ut').innerHTML = html;
 }
 
-function esc(t){
-  return String(t).replace(/[&<>"']/g, function(c){
-    return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
-  });
+function stoppKameraer(){
+  for(const id in stroemmer){
+    try{ stroemmer[id].close(); }catch(e){}
+    delete stroemmer[id];
+    const el = $('vid-' + id);
+    if(el) el.srcObject = null;
+    const dir = $('dir-' + id);
+    if(dir) dir.hidden = true;
+  }
 }
+
+function startKameraer(){
+  VISES.filter(function(v){ return v.art === 'kamera'; })
+       .forEach(function(v){ if(!stroemmer[v.id]) startKamera(v); });
+}
+
+/* ---------- Fullskjerm ---------- */
+function storSkjerm(kort){
+  if(kort.classList.contains('stor')){ lukkStor(kort); return; }
+  kort.classList.add('stor');
+  const el = kort.querySelector('video');
+  if(el && el.requestFullscreen) el.requestFullscreen().catch(function(){});
+  else if(el && el.webkitEnterFullscreen){ try{ el.webkitEnterFullscreen(); }catch(e){} }
+}
+function lukkStor(kort){
+  kort.classList.remove('stor');
+  if(document.fullscreenElement && document.exitFullscreen){
+    document.exitFullscreen().catch(function(){});
+  }
+}
+
+/* ============================================================
+   Hendelser og oppstart
+   ============================================================ */
+document.addEventListener('click', function(ev){
+  const lukk = ev.target.closest('.lukk-stor');
+  if(lukk){ ev.stopPropagation(); lukkStor(lukk.closest('.kamera')); return; }
+  const kam = ev.target.closest('[data-kamera]');
+  if(kam){ storSkjerm(kam); return; }
+  const en = ev.target.closest('[data-enhet]');
+  if(en && !aapen){ aapneEnhet(en.dataset.enhet); }
+});
+document.addEventListener('keydown', function(ev){
+  if(ev.key !== 'Escape') return;
+  const stor = document.querySelector('.kamera.stor');
+  if(stor) lukkStor(stor);
+  else if(aapen) lukkEnhet();
+});
 
 $('koble').onclick = godkjenn;
-$('hent').onclick  = hent;
-$('glem').onclick  = async function(){
-  await api('', { method:'POST', headers:{'Content-Type':'application/json'},
-                  body: JSON.stringify({ hva:'ut' }) });
-  si('Tilkoblingen er glemt.');
-  $('ut').innerHTML = '';
-};
+
+/* Skjermen sover: stopp stroemmene. En videostroem i en fane ingen ser
+   paa koster baade batteri og baandbredde. */
+document.addEventListener('visibilitychange', function(){
+  if(document.hidden){ stoppKameraer(); }
+  else { hentEnheter().then(startKameraer); }
+});
+
+/* KV-gulvet paa 60 sekunder gjelder ikke her - vi spoer Homey direkte.
+   Tolv sekunder er ofte nok til aa se at noen laaste doera, og sjelden
+   nok til at det ikke merkes noe sted. */
+setInterval(hentEnheter, 12000);
 
 (async function(){
   const kom = await taImotKode();
   const s = await api('?hva=status');
-  if(!s.ok){ if(!kom) si('Feil: ' + s.feil); return; }
-  if(s.godkjent){
-    si('Tilkoblet' + (s.homey ? ' til ' + s.homey : '') + '. Trykk «Hent enheter».');
-    hent();
-  }else if(!kom){
-    si('Ikke tilkoblet ennå. Trykk «Koble til Homey».');
-  }
+  if(!s.ok){ feil(s.feil); si('Noe er galt'); return; }
+  if(!s.godkjent && !kom){ visPort(); return; }
+  $('port').hidden = true;
+  await hentEnheter();
+  startKameraer();
 })();
 </script>
 </body>

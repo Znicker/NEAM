@@ -253,11 +253,21 @@ async function motHomey(env, epost, sti, valg){
       const s = await nySesjon(env, epost, oekt, a.access);
       if(s.feil) return { feil: s.feil };
     }
+    const hodet = { Authorization: 'Bearer ' + oekt.sesjon };
+    let kropp;
+    if(valg && valg.tekst !== undefined){
+      /* WebRTC-tilbudet sendes som ren tekst, ikke JSON - se
+         onRequestPost, hva:'tilbud'. */
+      hodet['Content-Type'] = 'text/plain';
+      kropp = valg.tekst;
+    }else if(valg && valg.body){
+      hodet['Content-Type'] = 'application/json';
+      kropp = JSON.stringify(valg.body);
+    }
     const r = await fetch(oekt.url + sti, {
       method: (valg && valg.method) || 'GET',
-      headers: Object.assign({ Authorization: 'Bearer ' + oekt.sesjon },
-                             (valg && valg.body) ? { 'Content-Type': 'application/json' } : {}),
-      body: (valg && valg.body) ? JSON.stringify(valg.body) : undefined
+      headers: hodet,
+      body: kropp
     });
     return { r: r };
   }
@@ -278,6 +288,7 @@ async function motHomey(env, epost, sti, valg){
     return { feil: 'Homey svarte ' + ut.r.status + (t ? ': ' + t.slice(0, 200) : '') };
   }
   const tekst = await ut.r.text();
+  if(valg && valg.svarTekst) return { tekst: tekst };
   try{ return { data: tekst ? JSON.parse(tekst) : null }; }
   catch(e){ return { data: null }; }
 }
@@ -342,6 +353,32 @@ export async function onRequestPost({ request, env }){
     const r = await motHomey(env, epost, sti, { method:'PUT', body:{ value: inn.verdi } });
     if(r.feil) return svar({ ok:false, feil:r.feil, maaGodkjenne: !!r.maaGodkjenne });
     return svar({ ok:true, svar:r.data });
+  }
+
+  /* ---------- WebRTC: tilbud inn, svar ut ----------
+     Nettleseren lager et tilbud (SDP), vi sender det videre til Homey,
+     og Homey svarer med sitt. Deretter gaar selve videostroemmen DIREKTE
+     mellom nettleseren og kameraet - bare denne ene utvekslingen gaar
+     gjennom oss. Video gjennom en Pages Function ville vaert baade tregt
+     og dyrt.
+
+     Kroppen er REN TEKST i begge retninger. Ingen JSON, ingen felter
+     rundt - maalt i Homeys egen webapp 11. september 2026.
+
+     MERK: et tilbud inneholder husets offentlige IP-adresse i klartekst.
+     Det er normalt for WebRTC, men det skal derfor ikke lagres eller
+     logges noe sted. Vi sender det videre og glemmer det. */
+  if(hva === 'tilbud'){
+    const id = String(inn.video || '');
+    if(!id)       return svar({ ok:false, feil:'Mangler video' });
+    if(!inn.sdp)  return svar({ ok:false, feil:'Mangler tilbud' });
+
+    const sti = '/api/manager/videos/video/' + encodeURIComponent(id) + '/offer';
+    const r = await motHomey(env, epost, sti,
+                             { method:'POST', tekst:String(inn.sdp), svarTekst:true });
+    if(r.feil) return svar({ ok:false, feil:r.feil, maaGodkjenne: !!r.maaGodkjenne });
+    if(!r.tekst) return svar({ ok:false, feil:'Homey svarte uten innhold' });
+    return svar({ ok:true, sdp:r.tekst });
   }
 
   return svar({ ok:false, feil:'Ukjent hva: ' + hva });
