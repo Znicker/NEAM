@@ -413,9 +413,36 @@ function underTekst(d, art){
 /* ============================================================
    Tegning
    ============================================================ */
+/* Kameraene tegnes ÉN GANG. Enhetene tegnes hver gang.
+
+   Foerste utgave bygde hele sida paa nytt ved hver oppfriskning, ogsaa
+   kamerafeltet. Da ble <video>-elementet byttet ut med et tomt hvert
+   tolvte sekund, mens selve stroemmen gikk videre i bakgrunnen mot et
+   element som ikke laa i sida lenger. Symptomet var at bildet falt ut
+   etter noen sekunder, at «Kobler til kameraet» kom tilbake, og at en
+   omlasting hjalp - alt sammen ting som peker mot nettet og ikke mot
+   oss selv.
+
+   En videostroem er TILSTAND. Den taaler ikke at elementet under den
+   byttes ut, og er derfor det ene som ikke skal tegnes paa nytt. */
+let kameraTegnet = '';
+
 function tegn(){
+  tegnKameraer();
+  tegnEnheter();
+}
+
+function tegnKameraer(){
   const kam = VISES.filter(function(v){ return v.art === 'kamera'; });
-  const res = VISES.filter(function(v){ return v.art !== 'kamera'; });
+  /* Bare naar SETTET har endret seg - da er det noe nytt, ikke en
+     oppfriskning. Navnet er med i avtrykket, saa et omdoept kamera
+     faar ny etikett. */
+  const avtrykk = kam.map(function(v){
+    const d = enheter[v.id];
+    return v.id + ':' + ((d && d.name) || '');
+  }).join('|');
+  if(avtrykk === kameraTegnet) return;
+  kameraTegnet = avtrykk;
 
   $('kameraer').innerHTML = kam.map(function(v){
     const d = enheter[v.id];
@@ -428,7 +455,10 @@ function tegn(){
       +   '<span class="lukk-stor" role="button" aria-label="Lukk">&times;</span>'
       + '</button>';
   }).join('');
+}
 
+function tegnEnheter(){
+  const res = VISES.filter(function(v){ return v.art !== 'kamera'; });
   $('bolkTittel').hidden = !res.length;
   $('enheter').innerHTML = res.map(function(v){
     const d = enheter[v.id];
@@ -645,7 +675,18 @@ async function startKamera(v){
       if(s === 'connected'){ kmeld(v.id, ''); if(dir) dir.hidden = false; }
       else if(s === 'failed' || s === 'disconnected' || s === 'closed'){
         if(dir) dir.hidden = true;
-        kmeld(v.id, 'Mistet kontakten med kameraet.');
+        kmeld(v.id, 'Mistet kontakten. Prøver igjen …');
+        /* Rydd opp og proev paa nytt. Uten dette ble et kamera som falt
+           ut liggende doedt til noen lastet sida. Fem sekunder er nok
+           til at et kort brudd har gitt seg, og sjelden nok til at en
+           Homey som er nede ikke blir spurt i hytt og vaer. */
+        try{ pc.close(); }catch(_){}
+        if(stroemmer[v.id] === pc){
+          delete stroemmer[v.id];
+          setTimeout(function(){
+            if(!document.hidden && !stroemmer[v.id]) startKamera(v);
+          }, 5000);
+        }
       }
     };
 
