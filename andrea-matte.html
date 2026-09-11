@@ -50,13 +50,14 @@
 
   /* Scenen, telefon foerst. */
   --kant:16px;
-  --robot-h:74px;
-  --lader-h:82px;
+  --robot-h:92px;
+  --lader-h:70px;
   --ror-h:16px;
   --lampe:12px;
   --boble-plass:66px;
-  --robot-w:calc(var(--robot-h) * .806);
-  --lader-w:calc(var(--lader-h) * .583);
+  /* Sideforholdet til bildefilene: robot 388x360, batteri 175x263. */
+  --robot-w:calc(var(--robot-h) * 1.078);
+  --lader-w:calc(var(--lader-h) * .665);
 
   --tast-h:62px;
   --tast-w:min(29vw, 104px);
@@ -65,7 +66,7 @@
 @media(min-width:700px) and (min-height:600px){
   :root{
     --kant:28px;
-    --robot-h:138px; --lader-h:148px; --ror-h:24px; --lampe:18px;
+    --robot-h:172px; --lader-h:118px; --ror-h:24px; --lampe:18px;
     --boble-plass:72px;
     --tast-h:74px; --tast-w:104px; --stykke:84px;
   }
@@ -73,7 +74,7 @@
 @media(min-width:1300px) and (min-height:600px){
   :root{
     --kant:40px;
-    --robot-h:144px; --lader-h:154px; --ror-h:24px; --lampe:18px;
+    --robot-h:176px; --lader-h:122px; --ror-h:24px; --lampe:18px;
     --boble-plass:72px;
     --tast-h:72px; --tast-w:104px; --stykke:84px;
   }
@@ -83,7 +84,7 @@
    tastatur. */
 @media(min-width:700px) and (min-height:1000px) and (orientation:portrait){
   :root{
-    --robot-h:168px; --lader-h:178px; --ror-h:26px; --lampe:20px;
+    --robot-h:208px; --lader-h:140px; --ror-h:26px; --lampe:20px;
     --tast-h:96px; --tast-w:140px; --stykke:108px;
   }
 }
@@ -182,15 +183,13 @@ body.spiller .topp{ display:none; }
   position:absolute; right:0; bottom:calc(var(--ror-h) * .35);
   width:var(--lader-w); height:var(--lader-h);
 }
-.lader svg{ width:100%; height:100%; display:block; overflow:visible; }
-.l-kasse{ fill:var(--paper); stroke:var(--messing-moerk); stroke-width:3; }
-.l-vindu{ fill:#EDE6D9; stroke:var(--messing); stroke-width:2; }
-.l-lyn{ fill:var(--metall-moerk); stroke:#5A6C7D; stroke-width:1.6; stroke-linejoin:round;
-        transition:fill .4s ease; }
-.l-lampe{ fill:#6E7883; stroke:var(--messing-moerk); stroke-width:2; transition:fill .4s ease; }
-.l-fot{ fill:var(--metall-moerk); stroke:var(--messing-moerk); stroke-width:2; }
-.lader.fulladet .l-lyn{ fill:var(--lys); filter:drop-shadow(0 0 5px var(--lys-glod)); }
-.lader.fulladet .l-lampe{ fill:var(--lys); }
+.lader img{ width:100%; height:100%; object-fit:contain; object-position:bottom; display:block;
+             transition:filter .5s ease; }
+/* Fulladet: batteriet gloeder. Bildet lyser alt av seg selv, saa dette er
+   et lys RUNDT det - ikke en ny farge oppaa. */
+.lader.fulladet img{
+  filter:drop-shadow(0 0 10px var(--lys-glod)) drop-shadow(0 0 24px var(--lys-glod));
+}
 
 .robot{
   position:absolute; bottom:calc(var(--ror-h) - 3px);
@@ -200,19 +199,19 @@ body.spiller .topp{ display:none; }
   z-index:2;
 }
 .robot-kropp{ width:100%; height:100%; transform-origin:50% 100%; }
-.robot svg{ width:100%; height:100%; display:block; overflow:visible; }
-.r-metall{ fill:var(--metall); stroke:var(--ink); stroke-width:2.6; stroke-linejoin:round; }
-.r-metall-m{ fill:var(--metall-moerk); stroke:var(--ink); stroke-width:2.4; }
-.r-visir{ fill:#D3CCBE; stroke:var(--ink); stroke-width:2; }
-.r-oye-bunn{ fill:#6F5E5A; stroke:var(--ink); stroke-width:1.8; }
-/* Oeynene lyser sterkere jo lenger han har kommet. --kraft settes
-   fra JS, 0 til 1. */
-.r-oye{ fill:#D9573F; opacity:calc(.25 + var(--kraft, 0) * .75); transition:opacity .6s ease; }
-.r-pupill{ fill:var(--ink); }
-.r-rod{ fill:var(--robot-rod); stroke:var(--ink); stroke-width:2; }
-.r-n{ fill:none; stroke:var(--robot-rod); stroke-width:4.5; stroke-linejoin:round; stroke-linecap:round; }
-.r-strek{ fill:none; stroke:var(--ink); stroke-width:1.6; stroke-linecap:round; }
-.r-antenne{ fill:var(--robot-rod); stroke:var(--ink); stroke-width:2; }
+.robot-kropp img{
+  width:100%; height:100%; object-fit:contain; object-position:bottom; display:block;
+}
+/* Reserve hvis bildefila mangler: en messingskive med N. Uten den staar
+   roboten som et tomt felt, og roeret ser ut som en feil i sida. */
+.robot-kropp .reserve{
+  display:none; width:100%; height:100%; border-radius:50%;
+  background:var(--metall); border:3px solid var(--messing-moerk);
+  align-items:center; justify-content:center;
+  font-size:calc(var(--robot-h) * .42); font-weight:700; color:var(--robot-rod);
+}
+.robot.uten-bilde img{ display:none; }
+.robot.uten-bilde .reserve{ display:flex; }
 
 .robot.gaar .robot-kropp{ animation:gaa .7s ease-in-out; }
 @keyframes gaa{
@@ -405,9 +404,10 @@ body.spiller .rekorder{ display:none; }
 /* ---------- Resultatet ---------- */
 .resultat{ text-align:center; }
 .stjerner{ display:flex; justify-content:center; gap:6px; margin:4px 0 10px; }
-.stjerne{ width:clamp(44px, 11vw, 64px); height:clamp(44px, 11vw, 64px); }
-.stjerne path{ fill:var(--paper-soft); stroke:var(--line); stroke-width:1.5; stroke-linejoin:round; }
-.stjerne.fylt path{ fill:var(--lys); stroke:var(--messing-moerk); }
+.stjerne{ width:clamp(44px, 11vw, 64px); height:auto; display:block; }
+/* Tom stjerne er den samme fila, tappet for farge. Ett bilde, to
+   tilstander - da kan de ikke komme i utakt. */
+.stjerne:not(.fylt){ filter:grayscale(1) brightness(1.45) opacity(.42); }
 .stjerner.vis .stjerne{ animation:stjerne .45s cubic-bezier(.3,1.6,.5,1) both; animation-delay:calc(var(--i) * .14s); }
 @keyframes stjerne{ from{ transform:scale(0) rotate(-40deg); opacity:0; } to{ transform:none; opacity:1; } }
 .poeng{ margin:0; font-size:28px; font-weight:700; font-variant-numeric:tabular-nums; }
@@ -440,9 +440,8 @@ body.spiller .rekorder{ display:none; }
 .nr-navn{ font-weight:700; font-size:var(--t-brod); }
 .nr-stjerner{ grid-row:span 2; display:flex; gap:2px; }
 .nr-detalj{ grid-column:2; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
-.mini{ width:20px; height:20px; }
-.mini path{ fill:#FFFFFF; stroke:var(--line); stroke-width:1.6; stroke-linejoin:round; }
-.mini.fylt path{ fill:var(--lys); stroke:var(--messing-moerk); }
+.mini{ width:20px; height:auto; display:block; }
+.mini:not(.fylt){ filter:grayscale(1) brightness(1.45) opacity(.4); }
 .samlet{ margin:12px 0 0; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
 .siste{ list-style:none; margin:0; padding:0; }
 .siste li{
@@ -456,6 +455,37 @@ body.spiller .rekorder{ display:none; }
 .s-topp{ font-size:var(--t-brod); font-weight:700; font-variant-numeric:tabular-nums; }
 .s-under{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
 .tom{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; margin:0; }
+
+/* ---------- Redigering (magne@ og sys@) ---------- */
+.runder-topp{ display:flex; align-items:baseline; gap:12px; margin-top:22px; }
+.runder-topp .kort-h{ margin:0; }
+.rediger-knapp{
+  margin-left:auto; border:1px solid var(--line); background:var(--paper);
+  border-radius:999px; padding:6px 14px;
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--ink-soft);
+}
+.rediger-knapp:active{ background:var(--paper-soft); }
+.rediger-knapp.paa{ background:var(--aksent-lys); border-color:var(--aksent); color:var(--aksent-moerk); }
+/* I redigering vises ALLE rundene, ikke bare fem - det er de gamle man
+   vil bli kvitt. Lista faar da et rullefelt saa kortet ikke vokser
+   forbi skjermen. */
+.siste.redigerer{ max-height:330px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.siste li.rad-redigeres{ grid-template-columns:auto 1fr auto; }
+.slett-rad{
+  grid-row:span 2; align-self:center;
+  border:1px solid var(--danger); background:var(--paper); color:var(--danger);
+  border-radius:999px; width:34px; height:34px; font-size:var(--t-stor); line-height:1;
+  display:flex; align-items:center; justify-content:center;
+}
+.slett-rad:active{ background:var(--danger); color:#FFFFFF; }
+.slett-alle{
+  display:block; width:100%; margin-top:14px;
+  border:1px solid var(--danger); background:var(--paper); color:var(--danger);
+  border-radius:999px; padding:11px 16px; font-size:var(--t-brod); font-weight:700;
+}
+.slett-alle:active{ background:var(--danger); color:#FFFFFF; }
+.slett-alle[hidden]{ display:none; }
 
 @media(prefers-reduced-motion:reduce){
   *, *::before, *::after{ animation:none !important; transition:none !important; }
@@ -481,45 +511,15 @@ body.spiller .rekorder{ display:none; }
     <div class="lamper" id="lamper" aria-hidden="true"></div>
 
     <div class="lader" id="lader" aria-hidden="true">
-      <svg viewBox="0 0 70 120">
-        <rect x="24" y="4" width="22" height="12" rx="3" class="l-kasse"/>
-        <rect x="7" y="13" width="56" height="99" rx="9" class="l-kasse"/>
-        <rect x="16" y="23" width="38" height="48" rx="6" class="l-vindu"/>
-        <path d="M39 27 L24 51 H34 L30 67 L47 42 H37 Z" class="l-lyn"/>
-        <circle cx="35" cy="87" r="8" class="l-lampe"/>
-        <rect x="18" y="104" width="34" height="8" rx="3" class="l-fot"/>
-      </svg>
+      <img src="/bilder/spill/batteri.webp?v=1" alt="" width="175" height="263">
     </div>
 
     <div class="robot" id="robot">
       <div class="boble" id="boble" role="status" aria-live="polite"></div>
       <div class="robot-kropp" aria-hidden="true">
-        <svg viewBox="0 0 100 124">
-          <line x1="50" y1="11" x2="50" y2="22" class="r-strek" style="stroke-width:3"/>
-          <circle cx="50" cy="8" r="5.5" class="r-antenne"/>
-          <rect x="14" y="32" width="9" height="18" rx="3" class="r-rod"/>
-          <rect x="77" y="32" width="9" height="18" rx="3" class="r-rod"/>
-          <rect x="21" y="21" width="58" height="42" rx="9" class="r-metall"/>
-          <rect x="29" y="28" width="42" height="20" rx="6" class="r-visir"/>
-          <circle cx="40" cy="38" r="6.5" class="r-oye-bunn"/>
-          <circle cx="60" cy="38" r="6.5" class="r-oye-bunn"/>
-          <circle cx="40" cy="38" r="5.4" class="r-oye"/>
-          <circle cx="60" cy="38" r="5.4" class="r-oye"/>
-          <circle cx="40" cy="38" r="2.3" class="r-pupill"/>
-          <circle cx="60" cy="38" r="2.3" class="r-pupill"/>
-          <rect x="37" y="52" width="26" height="6" rx="1.5" class="r-metall-m" style="stroke-width:1.8"/>
-          <path d="M42 52v6M46.5 52v6M51 52v6M55.5 52v6" class="r-strek"/>
-          <rect x="43" y="62" width="14" height="7" class="r-metall-m"/>
-          <rect x="7" y="72" width="12" height="30" rx="6" class="r-metall"/>
-          <rect x="81" y="72" width="12" height="30" rx="6" class="r-metall"/>
-          <rect x="19" y="68" width="62" height="40" rx="8" class="r-metall"/>
-          <path d="M31 98 V78 L44 98 V78" class="r-n"/>
-          <path d="M54 80 H71 M54 87 H68 M54 94 H71" class="r-strek" style="stroke-width:2.4"/>
-          <rect x="31" y="107" width="12" height="11" class="r-metall-m"/>
-          <rect x="57" y="107" width="12" height="11" class="r-metall-m"/>
-          <rect x="26" y="116" width="20" height="7" rx="3.5" class="r-metall-m"/>
-          <rect x="54" y="116" width="20" height="7" rx="3.5" class="r-metall-m"/>
-        </svg>
+        <img src="/bilder/spill/robot.webp?v=1" alt="" width="388" height="360"
+             onerror="this.closest('.robot').classList.add('uten-bilde')">
+        <span class="reserve">N</span>
       </div>
     </div>
   </section>
@@ -609,8 +609,13 @@ body.spiller .rekorder{ display:none; }
       <h2 class="kort-h">Rekorder</h2>
       <ul class="niva-rekorder" id="nivaRekorder"></ul>
       <p class="samlet" id="samlet"></p>
-      <h2 class="kort-h" style="margin-top:22px">Siste runder</h2>
+      <div class="runder-topp">
+        <h2 class="kort-h" id="runderH">Siste runder</h2>
+        <!-- Bare for magne@ og sys@. Se sjekkRedaktor(). -->
+        <button type="button" class="rediger-knapp" id="redigerKnapp" hidden>Rediger</button>
+      </div>
       <ul class="siste" id="siste"></ul>
+      <button type="button" class="slett-alle" id="slettAlle" hidden>Slett alle runder</button>
     </aside>
 
   </main>
@@ -923,7 +928,6 @@ function plasserRobot(skritt, antall, bevegelse){
   const r = $('robot');
   const x = antall ? skritt / antall : 0;
   r.style.setProperty('--x', x);
-  r.style.setProperty('--kraft', x);
   plasserBoble();
   if(bevegelse) spill1(r, bevegelse);
   $('lader').classList.toggle('fulladet', antall > 0 && skritt >= antall);
@@ -1319,8 +1323,8 @@ function visResultat(r, ny){
 
   let s = '';
   for(let i = 0; i < 5; i++){
-    s += '<svg class="stjerne' + (i < r.stjerner ? ' fylt' : '') + '" style="--i:' + i
-       + '" viewBox="0 0 24 24" aria-hidden="true"><path d="' + STJERNE + '"/></svg>';
+    s += '<img class="stjerne' + (i < r.stjerner ? ' fylt' : '') + '" style="--i:' + i
+       + '" src="' + STJERNE + '" alt="" width="128" height="122">';
   }
   const sb = $('stjerner');
   sb.innerHTML = s;
@@ -1372,12 +1376,13 @@ $('endreKnapp').addEventListener('click', function(){
    Rekordene
    ============================================================ */
 
-const STJERNE = 'M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z';
+/* Stjerna er ett bilde. Tom stjerne er den samme fila avfarget i CSS. */
+const STJERNE = '/bilder/spill/stjerne.webp?v=1';
 
 function miniStjerner(n){
   let s = '';
   for(let i = 0; i < 5; i++){
-    s += '<svg class="mini' + (i < n ? ' fylt' : '') + '" viewBox="0 0 24 24" aria-hidden="true"><path d="' + STJERNE + '"/></svg>';
+    s += '<img class="mini' + (i < n ? ' fylt' : '') + '" src="' + STJERNE + '" alt="" width="128" height="122">';
   }
   return s;
 }
@@ -1414,6 +1419,84 @@ function kortDato(iso){
   catch(e){ return ''; }
 }
 
+/* ============================================================
+   Redigering av rekordene
+   ------------------------------------------------------------
+   Magne og sys kan slette runder. Andrea skal ikke kunne det -
+   en highscore man kan viske ut er ingen highscore.
+
+   Identiteten kommer fra Cloudflare Access, ikke fra Graph:
+   spillet logger ikke inn mot Microsoft, og hele sida ligger
+   uansett bak Access. MERK at Access-sesjonen kan henge igjen som
+   forrige bruker paa en delt iPad - da ser Andrea knappen. Den
+   sperrer ikke noe farlig, men skal det bli tett, maa sida laste
+   felles-graph.js og spoerre Graph slik dashen gjoer.
+   ============================================================ */
+const REDAKTORER = ['magne@neam.no', 'sys@neam.no'];
+let erRedaktor = false;
+let redigerer = false;
+
+async function sjekkRedaktor(){
+  try{
+    const r = await fetch('/cdn-cgi/access/get-identity?_=' + Date.now(), { cache:'no-store' });
+    if(!r.ok) return;
+    const d = await r.json();
+    const e = String((d && d.email) || '').trim().toLowerCase();
+    erRedaktor = REDAKTORER.indexOf(e) !== -1;
+  }catch(e){ /* ingen Access lokalt - da ingen knapp */ }
+  if(erRedaktor){
+    $('redigerKnapp').hidden = false;
+    tegnRekorder();
+  }
+}
+
+$('redigerKnapp').addEventListener('click', function(){
+  redigerer = !redigerer;
+  this.classList.toggle('paa', redigerer);
+  this.textContent = redigerer ? 'Ferdig' : 'Rediger';
+  tegnRekorder();
+});
+
+/* Sletting spoer ALLTID. En runde som forsvinner uten spor er en rad
+   som ikke lenger finnes, og da er det ingenting igjen aa legge merke
+   til - samme grunn som at sletting beholder dialogen ellers i huset. */
+async function slettRunder(ider, sporsmaal){
+  const ja = await bekreft(sporsmaal, { jaTekst:'Slett', fare:true });
+  if(!ja) return;
+  try{
+    /* Fletter foerst, saa en runde som ble spilt paa en annen enhet ikke
+       ryker med. Ligger det en USENDT runde paa en annen enhet som
+       slettes her, kommer den tilbake naar den enheten aapner spillet -
+       da sletter man den en gang til. */
+    const fjern = await kvLes(NOKKEL);
+    const flett = flettData(fjern, data);
+    flett.runder = flett.runder.filter(function(r){ return ider.indexOf(r.id) === -1; });
+    await kvSkriv(NOKKEL, flett);
+    data = flett;
+    lokalSkriv(false);
+    tegnRekorder();
+  }catch(e){
+    console.warn('Mattespill: fikk ikke slettet', e);
+    varsle('Fikk ikke slettet. Prøv igjen om litt.');
+  }
+}
+
+$('slettAlle').addEventListener('click', function(){
+  const n = data.runder.length;
+  if(!n) return;
+  slettRunder(data.runder.map(function(r){ return r.id; }),
+    'Slette alle ' + n + (n === 1 ? ' runde' : ' runder') + '? Da står rekordene tomme.');
+});
+
+$('siste').addEventListener('click', function(ev){
+  const k = ev.target.closest('.slett-rad');
+  if(!k) return;
+  const r = data.runder.filter(function(x){ return x.id === k.dataset.id; })[0];
+  if(!r) return;
+  slettRunder([r.id], 'Slette runden ' + NIVAER[r.niva].navn + ', '
+    + r.riktige + ' av ' + r.antall + ' fra ' + kortDato(r.tid) + '?');
+});
+
 function tegnRekorder(nyId){
   const runder = data.runder;
 
@@ -1440,12 +1523,20 @@ function tegnRekorder(nyId){
       + ' på ' + runder.length + (runder.length === 1 ? ' runde.' : ' runder.')
     : '';
 
-  const siste = runder.slice(-5).reverse();
+  const siste = (redigerer ? runder.slice() : runder.slice(-5)).reverse();
+  $('runderH').textContent = redigerer
+    ? (runder.length === 1 ? 'Én runde' : 'Alle ' + runder.length + ' rundene')
+    : 'Siste runder';
+  $('siste').classList.toggle('redigerer', redigerer);
+  $('slettAlle').hidden = !(redigerer && runder.length);
   $('siste').innerHTML = siste.length
     ? siste.map(function(r){
-        return '<li' + (r.id === nyId ? ' class="ny"' : '') + '>'
+        const klasser = (r.id === nyId ? 'ny ' : '') + (redigerer ? 'rad-redigeres' : '');
+        return '<li' + (klasser.trim() ? ' class="' + klasser.trim() + '"' : '') + '>'
           + '<span class="s-stjerner" aria-label="' + r.stjerner + ' av 5 stjerner">' + miniStjerner(r.stjerner) + '</span>'
           + '<span class="s-topp">' + NIVAER[r.niva].navn + ', ' + r.riktige + ' av ' + r.antall + '</span>'
+          + (redigerer ? '<button type="button" class="slett-rad" data-id="' + esc(r.id)
+               + '" aria-label="Slett denne runden">&times;</button>' : '')
           + '<span class="s-under">' + esc(beskriv(r)) + ', ' + kortDato(r.tid) + '</span></li>';
       }).join('')
     : '<li><p class="tom">Ingen runder ennå. Når du har spilt, står de her.</p></li>';
@@ -1460,6 +1551,7 @@ byggOppsett();
 vis('oppsett');
 tegnRekorder();
 lastData();
+sjekkRedaktor();
 </script>
 </body>
 </html>
