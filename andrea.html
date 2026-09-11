@@ -1163,16 +1163,6 @@ input,select,textarea{font-size:16px}
   margin-left:auto; font-size:var(--t-etikett); font-weight:700;
   letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft);
 }
-/* .hu-ny brukes ikke lenger - det som legger noe til ligger i hoeyre
-   tommelknapp. Regelen blir staaende til noen rydder CSS-en samlet. */
-.hu-ny{
-  margin-left:auto;border:none;background:var(--handling-ny);
-  color:#FFFFFF;font-family:inherit;font-size:var(--t-brod);font-weight:700;
-  line-height:1;padding:3px 14px;border-radius:999px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  -webkit-tap-highlight-color:transparent;
-}
-.hu-ny:active{filter:brightness(.9)}
 /* Haken staar utenfor den fargede boksen, til hoeyre: den hoerer til
    gjoeremaalet, ikke til innholdet i det. */
 .hu-linje{display:flex;align-items:center;gap:9px;margin-bottom:6px}
@@ -2247,7 +2237,10 @@ async function hentAvtaler(start, slutt){
     const bolk = aktive.slice(i, i + 3);
     const svar = await Promise.all(bolk.map(async function(c){
       try{
-        const d = await graph('/me/calendars/' + c.id + '/calendarView' + q);
+        /* enc(): id-en er Microsofts, ikke vaar, og et skilletegn i den
+           ville delt opp stien. Se avtaleSti() i felles-graph.js - alle
+           andre Graph-stier i huset gaar gjennom den. */
+        const d = await graph('/me/calendars/' + enc(c.id) + '/calendarView' + q);
         return (d.value || []).map(function(e){
           return {
             id: e.id,

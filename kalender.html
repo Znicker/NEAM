@@ -2138,7 +2138,10 @@ async function hentVindu(a, b, bare){
       /* Graph gir maks noen hundre av gangen. Uten aa foelge nextLink
          ble eldre avtaler klipt bort naar vinduet vokste, og lista saa
          ut til aa stoppe paa en tilfeldig dato. */
-      let sti = '/me/calendars/' + c.id + '/calendarView' + q;
+      /* enc(): id-en er Microsofts, ikke vaar, og et skilletegn i den
+         ville delt opp stien. Se avtaleSti() i felles-graph.js - alle
+         andre Graph-stier i huset gaar gjennom den. */
+      let sti = '/me/calendars/' + enc(c.id) + '/calendarView' + q;
       let raa = [];
       for(let side = 0; side < 25 && sti; side++){
         const d = await graph(sti);

@@ -7506,128 +7506,10 @@ async function byggHandleliste(){
   };
 }
 
-/* ============================================================
-   Kort gjennomgang ved overfoering
-   ------------------------------------------------------------
-   Ett trykk: varene gaar over, du havner i handlelista. Underveis
-   svarer AI-en paa ETT spoersmaal - hvilke av de nye varene som
-   allerede staar paa lista og skal legges til der i stedet for aa
-   bli en ny rad.
-
-   Bare det spoersmaalet, med vilje. Det er den ene avgjoerelsen
-   som ikke kan tas om igjen etterpaa: har du foerst faatt to rader
-   som ser like ut, er skaden gjort. Mengder, typer og tvil om to
-   navn er samme vare taaler aa vente - de tar Neam etterpaa, naar
-   ingen staar og ser paa.
-
-   Og svaret er kort. Foerste utgave ba om hele varelista tilbake,
-   og den ble avkortet midt i en streng: modellen brukte budsjettet
-   paa aa tenke, og det som var igjen aa skrive med tok slutt. Noen
-   linjer med treff gaar alltid inn.
-
-   Feiler kallet, gaar varene over uten sammenslaaing. En treg eller
-   nede AI skal ikke staa mellom deg og handlelista.
-   ============================================================ */
-
-const FOERINGER_API   = '/api/data?key=foeringer';
+/* Handlelistas noekkel. Leses av hentHandleturer() nedenfor.
+   Konstanten laa i blokka om kort gjennomgang, som ble fjernet
+   11. september 2026 - se overfoerTilHandlelista(). */
 const HANDLELISTE_API = '/api/data?key=handleliste:v1';
-
-/* Gjelder til noen har lagret sine egne i KV. */
-const FOERINGER_STANDARD = [
-  'Slå sammen bare varer som er samme vare I BUTIKKEN - samme hylle, samme pakning.',
-  'Tilberedning i navnet teller ikke: «løk, finhakket» og «løk» er samme vare.',
-  'Formen du kjøper teller: «revet ost» og «ost i skiver» er to varer.',
-  'En presisering slås sammen med det generelle når butikken ikke tvinger et valg: «gul løk» og «løk» er samme. «Rødløk» og «løk» er ikke.',
-  'Fett- og styrkegrad skiller: kremfløte/matfløte, helmelk/lettmelk, kjøttdeig 14 %/5 %.',
-  'Fersk, tørket og hermetisk skiller, selv om ordet er det samme.',
-  'Slår du sammen, behold det mest presise navnet som forekom.',
-  'Mengden skal være en HANDLEMENGDE, ikke en oppskriftsmengde: 3 dl fløte + 2 ss fløte blir «1 beger fløte», ikke «3,2 dl».',
-  'Finnes det ingen naturlig pakning - krydder, «etter smak» - behold oppskriftsmengden.',
-  'Varenavnet skal være det som står på hylla: «kyllingfilet», ikke «kyllingfilet, ca. 600 g, i strimler».',
-  'Er du i tvil om to navn er samme vare, SPØR. Ikke slå sammen på gjetning.'
-].join('\n');
-
-async function hentFoeringer(){
-  try{
-    const r = await fetch(FOERINGER_API, {cache:'no-store'});
-    if(!r.ok) return FOERINGER_STANDARD;
-    const txt = await r.text();
-    if(!txt) return FOERINGER_STANDARD;
-    let d = JSON.parse(txt);
-    if(d && typeof d === 'object' && d.value !== undefined) d = d.value;
-    if(d && typeof d === 'object') d = d.tekst || '';
-    return String(d || '').trim() || FOERINGER_STANDARD;
-  }catch(e){ return FOERINGER_STANDARD; }
-}
-
-/* Navnene som alt staar paa handlelista. Vi filtrerer paa omraade og
-   avkrysset, ikke paa aktiv handleoekt: hvilken oekt som er aktiv ligger i
-   handlelistas minne per enhet (viewOktId), ikke i dataene, saa den kan
-   ikke leses utenfra. Oekter som er avsluttet for godt faller bort. */
-async function hentEksisterendeVarer(){
-  try{
-    const r = await fetch(HANDLELISTE_API, {cache:'no-store'});
-    if(!r.ok) return [];
-    const txt = await r.text();
-    if(!txt) return [];
-    let d = JSON.parse(txt);
-    if(d && typeof d === 'object' && d.value !== undefined) d = d.value;
-    if(typeof d === 'string') d = JSON.parse(d);
-    if(!d || !Array.isArray(d.items)) return [];
-    const doede = new Set((d.okter || [])
-      .filter(o => o && o.avsluttet && !o.startet).map(o => o.id));
-    return d.items
-      .filter(v => v && v.omrade === 'mat' && !v.done && !doede.has(v.oktId))
-      .map(v => String(v.name || '').trim())
-      .filter(Boolean);
-  }catch(e){ return []; }
-}
-
-const TREFF_SYSTEM = 'Du avgjør hvilke NYE varer som er samme vare som noe som allerede står på en norsk handleliste. '
-  + 'Du får husets føringer, en liste NYE varenavn og en liste EKSISTERENDE varenavn. '
-  + 'Svar med KUN et rått JSON-objekt, ingen kodegjerder og ingen tekst rundt: {"treff":[{"ny":string,"finnes":string}]}. '
-  + '"ny" må være et navn fra NYE, skrevet nøyaktig som det står der. "finnes" må være et navn fra EKSISTERENDE, nøyaktig som det står der. '
-  + 'Ta bare med par du er sikker på etter føringene. Er du i tvil, la paret være - det tas opp senere. '
-  + 'Er ingen av dem samme vare, svar {"treff":[]}.';
-
-/* Setter leggTilPaa paa de av pakkas varer som traff noe. Returnerer pakka. */
-async function kortGjennomgang(pakke){
-  const nye = (pakke.varer || []).map(v => String(v.vare || '').trim()).filter(Boolean);
-  if(!nye.length) return pakke;
-
-  let eksisterende = [];
-  try{ eksisterende = await hentEksisterendeVarer(); }catch(e){}
-  if(!eksisterende.length) return pakke;
-
-  try{
-    const foeringer = await hentFoeringer();
-    const tekst = await callClaudeText(TREFF_SYSTEM,
-      JSON.stringify({ foeringer, nye, eksisterende }), 2000);
-    const svar = JSON.parse(String(tekst).replace(/```json|```/g, '').trim());
-
-    /* Slaa opp uten hensyn til store bokstaver, men bare paa navn som
-       faktisk fantes i de to listene - en modell som finner paa et navn
-       skal ikke kunne lage en kobling til noe som ikke er der. */
-    const finnesSett = new Map(eksisterende.map(n => [n.toLowerCase(), n]));
-    const nyeSett = new Set(nye.map(n => n.toLowerCase()));
-    const kobling = new Map();
-    (svar.treff || []).forEach(t => {
-      const ny = String(t && t.ny || '').trim().toLowerCase();
-      const fant = finnesSett.get(String(t && t.finnes || '').trim().toLowerCase());
-      if(ny && fant && nyeSett.has(ny)) kobling.set(ny, fant);
-    });
-
-    pakke.varer.forEach(v => {
-      const t = kobling.get(String(v.vare || '').trim().toLowerCase());
-      if(t) v.leggTilPaa = t;
-    });
-  }catch(e){
-    /* Uten sammenslaaing blir det noen dubletter Neam kan rydde etterpaa.
-       Det er bedre enn aa la deg vente paa en tjeneste som ikke svarer. */
-    console.warn('Kort gjennomgang feilet - sender uten sammenslåing:', e && e.message);
-  }
-  return pakke;
-}
 
 /* ============================================================
    Hvilken handletur skal varene til?
@@ -7741,8 +7623,10 @@ async function overfoerTilHandlelista(pakke, filnavn, hva){
      gaar over som de er, staar som egne rader om enhetene ikke gaar opp,
      og Neam legger fram forslaget naar du er framme.
 
-     kortGjennomgang() og hjelperne rundt blir staaende ubrukt inntil
-     videre - de ryddes bort naar dette har staatt en stund. */
+     Funksjonen og hjelperne rundt er fjernet 11. september 2026, etter
+     to uker frakoblet. Beskrivelsen blir staaende: den forklarer
+     hvorfor det IKKE gjettes her, og det er en beslutning som fortsatt
+     gjelder. */
   pakke.godkjent = true;
   const ok = await sendPakke(pakke, filnavn, hva);
   /* Gikk overfoeringen i vasken, ble fila lastet ned i stedet - da skal du
