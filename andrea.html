@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Emma dash">
+<meta name="apple-mobile-web-app-title" content="Andrea dash">
 <meta name="theme-color" content="#F5F5F5">
 <meta name="robots" content="noindex, nofollow">
-<title>Emma dash – Neam</title>
+<title>Andrea dash – Neam</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -324,10 +324,10 @@ body{
 .hu-rad.hu-lekse.gul{ border-left-color:var(--handling-endre); }
 .hu-rad.hu-lekse.rod{ border-left-color:var(--danger); }
 
-/* Snarveiene til Roligheden laa i korttittelen til 4. september. De
-   ligger naa under «Roligheden» i hoeyre tommelknapp, sammen med resten
-   av det som peker ut av huset - korttittelen skal si hvor man er, ikke
-   baere knapper. */
+/* Snarveiene til skolen laa i korttittelen paa Emma dash til
+   4. september. De ligger naa under skraaknappen i hoeyre tommelknapp,
+   sammen med resten av det som peker ut av huset - korttittelen skal si
+   hvor man er, ikke baere knapper. */
 
 /* ---------- Timeplanen ---------- */
 .timeplan-boks{ width:min(96vw, 900px); max-width:none; }
@@ -377,7 +377,7 @@ body{
 
    Klassenavnene er kalenderens egne (.uke-head, .pu-kol, .pu-ev), saa
    den som har lest den ene fila kjenner igjen den andre. Reglene er
-   forenklet der emma-dashen ikke har delen: ingen valgt dag, ingen
+   forenklet der andrea-dashen ikke har delen: ingen valgt dag, ingen
    helligdagsfarge, ingen parallelle spor - det siste er en dagsvisning,
    og den ligger i sin egen fane her.
    ------------------------------------------------------------ */
@@ -1471,7 +1471,7 @@ select.hu-felt{
     <!-- Bare merket. Det baerer navnet sitt selv, og teksten ved siden
          sa det samme én gang til. Stoerrelsen er satt i CSS-en. -->
     <a class="merke" href="./index.html" aria-label="Til forsiden">
-      <span class="merke-ikon"><img src="/bilder/merke-emma-dash.png?v=2" alt="Emma dash" width="512" height="516"></span>
+      <span class="merke-ikon"><img src="/bilder/merke-andrea-dash.png?v=2" alt="Andrea dash" width="512" height="517"></span>
     </a>
     <div class="vaer-stripe" id="vaerStripe" hidden></div>
     <div class="vaer-sted">
@@ -1661,7 +1661,7 @@ select.hu-felt{
   <div class="hu-boble-bak avtale-bak" id="timeplanBak" hidden onclick="lukkTimeplan()"></div>
   <div class="avtale-boks timeplan-boks" id="timeplanBoks" hidden role="dialog" aria-modal="true">
     <button class="hub-lukk" onclick="lukkTimeplan()" aria-label="Lukk">×</button>
-    <div class="av-tittel"><span>Timeplan 8C</span></div>
+    <div class="av-tittel"><span>Timeplan 4. trinn</span></div>
     <div class="av-skjema" style="display:block" id="timeplanKropp"></div>
   </div>
 
@@ -1686,8 +1686,11 @@ select.hu-felt{
       </div>
       <textarea class="hu-felt hu-omr lim-omr" id="arkFelt"
                 placeholder="Lim inn her (Ctrl+V), eller slipp en tekstfil oppi."></textarea>
-      <div class="bilde-hjelp">Word-dokumenter kan ikke leses direkte —
-        åpne dokumentet, merk alt og lim inn teksten.</div>
+      <!-- Sandnes legger ukeplanen ut som PDF. Den kan ikke leses her -
+           se SKOLE_SIDE i skriptet for hvorfor, og hva som skal til. -->
+      <div class="bilde-hjelp">Ukeplanen er en PDF og kan ikke leses direkte —
+        åpne den, merk alt og lim inn teksten, eller ta bilde av den med
+        «Skann ark».</div>
     </div>
     <div class="av-foot">
       <button class="hu-avbryt" onclick="avbrytSkjema('arkBoks', lukkArk)">Avbryt</button>
@@ -1810,19 +1813,25 @@ select.hu-felt{
 <script src="/felles-neam.js?v=63"></script>
 <script>
 /* ============================================================
-   NEAM – Emma dash
-   Emmas egen skjerm. Samme form som kjoekkendashen - fast ramme,
-   ingen rulling, sveip mellom dager - men et annet innhold:
-   venstre kolonne har tre visninger (dag, uke, fag), hoeyre har
-   huskeboksene, og middagen er ute.
+   NEAM – Andrea dash
+   Andreas egen skjerm. Kopiert fra emma.html 11. september 2026
+   og tilpasset - samme mekanikk, annen eier og annen skole.
 
-   HVORFOR EGEN FIL OG IKKE ÉN SIDE FOR ALLE: Emma trenger fag,
-   frister og skoledag. Nina trenger noe annet. En felles side
-   ville blitt full av forgreninger paa innlogget bruker, og
-   driften mellom dem ville ligget gjemt inne i if-ene i stedet
-   for aapent i to filer. Mekanikken under er likevel skrevet
-   uten «Emma» i seg - eieren er en konstant oeverst - saa den
-   kan loeftes ut den dagen den staar likt i to filer.
+   HVA SOM SKILLER DEN FRA ANDREA DASH:
+   - Konstantene for eier og tilgang (EIER, EIER_KALENDERE,
+     EIER_MERKNADER, DASH_TILGANG) og fagnoekkelen andrea-fag:v1.
+   - Skolen. Sandnes skole ligger paa kommunens side og legger ut
+     ukeplanene som PDF. /api/hent er laast til Roligheden og
+     pakker bare ut .docx, saa «Hent fra nett» og de to
+     skoleplanverktoeyene til Neam er TATT UT her. Ukeplanen kommer
+     inn med Skann ark eller Lim inn. Se SKOLE_SIDE.
+   - Barneskolefagene og timeplanen for 4. trinn, lest ut av
+     ukeplanen. Gruppe Skare, og ukeleksene leveres fredag.
+   - Neams bakgrunnstekst, skrevet for et barn paa barneskolen.
+
+   Resten staar tegn for tegn likt emma.html. Det er med vilje:
+   den dagen mekanikken loeftes ut i en felles fil (se hub.html i
+   kartleggingen), er det bare konstantene som skal bli igjen.
    ============================================================ */
 
 const $ = function(id){ return document.getElementById(id); };
@@ -2006,7 +2015,7 @@ function visPort(paa){
    som vises, hvilke merknader som havner i huskeboksene - henger
    paa den ene konstanten, ikke paa navnet spredt utover.
 
-   TILGANG er hvem som slipper inn. Emma eier sida, men sys,
+   TILGANG er hvem som slipper inn. Andrea eier sida, men sys,
    Magne og Nina skal kunne skrive her: en frist lagt inn fra
    kjoekkenbenken skal staa paa skjermen hennes.
 
@@ -2021,9 +2030,9 @@ function visPort(paa){
 /* Kjoekkenskjermen kjoerer som kitchen. Sys staar igjen med vilje:
    uten den ville en feil paa kitchen-kontoen laast oss ute av
    veggskjermen uten vei inn. */
-const EIER = 'Emma';
+const EIER = 'Andrea';
 
-/* Kalenderne sida viser. Emmas egen og familiens - resten av husets
+/* Kalenderne sida viser. Andreas egen og familiens - resten av husets
    kalendere hoerer ikke hjemme paa skjermen hennes. Navnene sammenlignes
    i smaa bokstaver; «Familien» heter den i kalenderappen, «Familie» i
    huskelista, og begge staar her saa ingen av dem faller ut.
@@ -2031,13 +2040,13 @@ const EIER = 'Emma';
    Finner filteret INGEN av dem, slipper vi alle gjennom i stedet for aa
    vise en tom skjerm. En side som viser for mye er en side man ser at er
    feil; en tom side ser ut som en dag uten avtaler. */
-const EIER_KALENDERE = ['emma', 'familien', 'familie'];
+const EIER_KALENDERE = ['andrea', 'familien', 'familie'];
 
 /* Hvem huskeboksene viser. Familiens merknader gjelder henne ogsaa - det
    er der «vi drar klokka fem» staar. */
-const EIER_MERKNADER = ['Emma', 'Familie', 'Familien'];
+const EIER_MERKNADER = ['Andrea', 'Familie', 'Familien'];
 
-const DASH_TILGANG = ['emma@neam.no', 'sys@neam.no',
+const DASH_TILGANG = ['andrea@neam.no', 'sys@neam.no',
                       'magne@neam.no', 'nina@neam.no'];
 
 
@@ -3173,28 +3182,28 @@ function ukeBrikke(e, nr){
    Skrivingen leser friskt foerst, som huskelista: KV er
    sist-skriving-vinner, og flere kan staa i den samtidig.
    ============================================================ */
-const FAG_NOKKEL = 'emma-fag:v1';
+const FAG_NOKKEL = 'andrea-fag:v1';
 
-/* Emmas fag i 8C. Ukedagene er lest ut av timeplanen under, ikke skrevet
-   inn for haand - staar timeplanen der, finnes svaret allerede.
+/* Barneskolefagene etter LK20. Alle ti staar i timeplanen for 4. trinn,
+   og ukedagene under hvert fag er lest ut av den - se TIMEPLAN.
 
    Ingenting skrives til KV av dette. Lista er utgangspunktet den dagen
    noekkelen er tom; er den alt fylt, blir den staaende som den er, og fag
    maa endres i sida. */
-/* Hvem som kan staa som den som la noe inn. Emma foerst - det er hennes
+/* Hvem som kan staa som den som la noe inn. Andrea foerst - det er hennes
    skjerm, og det er hun som legger inn mest. «Neam» settes av verktoeyene
    hans og velges ikke for haand, men staar i lista saa den kan rettes hvis
    noe er feilmerket. */
-const FAG_HVEM = ['Emma', 'Magne', 'Nina', 'Neam'];
+const FAG_HVEM = ['Andrea', 'Magne', 'Nina', 'Neam'];
 
 function naaKlokke(){
   const d = new Date();
   return pad(d.getHours()) + ':' + pad(d.getMinutes());
 }
 
-const FAG_STANDARD = ['Norsk', 'Engelsk', 'Matematikk', 'Naturfag',
-                      'Samfunnsfag', 'KRLE', 'Kroppsøving', 'Musikk',
-                      'Utdanningsvalg', 'Spansk', 'Innsats for andre'];
+const FAG_STANDARD = ['Norsk', 'Matematikk', 'Engelsk', 'Naturfag',
+                      'Samfunnsfag', 'KRLE', 'Kunst og håndverk', 'Musikk',
+                      'Mat og helse', 'Kroppsøving'];
 
 let fagData = null;
 
@@ -3443,10 +3452,26 @@ function fristTekst(frist){
 }
 
 /* ============================================================
-   Timeplan 8C
+   Timeplan 4. trinn, gruppe Skare
    ------------------------------------------------------------
-   Fem timer, fem dager. Rutene bruker navnene slik de staar paa
-   arket fra skolen - «Matte», «Krle», «Gym» - og TIMEPLAN_FAG
+   Lest ut av ukeplanen for uke 38 (11. september 2026). Sandnes
+   legger ingen egen timeplan ut - dagene staar i tabellen i hver
+   ukeplan. Det som bare gjelder én uke er tatt ut (BlimE-dansen
+   fredag i uke 38).
+
+   1. time er «Plan for dagen» og lesekvart, 30 minutter. 1.–4. trinn
+   slutter 13.50 mandag, 13.15 tirsdag og 12.45 resten av uka - derfor
+   fem timer de to foerste dagene og fire resten.
+
+   DELTE TIMER. «Norsk/Matte» er to fag i samme time. En rute kan derfor
+   ha flere fag med skraastrek, og timeplanDager() teller dagen for hvert
+   av dem - ellers ville Matematikk mistet tirsdag og torsdag.
+
+   SVOEMMING. Tirsdag 3. time er svoemming for én gruppe og gym for den
+   andre, og de bytter. Begge er kroppsoeving, saa ruta sier Gym.
+
+   Rutene bruker navnene slik de staar paa arket fra skolen - «Matte»,
+   «Samfunn», «K&H» - og TIMEPLAN_FAG
    oversetter dem til fagnavnene sida bruker. To navn paa samme
    fag er greit saa lenge oversettelsen staar ett sted.
 
@@ -3456,27 +3481,65 @@ function fristTekst(frist){
    til.
    ============================================================ */
 /* Skolens side. Staar ett sted, saa den ikke maa rettes to naar skolen
-   legger om. */
-const ROLIGHEDEN = 'https://roligheden.skole.arendal.no/index.php?pageID=181';
+   legger om.
 
+   Sandnes skole er flyttet inn paa kommunens side
+   (arendal.kommune.no/sandnesskole). Hvert trinn har sin egen side med
+   ukeplanene som PDF - «Uke 35.pdf», «Uke 36.pdf» - og ingen samleside
+   slik Roligheden har.
+
+   «HENT FRA NETT» FINNES IKKE HER, og det er ikke glemt. To ting mangler:
+   /api/hent er laast til roligheden.skole.arendal.no og pakker bare ut
+   .docx, og neamStart() i felles-neam.js sender bare BILDER til Neam,
+   ikke dokumenter. Naar begge kan ta PDF, kan knappen komme tilbake -
+   uten omvei om tekst, siden Neam leser PDF direkte.
+
+   Adressene kan ikke regnes ut. En ukeplan ligger paa
+     .../sandnesskole/for-elever/4-trinn/~/_f/p78/<guid>/ukeplan-uke-38.pdf
+   og id-en er tilfeldig. En henter maa derfor lese trinnsida og finne
+   lenkene der, slik /api/hent gjoer med Rolighedens liste.
+
+   TRINN = 0 ville betydd ikke satt: da peker «Se paa nett» paa elevsida
+   med alle trinnene, og Neam faar ikke noe trinn i bakgrunnsteksten.
+   Oekes hvert hoest - trinnsida og timeplanen foelger med. */
+const SKOLE_NAVN = 'Sandnes skole';
+const TRINN = 4;
+
+/* Klassen er delt i grupper - svoemmingen gaar paa omgang mellom dem, og
+   beskjedene i ukeplanen sier hvilken gruppe de gjelder. Neam faar navnet
+   i bakgrunnsteksten og legger bort det som er for de andre. */
+const GRUPPE = 'Skare';
+const SKOLE_SIDE = 'https://www.arendal.kommune.no/sandnesskole/for-elever/'
+                 + (TRINN ? TRINN + '-trinn/' : '');
+
+/* Én rad per time, fem ruter per rad (mandag–fredag). Tom rute = fri.
+   Mandag 4. og 5. time er uteskole («Vill vekst»). */
 const TIMEPLAN = [
-  /* time 1 */ ['Naturfag',   'Samfunnsfag', 'Språkfag',    'Engelsk',     'Matte'],
-  /* time 2 */ ['Matte',      'Norsk',       'Samfunnsfag', 'Norsk',       'Musikk'],
-  /* time 3 */ ['Engelsk',    'Matte',       'Norsk',       'Krle',        'Språkfag'],
-  /* time 4 */ ['Gym',        'Krle',        'Naturfag',    'Samfunnsfag', 'Norsk'],
-  /* time 5 */ ['Gym',        'Valgfag',     'UTV',         '',            '']
+  /* time 1 */ ['Lesekvart',    'Lesekvart',        'Lesekvart',     'Lesekvart',     'Lesekvart'],
+  /* time 2 */ ['Matte',        'Norsk/Matte',      'Engelsk/K&H',   'Norsk/Matte',   'Matte/Norsk'],
+  /* time 3 */ ['Norsk',        'Gym',              'Norsk/Engelsk', 'Samfunn/Norsk', 'Norsk/Matte'],
+  /* time 4 */ ['Mat og helse', 'Musikk/Bibliotek', 'K&H/Samfunn',   'KRLE/Samfunn',  'Norsk/KRLE'],
+  /* time 5 */ ['Naturfag',     'K&H',              '',              '',              '']
 ];
 
+/* Ukedagen ukeleksene leveres. Fredag har «Innlevering lekser» i hver
+   ukeplan, og leksene i Ukelekse-boksen har ingen egen dato - de gjelder
+   uka og skal inn da. En lekse uten frist faar derfor fredag som antatt
+   frist, ikke siste dagen faget har time slik paa Emma dash: Engelsk er
+   bare onsdag, men engelskleksa leveres fredag som alle de andre.
+   0 = mandag, 4 = fredag. null gir Emma dash sin regel tilbake. */
+const LEKSEDAG = 4;
+
 /* Rutenavn -> fagnavn. Det som ikke staar her, heter det samme begge
-   steder. «Språkfag/Arbeidslivsfag» er Emmas spanskgruppe, og «Valgfag»
-   er Innsats for andre. */
+   steder. Navnene er de ukeplanen bruker. «Lesekvart» og «Bibliotek» er
+   ikke fag og staar uten oversettelse - de vises i tabellen, men teller
+   ikke som dager for noe fag. */
 const TIMEPLAN_FAG = {
-  'Matte'    : 'Matematikk',
-  'Krle'     : 'KRLE',
-  'Gym'      : 'Kroppsøving',
-  'UTV'      : 'Utdanningsvalg',
-  'Språkfag' : 'Spansk',
-  'Valgfag'  : 'Innsats for andre'
+  'Matte'   : 'Matematikk',
+  'Samfunn' : 'Samfunnsfag',
+  'K&H'     : 'Kunst og håndverk',
+  'Krle'    : 'KRLE',
+  'Gym'     : 'Kroppsøving'
 };
 
 /* Merket til hvert fag. Navnet paa fila utledes ikke av fagnavnet: da
@@ -3505,10 +3568,11 @@ const FAG_MERKE = {
   'Samfunnsfag'       : ['samfunnsfag', 410],
   'KRLE'              : ['krle', 408],
   'Kroppsøving'       : ['kroppsoving', 414],
-  'Musikk'            : ['musikk', 410],
-  'Utdanningsvalg'    : ['utdanningsvalg', 424],
-  'Spansk'            : ['spansk', 423],
-  'Innsats for andre' : ['innsats-for-andre', 428]
+  'Musikk'            : ['musikk', 410]
+  /* Kunst og haandverk og Mat og helse har ikke merke. De staar IKKE her
+     foer bildet ligger i bilder/fag/: en adresse som blir spurt etter
+     mens fila mangler, husker Cloudflare som forsidens svar - og da maa
+     FAG_MERKE_V oekes for alle merkene naar bildet endelig kommer. */
 };
 
 /* Versjon paa adressen, av samme grunn som paa CSS og JS: uten den
@@ -3616,17 +3680,27 @@ function fagMerkeHtml(navn, klasse, stempel){
        + lapp + '</span>';
 }
 
-function timeplanFag(rute){
-  const r = String(rute || '').trim();
-  return r ? (TIMEPLAN_FAG[r] || r) : '';
+/* Fagene i én rute, oversatt. «Norsk/Matte» er to fag i samme time - se
+   DELTE TIMER over. En rute uten skraastrek gir ett. */
+function timeplanFagListe(rute){
+  return String(rute || '').split('/')
+    .map(function(r){ return r.trim(); })
+    .filter(Boolean)
+    .map(function(r){ return TIMEPLAN_FAG[r] || r; });
 }
 
-/* Hvilke ukedager et fag er, lest ut av timeplanen. */
+/* Ruta som tekst, til tabellen og til Neam. */
+function timeplanFag(rute){
+  return timeplanFagListe(rute).join(' / ');
+}
+
+/* Hvilke ukedager et fag er, lest ut av timeplanen. En delt time teller
+   for begge fagene i den. */
 function timeplanDager(fagnavn){
   const ut = [];
   TIMEPLAN.forEach(function(rad){
     rad.forEach(function(rute, dag){
-      if(timeplanFag(rute) === fagnavn && ut.indexOf(dag) === -1) ut.push(dag);
+      if(timeplanFagListe(rute).indexOf(fagnavn) !== -1 && ut.indexOf(dag) === -1) ut.push(dag);
     });
   });
   return ut.sort(function(a, b){ return a - b; });
@@ -3676,14 +3750,52 @@ function mandagIUke(uke){
    eller et navn som ikke staar der - gir vi ingen frist. En gjettet dato
    er verre enn ingen: den ser riktig ut. */
 function sisteFagdag(fagnavn, uke){
-  const dager = timeplanDager(fagnavn);
+  /* Andrea dash: ukeleksene leveres paa en fast dag - se LEKSEDAG. Da
+     spiller det ingen rolle naar faget har time. */
+  if(LEKSEDAG !== null && LEKSEDAG !== undefined){
+    const m0 = uke ? mandagIUke(uke) : ukeStart(fagDag());
+    return datoNokkel(new Date(m0.getFullYear(), m0.getMonth(), m0.getDate() + LEKSEDAG));
+  }
+  let dager = timeplanDager(fagnavn);
+  /* Reserve: har faget ingen timer i timeplanen, er ukedagene som er
+     satt paa faget i sida det beste vi har. */
+  if(!dager.length){
+    const f = fagFinn(fagnavn);
+    if(f && f.dager.length) dager = f.dager.slice().sort(function(a, b){ return a - b; });
+  }
   if(!dager.length) return '';
   const m = uke ? mandagIUke(uke) : ukeStart(fagDag());
   const d = new Date(m.getFullYear(), m.getMonth(), m.getDate() + dager[dager.length - 1]);
   return datoNokkel(d);
 }
 
+/* Hvorfor en frist er antatt - staar i forslagspanelet og i svaret til
+   Neam, saa begge sier det samme som regelen i sisteFagdag().
+   FUNKSJON, ikke const: den leser UKEDAGER, som staar lenger ned i
+   fila, og en const lest foer initialisering tar ned hele skriptet
+   (kartleggingen del 18). */
+function antattGrunn(){
+  return (LEKSEDAG !== null && LEKSEDAG !== undefined)
+    ? 'satt til innleveringsdagen (' + UKEDAGER[LEKSEDAG] + ')'
+    : 'antatt ut fra timeplanen';
+}
+
+/* Sant naar minst én rute i timeplanen har et fag. */
+function harTimeplan(){
+  return TIMEPLAN.some(function(rad){
+    return (rad || []).some(function(r){ return String(r || '').trim(); });
+  });
+}
+
 function apneTimeplan(){
+  if(!harTimeplan()){
+    $('timeplanKropp').innerHTML =
+      '<div class="tom">Timeplanen er ikke lagt inn ennå.</div>';
+    $('timeplanBak').hidden  = false;
+    $('timeplanBoks').hidden = false;
+    passSkjema();
+    return;
+  }
   const idagN = ukedagNr(idag0());
   let ut = '<table class="tp-tabell"><thead><tr><th></th>'
     + ['Mandag','Tirsdag','Onsdag','Torsdag','Fredag'].map(function(d, i){
@@ -3716,7 +3828,7 @@ function lukkTimeplan(){
 /* ============================================================
    Bilder i lekser
    ------------------------------------------------------------
-   Bildene ligger IKKE i `emma-fag:v1` sammen med resten. Én noekkel
+   Bildene ligger IKKE i `andrea-fag:v1` sammen med resten. Én noekkel
    per bilde, og leksa baerer bare id-ene.
 
    Grunnen er stoerrelsen: fagnoekkelen leses og skrives paa nytt ved
@@ -3732,7 +3844,7 @@ function lukkTimeplan(){
 const BILDE_MAKS = 1400;      /* lengste side, piksler */
 const BILDE_KVAL = 0.72;      /* JPEG-kvalitet */
 
-function bildeNokkel(id){ return 'emma-bilde:' + id; }
+function bildeNokkel(id){ return 'andrea-bilde:' + id; }
 
 /* Lest én gang, husket resten av oekten. Fagvinduet tegnes om ved hver
    avhuking, og uten dette ville hvert bilde blitt hentet paa nytt. */
@@ -4395,7 +4507,7 @@ function visFagSkjema(modus, id, fagId){
     fagDagerValgt = start ? start.dager.slice() : [];
     tegnDagVelger();
   }else{
-    /* Emma er utgangspunktet - det er hennes skjerm. Legger Neam noe inn,
+    /* Andrea er utgangspunktet - det er hennes skjerm. Legger Neam noe inn,
        setter verktoeyet «Neam» selv, og da staar det slik naar noen aapner
        leksa etterpaa. */
     const hvem = (l ? l.av : (p ? p.av : '')) || EIER;
@@ -5212,7 +5324,7 @@ function lukkHuskeBoble(){
 
 /* Skjemaet er en dialog oeverst paa skjermen, ikke en boks inne i kortet:
    inne i kortet havnet feltene bak tastaturet paa iPad. */
-/* Nytt punkt fra Emmas skjerm gjelder henne med mindre noen sier noe
+/* Nytt punkt fra Andreas skjerm gjelder henne med mindre noen sier noe
    annet. Kjoekkendashen foreslaar Familie av samme grunn - den er husets
    skjerm, dette er hennes. */
 function personValg(velg, valgt){
@@ -5362,7 +5474,7 @@ function tegnHuskeInner(){
   /* Bare det som gjelder henne eller hele familien. Merknadene ligger i
      den samme KV-noekkelen som kjoekkendashen leser - det er derfor en
      frist lagt inn ved kjoekkenbenken dukker opp her uten noe mer
-     maskineri. Andreas turnoevelser skal ikke staa paa Emmas skjerm. */
+     maskineri. Emmas proever skal ikke staa paa Andreas skjerm. */
   const mine = liste.filter(function(m){
     return EIER_MERKNADER.indexOf(String(m.gjelder || '').trim()) !== -1;
   });
@@ -5541,7 +5653,7 @@ function tilbakeTilStandard(){
   if(flyttet && !byttet) tegnPlanPaaNytt();
 }
 /* ============================================================
-   Neam paa Emmas skjerm
+   Neam paa Andreas skjerm
    ------------------------------------------------------------
    Han leser og skriver fag, lekser og proever. Verktoeyene og
    begrunnelsen for at ukeplanen gaar via godkjenning staar over
@@ -5552,7 +5664,7 @@ window.neamKontekst = async function(){
   const antall = fagData
     ? fagData.lekser.filter(function(l){ return !l.ferdig; }).length : 0;
   return {
-    sted: 'Emma dash',
+    sted: 'Andrea dash',
     visning: visning === 'fag' ? ('Fag, ' + ukeNavn().toLowerCase())
            : visning === 'uke' ? ukeNavn()
            : dagNavn(),
@@ -5563,40 +5675,65 @@ window.neamKontekst = async function(){
 };
 
 window.neamBakgrunn = async function(){
+  /* Fagene leses fra dataene, ikke fra en liste skrevet i teksten: den
+     glir fra det som faktisk staar inne saa snart noen doeper om et fag. */
+  const fagNavn = (fagData && fagData.fag.length)
+    ? fagData.fag.map(function(f){ return f.navn; }) : FAG_STANDARD;
+  const skole = SKOLE_NAVN + (TRINN ? ', ' + TRINN + '. trinn' : '');
   const om =
-      'EMMA DASH er Emmas egen skjerm. Emma er 13 år og går på ungdomsskolen. '
+      'ANDREA DASH er Andreas egen skjerm. Andrea går på barneskolen (' + skole + ')'
+    + (GRUPPE ? ' og er i gruppe ' + GRUPPE : '') + '. '
+    + (TRINN ? '«' + TRINN + '. klasse» på ukeplanen er det samme som ' + TRINN + '. trinn. ' : '')
     + 'Skjermen har tre visninger i venstre kolonne: DAG (avtalene hennes og '
     + 'familiens den dagen), UKE (sju rader, én per dag) og FAG (lekser og '
     + 'frister samlet per fag). Til høyre står Påminnelser i dag og '
-    + 'Påminnelser denne uken, som Magne, Nina og Emma selv kan skrive i.\n\n'
-    + 'TIMEPLANEN LIGGER IKKE I FAG-VISNINGEN. Den står som merknader på '
-    + 'avtalene i kalenderen hennes. Fag handler om hva som skal være gjort '
-    + 'til når, ikke om hvilken time som er når.\n\n'
+    + 'Påminnelser denne uken, som Magne, Nina og Andrea selv kan skrive i.\n\n'
     + 'DØGNET SKIFTER KLOKKA 20. Etter det viser skjermen morgendagen.\n\n'
-    + 'FAGENE HENNES i 8C er: Norsk, Engelsk, Matematikk, Naturfag, '
-    + 'Samfunnsfag, KRLE, Kroppsøving, Musikk, Utdanningsvalg, Spansk og '
-    + 'Innsats for andre. På arkene fra skolen står noen av dem med andre '
-    + 'navn: «Matte» er Matematikk, «Krle» er KRLE, «Gym» er Kroppsøving, '
-    + '«UTV» er Utdanningsvalg, «Språkfag» eller «Arbeidslivsfag» er Spansk, '
-    + 'og «Valgfag» er Innsats for andre. Bruk alltid det FØRSTE navnet når '
-    + 'du sender noe til et verktøy.\n\n'
-    + 'TIMEPLANEN:\n' + timeplanTekst() + '\n\n'
+    + 'FAGENE HENNES er: ' + fagNavn.join(', ') + '. På arkene fra skolen kan '
+    + 'noen stå med andre navn: «Matte» er Matematikk, «Krle» er KRLE, «Gym» er '
+    + 'Kroppsøving, «K&H» er Kunst og håndverk, «Samfunn» er Samfunnsfag. '
+    + 'Bruk alltid navnet slik det står '
+    + 'i les_fagene når du sender noe til et verktøy.\n\n'
+    + (harTimeplan()
+        ? 'TIMEPLANEN:\n' + timeplanTekst() + '\n\n'
+        : 'TIMEPLANEN ER IKKE LAGT INN ENNÅ. Ukedagene som står på fagene i '
+          + 'les_fagene er det eneste du vet om når fagene har time.\n\n')
     + 'DU EIER FAG, LEKSER OG PRØVER på denne siden og kan både lese og skrive '
     + 'dem. Slå alltid opp med les_fagene eller les_lekser før du svarer på hva '
     + 'hun har - ikke gjett, og ikke svar av hukommelsen fra tidligere i '
     + 'samtalen hvis noe kan ha endret seg siden.\n\n'
-    + 'UKEPLANEN LIGGER PÅ SKOLENS SIDE og kan hentes med hent_skoleplan. '
-    + 'Uten argument får du den nyeste for 8. trinn. Timeplanene ligger i '
-    + 'samme liste - bruk list_skoleplaner og send url hvis du skal ha en av dem.\n\n'
-    + 'HUN HETER EMMA. Ukeplanen er felles for hele trinnet, og noen beskjeder '
-    + 'i den er rettet til enkeltelever ved navn. Står navnet Emma i en beskjed, '
+    + 'UKEPLANEN ER EN PDF PÅ SKOLENS SIDE, og du kan IKKE hente den selv. Den '
+    + 'kommer til deg som bilde (tatt med «Skann ark») eller som tekst limt inn. '
+    + 'Blir du bedt om å hente ukeplanen, si at den må skannes eller limes inn '
+    + 'fra Ukeplan-knappen i hjørnet.\n\n'
+    + 'UKEPLANEN HENNES ER BYGGET LIKT HVER UKE:\n'
+    + '  - «Ukas mål» øverst er læringsmålene per fag. De går i maal-lista.\n'
+    + '  - Tabellen med dagene er timene den uka. Den er ikke lekser.\n'
+    + '  - «Ukelekse» er leksene. De leveres FREDAG - «Innlevering lekser» står '
+    + 'på fredagen. Sett derfor fristen til fredagen i planens uke, med mindre en '
+    + 'lekse har sin egen dato. En lekse med flere punkter (lese, skrive, '
+    + 'diktatord) er én lekse per punkt.\n'
+    + '  - «Beskjeder» står på side to. Bare det som krever noe av henne eller '
+    + 'familien - noe hun skal ha med, gjøre eller møte til - blir påminnelser.\n'
+    + '  - Tilbakeblikket på uka som var («Hei alle sammen», «Denne uka var vi '
+    + '…»), takk for noe som har vært, og månedens ART-egenskap er verken lekser '
+    + 'eller beskjeder. La dem ligge.\n\n'
+    + (GRUPPE
+        ? 'HUN ER I GRUPPE ' + GRUPPE.toUpperCase() + '. Klassen er delt i grupper, '
+          + 'blant annet til svømming, og gruppene bytter på. Står det at noe gjelder '
+          + 'en annen gruppe - «svømming er for Dybdal-gruppa» - gjelder det ikke '
+          + 'henne (da har hun gym). Står det ' + GRUPPE + ', gjelder det henne. '
+          + 'Står det ingen gruppe, gjelder det hele klassen.\n\n'
+        : '')
+    + 'HUN HETER ANDREA. Ukeplanen er felles for hele trinnet, og noen beskjeder '
+    + 'i den er rettet til enkeltelever ved navn. Står navnet Andrea i en beskjed, '
     + 'gjelder den henne - ta den med. Står et annet elevnavn, er den ikke hennes; '
     + 'la den ligge. Beskjeder uten navn gjelder hele klassen og gjelder derfor '
     + 'også henne.\n\n'
     + 'LÆRINGSMÅL står som regel i ukeplanen, et par linjer per fag om hva '
     + 'eleven skal kunne. De er ikke lekser og ikke beskjeder. Kommer de fra '
     + 'en ukeplan, sender du dem i maal-lista til foreslaa_lekser i SAMME kall '
-    + 'som leksene - da ser Emma leksene og målene i ett panel og godkjenner '
+    + 'som leksene - da ser hun leksene og målene i ett panel og godkjenner '
     + 'alt på én gang. sett_laeringsmaal er bare for når hun ber om ett '
     + 'bestemt mål i klartekst.\n\n'
     + 'EN LEKSE MED FRIST VISER SEG AV SEG SELV under «Påminnelser i dag» på '
@@ -5617,29 +5754,30 @@ window.neamBakgrunn = async function(){
     + 'Si etterpå hvilke beskjeder du la inn og hvor de havnet, så hun kan rette '
     + 'det som ble feil plassert.\n\n'
     + 'UKEPLANEN GÅR ALLTID VIA foreslaa_lekser. Får du en ukeplan, et bilde, en '
-    + 'avskrift eller en liste med lekser du ikke har fått fra Emma i klartekst, '
+    + 'avskrift eller en liste med lekser du ikke har fått fra Andrea i klartekst, '
     + 'legger du HELE settet fram i ett kall og lar henne godkjenne. Ingenting er '
     + 'lagret av det kallet. Si «jeg har lagt fram X lekser, se over fristene» - '
     + 'ikke «jeg har lagt dem inn». Bruk legg_til_lekse bare når hun ber om én '
     + 'bestemt lekse i klartekst.\n\n'
-    + 'STÅR DET INGEN FRIST i ukeplanen, skal du UTELATE fristen — ikke gjette. '
-    + 'Huset setter den da til siste dagen faget har time den uka, ut fra '
-    + 'timeplanen over, og merker linja som antatt så Emma ser å sjekke den. '
-    + 'Send gjerne ukenummeret planen gjelder med, så blir uka riktig.\n\n'
-    + 'SJEKK AT UKA STEMMER. hent_skoleplan gir deg både ukenummeret fra '
-    + 'lenkenavnet og de ukenumrene som står i selve dokumentet. Spriker de, '
-    + 'spør Emma hvilken som er riktig FØR du legger noe fram - velg aldri selv. '
-    + 'Send alltid uke-argumentet videre til foreslaa_lekser; da sjekkes hver '
+    + 'ER DU I TVIL OM FRISTEN, skal du UTELATE den — ikke gjette. Huset setter '
+    + 'den da til fredagen i planens uke og merker linja som antatt, så hun ser å '
+    + 'sjekke den.\n\n'
+    + 'SJEKK AT UKA STEMMER. Ukenummeret står som regel øverst på planen. Les det, '
+    + 'og send det alltid som uke-argument til foreslaa_lekser; da sjekkes hver '
     + 'frist mot den uka, og de som havner utenfor blir merket i rødt så hun ser '
-    + 'dem.\n\n'
+    + 'dem. Finner du ikke ukenummeret, eller står det to, spør FØR du legger noe '
+    + 'fram - velg aldri selv.\n\n'
     + 'DATOER skrives 2026-09-08. Står det «8/9» eller «torsdag» i kilden, må du '
     + 'regne det om selv - og er du i tvil om hvilken måned eller hvilken uke, '
     + 'send den heller UTEN frist og si fra at den mangler. En feil frist er verre '
     + 'enn ingen: den ser riktig ut.\n\n'
     + 'DU HAR INGEN KALENDERVERKTØY. Blir du spurt hva som skjer en dag, si at du '
     + 'ikke kan lese avtalene og vis til Dag- eller Uke-visningen.\n\n'
-    + 'DU SNAKKER MED EN 13-ÅRING. Hold det kort, vennlig og konkret. Ikke moraliser '
-    + 'om lekser hun ikke har gjort - vis hva som står, og la henne bestemme.';
+    + 'DU SNAKKER MED EN JENTE I ' + (TRINN ? TRINN + '. KLASSE' : 'BARNESKOLEN')
+    + ' - eller med Magne eller Nina som '
+    + 'hjelper henne. Hold det kort, vennlig og konkret, med enkle ord og korte '
+    + 'setninger. Ikke moraliser om lekser hun ikke har gjort - vis hva som står, '
+    + 'og la henne bestemme.';
   const hus = await husregisterTekst();
   return (hus ? (om + '\n\n' + hus) : om) + '\n\n' + HUS_BAKGRUNN;
 };
@@ -5704,12 +5842,14 @@ function menyLeggTil(){
   ]);
 }
 
+/* Skraaknappen gaar rett til ukeplanen. Paa Emma dash ligger den ett
+   nivaa ned, under et skolemerke («Roligheden» -> Ukeplan / Timeplan).
+   Her finnes ikke noe merke for Sandnes ennaa, og knappemerket skal ikke
+   refereres foer fila ligger paa tjeneren - se KNAPP_V i felles-neam.js.
+   Da ble det ett nivaa: de tre veiene inn med ukeplanen, og timeplanen.
+   Kommer et Sandnes-merke, kan de to nivaaene fra Emma dash tas i bruk. */
 function menyUkeplan(){
   neamSideStabel('skraa', [
-    { navn:'Hent ukeplan fra skolens side', tekst:'Hent fra nett', farge:'ny',
-      merke:true, ikon:knappMerke('hent-fra-nett'),
-      gjor: hentUkeplan },
-
     { navn:'Skann ukeplanen med kamera', tekst:'Skann ark', farge:'ny',
       merke:true, ikon:knappMerke('skann-ark'),
       gjor: apneSkann },
@@ -5719,17 +5859,9 @@ function menyUkeplan(){
 
     { navn:'Se ukeplanen på skolens side', tekst:'Se på nett',
       merke:true, ikon:knappMerke('se-paa-nett'),
-      gjor: function(){ window.open(ROLIGHEDEN, '_blank', 'noopener'); } }
-  ]);
-}
+      gjor: function(){ window.open(SKOLE_SIDE, '_blank', 'noopener'); } },
 
-function menyRoligheden(){
-  neamSideStabel('skraa', [
-    { navn:'Ukeplan', tekst:'Ukeplan', behold:true, meny:true,
-      merke:true, ikon:knappMerke('ukeplan'),
-      gjor: menyUkeplan },
-
-    { navn:'Timeplan 8C', tekst:'Timeplan',
+    { navn:'Timeplan', tekst:'Timeplan',
       merke:true, ikon:knappMerke('timeplan'),
       gjor: apneTimeplan }
   ]);
@@ -5755,9 +5887,9 @@ window.neamSideHandlinger = function(){
       } },
 
     /* Paa skraa: alt som peker mot skolen. */
-    { plass:'skraa', navn:'Roligheden skole', tekst:'Roligheden', behold:true,
-      merke:true, ikon:knappMerke('roligheden'),
-      gjor: menyRoligheden },
+    { plass:'skraa', navn:'Ukeplan og timeplan', tekst:'Ukeplan', behold:true,
+      merke:true, ikon:knappMerke('ukeplan'),
+      gjor: menyUkeplan },
 
     /* Nede til venstre: alt som LEGGER TIL. Ett pluss, én betydning. */
     { plass:'ved', navn:'Legg til', behold:true, merke:true,
@@ -5801,7 +5933,7 @@ window.neamSideAndreTrykk = function(){ tilbakeTilStandard(); };
 
    ÉN TING ER ANNERLEDES ENN ELLERS I HUSET. Lekser som kommer
    fra en ukeplan gaar ikke rett inn - de gaar via
-   foreslaa_lekser, som legger dem i et panel Emma godkjenner.
+   foreslaa_lekser, som legger dem i et panel Andrea godkjenner.
    Grunnen er hva slags feil kilden gjoer. En skanning eller en
    avskrift bommer paa maaneden i «8/9», henger en lekse paa
    naboraden i tabellen, tar overskriften for en oppgave. Ingen
@@ -5818,7 +5950,7 @@ window.neamSideAndreTrykk = function(){ tilbakeTilStandard(); };
 const FAG_VERKTOY = [
   {
     name: 'les_fagene',
-    description: 'Alle fagene Emma har, med id, faglærer, hvilke ukedager faget er, '
+    description: 'Alle fagene Andrea har, med id, faglærer, hvilke ukedager faget er, '
                + 'og hvor mange åpne lekser og kommende prøver hvert av dem har. '
                + 'Bruk id-ene herfra i de andre verktøyene.',
     input_schema: { type:'object', properties:{}, required:[] }
@@ -5846,42 +5978,15 @@ const FAG_VERKTOY = [
       required:[]
     }
   },
-  {
-    name: 'list_skoleplaner',
-    description: 'Filene som ligger under «Ukeplaner og filer» på skolens side, med '
-               + 'navn, ukenummer og adresse. Bruk dette for å finne HVILKEN ukeplan '
-               + 'som er den nyeste før du henter den.',
-    input_schema: { type:'object', properties:{}, required:[] }
-  },
-  {
-    name: 'hent_skoleplan',
-    description: 'Henter en .docx fra skolens side og gir innholdet som tekst. '
-               + 'Uten argument hentes den NYESTE ukeplanen for 8. trinn. '
-               + 'Skal du ha en TIMEPLAN eller noe annet enn en ukeplan, send navn '
-               + 'eller url fra list_skoleplaner - timeplanene har ikke ukenummer '
-               + 'og finnes ikke av søket etter nyeste ukeplan. '
-               + 'Etter dette: sorter leksene på fag og legg dem fram med '
-               + 'foreslaa_lekser - ikke skriv dem inn selv.',
-    input_schema: {
-      type:'object',
-      properties:{
-        uke: { type:'number', description:'Ukenummer. Utelat for den nyeste.' },
-        navn: { type:'string', description:'Navnet på fila slik det står i '
-                                         + 'list_skoleplaner, for eksempel «Timeplan, 8C». '
-                                         + 'Bruk dette for timeplaner og annet enn ukeplaner.' },
-        url: { type:'string', description:'Full adresse fra list_skoleplaner. '
-                                        + 'Alternativ til navn.' }
-      },
-      required:[]
-    }
-  },
+  /* list_skoleplaner og hent_skoleplan staar paa Emma dash. De er
+     tatt ut her - se SKOLE_SIDE. */
   {
     name: 'foreslaa_lekser',
     description: 'Legger lekser OG læringsmål fram til godkjenning. INGENTING lagres '
-               + 'av dette kallet - forslagene kommer opp i et panel der Emma kan rette '
+               + 'av dette kallet - forslagene kommer opp i et panel der Andrea kan rette '
                + 'fag, tekst og frist, ta bort linjer og så trykke Legg inn. '
                + 'BRUK DETTE når leksene kommer fra en ukeplan, et bilde, en avskrift '
-               + 'eller noe annet du ikke har fra Emma selv i klartekst. Send ALLE '
+               + 'eller noe annet du ikke har fra Andrea selv i klartekst. Send ALLE '
                + 'leksene i ett kall - hun skal se hele uka på én gang, ikke godkjenne '
                + 'én linje av gangen. Etter kallet: si hva du la fram og be henne se '
                + 'over det, særlig fristene. Ikke påstå at noe er lagt inn.',
@@ -5898,7 +6003,7 @@ const FAG_VERKTOY = [
           type:'array',
           description:'Læringsmålene fra ukeplanen, ett per fag. De legges fram i '
                     + 'samme panel som leksene og godkjennes sammen med dem. '
-                    + 'Bruk sett_laeringsmaal bare når Emma ber om ett bestemt mål '
+                    + 'Bruk sett_laeringsmaal bare når Andrea ber om ett bestemt mål '
                     + 'i klartekst.',
           items:{
             type:'object',
@@ -5922,7 +6027,7 @@ const FAG_VERKTOY = [
               frist: { type:'string', description:'Dato på formen 2026-09-08. UTELAT den hvis '
                                           + 'ukeplanen ikke sier noe - da settes fristen til '
                                           + 'siste dagen faget har time den uka, og linja '
-                                          + 'merkes som antatt så Emma ser å sjekke den. '
+                                          + 'merkes som antatt så Andrea ser å sjekke den. '
                                           + 'Ikke gjett selv.' }
             },
             required:['fag','tekst']
@@ -5950,16 +6055,16 @@ const FAG_VERKTOY = [
   },
   {
     name: 'les_paaminnelser',
-    description: 'Påminnelsene som står på Emmas skjerm nå - både «i dag» og '
+    description: 'Påminnelsene som står på Andreas skjerm nå - både «i dag» og '
                + '«denne uken», med id, tekst, dato og hvem de gjelder.',
     input_schema: { type:'object', properties:{}, required:[] }
   },
   {
     name: 'legg_til_paaminnelse',
-    description: 'Legger en beskjed i påminnelsene på Emmas skjerm. BRUK DETTE til '
+    description: 'Legger en beskjed i påminnelsene på Andreas skjerm. BRUK DETTE til '
                + 'beskjeder fra ukeplanen som IKKE er lekser i et fag - turdag, ta med '
                + 'gymtøy, foreldremøte, innlevering av skjema, beskjeder rettet til '
-               + 'Emma personlig. Har beskjeden en DATO, havner den under «Påminnelser '
+               + 'Andrea personlig. Har beskjeden en DATO, havner den under «Påminnelser '
                + 'i dag» på den datoen. Har den ingen dato, havner den under '
                + '«Påminnelser denne uken» - og da må du sende uke-argumentet, ellers '
                + 'havner den i feil uke. Send ALDRI en lekse hit - lekser hører til '
@@ -5979,15 +6084,15 @@ const FAG_VERKTOY = [
                                             + 'står på, og det er sjelden den samme som '
                                             + 'planens. Gjelder bare beskjeder uten dato - '
                                             + 'har beskjeden en dato, er den gitt av datoen.' },
-        gjelder: { type:'string', description:'Emma, Magne, Nina, Andrea eller Familie. '
-                                            + 'Utelat for Emma.' }
+        gjelder: { type:'string', description:'Andrea, Magne, Nina, Emma eller Familie. '
+                                            + 'Utelat for Andrea.' }
       },
       required:['tekst']
     }
   },
   {
     name: 'legg_til_lekse',
-    description: 'Legger inn ÉN lekse med det samme. Bruk dette bare når Emma har sagt '
+    description: 'Legger inn ÉN lekse med det samme. Bruk dette bare når Andrea har sagt '
                + 'i klartekst hva som skal inn. Kommer leksene fra en ukeplan eller et '
                + 'bilde, bruk foreslaa_lekser i stedet.',
     input_schema: {
@@ -6018,7 +6123,7 @@ const FAG_VERKTOY = [
   },
   {
     name: 'slett_lekse',
-    description: 'Sletter en lekse. Emma får et spørsmål først og kan si nei - svaret '
+    description: 'Sletter en lekse. Andrea får et spørsmål først og kan si nei - svaret '
                + 'sier hva hun valgte. Er leksa gjort, er det bedre å huke den av med '
                + 'endre_lekse enn å slette den.',
     input_schema: {
@@ -6097,7 +6202,7 @@ const FAG_VERKTOY = [
 
 /* ---------------- Hjelpere ---------------- */
 
-/* Kallenavnene ungdomsskolen faktisk bruker. Prefiksregelen under tar
+/* Kallenavnene skolene faktisk bruker. Prefiksregelen under tar
    ikke «matte»: «Matematikk» begynner paa «mat», ikke paa «matt». */
 const FAG_KALLENAVN = {
   'matte':'matematikk', 'matematik':'matematikk',
@@ -6150,7 +6255,7 @@ function fagKrev(navn){
 }
 
 /* Dato inn fra Neam. Bare ISO godtas - alt annet er en gjetning, og en
-   gjetning paa en frist er nettopp det Emma skal slippe aa oppdage selv. */
+   gjetning paa en frist er nettopp det Andrea skal slippe aa oppdage selv. */
 function datoKrev(t, hva){
   const r = String(t || '').trim();
   if(!r) return '';
@@ -6475,60 +6580,10 @@ function lekseRadIHuske(m){
 }
 
 /* ---------------- Skolens side ----------------
-   Hentingen skjer i /api/hent, ikke her. Nettleseren faar ikke hente fra
-   roligheden.skole.arendal.no - skolen sender ingen CORS-hoder til
-   neam.no - og .docx maa uansett pakkes ut, som er en zip-jobb sida ikke
-   skal baere.
-
-   Lista huskes resten av oekten. Neam kaller ofte list_skoleplaner rett
-   foer hent_skoleplan, og skolens side skal ikke hentes to ganger for aa
-   svare paa det samme.
+   skolePlaner(), skoleFil() og hentUkeplan() staar paa Emma dash og er
+   tatt ut her. De snakker med /api/hent, som bare kjenner Roligheden og
+   .docx. Se SKOLE_SIDE for hva som skal til for Sandnes.
    ------------------------------------------------------------ */
-let skolePlanerHusk = null;
-
-async function skolePlaner(){
-  if(skolePlanerHusk) return skolePlanerHusk;
-  const r = await fetch('/api/hent?hva=liste', {cache:'no-store'});
-  const d = await r.json().catch(function(){ return null; });
-  if(!r.ok || !d || d.feil)
-    throw new Error((d && d.feil) || ('Fikk ikke tak i skolens side (' + r.status + ').'));
-  skolePlanerHusk = d.lenker || [];
-  return skolePlanerHusk;
-}
-
-async function skoleFil(url){
-  const r = await fetch('/api/hent?hva=fil&url=' + encodeURIComponent(url), {cache:'no-store'});
-  const d = await r.json().catch(function(){ return null; });
-  if(!r.ok || !d || d.feil)
-    throw new Error((d && d.feil) || ('Fikk ikke hentet fila (' + r.status + ').'));
-  return d;
-}
-
-/* Knappen. Neam gjoer jobben - han kan lese en ukeplan satt opp paa en
-   maate ingen har sett foer - og resultatet havner i forslagspanelet,
-   samme vei som alt annet han foreslaar. */
-async function hentUkeplan(){
-  if(typeof neamStart !== 'function'){
-    varsle('Neam er ikke tilgjengelig på denne siden.');
-    return;
-  }
-  await neamStart(
-    'Hent den nyeste ukeplanen for 8. trinn fra skolens side med '
-    + 'hent_skoleplan. Gjør to ting med den:\n\n'
-    + '1. LEKSENE: sorter dem på fagene Emma har, regn om datoene til formen '
-    + '2026-09-08, og legg ALT fram i ETT kall til foreslaa_lekser. Er du i tvil '
-    + 'om en dato, send leksa uten frist og si fra om hvilke det gjaldt.\n\n'
-    + '2. LÆRINGSMÅLENE: står det et par linjer per fag om hva hun skal kunne, '
-    + 'sender du dem i maal-lista i det SAMME foreslaa_lekser-kallet. Ikke som '
-    + 'egne kall.\n\n'
-    + '3. BESKJEDENE som ikke er lekser - turdag, utstyr, frister, foreldremøte, '
-    + 'og alt som er rettet til Emma ved navn - legger du inn med '
-    + 'legg_til_paaminnelse, én per beskjed. Med dato hvis den har en; har den '
-    + 'ingen, send uke-argumentet med ukenummeret planen gjelder.\n\n'
-    + 'Ta ikke med overskrifter eller ukenummer. Si til slutt hva du la fram og '
-    + 'hvilke beskjeder du la inn.',
-    {friskt:true});
-}
 
 /* ---------------- Lekseark inn ----------------
    Teksten gaar til Neam, ikke til en tolk her i sida. Han kan lese en
@@ -6587,14 +6642,14 @@ function kobleArkSlipp(){
    eller som bilde. Ett sted: den sto skrevet to ganger, og en presisering
    i den ene fulgte ikke med til den andre. */
 const ARK_INSTRUKS =
-    'Dette er lekselista fra skolen. Sorter leksene på fagene Emma har, regn '
+    'Dette er lekselista fra skolen. Sorter leksene på fagene Andrea har, regn '
   + 'om datoene til formen 2026-09-08, og legg ALT fram i ETT kall til '
   + 'foreslaa_lekser. Er du i tvil om en dato, send leksa uten frist og si fra '
   + 'om hvilke det gjaldt.\n\n'
   + 'Står det læringsmål per fag, send dem i maal-lista i det samme '
   + 'foreslaa_lekser-kallet.\n\n'
   + 'Beskjeder som IKKE er lekser - utstyr, turdager, frister, og alt som er '
-  + 'rettet til Emma ved navn - legger du inn med legg_til_paaminnelse. Med '
+  + 'rettet til Andrea ved navn - legger du inn med legg_til_paaminnelse. Med '
   + 'dato hvis den har en; har den ingen, send uke-argumentet med ukenummeret '
   + 'planen gjelder. Ta ikke med overskrifter eller ukenummer.';
 
@@ -6803,86 +6858,6 @@ async function fagUtfor(navn, arg){
     })};
   }
 
-  if(navn === 'list_skoleplaner'){
-    const d = await skolePlaner();
-    return { antall:d.length, planer:d.map(function(l){
-      return { navn:l.navn, uke:l.uke, url:l.url };
-    })};
-  }
-
-  if(navn === 'hent_skoleplan'){
-    let url = String(arg.url || '').trim();
-    let hvilken = null;
-
-    /* Er det en TIMEPLAN som skal hentes, ligger den i lista uten
-       ukenummer - da er soeket etter «nyeste ukeplan» feil sted aa lete.
-       Neam ba om «timeplanen» og fikk «fant ingen ukeplan» i retur, som
-       er sant, men ikke svar paa det han spurte om. */
-    if(!url && arg.navn){
-      const planer = await skolePlaner();
-      const sok = String(arg.navn).trim().toLowerCase();
-      const t = planer.find(function(l){ return l.navn.toLowerCase() === sok; })
-             || planer.find(function(l){ return l.navn.toLowerCase().indexOf(sok) !== -1; });
-      if(!t) throw new Error('Fant ingen fil som heter «' + arg.navn + '». '
-                           + 'Bruk list_skoleplaner for å se hva som ligger der.');
-      url = t.url;
-      hvilken = t;
-    }
-
-    if(!url){
-      const planer = await skolePlaner();
-      /* «8. trinn» og et ukenummer. Timeplanene ligger i samme liste og
-         har ikke uke, saa de faller ut av seg selv. */
-      const ukeplaner = planer.filter(function(l){
-        return l.uke && /8\.?\s*trinn/i.test(l.navn);
-      });
-      if(!ukeplaner.length)
-        throw new Error('Fant ingen ukeplan for 8. trinn på skolens side. '
-                      + 'Bruk list_skoleplaner for å se hva som ligger der.');
-      hvilken = arg.uke
-        ? ukeplaner.find(function(l){ return l.uke === Number(arg.uke); })
-        : ukeplaner.slice().sort(function(a, b){ return b.uke - a.uke; })[0];
-      if(!hvilken)
-        throw new Error('Fant ingen ukeplan for uke ' + arg.uke + '. Tilgjengelig: '
-                      + ukeplaner.map(function(l){ return l.uke; }).join(', ') + '.');
-      url = hvilken.url;
-    }
-    const d = await skoleFil(url);
-
-    /* Ukenummeret staar to steder: i LENKENAVNET paa skolens side og
-       inne i DOKUMENTET. De skal stemme overens, og gjoer de ikke det,
-       er det som regel fordi en gammel fil er lastet opp under et nytt
-       navn - eller motsatt. Vi sier fra om begge tallene i stedet for aa
-       velge ett; Neam maa spoerre naar de spriker.
-
-       Bare de foerste 400 tegnene: uketallet staar i overskriften, og
-       lenger ned i teksten dukker «uke» opp i andre sammenhenger
-       («neste uke», «uke 40 er hoestferie»). */
-    const topp = String(d.tekst || '').slice(0, 400);
-    const iTekst = [];
-    const re = /uke\s*(\d{1,2})/gi;
-    let m;
-    while((m = re.exec(topp)) !== null){
-      const u = parseInt(m[1], 10);
-      if(u >= 1 && u <= 53 && iTekst.indexOf(u) === -1) iTekst.push(u);
-    }
-
-    const fraNavn = hvilken ? hvilken.uke : null;
-    const stemmer = (fraNavn && iTekst.length)
-      ? (iTekst.indexOf(fraNavn) !== -1) : null;
-
-    return { navn:d.navn,
-             ukeFraNavn: fraNavn,
-             ukeIDokumentet: iTekst.length ? iTekst : null,
-             stemmerOverens: stemmer,
-             advarsel: stemmer === false
-               ? 'Lenken sier uke ' + fraNavn + ', men dokumentet nevner uke '
-                 + iTekst.join(' og ') + '. Spør Emma hvilken som er riktig '
-                 + 'FØR du legger noe fram - ikke velg selv.'
-               : null,
-             tegn:d.tegn, tekst:d.tekst };
-  }
-
   if(navn === 'foreslaa_lekser'){
     const inn = Array.isArray(arg.lekser) ? arg.lekser : [];
     const rader = inn.filter(function(r){
@@ -6912,7 +6887,7 @@ async function fagUtfor(navn, arg){
     /* En frist som er SKREVET i planen skal ligge i uka planen gjelder.
        Gjoer den ikke det, er det enten en lekse som med vilje peker
        framover - det finnes - eller en dato som er lest feil. Vi kan
-       ikke skille de to, saa vi merker dem og lar Emma se. */
+       ikke skille de to, saa vi merker dem og lar Andrea se. */
     const planUke = arg.uke ? Number(arg.uke) : isoUke(fagDag()).uke;
     rader.forEach(function(r){
       r.uke = r.frist ? isoUke(datoFraTekst(r.frist)).uke : null;
@@ -6924,7 +6899,7 @@ async function fagUtfor(navn, arg){
     apneForslag(rader, 'Ukeplan for uke ' + planUke + '. Ingenting er lagret ennå — '
                      + 'rett det som er galt, ta bort det som ikke skal med, og trykk '
                      + 'Legg inn.'
-                     + (antatte ? ' ' + antatte + ' frist er antatt ut fra timeplanen.' : '')
+                     + (antatte ? ' ' + antatte + ' frist er ' + antattGrunn() + '.' : '')
                      + (utenfor ? ' ' + utenfor + ' frist havner UTENFOR uke ' + planUke
                                 + ' — se over dem.' : ''),
                 maalInn, ukeNokkel(mandagIUke(planUke)));
@@ -6932,9 +6907,9 @@ async function fagUtfor(navn, arg){
              uke:planUke,
              antatteFrister:antatte || undefined,
              utenforUka:utenfor || undefined,
-             beskjed:'Forslagene ligger på skjermen og venter på at Emma godkjenner dem. '
-                   + 'Ingenting er lagret. Si hva du la fram, hvilke frister som er antatt '
-                   + 'ut fra timeplanen, og '
+             beskjed:'Forslagene ligger på skjermen og venter på at Andrea godkjenner dem. '
+                   + 'Ingenting er lagret. Si hva du la fram, hvilke frister som er '
+                   + antattGrunn() + ', og '
                    + (utenfor ? 'at ' + utenfor + ' frist(er) havner utenfor uke ' + planUke
                               + ' - be henne se særlig på dem.'
                               : 'at alle fristene ligger i uke ' + planUke + '.') };
@@ -7049,7 +7024,7 @@ async function fagUtfor(navn, arg){
     const ok = await bekreft('Neam vil slette «' + l.tekst + '» fra '
                            + fagNavnAv(l.fagId) + '. Slette den?',
                            {jaTekst:'Slett', fare:true});
-    if(!ok) return { slettet:false, beskjed:'Emma sa nei. Leksa står som før.' };
+    if(!ok) return { slettet:false, beskjed:'Andrea sa nei. Leksa står som før.' };
     await endreFag(function(d){
       d.lekser = d.lekser.filter(function(x){ return x.id !== arg.id; });
       return d;
@@ -7352,8 +7327,8 @@ async function oppdaterAlt(manuelt){
     $('portKnapp').hidden = true;
     $('portHjem').hidden = false;
     portNote(tilgang.epost
-      ? 'Emma dash er Emmas egen skjerm og ikke åpen for ' + tilgang.epost + '. Gå tilbake til forsiden.'
-      : 'Emma dash er Emmas egen skjerm og ikke tilgjengelig her.');
+      ? 'Andrea dash er Andreas egen skjerm og ikke åpen for ' + tilgang.epost + '. Gå tilbake til forsiden.'
+      : 'Andrea dash er Andreas egen skjerm og ikke tilgjengelig her.');
     return;
   }
 
@@ -7392,7 +7367,7 @@ async function oppdaterAlt(manuelt){
      skal ikke den automatiske oppdateringen dra dem tilbake. */
   setInterval(function(){ if(!document.hidden && dagOffset === 0) oppdaterAlt(false); }, 5*60*1000);
 
-  /* Paaminnelsene speiles hvert TREDJE SEKUND. Kjoekkendashen og Emma
+  /* Paaminnelsene speiles hvert TREDJE SEKUND. Kjoekkendashen og Andrea
      dash deler samme noekkel i KV, men det finnes ingen kanal mellom dem
      - den ene faar vite om den andres endring foerst naar den spoer.
 

@@ -752,13 +752,17 @@ const NEAM_APPER = [
   { sti:'/dashboard.html',   navn:'Kjøkken',     ikon:'/bilder/merke-kjokken-dash.png' },
   /* Versjonen legges paa i neamMerkeUrl(), ikke her - da staar stien
      lesbar i lista og nummeret ett sted. */
-  /* Emma dash staar aapen paa forsiden, og da er det ingen grunn til at
-     applista skal skjule den. Argumentet mot - en snarvei til en doer man
-     blir avvist i - gjelder fortsatt for Andrea, men det gjelder like
-     mye flisen paa forsiden, og den beslutningen er alt tatt. Naar lista
-     en dag kan filtreres paa innlogget bruker, hoerer begge to hjemme i
-     samme filter. */
-  { sti:'/emma.html',        navn:'Emma dash',   ikon:'/bilder/merke-emma-dash.png'   }
+  /* Emma dash og Andrea dash staar aapne paa forsiden, og da er det ingen
+     grunn til at applista skal skjule dem. Argumentet mot - en snarvei til
+     en doer man blir avvist i - gjelder begge veier: Emma blir avvist paa
+     Andreas, og Andrea paa Emmas. Men det gjelder like mye flisene paa
+     forsiden, og den beslutningen er alt tatt. Naar lista en dag kan
+     filtreres paa innlogget bruker, hoerer begge hjemme i samme filter.
+
+     Andrea kom til 11. september 2026. Med sju apper viser lista seks fra
+     alle sider - fiskebeinet blir 2-2-2. */
+  { sti:'/emma.html',        navn:'Emma dash',   ikon:'/bilder/merke-emma-dash.png'   },
+  { sti:'/andrea.html',      navn:'Andrea dash', ikon:'/bilder/merke-andrea-dash.png' }
 ];
 
 /* Stien til sida, normalisert.
@@ -800,6 +804,7 @@ const NEAM_SIDEMERKE = {
      linja under falt det tilbake paa Neam-merket - «Denne siden» med
      feil bilde. */
   '/emma'       : { navn:'Emma dash',    ikon:'/bilder/merke-emma-dash.png'    },
+  '/andrea'     : { navn:'Andrea dash',  ikon:'/bilder/merke-andrea-dash.png'  },
   '/'           : { navn:'Neam',         ikon:'/bilder/merke-neam.png'         }
 };
 
