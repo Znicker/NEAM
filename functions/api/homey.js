@@ -107,23 +107,62 @@ async function skrivOekt(env, epost, o){
    og hemmeligheten sendes som Basic-header, ikke i kroppen. Begge
    deler skiller seg fra Microsoft, og begge gir en uklar feil hvis
    man tar feil. */
-async function athomToken(felter, env){
-  const auth = btoa(KLIENT_ID + ':' + env.HOMEY_CLIENT_SECRET);
+async function ettTokenforsoek(felter, env, iKropp){
+  const hodet = { 'Content-Type': 'application/x-www-form-urlencoded' };
+  const kropp = Object.assign({}, felter);
+
+  if(iKropp){
+    kropp.client_id     = KLIENT_ID;
+    kropp.client_secret = env.HOMEY_CLIENT_SECRET;
+  }else{
+    hodet.Authorization = 'Basic ' + btoa(KLIENT_ID + ':' + env.HOMEY_CLIENT_SECRET);
+  }
+
   const r = await fetch(ATHOM + '/oauth2/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': 'Basic ' + auth
-    },
-    body: new URLSearchParams(felter)
+    method: 'POST', headers: hodet, body: new URLSearchParams(kropp)
   });
   const tekst = await r.text();
   let d;
   try{ d = JSON.parse(tekst); }
-  catch(e){ return { feil: 'Uventet svar fra Athom' }; }
-  if(!r.ok) return { feil: d.error_description || d.error || ('Athom svarte ' + r.status),
-                     kode: d.error || '', status: r.status };
+  catch(e){ return { feil: 'Uventet svar fra Athom', status: r.status }; }
+  if(!r.ok){
+    let tekstFeil = d.error_description;
+    /* Athom svarer noen ganger med et OBJEKT i error_description, ikke
+       en streng - {"response_type":"Invalid value"}. Uten dette ble
+       feilmeldingen til «[object Object]» paa skjermen. */
+    if(tekstFeil && typeof tekstFeil === 'object') tekstFeil = JSON.stringify(tekstFeil);
+    return { feil: tekstFeil || d.error || ('Athom svarte ' + r.status),
+             kode: d.error || '', status: r.status };
+  }
   return { data: d };
+}
+
+/* To maater aa vise hemmeligheten paa, og vi vet ikke hvilken Athom vil
+   ha. Spesifikasjonen sier Basic-header. Men den samme spesifikasjonen
+   sa ogsaa `authorization_type` der tjeneren ville ha `response_type`
+   (maalt 11. september 2026), saa den er ikke til aa stole blindt paa.
+
+   Derfor: Basic foerst, som dokumentert. Avvises nøklene, prøves
+   kroppen - som er den andre lovlige maaten i OAuth2. Det koster ett
+   ekstra kall den gangen den foerste ikke virker, og ingenting etterpaa.
+
+   Begge samtidig er IKKE et alternativ: flere tjenere avviser en
+   forespoersel som viser legitimasjon paa to maater. */
+async function athomToken(felter, env){
+  const a = await ettTokenforsoek(felter, env, false);
+  if(!a.feil) return a;
+
+  const nekter = a.status === 400 || a.status === 401;
+  if(!nekter) return a;
+
+  const b = await ettTokenforsoek(felter, env, true);
+  if(!b.feil) return b;
+
+  /* Begge veier ble avvist. Da er det hemmeligheten det staar paa, og
+     meldingen skal si det - ikke bare gjenta Athoms ordlyd. */
+  return { feil: b.feil + ' (prøvde både Basic-header og kropp – '
+                 + 'sjekk HOMEY_CLIENT_SECRET i Cloudflare, og at den er rullet ut)',
+           kode: b.kode, status: b.status };
 }
 
 /* Et access token som lever, eller et nytt. Skriver alltid ned et nytt
