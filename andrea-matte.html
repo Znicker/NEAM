@@ -364,11 +364,22 @@ body.spiller .rekorder{ display:none; }
 @keyframes inn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
 .svar-boks{
   display:inline-flex; align-items:center; justify-content:center; gap:.18em;
-  min-width:2.1em; height:1.3em; padding:0 .18em;
+  /* Fast bredde, ikke en boks som vokser med svaret. Den rommer tre
+     sifre - 10 * 10 er det stoerste som kan komme - saa stykket staar
+     stille mens hun skriver, og en tom rubrikk er like stor som en
+     full. En rubrikk som er liten til man fyller den ser ikke ut som
+     et sted man skal skrive. */
+  width:2.8em; height:1.4em; padding:0 .18em;
   background:#FFFFFF; border:3px solid var(--messing); border-radius:.2em;
   transition:box-shadow .25s ease, border-color .25s ease;
 }
-.svar-boks.tom::after{
+/* HET `tom` til 11. september 2026, og kolliderte med .tom for tomme
+   lister nede i rekorderkortet - den setter font-size:var(--t-meta),
+   og en klasseregel slaar arv. Rubrikken sto derfor i 14px i stedet
+   for arvede 84 saa lenge den var tom, og vokste til full stoerrelse
+   i det foerste tallet kom. Samme felle som i felles-data.js: i en fil
+   som er stor nok er alle de vanlige ordene alt tatt. */
+.svar-boks.ingen::after{
   content:''; width:3px; height:.8em; background:var(--ink-soft);
   animation:blink 1.1s steps(1) infinite;
 }
@@ -377,7 +388,7 @@ body.spiller .rekorder{ display:none; }
 /* Galt svar: det hun skrev staar igjen, strøket og lite, og det
    riktige ved siden av. Ikke roedt - roedt betyr slett her i huset,
    og det skal ikke kjennes som straff aa regne feil. */
-.svar-boks.feil{ border-color:var(--ink-soft); }
+.svar-boks.feil{ border-color:var(--ink-soft); width:auto; min-width:2.8em; }
 .svar-feil{ font-size:.5em; color:var(--ink-soft); text-decoration:line-through; text-decoration-thickness:3px; }
 .svar-boks.rister{ animation:boksrist .35s ease-in-out; }
 @keyframes boksrist{ 25%{ transform:translateX(-6px); } 75%{ transform:translateX(6px); } }
@@ -563,7 +574,7 @@ body.spiller .rekorder{ display:none; }
       <div class="spill-inn">
         <div class="oppgave" id="oppgave">
           <span id="stykke"></span><span aria-hidden="true">=</span>
-          <span class="svar-boks tom" id="svarBoks" aria-label="Ditt svar"></span>
+          <span class="svar-boks ingen" id="svarBoks" aria-label="Ditt svar"></span>
         </div>
         <div class="tastatur" id="tastatur" role="group" aria-label="Tall">
           <button type="button" class="tast" data-tall="1">1</button>
@@ -1161,7 +1172,7 @@ function visOppgave(){
   runde.svar = '';
   runde.venter = null;
   const boks = $('svarBoks');
-  boks.className = 'svar-boks tom';
+  boks.className = 'svar-boks ingen';
   boks.textContent = '';
   $('tastSvar').textContent = 'Svar';
   settTaster(true);
@@ -1176,7 +1187,7 @@ function settTaster(paa){
 function tegnSvar(){
   const boks = $('svarBoks');
   boks.textContent = runde.svar;
-  boks.classList.toggle('tom', runde.svar === '');
+  boks.classList.toggle('ingen', runde.svar === '');
 }
 
 function trykkTall(d){
