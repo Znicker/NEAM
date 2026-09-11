@@ -229,7 +229,10 @@ function neamKlipp(msgs){
     const m = msgs[i];
     if(m.role !== 'user') continue;
     if(typeof m.content === 'string') return msgs.slice(i);
-    if(Array.isArray(m.content) && m.content.some(function(b){ return b.type === 'image'; }))
+    /* Et dokument likesaa - en ukeplan sendt som PDF er turen som
+       starter alt det som foelger. */
+    if(Array.isArray(m.content) && m.content.some(function(b){
+         return b.type === 'image' || b.type === 'document'; }))
       return msgs.slice(i);
   }
   return msgs;
@@ -1933,6 +1936,15 @@ function neamTegn(){
         el.innerHTML = '<img alt="" src="data:'
           + (b.source.media_type || 'image/jpeg') + ';base64,' + b.source.data + '">';
         boks.appendChild(el);
+      }else if(b.type === 'document'){
+        /* Et dokument kan ikke vises som miniatyr. En linje med navnet,
+           i samme form som verktoeylinjene - noe som skjedde, ikke noe
+           som ble sagt. Uten den ser samtalen ut som at ingenting ble
+           sendt. */
+        const el = document.createElement('div');
+        el.className = 'neam-verktoy';
+        el.textContent = '📄 ' + (b.title || 'dokument');
+        boks.appendChild(el);
       }else if(b.type === 'text' && String(b.text || '').trim()){
         /* Teksten som fulgte et bilde er sidens egen instruks - se
            kommentaren over om `auto`. Den vises ikke. */
@@ -2147,6 +2159,13 @@ async function neamTur(){
 
    Staar Neam alt og jobber, gjoer kallet ingenting. Én ting av
    gangen i ett panel.
+
+   `bilder` og `dokumenter` sender innhold han skal LESE:
+     bilder:     [{ type:'image/jpeg', data:<base64> }]
+     dokumenter: [{ type:'application/pdf', data:<base64>, navn:'uke-38.pdf' }]
+   Dokumenter kom til 11. september 2026 for ukeplanene fra Sandnes,
+   som er PDF. Neam leser PDF direkte - tekst og oppsett - saa det er
+   ingen omvei om tekstutpakking som med Rolighedens .docx.
    ============================================================ */
 async function neamStart(beskjed, valg){
   const v = valg || {};
@@ -2154,7 +2173,9 @@ async function neamStart(beskjed, valg){
   const tekst = String(beskjed || '').trim();
   /* Et bilde uten ord er en gyldig melding - «her, les dette». */
   const bilder = Array.isArray(v.bilder) ? v.bilder.filter(Boolean) : [];
-  if(!tekst && !bilder.length) return;
+  const dokumenter = Array.isArray(v.dokumenter)
+    ? v.dokumenter.filter(function(d){ return d && d.data; }) : [];
+  if(!tekst && !bilder.length && !dokumenter.length) return;
 
   neamBygg();
   if(v.friskt){ neamPoster = []; neamPaatvunget = null; }
@@ -2178,13 +2199,23 @@ async function neamStart(beskjed, valg){
      `auto` skjuler beskjeden i samtalen - den er skrevet for Neam, ikke
      for brukeren. Bildene vises likevel, saa man ser HVA man sendte;
      ellers staar det bare «tenker ...» uten spor av at noe ble sendt. */
-  if(bilder.length){
-    const blokker = bilder.map(function(b){
+  if(bilder.length || dokumenter.length){
+    /* Dokumentene foerst, saa bildene, saa teksten - av samme grunn som
+       bildene staar foer teksten. `title` er API-ets eget felt og er det
+       samtalen viser; uten den ville linja bare sagt «PDF». */
+    const blokker = dokumenter.map(function(d){
+      const blokk = { type:'document',
+                      source:{ type:'base64',
+                               media_type: d.type || 'application/pdf',
+                               data: d.data } };
+      if(d.navn) blokk.title = String(d.navn);
+      return blokk;
+    }).concat(bilder.map(function(b){
       return { type:'image',
                source:{ type:'base64',
                         media_type: b.type || 'image/jpeg',
                         data: b.data } };
-    });
+    }));
     if(tekst) blokker.push({ type:'text', text:tekst });
     neamPoster.push({ api:{ role:'user', content:blokker }, auto:true, viserBilder:true });
   }else{
