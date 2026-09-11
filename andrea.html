@@ -1688,9 +1688,9 @@ select.hu-felt{
                 placeholder="Lim inn her (Ctrl+V), eller slipp en tekstfil oppi."></textarea>
       <!-- Sandnes legger ukeplanen ut som PDF. Den kan ikke leses her -
            se SKOLE_SIDE i skriptet for hvorfor, og hva som skal til. -->
-      <div class="bilde-hjelp">Ukeplanen er en PDF og kan ikke leses direkte —
-        åpne den, merk alt og lim inn teksten, eller ta bilde av den med
-        «Skann ark».</div>
+      <div class="bilde-hjelp">Ukeplanen fra skolens side hentes enklest med
+        «Hent fra nett». En PDF kan ikke slippes her — åpne den, merk alt og
+        lim inn teksten.</div>
     </div>
     <div class="av-foot">
       <button class="hu-avbryt" onclick="avbrytSkjema('arkBoks', lukkArk)">Avbryt</button>
@@ -1810,21 +1810,20 @@ select.hu-felt{
 <script src="/felles-filviser.js?v=2"></script>
 <!-- Neam: femmeren for navigering. Veggskjermen baerer ingen samtale -
      tilbakeTilStandard() legger femmeren ned naar skjermen hviler. -->
-<script src="/felles-neam.js?v=63"></script>
+<script src="/felles-neam.js?v=64"></script>
 <script>
 /* ============================================================
    NEAM – Andrea dash
    Andreas egen skjerm. Kopiert fra emma.html 11. september 2026
    og tilpasset - samme mekanikk, annen eier og annen skole.
 
-   HVA SOM SKILLER DEN FRA ANDREA DASH:
+   HVA SOM SKILLER DEN FRA EMMA DASH:
    - Konstantene for eier og tilgang (EIER, EIER_KALENDERE,
      EIER_MERKNADER, DASH_TILGANG) og fagnoekkelen andrea-fag:v1.
    - Skolen. Sandnes skole ligger paa kommunens side og legger ut
-     ukeplanene som PDF. /api/hent er laast til Roligheden og
-     pakker bare ut .docx, saa «Hent fra nett» og de to
-     skoleplanverktoeyene til Neam er TATT UT her. Ukeplanen kommer
-     inn med Skann ark eller Lim inn. Se SKOLE_SIDE.
+     ukeplanene som PDF. «Hent fra nett» gaar til /api/sandnes, ikke
+     /api/hent, og PDF-en gaar rett til Neam som dokument. De to
+     skoleplanverktoeyene hans er tatt ut - se SKOLE_SIDE.
    - Barneskolefagene og timeplanen for 4. trinn, lest ut av
      ukeplanen. Gruppe Skare, og ukeleksene leveres fredag.
    - Neams bakgrunnstekst, skrevet for et barn paa barneskolen.
@@ -3488,16 +3487,18 @@ function fristTekst(frist){
    ukeplanene som PDF - «Uke 35.pdf», «Uke 36.pdf» - og ingen samleside
    slik Roligheden har.
 
-   «HENT FRA NETT» FINNES IKKE HER, og det er ikke glemt. To ting mangler:
-   /api/hent er laast til roligheden.skole.arendal.no og pakker bare ut
-   .docx, og neamStart() i felles-neam.js sender bare BILDER til Neam,
-   ikke dokumenter. Naar begge kan ta PDF, kan knappen komme tilbake -
-   uten omvei om tekst, siden Neam leser PDF direkte.
+   «HENT FRA NETT» gaar til /api/sandnes (11. september 2026), ikke til
+   /api/hent - den er laast til Roligheden og pakker ut .docx. Sandnes
+   sine PDF-er gaar rett til Neam som dokument; han leser dem selv.
 
    Adressene kan ikke regnes ut. En ukeplan ligger paa
      .../sandnesskole/for-elever/4-trinn/~/_f/p78/<guid>/ukeplan-uke-38.pdf
-   og id-en er tilfeldig. En henter maa derfor lese trinnsida og finne
-   lenkene der, slik /api/hent gjoer med Rolighedens liste.
+   og id-en er tilfeldig. /api/sandnes leser derfor trinnsida foerst og
+   finner lenkene der.
+
+   Neam har INGEN verktoey for aa hente selv, slik han har paa Emma dash.
+   Knappen henter og gir ham PDF-en i samme melding som instruksen - et
+   dokument i et verktoeysvar er en form vi ikke har proevd mot API-et.
 
    TRINN = 0 ville betydd ikke satt: da peker «Se paa nett» paa elevsida
    med alle trinnene, og Neam faar ikke noe trinn i bakgrunnsteksten.
@@ -3568,11 +3569,14 @@ const FAG_MERKE = {
   'Samfunnsfag'       : ['samfunnsfag', 410],
   'KRLE'              : ['krle', 408],
   'Kroppsøving'       : ['kroppsoving', 414],
-  'Musikk'            : ['musikk', 410]
-  /* Kunst og haandverk og Mat og helse har ikke merke. De staar IKKE her
-     foer bildet ligger i bilder/fag/: en adresse som blir spurt etter
-     mens fila mangler, husker Cloudflare som forsidens svar - og da maa
-     FAG_MERKE_V oekes for alle merkene naar bildet endelig kommer. */
+  'Musikk'            : ['musikk', 410],
+  /* Kom 11. september 2026, med Andrea dash - Emma har ingen av dem.
+     Nye filnavn som aldri er spurt etter, saa FAG_MERKE_V kunne staa.
+     De maa ligge i bilder/fag/ i SAMME commit som denne linja: en adresse
+     som blir spurt etter mens fila mangler, husker Cloudflare som
+     forsidens svar, og da maa tallet oekes for alle merkene. */
+  'Kunst og håndverk' : ['kunst-og-handverk', 449],
+  'Mat og helse'      : ['mat-og-helse', 449]
 };
 
 /* Versjon paa adressen, av samme grunn som paa CSS og JS: uten den
@@ -5702,10 +5706,11 @@ window.neamBakgrunn = async function(){
     + 'dem. Slå alltid opp med les_fagene eller les_lekser før du svarer på hva '
     + 'hun har - ikke gjett, og ikke svar av hukommelsen fra tidligere i '
     + 'samtalen hvis noe kan ha endret seg siden.\n\n'
-    + 'UKEPLANEN ER EN PDF PÅ SKOLENS SIDE, og du kan IKKE hente den selv. Den '
-    + 'kommer til deg som bilde (tatt med «Skann ark») eller som tekst limt inn. '
-    + 'Blir du bedt om å hente ukeplanen, si at den må skannes eller limes inn '
-    + 'fra Ukeplan-knappen i hjørnet.\n\n'
+    + 'UKEPLANEN ER EN PDF PÅ SKOLENS SIDE. Du kan ikke hente den selv, men '
+    + 'huset kan: «Hent fra nett» under Ukeplan-knappen i hjørnet henter den og '
+    + 'gir den til deg som PDF. Den kan også komme som bilde («Skann ark») eller '
+    + 'som tekst limt inn. Blir du bedt om å hente ukeplanen, vis til Hent fra '
+    + 'nett.\n\n'
     + 'UKEPLANEN HENNES ER BYGGET LIKT HVER UKE:\n'
     + '  - «Ukas mål» øverst er læringsmålene per fag. De går i maal-lista.\n'
     + '  - Tabellen med dagene er timene den uka. Den er ikke lekser.\n'
@@ -5846,10 +5851,15 @@ function menyLeggTil(){
    nivaa ned, under et skolemerke («Roligheden» -> Ukeplan / Timeplan).
    Her finnes ikke noe merke for Sandnes ennaa, og knappemerket skal ikke
    refereres foer fila ligger paa tjeneren - se KNAPP_V i felles-neam.js.
-   Da ble det ett nivaa: de tre veiene inn med ukeplanen, og timeplanen.
+   Da ble det ett nivaa: de fire veiene inn med ukeplanen, og timeplanen.
+   Fem valg legges i kolonner paa to (2-2-1) - se .neam-stabel.bred.
    Kommer et Sandnes-merke, kan de to nivaaene fra Emma dash tas i bruk. */
 function menyUkeplan(){
   neamSideStabel('skraa', [
+    { navn:'Hent ukeplan fra skolens side', tekst:'Hent fra nett', farge:'ny',
+      merke:true, ikon:knappMerke('hent-fra-nett'),
+      gjor: hentUkeplan },
+
     { navn:'Skann ukeplanen med kamera', tekst:'Skann ark', farge:'ny',
       merke:true, ikon:knappMerke('skann-ark'),
       gjor: apneSkann },
@@ -6580,10 +6590,84 @@ function lekseRadIHuske(m){
 }
 
 /* ---------------- Skolens side ----------------
-   skolePlaner(), skoleFil() og hentUkeplan() staar paa Emma dash og er
-   tatt ut her. De snakker med /api/hent, som bare kjenner Roligheden og
-   .docx. Se SKOLE_SIDE for hva som skal til for Sandnes.
+   Hentingen skjer i /api/sandnes, ikke her - kommunen sender ingen
+   CORS-hoder til neam.no. Se SKOLE_SIDE.
+
+   Emma dash lar Neam hente selv med to verktoey. Her henter KNAPPEN, og
+   Neam faar PDF-en i samme melding som instruksen. Resultatet havner i
+   forslagspanelet, samme vei som Skann ark og Lim inn.
    ------------------------------------------------------------ */
+let henterUkeplan = false;
+
+async function sandnesKall(sporring){
+  const r = await fetch('/api/sandnes?' + sporring, {cache:'no-store'});
+  const d = await r.json().catch(function(){ return null; });
+  /* Funksjonen svarer 200 ogsaa naar noe er galt, med {feil}. Et svar som
+     ikke er JSON i det hele tatt er som regel Cloudflares forside - da
+     ligger ikke fila i repoet. */
+  if(!d) throw new Error('Fikk ikke svar fra /api/sandnes (' + r.status + ').');
+  if(d.feil) throw new Error(d.feil);
+  return d;
+}
+
+/* Hvilken ukeplan. Uka Fag-visningen staar paa foerst - fra fredag
+   klokka 18 er det neste uke, som er naar planen for den legges ut.
+   Finnes den ikke ennaa, den nyeste - maalt som «lengst fram i tid» og
+   ikke som hoeyest tall, saa uke 1 slaar uke 52 over nyttaar. */
+function velgUkeplan(planer){
+  const oensket = isoUke(fagDag()).uke;
+  const treff = planer.find(function(l){ return l.uke === oensket; });
+  if(treff) return { plan:treff, oensket:oensket, fant:true };
+  const naa = isoUke(idag0()).uke;
+  const fram = function(u){ return ((u - naa + 26 + 106) % 53) - 26; };
+  const nyeste = planer.slice().sort(function(a, b){ return fram(b.uke) - fram(a.uke); })[0];
+  return { plan:nyeste, oensket:oensket, fant:false };
+}
+
+/* Knappen. */
+async function hentUkeplan(){
+  if(henterUkeplan) return;
+  if(typeof neamStart !== 'function'){
+    varsle('Neam er ikke tilgjengelig på denne siden.');
+    return;
+  }
+  if(!TRINN){
+    varsle('Trinnet er ikke satt, så jeg vet ikke hvilken side ukeplanen ligger på.');
+    return;
+  }
+
+  henterUkeplan = true;
+  let valg, fil;
+  try{
+    const liste = await sandnesKall('hva=liste&trinn=' + TRINN);
+    const planer = (liste.lenker || []).filter(function(l){ return l.uke; });
+    if(!planer.length){
+      throw new Error('Fant ingen ukeplan på siden til ' + TRINN + '. trinn.');
+    }
+    valg = velgUkeplan(planer);
+    fil = await sandnesKall('hva=fil&url=' + encodeURIComponent(valg.plan.url));
+  }catch(e){
+    varsle('Fikk ikke hentet ukeplanen: ' + e.message);
+    return;
+  }finally{
+    henterUkeplan = false;
+  }
+
+  const uke = valg.plan.uke;
+  const innledning =
+      'Dette er ukeplanen «' + (fil.navn || valg.plan.navn) + '» fra skolens side. '
+    + 'Lenken sier uke ' + uke + '. Sjekk at det stemmer med ukenummeret øverst i '
+    + 'planen - spriker de, spør Andrea hvilken som er riktig FØR du legger noe fram.'
+    + (valg.fant ? ''
+        : ' Planen for uke ' + valg.oensket + ' ligger ikke ute ennå, så dette er '
+          + 'den nyeste som finnes. Si det til henne.')
+    + '\n\n';
+
+  await neamStart(innledning + ARK_INSTRUKS, {
+    friskt: true,
+    dokumenter: [{ type:'application/pdf', data:fil.data, navn:fil.navn || valg.plan.navn }]
+  });
+}
 
 /* ---------------- Lekseark inn ----------------
    Teksten gaar til Neam, ikke til en tolk her i sida. Han kan lese en
