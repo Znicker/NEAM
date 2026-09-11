@@ -738,10 +738,18 @@ async function neamKjor(blokk, defer){
 
 /* Appene i huset. Nøklet paa sti, saa knappen for sida man alt
    staar paa kan utelates - en lenke til seg selv er stoey. */
-/* Hvor «Til Dash» gaar. Egen konstant fordi den skal bli individuell per
-   innlogget bruker - da er det denne verdien som utledes, og ingenting
-   annet i fireren trenger aa vite om det. */
-const NEAM_DASH = '/dashboard.html';
+/* Plassen «ved» i venstre firer. HET «Til Dash» og gikk til
+   kjoekkendashen til 11. september 2026 - da ble den Sikkerhet.
+
+   Begrunnelsen for byttet: kjoekkendashen naas fra applista som alle
+   andre sider, mens sikkerhet er det ene man vil naa UTEN aa lete -
+   er doera laast, brenner det. En fast plass i hjoernet er verdt mer
+   der enn paa en side man uansett gaar til med vilje.
+
+   Egen konstant fordi maalet kan bli individuelt per innlogget bruker -
+   da er det denne verdien som utledes, og ingenting annet i fireren
+   trenger aa vite om det. */
+const NEAM_VED = '/sikkerhet.html';
 
 const NEAM_APPER = [
   /* Forsiden staar i lista fra 30. august 2026. Fireren har tre plasser
@@ -763,9 +771,17 @@ const NEAM_APPER = [
      filtreres paa innlogget bruker, hoerer begge hjemme i samme filter.
 
      Andrea kom til 11. september 2026. Med sju apper viser lista seks fra
-     alle sider - fiskebeinet blir 2-2-2. */
+     alle sider - fiskebeinet blir 2-2-2.
+
+     Sikkerhet kom samme kveld. Med aatte apper viser lista sju, og
+     fiskebeinet blir 2-2-2-1 - altsaa ETT NIVAA HOEYERE enn det har
+     vaert. Det er den foerste gangen figuren gaar over tre bjelker, og
+     hoeyden maa sjekkes paa telefon foer neste app legges til: naar
+     toppen naar skjermkanten, maa lista enten filtreres paa innlogget
+     bruker eller faa en annen form. */
   { sti:'/emma.html',        navn:'Emma dash',   ikon:'/bilder/merke-emma-dash.png'   },
-  { sti:'/andrea.html',      navn:'Andrea dash', ikon:'/bilder/merke-andrea-dash.png' }
+  { sti:'/andrea.html',      navn:'Andrea dash', ikon:'/bilder/merke-andrea-dash.png' },
+  { sti:'/sikkerhet.html',   navn:'Sikkerhet',   ikon:'/bilder/merke-sikkerhet.png'   }
 ];
 
 /* Stien til sida, normalisert.
@@ -808,6 +824,7 @@ const NEAM_SIDEMERKE = {
      feil bilde. */
   '/emma'       : { navn:'Emma dash',    ikon:'/bilder/merke-emma-dash.png'    },
   '/andrea'     : { navn:'Andrea dash',  ikon:'/bilder/merke-andrea-dash.png'  },
+  '/sikkerhet'  : { navn:'Sikkerhet',    ikon:'/bilder/merke-sikkerhet.png'    },
   '/'           : { navn:'Neam',         ikon:'/bilder/merke-neam.png'         }
 };
 
@@ -1536,6 +1553,38 @@ function neamVisApper(){
   boks.classList.add('fiskeben');
   boks.style.setProperty('--app-niv', niv.length);
 
+  /* FIGUREN MAA FAA PLASS. Med aatte apper i lista ble fiskebeinet fire
+     nivaaer hoeyt, og paa iPad (merker paa 120px) stakk toppen 46px over
+     skjermkanten - maalt 11. september 2026. Merkene var da uten aa
+     kunne trykkes, og ingenting sa fra.
+
+     I stedet for aa sette et tak paa antall apper, krymper figuren naar
+     den ikke faar plass. Hele boksen skaleres fra BUNNEN MIDT, der
+     stammen gaar ned i knappen, saa festepunktet ikke flytter seg og
+     roerene fortsatt moeter fireren.
+
+     Maalingen gjoeres etter at nivaaene er satt, men foer boksen vises -
+     derfor leses hoeyden av variablene og ikke av getBoundingClientRect:
+     en skjult boks har ingen hoeyde aa maale. */
+  boks.style.transform = '';
+  boks.style.transformOrigin = '';
+  (function(){
+    const stil = getComputedStyle(document.documentElement);
+    const tall = function(n){ return parseFloat(stil.getPropertyValue(n)) || 0; };
+    const A = tall('--f-aapen'), L = tall('--f-luft'), MY = tall('--f-marg-y');
+    if(!A) return;
+    /* Nederste kant av lista, over fireren - samme regnestykke som
+       `bottom` i felles-neam.css. */
+    const under = MY + 2 * A + L + 16;
+    const hoyde = niv.length * A + (niv.length - 1) * L;
+    /* Litt luft til toppen, saa merket ikke klistrer seg til kanten. */
+    const plass = window.innerHeight - under - 12;
+    if(hoyde <= plass) return;
+    const skala = Math.max(0.55, plass / hoyde);
+    boks.style.transformOrigin = '50% 100%';
+    boks.style.transform = 'scale(' + skala.toFixed(3) + ')';
+  })();
+
   /* Merkene plasseres i rutenettet: midtkolonnen for enkeltnivaaene,
      ytterkolonnene for parene. */
   const lenker = Array.prototype.slice.call(boks.querySelectorAll('.neam-app-lenke'));
@@ -1676,7 +1725,11 @@ function neamBygg(){
   firer.innerHTML =
       knapp('neamTLys', 'opp', 'Enheter og lys', knappMerke('enheter'), '', true)
     + knapp('neamTApper', 'skraa', 'Andre apper', knappMerke('apper'), '', true)
-    + knapp('neamTDash', 'ved', 'Til Dash', knappMerke('dash'), '', true);
+    /* INGEN knappMerke() her: merket ville sagt «Dash», og et merke skal
+       si noeyaktig det knappen gjoer. Knappen faller derfor tilbake paa
+       papirskive og tekst til et sikkerhetsmerke er tegnet - det er
+       samme reserve som brukes naar en merkefil mangler. */
+    + knapp('neamTVed', 'ved', 'Sikkerhet', '', 'Sikkerhet', false);
   document.body.appendChild(firer);
 
   /* Applista er sin egen boks utenfor fireren: den er fastposisjonert mot
@@ -1778,11 +1831,9 @@ function neamBygg(){
   document.getElementById('neamLukk').onclick = neamLukk;
   document.getElementById('neamSend').onclick = neamSend;
   document.getElementById('neamNy').onclick   = neamNySamtale;
-  document.getElementById('neamTDash').onclick = function(){
+  document.getElementById('neamTVed').onclick = function(){
     neamFirerNed();
-    /* Fast side inntil videre. Dash skal etter hvert vaere den enkelte
-       brukerens egen - da byttes stien her, ikke knappen. */
-    location.href = NEAM_DASH;
+    location.href = NEAM_VED;
   };
   document.getElementById('neamTApper').onclick = neamVisApper;
   document.getElementById('neamTLys').onclick = neamVisEnheter;
