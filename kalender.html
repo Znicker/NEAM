@@ -1731,7 +1731,10 @@ function standardVisning(){
 }
 
 const S = {
-  token:null, expires:0, refresh:null,
+  /* `oekt` er sant naar tjeneren har en Microsoft-oekt for den som er
+     logget inn i Access. Erstattet `refresh` 11. september 2026 -
+     refresh-tokenet ligger paa tjeneren naa, ikke her. */
+  token:null, expires:0, oekt:false,
   me:null,
   modus:standardVisning(),   /* month | week | day - etter skjermbredde */
   view:new Date(),
@@ -1851,27 +1854,52 @@ async function login(){
   location.href = AUTH_BASE + '/authorize?' + p;
 }
 
+/* ============================================================
+   Vekslingen ligger paa tjeneren - se functions/api/ms.js
+   ------------------------------------------------------------
+   Fram til 11. september 2026 snakket denne fila rett med
+   Microsofts /token. Da var app-registreringen en «Single-page
+   application», og SPA-er faar refresh-tokener som varer i 24
+   timer - en regel hos Microsoft, ikke en innstilling. Alle
+   maatte logge inn hver dag.
+
+   Naa gaar vekslingen gjennom /api/ms, som har klienthemmeligheten.
+   Det gir 90 dager, glidende. Nettleseren ser aldri
+   refresh-tokenet; den faar bare korte access tokens.
+
+   `S.refresh` finnes ikke lenger. Det som avgjoer om vi er
+   innlogget er `S.oekt` - om tjeneren har en oekt for den som er
+   logget inn i Access.
+   ============================================================ */
 async function exchange(body){
-  const base = { client_id: CFG.clientId, redirect_uri: REDIRECT };
-  for(const k in body) base[k] = body[k];
-  const r = await fetch(AUTH_BASE + '/token', {
+  const r = await fetch('/api/ms', {
     method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body: new URLSearchParams(base)
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body),
+    cache:'no-store'
   });
   const txt = await r.text();
   let data;
-  try{ data = JSON.parse(txt); }catch(e){ throw new Error('Uventet svar fra Microsoft'); }
-  if(!r.ok) throw new Error(data.error_description || data.error || 'Innlogging feilet');
+  try{ data = JSON.parse(txt); }catch(e){ throw new Error('Uventet svar fra innloggingen'); }
+  if(!data.ok){
+    const e = new Error(data.feil || 'Innlogging feilet');
+    /* Sier tjeneren at oekta er doed, skal vi til porten - ikke proeve
+       igjen. Ved forbigaaende feil staar oekta, og neste forsoek kan
+       lykkes. */
+    e.maaLoggeInn = !!data.maaLoggeInn;
+    throw e;
+  }
   return data;
 }
 
 function saveTokens(d){
   S.token   = d.access_token;
-  S.refresh = d.refresh_token || S.refresh;
+  S.oekt    = true;
   S.expires = Date.now() + (d.expires_in || 3600)*1000 - 60000;
+  /* Bare access-tokenet lagres, og bare for aa slippe et kall ved
+     hver sidelasting. Det varer en time uansett. */
   try{
-    localStorage.setItem('fh_cal_auth', JSON.stringify({refresh:S.refresh, token:S.token, expires:S.expires}));
+    localStorage.setItem('fh_cal_auth', JSON.stringify({token:S.token, expires:S.expires}));
   }catch(e){}
 }
 function loadTokens(){
@@ -1879,19 +1907,37 @@ function loadTokens(){
     const raw = localStorage.getItem('fh_cal_auth');
     if(!raw) return false;
     const d = JSON.parse(raw);
-    S.token = d.token; S.refresh = d.refresh; S.expires = d.expires || 0;
-    return !!(S.token || S.refresh);
+    /* `d.refresh` kan ligge igjen fra tiden foer 11. september 2026.
+       Den er verdiloes naa og skal ikke leses - den ryddes bort ved
+       foerste lagring. */
+    S.token = d.token || null; S.expires = d.expires || 0;
+    return !!S.token;
   }catch(e){ return false; }
 }
+
+/* Spoer tjeneren om den har en oekt for oss. Kalles ved oppstart naar
+   vi ikke har et brukbart access token liggende. */
+async function harOekt(){
+  try{
+    const r = await fetch('/api/ms', {cache:'no-store'});
+    const d = await r.json();
+    return !!(d && d.oekt);
+  }catch(e){ return false; }
+}
+
 let fornyelsePågår = null;
 async function gyldigToken(){
   if(S.token && Date.now() < S.expires) return S.token;
-  if(!S.refresh) return null;
+  if(!S.oekt) return null;
   /* Flere kalendere kan be om token samtidig — gjenbruk samme
      fornyelse i stedet for å sende flere refresh-kall parallelt. */
   if(!fornyelsePågår){
-    fornyelsePågår = exchange({grant_type:'refresh_token', refresh_token:S.refresh, scope:CFG.scopes})
+    fornyelsePågår = exchange({hva:'forny', redirect:REDIRECT})
       .then(function(d){ saveTokens(d); return S.token; })
+      .catch(function(e){
+        if(e.maaLoggeInn){ S.oekt = false; S.token = null; S.expires = 0; }
+        throw e;
+      })
       .finally(function(){ fornyelsePågår = null; });
   }
   return fornyelsePågår;
@@ -1905,7 +1951,7 @@ function nullstillLokalt(){
      alt. Ryddes her, ikke bare ved neste innlasting. */
   try{ localStorage.removeItem(CACHE_KEY); }catch(_){}
   sessionStorage.clear();
-  S.token = null; S.refresh = null; S.me = null; S.expires = 0;
+  S.token = null; S.oekt = false; S.me = null; S.expires = 0;
   S.calendars = []; S.events = [];
   settFull(false);
   render();
@@ -1917,6 +1963,11 @@ function nullstillLokalt(){
    URL-en maa vaere registrert i Azure. I stedet returnerer vi til vaar
    egen side, som allerede er registrert, og tar Access-utloggingen der. */
 function loggUt(){
+  /* Oekta paa tjeneren maa glemmes ogsaa - ellers ville neste person
+     paa samme maskin arvet den. Vi venter ikke paa svaret; utloggingen
+     skal ikke kunne henge fordi et kall er tregt. */
+  try{ fetch('/api/ms', {method:'POST', headers:{'Content-Type':'application/json'},
+                         body: JSON.stringify({hva:'ut'})}); }catch(e){}
   nullstillLokalt();
   try{ localStorage.removeItem('fh_navn'); }catch(_){}
   const el = $('brandNavn');
@@ -1935,7 +1986,7 @@ function settFull(på){
     const bilde = logo.querySelector('img');
     if(kilde && bilde && !bilde.getAttribute('src')) bilde.src = kilde.src;
   }
-  if(S.token || S.refresh) render();   /* la kalenderen fylle den nye bredden */
+  if(S.token || S.oekt) render();   /* la kalenderen fylle den nye bredden */
 }
 function toggleFull(){
   settFull(!document.querySelector('.shell').classList.contains('fullscreen'));
@@ -2138,10 +2189,7 @@ async function hentVindu(a, b, bare){
       /* Graph gir maks noen hundre av gangen. Uten aa foelge nextLink
          ble eldre avtaler klipt bort naar vinduet vokste, og lista saa
          ut til aa stoppe paa en tilfeldig dato. */
-      /* enc(): id-en er Microsofts, ikke vaar, og et skilletegn i den
-         ville delt opp stien. Se avtaleSti() i felles-graph.js - alle
-         andre Graph-stier i huset gaar gjennom den. */
-      let sti = '/me/calendars/' + enc(c.id) + '/calendarView' + q;
+      let sti = '/me/calendars/' + c.id + '/calendarView' + q;
       let raa = [];
       for(let side = 0; side < 25 && sti; side++){
         const d = await graph(sti);
@@ -2927,7 +2975,7 @@ document.addEventListener('click', function(ev){
      !(btn && btn.contains(ev.target))) p.hidden = true;
 });
 function render(){
-  const inn = !!(S.token || S.refresh);
+  const inn = !!(S.token || S.oekt);
   $('gate').hidden = inn;
   $('app').hidden  = !inn;
   /* Skjult inntil identiteten er lest, ikke synlig inntil den er
@@ -3109,14 +3157,14 @@ function sjekkSnu(){
   if(!el) return;
   const staaende = window.matchMedia('(max-width:560px) and (orientation:portrait)').matches;
   const trengerBredde = (S.vis !== 'liste') && (S.modus === 'month' || S.modus === 'week');
-  el.hidden = !(staaende && trengerBredde && (S.token || S.refresh));
+  el.hidden = !(staaende && trengerBredde && (S.token || S.oekt));
 }
 
 window.addEventListener('orientationchange', function(){ setTimeout(sjekkSnu, 120); });
 window.addEventListener('resize', sjekkSnu);
 
 function oppdaterBlapiler(){
-  const vis = !!(S.token || S.refresh) && S.vis !== 'liste';
+  const vis = !!(S.token || S.oekt) && S.vis !== 'liste';
   ['blaFor', 'blaNeste'].forEach(function(id){
     const el = $(id);
     if(el) el.hidden = !vis;
@@ -3177,7 +3225,7 @@ function visLaster(paa, straks, mild){
 }
 
 async function last(force){
-  if(!(S.token || S.refresh)) return;
+  if(!(S.token || S.oekt)) return;
   if(S.loading){ S.ventende = S.ventende || force; return; }   /* slå sammen kall */
   /* Merket vises bare naar noe faktisk maa hentes over nett. Ligger
      alt i cachen fra foer, gaar det saa fort at et merke bare blinker. */
@@ -5031,7 +5079,7 @@ function lukkDagMeny(){
    liggende visning staaende og dyttet toppen ut av stilling. */
 let rzTimer;
 function etterEndring(){
-  if(!(S.token || S.refresh)) return;
+  if(!(S.token || S.oekt)) return;
   renderHurtigKal();
   fyllAvtaler();
 }
@@ -5088,10 +5136,10 @@ window.addEventListener('orientationchange', function(){
     }
     try{
       const d = await exchange({
-        grant_type:'authorization_code',
+        hva:'kode',
         code:q.get('code'),
-        code_verifier:verifier,
-        scope:CFG.scopes
+        verifier:verifier,
+        redirect:REDIRECT
       });
       saveTokens(d);
       sessionStorage.removeItem('fh_verifier');
@@ -5102,7 +5150,14 @@ window.addEventListener('orientationchange', function(){
       return;
     }
   } else {
-    loadTokens();
+    /* Et access token som lever gjoer at skjermen fylles med én gang.
+       Ellers spoer vi tjeneren om den har en oekt - da fornyes tokenet
+       i bakgrunnen i stedet for at porten vises. */
+    if(!loadTokens() || Date.now() >= S.expires){
+      S.oekt = await harOekt();
+    }else{
+      S.oekt = true;
+    }
   }
 
   /* Access-identiteten er uavhengig av Microsoft-tokenet, så navnet under
@@ -5110,7 +5165,7 @@ window.addEventListener('orientationchange', function(){
   const identitet = hentIdentitet();
 
   render();
-  if(S.token || S.refresh){
+  if(S.token || S.oekt){
     /* Vis det vi hadde sist med én gang. Da staar ikke appen tom mens
        Microsoft svarer - og oppfriskningen skjer stille i bakgrunnen. */
     const harLokalt = lesLokalt();
