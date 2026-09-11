@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mattespill">
+<meta name="theme-color" content="#F5F5F5">
+<meta name="robots" content="noindex, nofollow">
+<title>Mattespill – Neam</title>
+<link rel="apple-touch-icon" href="/bilder/neam-robot.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/felles-rot.css?v=5">
+<link rel="stylesheet" href="/felles-dialog.css?v=1">
+<style>
+/* ============================================================
+   NEAM – Mattespill for Andrea
+   Laget 11. september 2026. Lenket fra Andrea dash.
+
+   Neam er nesten tom for stroem og staar i den ene enden av et
+   messingroer. Laderen staar i den andre. Hvert riktige svar
+   flytter ham ett skritt; et galt svar flytter ham ingenting.
+   Hvor langt han kom er stjernene.
+
+   Tre visninger paa én side: oppsett, spill og resultat. Scenen
+   med roboten er felles for alle tre - det er samme robot som
+   venter, gaar og kommer fram.
+
+   HVORFOR NEAM-HJOERNET IKKE ER HER: paa telefon ville haandtaket
+   staatt oppaa tastaturet, og samtalen er en rask vei til svaret.
+   Veien ut er merket oppe til venstre og sveip tilbake, som paa
+   de andre sidene.
+   ============================================================ */
+
+:root{
+  /* Messing - kontur og ramme, aldri fylt flate. */
+  --messing:#B8873A;
+  --messing-moerk:#8A6428;
+  /* Lyset i lampene og stjernene. Samme gule tre steder: lampa som
+     tennes naar han gaar forbi, svaret som var riktig og stjernene
+     paa slutten. Det er én betydning - "det der gikk bra". */
+  --lys:#F2C14E;
+  --lys-glod:rgba(242,193,78,.75);
+  --metall:#E6E1D6;
+  --metall-moerk:#C9C2B4;
+  --robot-rod:#A64D3C;
+
+  /* Scenen, telefon foerst. */
+  --kant:16px;
+  --robot-h:74px;
+  --lader-h:82px;
+  --ror-h:16px;
+  --lampe:12px;
+  --boble-plass:66px;
+  --robot-w:calc(var(--robot-h) * .806);
+  --lader-w:calc(var(--lader-h) * .583);
+
+  --tast-h:62px;
+  --tast-w:min(29vw, 104px);
+  --stykke:44px;
+}
+@media(min-width:700px) and (min-height:600px){
+  :root{
+    --kant:28px;
+    --robot-h:138px; --lader-h:148px; --ror-h:24px; --lampe:18px;
+    --boble-plass:72px;
+    --tast-h:74px; --tast-w:104px; --stykke:84px;
+  }
+}
+@media(min-width:1300px) and (min-height:600px){
+  :root{
+    --kant:40px;
+    --robot-h:144px; --lader-h:154px; --ror-h:24px; --lampe:18px;
+    --boble-plass:72px;
+    --tast-h:72px; --tast-w:104px; --stykke:84px;
+  }
+}
+/* iPad staaende har mye hoeyde og stabler alt. Tastaturet og roboten
+   faar bruke den - ellers staar halve skjermen tom under et lite
+   tastatur. */
+@media(min-width:700px) and (min-height:1000px) and (orientation:portrait){
+  :root{
+    --robot-h:168px; --lader-h:178px; --ror-h:26px; --lampe:20px;
+    --tast-h:96px; --tast-w:140px; --stykke:108px;
+  }
+}
+/* Korte skjermer (SE, iPad med tastatur paa tvers): tastaturet
+   krymper foer noe annet. */
+@media(max-height:640px){
+  :root{ --tast-h:52px; --boble-plass:58px; --stykke:42px; }
+}
+
+*{ box-sizing:border-box; }
+[hidden]{ display:none !important; }
+html, body{ margin:0; }
+body{
+  font-family:'Archivo', system-ui, -apple-system, sans-serif;
+  color:var(--ink);
+  background:var(--side-bakgrunn);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+button{
+  font-family:inherit; color:inherit;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  cursor:pointer;
+}
+button:focus-visible, a:focus-visible{
+  outline:3px solid var(--aksent); outline-offset:2px;
+}
+
+/* Klippet vannrett: roboten gaar tilbake fra laderen ved «Spill igjen»,
+   og boblen er alt plassert for der han skal - et oeyeblikk stikker den
+   utenfor. overflow-x paa body alene stopper ikke sideveis rulling i
+   iOS Safari. `clip` lager ingen rullebeholder; `hidden` er reserven. */
+.side{
+  overflow-x:hidden; overflow-x:clip;
+  min-height:100vh; min-height:100dvh;
+  max-width:1240px; margin:0 auto;
+  display:flex; flex-direction:column; gap:14px;
+  padding:max(14px, env(safe-area-inset-top)) var(--kant)
+          calc(20px + env(safe-area-inset-bottom));
+}
+
+/* ---------- Toppen ---------- */
+.topp{ display:flex; align-items:center; gap:14px; }
+.merke{ flex-shrink:0; display:block; width:64px; height:64px; }
+.merke img{ width:100%; height:100%; object-fit:contain; display:block; }
+.tittel{
+  margin:0; font-size:clamp(26px, 4.2vw, 44px); font-weight:700;
+  line-height:1.05; letter-spacing:-.01em;
+}
+.ingress{
+  margin:6px 0 0; max-width:54ch;
+  font-size:var(--t-brod); line-height:1.45; color:var(--ink-soft); font-weight:600;
+}
+@media(min-width:700px){ .merke{ width:96px; height:96px; } }
+/* Under spillet trengs hoeyden til tastaturet. */
+body.spiller .topp{ display:none; }
+
+/* ---------- Scenen ---------- */
+.scene{
+  position:relative; flex-shrink:0;
+  height:calc(var(--boble-plass) + var(--robot-h) + var(--ror-h));
+}
+/* Roeret kommer inn fra skjermkanten og ender i laderen. Samme glatte
+   roer som fireren - bildet flislagt, med messingfarge under saa et
+   bilde som ikke laster koster tekstur og ikke synlighet. */
+.ror{
+  position:absolute; bottom:0;
+  left:calc(-1 * var(--kant) - 20px);
+  right:calc(var(--lader-w) / 2);
+  height:var(--ror-h);
+  background-color:var(--messing);
+  background-image:url('/bilder/deler/ror-glatt.png?v=2');
+  background-size:auto 100%; background-repeat:repeat-x;
+  box-shadow:0 2px 5px rgba(44,62,80,.34);
+}
+.lamper{ position:absolute; inset:0; pointer-events:none; }
+/* Lampene sitter i roeret, én per skritt. Samme regnestykke for
+   plasseringen som roboten, saa han staar alltid midt over sin. */
+.lampe{
+  position:absolute;
+  bottom:calc((var(--ror-h) - var(--lampe)) / 2);
+  left:calc(var(--x) * (100% - var(--lader-w) - var(--robot-w)) + var(--robot-w) / 2);
+  width:var(--lampe); height:var(--lampe); margin-left:calc(var(--lampe) / -2);
+  border-radius:50%;
+  background:#6E7883;
+  box-shadow:0 0 0 2px var(--messing-moerk), inset 0 2px 3px rgba(0,0,0,.35);
+  transition:background .3s ease, box-shadow .3s ease;
+}
+.lampe.tent{
+  background:var(--lys);
+  box-shadow:0 0 0 2px var(--messing-moerk), 0 0 12px 3px var(--lys-glod);
+}
+
+.lader{
+  position:absolute; right:0; bottom:calc(var(--ror-h) * .35);
+  width:var(--lader-w); height:var(--lader-h);
+}
+.lader svg{ width:100%; height:100%; display:block; overflow:visible; }
+.l-kasse{ fill:var(--paper); stroke:var(--messing-moerk); stroke-width:3; }
+.l-vindu{ fill:#EDE6D9; stroke:var(--messing); stroke-width:2; }
+.l-lyn{ fill:var(--metall-moerk); stroke:#5A6C7D; stroke-width:1.6; stroke-linejoin:round;
+        transition:fill .4s ease; }
+.l-lampe{ fill:#6E7883; stroke:var(--messing-moerk); stroke-width:2; transition:fill .4s ease; }
+.l-fot{ fill:var(--metall-moerk); stroke:var(--messing-moerk); stroke-width:2; }
+.lader.fulladet .l-lyn{ fill:var(--lys); filter:drop-shadow(0 0 5px var(--lys-glod)); }
+.lader.fulladet .l-lampe{ fill:var(--lys); }
+
+.robot{
+  position:absolute; bottom:calc(var(--ror-h) - 3px);
+  left:calc(var(--x, 0) * (100% - var(--lader-w) - var(--robot-w)));
+  width:var(--robot-w); height:var(--robot-h);
+  transition:left .7s cubic-bezier(.45,.05,.3,1);
+  z-index:2;
+}
+.robot-kropp{ width:100%; height:100%; transform-origin:50% 100%; }
+.robot svg{ width:100%; height:100%; display:block; overflow:visible; }
+.r-metall{ fill:var(--metall); stroke:var(--ink); stroke-width:2.6; stroke-linejoin:round; }
+.r-metall-m{ fill:var(--metall-moerk); stroke:var(--ink); stroke-width:2.4; }
+.r-visir{ fill:#D3CCBE; stroke:var(--ink); stroke-width:2; }
+.r-oye-bunn{ fill:#6F5E5A; stroke:var(--ink); stroke-width:1.8; }
+/* Oeynene lyser sterkere jo lenger han har kommet. --kraft settes
+   fra JS, 0 til 1. */
+.r-oye{ fill:#D9573F; opacity:calc(.25 + var(--kraft, 0) * .75); transition:opacity .6s ease; }
+.r-pupill{ fill:var(--ink); }
+.r-rod{ fill:var(--robot-rod); stroke:var(--ink); stroke-width:2; }
+.r-n{ fill:none; stroke:var(--robot-rod); stroke-width:4.5; stroke-linejoin:round; stroke-linecap:round; }
+.r-strek{ fill:none; stroke:var(--ink); stroke-width:1.6; stroke-linecap:round; }
+.r-antenne{ fill:var(--robot-rod); stroke:var(--ink); stroke-width:2; }
+
+.robot.gaar .robot-kropp{ animation:gaa .7s ease-in-out; }
+@keyframes gaa{
+  0%,100%{ transform:translateY(0) rotate(0); }
+  25%{ transform:translateY(-5px) rotate(-3deg); }
+  50%{ transform:translateY(0) rotate(0); }
+  75%{ transform:translateY(-5px) rotate(3deg); }
+}
+.robot.rister .robot-kropp{ animation:rist .5s ease-in-out; }
+@keyframes rist{
+  0%,100%{ transform:rotate(0); }
+  20%{ transform:rotate(-5deg); } 40%{ transform:rotate(4deg); }
+  60%{ transform:rotate(-3deg); } 80%{ transform:rotate(2deg); }
+}
+.robot.jubler .robot-kropp{ animation:jubel .9s ease-in-out 2; }
+@keyframes jubel{
+  0%,100%{ transform:translateY(0) scale(1); }
+  30%{ transform:translateY(-16px) scale(1.04); }
+  55%{ transform:translateY(0) scale(.97,1.03); }
+}
+
+/* Snakkeboblen staar ved siden av hodet og foelger roboten. Siden og
+   bredden regnes ut i plasserBoble() - den tar den siden av roboten der
+   det er mest plass, og blir aldri bredere enn det som er igjen til
+   kanten. Over hodet var ikke et alternativ: tre linjer tekst der ville
+   krevd en scene dobbelt saa hoey. */
+.boble{
+  position:absolute; bottom:calc(var(--robot-h) * .42);
+  left:calc(100% + 10px);
+  width:max-content; max-width:min(320px, 60vw);
+  padding:10px 14px;
+  background:var(--paper); color:var(--ink);
+  border:2px solid var(--messing); border-radius:16px;
+  font-size:var(--t-brod); font-weight:600; line-height:1.35;
+  box-shadow:var(--shadow);
+}
+.boble::after{
+  content:''; position:absolute; bottom:14px; left:-8px;
+  width:14px; height:14px;
+  background:var(--paper);
+  border-left:2px solid var(--messing); border-bottom:2px solid var(--messing);
+  transform:rotate(45deg);
+}
+.robot.til-venstre .boble{ left:auto; right:calc(100% + 10px); }
+.robot.til-venstre .boble::after{
+  left:auto; right:-8px; border-left:none; border-bottom:none;
+  border-right:2px solid var(--messing); border-top:2px solid var(--messing);
+}
+.boble:empty{ display:none; }
+
+/* ---------- Flata under scenen ---------- */
+.flate{ display:flex; flex-direction:column; gap:14px; }
+@media(min-width:900px){
+  .flate{
+    display:grid; grid-template-columns:minmax(0,1.45fr) minmax(280px,1fr);
+    gap:18px; align-items:start;
+  }
+  body.spiller .flate{ grid-template-columns:1fr; }
+}
+body.spiller .rekorder{ display:none; }
+
+.kort{
+  background:var(--paper); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:18px 20px;
+}
+@media(min-width:700px){ .kort{ padding:22px 26px; } }
+
+.kort-h{
+  margin:0 0 12px; font-size:var(--t-stor); font-weight:700; line-height:1.2;
+}
+.kort-h + .kort-h, .bolk + .kort-h{ margin-top:22px; }
+.hjelp{ margin:0 0 10px; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+
+/* ---------- Valgene ---------- */
+.valg{
+  background:var(--paper); border:1px solid var(--line); border-radius:14px;
+  color:var(--ink); font-weight:700;
+  transition:background .15s ease, border-color .15s ease;
+}
+.valg:active{ transform:scale(.97); }
+.valg[aria-pressed="true"], .valg[aria-checked="true"]{
+  background:var(--aksent-lys); border-color:var(--aksent);
+  box-shadow:inset 0 0 0 1px var(--aksent);
+}
+
+.arter{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; }
+.art{
+  min-height:84px; padding:10px 6px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  font-size:var(--t-brod);
+}
+.art-tegn{ font-size:34px; line-height:1; font-weight:700; height:34px;
+            display:flex; align-items:center; }
+/* Halvhoeyt punktum er for lite som glyf selv i 34px - tegnes. */
+.prikk{ width:10px; height:10px; border-radius:50%; background:currentColor; }
+
+.bolk{ margin-top:16px; }
+.tabeller{ display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
+.tabell{
+  min-height:52px; font-size:22px; font-variant-numeric:tabular-nums;
+}
+.tabeller-snarvei{
+  margin-top:10px; border:none; background:transparent; padding:6px 2px;
+  font-size:var(--t-meta); font-weight:700; color:var(--aksent);
+}
+
+.nivaer{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; }
+.niva{
+  min-height:76px; padding:10px 4px; text-align:center;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+}
+.niva-navn{ font-size:clamp(16px, 4.4vw, 20px); }
+.niva-sub{ font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); line-height:1.3; }
+
+.start-rad{ margin-top:22px; }
+.start-hint{
+  margin:0 0 10px; min-height:1.3em;
+  font-size:var(--t-meta); font-weight:600; color:var(--ink-soft);
+}
+.knapp-blaa, .knapp-noytral{
+  border-radius:999px; font-weight:700; font-size:var(--t-stor);
+  padding:16px 24px; letter-spacing:.01em;
+}
+.knapp-blaa{ background:var(--aksent); color:#FFFFFF; border:1px solid var(--aksent); }
+.knapp-blaa:active{ background:var(--aksent-moerk); }
+.knapp-blaa:disabled{ background:var(--paper-soft); color:var(--ink-soft); border-color:var(--line); cursor:default; }
+.knapp-noytral{ background:var(--paper); color:var(--ink); border:1px solid var(--line); }
+.knapp-noytral:active{ background:var(--paper-soft); }
+.start-knapp{ width:100%; min-height:64px; font-size:24px; }
+
+/* ---------- Spillet ---------- */
+.spill{ display:flex; flex-direction:column; gap:10px; }
+.spill-topp{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.teller{ font-size:var(--t-brod); font-weight:700; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+.avslutt{
+  border:1px solid var(--line); background:var(--paper); border-radius:999px;
+  padding:8px 16px; font-size:var(--t-meta); font-weight:700; color:var(--ink-soft);
+}
+.spill-inn{ display:flex; flex-direction:column; align-items:center; gap:14px; }
+@media(min-width:900px) and (min-aspect-ratio:5/4){
+  .spill-inn{ flex-direction:row; justify-content:space-around; align-items:center; }
+}
+.oppgave{
+  display:flex; align-items:center; justify-content:center; flex-wrap:nowrap;
+  gap:.22em; font-size:min(var(--stykke), 11vw); font-weight:700; line-height:1;
+  font-variant-numeric:tabular-nums; white-space:nowrap;
+  min-height:calc(var(--stykke) * 1.6);
+}
+.oppgave.ny{ animation:inn .25s ease-out; }
+@keyframes inn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+.svar-boks{
+  display:inline-flex; align-items:center; justify-content:center; gap:.18em;
+  min-width:2.1em; height:1.3em; padding:0 .18em;
+  background:#FFFFFF; border:3px solid var(--messing); border-radius:.2em;
+  transition:box-shadow .25s ease, border-color .25s ease;
+}
+.svar-boks.tom::after{
+  content:''; width:3px; height:.8em; background:var(--ink-soft);
+  animation:blink 1.1s steps(1) infinite;
+}
+@keyframes blink{ 50%{ opacity:0; } }
+.svar-boks.riktig{ border-color:var(--messing-moerk); box-shadow:0 0 0 4px var(--lys), 0 0 18px 6px var(--lys-glod); }
+/* Galt svar: det hun skrev staar igjen, strøket og lite, og det
+   riktige ved siden av. Ikke roedt - roedt betyr slett her i huset,
+   og det skal ikke kjennes som straff aa regne feil. */
+.svar-boks.feil{ border-color:var(--ink-soft); }
+.svar-feil{ font-size:.5em; color:var(--ink-soft); text-decoration:line-through; text-decoration-thickness:3px; }
+.svar-boks.rister{ animation:boksrist .35s ease-in-out; }
+@keyframes boksrist{ 25%{ transform:translateX(-6px); } 75%{ transform:translateX(6px); } }
+
+.tastatur{
+  display:grid; grid-template-columns:repeat(3, var(--tast-w));
+  grid-auto-rows:var(--tast-h); gap:9px;
+}
+.tast{
+  border:1px solid var(--line); background:#FFFFFF; border-radius:16px;
+  font-size:calc(var(--tast-h) * .44); font-weight:700; font-variant-numeric:tabular-nums;
+  box-shadow:0 2px 0 var(--line);
+  display:flex; align-items:center; justify-content:center;
+}
+.tast:active{ transform:translateY(2px); box-shadow:none; background:var(--paper-soft); }
+.tast:disabled{ opacity:.4; cursor:default; }
+.tast-slett svg{ width:.9em; height:.9em; }
+.tast-svar{
+  background:var(--aksent); color:#FFFFFF; border-color:var(--aksent);
+  box-shadow:0 2px 0 var(--aksent-moerk); font-size:calc(var(--tast-h) * .32);
+}
+.tast-svar:active{ background:var(--aksent-moerk); }
+
+/* ---------- Resultatet ---------- */
+.resultat{ text-align:center; }
+.stjerner{ display:flex; justify-content:center; gap:6px; margin:4px 0 10px; }
+.stjerne{ width:clamp(44px, 11vw, 64px); height:clamp(44px, 11vw, 64px); }
+.stjerne path{ fill:var(--paper-soft); stroke:var(--line); stroke-width:1.5; stroke-linejoin:round; }
+.stjerne.fylt path{ fill:var(--lys); stroke:var(--messing-moerk); }
+.stjerner.vis .stjerne{ animation:stjerne .45s cubic-bezier(.3,1.6,.5,1) both; animation-delay:calc(var(--i) * .14s); }
+@keyframes stjerne{ from{ transform:scale(0) rotate(-40deg); opacity:0; } to{ transform:none; opacity:1; } }
+.poeng{ margin:0; font-size:28px; font-weight:700; font-variant-numeric:tabular-nums; }
+.rekord-melding{
+  display:inline-block; margin:12px 0 0; padding:7px 16px; border-radius:999px;
+  border:2px solid var(--messing); background:#FFF6DD;
+  font-size:var(--t-brod); font-weight:700;
+}
+.ov{ margin:20px auto 0; max-width:420px; text-align:left; }
+.ov-h{ margin:0 0 8px; font-size:var(--t-brod); font-weight:700; }
+.ov-liste{ list-style:none; margin:0; padding:0; display:grid; gap:6px; }
+.ov-liste li{
+  display:flex; justify-content:space-between; gap:12px; align-items:baseline;
+  padding:9px 12px; border-radius:10px; background:var(--boks-mild);
+  font-size:var(--t-brod); font-weight:600; font-variant-numeric:tabular-nums;
+}
+.ov-stykke{ font-weight:700; }
+.ov-du{ color:var(--ink-soft); font-size:var(--t-meta); }
+.lagring{ margin:14px 0 0; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.knapperad{ display:flex; gap:10px; justify-content:center; margin-top:22px; flex-wrap:wrap; }
+/* Deler bredden likt, saa de to staar paa én linje ogsaa paa telefon. */
+.knapperad button{ flex:1 1 0; max-width:220px; padding-left:14px; padding-right:14px; }
+
+/* ---------- Rekordene ---------- */
+.niva-rekorder{ list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.nr{
+  display:grid; grid-template-columns:auto 1fr; gap:2px 12px; align-items:center;
+  padding:10px 12px; border-radius:12px; background:var(--boks-mild);
+}
+.nr-navn{ font-weight:700; font-size:var(--t-brod); }
+.nr-stjerner{ grid-row:span 2; display:flex; gap:2px; }
+.nr-detalj{ grid-column:2; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.mini{ width:20px; height:20px; }
+.mini path{ fill:#FFFFFF; stroke:var(--line); stroke-width:1.6; stroke-linejoin:round; }
+.mini.fylt path{ fill:var(--lys); stroke:var(--messing-moerk); }
+.samlet{ margin:12px 0 0; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.siste{ list-style:none; margin:0; padding:0; }
+.siste li{
+  display:grid; grid-template-columns:auto 1fr; gap:1px 12px; align-items:center;
+  padding:9px 0; border-bottom:1px solid var(--line);
+}
+.siste li:last-child{ border-bottom:none; }
+.siste li.ny{ background:#FFF6DD; margin:0 -10px; padding:9px 10px; border-radius:10px; border-bottom-color:transparent; }
+.s-stjerner{ grid-row:span 2; display:flex; gap:1px; }
+.s-stjerner .mini{ width:16px; height:16px; }
+.s-topp{ font-size:var(--t-brod); font-weight:700; font-variant-numeric:tabular-nums; }
+.s-under{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.tom{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; margin:0; }
+
+@media(prefers-reduced-motion:reduce){
+  *, *::before, *::after{ animation:none !important; transition:none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="side">
+
+  <header class="topp">
+    <a class="merke" href="/andrea.html" aria-label="Til Andrea dash">
+      <img src="/bilder/merke-andrea-dash.png?v=2" alt="Andrea dash" width="512" height="517">
+    </a>
+    <div>
+      <h1 class="tittel">Hjelp Neam hjem</h1>
+      <p class="ingress">Hvert riktige svar gir Neam kraft til ett skritt mot laderen.</p>
+    </div>
+  </header>
+
+  <section class="scene" id="scene">
+    <div class="ror" aria-hidden="true"></div>
+    <div class="lamper" id="lamper" aria-hidden="true"></div>
+
+    <div class="lader" id="lader" aria-hidden="true">
+      <svg viewBox="0 0 70 120">
+        <rect x="24" y="4" width="22" height="12" rx="3" class="l-kasse"/>
+        <rect x="7" y="13" width="56" height="99" rx="9" class="l-kasse"/>
+        <rect x="16" y="23" width="38" height="48" rx="6" class="l-vindu"/>
+        <path d="M39 27 L24 51 H34 L30 67 L47 42 H37 Z" class="l-lyn"/>
+        <circle cx="35" cy="87" r="8" class="l-lampe"/>
+        <rect x="18" y="104" width="34" height="8" rx="3" class="l-fot"/>
+      </svg>
+    </div>
+
+    <div class="robot" id="robot">
+      <div class="boble" id="boble" role="status" aria-live="polite"></div>
+      <div class="robot-kropp" aria-hidden="true">
+        <svg viewBox="0 0 100 124">
+          <line x1="50" y1="11" x2="50" y2="22" class="r-strek" style="stroke-width:3"/>
+          <circle cx="50" cy="8" r="5.5" class="r-antenne"/>
+          <rect x="14" y="32" width="9" height="18" rx="3" class="r-rod"/>
+          <rect x="77" y="32" width="9" height="18" rx="3" class="r-rod"/>
+          <rect x="21" y="21" width="58" height="42" rx="9" class="r-metall"/>
+          <rect x="29" y="28" width="42" height="20" rx="6" class="r-visir"/>
+          <circle cx="40" cy="38" r="6.5" class="r-oye-bunn"/>
+          <circle cx="60" cy="38" r="6.5" class="r-oye-bunn"/>
+          <circle cx="40" cy="38" r="5.4" class="r-oye"/>
+          <circle cx="60" cy="38" r="5.4" class="r-oye"/>
+          <circle cx="40" cy="38" r="2.3" class="r-pupill"/>
+          <circle cx="60" cy="38" r="2.3" class="r-pupill"/>
+          <rect x="37" y="52" width="26" height="6" rx="1.5" class="r-metall-m" style="stroke-width:1.8"/>
+          <path d="M42 52v6M46.5 52v6M51 52v6M55.5 52v6" class="r-strek"/>
+          <rect x="43" y="62" width="14" height="7" class="r-metall-m"/>
+          <rect x="7" y="72" width="12" height="30" rx="6" class="r-metall"/>
+          <rect x="81" y="72" width="12" height="30" rx="6" class="r-metall"/>
+          <rect x="19" y="68" width="62" height="40" rx="8" class="r-metall"/>
+          <path d="M31 98 V78 L44 98 V78" class="r-n"/>
+          <path d="M54 80 H71 M54 87 H68 M54 94 H71" class="r-strek" style="stroke-width:2.4"/>
+          <rect x="31" y="107" width="12" height="11" class="r-metall-m"/>
+          <rect x="57" y="107" width="12" height="11" class="r-metall-m"/>
+          <rect x="26" y="116" width="20" height="7" rx="3.5" class="r-metall-m"/>
+          <rect x="54" y="116" width="20" height="7" rx="3.5" class="r-metall-m"/>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <main class="flate">
+
+    <!-- ===== Oppsett ===== -->
+    <section class="kort oppsett" id="oppsett" aria-label="Velg oppgaver">
+      <h2 class="kort-h">Hva vil du regne?</h2>
+      <div class="arter" role="group" aria-label="Regneart">
+        <button type="button" class="valg art" data-art="pluss" aria-pressed="false">
+          <span class="art-tegn" aria-hidden="true">+</span><span>Pluss</span></button>
+        <button type="button" class="valg art" data-art="minus" aria-pressed="false">
+          <span class="art-tegn" aria-hidden="true">−</span><span>Minus</span></button>
+        <button type="button" class="valg art" data-art="gange" aria-pressed="false">
+          <span class="art-tegn" aria-hidden="true"><span class="prikk"></span></span><span>Ganging</span></button>
+      </div>
+
+      <div class="bolk" id="tabellerBolk" hidden>
+        <h3 class="kort-h" style="font-size:var(--t-brod);margin-bottom:4px">Hvilke gangetabeller?</h3>
+        <p class="hjelp">Hver tabell går fra 1 til 10, uansett hvor vanskelig du velger.</p>
+        <div class="tabeller" id="tabeller" role="group" aria-label="Gangetabeller"></div>
+        <button type="button" class="tabeller-snarvei" id="alleTabeller">Velg alle</button>
+      </div>
+
+      <h2 class="kort-h" style="margin-top:22px">Hvor vanskelig?</h2>
+      <div class="nivaer" id="nivaer" role="radiogroup" aria-label="Vanskelighet"></div>
+
+      <div class="start-rad">
+        <p class="start-hint" id="startHint" aria-live="polite"></p>
+        <button type="button" class="knapp-blaa start-knapp" id="startKnapp">Start</button>
+      </div>
+    </section>
+
+    <!-- ===== Spillet ===== -->
+    <section class="kort spill" id="spill" hidden aria-label="Oppgaver">
+      <div class="spill-topp">
+        <span class="teller" id="teller"></span>
+        <button type="button" class="avslutt" id="avsluttKnapp">Avslutt</button>
+      </div>
+      <div class="spill-inn">
+        <div class="oppgave" id="oppgave">
+          <span id="stykke"></span><span aria-hidden="true">=</span>
+          <span class="svar-boks tom" id="svarBoks" aria-label="Ditt svar"></span>
+        </div>
+        <div class="tastatur" id="tastatur" role="group" aria-label="Tall">
+          <button type="button" class="tast" data-tall="1">1</button>
+          <button type="button" class="tast" data-tall="2">2</button>
+          <button type="button" class="tast" data-tall="3">3</button>
+          <button type="button" class="tast" data-tall="4">4</button>
+          <button type="button" class="tast" data-tall="5">5</button>
+          <button type="button" class="tast" data-tall="6">6</button>
+          <button type="button" class="tast" data-tall="7">7</button>
+          <button type="button" class="tast" data-tall="8">8</button>
+          <button type="button" class="tast" data-tall="9">9</button>
+          <button type="button" class="tast tast-slett" id="tastSlett" aria-label="Slett siste tall">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/>
+              <path d="M17 9l-6 6M11 9l6 6"/>
+            </svg>
+          </button>
+          <button type="button" class="tast" data-tall="0">0</button>
+          <button type="button" class="tast tast-svar" id="tastSvar">Svar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Resultatet ===== -->
+    <section class="kort resultat" id="resultat" hidden aria-label="Resultat">
+      <div class="stjerner" id="stjerner"></div>
+      <p class="poeng" id="poeng"></p>
+      <p class="rekord-melding" id="rekordMelding" hidden></p>
+      <div class="ov" id="ovBolk" hidden>
+        <h3 class="ov-h">Disse kan vi øve mer på</h3>
+        <ul class="ov-liste" id="ovListe"></ul>
+      </div>
+      <p class="lagring" id="lagring" hidden></p>
+      <div class="knapperad">
+        <button type="button" class="knapp-noytral" id="endreKnapp">Endre valg</button>
+        <button type="button" class="knapp-blaa" id="igjenKnapp">Spill igjen</button>
+      </div>
+    </section>
+
+    <!-- ===== Rekordene ===== -->
+    <aside class="kort rekorder" id="rekorder" aria-label="Rekorder">
+      <h2 class="kort-h">Rekorder</h2>
+      <ul class="niva-rekorder" id="nivaRekorder"></ul>
+      <p class="samlet" id="samlet"></p>
+      <h2 class="kort-h" style="margin-top:22px">Siste runder</h2>
+      <ul class="siste" id="siste"></ul>
+    </aside>
+
+  </main>
+</div>
+
+<script src="/felles-dialog.js?v=1"></script>
+<script>
+'use strict';
+
+/* ============================================================
+   Konstanter
+   ============================================================ */
+
+/* KV-noekkelen. Samme form som andrea-fag:v1. Hele historikken ligger
+   i én verdi - rekordene er utledet av rundene, ikke lagret ved siden
+   av dem, saa de to kan aldri bli uenige. */
+const NOKKEL = 'andrea-matte:v1';
+/* Speil paa enheten. Ikke en egen sannhet: det er det siste vi vet om
+   KV-verdien, pluss runder som ikke kom fram. */
+const LOKAL_NOKKEL = 'neam-andrea-matte:v1';
+/* Tusen runder a ti oppgaver er aar med spilling. Taket er der saa
+   verdien ikke vokser uten grense; de eldste gaar foerst. */
+const MAKS_RUNDER = 1000;
+
+/* Vanskeligheten styrer pluss og minus og antall oppgaver. Gangingen
+   styres av tabellene hun velger - hver tabell er alltid 1 til 10.
+   Det var Magnes beslutning: nivaa og regneart er uavhengige. */
+const NIVAER = {
+  lett:      { navn:'Lett',      maks:5,  antall:10, rang:1 },
+  middels:   { navn:'Middels',   maks:7,  antall:10, rang:2 },
+  vanskelig: { navn:'Vanskelig', maks:10, antall:15, rang:3 }
+};
+const NIVA_REKKE = ['lett', 'middels', 'vanskelig'];
+
+/* Tegnene er de skolen bruker: ekte minustegn (U+2212), ikke
+   bindestrek, og halvhoeyt punktum for gange. */
+const ARTER = {
+  pluss: { navn:'pluss',   tegn:'+' },
+  minus: { navn:'minus',   tegn:'\u2212' },
+  gange: { navn:'ganging', tegn:'\u00B7' }
+};
+const ART_REKKE = ['pluss', 'minus', 'gange'];
+
+/* Hvor lenge Neam blir staaende etter et riktig svar foer neste
+   oppgave. Et galt svar venter paa trykk - hun skal faa se det
+   riktige svaret i ro. */
+const PAUSE_RIKTIG = 1100;
+
+/* Neams replikker. Varm og litt stiv, aldri sarkastisk. Et galt svar
+   er aldri hennes feil i hans munn. */
+const REPLIKK = {
+  hilsen: 'Å, Andrea! Batteriet mitt er nesten tomt, og laderen står helt der borte. Vil du hjelpe meg?',
+  start: [
+    'Tusen takk! Jeg er klar når du er.',
+    'Så snilt av deg. La oss begynne.',
+    'Utmerket. Jeg retter antennen mot laderen.'
+  ],
+  riktig: [
+    'Riktig! Jeg kjenner kraften komme.',
+    'Helt korrekt. Ett skritt til!',
+    'Utmerket regnet, Andrea.',
+    'Nøyaktig riktig. Så flink du er!',
+    'Riktig! Tannhjulene mine snurrer igjen.',
+    'Strålende! Laderen er nærmere nå.',
+    'Ja, det stemmer på prikken.'
+  ],
+  feil: [
+    'Å, du godeste. Den var lur!',
+    'Nesten, Andrea. Se på svaret, så tar vi neste.',
+    'Hm, ikke helt. Jeg står stille denne gangen, men det gjør ingenting.',
+    'Ingen fare. Neste blir bedre, skal du se.'
+  ]
+};
+
+/* ============================================================
+   Tilstand
+   ============================================================ */
+
+let valg = { arter:['pluss'], tabeller:[], niva:'lett' };
+let data = { versjon:1, runder:[] };
+/* Paagaaende runde, eller null. */
+let runde = null;
+/* Siste avsluttede runde, til resultatvisningen. */
+let sisteRunde = null;
+/* Har brukeren rørt valgene foer KV svarte? Da skal ikke lastingen
+   overskrive dem med forrige rundes valg. */
+let valgRort = false;
+let visning = 'oppsett';
+
+const $ = function(id){ return document.getElementById(id); };
+
+/* ============================================================
+   Lagring - KV med speil paa enheten
+   ------------------------------------------------------------
+   KV cacher lesinger i 60 sekunder. Spiller hun to korte runder
+   paa rad, kan lesingen foer andre skriving mangle den foerste.
+   Derfor flettes alltid det vi har i minnet inn i det KV svarer,
+   paa rundens id, foer vi skriver. Ingen runde kan forsvinne av at
+   lesingen var gammel.
+   ============================================================ */
+
+async function kvLes(nokkel){
+  const r = await fetch('/api/data?key=' + encodeURIComponent(nokkel),
+                        { headers:{ 'Accept':'application/json' }, cache:'no-store' });
+  if(!r.ok) throw new Error('KV les ' + r.status);
+  const d = await r.json();
+  return (d && d.value !== undefined) ? d.value : null;
+}
+
+async function kvSkriv(nokkel, verdi){
+  const r = await fetch('/api/data?key=' + encodeURIComponent(nokkel), {
+    method:'PUT', headers:{ 'Content-Type':'application/json' },
+    body:JSON.stringify(verdi)
+  });
+  if(!r.ok) throw new Error('KV skriv ' + r.status);
+  return true;
+}
+
+function gyldigRunde(r){
+  return r && typeof r.id === 'string' && NIVAER[r.niva]
+      && Array.isArray(r.arter) && typeof r.riktige === 'number'
+      && typeof r.antall === 'number' && r.antall > 0;
+}
+
+function flettData(a, b){
+  const kart = new Map();
+  [a, b].forEach(function(d){
+    const liste = (d && Array.isArray(d.runder)) ? d.runder : [];
+    liste.forEach(function(r){ if(gyldigRunde(r)) kart.set(r.id, r); });
+  });
+  let runder = Array.from(kart.values())
+    .sort(function(x, y){ return x.tid < y.tid ? -1 : x.tid > y.tid ? 1 : 0; });
+  if(runder.length > MAKS_RUNDER) runder = runder.slice(-MAKS_RUNDER);
+  return { versjon:1, runder:runder };
+}
+
+function lokalLes(){
+  try{
+    const t = localStorage.getItem(LOKAL_NOKKEL);
+    return t ? JSON.parse(t) : null;
+  }catch(e){ return null; }
+}
+
+function lokalSkriv(usendt){
+  try{
+    localStorage.setItem(LOKAL_NOKKEL, JSON.stringify({ data:data, usendt:!!usendt }));
+  }catch(e){ /* full eller privat modus - KV er fortsatt kilden */ }
+}
+
+async function synk(){
+  const fjern = await kvLes(NOKKEL);
+  const flett = flettData(fjern, data);
+  await kvSkriv(NOKKEL, flett);
+  data = flett;
+  lokalSkriv(false);
+}
+
+async function lastData(){
+  const lokal = lokalLes();
+  if(lokal && lokal.data){
+    data = flettData(lokal.data, null);
+    brukSisteValg();
+    tegnRekorder();
+  }
+  try{
+    const fjern = await kvLes(NOKKEL);
+    data = flettData(fjern, data);
+    if(lokal && lokal.usendt){
+      await kvSkriv(NOKKEL, data);
+    }
+    lokalSkriv(false);
+  }catch(e){
+    console.warn('Mattespill: fikk ikke lest KV', e);
+  }
+  brukSisteValg();
+  tegnRekorder();
+}
+
+/* ============================================================
+   Oppgavene
+   ============================================================ */
+
+function blandet(liste){
+  const b = liste.slice();
+  for(let i = b.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = b[i]; b[i] = b[j]; b[j] = t;
+  }
+  return b;
+}
+
+/* Alle mulige stykker for én regneart. Minus gaar aldri under null -
+   det er ikke pensum paa 4. trinn. 0 + 0 og 0 - 0 er tatt ut. */
+function pott(art, niva, tabeller){
+  const m = NIVAER[niva].maks;
+  const p = [];
+  if(art === 'pluss'){
+    for(let a = 0; a <= m; a++) for(let b = 0; b <= m; b++){
+      if(a || b) p.push({ a:a, b:b, art:art, svar:a + b });
+    }
+  }else if(art === 'minus'){
+    for(let a = 1; a <= m; a++) for(let b = 0; b <= a; b++){
+      p.push({ a:a, b:b, art:art, svar:a - b });
+    }
+  }else if(art === 'gange'){
+    tabeller.forEach(function(t){
+      for(let n = 1; n <= 10; n++){
+        /* Begge rekkefoelger forekommer - 3 · 7 og 7 · 3 er samme
+           stykke, og det skal hun kjenne igjen. */
+        const snu = Math.random() < .5;
+        p.push({ a:snu ? t : n, b:snu ? n : t, art:art, svar:t * n });
+      }
+    });
+  }
+  return p;
+}
+
+/* Trekker n stykker av én art. Stykker med null er lette og kjedelige
+   i mengder; hoeyst ett slikt per art og runde, og bare annenhver
+   gang. Er potta mindre enn n (én gangetabell paa Vanskelig gir ti
+   stykker til femten plasser), stokkes den paa nytt og trekkes igjen. */
+function trekk(art, n){
+  const p = pott(art, valg.niva, valg.tabeller);
+  const vanlige = blandet(p.filter(function(o){ return o.a !== 0 && o.b !== 0; }));
+  const nuller  = blandet(p.filter(function(o){ return o.a === 0 || o.b === 0; }));
+  let rekke = vanlige.slice(0, n);
+  if(nuller.length && (Math.random() < .5 || !rekke.length)){
+    rekke.splice(Math.floor(Math.random() * (rekke.length + 1)), 0, nuller[0]);
+  }
+  const ut = [];
+  let k = 0;
+  while(ut.length < n){
+    if(k >= rekke.length){
+      rekke = blandet(vanlige.length ? vanlige : nuller);
+      k = 0;
+    }
+    ut.push(Object.assign({}, rekke[k++]));
+  }
+  return ut;
+}
+
+function likeStykker(x, y){ return x && y && x.art === y.art && x.a === y.a && x.b === y.b; }
+
+function lagOppgaver(){
+  const N = NIVAER[valg.niva].antall;
+  const arter = blandet(valg.arter);
+  let alle = [];
+  arter.forEach(function(art, i){
+    const n = Math.floor(N / arter.length) + (i < N % arter.length ? 1 : 0);
+    alle = alle.concat(trekk(art, n));
+  });
+  alle = blandet(alle);
+  /* Samme stykke to ganger paa rad ser ut som en feil i spillet. Et
+     bytte godtas bare naar ingen av de to plassene faar en lik nabo
+     etterpaa; det letes i hele lista, ikke bare framover - ellers blir
+     et dobbeltstykke helt til slutt staaende. */
+  function kollisjon(k){
+    return likeStykker(alle[k], alle[k - 1]) || likeStykker(alle[k], alle[k + 1]);
+  }
+  for(let runde2 = 0; runde2 < 3; runde2++){
+    for(let i = 1; i < alle.length; i++){
+      if(!likeStykker(alle[i], alle[i - 1])) continue;
+      for(let j = 0; j < alle.length; j++){
+        if(j === i || j === i - 1) continue;
+        let t = alle[i]; alle[i] = alle[j]; alle[j] = t;
+        if(!kollisjon(i) && !kollisjon(j)) break;
+        t = alle[i]; alle[i] = alle[j]; alle[j] = t;
+      }
+    }
+  }
+  return alle;
+}
+
+function stykkeTekst(o){ return o.a + ' ' + ARTER[o.art].tegn + ' ' + o.b; }
+
+/* 5 for alt riktig, saa ned i femtedeler. Med ti oppgaver: 10 = 5,
+   8-9 = 4, 6-7 = 3, 4-5 = 2, under det 1. Med femten: 15 = 5,
+   12-14 = 4, 9-11 = 3, 6-8 = 2. Én stjerne er gulvet - hun har
+   hjulpet ham uansett. */
+function stjernerFor(riktige, antall){
+  const k = riktige / antall;
+  if(k >= 1) return 5;
+  if(k >= .8) return 4;
+  if(k >= .6) return 3;
+  if(k >= .4) return 2;
+  return 1;
+}
+
+function tilfeldig(liste){ return liste[Math.floor(Math.random() * liste.length)]; }
+
+/* ============================================================
+   Scenen
+   ============================================================ */
+
+function tegnLamper(antall, tent){
+  const boks = $('lamper');
+  let html = '';
+  for(let i = 1; i <= antall; i++){
+    html += '<span class="lampe' + (i <= tent ? ' tent' : '') + '" style="--x:' + (i / antall) + '"></span>';
+  }
+  boks.innerHTML = html;
+}
+
+function tennLampe(nr){
+  const l = $('lamper').children[nr - 1];
+  if(l) l.classList.add('tent');
+}
+
+function plasserRobot(skritt, antall, bevegelse){
+  const r = $('robot');
+  const x = antall ? skritt / antall : 0;
+  r.style.setProperty('--x', x);
+  r.style.setProperty('--kraft', x);
+  plasserBoble();
+  if(bevegelse) spill1(r, bevegelse);
+  $('lader').classList.toggle('fulladet', antall > 0 && skritt >= antall);
+}
+
+/* Hvilken side av roboten boblen skal staa paa, og hvor bred den kan
+   bli. Regnet ut av MAALET for bevegelsen, ikke der roboten staar naa -
+   han er midt i en overgang naar dette kalles. */
+function plasserBoble(){
+  const r = $('robot');
+  const W = $('scene').clientWidth;
+  const rw = r.offsetWidth;
+  const lw = $('lader').offsetWidth;
+  const x = Number(r.style.getPropertyValue('--x')) || 0;
+  const venstreKant = x * (W - lw - rw);
+  /* Til hoeyre stopper plassen ved laderen: den er maalet, og skal
+     synes hele veien. */
+  const plassHoyre = W - lw - (venstreKant + rw) - 16;
+  const plassVenstre = venstreKant - 10;
+  const tilVenstre = plassVenstre > plassHoyre;
+  r.classList.toggle('til-venstre', tilVenstre);
+  const plass = tilVenstre ? plassVenstre : plassHoyre;
+  $('boble').style.maxWidth = Math.max(150, Math.min(320, plass - 4)) + 'px';
+}
+window.addEventListener('resize', plasserBoble);
+
+/* Starter en animasjon paa nytt selv om klassen alt staar der. */
+function spill1(el, klasse){
+  el.classList.remove('gaar', 'rister', 'jubler');
+  void el.offsetWidth;
+  el.classList.add(klasse);
+}
+
+function si(tekst){ $('boble').textContent = tekst || ''; }
+
+/* ============================================================
+   Oppsettet
+   ============================================================ */
+
+function byggOppsett(){
+  let t = '';
+  for(let n = 1; n <= 10; n++){
+    t += '<button type="button" class="valg tabell" data-tabell="' + n
+       + '" aria-pressed="false" aria-label="' + n + '-gangen">' + n + '</button>';
+  }
+  $('tabeller').innerHTML = t;
+
+  $('nivaer').innerHTML = NIVA_REKKE.map(function(k){
+    const v = NIVAER[k];
+    return '<button type="button" class="valg niva" role="radio" aria-checked="false" data-niva="' + k + '">'
+      + '<span class="niva-navn">' + v.navn + '</span>'
+      + '<span class="niva-sub">Tall 0–' + v.maks + '<br>' + v.antall + ' oppgaver</span>'
+      + '</button>';
+  }).join('');
+
+  document.querySelectorAll('.art').forEach(function(b){
+    b.addEventListener('click', function(){
+      const a = b.dataset.art;
+      const i = valg.arter.indexOf(a);
+      if(i === -1) valg.arter.push(a); else valg.arter.splice(i, 1);
+      valgRort = true;
+      tegnValg();
+    });
+  });
+  document.querySelectorAll('.tabell').forEach(function(b){
+    b.addEventListener('click', function(){
+      const n = Number(b.dataset.tabell);
+      const i = valg.tabeller.indexOf(n);
+      if(i === -1) valg.tabeller.push(n); else valg.tabeller.splice(i, 1);
+      valg.tabeller.sort(function(x, y){ return x - y; });
+      valgRort = true;
+      tegnValg();
+    });
+  });
+  $('alleTabeller').addEventListener('click', function(){
+    valg.tabeller = valg.tabeller.length === 10 ? [] : [1,2,3,4,5,6,7,8,9,10];
+    valgRort = true;
+    tegnValg();
+  });
+  document.querySelectorAll('.niva').forEach(function(b){
+    b.addEventListener('click', function(){
+      valg.niva = b.dataset.niva;
+      valgRort = true;
+      tegnValg();
+    });
+  });
+  $('startKnapp').addEventListener('click', function(){ startSpill(false); });
+}
+
+/* Hva som mangler foer hun kan starte, eller tom streng. */
+function mangler(){
+  if(!valg.arter.length) return 'Velg minst én regneart.';
+  if(valg.arter.indexOf('gange') !== -1 && !valg.tabeller.length) return 'Velg minst én gangetabell.';
+  return '';
+}
+
+function tegnValg(){
+  document.querySelectorAll('.art').forEach(function(b){
+    b.setAttribute('aria-pressed', valg.arter.indexOf(b.dataset.art) !== -1 ? 'true' : 'false');
+  });
+  const gange = valg.arter.indexOf('gange') !== -1;
+  $('tabellerBolk').hidden = !gange;
+  document.querySelectorAll('.tabell').forEach(function(b){
+    b.setAttribute('aria-pressed', valg.tabeller.indexOf(Number(b.dataset.tabell)) !== -1 ? 'true' : 'false');
+  });
+  $('alleTabeller').textContent = valg.tabeller.length === 10 ? 'Fjern alle' : 'Velg alle';
+  document.querySelectorAll('.niva').forEach(function(b){
+    b.setAttribute('aria-checked', b.dataset.niva === valg.niva ? 'true' : 'false');
+  });
+  const m = mangler();
+  $('startHint').textContent = m;
+  $('startKnapp').disabled = !!m;
+
+  /* Roeret viser hvor langt han skal gaa paa nivaaet hun har valgt. */
+  if(visning === 'oppsett'){
+    tegnLamper(NIVAER[valg.niva].antall, 0);
+    plasserRobot(0, NIVAER[valg.niva].antall);
+  }
+}
+
+/* Forrige rundes valg er utgangspunktet neste gang - utledet av den
+   siste runden, ikke lagret for seg. */
+function brukSisteValg(){
+  if(valgRort || !data.runder.length) return;
+  const r = data.runder[data.runder.length - 1];
+  const arter = (r.arter || []).filter(function(a){ return ARTER[a]; });
+  if(!arter.length) return;
+  valg = {
+    arter: arter.slice(),
+    tabeller: (r.tabeller || []).map(Number)
+                .filter(function(n){ return n >= 1 && n <= 10; })
+                .sort(function(x, y){ return x - y; }),
+    niva: NIVAER[r.niva] ? r.niva : 'lett'
+  };
+  tegnValg();
+}
+
+/* ============================================================
+   Visningene og historikken
+   ------------------------------------------------------------
+   Samme moenster som de andre sidene: oppsettet er foerste
+   oppfoering, spillet legges oppaa, resultatet erstatter spillet.
+   Sveip tilbake fra resultatet gaar da til oppsettet, og ett sveip
+   til gaar ut til Andrea dash.
+   ============================================================ */
+
+function vis(navn){
+  visning = navn;
+  $('oppsett').hidden  = navn !== 'oppsett';
+  $('spill').hidden    = navn !== 'spill';
+  $('resultat').hidden = navn !== 'resultat';
+  document.body.classList.toggle('spiller', navn === 'spill');
+  if(navn === 'oppsett'){
+    si(REPLIKK.hilsen);
+    tegnValg();
+    $('lader').classList.remove('fulladet');
+  }
+  window.scrollTo(0, 0);
+}
+
+function harSvart(){ return !!(runde && runde.i > 0); }
+
+window.addEventListener('popstate', async function(ev){
+  const st = ev.state || {};
+  const maal = st.visning || 'oppsett';
+
+  if(runde && maal !== 'spill'){
+    /* Midt i en runde: svar hun har gitt finnes ingen andre steder.
+       Sveipen kan ikke stoppes, saa vi legger spillet tilbake og
+       spoer. Ingen svar ennaa - da er det ingenting aa miste. */
+    if(harSvart() && !runde.avbrytGodkjent){
+      history.pushState({ fh:true, visning:'spill' }, '');
+      const ja = await bekreft('Avslutte runden? Svarene så langt blir ikke lagret.',
+                               { jaTekst:'Avslutt', neiTekst:'Fortsett' });
+      if(ja && runde){ runde.avbrytGodkjent = true; history.back(); }
+      return;
+    }
+    avbrytRunde();
+    vis('oppsett');
+    return;
+  }
+  if(maal === 'spill'){
+    /* Framover inn i en runde som er over. */
+    if(!runde){ history.back(); return; }
+    vis('spill');
+    return;
+  }
+  if(maal === 'resultat' && sisteRunde){ visResultat(sisteRunde, false); return; }
+  vis('oppsett');
+});
+
+function avbrytRunde(){
+  if(runde && runde.timer) clearTimeout(runde.timer);
+  runde = null;
+}
+
+/* ============================================================
+   Spillet
+   ============================================================ */
+
+function startSpill(igjen){
+  if(mangler()) return;
+  valgRort = true;
+  avbrytRunde();
+  const antall = NIVAER[valg.niva].antall;
+  runde = {
+    oppgaver: lagOppgaver(),
+    antall: antall,
+    i: 0,
+    riktige: 0,
+    feil: [],
+    svar: '',
+    venter: null,          /* null | 'riktig' | 'feil' */
+    timer: null,
+    avbrytGodkjent: false,
+    valg: { arter:valg.arter.slice(), tabeller:valg.tabeller.slice(), niva:valg.niva }
+  };
+  if(igjen) history.replaceState({ fh:true, visning:'spill' }, '');
+  else      history.pushState({ fh:true, visning:'spill' }, '');
+  vis('spill');
+  tegnLamper(antall, 0);
+  plasserRobot(0, antall);
+  si(tilfeldig(REPLIKK.start));
+  visOppgave();
+}
+
+function visOppgave(){
+  const o = runde.oppgaver[runde.i];
+  $('teller').textContent = 'Oppgave ' + (runde.i + 1) + ' av ' + runde.antall;
+  $('stykke').textContent = stykkeTekst(o);
+  runde.svar = '';
+  runde.venter = null;
+  const boks = $('svarBoks');
+  boks.className = 'svar-boks tom';
+  boks.textContent = '';
+  $('tastSvar').textContent = 'Svar';
+  settTaster(true);
+  const opp = $('oppgave');
+  opp.classList.remove('ny'); void opp.offsetWidth; opp.classList.add('ny');
+}
+
+function settTaster(paa){
+  document.querySelectorAll('.tast[data-tall], #tastSlett').forEach(function(t){ t.disabled = !paa; });
+}
+
+function tegnSvar(){
+  const boks = $('svarBoks');
+  boks.textContent = runde.svar;
+  boks.classList.toggle('tom', runde.svar === '');
+}
+
+function trykkTall(d){
+  if(!runde || runde.venter) return;
+  if(runde.svar.length >= 3) return;
+  runde.svar = (runde.svar === '0' ? '' : runde.svar) + d;
+  tegnSvar();
+}
+
+function slettTall(){
+  if(!runde || runde.venter) return;
+  runde.svar = runde.svar.slice(0, -1);
+  tegnSvar();
+}
+
+function sendSvar(){
+  if(!runde) return;
+  if(runde.venter === 'feil'){ neste(); return; }
+  if(runde.venter) return;
+  const boks = $('svarBoks');
+  if(runde.svar === ''){ spillPaa(boks, 'rister'); return; }
+
+  const o = runde.oppgaver[runde.i];
+  const svar = Number(runde.svar);
+  settTaster(false);
+
+  if(svar === o.svar){
+    runde.riktige++;
+    runde.venter = 'riktig';
+    boks.classList.add('riktig');
+    tennLampe(runde.riktige);
+    plasserRobot(runde.riktige, runde.antall, 'gaar');
+    si(tilfeldig(REPLIKK.riktig));
+    runde.timer = setTimeout(neste, PAUSE_RIKTIG);
+  }else{
+    runde.feil.push({ stykke:stykkeTekst(o), riktig:o.svar, svar:svar });
+    runde.venter = 'feil';
+    boks.className = 'svar-boks feil';
+    boks.innerHTML = '<span class="svar-feil">' + svar + '</span><span>' + o.svar + '</span>';
+    boks.setAttribute('aria-label', 'Du svarte ' + svar + '. Riktig svar er ' + o.svar);
+    spill1($('robot'), 'rister');
+    si(tilfeldig(REPLIKK.feil));
+    $('tastSvar').textContent = 'Neste';
+  }
+}
+
+/* Samme som spill1, for elementer uten robotklassene. */
+function spillPaa(el, klasse){
+  el.classList.remove(klasse); void el.offsetWidth; el.classList.add(klasse);
+}
+
+function neste(){
+  if(!runde) return;
+  if(runde.timer){ clearTimeout(runde.timer); runde.timer = null; }
+  $('svarBoks').setAttribute('aria-label', 'Ditt svar');
+  runde.i++;
+  if(runde.i >= runde.antall){ ferdig(); return; }
+  visOppgave();
+}
+
+$('tastatur').addEventListener('click', function(ev){
+  const t = ev.target.closest('.tast');
+  if(!t || t.disabled) return;
+  if(t.dataset.tall !== undefined) trykkTall(t.dataset.tall);
+  else if(t.id === 'tastSlett') slettTall();
+  else if(t.id === 'tastSvar') sendSvar();
+});
+
+/* Tastaturet paa PC-en gjoer det samme som knappene. */
+document.addEventListener('keydown', function(ev){
+  if(visning !== 'spill' || !runde) return;
+  if(document.querySelector('.dlg-bak:not([hidden])')) return;
+  if(/^[0-9]$/.test(ev.key)){ trykkTall(ev.key); ev.preventDefault(); }
+  else if(ev.key === 'Backspace'){ slettTall(); ev.preventDefault(); }
+  else if(ev.key === 'Enter'){ sendSvar(); ev.preventDefault(); }
+});
+
+$('avsluttKnapp').addEventListener('click', async function(){
+  if(!runde) return;
+  if(harSvart()){
+    const ja = await bekreft('Avslutte runden? Svarene så langt blir ikke lagret.',
+                             { jaTekst:'Avslutt', neiTekst:'Fortsett' });
+    if(!ja || !runde) return;
+  }
+  runde.avbrytGodkjent = true;
+  history.back();
+});
+
+/* ============================================================
+   Resultatet
+   ============================================================ */
+
+function bedre(x, y){
+  if(x.stjerner !== y.stjerner) return x.stjerner > y.stjerner;
+  return x.riktige / x.antall > y.riktige / y.antall;
+}
+
+function ferdig(){
+  const rd = runde;
+  runde = null;
+  const stj = stjernerFor(rd.riktige, rd.antall);
+  const r = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    tid: new Date().toISOString(),
+    niva: rd.valg.niva,
+    arter: ART_REKKE.filter(function(a){ return rd.valg.arter.indexOf(a) !== -1; }),
+    tabeller: rd.valg.arter.indexOf('gange') !== -1 ? rd.valg.tabeller.slice() : [],
+    riktige: rd.riktige,
+    antall: rd.antall,
+    stjerner: stj,
+    feil: rd.feil
+  };
+
+  /* Rekorden maales mot det som fantes FOER denne runden. */
+  const tidligere = data.runder.filter(function(x){ return x.niva === r.niva; });
+  let best = null;
+  tidligere.forEach(function(x){ if(!best || bedre(x, best)) best = x; });
+  const femmere = tidligere.filter(function(x){ return x.stjerner === 5; }).length;
+  let melding = '';
+  if(best && bedre(r, best)) melding = 'Ny rekord på ' + NIVAER[r.niva].navn + '!';
+  else if(stj === 5 && femmere > 0) melding = 'Fem stjerner for ' + (femmere + 1) + '. gang på ' + NIVAER[r.niva].navn + '!';
+  r.melding = melding;
+
+  sisteRunde = r;
+  history.replaceState({ fh:true, visning:'resultat' }, '');
+  visResultat(r, true);
+  lagreRunde(r);
+}
+
+function sluttReplikk(r){
+  const k = r.riktige, n = r.antall;
+  if(k >= n) return 'Fulladet! Tusen hjertelig takk, Andrea. Du reddet meg.';
+  if(k === 0) return 'Jeg står fortsatt her, men jeg gir ikke opp. Skal vi prøve igjen?';
+  if(k / n >= .8) return 'Jeg kom ' + k + ' skritt! Den siste biten triller jeg selv. Takk, Andrea.';
+  if(k / n >= .4) return 'Takk for hjelpen! Jeg kom ' + k + ' av ' + n + ' skritt. Vil du prøve igjen?';
+  return 'Jeg kom ' + k + ' skritt av sted. Skal vi prøve en gang til sammen?';
+}
+
+function visResultat(r, ny){
+  vis('resultat');
+  tegnLamper(r.antall, r.riktige);
+  plasserRobot(r.riktige, r.antall, (ny && r.riktige >= r.antall) ? 'jubler' : null);
+  si(sluttReplikk(r));
+
+  let s = '';
+  for(let i = 0; i < 5; i++){
+    s += '<svg class="stjerne' + (i < r.stjerner ? ' fylt' : '') + '" style="--i:' + i
+       + '" viewBox="0 0 24 24" aria-hidden="true"><path d="' + STJERNE + '"/></svg>';
+  }
+  const sb = $('stjerner');
+  sb.innerHTML = s;
+  sb.setAttribute('role', 'img');
+  sb.setAttribute('aria-label', r.stjerner + ' av 5 stjerner');
+  sb.classList.remove('vis');
+  if(ny){ void sb.offsetWidth; sb.classList.add('vis'); }
+
+  $('poeng').textContent = r.riktige + ' av ' + r.antall + ' riktige';
+  $('rekordMelding').textContent = r.melding || '';
+  $('rekordMelding').hidden = !r.melding;
+
+  const feil = r.feil || [];
+  $('ovBolk').hidden = !feil.length;
+  $('ovListe').innerHTML = feil.map(function(f){
+    return '<li><span class="ov-stykke">' + esc(f.stykke) + ' = ' + f.riktig + '</span>'
+         + '<span class="ov-du">du svarte ' + f.svar + '</span></li>';
+  }).join('');
+  if(ny) $('lagring').hidden = true;
+  tegnRekorder(r.id);
+}
+
+async function lagreRunde(r){
+  data.runder.push(r);
+  lokalSkriv(true);
+  tegnRekorder(r.id);
+  try{
+    await synk();
+    tegnRekorder(r.id);
+  }catch(e){
+    console.warn('Mattespill: fikk ikke lagret i KV', e);
+    const l = $('lagring');
+    l.textContent = 'Resultatet ligger på denne enheten og sendes neste gang du åpner spillet med nett.';
+    l.hidden = false;
+  }
+}
+
+$('igjenKnapp').addEventListener('click', function(){ startSpill(true); });
+$('endreKnapp').addEventListener('click', function(){
+  if(history.state && history.state.visning === 'resultat' && history.length > 1){
+    history.back();
+  }else{
+    history.replaceState({ fh:true, visning:'oppsett' }, '');
+    vis('oppsett');
+  }
+});
+
+/* ============================================================
+   Rekordene
+   ============================================================ */
+
+const STJERNE = 'M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z';
+
+function miniStjerner(n){
+  let s = '';
+  for(let i = 0; i < 5; i++){
+    s += '<svg class="mini' + (i < n ? ' fylt' : '') + '" viewBox="0 0 24 24" aria-hidden="true"><path d="' + STJERNE + '"/></svg>';
+  }
+  return s;
+}
+
+function esc(t){
+  return String(t).replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+/* «2-, 3- og 5-gangen», «5-gangen», «alle gangetabellene». */
+function tabellTekst(t){
+  const n = (t || []).slice().sort(function(x, y){ return x - y; });
+  if(n.length === 10) return 'alle gangetabellene';
+  if(n.length === 1) return n[0] + '-gangen';
+  return n.slice(0, -1).join('-, ') + '- og ' + n[n.length - 1] + '-gangen';
+}
+
+function beskriv(r){
+  const deler = [];
+  if(r.arter.indexOf('pluss') !== -1) deler.push('pluss');
+  if(r.arter.indexOf('minus') !== -1) deler.push('minus');
+  if(r.arter.indexOf('gange') !== -1) deler.push(tabellTekst(r.tabeller));
+  let t;
+  if(deler.length === 1) t = deler[0];
+  /* To «og» i samme linje leses daarlig: «pluss og 2- og 5-gangen». */
+  else if(/ og /.test(deler[deler.length - 1])) t = deler.join(', ');
+  else t = deler.slice(0, -1).join(', ') + ' og ' + deler[deler.length - 1];
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+function kortDato(iso){
+  try{ return new Date(iso).toLocaleDateString('nb-NO', { day:'numeric', month:'short' }); }
+  catch(e){ return ''; }
+}
+
+function tegnRekorder(nyId){
+  const runder = data.runder;
+
+  $('nivaRekorder').innerHTML = NIVA_REKKE.map(function(k){
+    const paa = runder.filter(function(r){ return r.niva === k; });
+    let best = null;
+    paa.forEach(function(r){ if(!best || bedre(r, best)) best = r; });
+    let detalj;
+    if(!best) detalj = 'Ikke prøvd ennå';
+    else if(best.stjerner === 5){
+      const g = paa.filter(function(r){ return r.stjerner === 5; }).length;
+      detalj = g === 1 ? 'Fem stjerner én gang' : 'Fem stjerner ' + g + ' ganger';
+    }else detalj = 'Beste: ' + best.riktige + ' av ' + best.antall;
+    return '<li class="nr">'
+      + '<span class="nr-stjerner" aria-label="' + (best ? best.stjerner : 0) + ' av 5 stjerner">'
+      + miniStjerner(best ? best.stjerner : 0) + '</span>'
+      + '<span class="nr-navn">' + NIVAER[k].navn + '</span>'
+      + '<span class="nr-detalj">' + detalj + '</span></li>';
+  }).join('');
+
+  const sum = runder.reduce(function(s, r){ return s + (r.stjerner || 0); }, 0);
+  $('samlet').textContent = runder.length
+    ? 'Du har samlet ' + sum + (sum === 1 ? ' stjerne' : ' stjerner')
+      + ' på ' + runder.length + (runder.length === 1 ? ' runde.' : ' runder.')
+    : '';
+
+  const siste = runder.slice(-5).reverse();
+  $('siste').innerHTML = siste.length
+    ? siste.map(function(r){
+        return '<li' + (r.id === nyId ? ' class="ny"' : '') + '>'
+          + '<span class="s-stjerner" aria-label="' + r.stjerner + ' av 5 stjerner">' + miniStjerner(r.stjerner) + '</span>'
+          + '<span class="s-topp">' + NIVAER[r.niva].navn + ', ' + r.riktige + ' av ' + r.antall + '</span>'
+          + '<span class="s-under">' + esc(beskriv(r)) + ', ' + kortDato(r.tid) + '</span></li>';
+      }).join('')
+    : '<li><p class="tom">Ingen runder ennå. Når du har spilt, står de her.</p></li>';
+}
+
+/* ============================================================
+   Oppstart
+   ============================================================ */
+
+history.replaceState({ fh:true, visning:'oppsett' }, '');
+byggOppsett();
+vis('oppsett');
+tegnRekorder();
+lastData();
+</script>
+</body>
+</html>
