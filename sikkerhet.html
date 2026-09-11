@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Sikkerhet – Neam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/felles-rot.css?v=5">
+<style>
+/* ============================================================
+   MIDLERTIDIG. Dette er ikke sikkerhetssida - det er et vindu inn
+   i hva Homey faktisk melder inn, slik at den ekte sida kan tegnes
+   mot virkeligheten og ikke mot en antakelse.
+
+   Den skal byttes ut i sin helhet. Derfor er den ustylet med vilje:
+   ingenting her skal kunne bli sittende igjen ved et uhell.
+   ============================================================ */
+*{box-sizing:border-box}
+body{
+  margin:0; padding:24px 20px 60px;
+  font-family:'Archivo',system-ui,sans-serif; color:var(--ink);
+  max-width:1100px; margin:0 auto;
+}
+h1{ font-size:26px; margin:0 0 4px; }
+.sub{ color:var(--ink-soft); font-weight:600; font-size:var(--t-meta); margin:0 0 20px; }
+button{
+  font-family:inherit; font-size:var(--t-brod); font-weight:700;
+  padding:12px 20px; border-radius:999px; cursor:pointer;
+  background:var(--aksent); color:#fff; border:1px solid var(--aksent);
+}
+button.mild{ background:var(--paper); color:var(--ink); border-color:var(--line); }
+.rad{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+.melding{
+  padding:12px 16px; border-radius:12px; background:var(--boks-mild);
+  border:1px solid var(--boks-kant); font-size:var(--t-meta); font-weight:600;
+  margin-bottom:18px; white-space:pre-wrap;
+}
+.kort{
+  background:var(--paper); border:1px solid var(--line); border-radius:14px;
+  padding:14px 16px; margin-bottom:10px;
+}
+.navn{ font-weight:700; font-size:var(--t-brod); }
+.meta{ color:var(--ink-soft); font-size:var(--t-meta); font-weight:600; margin-top:2px; }
+.kap{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.k{
+  font-family:'IBM Plex Mono',monospace; font-size:var(--t-etikett);
+  background:var(--bg-2); border:1px solid var(--line);
+  border-radius:8px; padding:4px 8px;
+}
+.k.settbar{ border-color:var(--handling-ny); color:var(--handling-ny); }
+.k.video{ border-color:var(--handling-tvers); color:var(--handling-tvers); }
+h2{ font-size:var(--t-stor); margin:26px 0 10px; }
+pre{
+  background:var(--bg-2); border:1px solid var(--line); border-radius:12px;
+  padding:14px; overflow:auto; font-size:11px; line-height:1.45; max-height:420px;
+}
+</style>
+</head>
+<body>
+
+<h1>Sikkerhet</h1>
+<p class="sub">Midlertidig oppkobling mot Homey. Denne sida blir byttet ut.</p>
+
+<div class="rad">
+  <button id="koble">Koble til Homey</button>
+  <button class="mild" id="hent">Hent enheter</button>
+  <button class="mild" id="glem">Glem tilkoblingen</button>
+</div>
+
+<div class="melding" id="melding">Sjekker …</div>
+
+<div id="ut"></div>
+
+<script>
+'use strict';
+
+const KLIENT_ID = '6aa482381886c16fbed1f999';
+/* Godkjenningen maa returnere til en adresse som staar registrert hos
+   Athom. Cloudflare serverer sida uten .html, saa begge former er meldt
+   inn - men vi bruker ALLTID den samme her, saa det ikke avhenger av
+   hvordan sida ble aapnet. */
+const RETUR = 'https://neam.no/sikkerhet.html';
+
+const $ = function(id){ return document.getElementById(id); };
+function si(t){ $('melding').textContent = t; }
+
+async function api(sti, valg){
+  const r = await fetch('/api/homey' + sti, Object.assign({ cache:'no-store' }, valg || {}));
+  const t = await r.text();
+  try{ return JSON.parse(t); }
+  catch(e){ return { ok:false, feil:'Uventet svar: ' + t.slice(0,200) }; }
+}
+
+function godkjenn(){
+  const p = new URLSearchParams({
+    authorization_type: 'code',
+    client_id: KLIENT_ID,
+    redirect_uri: RETUR,
+    state: Math.random().toString(36).slice(2)
+  });
+  location.href = 'https://api.athom.com/oauth2/authorise?' + p;
+}
+
+async function taImotKode(){
+  const q = new URLSearchParams(location.search);
+  const kode = q.get('code');
+  if(!kode) return false;
+  history.replaceState({}, '', RETUR);
+  si('Fullfører tilkoblingen …');
+  const d = await api('', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ hva:'kode', code: kode, redirect: RETUR })
+  });
+  si(d.ok ? 'Tilkoblet.' : ('Fikk ikke koblet til: ' + d.feil));
+  return true;
+}
+
+/* Kapabiliteter med `setable` kan styres; resten kan bare leses. Det er
+   den opplysningen den ekte sida skal bygge valgene sine av. */
+function kapListe(d){
+  const o = d.capabilitiesObj || {};
+  const navn = Object.keys(o).length ? Object.keys(o) : (d.capabilities || []);
+  return navn.map(function(k){
+    const c = o[k] || {};
+    const settbar = !!c.setable;
+    const verdi = (c.value !== undefined && c.value !== null) ? String(c.value) : '–';
+    return '<span class="k' + (settbar ? ' settbar' : '') + '">'
+         + k + ' = ' + verdi + (settbar ? ' ✎' : '') + '</span>';
+  }).join('');
+}
+
+async function hent(){
+  si('Henter …');
+  const [e, s] = await Promise.all([api('?hva=enheter'), api('?hva=soner')]);
+  if(!e.ok){
+    si('Fikk ikke enhetene: ' + e.feil + (e.maaGodkjenne ? '\nTrykk «Koble til Homey».' : ''));
+    return;
+  }
+  const soner = {};
+  if(s.ok && s.soner) for(const id in s.soner) soner[id] = s.soner[id].name;
+
+  const liste = Object.values(e.enheter || {});
+  liste.sort(function(a, b){
+    return (soner[a.zone] || '').localeCompare(soner[b.zone] || '')
+        || String(a.name || '').localeCompare(String(b.name || ''));
+  });
+
+  si('Fant ' + liste.length + ' enheter.');
+
+  let html = '';
+  liste.forEach(function(d){
+    /* Video er det ene som avgjoer om kameraene kan vises i nettleseren.
+       Vi merker den saerskilt saa den ikke forsvinner i lista. */
+    const harVideo = !!(d.videos && Object.keys(d.videos).length)
+                  || !!(d.images && Object.keys(d.images).length)
+                  || d.class === 'camera';
+    html += '<div class="kort">'
+      + '<div class="navn">' + esc(d.name || '(uten navn)')
+      + (harVideo ? ' <span class="k video">kamera</span>' : '') + '</div>'
+      + '<div class="meta">' + esc(soner[d.zone] || 'ukjent sone')
+      + ' · klasse: ' + esc(d.class || '?')
+      + ' · id: ' + esc(d.id || '') + '</div>'
+      + '<div class="kap">' + kapListe(d) + '</div>'
+      + '</div>';
+  });
+
+  /* Raa data for de enhetene som ser ut som kameraer - der trenger vi
+     aa se nøyaktig hva som meldes inn for aa vite om strøm er mulig. */
+  const kameraer = liste.filter(function(d){
+    return d.class === 'camera' || (d.videos && Object.keys(d.videos).length)
+        || (d.images && Object.keys(d.images).length);
+  });
+  if(kameraer.length){
+    html += '<h2>Kameraene, i sin helhet</h2><pre>'
+          + esc(JSON.stringify(kameraer, null, 2)) + '</pre>';
+  }
+
+  $('ut').innerHTML = html;
+}
+
+function esc(t){
+  return String(t).replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+  });
+}
+
+$('koble').onclick = godkjenn;
+$('hent').onclick  = hent;
+$('glem').onclick  = async function(){
+  await api('', { method:'POST', headers:{'Content-Type':'application/json'},
+                  body: JSON.stringify({ hva:'ut' }) });
+  si('Tilkoblingen er glemt.');
+  $('ut').innerHTML = '';
+};
+
+(async function(){
+  const kom = await taImotKode();
+  const s = await api('?hva=status');
+  if(!s.ok){ if(!kom) si('Feil: ' + s.feil); return; }
+  if(s.godkjent){
+    si('Tilkoblet' + (s.homey ? ' til ' + s.homey : '') + '. Trykk «Hent enheter».');
+    hent();
+  }else if(!kom){
+    si('Ikke tilkoblet ennå. Trykk «Koble til Homey».');
+  }
+})();
+</script>
+</body>
+</html>
