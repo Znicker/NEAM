@@ -2433,12 +2433,20 @@ function ukeAv(datotekst){
 }
 
 /* ============================================================
-   Emmas lekser
+   Barnas lekser
    ------------------------------------------------------------
-   Kjoekkenskjermen eier ingen lekser. Den LESER Emmas fagnoekkel
-   og viser leksene med frist i dag i samme boks som resten av
-   paaminnelsene - saa den som staar ved benken ser at datteren
-   har en innlevering i dag, uten aa gaa til hennes skjerm.
+   Kjoekkenskjermen eier ingen lekser. Den LESER fagnoekkelen til
+   hvert barn og viser leksene med frist i dag i samme boks som
+   resten av paaminnelsene - saa den som staar ved benken ser at
+   en av doetrene har en innlevering i dag, uten aa gaa til
+   hennes skjerm.
+
+   EN LISTE, IKKE EN KOPI PER BARN. Blokka gjaldt bare Emma til
+   11. september 2026. Andrea dash kom samme kveld, og valget sto
+   mellom aa duplisere alt med «andrea» i navnene eller aa gjoere
+   det ene barnet til en liste. Duplisering koster det samme for
+   to og mer for tre; lista koster likt uansett. Kommer et
+   tredje navn en dag, er det én linje i BARN.
 
    Utledet, ikke kopiert: leksa finnes ett sted, i faget, og
    vises to steder. Ble den skrevet inn som en egen merknad her,
@@ -2449,13 +2457,20 @@ function ukeAv(datotekst){
    og faget rundt seg. Kjoekkenet er en oppslagstavle for dette,
    ikke et arbeidsbord.
    ============================================================ */
-const EMMA_FAG_NOKKEL = 'emma-fag:v1';
+/* Navnet er det samme som i PERSONER, saa farge og initial paa raden
+   faller paa plass av seg selv. */
+const BARN = [
+  { navn:'Emma',   nokkel:'emma-fag:v1'   },
+  { navn:'Andrea', nokkel:'andrea-fag:v1' }
+];
 
-let emmaFag = null;          /* { fag:[...], lekser:[...] } */
-let emmaFagAvtrykk = '';
+/* Navn -> { fag:[...], lekser:[...] }. Et barn som ikke er lest ennaa,
+   eller som ikke svarte, mangler her og hoppes over. */
+let barnFag = {};
+let barnAvtrykk = {};
 
-async function hentEmmaFag(){
-  const r = await fetch('/api/data?key=' + EMMA_FAG_NOKKEL, {cache:'no-store'});
+async function hentBarnFag(nokkel){
+  const r = await fetch('/api/data?key=' + nokkel, {cache:'no-store'});
   if(!r.ok) throw new Error('HTTP ' + r.status);
   const d = await r.json();
   const v = d && d.value;
@@ -2466,22 +2481,34 @@ async function hentEmmaFag(){
   };
 }
 
-function emmaFagNavn(id){
-  const f = (emmaFag && emmaFag.fag || []).find(function(x){ return x.id === id; });
+function fagNavn(barn, id){
+  const d = barnFag[barn];
+  const f = (d && d.fag || []).find(function(x){ return x.id === id; });
   return f ? String(f.navn || '') : '';
 }
 
 /* Speiles i samme tempo som huskelista - se speilHuske(). Tegner bare
-   naar noe faktisk er annerledes. */
-async function speilEmmaFag(){
+   naar noe faktisk er annerledes, og ÉN gang selv om begge barna har
+   endret seg: to tegninger rett etter hverandre er den samme jobben
+   gjort to ganger.
+
+   Et barn som ikke svarer, roerer ingenting - da blir det som sto der
+   staaende. En tom liste og en mislykket lesing ser like ut paa
+   skjermen, og den gamle er den riktigste av de to. */
+async function speilBarnFag(){
   if(document.hidden) return;
-  let d;
-  try{ d = await hentEmmaFag(); }
-  catch(e){ return; }
-  const avtrykk = JSON.stringify(d);
-  if(avtrykk === emmaFagAvtrykk) return;
-  emmaFagAvtrykk = avtrykk;
-  emmaFag = d;
+  let endret = false;
+  await Promise.all(BARN.map(async function(b){
+    let d;
+    try{ d = await hentBarnFag(b.nokkel); }
+    catch(e){ return; }
+    const avtrykk = JSON.stringify(d);
+    if(avtrykk === barnAvtrykk[b.navn]) return;
+    barnAvtrykk[b.navn] = avtrykk;
+    barnFag[b.navn] = d;
+    endret = true;
+  }));
+  if(!endret) return;
   if(huBobleId) { huskeUtsatt = true; return; }
   tegnHuske();
 }
@@ -2889,23 +2916,31 @@ function tegnHuskeInner(){
      treff: liste.filter(function(m){ return m.omfang === 'uke' && ukeAv(m.frist) === uke; })}
   ];
 
-  /* Emmas lekser med frist paa denne dagen, lagt til i «i dag»-boksen.
-     De er utledet fra fagnoekkelen hennes - se hentEmmaFag(). */
-  const emmasLekser = (emmaFag ? emmaFag.lekser : []).filter(function(l){
-    return l && l.frist === dag;
-  }).map(function(l){
-    return {
-      id: 'lekse:' + l.id,
-      lekse: true,
-      gjelder: 'Emma',
-      overskrift: emmaFagNavn(l.fagId) + ': ' + String(l.tekst || ''),
-      tekst: '',
-      frist: l.frist,
-      omfang: 'dag',
-      ferdig: !!l.ferdig
-    };
+  /* Barnas lekser med frist paa denne dagen, lagt til i «i dag»-boksen.
+     De er utledet fra fagnoeklene deres - se hentBarnFag().
+
+     Id-en baerer barnets navn. To soestre kan ha hver sin lekse med
+     samme id i hver sin noekkel - id-ene er lokale for hvert barn - og
+     uten navnet ville de to radene delt id paa skjermen. */
+  BARN.forEach(function(b){
+    const d = barnFag[b.navn];
+    if(!d) return;
+    const lekser = (d.lekser || []).filter(function(l){
+      return l && l.frist === dag;
+    }).map(function(l){
+      return {
+        id: 'lekse:' + b.navn.toLowerCase() + ':' + l.id,
+        lekse: true,
+        gjelder: b.navn,
+        overskrift: fagNavn(b.navn, l.fagId) + ': ' + String(l.tekst || ''),
+        tekst: '',
+        frist: l.frist,
+        omfang: 'dag',
+        ferdig: !!l.ferdig
+      };
+    });
+    grupper[0].treff = grupper[0].treff.concat(lekser);
   });
-  grupper[0].treff = grupper[0].treff.concat(emmasLekser);
 
   grupper.forEach(function(g){
     /* Avhukede punkter synker til bunnen - de er gjort, men blir staaende
@@ -3372,9 +3407,13 @@ async function oppdaterAlt(manuelt){
       $('middag').innerHTML = '<div class="tom feil">Kunne ikke hente matplanen.</div>';
     }),
     lastHuske(),
-    hentEmmaFag().then(function(d){
-      emmaFag = d; emmaFagAvtrykk = JSON.stringify(d);
-    }).catch(function(){ emmaFag = { fag:[], lekser:[] }; }),
+    /* Ett kall per barn, i parallell med resten. Et barn som ikke
+       svarer faar en tom plass og stopper ikke de andre. */
+    Promise.all(BARN.map(function(b){
+      return hentBarnFag(b.nokkel).then(function(d){
+        barnFag[b.navn] = d; barnAvtrykk[b.navn] = JSON.stringify(d);
+      }).catch(function(){ barnFag[b.navn] = { fag:[], lekser:[] }; });
+    })),
     lastMiddagNotat()
   ];
   try{
@@ -3491,7 +3530,7 @@ async function oppdaterAlt(manuelt){
      og vaeret et vaerkall, og de taaler ikke dette tempoet. */
   setInterval(speilHuske, 3000);
   /* Emmas fag ligger i sin egen noekkel og maa speiles for seg. */
-  setInterval(speilEmmaFag, 3000);
+  setInterval(speilBarnFag, 3000);
 })();
 
 document.addEventListener('keydown', function(e){
@@ -3505,7 +3544,7 @@ document.addEventListener('keydown', function(e){
 });
 
 document.addEventListener('visibilitychange', function(){
-  if(!document.hidden){ tegnKlokke(); oppdaterAlt(false); speilHuske(); speilEmmaFag(); lastSjo(); }
+  if(!document.hidden){ tegnKlokke(); oppdaterAlt(false); speilHuske(); speilBarnFag(); lastSjo(); }
 });
 </script>
 </body>
