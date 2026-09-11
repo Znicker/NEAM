@@ -95,7 +95,13 @@ async function api(sti, valg){
 }
 
 function godkjenn(){
+  /* BEGGE navnene sendes. Athoms spesifikasjon sier
+     `authorization_type`, men tjeneren avviste kallet med
+     «response_type: Invalid value» - den vil ha standardnavnet.
+     Maalt 11. september 2026. De koster ingenting sammen, og vi
+     slipper aa vite hvilken av dem som gjelder til enhver tid. */
   const p = new URLSearchParams({
+    response_type: 'code',
     authorization_type: 'code',
     client_id: KLIENT_ID,
     redirect_uri: RETUR,

@@ -265,10 +265,15 @@ export async function onRequestPost({ request, env }){
     if(!lovligRedirect(inn.redirect)) return svar({ ok:false, feil:'Ugyldig returadresse' });
     if(!inn.code) return svar({ ok:false, feil:'Mangler kode' });
 
-    /* Athom vil ha `authorization_code`, ikke `code`. */
+    /* Athoms spesifikasjon sier `authorization_code`; standarden sier
+       `code`. Ved godkjenningen viste det seg at tjeneren fulgte
+       standarden og ikke spesifikasjonen (se sikkerhet.html), saa her
+       sendes begge. Et felt for mye blir ignorert; et felt for lite
+       gir en uklar feil. */
     const r = await athomToken({
       grant_type: 'authorization_code',
-      authorization_code: String(inn.code)
+      authorization_code: String(inn.code),
+      code: String(inn.code)
     }, env);
     if(r.feil) return svar({ ok:false, feil:r.feil });
 
