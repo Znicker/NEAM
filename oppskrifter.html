@@ -7962,12 +7962,27 @@ function settBusy(på){
   }
 }
 
-// Pakker inn de knappene som utløser lagring eller nettverkskall.
-// Ett sted, slik at nye handlinger bare trenger å føres opp i lista.
+/* Pakker inn de knappene som utløser lagring eller nettverkskall.
+   Ett sted, slik at nye handlinger bare trenger å føres opp i lista.
+
+   EN FUNKSJON HER MÅ ALDRI KALLE EN ANNEN HERFRA.
+   Sperren er ett felles flagg: den ytre setter `appBusy`, og den indre
+   ser da at appen er opptatt og returnerer STILLE. Ingen feil, ingen
+   melding - handlingen bare uteblir.
+
+   Det skjedde 12. september 2026: `leggTilDirekte` sluttet å lagre selv
+   og begynte i stedet å åpne porsjonsvelgeren gjennom `openDayPicker`.
+   Begge sto her, og dermed låste den ene den andre ute. Symptomet var at
+   pluss-knappen på et oppskriftskort ikke gjorde noe som helst - uten en
+   linje i konsollen.
+
+   `leggTilDirekte` er derfor tatt ut: den lagrer ingenting lenger, den
+   bare åpner en dialog. Sperren hører til `addToPlanDay`, som er den som
+   faktisk skriver. */
 ['addToPlanDay', 'avvisKandidat', 'confirmIngMerge', 'deleteCurrentRecipe', 'exportBackup',
  'godtaKandidat', 'removeIngredientRow', 'runAllergenNutritionReview', 'saveComment',
  'saveRecipe', 'saveTasting', 'startGjennomgang', 'submitPhysicalImport',
- 'submitRestoreBackup', 'submitWebImportPaste', 'openDayPicker', 'leggTilDirekte'].forEach(navn => {
+ 'submitRestoreBackup', 'submitWebImportPaste', 'openDayPicker'].forEach(navn => {
   const orig = window[navn];
   if(typeof orig !== 'function') return;
   window[navn] = async function(...args){
