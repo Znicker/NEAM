@@ -194,12 +194,35 @@ body.over .rekorder{ display:none; }
 .ord-topp{ display:flex; align-items:baseline; gap:12px; }
 .ord-topp .kort-h{ margin:0; }
 .endre-knapp{
-  margin-left:auto; border:1px solid var(--line); background:var(--paper);
+  border:1px solid var(--line); background:var(--paper);
   border-radius:999px; padding:6px 14px;
   font-size:var(--t-etikett); font-weight:700; letter-spacing:.06em;
   text-transform:uppercase; color:var(--ink-soft);
 }
+/* Den foerste av de to skyver seg selv og naboen ut til hoeyre. */
+.ord-topp .endre-knapp:first-of-type{ margin-left:auto; }
 .endre-knapp:active{ background:var(--paper-soft); }
+.ord-topp{ flex-wrap:wrap; gap:8px; }
+
+/* Ukevelgeren. Samme begrunnelse for -webkit-appearance som
+   stemmevelgeren: iOS gir select-felt sin egen indre stoerrelse. */
+.ukerad{
+  display:flex; align-items:center; gap:10px; margin:0 0 12px;
+  font-size:var(--t-meta); font-weight:700; color:var(--ink-soft);
+}
+.ukerad select{
+  flex:1; min-width:0; height:44px; padding:0 12px;
+  -webkit-appearance:none; appearance:none;
+  border:1.5px solid var(--line); border-radius:12px;
+  background:#FFFFFF; color:var(--ink);
+  font-family:inherit; font-size:16px; font-weight:600;
+}
+/* En gammel uke skal ikke se ut som denne uka. */
+.gammel-uke{
+  margin:0 0 12px; padding:9px 13px; border-radius:12px;
+  background:var(--boks-mild); border:1px solid var(--boks-kant);
+  font-size:var(--t-meta); font-weight:700; color:var(--handling-endre-moerk);
+}
 
 .ordliste{ list-style:none; margin:12px 0 0; padding:0; display:grid; gap:8px; }
 .ordliste li{
@@ -543,12 +566,18 @@ body.over .rekorder{ display:none; }
     <!-- ===== Oppsett: ukas ord og de tre veiene ===== -->
     <section class="kort oppsett" id="oppsett" aria-label="Ukas ord">
       <div class="ord-topp">
-        <h2 class="kort-h">Ukas ord</h2>
+        <h2 class="kort-h" id="ukeH">Ukas ord</h2>
+        <button type="button" class="endre-knapp" id="nyUkeKnapp">Ny uke</button>
         <button type="button" class="endre-knapp" id="endreOrd">Endre</button>
       </div>
 
       <div id="visOrd">
+        <p class="ukerad" id="ukerad" hidden>
+          <label for="ukeValg">Vis uke</label>
+          <select id="ukeValg"></select>
+        </p>
         <p class="hjelp" id="ordHjelp"></p>
+        <p class="gammel-uke" id="gammelUke" hidden></p>
         <ul class="ordliste skjult" id="ordliste"></ul>
         <button type="button" class="o-vis" id="visSkjul" hidden>Vis ordene</button>
         <!-- Vises bare naar ord mangler setning. Se tegnOrdliste(). -->
@@ -683,6 +712,9 @@ const NOKKEL = 'andrea-diktat:v1';
    KV-verdien, pluss runder som ikke kom fram. */
 const LOKAL_NOKKEL = 'neam-andrea-diktat:v1';
 const MAKS_RUNDER = 400;
+/* Ukelister som beholdes. To skolehalvaar er omtrent fyrre uker, saa
+   hundre er rikelig - og de er smaa: fem ord med to setninger hver. */
+const MAKS_LISTER = 100;
 const MAKS_ORD = 10;
 /* Alle ord faar LIKE MANGE ruter, ikke ruter etter lengde. Grunnen er at
    rutene ellers roeper hvor langt ordet er, og lengden er en del av det
@@ -736,7 +768,11 @@ const REPLIKK = {
    Tilstand
    ============================================================ */
 
-let data = { versjon:1, liste:null, runder:[] };
+let data = { versjon:2, lister:[], runder:[] };
+/* Uka som vises. Null betyr den nyeste - det er nesten alltid den, og
+   da skal den ikke laases fast til en id som kan bli byttet ut mens
+   sida staar aapen. */
+let valgtId = null;
 /* Paagaaende opplesning, eller null. */
 let ov = null;
 /* Sekvensnummer for tale. En gammel opplesning som svarer sent skal ikke
@@ -791,22 +827,62 @@ function gyldigRunde(r){
 }
 
 function gyldigListe(l){
-  return l && typeof l.tid === 'string' && Array.isArray(l.ord) && l.ord.length > 0;
+  return l && typeof l.id === 'string' && typeof l.tid === 'string'
+      && Array.isArray(l.ord) && l.ord.length > 0;
 }
 
-/* Rundene flettes paa id. Ordlista er ÉN verdi, og da vinner den
-   nyeste: to enheter som skriver hver sin ordliste samme uke skal ende
-   paa den som ble skrevet sist, ikke paa en blanding av to lister.
+/* ------------------------------------------------------------
+   Ukenummer
+   ------------------------------------------------------------
+   ISO 8601, som i Norge: uke 1 er den uka som inneholder aarets
+   foerste torsdag, og uka begynner paa mandag.
 
-   VED LIK TID er det samme liste, skrevet to ganger - ordene foerst og
+   Nummeret LAGRES paa lista naar den opprettes, og regnes ikke ut
+   av tidspunktet hver gang det skal vises. Grunnen er kanten:
+   legger man inn ordene soendag kveld for uka som kommer, gir
+   tidspunktet forrige ukes nummer, og lista ville skiftet navn
+   ved midnatt.
+   ------------------------------------------------------------ */
+function ukeAv(d){
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  /* Til torsdag i samme uke - da ligger vi trygt i riktig aar. */
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+  const nyttaar = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  const nr = Math.ceil(((t - nyttaar) / 86400000 + 1) / 7);
+  return { aar: t.getUTCFullYear(), uke: nr };
+}
+
+function ukeNa(){ return ukeAv(new Date()); }
+
+function ukeNavn(l){
+  if(!l || !l.uke) return 'Ukas ord';
+  const na = ukeNa();
+  /* Aarstallet bare naar det ikke er inneverende aar - ellers er det
+     stoey paa en etikett som skal leses paa et halvt sekund. */
+  return 'Uke ' + l.uke + (l.aar && l.aar !== na.aar ? ' · ' + l.aar : '');
+}
+
+/* Rundene og listene flettes paa id.
+
+   VED SAMME ID er det samme liste skrevet to ganger - ordene foerst og
    setningene etterpaa. Da vinner den med flest setninger. Uten dette
    leddet ble setningene lagret og straks overskrevet av versjonen uten:
-   KV sto foerst i lista, likhet gikk i dens favoer, og opplesningen sa
-   ordet to ganger uten noe imellom. */
+   KV sto foerst, likhet gikk i dens favoer, og opplesningen sa ordet to
+   ganger uten noe imellom.
+
+   Er antallet likt, vinner den som ble endret sist. */
 function antallSetninger(l){
   return ((l && l.ord) || []).reduce(function(n, o){
     return n + (((o && o.setninger) || []).length ? 1 : 0);
   }, 0);
+}
+
+/* Lista laa foer som ÉN verdi under `liste`. Den loeftes inn i `lister`
+   naar den dukker opp, saa gamle lagringer ikke gaar tapt. */
+function listeneI(d){
+  if(!d) return [];
+  if(Array.isArray(d.lister)) return d.lister;
+  return d.liste ? [d.liste] : [];
 }
 
 function flettData(a, b){
@@ -819,15 +895,24 @@ function flettData(a, b){
     .sort(function(x, y){ return x.tid < y.tid ? -1 : x.tid > y.tid ? 1 : 0; });
   if(runder.length > MAKS_RUNDER) runder = runder.slice(-MAKS_RUNDER);
 
-  let liste = null;
+  const lkart = new Map();
   [a, b].forEach(function(d){
-    const l = d && d.liste;
-    if(!gyldigListe(l)) return;
-    if(!liste){ liste = l; return; }
-    if(l.tid > liste.tid){ liste = l; return; }
-    if(l.tid === liste.tid && antallSetninger(l) > antallSetninger(liste)) liste = l;
+    listeneI(d).forEach(function(l){
+      if(!gyldigListe(l)) return;
+      const foer = lkart.get(l.id);
+      if(!foer){ lkart.set(l.id, l); return; }
+      const ns = antallSetninger(l), fs = antallSetninger(foer);
+      if(ns > fs){ lkart.set(l.id, l); return; }
+      if(ns === fs && String(l.endret || l.tid) > String(foer.endret || foer.tid)){
+        lkart.set(l.id, l);
+      }
+    });
   });
-  return { versjon:1, liste:liste, runder:runder };
+  let lister = Array.from(lkart.values())
+    .sort(function(x, y){ return x.tid < y.tid ? -1 : x.tid > y.tid ? 1 : 0; });
+  if(lister.length > MAKS_LISTER) lister = lister.slice(-MAKS_LISTER);
+
+  return { versjon:2, lister:lister, runder:runder };
 }
 
 function lokalLes(){
@@ -877,7 +962,8 @@ async function lastData(){
      Etter tegningen, saa knappen finnes og kan slaas av mens det staar
      paa. Én gang per liste per oekt - se setningerProvd. */
   const mangler = ordene().some(function(o){ return !((o.setninger || []).length); });
-  if(mangler && data.liste && !setningerProvd[data.liste.id]){
+  const l = valgtListe();
+  if(mangler && l && !setningerProvd[l.id]){
     hentSetninger();
   }
 }
@@ -886,8 +972,25 @@ async function lastData(){
    Ordene
    ============================================================ */
 
+/* Den nyeste lista, eller den som er valgt i ukevelgeren. */
+function nyesteListe(){
+  return data.lister.length ? data.lister[data.lister.length - 1] : null;
+}
+
+function valgtListe(){
+  if(valgtId){
+    const t = data.lister.filter(function(l){ return l.id === valgtId; })[0];
+    if(t) return t;
+    /* Uka er borte - slettet paa en annen enhet, eller falt ut av taket.
+       Da faller vi tilbake til den nyeste i stedet for aa staa tomt. */
+    valgtId = null;
+  }
+  return nyesteListe();
+}
+
 function ordene(){
-  return (data.liste && Array.isArray(data.liste.ord)) ? data.liste.ord : [];
+  const l = valgtListe();
+  return (l && Array.isArray(l.ord)) ? l.ord : [];
 }
 
 /* Rutene per ord. Se EKSTRA_RUTER og RUTER_FAST. */
@@ -931,9 +1034,41 @@ function likTegn(a, b){
   return tegnKlasse(a) === tegnKlasse(b);
 }
 
+/* Ukevelgeren. Nyeste uke oeverst - det er den man skal til i ni av ti
+   tilfeller, og en liste som vokser nedover ville skjoevet den bort. */
+function tegnUker(){
+  const l = valgtListe();
+  const rad = $('ukerad');
+  $('ukeH').textContent = ukeNavn(l);
+
+  rad.hidden = data.lister.length < 2;
+  if(!rad.hidden){
+    const valg = $('ukeValg');
+    valg.innerHTML = data.lister.slice().reverse().map(function(x){
+      return '<option value="' + esc(x.id) + '"' + (l && x.id === l.id ? ' selected' : '') + '>'
+           + esc(ukeNavn(x)) + ' · ' + x.ord.length
+           + (x.ord.length === 1 ? ' ord' : ' ord') + '</option>';
+    }).join('');
+  }
+
+  /* En gammel uke skal ikke kunne forveksles med denne uka - arket og
+     stjernene ser like ut uansett hvilken liste som ligger bak. */
+  const na = ukeNa();
+  const gammel = l && l.uke && !(l.uke === na.uke && l.aar === na.aar);
+  $('gammelUke').hidden = !gammel;
+  if(gammel){
+    $('gammelUke').textContent = 'Du ser på ' + ukeNavn(l).toLowerCase()
+      + '. Trykk «Ny uke» for å legge inn ordene for uke ' + na.uke + '.';
+  }
+  /* Uten noen liste er «Endre» meningsloes - det finnes ingenting aa
+     endre, og «Ny uke» er den ene veien inn. */
+  $('endreOrd').hidden = !data.lister.length;
+}
+
 function tegnOrdliste(){
   const ord = ordene();
   const ul = $('ordliste');
+  tegnUker();
   ul.innerHTML = ord.length
     ? ord.map(function(o, i){
         return '<li><span class="o-nr">' + (i + 1) + '</span>'
@@ -951,7 +1086,7 @@ function tegnOrdliste(){
     : 'Lag setning til ' + uten + (uten === 1 ? ' ord som mangler' : ' ord som mangler');
   $('ordHjelp').textContent = ord.length
     ? ord.length + ' ord denne uka.' + (uten ? ' ' + uten + ' av dem mangler setning.' : '')
-    : 'Ingen ord lagt inn ennå. Trykk Endre for å skrive dem inn.';
+    : 'Ingen ord lagt inn ennå. Trykk «Ny uke» for å skrive dem inn.';
   $('veiOv').disabled = !ord.length;
   $('veiArk').disabled = !ord.length;
   $('veiBilde').disabled = !ord.length;
@@ -983,23 +1118,49 @@ function felteneNa(){
     function(el){ return el.value.trim(); });
 }
 
+/* Skiller de to veiene inn i skjemaet: «Endre» retter uka som vises,
+   «Ny uke» lager en ny. Uten dette skillet maatte man velge mellom aa
+   kunne rette en skrivefeil og aa kunne starte en ny uke - den ene
+   knappen kan ikke bety begge deler. */
+let nyUke = false;
+
 $('endreOrd').addEventListener('click', function(){
+  nyUke = false;
   tegnFelt(ordene().map(function(o){ return o.ord; }));
+  aapneRedigering();
+});
+
+$('nyUkeKnapp').addEventListener('click', function(){
+  nyUke = true;
+  tegnFelt([]);
+  aapneRedigering();
+});
+
+$('ukeValg').addEventListener('change', function(){
+  valgtId = this.value;
+  tegnOrdliste();
+  tegnRunder();
+});
+
+function aapneRedigering(){
   $('visOrd').hidden = true;
   $('redigerOrd').hidden = false;
+  $('nyUkeKnapp').hidden = true;
   $('endreOrd').hidden = true;
-});
+}
 
 function lukkRedigering(){
   $('visOrd').hidden = false;
   $('redigerOrd').hidden = true;
-  $('endreOrd').hidden = false;
+  $('nyUkeKnapp').hidden = false;
+  nyUke = false;
+  tegnOrdliste();
 }
 
 $('avbrytOrd').addEventListener('click', function(){
   /* Avbryt-regelen: spoer bare naar det finnes noe aa miste. */
   const na = felteneNa().filter(Boolean).join('\u241F');
-  const foer = ordene().map(function(o){ return o.ord; }).join('\u241F');
+  const foer = nyUke ? '' : ordene().map(function(o){ return o.ord; }).join('\u241F');
   if(na === foer){ lukkRedigering(); return; }
   bekreft('Du har endret ordene uten å lagre. Forkaster du det nå, er det borte.',
           { jaTekst:'Forkast', fare:true }).then(function(ja){ if(ja) lukkRedigering(); });
@@ -1028,14 +1189,37 @@ $('ordFelt').addEventListener('click', function(ev){
 $('lagreOrd').addEventListener('click', async function(){
   const ord = felteneNa().filter(Boolean);
   if(!ord.length){ varsle('Skriv inn minst ett ord.'); return; }
+  const na = new Date().toISOString();
 
   /* Ordene lagres MED DET SAMME, uten setninger. Setningene kommer fra
-     Neam og kan feile; da skal ordene likevel ligge der. */
-  data.liste = {
-    id: nyId(),
-    tid: new Date().toISOString(),
-    ord: ord.map(function(o){ return { ord:o, setninger:[] }; })
-  };
+     Neam og kan feile; da skal ordene likevel ligge der.
+
+     Setningene foelger ORDET, ikke plassen: rettes en skrivefeil i ett
+     ord, skal de fire andre beholde setningene sine. Uten dette maatte
+     hele uka lages om fordi ett ord ble endret. */
+  const foer = {};
+  ordene().forEach(function(o){
+    foer[String(o.ord).trim().toLowerCase()] = o.setninger || [];
+  });
+  const nyeOrd = ord.map(function(o){
+    return { ord:o, setninger: foer[o.trim().toLowerCase()] || [] };
+  });
+
+  const mal = nyUke ? null : valgtListe();
+  if(mal){
+    mal.ord = nyeOrd;
+    mal.endret = na;
+  }else{
+    const u = ukeNa();
+    data.lister.push({
+      id: nyId(), tid: na, endret: na,
+      uke: u.uke, aar: u.aar,
+      ord: nyeOrd
+    });
+    valgtId = null;                /* ny uke er alltid den nyeste */
+  }
+  nyUke = false;
+
   lokalSkriv(true);
   lukkRedigering();
   tegnOrdliste();
@@ -1058,17 +1242,21 @@ const setningerProvd = {};
    mangler, og fra knappene - de kan feile foerste gang, og da skal det
    gaa an aa proeve igjen uten aa skrive ordene om att. */
 async function hentSetninger(){
-  const ord = ordene().map(function(o){ return o.ord; });
+  const l = valgtListe();
+  if(!l) return;
+  const ord = l.ord.map(function(o){ return o.ord; });
   if(!ord.length) return;
-  const listeId = data.liste.id;
+  const listeId = l.id;
   setningerProvd[listeId] = true;
   $('setningerKnapp').disabled = true;
   si('Et øyeblikk. Jeg finner på en setning til hvert ord.');
   try{
     const med = await lagSetninger(ord);
     /* Bare hvis lista ikke er byttet ut mens vi ventet. */
-    if(data.liste && data.liste.id === listeId && data.liste.ord.length === med.length){
-      data.liste.ord = med;
+    const na = data.lister.filter(function(x){ return x.id === listeId; })[0];
+    if(na && na.ord.length === med.length){
+      na.ord = med;
+      na.endret = new Date().toISOString();
       lokalSkriv(true);
       await synk();
     }
@@ -1536,6 +1724,7 @@ $('stemmeValg').addEventListener('change', function(){
    ============================================================ */
 
 function tegnArk(){
+  const l = valgtListe();
   const ord = ordene();
   const ark = $('ark');
   if(!ord.length){ ark.innerHTML = ''; return; }
@@ -1545,7 +1734,7 @@ function tegnArk(){
   ark.innerHTML =
       '<div class="ark-topp">'
     +   '<h1 class="ark-h">DIKTAT</h1>'
-    +   '<p class="ark-felt">Navn: <span></span></p>'
+    +   '<p class="ark-felt">' + esc(ukeNavn(l)) + ' &nbsp; Navn: <span></span></p>'
     + '</div>'
     + '<p class="ark-hjelp">Ett tegn i hver rute. Begynn helt til venstre. '
     + 'De små bokstavene står mellom de to linjene, de høye går opp til taket, '
@@ -1733,10 +1922,16 @@ async function rettArket(fil){
    ============================================================ */
 
 function byggRunde(ord, rader){
+  const l = valgtListe();
   return {
     id: nyId(),
     tid: new Date().toISOString(),
-    listeId: data.liste ? data.liste.id : null,
+    listeId: l ? l.id : null,
+    /* Uka lagres PAA RUNDEN, ikke slaas opp via listeId naar den skal
+       vises. En liste kan falle ut av taket eller bli slettet, og da
+       skal resultatet fortsatt vite hvilken uke det gjaldt. */
+    uke: l ? l.uke : null,
+    aar: l ? l.aar : null,
     ord: ord.map(function(o, i){
       const r = rader[i] || { skrevet:[], usikre:[] };
       return {
@@ -2115,7 +2310,8 @@ function tegnRunder(nyId){
           + '<span class="s-topp">' + v.stjerner + ' av ' + v.antall + ' ord</span>'
           + (redigerer ? '<button type="button" class="slett-rad" data-id="' + esc(r.id)
                + '" aria-label="Slett denne diktaten">&times;</button>' : '')
-          + '<span class="s-under">' + v.prosent + ' % av bokstavene, ' + kortDato(r.tid) + '</span></li>';
+          + '<span class="s-under">' + v.prosent + ' % av bokstavene, '
+          + (r.uke ? 'uke ' + r.uke + ' · ' : '') + kortDato(r.tid) + '</span></li>';
       }).join('')
     : '<li><p class="tom">Ingen diktater ennå. Når du har tatt bilde av et ark, står de her.</p></li>';
 
