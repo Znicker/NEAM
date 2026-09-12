@@ -95,6 +95,20 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
   padding:18px; text-align:center;
   color:#E8E2D6; font-size:var(--t-meta); font-weight:600; line-height:1.5;
 }
+/* Lydknappen. Ligger oeverst til hoeyre, motsatt av direktemerket.
+   Stroemmen starter alltid STUM - iOS nekter aa spille av av seg selv
+   ellers, og et kamera som staar med en play-knapp er et kamera man maa
+   be om aa se. Lyd er noe man ber om; bilde er noe man faar. */
+.lyd{
+  position:absolute; top:8px; right:10px; z-index:3;
+  width:38px; height:38px; border-radius:50%;
+  background:rgba(0,0,0,.5); border:none; color:#fff;
+  display:flex; align-items:center; justify-content:center; padding:0;
+}
+.lyd svg{ width:20px; height:20px; }
+.lyd:active{ background:rgba(0,0,0,.75); }
+.kamera.stor .lyd{ top:calc(12px + env(safe-area-inset-top)); right:66px; width:44px; height:44px; }
+
 /* Direktemerket. Prikken pulserer bare naar bildet faktisk gaar. */
 .direkte{
   position:absolute; top:10px; left:12px; display:flex; align-items:center; gap:6px;
@@ -453,6 +467,8 @@ function tegnKameraer(){
     return '<button class="kamera" data-kamera="' + esc(v.id) + '">'
       +   '<video id="vid-' + esc(v.id) + '" playsinline autoplay muted></video>'
       +   '<span class="direkte" id="dir-' + esc(v.id) + '" hidden>Direkte</span>'
+      +   '<span class="lyd" id="lyd-' + esc(v.id) + '" role="button"'
+      +     ' aria-label="Slå på lyd" hidden>' + LYD_AV + '</span>'
       +   '<span class="kamera-melding" id="kmeld-' + esc(v.id) + '">Kobler til kameraet …</span>'
       +   '<span class="kamera-navn">' + esc(navn) + '</span>'
       +   '<span class="lukk-stor" role="button" aria-label="Lukk">&times;</span>'
@@ -636,7 +652,33 @@ function visPort(){
    dem etterpaa (ingen trickle), saa et halvferdig tilbud gir en
    forbindelse som aldri kobler seg opp.
    ============================================================ */
+/* To ikoner, ett per tilstand. Hoeyttaler med kryss naar lyden er av,
+   med boelger naar den er paa. */
+const LYD_AV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+  + ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+  + '<path d="M11 5 6 9H2v6h4l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>';
+const LYD_PAA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+  + ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+  + '<path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/>'
+  + '<path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+
 const stroemmer = {};
+
+/* Starter avspillingen, og viser lydknappen naar bildet gaar. Avvises
+   avspillingen likevel, sier vi fra i klartekst - da staar iOS' egen
+   play-knapp der, og brukeren skal vite at det er den som gjelder. */
+function spillAv(el, id){
+  let p;
+  try{ p = el.play(); }catch(e){ return; }
+  if(!p || !p.then) return;
+  p.then(function(){
+    kmeld(id, '');
+    const l = $('lyd-' + id);
+    if(l) l.hidden = false;
+  }).catch(function(){
+    kmeld(id, 'Trykk på bildet for å starte');
+  });
+}
 
 function kmeld(id, t){
   const el = $('kmeld-' + id);
@@ -667,10 +709,16 @@ async function startKamera(v){
 
     pc.ontrack = function(ev){
       const el = $('vid-' + v.id);
-      if(el && ev.streams[0] && el.srcObject !== ev.streams[0]){
-        el.srcObject = ev.streams[0];
-        el.play().catch(function(){});
-      }
+      if(!el || !ev.streams[0] || el.srcObject === ev.streams[0]) return;
+      el.srcObject = ev.streams[0];
+      el.muted = true;              /* maa staa for at iOS skal spille av selv */
+      spillAv(el, v.id);
+      /* iOS avviser av og til foerste forsoek, og godtar det naar bildet
+         faktisk er klart. Derfor proeves det paa nytt ved hvert punkt der
+         elementet har noe aa vise - ikke bare én gang. */
+      ['loadedmetadata','canplay','playing'].forEach(function(h){
+        el.addEventListener(h, function(){ spillAv(el, v.id); });
+      });
     };
     pc.onconnectionstatechange = function(){
       const s = pc.connectionState;
@@ -726,6 +774,8 @@ function stoppKameraer(){
     if(el) el.srcObject = null;
     const dir = $('dir-' + id);
     if(dir) dir.hidden = true;
+    const l = $('lyd-' + id);
+    if(l){ l.hidden = true; l.innerHTML = LYD_AV; }
   }
 }
 
@@ -753,6 +803,23 @@ function lukkStor(kort){
    Hendelser og oppstart
    ============================================================ */
 document.addEventListener('click', function(ev){
+  /* Lydknappen foerst: den ligger oppaa kamerakortet, og uten dette
+     ville trykket ogsaa aapnet fullskjerm. */
+  const lyd = ev.target.closest('.lyd');
+  if(lyd){
+    ev.stopPropagation();
+    const id = lyd.id.slice(4);
+    const el = $('vid-' + id);
+    if(!el) return;
+    el.muted = !el.muted;
+    lyd.innerHTML = el.muted ? LYD_AV : LYD_PAA;
+    lyd.setAttribute('aria-label', el.muted ? 'Slå på lyd' : 'Slå av lyd');
+    /* Et trykk er en brukerhandling, og da godtar ogsaa iOS lyd.
+       play() gir ikke et loefte i alle nettlesere - derfor vakten. */
+    const p = el.play();
+    if(p && p.catch) p.catch(function(){});
+    return;
+  }
   const lukk = ev.target.closest('.lukk-stor');
   if(lukk){ ev.stopPropagation(); lukkStor(lukk.closest('.kamera')); return; }
   const kam = ev.target.closest('[data-kamera]');
