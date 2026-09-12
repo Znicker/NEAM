@@ -297,6 +297,9 @@ body.over .rekorder{ display:none; }
   background:var(--boks-mild); font-size:var(--t-meta); font-weight:600;
   color:var(--ink-soft); line-height:1.4;
 }
+/* Knappen staar inne i beskjeden, ikke under den: den hoerer til
+   setningen den avslutter. */
+.tale-av .o-vis{ margin:0 0 0 4px; padding:0; font-size:inherit; }
 
 /* ---------- Resultatet ---------- */
 .resultat{ text-align:center; }
@@ -562,7 +565,8 @@ body.over .rekorder{ display:none; }
         </div>
       </div>
       <p class="tale-av" id="utenSetning" hidden>Dette ordet har ingen setning, så jeg sier det
-        bare to ganger. Gå tilbake og trykk «Lag setninger til ordene», så får det en.</p>
+        bare to ganger.
+        <button type="button" class="o-vis" id="setningerHer">Lag setninger nå</button></p>
       <p class="tale-av" id="taleAv" hidden></p>
     </section>
 
@@ -1002,6 +1006,18 @@ async function hentSetninger(){
 }
 
 $('setningerKnapp').addEventListener('click', hentSetninger);
+
+/* Samme handling, men fra oevingssida - der beskjeden om at setningen
+   mangler faktisk staar. En knapp som fikser noe hoerer hjemme der
+   problemet vises, ikke ett sveip unna. */
+$('setningerHer').addEventListener('click', async function(){
+  this.disabled = true;
+  this.textContent = 'Lager setninger …';
+  await hentSetninger();
+  this.disabled = false;
+  this.textContent = 'Lag setninger nå';
+  if(ov){ tegnOving(); lesOppgave(false); }
+});
 
 /* ============================================================
    Neam
