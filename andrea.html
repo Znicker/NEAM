@@ -1907,14 +1907,14 @@ function settSted(navn, harSted){
 
 const STED = { navn:'Arendal', lat:58.4614, lon:8.7724 };
 
-/* Samme Azure-app og token som kalenderen — de deler fh_cal_auth. */
-const CFG = {
-  clientId : 'ccab6959-abc2-4d09-9212-4b33c0db025c',
-  authority: 'common',
-  scopes   : 'openid profile offline_access User.Read Calendars.Read Calendars.ReadWrite'
-};
-const REDIRECT  = location.origin + location.pathname;
-const AUTH_BASE = 'https://login.microsoftonline.com/' + CFG.authority + '/oauth2/v2.0';
+/* CFG og AUTH_BASE er slettet 13. september 2026. De hoerte til
+   innloggingen denne sida hadde selv; naa eier forsiden den, og disse sto
+   igjen som konstanter ingen leste. En app-id som ligger to steder er en
+   app-id som kan bli ulik.
+
+   REDIRECT blir staaende: den brukes til aa rydde adressefeltet naar en
+   gammel lenke med ?code= kommer innom. */
+const REDIRECT = location.origin + location.pathname;
 
 /* Samme faste farger som kalenderen, med KV-overstyring. */
 /* Reservefargen naar ingen har valgt én. Utledes av navnet, ikke av
@@ -1927,134 +1927,76 @@ const DAGER = ['søndag','mandag','tirsdag','onsdag','torsdag','fredag','lørdag
 const MND = ['januar','februar','mars','april','mai','juni',
              'juli','august','september','oktober','november','desember'];
 
-const S = { token:null, refresh:null, expires:0, laster:false };
+/* `refresh` er borte fra 13. september 2026 - refresh-tokenet ligger
+   paa tjeneren og kommer aldri hit. Se innloggingen lenger nede. */
+const S = { token:null, expires:0, laster:false };
 
 /* ============================================================
    Innlogging (PKCE) — samme moenster som kalenderen
    ============================================================ */
-function base64url(buf){
-  return btoa(String.fromCharCode.apply(null, new Uint8Array(buf)))
-    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+/* ============================================================
+   Innlogging: forsiden eier den
+   ------------------------------------------------------------
+   Fram til 13. september 2026 hadde denne sida sin egen fulle
+   innlogging - PKCE, kodeveksling mot Microsoft og et
+   refresh-token i localStorage. Det var kopiert ordrett til tre
+   sider, og alle tre led av det samme: en app-registrering av
+   typen «Single-page application» gir refresh-tokener som varer
+   24 timer, saa man maatte logge inn hver dag.
+
+   Naa finnes det ÉN doer. Forsiden veksler koden gjennom
+   /api/ms, som har klienthemmeligheten og faar 90 dager.
+   Oekta lagres som `auth:ms:<epost>` - paa PERSONEN, ikke paa
+   sida - saa denne sida kan hente et ferskt access token fra den
+   uten aa vite noe om innlogging i det hele tatt.
+
+   HVA SOM BLE SLETTET: base64url, lagVerifier, lagChallenge,
+   PKCE-utgaven av loggInn, bytt, lagreToken, lesToken og
+   gyldigToken. Ingen av dem gjorde noe denne sida trenger lenger,
+   og en innloggingskode som ikke brukes er den sorten som blir
+   farlig naar noen leser den om et halvt aar og tror den betyr
+   noe.
+
+   gyldigToken() kommer fra felles-ms.js og er den samme paa alle
+   sidene.
+   ============================================================ */
+
+/* «Logg inn» er en tur til forsiden. Den er inngangen til huset og
+   den eneste sida som er registrert som «Web» i Azure - altsaa den
+   eneste som kan veksle en kode med klienthemmelighet. */
+function loggInn(){
+  try{ sessionStorage.setItem('fh_tilbake', location.pathname); }catch(e){}
+  location.href = '/index.html';
 }
-async function lagVerifier(){
-  const a = new Uint8Array(32);
-  crypto.getRandomValues(a);
-  return base64url(a.buffer);
-}
-async function lagChallenge(v){
-  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v));
-  return base64url(d);
-}
-async function loggInn(){
-  try{
-    const verifier = await lagVerifier();
-    const challenge = await lagChallenge(verifier);
-    const state = base64url(crypto.getRandomValues(new Uint8Array(12)).buffer);
-    sessionStorage.setItem('fh_verifier', verifier);
-    sessionStorage.setItem('fh_state', state);
-    location.href = AUTH_BASE + '/authorize'
-      + '?client_id=' + CFG.clientId
-      + '&response_type=code'
-      + '&redirect_uri=' + encodeURIComponent(REDIRECT)
-      + '&response_mode=query'
-      + '&scope=' + encodeURIComponent(CFG.scopes)
-      + '&state=' + state
-      + '&code_challenge=' + challenge
-      + '&code_challenge_method=S256';
-  }catch(e){
-    portNote('Kunne ikke starte innloggingen: ' + e.message);
-  }
-}
-async function bytt(felter){
-  const body = new URLSearchParams(Object.assign({
-    client_id: CFG.clientId,
-    redirect_uri: REDIRECT
-  }, felter));
-  const r = await fetch(AUTH_BASE + '/token', {
-    method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body: body.toString()
-  });
-  const d = await r.json();
-  if(!r.ok) throw new Error(d.error_description || d.error || 'Innlogging feilet');
-  return d;
-}
-function lagreToken(d){
-  S.token = d.access_token;
-  S.refresh = d.refresh_token || S.refresh;
-  S.expires = Date.now() + (d.expires_in || 3600)*1000 - 60000;
-  try{
-    localStorage.setItem('fh_cal_auth', JSON.stringify({refresh:S.refresh, token:S.token, expires:S.expires}));
-  }catch(e){}
-}
+
+/* Tokenet deles med alle sidene gjennom felles-ms.js. Denne funksjonen
+   speiler det inn i S, som resten av fila leser. */
 function lesToken(){
-  try{
-    const raw = localStorage.getItem('fh_cal_auth');
-    if(!raw) return false;
-    const d = JSON.parse(raw);
-    S.token = d.token; S.refresh = d.refresh; S.expires = d.expires || 0;
-    return !!(S.token || S.refresh);
-  }catch(e){ return false; }
+  const ja = (typeof msLes === 'function') ? msLes() : false;
+  if(ja){ S.token = MS.token; S.expires = MS.expires; }
+  return ja;
 }
-/* Refresh-tokenet fra en SPA-registrering lever bare et doegn. En skjerm
-   som staar paa over natta vaakner derfor uten gyldig token. Microsoft-oekta
-   i nettleseren lever lenger, saa en ny runde gjennom innloggingen gaar som
-   regel rett gjennom uten at noen maa taste noe.
-   Sperren er viktig: er OGSAA Microsoft-oekta doed, kommer vi tilbake med
-   samme feil, og uten flagg ville skjermen sendt seg selv i ring. Ett
-   forsoek per oekt - deretter en aerlig beskjed. */
+
+/* Hentes et token fra oekta, skal S foelge med - ellers ville sida trodd
+   den var utlogget mens kallene gikk fint. */
+async function hentTokenFraOekt(){
+  if(typeof msToken !== 'function') return null;
+  let t = null;
+  try{ t = await msToken(); }catch(e){ return null; }
+  if(t){ S.token = MS.token; S.expires = MS.expires; }
+  return t;
+}
+
 function grantUtloept(e){
-  const m = String((e && e.message) || '');
-  return m.indexOf('AADSTS70000') >= 0
-      || m.indexOf('invalid_grant') >= 0
-      || m.indexOf('expired') >= 0;
+  const m = String(e && e.message || '');
+  return /AADSTS(700082|50173|50078|54005)|invalid_grant|Ingen økt/i.test(m);
 }
 function harProevdPaaNytt(){
-  try{ return sessionStorage.getItem('fh_reauth') === '1'; }catch(e){ return true; }
+  try{ return sessionStorage.getItem('fh_reauth') === '1'; }catch(e){ return false; }
 }
 function merkProevd(){ try{ sessionStorage.setItem('fh_reauth','1'); }catch(e){} }
 function nullstillProevd(){ try{ sessionStorage.removeItem('fh_reauth'); }catch(e){} }
 
-let fornyelse = null;
-async function gyldigToken(){
-  if(S.token && Date.now() < S.expires) return S.token;
-  /* Ingen egen fornyelse aa gjoere paa? Spoer tjeneren.
-     ------------------------------------------------------------
-     Denne sida veksler koden sin rett hos Microsoft, og en app av
-     typen «Single-page application» faar refresh-tokener som varer
-     24 timer - Microsofts regel, ikke en innstilling. Derfor maatte
-     man logge inn her hver dag.
-
-     Kalenderen la om 11. september 2026: der gaar vekslingen gjennom
-     /api/ms, som har klienthemmeligheten og faar 90 dager. Oekta
-     lagres som `auth:ms:<epost>` - noeklet til PERSONEN, ikke til
-     sida. Har man logget inn i kalenderen, kan denne sida hente et
-     ferskt token derfra uten aa logge inn selv.
-
-     Reserve, ikke erstatning: sidens egen flyt staar urort, og
-     finnes det verken refresh-token eller oekt, svarer vi null som
-     foer. Se felles-ms.js. */
-  if(!S.refresh){
-    if(typeof msToken !== 'function') return null;
-    try{ return await msToken(); }catch(e){ return null; }
-  }
-  if(!fornyelse){
-    fornyelse = bytt({grant_type:'refresh_token', refresh_token:S.refresh, scope:CFG.scopes})
-      .then(function(d){ lagreToken(d); nullstillProevd(); return S.token; })
-      .catch(function(e){
-        if(grantUtloept(e) && !harProevdPaaNytt()){
-          merkProevd();
-          try{ localStorage.removeItem('fh_cal_auth'); }catch(_){}
-          S.token = null; S.refresh = null; S.expires = 0;
-          loggInn();                       /* gaar stille gjennom naar oekta lever */
-          return null;
-        }
-        throw e;
-      })
-      .finally(function(){ fornyelse = null; });
-  }
-  return fornyelse;
-}
 /* Skjermen skal ikke kjefte. Trace ID og Correlation ID hoerer i konsollen,
    ikke paa kjoekkenveggen - der trengs bare det man kan gjoere noe med. */
 function planFeil(e){
@@ -2069,7 +2011,7 @@ function planFeil(e){
 function koblePaaNytt(){
   nullstillProevd();
   try{ localStorage.removeItem('fh_cal_auth'); }catch(e){}
-  S.token = null; S.refresh = null; S.expires = 0;
+  S.token = null; S.expires = 0;
   loggInn();
 }
 
@@ -7768,36 +7710,20 @@ async function oppdaterAlt(manuelt){
     return;
   }
 
+  /* Sida tar ikke lenger imot koder fra Microsoft - forsiden gjoer det.
+     Kommer en kode hit likevel, er det en gammel bokmerket adresse; da
+     ryddes den bort og vi gaar videre som vanlig. */
   if(q.get('code')){
-    const verifier = sessionStorage.getItem('fh_verifier');
-    const forventet = sessionStorage.getItem('fh_state');
     history.replaceState({}, '', REDIRECT);
-    if(!verifier || q.get('state') !== forventet){
-      visPort(true);
-      portNote('Innloggingen ble avbrutt. Prøv på nytt.');
-      return;
-    }
-    try{
-      const d = await bytt({
-        grant_type:'authorization_code',
-        code:q.get('code'),
-        code_verifier:verifier,
-        scope:CFG.scopes
-      });
-      lagreToken(d);
-      nullstillProevd();          /* ny oekt - ett forsoek er ledig igjen */
-      sessionStorage.removeItem('fh_verifier');
-      sessionStorage.removeItem('fh_state');
-    }catch(err){
-      visPort(true);
-      portNote(err.message);
-      return;
-    }
-  } else {
-    lesToken();
   }
 
-  if(!(S.token || S.refresh)){
+  /* Har vi et brukbart token liggende? Ellers: finnes det en oekt paa
+     tjeneren? Foerst naar begge svarer nei staar vi uten. */
+  if(!lesToken() || !(S.token && Date.now() < S.expires)){
+    await hentTokenFraOekt();
+  }
+
+  if(!S.token){
     visPort(true);
     return;
   }
