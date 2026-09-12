@@ -206,6 +206,49 @@
     font-size:var(--t-meta); color:var(--ink-soft); font-weight:600;
     margin:0 0 8px;
   }
+  /* Angre-stripa. Nede, over fireren, saa den ikke daekker den - og
+     bred nok til at «Angre» er et ordentlig trykkmaal. */
+  .angre-stripe{
+    position:fixed; z-index:60;
+    left:14px; right:14px;
+    bottom:calc(96px + env(safe-area-inset-bottom));
+    display:flex; align-items:center; gap:10px;
+    background:var(--ink); color:#FFFFFF;
+    border-radius:14px; padding:11px 12px 11px 16px;
+    box-shadow:0 8px 26px rgba(44,62,80,.34);
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:600;
+  }
+  .angre-stripe span{ flex:1; min-width:0; }
+  .angre-knapp{
+    flex:none; background:#FFFFFF; color:var(--ink); border:none;
+    border-radius:999px; padding:9px 18px;
+    font-family:inherit; font-size:var(--t-meta); font-weight:700;
+  }
+  .angre-knapp:active{ background:var(--paper-soft); }
+  .angre-lukk{
+    flex:none; background:none; border:none; color:#FFFFFF;
+    font-size:22px; line-height:1; padding:0 4px; opacity:.7;
+  }
+  @media(min-width:700px){
+    .angre-stripe{ left:auto; right:24px; width:380px; bottom:calc(120px + env(safe-area-inset-bottom)); }
+  }
+
+  .innboks-linje{ display:flex; align-items:stretch; gap:6px; margin-bottom:8px; }
+  .innboks-linje .innboks-rad{ flex:1; min-width:0; margin-bottom:0; }
+  .innboks-slett{
+    flex:none; width:42px; border-radius:12px;
+    border:1px solid var(--danger); background:var(--paper); color:var(--danger);
+    font-size:22px; line-height:1; padding:0;
+  }
+  .innboks-slett:active{ background:var(--danger); color:#FFFFFF; }
+  .innboks-tom-alle{
+    display:block; width:100%; margin-top:4px;
+    border:1px solid var(--danger); background:var(--paper); color:var(--danger);
+    border-radius:12px; padding:10px 14px;
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
+  }
+  .innboks-tom-alle:active{ background:var(--danger); color:#FFFFFF; }
+
   .innboks-rad{
     display:block; width:100%; text-align:left; margin-bottom:8px;
     border:1px solid var(--boks-kant); border-radius:12px;
@@ -1040,7 +1083,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-data.js?v=3"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
-<script src="/felles-neam.js?v=65"></script>
+<script src="/felles-neam.js?v=66"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').
@@ -2132,6 +2175,11 @@ function tegnInnboksListe(){
   /* Bygget med DOM, ikke innerHTML: navnene kommer fra oppskriftstitler
      som brukeren selv har skrevet, og sida har ingen escape-hjelper. */
   innboks.forEach((p, i) => {
+    /* Raden er nå en linje med TO knapper: pakka selv og en sletteknapp.
+       En knapp inni en knapp er ikke lov, så den ytre er en div. */
+    const linje = document.createElement('div');
+    linje.className = 'innboks-linje';
+
     const rad = document.createElement('button');
     rad.type = 'button';
     rad.className = 'innboks-rad';
@@ -2154,8 +2202,58 @@ function tegnInnboksListe(){
 
     rad.appendChild(navn);
     rad.appendChild(meta);
-    el.appendChild(rad);
+
+    const slett = document.createElement('button');
+    slett.type = 'button';
+    slett.className = 'innboks-slett';
+    slett.setAttribute('aria-label', 'Slett pakka ' + innboksNavn(p));
+    slett.title = 'Slett pakka';
+    slett.textContent = '×';
+    slett.onclick = () => slettPakke(p, innboksNavn(p));
+
+    linje.appendChild(rad);
+    linje.appendChild(slett);
+    el.appendChild(linje);
   });
+
+  /* Tøm alt. Vises fra to pakker og oppover - med én er raden nok. */
+  if (innboks.length > 1){
+    const tom = document.createElement('button');
+    tom.type = 'button';
+    tom.className = 'innboks-tom-alle';
+    tom.textContent = 'Slett alle ' + innboks.length + ' pakkene';
+    tom.onclick = tomInnboks;
+    el.appendChild(tom);
+  }
+}
+
+/* Sletting spør alltid: en rad som forsvinner etterlater ingenting å
+   legge merke til. Samme regel som ellers i huset. */
+async function slettPakke(p, navn){
+  const ja = await bekreft('Slette pakka «' + navn + '»?',
+                           { jaTekst:'Slett', fare:true });
+  if (!ja) return;
+  await fjernFraInnboks(p && p.id);
+  innboks = await lesInnboks();
+  tegnInnboksListe();
+  tegnInnboksMerke();
+}
+
+async function tomInnboks(){
+  const n = innboks.length;
+  const ja = await bekreft('Slette alle ' + n + ' pakkene fra Oppskriftsboka? '
+                         + 'Rettene blir liggende i oppskriftsboka - det er bare '
+                         + 'køen hit som tømmes.',
+                           { jaTekst:'Slett alle', fare:true });
+  if (!ja) return;
+  try {
+    await skrivInnboks([]);
+    innboks = [];
+    tegnInnboksListe();
+    tegnInnboksMerke();
+  } catch (e) {
+    varsle('Klarte ikke tømme køen. Prøv en gang til.');
+  }
 }
 
 function velgFraInnboks(i){
@@ -2635,7 +2733,22 @@ async function bekreftListe(){
 
   impListe = null;
   closeModal('sum-modal');
+
+  /* Hvilke rader som fantes FOER importen. Alt som er nytt etterpaa kom
+     fra denne pakka, og det er nettopp de som skal kunne angres. Vi
+     sammenligner id-er og ikke antall: en vare kan ha blitt lagt til en
+     rad som alt fantes (leggTilPaa), og den raden skal ikke slettes. */
+  const foer = new Set(data.items.map(x => x && x.id).filter(Boolean));
+
   await leggIListen(varer, d.tilOkt || null);
+
+  sisteImport = {
+    ider: data.items.map(x => x && x.id).filter(id => id && !foer.has(id)),
+    antall: 0,
+    tid: Date.now()
+  };
+  sisteImport.antall = sisteImport.ider.length;
+  visAngreStripe();
 
   const id = innboksValgtId;
   innboksValgtId = null;
@@ -2885,6 +2998,74 @@ function oktForPakke(tilOkt){
     return okt;
   }
   return sikreAktivOkt();
+}
+
+/* ============================================================
+   Angre siste import
+   ------------------------------------------------------------
+   Stripa staar til man gjoer noe med den. Den forsvinner ikke av seg
+   selv: en import som gikk galt oppdages ofte foerst naar man leser
+   gjennom lista etterpaa, og da skal veien ut fortsatt vaere der.
+
+   Den fjerner BARE rader som kom inn med importen. Har Neam slaatt en
+   ny vare sammen med en som sto der fra foer, blir den raden staaende -
+   den er ikke ny, og mengden paa den er en annen sak.
+   ============================================================ */
+let sisteImport = null;
+
+function visAngreStripe(){
+  const gammel = document.getElementById('angre-import');
+  if (gammel) gammel.remove();
+  if (!sisteImport || !sisteImport.antall) return;
+
+  const el = document.createElement('div');
+  el.id = 'angre-import';
+  el.className = 'angre-stripe';
+
+  const tekst = document.createElement('span');
+  tekst.textContent = sisteImport.antall === 1
+    ? 'Én vare kom inn fra Oppskriftsboka.'
+    : sisteImport.antall + ' varer kom inn fra Oppskriftsboka.';
+
+  const angre = document.createElement('button');
+  angre.type = 'button';
+  angre.className = 'angre-knapp';
+  angre.textContent = 'Angre';
+  angre.onclick = angreImport;
+
+  const ok = document.createElement('button');
+  ok.type = 'button';
+  ok.className = 'angre-lukk';
+  ok.setAttribute('aria-label', 'Lukk');
+  ok.textContent = '×';
+  ok.onclick = function(){ sisteImport = null; el.remove(); };
+
+  el.appendChild(tekst);
+  el.appendChild(angre);
+  el.appendChild(ok);
+  document.body.appendChild(el);
+}
+
+async function angreImport(){
+  if (!sisteImport || !sisteImport.ider.length) return;
+  const n = sisteImport.antall;
+  const ja = await bekreft('Fjerne de ' + n + ' varene som kom inn fra Oppskriftsboka? '
+                         + 'Resten av lista blir stående.',
+                           { jaTekst:'Fjern dem', fare:true });
+  if (!ja) return;
+
+  const skalBort = new Set(sisteImport.ider);
+  data.items = data.items.filter(x => !(x && skalBort.has(x.id)));
+  sisteImport = null;
+  const el = document.getElementById('angre-import');
+  if (el) el.remove();
+
+  try{
+    await save();
+    render();
+  }catch(e){
+    varsle('Klarte ikke lagre. Last sida på nytt og prøv igjen.');
+  }
 }
 
 async function leggIListen(varer, tilOkt){

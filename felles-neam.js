@@ -392,7 +392,16 @@ function neamSystem(k, harVerktoy, bakgrunn){
 async function neamEttForsok(meldinger, system, verktoy){
   const kropp = {
     model: neamModell().id,
-    max_tokens: 4000,
+    /* 4000 var for lite. En hel ukes varer i ETT verktoeykall - navn,
+       mengde, enhet og kilde for femti linjer - er i seg selv rundt
+       3000 tokens, og da er det ingenting igjen til svaret. Resultatet
+       var «Neam ble avbrutt midt i» paa handlelista, gang paa gang.
+
+       Taket koster ingenting naar det ikke naas: vi betaler for det som
+       faktisk skrives, ikke for grensen. Det eneste taket verner mot er
+       en modell som skriver i det uendelige, og 12 000 er fortsatt godt
+       innenfor det. Maalt 12. september 2026. */
+    max_tokens: 12000,
 
     /* Utvidet tenkning AV.
 
@@ -2112,7 +2121,8 @@ async function neamTur(){
               }).join(', '), '\nhele svaret:', svar);
           }catch(e){}
           neamPoster.push({ feil:'Neam ble avbrutt midt i - svaret ble for langt. '
-                              + 'Be om mindre av gangen, eller prøv på nytt.' });
+                              + 'Be om mindre av gangen - for eksempel «bare kjøledisken» '
+                              + 'eller «de ti første» - eller prøv på nytt.' });
           break;
         }
 
