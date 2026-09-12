@@ -338,6 +338,21 @@
   left:auto; right:calc(var(--f-aapen) / 2 - var(--ror-tykk) / 2);
 }
 
+/* Knapper i OEVERSTE rad henger ned i raden under med et kort roer -
+   samme grep som .rad bruker. Uten dette hang bare foerste kolonne
+   sammen (via ::before), mens de andre sto loest over sin egen rad: «Se
+   paa nett» svevde over «Lim inn» uten forbindelse. Klassen .over settes
+   av JS etter tegning, for det er foerst da man vet hvem som havnet
+   oppe. */
+.neam-stabel.bred .neam-enhet{ position:relative; }
+.neam-stabel.bred .neam-enhet.over::after{
+  content:''; position:absolute; z-index:-1;
+  width:var(--ror-tykk); left:calc(50% - var(--ror-tykk) / 2);
+  background-image:var(--ror-lodd);
+  background-size:100% auto; background-repeat:repeat-y; box-shadow:var(--ror-skygge);
+  top:50%; height:calc(50% + var(--f-luft) + var(--f-aapen) / 2);
+}
+
 /* Vannrett roer langs NEDERSTE rad, fra foerste til siste kolonnes akse,
    saa kolonnene henger sammen i stedet for aa staa loese ved siden av
    hverandre. */
@@ -495,7 +510,18 @@
   display:flex; align-items:center; justify-content:center;
 }
 .neam-enhet svg{ width:var(--f-ikon); height:var(--f-ikon); }
-.neam-enhet img{ width:100%; height:auto; display:block; }
+.neam-enhet img{
+  width:100%; height:auto; display:block;
+  /* min-width:0 er ikke pynt. Bildet er et flex-barn (knappen er
+     display:flex), og et flex-barn har min-width:AUTO som standard -
+     altsaa sin egen naturlige bredde. Chrome ser gjennom fingrene med
+     det; Safari gjoer det ikke. Paa iPhone fikk et 512px-merke derfor
+     512px, og med overflow:visible flommet det ut over hele skjermen.
+
+     Det rammet bare Emma og Andrea dash - de eneste sidene med
+     merkebilder i fireren. Funnet 12. september 2026. */
+  min-width:0; max-width:100%; flex:0 1 auto;
+}
 .neam-enhet:active{ transform:scale(.94); }
 .neam-enhet.merke{ background:none; box-shadow:none; overflow:visible; }
 .neam-enhet.merke img{ filter:drop-shadow(0 3px 9px rgba(44,62,80,.32)); }
