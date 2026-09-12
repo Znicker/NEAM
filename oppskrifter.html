@@ -315,6 +315,14 @@
   /* Ukemeny: to piller over sorteringsknappen. Fargene er hentet fra
      ikonene de erstatter, saa de er til aa kjenne igjen. Sorteringsknappen
      er hvit - den er den noeytrale i hele Neam. */
+  /* SKJULT fra 12. september 2026: Åpne ukemeny, Legg i ukemeny og Ny
+     oppskrift ligger i Neam-fireren nede til høyre. Markupen står igjen
+     fordi knappene fortsatt kalles derfra - `ukeTrykk`, `plan-fab` og
+     `renderPlanFab()` peker på elementene her. Å rive dem ut ville vært
+     en større operasjon uten gevinst; skjult er nok. */
+  .uke-flyt, #view-home .uke-flyt{ display:none !important; }
+  .sorter-flyt, body:has(#view-home.view.active) .sorter-flyt{ display:none !important; }
+
   .uke-flyt{
     position:fixed; z-index:26;
     right:20px; bottom:calc(84px + env(safe-area-inset-bottom));
@@ -1613,16 +1621,16 @@
   #view-home .uke-ikon{ display:none; }
   #view-home .uke-knapp .fab-tekst{ max-width:none; opacity:1; transition:none; }
 
-  /* To ting deler denne raden: «Ny oppskrift» og ukevelgeren. De hoerer
-     ikke sammen - den ene skaper noe, den andre er en innstilling - saa
-     de faar hver sin linje. Ukevelgeren oeverst, fordi den gjelder alt
-     man gjoer nedenfor. */
+  /* Ukevelgeren staar igjen alene her etter at «Ny oppskrift» flyttet
+     inn i fireren. Den er en INNSTILLING - hvilken uke man legger retter
+     i - og hoerer hjemme i spalten der man ser og filtrerer, ikke under
+     tommelen sammen med handlingene. */
   #view-home .bottom-bar{
     display:flex; flex-wrap:wrap; position:relative; inset:auto; padding:0;
     justify-content:stretch; margin-top:0;
   }
   #view-home .plan-week-line{ order:-1; }
-  #view-home .fab-pill{ width:100%; justify-content:center; }
+  #view-home .fab-pill{ display:none; }
   #view-home .fab-pill{
     background:none; border:none; border-radius:0; padding:0; width:100%;
   }
