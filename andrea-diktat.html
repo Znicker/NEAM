@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Diktat">
+<meta name="theme-color" content="#F5F5F5">
+<meta name="robots" content="noindex, nofollow">
+<title>Diktat – Neam</title>
+<link rel="apple-touch-icon" href="/bilder/neam-robot.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/felles-rot.css?v=5">
+<link rel="stylesheet" href="/felles-dialog.css?v=1">
+<style>
+/* ============================================================
+   NEAM – Diktat for Andrea
+   Laget 12. september 2026. Lenket fra Andrea dash, ved siden
+   av mattespillet.
+
+   Neam leser opp ukas ord. Hun skriver dem paa et ark han selv
+   har laget - ett tegn i hver rute - og tar bilde av arket naar
+   hun er ferdig. Da leser han arket og gir stjerner.
+
+   HVORFOR RUTER: uten dem maa modellen selv finne hvor én
+   bokstav slutter og den neste begynner i barneskrift, og en
+   feilsegmentert bokstav blir til en skrivefeil som ikke finnes.
+   Med ruter er spoersmaalet «hva staar i denne ruta», og svaret
+   er én bokstav per rute i fast rekkefoelge. Da eier VI
+   plasseringen: markeringen under bildet foelger samme rutenett,
+   saa bokstav tre er alltid bokstav tre.
+
+   HVORFOR FASITEN IKKE SENDES MED BILDET: en modell som vet hva
+   det skal staa, leser det den venter aa se. Den faar bildet og
+   ingenting annet, og sammenligningen gjoeres her i sida - som
+   ren tegnsammenligning, ikke som en vurdering. Se lesArk().
+
+   TRE VISNINGER: oppsett (ukas ord og de tre knappene), oeving
+   (opplesning, ett ord av gangen) og resultat. Arket ligger for
+   seg og vises bare i utskrift.
+
+   BILDET LAGRES IKKE. Det staar i minnet mens resultatet er
+   oppe, og forsvinner naar sida lastes paa nytt. En KV-verdi med
+   ukentlige arkbilder i ville vokst uten grense, og bildet har
+   ingen verdi etter at arket er lest.
+
+   HVORFOR NEAM-HJOERNET IKKE ER HER: samme grunn som i
+   mattespillet - paa telefon ville haandtaket staatt oppaa
+   tastaturet, og samtalen er en rask vei til fasiten. Veien ut
+   er merket oppe til venstre og sveip tilbake.
+   ============================================================ */
+
+:root{
+  /* Messing - kontur og ramme, aldri fylt flate. */
+  --messing:#B8873A;
+  --messing-moerk:#8A6428;
+  /* Lyset i stjernene og i en riktig bokstav. Samme gule to steder:
+     det er én betydning - «det der satt». */
+  --lys:#F2C14E;
+  --lys-glod:rgba(242,193,78,.75);
+  --metall:#E6E1D6;
+  --robot-rod:#A64D3C;
+
+  --kant:16px;
+  --robot-h:104px;
+  /* Sideforholdet til bildefila: robot 388x360. */
+  --robot-w:calc(var(--robot-h) * 1.078);
+  --rute:38px;
+}
+@media(min-width:700px) and (min-height:600px){
+  :root{ --kant:28px; --robot-h:150px; --rute:46px; }
+}
+@media(min-width:1300px) and (min-height:600px){
+  :root{ --kant:40px; --robot-h:150px; --rute:46px; }
+}
+@media(max-height:640px){
+  :root{ --robot-h:84px; --rute:34px; }
+}
+
+*{ box-sizing:border-box; }
+[hidden]{ display:none !important; }
+html, body{ margin:0; }
+body{
+  font-family:'Archivo', system-ui, -apple-system, sans-serif;
+  color:var(--ink);
+  background:var(--side-bakgrunn);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+button{
+  font-family:inherit; color:inherit;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  cursor:pointer;
+}
+button:focus-visible, a:focus-visible, input:focus-visible{
+  outline:3px solid var(--aksent); outline-offset:2px;
+}
+
+.side{
+  overflow-x:hidden; overflow-x:clip;
+  min-height:100vh; min-height:100dvh;
+  max-width:1240px; margin:0 auto;
+  display:flex; flex-direction:column; gap:14px;
+  padding:max(14px, env(safe-area-inset-top)) var(--kant)
+          calc(20px + env(safe-area-inset-bottom));
+}
+
+/* ---------- Toppen ---------- */
+.topp{ display:flex; align-items:center; gap:14px; }
+.merke{ flex-shrink:0; display:block; width:64px; height:64px; }
+.merke img{ width:100%; height:100%; object-fit:contain; display:block; }
+.tittel{
+  margin:0; font-size:clamp(26px, 4.2vw, 44px); font-weight:700;
+  line-height:1.05; letter-spacing:-.01em;
+}
+.ingress{
+  margin:6px 0 0; max-width:54ch;
+  font-size:var(--t-brod); line-height:1.45; color:var(--ink-soft); font-weight:600;
+}
+@media(min-width:700px){ .merke{ width:96px; height:96px; } }
+/* Under opplesningen trengs hoeyden til Neam og de to knappene. */
+body.over .topp{ display:none; }
+
+/* ---------- Neam med boble ----------
+   Han staar stille her - det er han som leser, ikke han som gaar.
+   Boblen ligger ved siden av hodet, paa hoeyre side, og tar resten
+   av bredden. */
+.scene{
+  display:flex; align-items:flex-end; gap:12px; flex-shrink:0;
+  min-height:calc(var(--robot-h) + 6px);
+}
+.robot{ position:relative; width:var(--robot-w); height:var(--robot-h); flex-shrink:0; }
+.robot img{
+  width:100%; height:100%; object-fit:contain; object-position:bottom; display:block;
+}
+/* Reserve hvis bildefila mangler: en messingskive med N. Uten den staar
+   han som et tomt felt, og scenen ser ut som en feil i sida. */
+.robot .reserve{
+  display:none; width:100%; height:100%; border-radius:50%;
+  background:var(--metall); border:3px solid var(--messing-moerk);
+  align-items:center; justify-content:center;
+  font-size:calc(var(--robot-h) * .42); font-weight:700; color:var(--robot-rod);
+}
+.robot.uten-bilde img{ display:none; }
+.robot.uten-bilde .reserve{ display:flex; }
+.robot.leser{ animation:nikk 1.6s ease-in-out infinite; }
+@keyframes nikk{
+  0%,100%{ transform:translateY(0) rotate(0); }
+  50%{ transform:translateY(-4px) rotate(-2deg); }
+}
+
+.boble{
+  position:relative; flex:1; min-width:0;
+  margin-bottom:calc(var(--robot-h) * .18);
+  padding:10px 14px;
+  background:var(--paper); color:var(--ink);
+  border:2px solid var(--messing); border-radius:16px;
+  font-size:var(--t-brod); font-weight:600; line-height:1.35;
+  box-shadow:var(--shadow);
+}
+.boble::after{
+  content:''; position:absolute; bottom:14px; left:-8px;
+  width:14px; height:14px;
+  background:var(--paper);
+  border-left:2px solid var(--messing); border-bottom:2px solid var(--messing);
+  transform:rotate(45deg);
+}
+.boble:empty{ display:none; }
+
+/* ---------- Flata ---------- */
+.flate{ display:flex; flex-direction:column; gap:14px; }
+@media(min-width:900px){
+  .flate{
+    display:grid; grid-template-columns:minmax(0,1.45fr) minmax(280px,1fr);
+    gap:18px; align-items:start;
+  }
+  body.over .flate{ grid-template-columns:1fr; }
+}
+body.over .rekorder{ display:none; }
+
+.kort{
+  background:var(--paper); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:18px 20px;
+}
+@media(min-width:700px){ .kort{ padding:22px 26px; } }
+.kort-h{ margin:0 0 12px; font-size:var(--t-stor); font-weight:700; line-height:1.2; }
+.hjelp{ margin:0 0 10px; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+
+/* ---------- Ukas ord ---------- */
+.ord-topp{ display:flex; align-items:baseline; gap:12px; }
+.ord-topp .kort-h{ margin:0; }
+.endre-knapp{
+  margin-left:auto; border:1px solid var(--line); background:var(--paper);
+  border-radius:999px; padding:6px 14px;
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--ink-soft);
+}
+.endre-knapp:active{ background:var(--paper-soft); }
+
+.ordliste{ list-style:none; margin:12px 0 0; padding:0; display:grid; gap:8px; }
+.ordliste li{
+  display:flex; align-items:center; gap:12px;
+  padding:11px 14px; border-radius:12px; background:var(--boks-mild);
+  font-size:var(--t-stor); font-weight:700;
+}
+.o-nr{
+  flex-shrink:0; width:26px; height:26px; border-radius:50%;
+  border:2px solid var(--messing); color:var(--messing-moerk);
+  display:flex; align-items:center; justify-content:center;
+  font-size:var(--t-meta); font-weight:700;
+}
+/* Ordene staar skjult i utgangspunktet. Ser hun dem rett foer hun
+   skriver, er det ikke lenger en diktat. Trykk paa raden viser dem -
+   det er hennes eget valg, og det skal koste ett trykk. */
+.ordliste.skjult .o-ord{
+  color:transparent; background:var(--metall); border-radius:6px;
+  user-select:none;
+}
+.o-vis{
+  margin:12px 0 0; border:none; background:transparent; padding:6px 2px;
+  font-size:var(--t-meta); font-weight:700; color:var(--aksent);
+}
+
+/* ---------- Redigering av ordene ---------- */
+.rediger{ display:grid; gap:8px; margin-top:12px; }
+.rad-inn{ display:flex; align-items:center; gap:10px; }
+.rad-inn input{
+  flex:1; min-width:0; padding:12px 14px; border-radius:12px;
+  border:1.5px solid var(--line); background:#FFFFFF; color:var(--ink);
+  /* 16px er et gulv: under det zoomer iOS inn naar feltet faar fokus. */
+  font-size:18px; font-weight:700; font-family:inherit;
+}
+.rad-fjern{
+  flex-shrink:0; border:1px solid var(--line); background:var(--paper);
+  color:var(--ink-soft); border-radius:999px; width:34px; height:34px;
+  font-size:var(--t-stor); line-height:1;
+  display:flex; align-items:center; justify-content:center;
+}
+.rad-fjern:active{ background:var(--paper-soft); }
+.legg-til{
+  margin-top:4px; border:none; background:transparent; padding:6px 2px;
+  font-size:var(--t-meta); font-weight:700; color:var(--aksent); text-align:left;
+}
+
+.knapp-blaa, .knapp-noytral{
+  border-radius:999px; font-weight:700; font-size:var(--t-brod);
+  padding:14px 20px; letter-spacing:.01em;
+}
+.knapp-blaa{ background:var(--aksent); color:#FFFFFF; border:1px solid var(--aksent); }
+.knapp-blaa:active{ background:var(--aksent-moerk); }
+.knapp-blaa:disabled{ background:var(--paper-soft); color:var(--ink-soft); border-color:var(--line); cursor:default; }
+.knapp-noytral{ background:var(--paper); color:var(--ink); border:1px solid var(--line); }
+.knapp-noytral:active{ background:var(--paper-soft); }
+.knapperad{ display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+.knapperad button{ flex:1 1 0; min-width:130px; }
+
+/* De tre veiene videre. Stablet, saa de er store nok til en tommel. */
+.veier{ display:grid; gap:10px; margin-top:18px; }
+.vei{
+  display:flex; align-items:center; gap:14px; text-align:left;
+  border:1px solid var(--line); background:var(--paper); border-radius:16px;
+  padding:14px 16px; width:100%;
+}
+.vei:active{ background:var(--paper-soft); transform:scale(.99); }
+.vei:disabled{ opacity:.45; cursor:default; }
+.vei-ikon{
+  flex-shrink:0; width:44px; height:44px; border-radius:50%;
+  border:2px solid var(--messing); color:var(--messing-moerk);
+  display:flex; align-items:center; justify-content:center;
+}
+.vei-ikon svg{ width:24px; height:24px; }
+.vei-navn{ display:block; font-size:var(--t-brod); font-weight:700; }
+.vei-sub{ display:block; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; margin-top:2px; }
+.vei.hoved{ border-color:var(--aksent); background:var(--aksent-lys); }
+
+/* ---------- Opplesningen ---------- */
+.over-topp{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.teller{ font-size:var(--t-brod); font-weight:700; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+.avslutt{
+  border:1px solid var(--line); background:var(--paper); border-radius:999px;
+  padding:8px 16px; font-size:var(--t-meta); font-weight:700; color:var(--ink-soft);
+}
+.over-inn{ display:flex; flex-direction:column; align-items:center; gap:18px; margin-top:18px; }
+/* Ordet staar ALDRI her. Nummeret er alt hun skal se. */
+.over-nr{
+  font-size:clamp(56px, 18vw, 120px); font-weight:700; line-height:1;
+  color:var(--messing); font-variant-numeric:tabular-nums;
+}
+.over-knapper{ display:grid; grid-template-columns:1fr 1fr; gap:12px; width:100%; max-width:420px; }
+.over-knapper button{ min-height:64px; font-size:var(--t-stor); }
+.tale-av{
+  margin:14px 0 0; padding:10px 14px; border-radius:12px;
+  background:var(--boks-mild); font-size:var(--t-meta); font-weight:600;
+  color:var(--ink-soft); line-height:1.4;
+}
+
+/* ---------- Resultatet ---------- */
+.resultat{ text-align:center; }
+.stjerner{ display:flex; justify-content:center; gap:6px; margin:4px 0 10px; flex-wrap:wrap; }
+.stjerne{ width:clamp(40px, 10vw, 58px); height:auto; display:block; }
+/* Tom stjerne er den samme fila, tappet for farge. Ett bilde, to
+   tilstander - da kan de ikke komme i utakt. */
+.stjerne:not(.fylt){ filter:grayscale(1) brightness(1.45) opacity(.42); }
+.stjerner.vis .stjerne{ animation:stjerne .45s cubic-bezier(.3,1.6,.5,1) both; animation-delay:calc(var(--i) * .14s); }
+@keyframes stjerne{ from{ transform:scale(0) rotate(-40deg); opacity:0; } to{ transform:none; opacity:1; } }
+.poeng{ margin:0; font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; }
+.prosent{ margin:6px 0 0; font-size:var(--t-brod); color:var(--ink-soft); font-weight:600; }
+
+/* Bildet av arket, over markeringen. Det er hennes eget arbeid - hun
+   skal se hva han saa paa. */
+.arkbilde{ margin:16px 0 0; }
+.arkbilde img{
+  display:block; width:100%; max-height:300px; object-fit:contain;
+  border-radius:12px; border:1px solid var(--line); background:#FFFFFF;
+}
+
+.fasit{ margin:18px 0 0; display:grid; gap:12px; text-align:left; }
+.f-ord{ padding:12px 14px; border-radius:12px; background:var(--boks-mild); }
+.f-topp{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.f-nr{
+  flex-shrink:0; width:24px; height:24px; border-radius:50%;
+  border:2px solid var(--messing); color:var(--messing-moerk);
+  display:flex; align-items:center; justify-content:center;
+  font-size:var(--t-etikett); font-weight:700;
+}
+.f-riktig{ font-size:var(--t-meta); font-weight:700; color:var(--ink-soft); }
+.f-riktig.ja{ color:var(--handling-ny-moerk); }
+.f-ruter{ display:flex; gap:5px; flex-wrap:wrap; }
+.rute{
+  width:var(--rute); height:calc(var(--rute) * 1.15);
+  border:2px solid var(--line); border-radius:8px; background:#FFFFFF;
+  display:flex; align-items:center; justify-content:center;
+  font-size:calc(var(--rute) * .52); font-weight:700; line-height:1;
+  font-family:inherit; color:var(--ink); padding:0;
+}
+/* Riktig bokstav i messing, med det samme gule lyset som stjernene. */
+.rute.ja{ border-color:var(--messing); color:var(--messing-moerk); box-shadow:inset 0 0 0 2px var(--lys); }
+/* Galt: hennes bokstav strøket og liten, den riktige under. Ikke roedt -
+   roedt betyr slett her i huset, og en skrivefeil er ikke en straff. */
+.rute.nei{ border-color:var(--ink-soft); flex-direction:column; gap:1px; font-size:calc(var(--rute) * .38); }
+.rute-skrevet{ color:var(--ink-soft); text-decoration:line-through; text-decoration-thickness:2px; }
+.rute-riktig{ color:var(--ink); font-size:calc(var(--rute) * .46); }
+/* Usikker: han fikk ikke lest ruta. Trykk, og hun skriver hva det sto. */
+.rute.usikker{ border-color:var(--handling-endre); color:var(--handling-endre); border-style:dashed; }
+.rute.usikker:active{ background:var(--boks-mild); }
+.rute-inn{
+  width:var(--rute); height:calc(var(--rute) * 1.15);
+  border:2px solid var(--aksent); border-radius:8px; background:#FFFFFF;
+  text-align:center; font-size:calc(var(--rute) * .52); font-weight:700;
+  font-family:inherit; color:var(--ink); padding:0;
+}
+.f-svar{ margin:8px 0 0; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.f-svar b{ color:var(--ink); }
+.lagring{ margin:14px 0 0; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+
+/* ---------- Rettingen paagaar ---------- */
+.venter{ text-align:center; padding:26px 0; }
+.venter-tekst{ margin:0; font-size:var(--t-brod); font-weight:600; color:var(--ink-soft); }
+.snurr{
+  width:40px; height:40px; margin:0 auto 14px;
+  border:4px solid var(--line); border-top-color:var(--messing); border-radius:50%;
+  animation:snurr 1s linear infinite;
+}
+@keyframes snurr{ to{ transform:rotate(360deg); } }
+
+/* ---------- Rekordene ---------- */
+.siste{ list-style:none; margin:0; padding:0; }
+.siste li{
+  display:grid; grid-template-columns:auto 1fr; gap:1px 12px; align-items:center;
+  padding:9px 0; border-bottom:1px solid var(--line);
+}
+.siste li:last-child{ border-bottom:none; }
+.siste li.ny{ background:#FFF6DD; margin:0 -10px; padding:9px 10px; border-radius:10px; border-bottom-color:transparent; }
+.s-stjerner{ grid-row:span 2; display:flex; gap:1px; }
+.mini{ width:16px; height:16px; display:block; }
+.mini:not(.fylt){ filter:grayscale(1) brightness(1.45) opacity(.4); }
+.s-topp{ font-size:var(--t-brod); font-weight:700; font-variant-numeric:tabular-nums; }
+.s-under{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.tom{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; margin:0; }
+.samlet{ margin:12px 0 0; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.runder-topp{ display:flex; align-items:baseline; gap:12px; }
+.runder-topp .kort-h{ margin:0; }
+.rediger-knapp{
+  margin-left:auto; border:1px solid var(--line); background:var(--paper);
+  border-radius:999px; padding:6px 14px;
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--ink-soft);
+}
+.rediger-knapp:active{ background:var(--paper-soft); }
+.rediger-knapp.paa{ background:var(--aksent-lys); border-color:var(--aksent); color:var(--aksent-moerk); }
+.siste.redigerer{ max-height:330px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.siste li.rad-redigeres{ grid-template-columns:auto 1fr auto; }
+.slett-rad{
+  grid-row:span 2; align-self:center;
+  border:1px solid var(--danger); background:var(--paper); color:var(--danger);
+  border-radius:999px; width:34px; height:34px; font-size:var(--t-stor); line-height:1;
+  display:flex; align-items:center; justify-content:center;
+}
+.slett-rad:active{ background:var(--danger); color:#FFFFFF; }
+
+/* ============================================================
+   Arket
+   ------------------------------------------------------------
+   Vises BARE i utskrift. Paa skjermen er det ingenting aa se -
+   arket er noe hun skriver paa med blyant.
+
+   Ingen ord staar paa det, bare numre: ser hun ordet mens hun
+   skriver, er det ikke lenger en diktat.
+
+   Ruter i millimeter, ikke piksler: dette er papir, og en rute
+   skal vaere stor nok til en barnehaand uansett hvilken skriver
+   arket kommer ut av. Radene staar godt fra hverandre - det
+   loefter treffsikkerheten i lesningen mer enn noe annet enkelt
+   grep.
+   ============================================================ */
+.ark{ display:none; }
+
+@media print{
+  /* Ingen bakgrunn paa papir: bildelaget fra felles-rot.css ville
+     spist en hel tonerkassett. */
+  html{ background:none; }
+  body::before{ display:none; }
+  body > .side{ display:none; }
+  .ark{ display:block; color:#000000; font-family:'Archivo', sans-serif; }
+  @page{ size:A4 portrait; margin:16mm; }
+}
+
+.ark-topp{ display:flex; align-items:flex-end; justify-content:space-between; gap:10mm; }
+.ark-h{ margin:0; font-size:11mm; font-weight:700; letter-spacing:.02em; }
+.ark-felt{ font-size:4mm; font-weight:600; }
+.ark-felt span{ display:inline-block; border-bottom:.4mm solid #000000; width:40mm; }
+.ark-hjelp{ margin:3mm 0 9mm; font-size:4mm; font-weight:600; }
+.ark-rad{ display:flex; align-items:center; gap:3mm; margin-bottom:9mm; }
+.ark-nr{
+  flex-shrink:0; width:9mm; height:9mm; border-radius:50%;
+  border:.6mm solid #000000;
+  display:flex; align-items:center; justify-content:center;
+  font-size:5mm; font-weight:700;
+}
+.ark-ruter{ display:flex; gap:2mm; }
+.ark-rute{ width:13mm; height:15mm; border:.5mm solid #000000; border-radius:1.5mm; }
+.ark-bunn{ margin-top:6mm; font-size:3.4mm; font-weight:600; }
+</style>
+</head>
+<body>
+
+<div class="side">
+
+  <header class="topp">
+    <a class="merke" href="/andrea.html" aria-label="Til Andrea dash">
+      <img src="/bilder/merke-andrea-dash.png?v=2" alt="Andrea dash" width="512" height="517">
+    </a>
+    <div>
+      <h1 class="tittel">Diktat</h1>
+      <p class="ingress">Neam leser ordene. Du skriver dem på arket, ett tegn i hver rute.</p>
+    </div>
+  </header>
+
+  <section class="scene">
+    <div class="robot" id="robot">
+      <img src="/bilder/spill/robot.webp?v=1" alt="" width="388" height="360"
+           onerror="this.closest('.robot').classList.add('uten-bilde')">
+      <span class="reserve" aria-hidden="true">N</span>
+    </div>
+    <p class="boble" id="boble" role="status" aria-live="polite"></p>
+  </section>
+
+  <main class="flate">
+
+    <!-- ===== Oppsett: ukas ord og de tre veiene ===== -->
+    <section class="kort oppsett" id="oppsett" aria-label="Ukas ord">
+      <div class="ord-topp">
+        <h2 class="kort-h">Ukas ord</h2>
+        <button type="button" class="endre-knapp" id="endreOrd">Endre</button>
+      </div>
+
+      <div id="visOrd">
+        <p class="hjelp" id="ordHjelp"></p>
+        <ul class="ordliste skjult" id="ordliste"></ul>
+        <button type="button" class="o-vis" id="visSkjul" hidden>Vis ordene</button>
+
+        <div class="veier">
+          <button type="button" class="vei hoved" id="veiOv">
+            <span class="vei-ikon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/>
+                <path d="M18.5 5.5a9 9 0 0 1 0 13"/>
+              </svg>
+            </span>
+            <span><span class="vei-navn">Hør ordene</span>
+                  <span class="vei-sub">Neam leser ett og ett</span></span>
+          </button>
+
+          <button type="button" class="vei" id="veiArk">
+            <span class="vei-ikon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                <rect x="6" y="14" width="12" height="7" rx="1"/>
+              </svg>
+            </span>
+            <span><span class="vei-navn">Skriv ut ark</span>
+                  <span class="vei-sub">Ruter til å skrive i</span></span>
+          </button>
+
+          <button type="button" class="vei" id="veiBilde">
+            <span class="vei-ikon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <circle cx="12" cy="12.5" r="3.5"/>
+              </svg>
+            </span>
+            <span><span class="vei-navn">Ta bilde av arket</span>
+                  <span class="vei-sub">Neam leser og gir stjerner</span></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Redigering av ordene -->
+      <div id="redigerOrd" hidden>
+        <p class="hjelp">Skriv inn ordene hun har fått denne uka. Ett ord per linje.</p>
+        <div class="rediger" id="ordFelt"></div>
+        <button type="button" class="legg-til" id="leggTilOrd">+ Legg til ett ord</button>
+        <div class="knapperad">
+          <button type="button" class="knapp-noytral" id="avbrytOrd">Avbryt</button>
+          <button type="button" class="knapp-blaa" id="lagreOrd">Lagre</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Opplesningen ===== -->
+    <section class="kort over" id="over" hidden aria-label="Opplesning">
+      <div class="over-topp">
+        <span class="teller" id="teller"></span>
+        <button type="button" class="avslutt" id="avsluttOv">Ferdig</button>
+      </div>
+      <div class="over-inn">
+        <span class="over-nr" id="overNr" aria-hidden="true"></span>
+        <div class="over-knapper">
+          <button type="button" class="knapp-noytral" id="horIgjen">Hør igjen</button>
+          <button type="button" class="knapp-blaa" id="nesteOrd">Neste ord</button>
+        </div>
+      </div>
+      <p class="tale-av" id="taleAv" hidden></p>
+    </section>
+
+    <!-- ===== Rettingen paagaar ===== -->
+    <section class="kort venter" id="venter" hidden aria-label="Neam leser arket">
+      <div class="snurr" aria-hidden="true"></div>
+      <p class="venter-tekst">Neam leser arket ditt …</p>
+    </section>
+
+    <!-- ===== Resultatet ===== -->
+    <section class="kort resultat" id="resultat" hidden aria-label="Resultat">
+      <div class="stjerner" id="stjerner"></div>
+      <p class="poeng" id="poeng"></p>
+      <p class="prosent" id="prosentTekst"></p>
+      <figure class="arkbilde" id="arkbilde" hidden><img id="arkbildeImg" alt="Arket ditt"></figure>
+      <div class="fasit" id="fasit"></div>
+      <p class="lagring" id="lagring" hidden></p>
+      <div class="knapperad">
+        <button type="button" class="knapp-noytral" id="tilbakeKnapp">Tilbake</button>
+        <button type="button" class="knapp-blaa" id="nyttBildeKnapp">Nytt bilde</button>
+      </div>
+    </section>
+
+    <!-- ===== Rekordene ===== -->
+    <aside class="kort rekorder" id="rekorder" aria-label="Tidligere diktater">
+      <div class="runder-topp">
+        <h2 class="kort-h" id="runderH">Tidligere diktater</h2>
+        <!-- Bare for magne@ og sys@. Se sjekkRedaktor(). -->
+        <button type="button" class="rediger-knapp" id="redigerKnapp" hidden>Rediger</button>
+      </div>
+      <ul class="siste" id="siste"></ul>
+      <p class="samlet" id="samlet"></p>
+    </aside>
+
+  </main>
+</div>
+
+<!-- Arket. Fylles av tegnArk() og vises bare i utskrift. -->
+<div class="ark" id="ark" aria-hidden="true"></div>
+
+<!-- Bildefeltet. Ligger utenfor .side saa det ikke arver noe fra kortene. -->
+<input type="file" id="bildeFil" accept="image/*" hidden>
+
+<script src="/felles-dialog.js?v=1"></script>
+<script>
+'use strict';
+
+/* ============================================================
+   Konstanter
+   ============================================================ */
+
+/* KV-noekkelen. Samme form som andrea-matte:v1 og andrea-fag:v1.
+   Ukas ordliste og hele historikken ligger i én verdi. */
+const NOKKEL = 'andrea-diktat:v1';
+/* Speil paa enheten. Ikke en egen sannhet: det er det siste vi vet om
+   KV-verdien, pluss runder som ikke kom fram. */
+const LOKAL_NOKKEL = 'neam-andrea-diktat:v1';
+const MAKS_RUNDER = 400;
+const MAKS_ORD = 10;
+/* To ruter ekstra bak hvert ord, saa en bokstav for mye har et sted aa
+   staa. MERK at antallet ruter dermed roeper ordets lengde; skal det
+   vekk, settes RUTER_FAST til et tall - da faar alle ord like mange. */
+const EKSTRA_RUTER = 2;
+const RUTER_FAST = 0;
+
+/* Modellen som leser arket. Sonnet er god nok til barneskrift i ruter,
+   og raskere enn Opus - hun staar og venter mens den leser. */
+const MODELL = 'claude-sonnet-5';
+
+/* Tale. Litt saktere enn vanlig tale, og litt lavere toneleie: det gir
+   den stive, formelle klangen Neam skal ha, og et diktatord skal uansett
+   leses roligere enn en setning. */
+const TALE_FART = 0.82;
+const TALE_TONE = 0.9;
+/* Pausene i «ord - setning - ord». Lang nok til at hun rekker aa begynne
+   aa skrive, kort nok til at hun ikke tror han er ferdig. */
+const PAUSE_MELLOM = 900;
+
+/* Neams replikker. Varm og litt stiv, aldri sarkastisk. */
+const REPLIKK = {
+  tom: 'God dag, Andrea! Jeg har ingen ord denne uka ennå. Trykk Endre, så skriver vi dem inn sammen.',
+  klar: 'Ukas ord er på plass. Skal jeg lese dem opp, eller vil du ha arket først?',
+  leser: 'Lytt godt. Jeg leser ordet, så en setning, så ordet en gang til.',
+  leserArk: 'Et øyeblikk. Jeg ser på hver rute etter tur.'
+};
+
+/* ============================================================
+   Tilstand
+   ============================================================ */
+
+let data = { versjon:1, liste:null, runder:[] };
+/* Paagaaende opplesning, eller null. */
+let ov = null;
+/* Sekvensnummer for tale. En gammel opplesning som svarer sent skal ikke
+   sette i gang neste ord - samme regel som for tegning: kast det som er
+   utdatert, ikke hopp over det som er nytt. */
+let taleNr = 0;
+/* Siste rettede runde og bildet den ble lest av. Bildet lagres ikke. */
+let sisteRunde = null;
+let sisteBilde = null;
+let visning = 'oppsett';
+
+const $ = function(id){ return document.getElementById(id); };
+
+function esc(t){
+  return String(t).replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+function si(tekst){ $('boble').textContent = tekst || ''; }
+
+function nyId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+/* ============================================================
+   Lagring - KV med speil paa enheten
+   ------------------------------------------------------------
+   Samme moenster som mattespillet: KV cacher lesinger i 60
+   sekunder, saa det vi har i minnet flettes alltid inn i det KV
+   svarer foer vi skriver. Ingen runde kan forsvinne av at
+   lesingen var gammel.
+   ============================================================ */
+
+async function kvLes(nokkel){
+  const r = await fetch('/api/data?key=' + encodeURIComponent(nokkel),
+                        { headers:{ 'Accept':'application/json' }, cache:'no-store' });
+  if(!r.ok) throw new Error('KV les ' + r.status);
+  const d = await r.json();
+  return (d && d.value !== undefined) ? d.value : null;
+}
+
+async function kvSkriv(nokkel, verdi){
+  const r = await fetch('/api/data?key=' + encodeURIComponent(nokkel), {
+    method:'PUT', headers:{ 'Content-Type':'application/json' },
+    body:JSON.stringify(verdi)
+  });
+  if(!r.ok) throw new Error('KV skriv ' + r.status);
+  return true;
+}
+
+function gyldigRunde(r){
+  return r && typeof r.id === 'string' && Array.isArray(r.ord) && r.ord.length > 0;
+}
+
+function gyldigListe(l){
+  return l && typeof l.tid === 'string' && Array.isArray(l.ord) && l.ord.length > 0;
+}
+
+/* Rundene flettes paa id. Ordlista er ÉN verdi, og da vinner den
+   nyeste: to enheter som skriver hver sin ordliste samme uke skal ende
+   paa den som ble skrevet sist, ikke paa en blanding av to lister. */
+function flettData(a, b){
+  const kart = new Map();
+  [a, b].forEach(function(d){
+    const liste = (d && Array.isArray(d.runder)) ? d.runder : [];
+    liste.forEach(function(r){ if(gyldigRunde(r)) kart.set(r.id, r); });
+  });
+  let runder = Array.from(kart.values())
+    .sort(function(x, y){ return x.tid < y.tid ? -1 : x.tid > y.tid ? 1 : 0; });
+  if(runder.length > MAKS_RUNDER) runder = runder.slice(-MAKS_RUNDER);
+
+  let liste = null;
+  [a, b].forEach(function(d){
+    const l = d && d.liste;
+    if(!gyldigListe(l)) return;
+    if(!liste || l.tid > liste.tid) liste = l;
+  });
+  return { versjon:1, liste:liste, runder:runder };
+}
+
+function lokalLes(){
+  try{
+    const t = localStorage.getItem(LOKAL_NOKKEL);
+    return t ? JSON.parse(t) : null;
+  }catch(e){ return null; }
+}
+
+function lokalSkriv(usendt){
+  try{
+    localStorage.setItem(LOKAL_NOKKEL, JSON.stringify({ data:data, usendt:!!usendt }));
+  }catch(e){ /* full eller privat modus - KV er fortsatt kilden */ }
+}
+
+async function synk(){
+  const fjern = await kvLes(NOKKEL);
+  const flett = flettData(fjern, data);
+  await kvSkriv(NOKKEL, flett);
+  data = flett;
+  lokalSkriv(false);
+}
+
+async function lastData(){
+  const lokal = lokalLes();
+  if(lokal && lokal.data){
+    data = flettData(lokal.data, null);
+    tegnOrdliste();
+    tegnRunder();
+  }
+  try{
+    const fjern = await kvLes(NOKKEL);
+    data = flettData(fjern, data);
+    if(lokal && lokal.usendt) await kvSkriv(NOKKEL, data);
+    lokalSkriv(false);
+  }catch(e){
+    console.warn('Diktat: fikk ikke lest KV', e);
+  }
+  tegnOrdliste();
+  tegnRunder();
+}
+
+/* ============================================================
+   Ordene
+   ============================================================ */
+
+function ordene(){
+  return (data.liste && Array.isArray(data.liste.ord)) ? data.liste.ord : [];
+}
+
+/* Rutene per ord. Se EKSTRA_RUTER og RUTER_FAST. */
+function ruterFor(ord){
+  return RUTER_FAST > 0 ? RUTER_FAST : String(ord).length + EKSTRA_RUTER;
+}
+
+/* Tegnene sammenlignes uten forskjell paa store og smaa bokstaver: et
+   barn som skriver SOL har ikke skrevet feil. */
+function likTegn(a, b){
+  return String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+}
+
+function tegnOrdliste(){
+  const ord = ordene();
+  const ul = $('ordliste');
+  ul.innerHTML = ord.length
+    ? ord.map(function(o, i){
+        return '<li><span class="o-nr">' + (i + 1) + '</span>'
+             + '<span class="o-ord">' + esc(o.ord) + '</span></li>';
+      }).join('')
+    : '';
+  $('visSkjul').hidden = !ord.length;
+  $('ordHjelp').textContent = ord.length
+    ? ord.length + (ord.length === 1 ? ' ord denne uka.' : ' ord denne uka.')
+    : 'Ingen ord lagt inn ennå. Trykk Endre for å skrive dem inn.';
+  $('veiOv').disabled = !ord.length;
+  $('veiArk').disabled = !ord.length;
+  $('veiBilde').disabled = !ord.length;
+  if(visning === 'oppsett') si(ord.length ? REPLIKK.klar : REPLIKK.tom);
+  tegnArk();
+}
+
+$('visSkjul').addEventListener('click', function(){
+  const skjult = $('ordliste').classList.toggle('skjult');
+  this.textContent = skjult ? 'Vis ordene' : 'Skjul ordene';
+});
+
+/* ---------------- Redigering ---------------- */
+
+function tegnFelt(verdier){
+  const v = verdier.slice();
+  while(v.length < 5) v.push('');
+  $('ordFelt').innerHTML = v.map(function(t, i){
+    return '<div class="rad-inn">'
+         + '<input type="text" value="' + esc(t) + '" maxlength="24" autocapitalize="off" '
+         + 'autocorrect="off" spellcheck="false" aria-label="Ord ' + (i + 1) + '">'
+         + '<button type="button" class="rad-fjern" aria-label="Fjern ord ' + (i + 1) + '">&times;</button>'
+         + '</div>';
+  }).join('');
+}
+
+function felteneNa(){
+  return Array.prototype.map.call($('ordFelt').querySelectorAll('input'),
+    function(el){ return el.value.trim(); });
+}
+
+$('endreOrd').addEventListener('click', function(){
+  tegnFelt(ordene().map(function(o){ return o.ord; }));
+  $('visOrd').hidden = true;
+  $('redigerOrd').hidden = false;
+  $('endreOrd').hidden = true;
+});
+
+function lukkRedigering(){
+  $('visOrd').hidden = false;
+  $('redigerOrd').hidden = true;
+  $('endreOrd').hidden = false;
+}
+
+$('avbrytOrd').addEventListener('click', function(){
+  /* Avbryt-regelen: spoer bare naar det finnes noe aa miste. */
+  const na = felteneNa().filter(Boolean).join('\u241F');
+  const foer = ordene().map(function(o){ return o.ord; }).join('\u241F');
+  if(na === foer){ lukkRedigering(); return; }
+  bekreft('Du har endret ordene uten å lagre. Forkaster du det nå, er det borte.',
+          { jaTekst:'Forkast', fare:true }).then(function(ja){ if(ja) lukkRedigering(); });
+});
+
+$('leggTilOrd').addEventListener('click', function(){
+  const v = felteneNa();
+  if(v.length >= MAKS_ORD){ varsle('Høyst ' + MAKS_ORD + ' ord om gangen.'); return; }
+  v.push('');
+  tegnFelt(v);
+  const felt = $('ordFelt').querySelectorAll('input');
+  if(felt.length) felt[felt.length - 1].focus();
+});
+
+$('ordFelt').addEventListener('click', function(ev){
+  const k = ev.target.closest('.rad-fjern');
+  if(!k) return;
+  const rad = k.closest('.rad-inn');
+  const alle = Array.prototype.slice.call($('ordFelt').children);
+  const i = alle.indexOf(rad);
+  const v = felteneNa();
+  v.splice(i, 1);
+  tegnFelt(v);
+});
+
+$('lagreOrd').addEventListener('click', async function(){
+  const ord = felteneNa().filter(Boolean);
+  if(!ord.length){ varsle('Skriv inn minst ett ord.'); return; }
+
+  /* Ordene lagres MED DET SAMME, uten setninger. Setningene kommer fra
+     Neam og kan feile; da skal ordene likevel ligge der. */
+  data.liste = {
+    id: nyId(),
+    tid: new Date().toISOString(),
+    ord: ord.map(function(o){ return { ord:o, setninger:[] }; })
+  };
+  lokalSkriv(true);
+  lukkRedigering();
+  tegnOrdliste();
+  si('Ordene er notert. Jeg finner på en setning til hvert av dem.');
+
+  try{ await synk(); }
+  catch(e){ console.warn('Diktat: fikk ikke lagret ordene', e); }
+
+  try{
+    const med = await lagSetninger(ord);
+    /* Bare hvis lista ikke er byttet ut mens vi ventet. */
+    if(data.liste && data.liste.ord.length === med.length){
+      data.liste.ord = med;
+      lokalSkriv(true);
+      await synk();
+    }
+    si(REPLIKK.klar);
+  }catch(e){
+    console.warn('Diktat: fikk ikke laget setninger', e);
+    si('Jeg fikk ikke laget setninger denne gangen, men ordene kan jeg lese.');
+  }
+});
+
+/* ============================================================
+   Neam
+   ------------------------------------------------------------
+   To kall gaar herfra: setninger til ordene, og lesing av arket.
+   Begge gaar rett til /api/claude, ikke gjennom samtalepanelet -
+   de har ett bestemt svar hver, og skal ikke kunne bli til noe
+   annet underveis.
+   ============================================================ */
+
+async function neam(kropp){
+  const stopper = new AbortController();
+  const klokke = setTimeout(function(){ stopper.abort(); }, 90000);
+  let r;
+  try{
+    r = await fetch('/api/claude', {
+      method:'POST', headers:{ 'Content-Type':'application/json' },
+      body:JSON.stringify(Object.assign({ thinking:{ type:'disabled' } }, kropp)),
+      signal:stopper.signal
+    });
+  }catch(e){
+    throw new Error(e && e.name === 'AbortError'
+      ? 'Neam svarte ikke i tide.' : 'Fikk ikke kontakt med Neam.');
+  }finally{
+    clearTimeout(klokke);
+  }
+  const raa = await r.text();
+  let d;
+  try{ d = JSON.parse(raa); }
+  catch(e){ throw new Error('Uventet svar fra tjenesten (HTTP ' + r.status + ').'); }
+  if(!r.ok || d.type === 'error'){
+    throw new Error((d.error && d.error.message) || ('HTTP ' + r.status));
+  }
+  return (d.content || [])
+    .map(function(b){ return b.type === 'text' ? b.text : ''; })
+    .filter(Boolean).join('\n');
+}
+
+/* Modellen svarer i JSON. Kodegjerder tas bort foer tolkning - de kommer
+   av og til selv naar den er bedt om aa la vaere. */
+function somJson(tekst){
+  const t = String(tekst || '').replace(/```json|```/g, '').trim();
+  const start = t.search(/[[{]/);
+  if(start === -1) throw new Error('Fant ingen JSON i svaret');
+  return JSON.parse(t.slice(start));
+}
+
+/* ---------------- Setningene ----------------
+   To per ord: én med Andrea i, én noeytral. Den ene leses, den andre
+   ligger klar til «Hoer igjen» - da blir gjentakelsen ikke identisk
+   gjentakelse, som er bedre for pugging. */
+async function lagSetninger(ord){
+  const svar = await neam({
+    model: MODELL,
+    max_tokens: 1500,
+    system: 'Du er Neam, en vennlig og litt formell robot som hjelper Andrea på '
+          + '4. trinn med diktatordene sine. Du svarer bare med JSON.',
+    messages: [{ role:'user', content:
+        'Lag to korte norske setninger til hvert av disse ordene:\n'
+      + ord.map(function(o, i){ return (i + 1) + '. ' + o; }).join('\n') + '\n\n'
+      + 'Regler:\n'
+      + '- Ordet må stå i setningen, i nøyaktig den formen det er oppgitt.\n'
+      + '- Første setning skal handle om Andrea og bruke navnet hennes.\n'
+      + '- Andre setning skal være nøytral, uten navn.\n'
+      + '- Høyst åtte ord i hver setning, og bokmål et barn på 9 år forstår.\n'
+      + '- Ingen andre ord fra lista skal stå i setningen.\n\n'
+      + 'Svar BARE med JSON på formen:\n'
+      + '{"ord":[{"ord":"sol","setninger":["Andrea sitter i sola.","Sola skinner i dag."]}]}'
+  }] });
+  const d = somJson(svar);
+  const kart = new Map();
+  ((d && d.ord) || []).forEach(function(o){
+    if(o && typeof o.ord === 'string' && Array.isArray(o.setninger)){
+      kart.set(o.ord.trim().toLowerCase(),
+               o.setninger.map(String).filter(Boolean).slice(0, 2));
+    }
+  });
+  /* Rekkefoelgen er VAAR, ikke modellens: kommer et ord tilbake i feil
+     orden eller mangler helt, staar det likevel paa sin plass - uten
+     setninger, som er greit nok. */
+  return ord.map(function(o){
+    return { ord:o, setninger: kart.get(o.trim().toLowerCase()) || [] };
+  });
+}
+
+/* ============================================================
+   Opplesningen
+   ------------------------------------------------------------
+   Nettleserens egen talesyntese. Den norske stemmen er god nok
+   til enkeltord; finnes ingen norsk stemme, sier vi fra i stedet
+   for aa lese ordet med engelsk uttale - «skjegg» lest paa
+   engelsk er verre enn ingen opplesning.
+   ============================================================ */
+
+let stemme = null;
+let taleStottes = ('speechSynthesis' in window);
+
+function finnStemme(){
+  if(!taleStottes) return;
+  const alle = window.speechSynthesis.getVoices() || [];
+  stemme = alle.filter(function(v){ return /^nb/i.test(v.lang); })[0]
+        || alle.filter(function(v){ return /^no/i.test(v.lang); })[0]
+        || alle.filter(function(v){ return /^nn/i.test(v.lang); })[0]
+        || null;
+}
+if(taleStottes){
+  finnStemme();
+  /* iOS fyller lista etter at sida er lastet. */
+  window.speechSynthesis.onvoiceschanged = finnStemme;
+}
+
+/* Leser én tekst og lover aa komme tilbake naar den er lest.
+
+   VAKTHUNDEN er ikke pynt: i Safari hender det at `onend` aldri fyrer,
+   og da ville kjeden ord-setning-ord staatt bom stille uten at noe saa
+   galt ut. Tiden er anslaatt av lengden, med et gulv. */
+function les(tekst){
+  return new Promise(function(ok){
+    if(!taleStottes){ ok(false); return; }
+    const y = new SpeechSynthesisUtterance(String(tekst));
+    /* Finner vi ingen norsk stemme i lista, setter vi likevel spraaket og
+       lar nettleseren velge. Lista er tom en liten stund etter at sida er
+       lastet i iOS, og en stum opplesning er verre enn en uttale som
+       kanskje bommer paa «skjegg». */
+    if(stemme) y.voice = stemme;
+    y.lang = stemme ? stemme.lang : 'nb-NO';
+    y.rate = TALE_FART;
+    y.pitch = TALE_TONE;
+    let ferdig = false;
+    const slutt = function(){
+      if(ferdig) return;
+      ferdig = true;
+      clearTimeout(vakt);
+      ok(true);
+    };
+    y.onend = slutt;
+    y.onerror = slutt;
+    const vakt = setTimeout(slutt, Math.max(3500, String(tekst).length * 160));
+    window.speechSynthesis.speak(y);
+  });
+}
+
+function pause(ms){
+  return new Promise(function(ok){ setTimeout(ok, ms); });
+}
+
+function stopTale(){
+  taleNr++;
+  if(taleStottes) window.speechSynthesis.cancel();
+}
+
+/* Ord, setning, ord - i den rekkefoelgen, fordi det er slik laereren
+   gjoer det, og fordi det siste ordet er det hun skriver etter. */
+async function lesOppgave(annenSetning){
+  if(!ov) return;
+  const o = ordene()[ov.i];
+  if(!o) return;
+  stopTale();
+  const mitt = taleNr;
+  const s = o.setninger || [];
+  const setning = s.length ? (annenSetning && s[1] ? s[1] : s[0]) : '';
+
+  await les(o.ord);
+  if(mitt !== taleNr) return;
+  if(setning){
+    await pause(PAUSE_MELLOM);
+    if(mitt !== taleNr) return;
+    await les(setning);
+    if(mitt !== taleNr) return;
+  }
+  await pause(PAUSE_MELLOM);
+  if(mitt !== taleNr) return;
+  await les(o.ord);
+}
+
+function tegnOving(){
+  const ord = ordene();
+  $('teller').textContent = 'Ord ' + (ov.i + 1) + ' av ' + ord.length;
+  $('overNr').textContent = String(ov.i + 1);
+  $('nesteOrd').textContent = (ov.i + 1 >= ord.length) ? 'Ferdig' : 'Neste ord';
+  $('robot').classList.add('leser');
+}
+
+function startOving(){
+  if(!ordene().length) return;
+  ov = { i:0, hort:false };
+  history.pushState({ fh:true, visning:'over' }, '');
+  vis('over');
+  si(REPLIKK.leser);
+  tegnOving();
+  /* Foerste opplesning MAA starte i trykket som kom hit: iOS gir ikke
+     talesyntesen lov til aa si noe uten en brukerhandling bak seg. */
+  lesOppgave(false);
+
+  /* Stemmelista fylles av nettleseren, og i iOS er den tom en liten stund
+     etter at sida er lastet. Derfor spoer vi én gang til foer vi sier at
+     noe mangler - beskjeden skal gjelde enheten, ikke tidspunktet. */
+  finnStemme();
+  settTaleVarsel();
+  setTimeout(function(){ finnStemme(); settTaleVarsel(); }, 900);
+}
+
+function settTaleVarsel(){
+  const el = $('taleAv');
+  if(!taleStottes){
+    el.textContent = 'Denne nettleseren kan ikke lese høyt. Prøv på iPad eller iPhone, '
+                   + 'eller be noen lese ordene fra lista.';
+    el.hidden = false;
+    return;
+  }
+  if(!stemme){
+    el.textContent = 'Jeg fant ingen norsk stemme på denne enheten, så uttalen kan bli rar. '
+                   + 'På iPad og iPhone pleier den å være på plass.';
+    el.hidden = false;
+    return;
+  }
+  el.hidden = true;
+}
+
+$('veiOv').addEventListener('click', startOving);
+$('horIgjen').addEventListener('click', function(){
+  if(!ov) return;
+  ov.hort = !ov.hort;
+  lesOppgave(ov.hort);
+});
+$('nesteOrd').addEventListener('click', function(){
+  if(!ov) return;
+  if(ov.i + 1 >= ordene().length){ history.back(); return; }
+  ov.i++;
+  ov.hort = false;
+  tegnOving();
+  lesOppgave(false);
+});
+$('avsluttOv').addEventListener('click', function(){ history.back(); });
+
+/* ============================================================
+   Arket
+   ============================================================ */
+
+function tegnArk(){
+  const ord = ordene();
+  const ark = $('ark');
+  if(!ord.length){ ark.innerHTML = ''; return; }
+  const dato = new Date().toLocaleDateString('nb-NO',
+    { day:'numeric', month:'long', year:'numeric' });
+
+  ark.innerHTML =
+      '<div class="ark-topp">'
+    +   '<h1 class="ark-h">DIKTAT</h1>'
+    +   '<p class="ark-felt">Navn: <span></span></p>'
+    + '</div>'
+    + '<p class="ark-hjelp">Ett tegn i hver rute. Begynn helt til venstre.</p>'
+    + ord.map(function(o, i){
+        let r = '';
+        const n = ruterFor(o.ord);
+        for(let k = 0; k < n; k++) r += '<span class="ark-rute"></span>';
+        return '<div class="ark-rad"><span class="ark-nr">' + (i + 1) + '</span>'
+             + '<span class="ark-ruter">' + r + '</span></div>';
+      }).join('')
+    + '<p class="ark-bunn">Neam · ' + esc(dato) + '</p>';
+}
+
+$('veiArk').addEventListener('click', function(){
+  if(!ordene().length) return;
+  /* iOS gir ingen utskrift til en side som kjoerer fra hjemskjermen -
+     window.print() gjoer da ingenting i det hele tatt, og et trykk som
+     ikke gjoer noe ser ut som en oedelagt knapp. Da sier vi det heller. */
+  if(navigator.standalone){
+    varsle('Arket må skrives ut fra Safari eller en PC – ikke fra appen på '
+         + 'hjemskjermen. Åpne neam.no/andrea-diktat.html i Safari, så virker knappen.');
+    return;
+  }
+  window.print();
+});
+
+/* ============================================================
+   Lesing av arket
+   ------------------------------------------------------------
+   FASITEN SENDES IKKE MED. Modellen faar bildet, antall rader og
+   ingenting annet. Vet den hva det skal staa, leser den det den
+   venter aa se, og en feil hun faktisk gjorde ville forsvunnet.
+   Sammenligningen skjer her nede, som ren tegnsammenligning.
+   ============================================================ */
+
+const BILDE_MAKS = 1600;      /* lengste side, piksler */
+const BILDE_KVAL = 0.88;      /* JPEG-kvalitet - hoeyere enn ellers i huset:
+                                 det er blyant paa papir som skal leses */
+
+function krympBilde(fil){
+  return new Promise(function(ok, nei){
+    const les = new FileReader();
+    les.onerror = function(){ nei(new Error('Kunne ikke lese bildet')); };
+    les.onload = function(){
+      const bil = new Image();
+      bil.onerror = function(){ nei(new Error('Kunne ikke tolke bildet')); };
+      bil.onload = function(){
+        const skala = Math.min(1, BILDE_MAKS / Math.max(bil.width, bil.height));
+        const b = Math.round(bil.width * skala);
+        const h = Math.round(bil.height * skala);
+        const lerret = document.createElement('canvas');
+        lerret.width = b; lerret.height = h;
+        const t = lerret.getContext('2d');
+        /* Hvit bunn: et gjennomsiktig bilde blir svart som JPEG. */
+        t.fillStyle = '#FFFFFF';
+        t.fillRect(0, 0, b, h);
+        t.drawImage(bil, 0, 0, b, h);
+        ok(lerret.toDataURL('image/jpeg', BILDE_KVAL));
+      };
+      bil.src = String(les.result);
+    };
+    les.readAsDataURL(fil);
+  });
+}
+
+async function lesArk(dataUrl, antall){
+  const svar = await neam({
+    model: MODELL,
+    max_tokens: 1200,
+    system: 'Du leser håndskrift i ruter og svarer bare med JSON. Du gjetter aldri '
+          + 'hva et ord skal være - du rapporterer bare hvilket tegn som står i hver rute.',
+    messages: [{ role:'user', content:[
+      { type:'image', source:{ type:'base64', media_type:'image/jpeg',
+                               data: dataUrl.split(',')[1] || '' } },
+      { type:'text', text:
+          'Dette er et diktatark med ' + antall + ' nummererte rader. Hver rad har en '
+        + 'rekke tomme ruter, og et barn har skrevet ett håndskrevet tegn i noen av dem.\n\n'
+        + 'Les hver rad for seg, fra venstre mot høyre, og rapporter hva som står i hver '
+        + 'rute.\n\n'
+        + 'Regler:\n'
+        + '- Rapporter tegn for tegn. Sett ikke sammen ord, og rett ikke opp noe.\n'
+        + '- En tom rute rapporteres som tom streng.\n'
+        + '- Behold store og små bokstaver slik de er skrevet.\n'
+        + '- Er du i tvil om hvilket tegn som står i en rute, tar du med rutens nummer '
+        + '(0 for den første) i usikre-lista, og oppgir likevel det du tror står der.\n'
+        + '- Er du i tvil, si det. Ikke gjett deg til et ord som gir mening.\n\n'
+        + 'Svar BARE med JSON på formen:\n'
+        + '{"rader":[{"nr":1,"bokstaver":["s","o","l","",""],"usikre":[2]}]}'
+      }
+    ] }]
+  });
+  const d = somJson(svar);
+  const rader = (d && d.rader) || [];
+  const ut = [];
+  for(let i = 0; i < antall; i++){
+    /* Raden med riktig nummer, ellers den paa samme plass. Radnummeret i
+       margen er der nettopp for dette: et skjevt bilde skal ikke kunne
+       forskyve rad tre til ord to. */
+    const r = rader.filter(function(x){ return Number(x && x.nr) === i + 1; })[0]
+           || rader[i] || {};
+    ut.push({
+      skrevet: (Array.isArray(r.bokstaver) ? r.bokstaver : []).map(function(b){
+        return String(b == null ? '' : b).trim();
+      }),
+      usikre: (Array.isArray(r.usikre) ? r.usikre : []).map(Number)
+                .filter(function(n){ return n >= 0; })
+    });
+  }
+  return ut;
+}
+
+function velgBilde(){
+  const f = $('bildeFil');
+  f.value = '';
+  f.click();
+}
+
+$('veiBilde').addEventListener('click', velgBilde);
+$('nyttBildeKnapp').addEventListener('click', velgBilde);
+
+$('bildeFil').addEventListener('change', function(){
+  const f = this.files && this.files[0];
+  if(f) rettArket(f);
+});
+
+async function rettArket(fil){
+  const ord = ordene();
+  if(!ord.length) return;
+
+  let url;
+  try{ url = await krympBilde(fil); }
+  catch(e){ varsle('Fikk ikke lest bildet: ' + e.message); return; }
+
+  if(visning !== 'venter'){
+    history.pushState({ fh:true, visning:'venter' }, '');
+  }
+  vis('venter');
+  si(REPLIKK.leserArk);
+
+  let rader;
+  try{
+    rader = await lesArk(url, ord.length);
+  }catch(e){
+    console.warn('Diktat: fikk ikke lest arket', e);
+    history.back();
+    varsle('Jeg fikk ikke lest arket: ' + e.message + '\n\nPrøv et nytt bilde med bedre lys.');
+    return;
+  }
+
+  sisteBilde = url;
+  const r = byggRunde(ord, rader);
+  sisteRunde = r;
+  history.replaceState({ fh:true, visning:'resultat' }, '');
+  visResultat(r, true);
+  lagreRunde(r);
+}
+
+/* ============================================================
+   Vurderingen
+   ------------------------------------------------------------
+   Ren tegnsammenligning, rute for rute. Ett ord gir én stjerne
+   naar HVERT tegn stemmer - en diktat er alt eller ingenting.
+   Prosenten regnes over alle bokstavene i alle ordene SAMLET,
+   ikke per ord: én feil i «vi» er femti prosent og én feil i
+   «kanskje» er fjorten, og da blir korte ord urimelig harde.
+   ============================================================ */
+
+function byggRunde(ord, rader){
+  return {
+    id: nyId(),
+    tid: new Date().toISOString(),
+    listeId: data.liste ? data.liste.id : null,
+    ord: ord.map(function(o, i){
+      const r = rader[i] || { skrevet:[], usikre:[] };
+      return {
+        ord: o.ord,
+        /* Bare saa mange ruter som arket hadde - leser modellen flere,
+           er de ikke fra dette arket. */
+        skrevet: r.skrevet.slice(0, ruterFor(o.ord)),
+        usikre: r.usikre.filter(function(n){ return n < ruterFor(o.ord); }),
+        /* Ruter hun selv har fylt inn etterpaa. Da var det modellen som
+           var usikker, ikke henne - og de teller som riktige. */
+        rettet: {}
+      };
+    })
+  };
+}
+
+/* Hva staar i rute k - hennes egen retting foerst, saa det modellen las. */
+function tegnI(o, k){
+  if(o.rettet && Object.prototype.hasOwnProperty.call(o.rettet, k)) return o.rettet[k];
+  return o.skrevet[k] || '';
+}
+
+function erUsikker(o, k){
+  if(o.rettet && Object.prototype.hasOwnProperty.call(o.rettet, k)) return false;
+  return o.usikre.indexOf(k) !== -1;
+}
+
+/* Ett ord: riktige bokstaver, om hele ordet er riktig, og om noe
+   fortsatt staar uavklart. */
+function vurderOrd(o){
+  const fasit = String(o.ord);
+  let riktige = 0;
+  let alt = true;
+  let uavklart = false;
+  for(let k = 0; k < fasit.length; k++){
+    if(erUsikker(o, k)){ uavklart = true; alt = false; continue; }
+    if(likTegn(tegnI(o, k), fasit[k])) riktige++;
+    else alt = false;
+  }
+  /* Et tegn i en rute BAK ordet er en bokstav for mye. */
+  const ruter = ruterFor(fasit);
+  for(let k = fasit.length; k < ruter; k++){
+    if(erUsikker(o, k)){ uavklart = true; alt = false; }
+    else if(tegnI(o, k)) alt = false;
+  }
+  return { riktige:riktige, lengde:fasit.length, alt:alt, uavklart:uavklart };
+}
+
+function vurder(r){
+  let stjerner = 0, riktige = 0, bokstaver = 0, uavklart = 0;
+  r.ord.forEach(function(o){
+    const v = vurderOrd(o);
+    if(v.alt) stjerner++;
+    if(v.uavklart) uavklart++;
+    riktige += v.riktige;
+    bokstaver += v.lengde;
+  });
+  return {
+    stjerner: stjerner,
+    antall: r.ord.length,
+    prosent: bokstaver ? Math.round(riktige / bokstaver * 100) : 0,
+    riktigeBokstaver: riktige,
+    bokstaver: bokstaver,
+    uavklart: uavklart
+  };
+}
+
+/* ============================================================
+   Resultatet
+   ============================================================ */
+
+const STJERNE = '/bilder/spill/stjerne.webp?v=1';
+
+function miniStjerner(n, av){
+  let s = '';
+  for(let i = 0; i < av; i++){
+    s += '<img class="mini' + (i < n ? ' fylt' : '') + '" src="' + STJERNE
+       + '" alt="" width="128" height="122">';
+  }
+  return s;
+}
+
+function sluttReplikk(v){
+  if(v.uavklart) return 'Noen ruter fikk jeg ikke lest. Trykk på de gule, så sier du hva som sto.';
+  if(v.stjerner >= v.antall) return 'Alle ordene riktig! Det var storartet gjort, Andrea.';
+  if(v.stjerner === 0 && v.prosent >= 70) return 'Ingen ord kom helt i havn, men bokstavene satt nesten. Vi tar en runde til.';
+  if(v.stjerner === 0) return 'Dette var vanskelige ord. Skal vi høre dem en gang til?';
+  if(v.stjerner >= v.antall - 1) return 'Bare ett ord glapp. Det er sterkt gjort.';
+  return 'Godt jobbet, Andrea. Se hvor det glapp, så øver vi på dem.';
+}
+
+function visResultat(r, ny){
+  vis('resultat');
+  const v = vurder(r);
+  si(sluttReplikk(v));
+
+  let s = '';
+  for(let i = 0; i < v.antall; i++){
+    s += '<img class="stjerne' + (i < v.stjerner ? ' fylt' : '') + '" style="--i:' + i
+       + '" src="' + STJERNE + '" alt="" width="128" height="122">';
+  }
+  const sb = $('stjerner');
+  sb.innerHTML = s;
+  sb.setAttribute('role', 'img');
+  sb.setAttribute('aria-label', v.stjerner + ' av ' + v.antall + ' stjerner');
+  sb.classList.remove('vis');
+  if(ny){ void sb.offsetWidth; sb.classList.add('vis'); }
+
+  $('poeng').textContent = v.stjerner + ' av ' + v.antall + ' ord riktig';
+  $('prosentTekst').textContent = v.prosent + ' % av bokstavene satt ('
+    + v.riktigeBokstaver + ' av ' + v.bokstaver + ').';
+
+  $('arkbilde').hidden = !sisteBilde;
+  if(sisteBilde) $('arkbildeImg').src = sisteBilde;
+
+  tegnFasit(r);
+  if(ny) $('lagring').hidden = true;
+}
+
+function tegnFasit(r){
+  $('fasit').innerHTML = r.ord.map(function(o, i){
+    const v = vurderOrd(o);
+    const fasit = String(o.ord);
+    const ruter = ruterFor(fasit);
+    let rad = '';
+    for(let k = 0; k < ruter; k++){
+      const skrevet = tegnI(o, k);
+      const riktig = k < fasit.length ? fasit[k] : '';
+      if(erUsikker(o, k)){
+        rad += '<button type="button" class="rute usikker" data-o="' + i + '" data-k="' + k
+             + '" aria-label="Ukjent tegn i rute ' + (k + 1) + '. Trykk for å skrive det inn">?</button>';
+      }else if(!skrevet && !riktig){
+        rad += '<span class="rute" aria-hidden="true"></span>';
+      }else if(likTegn(skrevet, riktig)){
+        rad += '<span class="rute ja">' + esc(riktig) + '</span>';
+      }else{
+        rad += '<span class="rute nei">'
+             + (skrevet ? '<span class="rute-skrevet">' + esc(skrevet) + '</span>' : '')
+             + (riktig ? '<span class="rute-riktig">' + esc(riktig) + '</span>' : '')
+             + '</span>';
+      }
+    }
+    return '<div class="f-ord">'
+         + '<div class="f-topp"><span class="f-nr">' + (i + 1) + '</span>'
+         + '<span class="f-riktig' + (v.alt ? ' ja' : '') + '">'
+         + (v.uavklart ? 'Noe mangler' : (v.alt ? 'Riktig' : v.riktige + ' av ' + v.lengde + ' bokstaver'))
+         + '</span></div>'
+         + '<div class="f-ruter">' + rad + '</div>'
+         + '<p class="f-svar">Ordet er <b>' + esc(fasit) + '</b></p>'
+         + '</div>';
+  }).join('');
+}
+
+/* Et spoersmaalstegn byttes ut med et felt hun skriver i. Svaret er
+   verdifullt: det forteller om feilen var hennes eller modellens. */
+$('fasit').addEventListener('click', function(ev){
+  const k = ev.target.closest('.rute.usikker');
+  if(!k) return;
+  const oi = Number(k.dataset.o), ki = Number(k.dataset.k);
+  const inn = document.createElement('input');
+  inn.type = 'text';
+  inn.className = 'rute-inn';
+  inn.maxLength = 1;
+  inn.setAttribute('autocapitalize', 'off');
+  inn.setAttribute('autocorrect', 'off');
+  inn.setAttribute('spellcheck', 'false');
+  inn.setAttribute('aria-label', 'Hva sto i rute ' + (ki + 1) + '?');
+  const ferdig = function(){
+    if(!sisteRunde) return;
+    const o = sisteRunde.ord[oi];
+    if(!o) return;
+    const t = inn.value.trim();
+    /* Tomt felt er et ANGRE, ikke et svar. Uten dette ville et bomtrykk
+       paa spoersmaalstegnet gjort ruta til en feil hun aldri gjorde -
+       og spoersmaalstegnet var det eneste sporet av at den var uavklart. */
+    if(!t){ visResultat(sisteRunde, false); return; }
+    o.rettet[ki] = t;
+    visResultat(sisteRunde, false);
+    lagreRunde(sisteRunde);
+  };
+  inn.addEventListener('blur', ferdig);
+  inn.addEventListener('keydown', function(e){ if(e.key === 'Enter') inn.blur(); });
+  inn.addEventListener('input', function(){ if(inn.value.trim()) inn.blur(); });
+  k.replaceWith(inn);
+  inn.focus();
+});
+
+$('tilbakeKnapp').addEventListener('click', function(){
+  if(history.state && history.state.visning === 'resultat' && history.length > 1) history.back();
+  else{ history.replaceState({ fh:true, visning:'oppsett' }, ''); vis('oppsett'); }
+});
+
+/* ============================================================
+   Lagring av runden
+   ============================================================ */
+
+async function lagreRunde(r){
+  /* Samme id som foer naar hun retter en rute: runden skal oppdateres,
+     ikke bli til en ny. */
+  const i = data.runder.map(function(x){ return x.id; }).indexOf(r.id);
+  if(i === -1) data.runder.push(r); else data.runder[i] = r;
+  lokalSkriv(true);
+  tegnRunder(r.id);
+  try{
+    await synk();
+    tegnRunder(r.id);
+  }catch(e){
+    console.warn('Diktat: fikk ikke lagret i KV', e);
+    const l = $('lagring');
+    l.textContent = 'Resultatet ligger på denne enheten og sendes neste gang du åpner diktaten med nett.';
+    l.hidden = false;
+  }
+}
+
+/* ============================================================
+   Visningene og historikken
+   ------------------------------------------------------------
+   Samme moenster som mattespillet: oppsettet er foerste
+   oppfoering, resten legges oppaa. Sveip tilbake gaar da til
+   oppsettet, og ett sveip til gaar ut til Andrea dash.
+   ============================================================ */
+
+function vis(navn){
+  visning = navn;
+  $('oppsett').hidden  = navn !== 'oppsett';
+  $('over').hidden     = navn !== 'over';
+  $('venter').hidden   = navn !== 'venter';
+  $('resultat').hidden = navn !== 'resultat';
+  document.body.classList.toggle('over', navn === 'over');
+  if(navn !== 'over'){
+    $('robot').classList.remove('leser');
+    stopTale();
+    ov = null;
+  }
+  if(navn === 'oppsett'){
+    si(ordene().length ? REPLIKK.klar : REPLIKK.tom);
+  }
+  window.scrollTo(0, 0);
+}
+
+window.addEventListener('popstate', function(ev){
+  const maal = (ev.state || {}).visning || 'oppsett';
+  if(maal === 'over' && ordene().length){ startOving(); return; }
+  if(maal === 'resultat' && sisteRunde){ visResultat(sisteRunde, false); return; }
+  /* Ventevisningen er ingen plass aa komme tilbake TIL - lesningen er
+     over eller avbrutt naar vi er her. */
+  vis('oppsett');
+});
+
+/* ============================================================
+   Tidligere diktater
+   ============================================================ */
+
+function kortDato(iso){
+  try{ return new Date(iso).toLocaleDateString('nb-NO', { day:'numeric', month:'short' }); }
+  catch(e){ return ''; }
+}
+
+function tegnRunder(nyId){
+  const runder = data.runder;
+  const liste = (redigerer ? runder.slice() : runder.slice(-6)).reverse();
+
+  $('runderH').textContent = redigerer
+    ? (runder.length === 1 ? 'Én diktat' : 'Alle ' + runder.length + ' diktatene')
+    : 'Tidligere diktater';
+  $('siste').classList.toggle('redigerer', redigerer);
+  $('siste').innerHTML = liste.length
+    ? liste.map(function(r){
+        const v = vurder(r);
+        const klasser = (r.id === nyId ? 'ny ' : '') + (redigerer ? 'rad-redigeres' : '');
+        return '<li' + (klasser.trim() ? ' class="' + klasser.trim() + '"' : '') + '>'
+          + '<span class="s-stjerner" aria-label="' + v.stjerner + ' av ' + v.antall + ' stjerner">'
+          + miniStjerner(v.stjerner, v.antall) + '</span>'
+          + '<span class="s-topp">' + v.stjerner + ' av ' + v.antall + ' ord</span>'
+          + (redigerer ? '<button type="button" class="slett-rad" data-id="' + esc(r.id)
+               + '" aria-label="Slett denne diktaten">&times;</button>' : '')
+          + '<span class="s-under">' + v.prosent + ' % av bokstavene, ' + kortDato(r.tid) + '</span></li>';
+      }).join('')
+    : '<li><p class="tom">Ingen diktater ennå. Når du har tatt bilde av et ark, står de her.</p></li>';
+
+  const sum = runder.reduce(function(s, r){ return s + vurder(r).stjerner; }, 0);
+  $('samlet').textContent = runder.length
+    ? 'Du har samlet ' + sum + (sum === 1 ? ' stjerne' : ' stjerner')
+      + ' på ' + runder.length + (runder.length === 1 ? ' diktat.' : ' diktater.')
+    : '';
+}
+
+/* ============================================================
+   Redigering (magne@ og sys@)
+   ------------------------------------------------------------
+   Magne og sys kan slette diktater - her betyr det mest naar
+   modellen har lest et ark feil. Andrea skal ikke kunne det: en
+   highscore man kan viske ut er ingen highscore.
+
+   Identiteten kommer fra Cloudflare Access, som i mattespillet.
+   ============================================================ */
+const REDAKTORER = ['magne@neam.no', 'sys@neam.no'];
+let erRedaktor = false;
+let redigerer = false;
+
+async function sjekkRedaktor(){
+  try{
+    const r = await fetch('/cdn-cgi/access/get-identity?_=' + Date.now(), { cache:'no-store' });
+    if(!r.ok) return;
+    const d = await r.json();
+    const e = String((d && d.email) || '').trim().toLowerCase();
+    erRedaktor = REDAKTORER.indexOf(e) !== -1;
+  }catch(e){ /* ingen Access lokalt - da ingen knapp */ }
+  if(erRedaktor){
+    $('redigerKnapp').hidden = false;
+    tegnRunder();
+  }
+}
+
+$('redigerKnapp').addEventListener('click', function(){
+  redigerer = !redigerer;
+  this.classList.toggle('paa', redigerer);
+  this.textContent = redigerer ? 'Ferdig' : 'Rediger';
+  tegnRunder();
+});
+
+/* Sletting spoer ALLTID. En diktat som forsvinner uten spor er en rad
+   som ikke lenger finnes, og da er det ingenting igjen aa legge merke
+   til - samme grunn som at sletting beholder dialogen ellers i huset. */
+$('siste').addEventListener('click', async function(ev){
+  const k = ev.target.closest('.slett-rad');
+  if(!k) return;
+  const r = data.runder.filter(function(x){ return x.id === k.dataset.id; })[0];
+  if(!r) return;
+  const v = vurder(r);
+  const ja = await bekreft('Slette diktaten med ' + v.stjerner + ' av ' + v.antall
+    + ' ord fra ' + kortDato(r.tid) + '?', { jaTekst:'Slett', fare:true });
+  if(!ja) return;
+  try{
+    /* Fletter foerst, saa en diktat tatt paa en annen enhet ikke ryker med. */
+    const fjern = await kvLes(NOKKEL);
+    const flett = flettData(fjern, data);
+    flett.runder = flett.runder.filter(function(x){ return x.id !== r.id; });
+    await kvSkriv(NOKKEL, flett);
+    data = flett;
+    if(sisteRunde && sisteRunde.id === r.id) sisteRunde = null;
+    lokalSkriv(false);
+    tegnRunder();
+  }catch(e){
+    console.warn('Diktat: fikk ikke slettet', e);
+    varsle('Fikk ikke slettet. Prøv igjen om litt.');
+  }
+});
+
+/* ============================================================
+   Oppstart
+   ============================================================ */
+
+history.replaceState({ fh:true, visning:'oppsett' }, '');
+vis('oppsett');
+tegnOrdliste();
+tegnRunder();
+lastData();
+sjekkRedaktor();
+</script>
+</body>
+</html>

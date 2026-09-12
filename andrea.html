@@ -346,6 +346,11 @@ body{
    innholdet, ikke i en fil. */
 .spill-robot{ width:56px; height:auto; flex-shrink:0; display:block; }
 .spill-robot[hidden]{ display:none; }
+/* Diktatkortet har ikke roboten - to like bilder ved siden av hverandre
+   sier at de to kortene er det samme. Rutene er tegnet her og ikke hentet
+   som bilde, av samme grunn som roboten over: da finnes det ingen fil som
+   kan mangle. Samme bredde som roboten, saa de to kortene staar i linje. */
+.diktat-ikon{ width:56px; height:56px; flex-shrink:0; display:block; color:var(--handling-endre); }
 .spill-navn{ display:block; font-size:var(--t-brod); font-weight:700; }
 .spill-sub{ display:block; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; margin-top:1px; }
 /* iPad staaende: kolonnen er en rad, og kortet blir en smal flis ved
@@ -1832,6 +1837,22 @@ select.hu-felt{
          aria-label="Mattespill: hjelp Neam hjem">
         <img class="spill-robot" src="/bilder/spill/robot.webp?v=1" alt="" width="388" height="360" onerror="this.hidden = true">
         <span><span class="spill-navn">Mattespill</span><span class="spill-sub">Hjelp Neam hjem</span></span>
+      </a>
+
+      <!-- Snarvei til diktaten. Ruteark og blyant, tegnet inn her. -->
+      <a class="kort spill-kort" id="kortDiktat" href="/andrea-diktat.html"
+         aria-label="Diktat: Neam leser ordene">
+        <svg class="diktat-ikon" viewBox="0 0 48 48" fill="none" stroke="currentColor"
+             stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="5" y="9" width="11" height="13" rx="2"/>
+          <rect x="18.5" y="9" width="11" height="13" rx="2"/>
+          <rect x="32" y="9" width="11" height="13" rx="2"/>
+          <path d="M9 17.5 12 13l3 4.5M10 16h4"/>
+          <path d="M22 22V9h3.2a3.4 3.4 0 0 1 0 6.8H22"/>
+          <path d="M25 33H8M25 40H8"/>
+          <path d="M36.5 29.5 42 35l-8.5 8.5-5.5.5.5-5.5z"/>
+        </svg>
+        <span><span class="spill-navn">Diktat</span><span class="spill-sub">Neam leser ordene</span></span>
       </a>
 
     </div>
