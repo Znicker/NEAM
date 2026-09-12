@@ -947,6 +947,7 @@ select.hu-felt{
 
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
 <script src="/felles-data.js?v=3"></script>
+<script src="/felles-lesalt.js?v=1"></script>
 <script src="/felles-graph.js?v=2"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
@@ -3258,10 +3259,15 @@ window.neamBakgrunn = async function(){
 /* ---- Husets leseverktoey ----
    Ligger i felles-data.js og er identiske paa alle fem sidene. */
 window.neamVerktoy = async function(){
-  return HUS_VERKTOY.slice();
+  /* Sida eier ingen data selv, saa alt Neam kan se her kommer fra
+     leselaget. Uten det sto han paa kjøkkendashen uten aa vite noe som helst
+     om huset utenfor husregisteret. */
+  return lesAltVerktoy([]).concat(HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){
+  const alt = await lesAltUtfor(navn, arg);
+  if(alt) return alt;
   const hus = await husUtfor(navn, arg);
   if(hus) return hus.svar;
   throw new Error('Ukjent verktøy: ' + navn);

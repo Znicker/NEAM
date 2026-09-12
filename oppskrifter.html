@@ -2349,6 +2349,7 @@ input,select,textarea{font-size:16px}
 </div>
 
 <script src="/felles-data.js?v=3"></script>
+<script src="/felles-lesalt.js?v=1"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-neam.js?v=66"></script>
@@ -2991,7 +2992,11 @@ window.neamSideAndreTrykk = function(){
 })();
 
 window.neamVerktoy = async function(){
-  return [neamOppskriftVerktoy()].concat(HUS_VERKTOY);
+  /* Sida har bare ETT eget verktoey, og det skriver. Lesingen av
+     oppskriftsboka kommer fra leselaget - det var her skjevheten var
+     stoerst: Neam kunne fylle boka, men ikke aapne den. */
+  const egne = [neamOppskriftVerktoy()];
+  return egne.concat(lesAltVerktoy(egne), HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){
@@ -3012,6 +3017,8 @@ window.neamUtfor = async function(navn, arg){
     }
     return { lagt_inn: inn.length, navn: inn, feilet: ut };
   }
+  const alt = await lesAltUtfor(navn, arg);
+  if(alt) return alt;
   const hus = await husUtfor(navn, arg);
   if(hus) return hus.svar;
   throw new Error('Ukjent verkt\u00f8y: ' + navn);

@@ -1081,6 +1081,7 @@ input,select,textarea{font-size:16px}
 </div>
 
 <script src="/felles-data.js?v=3"></script>
+<script src="/felles-lesalt.js?v=1"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-neam.js?v=66"></script>
@@ -6722,7 +6723,7 @@ window.neamBakgrunn = async function(){
    han har aa gaa etter naar han velger verktoey, saa de sier hva
    verktoeyet gjoer OG naar det ikke passer. */
 window.neamVerktoy = async function(){
-  return [
+  const egne = [
     {
       name: 'les_handlelista',
       description: 'Leser varene i en handletur: navn, mengde, varetype, butikk og '
@@ -7071,6 +7072,14 @@ window.neamVerktoy = async function(){
 
     ...HUS_VERKTOY
   ];
+
+  /* Leselaget legges paa til slutt, uten dem sida alt har selv:
+     les_handlelista her leser fra minnet og ser haken som ble satt for
+     to sekunder siden, mens leselagets gaar til KV. Sidens egen vinner. */
+  /* les_handlelista og les_handleliste skiller seg med én bokstav. To
+     saa like navn i samme liste er en felle, og sidens egen er den beste
+     her - den ser haken som ble satt for to sekunder siden. */
+  return egne.concat(lesAltVerktoy(egne.concat([{name:'les_handleliste'}])));
 };
 
 /* ============================================================
@@ -7548,6 +7557,8 @@ window.neamUtfor = async function(navn, arg){
   /* Husets leseverktoey - de samme paa alle fem sidene. Ligger i
      felles-data.js, ikke her, saa formuleringen og avkortingen er lik
      uansett hvor Neam staar. */
+  const alt = await lesAltUtfor(navn, arg);
+  if(alt) return alt;
   const hus = await husUtfor(navn, arg);
   if (hus) return hus.svar;
 

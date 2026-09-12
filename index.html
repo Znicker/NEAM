@@ -19,6 +19,7 @@
      felles-dialog.js, som ligger nederst - derfor staar begge to der,
      ikke her. -->
 <script src="/felles-data.js?v=3"></script>
+<script src="/felles-lesalt.js?v=1"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -1100,10 +1101,15 @@ window.neamSideHandlinger = function(){
 /* ---- Husets leseverktoey ----
    Ligger i felles-data.js og er identiske paa alle fem sidene. */
 window.neamVerktoy = async function(){
-  return HUS_VERKTOY.slice();
+  /* Sida eier ingen data selv, saa alt Neam kan se her kommer fra
+     leselaget. Uten det sto han paa forsiden uten aa vite noe som helst
+     om huset utenfor husregisteret. */
+  return lesAltVerktoy([]).concat(HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){
+  const alt = await lesAltUtfor(navn, arg);
+  if(alt) return alt;
   const hus = await husUtfor(navn, arg);
   if(hus) return hus.svar;
   throw new Error('Ukjent verktøy: ' + navn);

@@ -261,6 +261,8 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
 </div>
 
 <script src="/felles-dialog.js?v=1"></script>
+<script src="/felles-data.js?v=3"></script>
+<script src="/felles-lesalt.js?v=1"></script>
 <script src="/felles-neam.js?v=66"></script>
 <script>
 'use strict';
@@ -997,12 +999,20 @@ async function husUtforSik(navn, arg){
 }
 
 window.neamVerktoy = async function(){
-  return HUS_VERKTOY_SIK.slice();
+  /* Sida lastet verken datalaget eller husregisteret foer 13. september
+     2026. Nå gjor den begge: staar man her og ser at doera er ulaast, er
+     det ogsaa her man spor «hva staar paa handlelista» - grensen mellom
+     appene er vaar, ikke brukerens. */
+  return HUS_VERKTOY_SIK.concat(lesAltVerktoy(HUS_VERKTOY_SIK), HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){
   const mitt = await husUtforSik(navn, arg);
   if(mitt) return mitt;
+  const alt = await lesAltUtfor(navn, arg);
+  if(alt) return alt;
+  const hus = await husUtfor(navn, arg);
+  if(hus) return hus.svar;
   throw new Error('Ukjent verkt\u00f8y: ' + navn);
 };
 
