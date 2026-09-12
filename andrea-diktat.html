@@ -204,18 +204,25 @@ body.over .rekorder{ display:none; }
 .endre-knapp:active{ background:var(--paper-soft); }
 .ord-topp{ flex-wrap:wrap; gap:8px; }
 
-/* Ukevelgeren. Samme begrunnelse for -webkit-appearance som
-   stemmevelgeren: iOS gir select-felt sin egen indre stoerrelse. */
-.ukerad{
-  display:flex; align-items:center; gap:10px; margin:0 0 12px;
-  font-size:var(--t-meta); font-weight:700; color:var(--ink-soft);
+/* Ukebaren. Pilene er like store som en tommel og staar ytterst, med
+   uka midt imellom - samme moenster som dagbytte i kalenderen. */
+.ukebar{
+  display:flex; align-items:center; gap:8px; margin:0 0 12px;
+  padding:4px; border-radius:999px; background:var(--paper-soft);
 }
-.ukerad select{
-  flex:1; min-width:0; height:44px; padding:0 12px;
-  -webkit-appearance:none; appearance:none;
-  border:1.5px solid var(--line); border-radius:12px;
-  background:#FFFFFF; color:var(--ink);
-  font-family:inherit; font-size:16px; font-weight:600;
+.uke-pil{
+  flex-shrink:0; width:40px; height:40px; border-radius:50%;
+  border:1px solid var(--line); background:var(--paper); color:var(--ink);
+  font-size:var(--t-stor); line-height:1;
+  display:flex; align-items:center; justify-content:center;
+}
+.uke-pil:active:not(:disabled){ background:var(--boks-mild); }
+/* Avslaatt, ikke skjult: at det ikke finnes flere uker er en opplysning,
+   og en pil som forsvinner flytter den andre mens fingeren er paa vei. */
+.uke-pil:disabled{ opacity:.3; cursor:default; }
+.uke-na{
+  flex:1; text-align:center; min-width:0;
+  font-size:var(--t-brod); font-weight:700; color:var(--ink);
 }
 /* En gammel uke skal ikke se ut som denne uka. */
 .gammel-uke{
@@ -572,10 +579,11 @@ body.over .rekorder{ display:none; }
       </div>
 
       <div id="visOrd">
-        <p class="ukerad" id="ukerad" hidden>
-          <label for="ukeValg">Vis uke</label>
-          <select id="ukeValg"></select>
-        </p>
+        <div class="ukebar" id="ukerad" hidden>
+          <button type="button" class="uke-pil" id="ukeForrige" aria-label="Forrige uke">‹</button>
+          <span class="uke-na" id="ukeNa"></span>
+          <button type="button" class="uke-pil" id="ukeNeste" aria-label="Neste uke">›</button>
+        </div>
         <p class="hjelp" id="ordHjelp"></p>
         <p class="gammel-uke" id="gammelUke" hidden></p>
         <ul class="ordliste skjult" id="ordliste"></ul>
@@ -854,12 +862,23 @@ function ukeAv(d){
 
 function ukeNa(){ return ukeAv(new Date()); }
 
+/* Ukenummeret paa ei liste. Er det ikke lagret - lister laget foer feltet
+   fantes - regnes det ut av tidspunktet i stedet. Det er ikke like godt
+   som et lagret nummer, men det er riktig for alt som ble lagt inn i loepet
+   av uka det gjaldt, og det er alternativet til aa staa uten nummer. */
+function ukeTall(l){
+  if(!l) return null;
+  if(l.uke) return { uke:l.uke, aar:l.aar || ukeAv(new Date(l.tid)).aar };
+  try{ return ukeAv(new Date(l.tid)); }catch(e){ return null; }
+}
+
 function ukeNavn(l){
-  if(!l || !l.uke) return 'Ukas ord';
+  const u = ukeTall(l);
+  if(!u) return 'Ukas ord';
   const na = ukeNa();
   /* Aarstallet bare naar det ikke er inneverende aar - ellers er det
      stoey paa en etikett som skal leses paa et halvt sekund. */
-  return 'Uke ' + l.uke + (l.aar && l.aar !== na.aar ? ' · ' + l.aar : '');
+  return 'Uke ' + u.uke + (u.aar !== na.aar ? ' · ' + u.aar : '');
 }
 
 /* Rundene og listene flettes paa id.
@@ -1034,21 +1053,24 @@ function likTegn(a, b){
   return tegnKlasse(a) === tegnKlasse(b);
 }
 
-/* Ukevelgeren. Nyeste uke oeverst - det er den man skal til i ni av ti
-   tilfeller, og en liste som vokser nedover ville skjoevet den bort. */
+/* Ukebaren. Pilene blar i den rekkefoelgen listene ble laget: venstre
+   bakover i tid, hoeyre framover - som alt annet som blar i huset. */
+function ukeIndeks(){
+  const l = valgtListe();
+  if(!l) return -1;
+  return data.lister.map(function(x){ return x.id; }).indexOf(l.id);
+}
+
 function tegnUker(){
   const l = valgtListe();
-  const rad = $('ukerad');
+  const i = ukeIndeks();
   $('ukeH').textContent = ukeNavn(l);
 
-  rad.hidden = data.lister.length < 2;
-  if(!rad.hidden){
-    const valg = $('ukeValg');
-    valg.innerHTML = data.lister.slice().reverse().map(function(x){
-      return '<option value="' + esc(x.id) + '"' + (l && x.id === l.id ? ' selected' : '') + '>'
-           + esc(ukeNavn(x)) + ' · ' + x.ord.length
-           + (x.ord.length === 1 ? ' ord' : ' ord') + '</option>';
-    }).join('');
+  $('ukerad').hidden = !data.lister.length;
+  if(data.lister.length){
+    $('ukeNa').textContent = ukeNavn(l) + ' · ' + (l ? l.ord.length : 0) + ' ord';
+    $('ukeForrige').disabled = i <= 0;
+    $('ukeNeste').disabled = i < 0 || i >= data.lister.length - 1;
   }
 
   /* En gammel uke skal ikke kunne forveksles med denne uka - arket og
@@ -1136,11 +1158,21 @@ $('nyUkeKnapp').addEventListener('click', function(){
   aapneRedigering();
 });
 
-$('ukeValg').addEventListener('change', function(){
-  valgtId = this.value;
+/* Bla mellom ukene. `valgtId` settes eksplisitt selv naar vi lander paa
+   den nyeste - ellers ville «null betyr nyeste» gjort at en ny uke lagt
+   inn paa en annen enhet plutselig tok over skjermen midt i blaingen. */
+function blaUke(steg){
+  const i = ukeIndeks();
+  if(i < 0) return;
+  const ny = i + steg;
+  if(ny < 0 || ny >= data.lister.length) return;
+  valgtId = data.lister[ny].id;
   tegnOrdliste();
   tegnRunder();
-});
+}
+
+$('ukeForrige').addEventListener('click', function(){ blaUke(-1); });
+$('ukeNeste').addEventListener('click', function(){ blaUke(1); });
 
 function aapneRedigering(){
   $('visOrd').hidden = true;

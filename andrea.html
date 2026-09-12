@@ -7251,13 +7251,195 @@ async function fagUtfor(navn, arg){
 
 /* Sidas egne foerst, husets sist - da vinner et sidenavn ved en
    eventuell navnekollisjon. */
+/* ============================================================
+   Diktatverktøyene
+   ------------------------------------------------------------
+   Lagt til 12. september 2026. Det foerste verktoeyet som lar
+   Neam skrive til en ANNEN app enn den han staar i: ordene ligger
+   i diktatsidas noekkel, og det er derfra andrea-diktat.html
+   henter dem.
+
+   HVORFOR DET ER TRYGT AKKURAT HER: diktatsida er ikke aapen naar
+   dette skjer. En skjerm kan bare vise noe utdatert hvis den
+   staar og ser paa det samme - her er det ingen skjerm. Neste
+   gang diktaten aapnes, leses ordene friskt fra KV.
+
+   HVORFOR SETNINGENE IKKE LAGES HER: diktatsida lager dem selv
+   naar den ser at de mangler. Aa gjoere det to steder ville gitt
+   to sannheter om hva en god eksempelsetning er.
+
+   SKRIVEMAATEN er les - flett - skriv, som overalt ellers. Vi
+   roerer ALDRI `runder`: resultatene hoerer diktatsida til, og et
+   kall herfra skal ikke kunne stryke en stjerne hun har tatt.
+   ============================================================ */
+
+const DIKTAT_NOKKEL = 'andrea-diktat:v1';
+const DIKTAT_MAKS_LISTER = 100;
+
+/* ISO 8601, som i Norge: uke 1 er den uka som inneholder aarets foerste
+   torsdag. Samme regnestykke som i andrea-diktat.html - gjentatt her og
+   ikke delt, fordi de to sidene ikke deler noe skriptlag i dag. */
+function diktatUke(d){
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+  const nyttaar = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return { aar: t.getUTCFullYear(),
+           uke: Math.ceil(((t - nyttaar) / 86400000 + 1) / 7) };
+}
+
+/* Verdien slik den ligger i KV, i den formen vi vil ha den. Den gamle
+   formen hadde én `liste`; den loeftes inn i `lister` saa ingenting gaar
+   tapt naar vi skriver tilbake. */
+function diktatNormal(d){
+  const lister = (d && Array.isArray(d.lister)) ? d.lister
+               : (d && d.liste) ? [d.liste] : [];
+  return {
+    versjon: 2,
+    lister: lister.filter(function(l){
+      return l && typeof l.id === 'string' && Array.isArray(l.ord) && l.ord.length;
+    }),
+    runder: (d && Array.isArray(d.runder)) ? d.runder : []
+  };
+}
+
+const DIKTAT_VERKTOY = [
+  {
+    name: 'les_diktat',
+    description: 'Diktatordene Andrea har hatt, uke for uke, med de siste resultatene. '
+               + 'Bruk denne før du legger inn nye ord, så du vet om uka alt finnes. '
+               + 'Nyeste uke står sist.',
+    input_schema: { type:'object', properties:{
+      antall: { type:'integer',
+                description:'Hvor mange uker bakover. Standard 4.' }
+    }, required:[] }
+  },
+  {
+    name: 'sett_diktatord',
+    description: 'Legger inn diktatordene for en uke. Finnes uka fra før, blir ordene '
+               + 'byttet ut med disse - send derfor ALLE ordene for uka, ikke bare de '
+               + 'nye. Ord som står der fra før beholder eksempelsetningene sine; nye '
+               + 'ord får setninger av seg selv neste gang diktatsiden åpnes, så det '
+               + 'skal du ikke love at du gjør her og nå. Rører ikke resultatene.',
+    input_schema: { type:'object', properties:{
+      ord: { type:'array', items:{ type:'string' },
+             description:'Ordene slik de skal skrives, med riktige store og små '
+                       + 'bokstaver. Ett ord per element.' },
+      uke: { type:'integer',
+             description:'Ukenummer. Utelat for inneværende uke. Gjelder ordene neste '
+                       + 'uke, send det tallet.' },
+      aar: { type:'integer', description:'Utelat om det er inneværende år.' }
+    }, required:['ord'] },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      const na = diktatUke(new Date());
+      const uke = arg.uke || na.uke;
+      const aar = arg.aar || na.aar;
+      const liste = (arg.ord || []).map(function(o){ return '· ' + o; }).join('\n');
+      return 'Sette diktatordene for uke ' + uke
+           + (aar !== na.aar ? ' (' + aar + ')' : '') + ':\n\n' + liste;
+    }
+  }
+];
+
+async function diktatUtfor(navn, arg){
+  arg = arg || {};
+
+  if(navn === 'les_diktat'){
+    const d = diktatNormal(await dataLes(DIKTAT_NOKKEL));
+    const antall = Math.max(1, Math.min(20, arg.antall || 4));
+    const uker = d.lister.slice(-antall).map(function(l){
+      const runder = d.runder.filter(function(r){ return r.listeId === l.id; });
+      return {
+        uke: l.uke || null,
+        aar: l.aar || null,
+        ord: l.ord.map(function(o){ return o.ord; }),
+        /* Om setningene finnes, ikke hvilke: Neam skal kunne si fra at de
+           mangler, men han skal ikke lese dem opp - da er de ikke lenger
+           noe hun hoerer for foerste gang naar hun oever. */
+        mangler_setninger: l.ord.filter(function(o){
+          return !((o.setninger || []).length);
+        }).length,
+        forsok: runder.length
+      };
+    });
+    /* Resultatene for seg: de hoerer til uka, men de er det man spoer om
+       naar man spoer «hvordan gikk det», og da skal de ikke ligge begravd
+       inne i ordlista. */
+    const siste = d.runder.slice(-5).map(function(r){
+      const ord = r.ord || [];
+      return { uke: r.uke || null, tid: r.tid,
+               ord: ord.length,
+               riktige: ord.filter(function(o){
+                 /* Samme regel som diktatsida: hele ordet, eller ingenting. */
+                 const skrevet = (o.skrevet || []).join('').trim().toLowerCase();
+                 return skrevet === String(o.ord).toLowerCase();
+               }).length };
+    });
+    return { uker: uker, siste_resultater: siste };
+  }
+
+  if(navn === 'sett_diktatord'){
+    const ord = (arg.ord || []).map(function(o){ return String(o).trim(); }).filter(Boolean);
+    if(!ord.length) throw new Error('Ingen ord å legge inn.');
+    if(ord.length > 15) throw new Error('Høyst 15 ord om gangen.');
+
+    const na = diktatUke(new Date());
+    const uke = arg.uke || na.uke;
+    const aar = arg.aar || na.aar;
+    const tid = new Date().toISOString();
+
+    /* Les - flett - skriv. Verdien hentes paa nytt HER, ikke fra noe vi
+       hadde fra foer: diktatsida kan ha skrevet en runde i mellomtiden. */
+    const d = diktatNormal(await dataLes(DIKTAT_NOKKEL));
+    const finnes = d.lister.filter(function(l){
+      return l.uke === uke && l.aar === aar;
+    })[0];
+
+    /* Setningene foelger ORDET, ikke plassen - et ord som staar der fra
+       foer skal beholde sine. */
+    const foer = {};
+    if(finnes){
+      finnes.ord.forEach(function(o){
+        foer[String(o.ord).trim().toLowerCase()] = o.setninger || [];
+      });
+    }
+    const nyeOrd = ord.map(function(o){
+      return { ord:o, setninger: foer[o.toLowerCase()] || [] };
+    });
+
+    if(finnes){
+      finnes.ord = nyeOrd;
+      finnes.endret = tid;
+    }else{
+      d.lister.push({ id: 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+                      tid: tid, endret: tid, uke: uke, aar: aar, ord: nyeOrd });
+      d.lister.sort(function(x, y){ return x.tid < y.tid ? -1 : x.tid > y.tid ? 1 : 0; });
+      if(d.lister.length > DIKTAT_MAKS_LISTER){
+        d.lister = d.lister.slice(-DIKTAT_MAKS_LISTER);
+      }
+    }
+
+    await dataSkriv(DIKTAT_NOKKEL, d);
+    const nye = ord.filter(function(o){ return !foer[o.toLowerCase()]; }).length;
+    return { lagret: true, uke: uke, aar: aar, antall: ord.length,
+             nye_ord: nye,
+             merknad: nye
+               ? 'Eksempelsetningene lages av seg selv neste gang diktatsiden åpnes.'
+               : 'Ingen nye ord - alle hadde setninger fra før.' };
+  }
+
+  return null;
+}
+
 window.neamVerktoy = async function(){
-  return FAG_VERKTOY.concat(HUS_VERKTOY);
+  return FAG_VERKTOY.concat(DIKTAT_VERKTOY, HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){
   const mitt = await fagUtfor(navn, arg);
   if(mitt) return mitt;
+  const dikt = await diktatUtfor(navn, arg);
+  if(dikt) return dikt;
   const hus = await husUtfor(navn, arg);
   if(hus) return hus.svar;
   throw new Error('Ukjent verktøy: ' + navn);
