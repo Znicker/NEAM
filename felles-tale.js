@@ -35,19 +35,51 @@
    uten at noe saa galt ut.
 
    ADVARSEL FOER DEN LASTES PAA DIKTATSIDA: andrea-diktat.html har
-   sine EGNE `TALE_TONE`, `taleNr` og `taleStottes` fra den gangen
+   sine EGNE `taleNr` og `taleStottes` fra den gangen
    talen bare fantes der. To `const` med samme navn er en
    SyntaxError som tar ned HELE skriptet i sida, uten at noe peker
    paa aarsaken - samme felle som `SIK_MERKE_V` i sikkerhet.html.
-   Skal diktatsida over paa denne fila, maa dens egne tre fjernes
-   i samme commit.
+   Skal diktatsida over paa denne fila, maa dens egne fjernes i
+   samme commit. (`TALE_TONE` heter `taleTone` her fra 13. september
+   2026, saa den kolliderer ikke lenger.)
    ============================================================ */
 
 const TALE_LAGER = 'neam-tale';          /* av/paa, per enhet */
 const TALE_STEMME = 'neam-tale-stemme';  /* valgt stemme, per enhet */
+const TALE_TONE_LAGER = 'neam-tale-tone';/* valgt tonehoeyde, per enhet */
 
-const TALE_FART = 0.98;
-const TALE_TONE = 1.0;
+/* ------------------------------------------------------------
+   Klangen
+   ------------------------------------------------------------
+   Neam skal hoeres ut som en robot: moerk, jevn og litt stiv.
+
+   EKTE ROBOTLYD ER IKKE MULIG her. Talesyntesen i nettleseren
+   sender lyden rett til hoegttaleren uten aa gi oss signalet, saa
+   det finnes ingenting aa legge en effekt paa. Ringmodulasjon
+   eller vokoder ville krevd at lyden kom tilbake som data, og det
+   gjoer den bare fra en TTS-tjeneste i skyen - med latens og en
+   pris per setning.
+
+   DET VI HAR ER TONEHOEYDEN, og den baerer lenger enn man skulle
+   tro. Under omtrent 0,75 slutter stemmen aa hoeres ut som et
+   menneske som snakker lavt, og begynner aa hoeres ut som noe som
+   er laget. 0,6 er moerkt uten aa bli grumsete; gaar man under
+   0,5, forsvinner konsonantene.
+
+   FARTEN foelger med ned. En moerk stemme som snakker fort blir
+   maset; litt saktere gir den tyngde.
+
+   MANNSSTEMME finnes ikke overalt. Windows har Microsoft Finn,
+   Android har flere. iOS har saa vidt vi vet bare Nora, som er en
+   kvinnestemme - og da er tonehoeyden det eneste vi kan gjoere. */
+const TALE_FART = 0.92;
+let taleTone = 0.6;   /* let, ikke const: skal kunne proeves i konsollen */
+
+/* Stemmer vi VET er mannsstemmer paa norsk. Lista er kort fordi det
+   finnes faa: nettleseren oppgir ikke kjoenn, saa navnet er det eneste
+   vi har aa gaa paa. Staar det en her som ikke finnes paa enheten,
+   koster det ingenting - den blir bare aldri valgt. */
+const TALE_MENN = ['finn', 'henrik', 'jan', 'ola', 'magnus', 'male', 'mann'];
 
 let taleStottes = ('speechSynthesis' in window);
 let taleStemme = null;
@@ -64,9 +96,17 @@ function taleErNorsk(v){
       || /norsk|norwegian|bokm/i.test(String((v && v.name) || ''));
 }
 
+function taleErMann(v){
+  const n = String((v && v.name) || '').toLowerCase();
+  return TALE_MENN.some(function(m){ return n.indexOf(m) !== -1; });
+}
+
 function taleSkaar(v){
   const n = String((v && v.name) || '').toLowerCase();
   let s = 0;
+  /* Mannsstemme foerst, og med god margin: den avgjoer hvem Neam HOERES
+     UT som, mens de andre leddene bare avgjoer hvor godt det klinger. */
+  if(taleErMann(v)) s += 20;
   if(/premium|enhanced|neural|natural/.test(n)) s += 6;
   if(/google/.test(n)) s += 3;
   if(/siri/.test(n)) s += 2;
@@ -99,6 +139,16 @@ function taleLetEtterStemme(naarFerdig){
     setTimeout(igjen, 300);
   })();
 }
+
+/* Tonehoeyden hentes ved oppstart, ikke foerst naar velgeren aapnes.
+   Uten det snakket han med standardtonen til noen tilfeldigvis aapnet
+   innstillingene - og valget saa ut til aa ha forsvunnet. */
+try{
+  const lagretTone = parseFloat(localStorage.getItem(TALE_TONE_LAGER));
+  if(isFinite(lagretTone) && lagretTone >= 0.3 && lagretTone <= 1.5){
+    taleTone = lagretTone;
+  }
+}catch(e){}
 
 if(taleStottes){
   taleFinnStemme();
@@ -148,7 +198,7 @@ function taleLes(tekst, fart){
     if(taleStemme) y.voice = taleStemme;
     y.lang = taleStemme ? taleStemme.lang : 'nb-NO';
     y.rate = fart || TALE_FART;
-    y.pitch = TALE_TONE;
+    y.pitch = taleTone;
     let ferdig = false;
     const slutt = function(){
       if(ferdig) return;
@@ -379,3 +429,62 @@ function lyttFeilTekst(kode){
   }
   return 'Fikk ikke hørt etter (' + kode + ').';
 }
+
+
+/* ------------------------------------------------------------
+   Å finne ut hva enheten faktisk har
+   ------------------------------------------------------------
+   Kalles fra konsollen. Nettleseren oppgir ikke kjoenn, og
+   navnene sier lite fra plattform til plattform - saa den eneste
+   maaten aa vite hvilken som passer er aa hoere dem.
+
+     taleStemmeliste()      skriver ut de norske
+     taleProev(2)           leser en setning med nummer 2
+     taleVelg(2)            velger den, og husker valget
+   ------------------------------------------------------------ */
+function taleStemmeliste(){
+  taleFinnStemme();
+  if(!taleStemmer.length){
+    console.log('Ingen norske stemmer paa denne enheten. Alt den har:',
+      taleAlle.map(function(v){ return v.name + ' (' + v.lang + ')'; }));
+    return [];
+  }
+  taleStemmer.forEach(function(v, i){
+    console.log(i + ': ' + v.name + ' (' + v.lang + ')'
+      + (taleErMann(v) ? ' - regnet som mannsstemme' : '')
+      + (taleStemme && (v.voiceURI || v.name) === (taleStemme.voiceURI || taleStemme.name)
+         ? '  <- i bruk' : ''));
+  });
+  return taleStemmer;
+}
+
+function taleProev(i, tone){
+  taleFinnStemme();
+  const v = taleStemmer[i || 0];
+  if(!v){ console.log('Ingen stemme med nummer ' + i); return; }
+  const foer = taleStemme;
+  taleStemme = v;
+  const foerTone = taleTone;
+  if(tone !== undefined) taleTone = tone;
+  taleLes('God dag. Jeg er Neam, husassistenten.').then(function(){
+    taleStemme = foer;
+    taleTone = foerTone;
+  });
+}
+
+function taleVelg(i){
+  taleFinnStemme();
+  const v = taleStemmer[i || 0];
+  if(!v) return null;
+  try{ localStorage.setItem(TALE_STEMME, v.voiceURI || v.name); }catch(e){}
+  taleStemme = v;
+  /* Stopper foerst: trykker man seg gjennom fire stemmer, skal man hoere
+     den fjerde - ikke alle fire etter hverandre. */
+  taleStopp();
+  taleLes('Da er det jeg som snakker.');
+  return v;
+}
+
+/* Tonehoeyden kan proeves uten aa endre fila:
+     taleTone = 0.5; taleProev(0);
+   Den som sitter best skrives inn som startverdi paa `taleTone`. */

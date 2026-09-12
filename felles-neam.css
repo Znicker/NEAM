@@ -1170,6 +1170,46 @@
 @media (prefers-reduced-motion: reduce){
   .neam-mik.lytter{ animation:none; }
 }
+/* ---------- Stemmevalget ----------
+   Vises ved et langt trykk paa hoegttaleren, og er skjult ellers. En
+   permanent rad med stemmenavn ville tatt plass fra samtalen hver dag,
+   for noe man roerer én gang. */
+.neam-stemme{
+  flex-shrink:0; padding:10px 14px 12px;
+  border-bottom:1px solid var(--line); background:var(--boks-mild);
+}
+.neam-stemme[hidden]{ display:none; }
+.neam-stemme-rad{ display:flex; gap:7px; flex-wrap:wrap; }
+.neam-stemme-valg{
+  border:1px solid var(--line); background:var(--paper); color:var(--ink);
+  border-radius:999px; padding:7px 13px; cursor:pointer;
+  font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
+}
+.neam-stemme-valg:active{ transform:scale(.96); }
+.neam-stemme-valg.valgt{
+  background:var(--aksent); border-color:var(--aksent); color:#FFFFFF;
+}
+.neam-stemme-tom{
+  margin:0; font-size:var(--t-meta); color:var(--ink-soft);
+  font-weight:600; line-height:1.4;
+}
+.neam-stemme-tone{
+  display:flex; align-items:center; gap:10px; margin-top:11px;
+  font-size:var(--t-etikett); font-weight:700; color:var(--ink-soft);
+  text-transform:uppercase; letter-spacing:.05em;
+}
+.neam-stemme-tone input{ flex:1; min-width:0; accent-color:var(--aksent); }
+.neam-stemme-tone span{
+  font-variant-numeric:tabular-nums; color:var(--ink);
+  min-width:3.2em; text-align:right; text-transform:none; letter-spacing:0;
+}
+
+/* Hoegttaleren aapner stemmevalget ved langt trykk. iOS legger en
+   tekstmarkering og en kontekstmeny oppaa lange trykk; begge er i veien. */
+.neam-topp-knapp.tale{
+  -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+}
+
 /* SAMTALEN GAAR, men han snakker akkurat naa - mikrofonen er lukket et
    oeyeblikk. Fylt, men uten puls: den er ikke aapen, og den skal ikke se
    aapen ut. At den fortsatt er roed sier at samtalen ikke er slutt. */

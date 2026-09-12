@@ -1882,6 +1882,12 @@ function neamBygg(){
     +       '<span class="lang">Ny samtale</span><span class="kort">Ny</span></button>'
     +     '<button type="button" class="neam-lukk" id="neamLukk" aria-label="Lukk">&times;</button>'
     +   '</div>'
+    +   '<div class="neam-stemme" id="neamStemme" hidden>'
+    +     '<div class="neam-stemme-rad" id="neamStemmeliste"></div>'
+    +     '<label class="neam-stemme-tone">Mørkere'
+    +       '<input type="range" id="neamTone" min="0.4" max="1.2" step="0.05">'
+    +       '<span id="neamToneTall"></span></label>'
+    +   '</div>'
     +   '<div class="neam-samtale" id="neamSamtale"></div>'
     +   '<div class="neam-bunn">'
     +     '<textarea class="neam-felt" id="neamFelt" rows="1" '
@@ -1904,6 +1910,25 @@ function neamBygg(){
 
   document.getElementById('neamLukk').onclick = neamLukk;
   document.getElementById('neamTale').onclick = neamTaleBytt;
+  /* Et LANGT trykk paa hoegttaleren aapner stemmevalget. Et kort trykk
+     skrur lyden av og paa - det er det man gjoer ofte, og det skal ikke
+     koste et ekstra steg. Innstillingene er noe man gjoer én gang. */
+  neamLangtTrykk(document.getElementById('neamTale'), neamStemmeBytt);
+  document.getElementById('neamTone').oninput = function(){
+    taleTone = parseFloat(this.value) || 0.6;
+    try{ localStorage.setItem(TALE_TONE_LAGER, String(taleTone)); }catch(e){}
+    document.getElementById('neamToneTall').textContent = taleTone.toFixed(2).replace('.', ',');
+  };
+  document.getElementById('neamTone').onchange = function(){
+    taleStopp();
+    taleLes('Slik høres jeg ut nå.');
+  };
+  document.getElementById('neamStemmeliste').onclick = function(ev){
+    const k = ev.target.closest('.neam-stemme-valg');
+    if(!k) return;
+    taleVelg(parseInt(k.dataset.i, 10) || 0);
+    neamStemmerTegn();
+  };
   document.getElementById('neamMik').onclick = neamMikBytt;
   neamTaleTegn();
   neamMikTegn();
@@ -2144,6 +2169,90 @@ function neamMikSlutt(horteNoe){
   /* Et lite opphold foer vi aapner igjen. Uten det starter og stopper
      gjenkjenningen i tett foelge, og iOS gir opp etter noen runder. */
   setTimeout(neamPratLyttIgjen, 400);
+}
+
+/* ------------------------------------------------------------
+   Stemmevalget
+   ------------------------------------------------------------
+   Stemmene finnes bare paa enheten man staar paa, og de hoeres
+   ulike ut. Derfor kan valget ikke gjoeres av meg i en fil - det
+   maa gjoeres der man hoerer resultatet, altsaa som regel paa en
+   telefon uten konsoll.
+
+   Raden vises ved et LANGT trykk paa hoegttaleren. Den staar
+   skjult ellers: dette er en innstilling man gjoer én gang, og en
+   permanent rad med stemmenavn i panelet ville tatt plass fra
+   samtalen hver eneste dag for noe man rørte én gang i fjor.
+
+   HVER ENDRING SIER NOE. En stemmevelger der man maa gaa ut, si
+   noe til Neam og vente paa svaret for aa hoere forskjellen, er
+   ikke en stemmevelger.
+   ------------------------------------------------------------ */
+
+/* Langt trykk som virker baade med finger og mus, uten aa forstyrre det
+   vanlige klikket. iOS legger en kontekstmeny oppaa lange trykk; den er
+   holdt unna i CSS-en med -webkit-touch-callout. */
+function neamLangtTrykk(el, gjor){
+  if(!el) return;
+  let tid = null, lang = false;
+  const start = function(){
+    lang = false;
+    clearTimeout(tid);
+    tid = setTimeout(function(){ lang = true; gjor(); }, 550);
+  };
+  const slutt = function(ev){
+    clearTimeout(tid);
+    /* Var det et langt trykk, skal ikke klikket ogsaa fyre - ellers ville
+       lyden blitt skrudd av i samme bevegelse som aapnet valget. */
+    if(lang && ev){ ev.preventDefault(); ev.stopPropagation(); }
+    lang = false;
+  };
+  el.addEventListener('pointerdown', start);
+  el.addEventListener('pointerup', slutt);
+  el.addEventListener('pointerleave', function(){ clearTimeout(tid); });
+  el.addEventListener('click', function(ev){
+    if(lang){ ev.preventDefault(); ev.stopPropagation(); lang = false; }
+  }, true);
+}
+
+function neamStemmeBytt(){
+  const b = document.getElementById('neamStemme');
+  if(!b) return;
+  b.hidden = !b.hidden;
+  if(!b.hidden) neamStemmerTegn();
+}
+
+function neamStemmerTegn(){
+  const boks = document.getElementById('neamStemmeliste');
+  if(!boks || typeof taleFinnStemme !== 'function') return;
+  taleFinnStemme();
+
+  /* Lagret tonehoeyde. Ligger paa enheten, som stemmevalget: begge sier
+     noe om hoegttaleren man hoerer paa, ikke om huset. */
+  let lagret = null;
+  try{ lagret = localStorage.getItem(TALE_TONE_LAGER); }catch(e){}
+  if(lagret) taleTone = parseFloat(lagret) || taleTone;
+  const skyv = document.getElementById('neamTone');
+  if(skyv){
+    skyv.value = String(taleTone);
+    document.getElementById('neamToneTall').textContent =
+      taleTone.toFixed(2).replace('.', ',');
+  }
+
+  if(!taleStemmer.length){
+    boks.innerHTML = '<p class="neam-stemme-tom">Ingen norsk stemme på denne enheten. '
+      + 'På iPhone og iPad hentes den under Innstillinger → Tilgjengelighet → '
+      + 'Talt innhold → Stemmer → Norsk bokmål.</p>';
+    return;
+  }
+  const na = taleStemme ? (taleStemme.voiceURI || taleStemme.name) : '';
+  boks.innerHTML = taleStemmer.map(function(v, i){
+    const id = v.voiceURI || v.name;
+    return '<button type="button" class="neam-stemme-valg'
+         + (id === na ? ' valgt' : '') + '" data-i="' + i + '">'
+         + String(v.name).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;') + '</button>';
+  }).join('');
 }
 
 function neamTaleTegn(){
