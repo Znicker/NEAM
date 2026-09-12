@@ -426,7 +426,7 @@ body.over .rekorder{ display:none; }
   body::before{ display:none; }
   body > .side{ display:none; }
   .ark{ display:block; color:#000000; font-family:'Archivo', sans-serif; }
-  @page{ size:A4 portrait; margin:16mm; }
+  @page{ size:A4 portrait; margin:14mm; }
 }
 
 .ark-topp{ display:flex; align-items:flex-end; justify-content:space-between; gap:10mm; }
@@ -434,15 +434,20 @@ body.over .rekorder{ display:none; }
 .ark-felt{ font-size:4mm; font-weight:600; }
 .ark-felt span{ display:inline-block; border-bottom:.4mm solid #000000; width:40mm; }
 .ark-hjelp{ margin:3mm 0 9mm; font-size:4mm; font-weight:600; }
-.ark-rad{ display:flex; align-items:center; gap:3mm; margin-bottom:9mm; }
+/* Tolv ruter maa faa plass paa bredden: 182 mm innenfor margene, minus
+   nummeret og luften etter det. 12 x 12 mm med 1,6 mm mellom blir
+   161,6 mm, og da er det fortsatt et par millimeter igjen aa gaa paa om
+   skriveren skalerer litt. Radene staar 14 mm fra hverandre - god
+   avstand mellom linjene er det enkeltgrepet som loefter lesningen mest. */
+.ark-rad{ display:flex; align-items:center; gap:3mm; margin-bottom:14mm; }
 .ark-nr{
   flex-shrink:0; width:9mm; height:9mm; border-radius:50%;
   border:.6mm solid #000000;
   display:flex; align-items:center; justify-content:center;
   font-size:5mm; font-weight:700;
 }
-.ark-ruter{ display:flex; gap:2mm; }
-.ark-rute{ width:13mm; height:15mm; border:.5mm solid #000000; border-radius:1.5mm; }
+.ark-ruter{ display:flex; gap:1.6mm; }
+.ark-rute{ width:12mm; height:14mm; border:.5mm solid #000000; border-radius:1.5mm; }
 .ark-bunn{ margin-top:6mm; font-size:3.4mm; font-weight:600; }
 </style>
 </head>
@@ -606,11 +611,14 @@ const NOKKEL = 'andrea-diktat:v1';
 const LOKAL_NOKKEL = 'neam-andrea-diktat:v1';
 const MAKS_RUNDER = 400;
 const MAKS_ORD = 10;
-/* To ruter ekstra bak hvert ord, saa en bokstav for mye har et sted aa
-   staa. MERK at antallet ruter dermed roeper ordets lengde; skal det
-   vekk, settes RUTER_FAST til et tall - da faar alle ord like mange. */
+/* Alle ord faar LIKE MANGE ruter, ikke ruter etter lengde. Grunnen er at
+   rutene ellers roeper hvor langt ordet er, og lengden er en del av det
+   hun skal kunne. Tolv rommer ordene paa 4. trinn med god margin, og en
+   bokstav for mye har fortsatt et sted aa staa.
+
+   EKSTRA_RUTER brukes bare hvis RUTER_FAST settes til 0. */
 const EKSTRA_RUTER = 2;
-const RUTER_FAST = 0;
+const RUTER_FAST = 12;
 
 /* Modellen som leser arket. Sonnet er god nok til barneskrift i ruter,
    og raskere enn Opus - hun staar og venter mens den leser. */
@@ -983,27 +991,72 @@ async function lagSetninger(ord){
 /* ============================================================
    Opplesningen
    ------------------------------------------------------------
-   Nettleserens egen talesyntese. Den norske stemmen er god nok
-   til enkeltord; finnes ingen norsk stemme, sier vi fra i stedet
-   for aa lese ordet med engelsk uttale - «skjegg» lest paa
-   engelsk er verre enn ingen opplesning.
+   Nettleserens egen talesyntese.
+
+   AA FINNE DEN NORSKE STEMMEN er verre enn det burde vaere:
+
+   - Lista er tom rett etter at sida er lastet, og fylles i sitt
+     eget tempo. `onvoiceschanged` fyrer paa noen enheter og ikke
+     paa andre, saa vi spoer om igjen med korte mellomrom i stedet
+     for aa stole paa hendelsen.
+   - Sprakkoden skrives ulikt: «nb-NO» i iOS, «nb_NO» med
+     understrek i enkelte Android-nettlesere, og «no-NO» i eldre
+     Windows-stemmer. Vi normaliserer foer vi sammenligner.
+   - Noen stemmer oppgir feil eller tom kode, men heter noe som
+     avsloerer dem: Nora, Iselin, Finn, «Norwegian», «norsk».
+
+   Finner vi ingenting, leser vi likevel - med `lang` satt, saa
+   nettleseren faar velge selv. En stum knapp er verre enn en
+   uttale som bommer, og beskjeden under sier hva som er galt.
    ============================================================ */
 
 let stemme = null;
 let taleStottes = ('speechSynthesis' in window);
+/* Hva vi faktisk fant. Staar i beskjeden naar ingen norsk stemme finnes,
+   saa det gaar an aa se HVA enheten har uten aa koble til en konsoll. */
+let stemmeFunn = [];
+
+function normLang(v){
+  return String((v && v.lang) || '').replace('_', '-').toLowerCase();
+}
 
 function finnStemme(){
   if(!taleStottes) return;
-  const alle = window.speechSynthesis.getVoices() || [];
-  stemme = alle.filter(function(v){ return /^nb/i.test(v.lang); })[0]
-        || alle.filter(function(v){ return /^no/i.test(v.lang); })[0]
-        || alle.filter(function(v){ return /^nn/i.test(v.lang); })[0]
-        || null;
+  let alle = [];
+  try{ alle = window.speechSynthesis.getVoices() || []; }catch(e){ alle = []; }
+  stemmeFunn = alle;
+  const treff = function(test){ return alle.filter(test)[0] || null; };
+  stemme =
+       treff(function(v){ return /^nb(-|$)/.test(normLang(v)); })
+    || treff(function(v){ return /^nn(-|$)/.test(normLang(v)); })
+    || treff(function(v){ return /^no(-|$)/.test(normLang(v)); })
+    /* Navnet som siste utvei - se kommentaren over. */
+    || treff(function(v){ return /norsk|norwegian|bokm/i.test(String(v.name || '')); })
+    || treff(function(v){ return /^(nora|iselin|finn)\b/i.test(String(v.name || '')); })
+    || null;
 }
+
+/* Spoer om igjen til lista dukker opp. Ti ganger med 300 ms er tre
+   sekunder - lenger enn noen enhet trenger, og vi slutter med det
+   samme vi har funnet noe. */
+function letEtterStemme(naarFerdig){
+  let forsok = 0;
+  const igjen = function(){
+    finnStemme();
+    if(stemme || forsok >= 10){ if(naarFerdig) naarFerdig(); return; }
+    forsok++;
+    setTimeout(igjen, 300);
+  };
+  igjen();
+}
+
 if(taleStottes){
   finnStemme();
-  /* iOS fyller lista etter at sida er lastet. */
-  window.speechSynthesis.onvoiceschanged = finnStemme;
+  /* Fyrer paa noen enheter. Vi lener oss ikke paa den, men tar den imot. */
+  window.speechSynthesis.onvoiceschanged = function(){
+    finnStemme();
+    if(visning === 'over') settTaleVarsel();
+  };
 }
 
 /* Leser én tekst og lover aa komme tilbake naar den er lest.
@@ -1086,15 +1139,20 @@ function startOving(){
   si(REPLIKK.leser);
   tegnOving();
   /* Foerste opplesning MAA starte i trykket som kom hit: iOS gir ikke
-     talesyntesen lov til aa si noe uten en brukerhandling bak seg. */
+     talesyntesen lov til aa si noe uten en brukerhandling bak seg. Den
+     gaar derfor med det vi har naa, ogsaa uten stemme - `lang` alene gir
+     som regel riktig uttale. */
   lesOppgave(false);
 
-  /* Stemmelista fylles av nettleseren, og i iOS er den tom en liten stund
-     etter at sida er lastet. Derfor spoer vi én gang til foer vi sier at
-     noe mangler - beskjeden skal gjelde enheten, ikke tidspunktet. */
-  finnStemme();
+  /* Lista fylles i sitt eget tempo, og paa noen enheter foerst ETTER det
+     foerste kallet til speak(). Derfor leter vi videre her, og leser
+     ordet om igjen med riktig stemme hvis den dukker opp underveis. */
   settTaleVarsel();
-  setTimeout(function(){ finnStemme(); settTaleVarsel(); }, 900);
+  const utenStemme = !stemme;
+  letEtterStemme(function(){
+    settTaleVarsel();
+    if(utenStemme && stemme && ov && ov.i === 0) lesOppgave(false);
+  });
 }
 
 function settTaleVarsel(){
@@ -1106,8 +1164,17 @@ function settTaleVarsel(){
     return;
   }
   if(!stemme){
-    el.textContent = 'Jeg fant ingen norsk stemme på denne enheten, så uttalen kan bli rar. '
-                   + 'På iPad og iPhone pleier den å være på plass.';
+    /* HVA enheten faktisk har staar i beskjeden. Uten det er «ikke norsk
+       stemme» en paastand det ikke gaar an aa gjoere noe med; med det ser
+       man med én gang om lista er tom, eller full av andre spraak. */
+    const funn = stemmeFunn.length
+      ? stemmeFunn.slice(0, 8).map(function(v){ return v.lang || '?'; }).join(', ')
+        + (stemmeFunn.length > 8 ? ' …' : '')
+      : 'ingen i det hele tatt';
+    el.textContent = 'Jeg fant ingen norsk stemme her, så uttalen kan bli rar. '
+                   + 'Enheten har ' + stemmeFunn.length + ' stemmer: ' + funn + '. '
+                   + 'På iPhone og iPad ligger den under Innstillinger → Tilgjengelighet '
+                   + '→ Talt innhold → Stemmer → Norsk bokmål.';
     el.hidden = false;
     return;
   }
@@ -1435,11 +1502,25 @@ function visResultat(r, ny){
   if(ny) $('lagring').hidden = true;
 }
 
+/* Hvor mange ruter som VISES i resultatet. Arket har tolv til alle ord,
+   men tolv ruter der ni er tomme er stoey - og en tom rute bak ordet er
+   ikke noe hun har gjort feil. Vi viser ordets lengde, og lenger hvis
+   hun faktisk har skrevet noe der ute. Vurderingen ser fortsatt paa alle
+   tolv: en bokstav for mye skal telle. */
+function visteRuter(o){
+  const ruter = ruterFor(o.ord);
+  let sist = Math.min(String(o.ord).length, ruter);
+  for(let k = sist; k < ruter; k++){
+    if(tegnI(o, k) || erUsikker(o, k)) sist = k + 1;
+  }
+  return sist;
+}
+
 function tegnFasit(r){
   $('fasit').innerHTML = r.ord.map(function(o, i){
     const v = vurderOrd(o);
     const fasit = String(o.ord);
-    const ruter = ruterFor(fasit);
+    const ruter = visteRuter(o);
     let rad = '';
     for(let k = 0; k < ruter; k++){
       const skrevet = tegnI(o, k);
