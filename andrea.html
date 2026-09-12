@@ -1861,6 +1861,7 @@ select.hu-felt{
 </div>
 
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
+<script src="/felles-hus.js?v=1"></script>
 <script src="/felles-data.js?v=3"></script>
 <script src="/felles-lesalt.js?v=1"></script>
 <script src="/felles-graph.js?v=2"></script>
@@ -7558,7 +7559,8 @@ window.neamVerktoy = async function(){
   const egne = FAG_VERKTOY.concat(DIKTAT_VERKTOY);
   /* les_diktat og les_diktatord er to navn paa samme sporsmaal. Sidens
      egen svarer rikere, saa leselagets tas bort her. */
-  return egne.concat(lesAltVerktoy(egne.concat([{name:'les_diktatord'}])), HUS_VERKTOY);
+  return egne.concat(HJEM_VERKTOY,
+                     lesAltVerktoy(egne.concat([{name:'les_diktatord'}])), HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){
@@ -7566,6 +7568,8 @@ window.neamUtfor = async function(navn, arg){
   if(mitt) return mitt;
   const dikt = await diktatUtfor(navn, arg);
   if(dikt) return dikt;
+  const hjem = await hjemUtfor(navn, arg);
+  if(hjem) return hjem;
   const alt = await lesAltUtfor(navn, arg);
   if(alt) return alt;
   const hus = await husUtfor(navn, arg);

@@ -2348,6 +2348,7 @@ input,select,textarea{font-size:16px}
   </div>
 </div>
 
+<script src="/felles-hus.js?v=1"></script>
 <script src="/felles-data.js?v=3"></script>
 <script src="/felles-lesalt.js?v=1"></script>
 <script src="/felles-dialog.js?v=1"></script>
@@ -2996,7 +2997,7 @@ window.neamVerktoy = async function(){
      oppskriftsboka kommer fra leselaget - det var her skjevheten var
      stoerst: Neam kunne fylle boka, men ikke aapne den. */
   const egne = [neamOppskriftVerktoy()];
-  return egne.concat(lesAltVerktoy(egne), HUS_VERKTOY);
+  return egne.concat(HJEM_VERKTOY, lesAltVerktoy(egne), HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){
@@ -3017,6 +3018,8 @@ window.neamUtfor = async function(navn, arg){
     }
     return { lagt_inn: inn.length, navn: inn, feilet: ut };
   }
+  const hjem = await hjemUtfor(navn, arg);
+  if(hjem) return hjem;
   const alt = await lesAltUtfor(navn, arg);
   if(alt) return alt;
   const hus = await husUtfor(navn, arg);

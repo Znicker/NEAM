@@ -1080,6 +1080,7 @@ input,select,textarea{font-size:16px}
   </div>
 </div>
 
+<script src="/felles-hus.js?v=1"></script>
 <script src="/felles-data.js?v=3"></script>
 <script src="/felles-lesalt.js?v=1"></script>
 <script src="/felles-dialog.js?v=1"></script>
@@ -7079,7 +7080,8 @@ window.neamVerktoy = async function(){
   /* les_handlelista og les_handleliste skiller seg med én bokstav. To
      saa like navn i samme liste er en felle, og sidens egen er den beste
      her - den ser haken som ble satt for to sekunder siden. */
-  return egne.concat(lesAltVerktoy(egne.concat([{name:'les_handleliste'}])));
+  return egne.concat(HJEM_VERKTOY,
+                     lesAltVerktoy(egne.concat([{name:'les_handleliste'}])));
 };
 
 /* ============================================================
@@ -7557,6 +7559,8 @@ window.neamUtfor = async function(navn, arg){
   /* Husets leseverktoey - de samme paa alle fem sidene. Ligger i
      felles-data.js, ikke her, saa formuleringen og avkortingen er lik
      uansett hvor Neam staar. */
+  const hjem = await hjemUtfor(navn, arg);
+  if(hjem) return hjem;
   const alt = await lesAltUtfor(navn, arg);
   if(alt) return alt;
   const hus = await husUtfor(navn, arg);

@@ -1531,6 +1531,7 @@ input,select,textarea{font-size:16px}
 
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
 <script src="/felles-graph.js?v=2"></script>
+<script src="/felles-hus.js?v=1"></script>
 <script src="/felles-data.js?v=3"></script>
 <script src="/felles-lesalt.js?v=1"></script>
 <script src="/felles-dialog.js?v=1"></script>
@@ -5227,12 +5228,14 @@ async function kalUtfor(navn, arg){
 }
 
 window.neamVerktoy = async function(){
-  return KAL_VERKTOY.concat(lesAltVerktoy(KAL_VERKTOY), HUS_VERKTOY);
+  return KAL_VERKTOY.concat(HJEM_VERKTOY, lesAltVerktoy(KAL_VERKTOY), HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){
   const mitt = await kalUtfor(navn, arg);
   if(mitt) return mitt;
+  const hjem = await hjemUtfor(navn, arg);
+  if(hjem) return hjem;
   const alt = await lesAltUtfor(navn, arg);
   if(alt) return alt;
   const hus = await husUtfor(navn, arg);

@@ -946,6 +946,7 @@ select.hu-felt{
 </div>
 
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
+<script src="/felles-hus.js?v=1"></script>
 <script src="/felles-data.js?v=3"></script>
 <script src="/felles-lesalt.js?v=1"></script>
 <script src="/felles-graph.js?v=2"></script>
@@ -3262,10 +3263,12 @@ window.neamVerktoy = async function(){
   /* Sida eier ingen data selv, saa alt Neam kan se her kommer fra
      leselaget. Uten det sto han paa kjøkkendashen uten aa vite noe som helst
      om huset utenfor husregisteret. */
-  return lesAltVerktoy([]).concat(HUS_VERKTOY);
+  return HJEM_VERKTOY.concat(lesAltVerktoy(HJEM_VERKTOY), HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){
+  const hjem = await hjemUtfor(navn, arg);
+  if(hjem) return hjem;
   const alt = await lesAltUtfor(navn, arg);
   if(alt) return alt;
   const hus = await husUtfor(navn, arg);
