@@ -522,7 +522,9 @@ const SLIPP_INN = [
   'sys@neam.no'
 ];
 
-const A = { token:null, refresh:null, expires:0, me:null };
+/* `refresh` er borte fra 13. september 2026: refresh-tokenet ligger paa
+   tjeneren og kommer aldri hit. Se vekslingen lenger nede. */
+const A = { token:null, expires:0, me:null };
 
 function randStr(n){
   const a = new Uint8Array(n); crypto.getRandomValues(a);
@@ -551,54 +553,75 @@ async function loggInn(){
   location.href = AUTH_BASE + '/authorize?' + p;
 }
 
+/* ============================================================
+   Vekslingen ligger paa tjeneren - se functions/api/ms.js
+   ------------------------------------------------------------
+   Fram til 13. september 2026 vekslet denne fila koden selv, mot
+   en app-registrering av typen «Single-page application». SPA-er
+   faar refresh-tokener som varer 24 timer - Microsofts regel, ikke
+   en innstilling - saa alle maatte logge inn hver dag.
+
+   Naa gaar vekslingen gjennom /api/ms, som har klienthemmeligheten.
+   Det gir 90 dager, glidende, og nettleseren ser aldri
+   refresh-tokenet.
+
+   FORSIDEN ER STEDET DET SKJER. Oekta lagres som `auth:ms:<epost>`,
+   altsaa paa PERSONEN og ikke paa sida. Logger man inn her, kan
+   alle de andre sidene hente et ferskt token fra den samme oekta
+   uten aa ha en innlogging selv. Derfor er dette den ene doera, og
+   derfor ligger den paa inngangen til huset.
+
+   AZURE: `https://neam.no/` og `https://neam.no/index.html` maa
+   staa som «Web», ikke «Single-page application». En adresse kan
+   bare ligge ett av stedene, saa flyttingen og denne koden maa ut
+   samtidig - gjor man det ene uten det andre, virker ikke
+   innloggingen herfra.
+
+   `A.refresh` finnes ikke lenger. Det som avgjoer om vi er
+   innlogget er om tjeneren har en oekt for den som er logget inn
+   i Access.
+   ============================================================ */
 async function bytt(body){
-  const base = { client_id: CFG.clientId, redirect_uri: REDIRECT };
-  for(const k in body) base[k] = body[k];
-  const r = await fetch(AUTH_BASE + '/token', {
+  const r = await fetch('/api/ms', {
     method:'POST',
-    headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body: new URLSearchParams(base)
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body),
+    cache:'no-store'
   });
   const txt = await r.text();
   let d;
-  try{ d = JSON.parse(txt); }catch(e){ throw new Error('Uventet svar fra Microsoft'); }
-  if(!r.ok) throw new Error(d.error_description || d.error || 'Innlogging feilet');
+  try{ d = JSON.parse(txt); }catch(e){ throw new Error('Uventet svar fra innloggingen'); }
+  if(!d.ok){
+    const e = new Error(d.feil || 'Innlogging feilet');
+    e.maaLoggeInn = !!d.maaLoggeInn;
+    throw e;
+  }
   return d;
 }
 
-function lagre(d){
-  A.token   = d.access_token;
-  A.refresh = d.refresh_token || A.refresh;
-  A.expires = Date.now() + (d.expires_in || 3600)*1000 - 60000;
-  try{
-    localStorage.setItem('fh_cal_auth',
-      JSON.stringify({refresh:A.refresh, token:A.token, expires:A.expires}));
-  }catch(e){}
-}
+/* Lagring og lesing gaar gjennom felles-ms.js, saa forsiden og alle de
+   andre sidene deler det SAMME access-tokenet. Bare access-tokenet
+   ligger lokalt, og det varer en time uansett. */
+function lagre(d){ msLagre(d); A.token = MS.token; A.expires = MS.expires; }
 function hent(){
-  try{
-    const raw = localStorage.getItem('fh_cal_auth');
-    if(!raw) return false;
-    const d = JSON.parse(raw);
-    A.token = d.token; A.refresh = d.refresh; A.expires = d.expires || 0;
-    return !!(A.token || A.refresh);
-  }catch(e){ return false; }
+  const ja = msLes();
+  A.token = MS.token; A.expires = MS.expires;
+  return ja;
 }
-async function gyldigToken(){
-  if(A.token && Date.now() < A.expires) return A.token;
-  /* Reserve: oekta paa tjeneren. Se den lange forklaringen i
-     dashboard.html - samme sak her. */
-  if(!A.refresh){
-    if(typeof msToken !== 'function') return null;
-    try{ return await msToken(); }catch(e){ return null; }
-  }
-  const d = await bytt({grant_type:'refresh_token', refresh_token:A.refresh, scope:CFG.scopes});
-  lagre(d);
-  return A.token;
-}
+
+/* gyldigToken() ligger i felles-ms.js fra 13. september 2026. Den
+   henter fra oekta paa tjeneren, og er den samme paa alle sidene. */
+
 function loggUt(){
+  /* Oekta paa tjeneren maa glemmes ogsaa - ellers ville neste person paa
+     samme maskin arvet den, og det er DEN som naa gjelder alle sidene.
+     Vi venter ikke paa svaret; utloggingen skal ikke kunne henge fordi
+     et kall er tregt. */
+  try{ fetch('/api/ms', {method:'POST', headers:{'Content-Type':'application/json'},
+                         body: JSON.stringify({hva:'ut'})}); }catch(_){}
   try{ localStorage.removeItem('fh_cal_auth'); localStorage.removeItem('fh_navn'); localStorage.removeItem('fh_bilde'); sessionStorage.clear(); }catch(_){}
-  A.token = null; A.refresh = null; A.me = null; A.expires = 0;
+  A.token = null; A.me = null; A.expires = 0;
+  MS.token = null; MS.expires = 0; MS.oekt = false;
   /* To sesjoner maa avsluttes: Microsoft-kontoen og Cloudflare Access.
      Vi kan ikke sende Microsoft rett til /cdn-cgi/access/logout, for den
      URL-en maa vaere registrert i Azure — er den ikke det, nekter Microsoft
@@ -697,12 +720,45 @@ async function sjekkTilgang(){
       return;
     }
     try{
-      const d = await bytt({
-        grant_type:'authorization_code',
-        code:q.get('code'),
-        code_verifier:verifier,
-        scope:CFG.scopes
-      });
+      let d;
+      try{
+        d = await bytt({ hva:'kode', code:q.get('code'),
+                         verifier:verifier, redirect:REDIRECT });
+      }catch(serverfeil){
+        /* ------------------------------------------------------------
+           Reserve: den gamle vekslingen, rett mot Microsoft.
+           ------------------------------------------------------------
+           Denne fila og Azure maa egentlig endres samtidig: en adresse
+           kan bare ligge som «Web» ELLER som «Single-page application»,
+           og /api/ms veksler med klienthemmelighet, som bare Web godtar.
+           Ligger adressen fortsatt som SPA naar koden gaar live, svarer
+           Microsoft AADSTS9002327 og ingen kommer inn.
+
+           Med denne grenen spiller rekkefoelgen ingen rolle. Virker ikke
+           serverveien, tar vi den gamle - og den gamle virker nettopp saa
+           lenge adressen er SPA. Naar du flytter den i Azure, slutter den
+           gamle aa virke i samme oeyeblikk som den nye begynner.
+
+           NAAR KAN DEN FJERNES: naar bade `https://neam.no/` og
+           `https://neam.no/index.html` staar som Web, og innlogging er
+           bekreftet. Da er dette doed kode som bare kan forvirre. */
+        console.warn('Serververksling feilet, prøver den gamle veien:', serverfeil.message);
+        const base = { client_id: CFG.clientId, redirect_uri: REDIRECT,
+                       grant_type:'authorization_code', code:q.get('code'),
+                       code_verifier:verifier, scope:CFG.scopes };
+        const r = await fetch(AUTH_BASE + '/token', {
+          method:'POST',
+          headers:{'Content-Type':'application/x-www-form-urlencoded'},
+          body: new URLSearchParams(base)
+        });
+        const txt = await r.text();
+        let g;
+        try{ g = JSON.parse(txt); }catch(e){ throw serverfeil; }
+        if(!r.ok) throw new Error(g.error_description || g.error || serverfeil.message);
+        d = { access_token:g.access_token, expires_in:g.expires_in };
+        /* Det gamle refresh-tokenet lagres IKKE. Det varer ett doegn og
+           ville bare gjort at man ikke merket at serverveien er nede. */
+      }
       lagre(d);
       sessionStorage.removeItem('fh_verifier');
       sessionStorage.removeItem('fh_state');
@@ -711,8 +767,17 @@ async function sjekkTilgang(){
       return;
     }
   } else if(!hent()){
-    loggInn();                    /* ingen lagret pålogging — send rett til Microsoft */
-    return;
+    /* Ikke noe token liggende. Men oekta bor paa tjeneren og kan godt
+       finnes likevel - fra en annen enhet, eller fra i forrige uke. Da
+       henter vi et ferskt token i stedet for aa sende folk til Microsoft
+       for ingenting. Bare naar det ikke finnes noen oekt gaar vi dit. */
+    let fikk = null;
+    try{ fikk = await msToken(); }catch(e){ fikk = null; }
+    if(!fikk){
+      loggInn();
+      return;
+    }
+    A.token = MS.token; A.expires = MS.expires;
   }
 
   try{
@@ -728,7 +793,8 @@ async function sjekkTilgang(){
 
 function loggUt2(melding){
   localStorage.removeItem('fh_cal_auth');
-  A.token = null; A.refresh = null; A.me = null; A.expires = 0;
+  A.token = null; A.me = null; A.expires = 0;
+  MS.token = null; MS.expires = 0;
   portNote(melding, true);
 }
 </script>
