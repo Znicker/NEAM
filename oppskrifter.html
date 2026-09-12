@@ -1139,6 +1139,27 @@
     font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:600; color:var(--ink-soft);
     white-space:nowrap; padding-top:3px;
   }
+  /* Porsjonsjustering rett i ukemenyen. Tallet staar mellom to piler, og
+     endringen lagres med én gang - ingen bekreftelse. Et feil porsjonstall
+     er synlig der det staar, og rettes med samme pil man bommet med. */
+  .plan-serv-just{
+    display:flex; align-items:center; gap:2px; flex-shrink:0; padding-top:1px;
+  }
+  .plan-serv-just button{
+    width:26px; height:26px; border-radius:50%; border:1px solid var(--line);
+    background:var(--paper); color:var(--ink-soft);
+    font-size:15px; line-height:1; padding:0; flex-shrink:0;
+  }
+  .plan-serv-just button:active{ background:var(--aksent); border-color:var(--aksent); color:#FFFFFF; }
+  .plan-serv-just button:disabled{ opacity:.35; }
+  .plan-serv-just .tall{
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700;
+    color:var(--ink); min-width:34px; text-align:center; font-variant-numeric:tabular-nums;
+  }
+  .plan-serv-just .tall small{
+    display:block; font-size:var(--t-etikett); font-weight:600;
+    color:var(--ink-soft); letter-spacing:.04em;
+  }
 
   /* Verktøylinje og valg i ingrediensfanen */
   .ing-toolbar{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
@@ -6231,7 +6252,10 @@ let mealPlan = {};        // hele planen, lastet ved oppstart
 let planWeek = null;      // uka som vises mellom knappene: {year, week}
 let planAddMode = false;  // viser + pa oppskriftskortene
 let planPickId = null;       // oppskriften dagvelgeren jobber med
-let planPickServings = 4;    // porsjoner valgt i dagvelgeren
+/* Hvor mange som spiser hjemme til vanlig. Utgangspunktet hver gang en
+   rett legges i ukemenyen - se openDayPicker(). */
+const PLAN_STD_PORSJONER = 4;
+let planPickServings = PLAN_STD_PORSJONER;    // porsjoner valgt i dagvelgeren
 let planPickBase = 4;        // oppskriftens egne porsjoner, til sammenligning
 
 const PLAN_DAY_NAMES = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
@@ -6369,10 +6393,13 @@ async function openDayPicker(recipeId){
   const r = recipes.find(x => x.id === recipeId);
   if(!r) return;
   planPickId = recipeId;
-  // Starter på oppskriftens egne porsjoner, så «legg til» som regel er ett trykk
+  /* Starter alltid på PLAN_STD_PORSJONER, ikke på oppskriftens eget tall.
+     Beslutning 12. september 2026: det er husstanden som bestemmer hvor
+     mange som skal spise, ikke den som skrev oppskriften. Oppskriftens
+     tall vises fortsatt under, så man ser hva man skalerer fra. */
   const full = await loadFullRecipe(recipeId);
-  planPickBase = (full && Number(full.baseServings)) || 4;
-  planPickServings = planPickBase;
+  planPickBase = (full && Number(full.baseServings)) || PLAN_STD_PORSJONER;
+  planPickServings = PLAN_STD_PORSJONER;
   renderServPicker();
   $('day-picker-title').textContent = r.title || 'Uten navn';
   $('day-picker-week').textContent = 'Uke ' + planWeek.week + ' - velg dag';
@@ -6406,9 +6433,16 @@ function renderServPicker(){
 }
 let planSaving = false;   // hindrer at et nytt trykk kommer inn mens lagringen pågår
 
-/* Har man alt sagt hvilken dag retten skal på, er dagvelgeren et unødvendig
-   mellomledd. Retten legges rett inn med sine egne porsjoner; vil man endre
-   antallet, gjør man det etterpå via minus-knappen. */
+/* HET ET UNØDVENDIG MELLOMLEDD TIL 12. SEPTEMBER 2026.
+
+   Da dagen alt var valgt, ble retten lagt rett inn med oppskriftens egne
+   porsjoner - uten å spørre. Det sparte ett trykk, men gjorde at det
+   VARIERTE om man ble spurt: via dagvelgeren fikk man porsjonsvalget, via
+   en valgt dag gikk man rundt det. Et valg som noen ganger kommer og noen
+   ganger ikke, er verre enn ett trykk.
+
+   Nå spørres det alltid - men bare om porsjonene, ikke om dagen på nytt.
+   Dagvelgergrida viser da én dag, og den dagen er svaret. */
 async function leggTilDirekte(recipeId, dayNum){
   const r = recipes.find(x => x.id === recipeId);
   if(!r || !planWeek) return;
@@ -6419,8 +6453,22 @@ async function leggTilDirekte(recipeId, dayNum){
     showToast(`${r.title || 'Retten'} ligger allerede på ${dayName.toLowerCase()}.`, true);
     return;
   }
+  /* Åpner porsjonsvelgeren med dagen alt bestemt. addToPlanDay() gjør
+     resten, og er den samme veien som fra dagvelgeren - én vei inn til
+     lagringen, uansett hvor man kom fra. */
+  planTargetDay = dayNum;
+  await openDayPicker(recipeId);
+  return;
+}
+
+/* Beholdt av historiske grunner: den gamle direkteveien. Kalles ikke
+   lenger. */
+async function leggTilUtenAaSpoerre(recipeId, dayNum){
+  const r = recipes.find(x => x.id === recipeId);
+  const key = planWeekKey(planWeek);
+  const dayName = PLAN_DAY_NAMES[dayNum - 1];
   const full = await loadFullRecipe(recipeId);
-  const porsjoner = (full && Number(full.baseServings)) || 4;
+  const porsjoner = (full && Number(full.baseServings)) || PLAN_STD_PORSJONER;
 
   if(!mealPlan[key]) mealPlan[key] = {};
   if(!mealPlan[key][dayNum]) mealPlan[key][dayNum] = [];
@@ -6603,7 +6651,13 @@ function renderPlanMenuTab(){
       ? dishes.map((d, di) => `
           <div class="plan-col-dish">
             <button type="button" class="plan-dish-name" onclick="openRecipe('${d.id}')">${escapeHtml(d.title)}</button>
-            <span class="plan-dish-serv">${d.servings ? d.servings + ' pors.' : ''}</span>
+            <span class="plan-serv-just">
+              <button type="button" onclick="endrePorsjoner('${key}', ${dayNum}, ${di}, -1)"
+                      aria-label="Færre porsjoner"${(d.servings || 1) <= 1 ? ' disabled' : ''}>−</button>
+              <span class="tall">${d.servings || '–'}<small>pors.</small></span>
+              <button type="button" onclick="endrePorsjoner('${key}', ${dayNum}, ${di}, 1)"
+                      aria-label="Flere porsjoner"${(d.servings || 0) >= 50 ? ' disabled' : ''}>+</button>
+            </span>
             <button type="button" class="plan-dish-rm" onclick="removeFromPlan('${key}', ${dayNum}, ${di})">Slett</button>
           </div>`).join('')
       : '';
@@ -6727,6 +6781,44 @@ async function oppdaterUkesrader(){
   }catch(e){
     console.warn('Klarte ikke oppdatere ukas rader', e);
   }
+}
+
+/* Endrer porsjonene paa én rett i ukemenyen, rett fra lista.
+
+   Ingen bekreftelse: tallet staar synlig der man trykket, og en bom rettes
+   med den andre pila. Skjermen oppdateres FOER lagringen, saa trykket
+   kjennes umiddelbart - og rulles tilbake hvis lagringen ryker, saa man
+   aldri ser et tall som ikke kom fram.
+
+   Ingredienslista og handlelista regner ut fra nettopp dette tallet, saa
+   en justering her endrer hva som havner i handlekurven. */
+let porsjonLagrer = false;
+async function endrePorsjoner(key, dayNum, index, delta){
+  if(porsjonLagrer) return;
+  const liste = (mealPlan[key] && mealPlan[key][dayNum]) || [];
+  const d = liste[index];
+  if(!d) return;
+
+  const foer = Number(d.servings) || PLAN_STD_PORSJONER;
+  const ny = Math.max(1, Math.min(50, foer + delta));
+  if(ny === foer) return;
+
+  porsjonLagrer = true;
+  d.servings = ny;
+  renderPlanView();
+  renderHome();
+  renderDetailPlanRow();
+
+  try{
+    await persistMealPlan();
+  }catch(e){
+    d.servings = foer;
+    renderPlanView();
+    renderHome();
+    renderDetailPlanRow();
+    showToast('Klarte ikke lagre. Prøv en gang til.', true);
+  }
+  porsjonLagrer = false;
 }
 
 /* ---- Samle ukas ingredienser, gruppert på vare ---- */
