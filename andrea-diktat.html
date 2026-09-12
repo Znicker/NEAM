@@ -347,6 +347,13 @@ body.over .rekorder{ display:none; }
 /* Usikker: han fikk ikke lest ruta. Trykk, og hun skriver hva det sto. */
 .rute.usikker{ border-color:var(--handling-endre); color:var(--handling-endre); border-style:dashed; }
 .rute.usikker:active{ background:var(--boks-mild); }
+/* En bokstav som mangler har ingen rute paa arket. Stiplet og blek, saa
+   det leses som et hull og ikke som noe hun har skrevet. */
+.rute.borte{
+  border-style:dotted; border-color:var(--ink-soft); background:var(--boks-mild);
+  font-size:calc(var(--rute) * .46);
+}
+.rute.borte .rute-riktig{ color:var(--ink-soft); }
 .rute-inn{
   width:var(--rute); height:calc(var(--rute) * 1.15);
   border:2px solid var(--aksent); border-radius:8px; background:#FFFFFF;
@@ -487,6 +494,8 @@ body.over .rekorder{ display:none; }
         <p class="hjelp" id="ordHjelp"></p>
         <ul class="ordliste skjult" id="ordliste"></ul>
         <button type="button" class="o-vis" id="visSkjul" hidden>Vis ordene</button>
+        <!-- Vises bare naar ord mangler setning. Se tegnOrdliste(). -->
+        <button type="button" class="o-vis" id="setningerKnapp" hidden>Lag setninger til ordene</button>
 
         <div class="veier">
           <button type="button" class="vei hoved" id="veiOv">
@@ -620,9 +629,14 @@ const MAKS_ORD = 10;
 const EKSTRA_RUTER = 2;
 const RUTER_FAST = 12;
 
-/* Modellen som leser arket. Sonnet er god nok til barneskrift i ruter,
-   og raskere enn Opus - hun staar og venter mens den leser. */
-const MODELL = 'claude-sonnet-5';
+/* Modellen som leser arket. Opus fra 12. september 2026: Sonnet las
+   bokstavene riktig, men merket for mye som usikkert, og hver usikker
+   rute er et spoersmaal et barn maa svare paa. Den er tregere - hun
+   staar og venter mens den leser - men arket leses én gang per uke.
+
+   Setningene lages av samme modell. Det er ikke en vurdering av
+   oppgaven, bare enklere: én modell aa bytte naar den skal byttes. */
+const MODELL = 'claude-opus-5';
 
 /* Tale. Litt saktere enn vanlig tale, og litt lavere toneleie: det gir
    den stive, formelle klangen Neam skal ha, og et diktatord skal uansett
@@ -705,7 +719,19 @@ function gyldigListe(l){
 
 /* Rundene flettes paa id. Ordlista er ÉN verdi, og da vinner den
    nyeste: to enheter som skriver hver sin ordliste samme uke skal ende
-   paa den som ble skrevet sist, ikke paa en blanding av to lister. */
+   paa den som ble skrevet sist, ikke paa en blanding av to lister.
+
+   VED LIK TID er det samme liste, skrevet to ganger - ordene foerst og
+   setningene etterpaa. Da vinner den med flest setninger. Uten dette
+   leddet ble setningene lagret og straks overskrevet av versjonen uten:
+   KV sto foerst i lista, likhet gikk i dens favoer, og opplesningen sa
+   ordet to ganger uten noe imellom. */
+function antallSetninger(l){
+  return ((l && l.ord) || []).reduce(function(n, o){
+    return n + (((o && o.setninger) || []).length ? 1 : 0);
+  }, 0);
+}
+
 function flettData(a, b){
   const kart = new Map();
   [a, b].forEach(function(d){
@@ -720,7 +746,9 @@ function flettData(a, b){
   [a, b].forEach(function(d){
     const l = d && d.liste;
     if(!gyldigListe(l)) return;
-    if(!liste || l.tid > liste.tid) liste = l;
+    if(!liste){ liste = l; return; }
+    if(l.tid > liste.tid){ liste = l; return; }
+    if(l.tid === liste.tid && antallSetninger(l) > antallSetninger(liste)) liste = l;
   });
   return { versjon:1, liste:liste, runder:runder };
 }
@@ -794,8 +822,16 @@ function tegnOrdliste(){
       }).join('')
     : '';
   $('visSkjul').hidden = !ord.length;
+  /* Uten setning leser han bare ordet to ganger. Det er ikke galt, men
+     det er ikke det som var meningen - og da skal det staa her, ikke
+     oppdages foerste gang hun oever. */
+  const uten = ord.filter(function(o){ return !((o.setninger || []).length); }).length;
+  $('setningerKnapp').hidden = !ord.length || !uten;
+  $('setningerKnapp').textContent = uten === ord.length
+    ? 'Lag setninger til ordene'
+    : 'Lag setning til ' + uten + (uten === 1 ? ' ord som mangler' : ' ord som mangler');
   $('ordHjelp').textContent = ord.length
-    ? ord.length + (ord.length === 1 ? ' ord denne uka.' : ' ord denne uka.')
+    ? ord.length + ' ord denne uka.' + (uten ? ' ' + uten + ' av dem mangler setning.' : '')
     : 'Ingen ord lagt inn ennå. Trykk Endre for å skrive dem inn.';
   $('veiOv').disabled = !ord.length;
   $('veiArk').disabled = !ord.length;
@@ -889,20 +925,37 @@ $('lagreOrd').addEventListener('click', async function(){
   try{ await synk(); }
   catch(e){ console.warn('Diktat: fikk ikke lagret ordene', e); }
 
+  await hentSetninger();
+});
+
+/* Setningene til ordene som ligger inne. Kalles baade rett etter lagring
+   og fra knappen - de kan feile foerste gang, og da skal det gaa an aa
+   proeve igjen uten aa skrive ordene om att. */
+async function hentSetninger(){
+  const ord = ordene().map(function(o){ return o.ord; });
+  if(!ord.length) return;
+  const listeId = data.liste.id;
+  $('setningerKnapp').disabled = true;
+  si('Et øyeblikk. Jeg finner på en setning til hvert ord.');
   try{
     const med = await lagSetninger(ord);
     /* Bare hvis lista ikke er byttet ut mens vi ventet. */
-    if(data.liste && data.liste.ord.length === med.length){
+    if(data.liste && data.liste.id === listeId && data.liste.ord.length === med.length){
       data.liste.ord = med;
       lokalSkriv(true);
       await synk();
     }
+    tegnOrdliste();
     si(REPLIKK.klar);
   }catch(e){
     console.warn('Diktat: fikk ikke laget setninger', e);
+    tegnOrdliste();
     si('Jeg fikk ikke laget setninger denne gangen, men ordene kan jeg lese.');
   }
-});
+  $('setningerKnapp').disabled = false;
+}
+
+$('setningerKnapp').addEventListener('click', hentSetninger);
 
 /* ============================================================
    Neam
@@ -1155,6 +1208,35 @@ function startOving(){
   });
 }
 
+/* Veien til stemmen er forskjellig per plattform, og en beskjed som
+   viser feil vei er verre enn ingen: da leter man der det ikke er noe.
+   iPadOS oppgir seg selv som Macintosh siden iPadOS 13 - antall
+   beroeringspunkter er det som skiller dem. */
+function stemmeVei(){
+  const ua = navigator.userAgent || '';
+  const berorer = (navigator.maxTouchPoints || 0) > 1;
+  if(/iPhone|iPod/.test(ua) || (/iPad|Macintosh/.test(ua) && berorer)){
+    return 'Den legges til under Innstillinger → Tilgjengelighet → Talt innhold '
+         + '→ Stemmer → Norsk bokmål.';
+  }
+  if(/Macintosh|Mac OS X/.test(ua)){
+    return 'Den legges til under Systeminnstillinger → Tilgjengelighet → Talt innhold '
+         + '→ Systemstemme → Tilpass → Norsk bokmål.';
+  }
+  if(/Windows/.test(ua)){
+    /* Chrome og Edge paa Windows henter stemmene fra operativsystemet, og
+       den norske foelger med spraakpakken - ikke med nettleseren. */
+    return 'På Windows følger stemmen med språkpakken: Innstillinger → Tid og språk '
+         + '→ Språk og område → Legg til språk → Norsk bokmål, og huk av for Tale. '
+         + 'Start nettleseren på nytt etterpå.';
+  }
+  if(/Android/.test(ua)){
+    return 'På Android ligger den under Innstillinger → System → Språk → '
+         + 'Tekst-til-tale → Installer taledata → Norsk.';
+  }
+  return 'Den følger med språkpakken for norsk i operativsystemet.';
+}
+
 function settTaleVarsel(){
   const el = $('taleAv');
   if(!taleStottes){
@@ -1173,8 +1255,7 @@ function settTaleVarsel(){
       : 'ingen i det hele tatt';
     el.textContent = 'Jeg fant ingen norsk stemme her, så uttalen kan bli rar. '
                    + 'Enheten har ' + stemmeFunn.length + ' stemmer: ' + funn + '. '
-                   + 'På iPhone og iPad ligger den under Innstillinger → Tilgjengelighet '
-                   + '→ Talt innhold → Stemmer → Norsk bokmål.';
+                   + stemmeVei();
     el.hidden = false;
     return;
   }
@@ -1293,10 +1374,18 @@ async function lesArk(dataUrl, antall){
         + 'Regler:\n'
         + '- Rapporter tegn for tegn. Sett ikke sammen ord, og rett ikke opp noe.\n'
         + '- En tom rute rapporteres som tom streng.\n'
-        + '- Behold store og små bokstaver slik de er skrevet.\n'
-        + '- Er du i tvil om hvilket tegn som står i en rute, tar du med rutens nummer '
-        + '(0 for den første) i usikre-lista, og oppgir likevel det du tror står der.\n'
-        + '- Er du i tvil, si det. Ikke gjett deg til et ord som gir mening.\n\n'
+        + '- STORE OG SMÅ BOKSTAVER SPILLER INGEN ROLLE. Mange bokstaver har samme '
+        + 'form i begge størrelser – P og p, Y og y, S og s, O og o, C, V, W, X, Z – '
+        + 'og inne i en rute finnes det ingen skrivelinje å måle høyden mot. Kan du '
+        + 'ikke se forskjell, velger du bare én av dem. Det blir aldri regnet som '
+        + 'feil, og det er ALDRI en grunn til å merke ruta som usikker.\n'
+        + '- Bruk usikre-lista bare når du ikke vet HVILKEN BOKSTAV det er – for '
+        + 'eksempel når streken kan være både en l, en stor I og et ettall. Er du '
+        + 'bare litt i tvil, oppgir du tegnet uten å merke det. Hver rute som merkes '
+        + 'må et barn svare på etterpå, så listen skal være kort.\n'
+        + '- Merker du en rute som usikker, oppgir du likevel det du tror står der.\n'
+        + '- Sett ikke sammen ord, og gjett deg ikke til et ord som gir mening. '
+        + 'Rapporter det som faktisk står i ruta.\n\n'
         + 'Svar BARE med JSON på formen:\n'
         + '{"rader":[{"nr":1,"bokstaver":["s","o","l","",""],"usikre":[2]}]}'
       }
@@ -1410,25 +1499,100 @@ function erUsikker(o, k){
   return o.usikre.indexOf(k) !== -1;
 }
 
+/* De rutene hun faktisk har skrevet i, i rekkefoelge. Tomme ruter er
+   ikke tegn - de er plassen bak ordet. En tom rute MIDT i ordet faller
+   ogsaa bort her, og dukker opp igjen som en manglende bokstav i
+   oppstillingen under, som er det den er. */
+function celleneI(o){
+  const ruter = ruterFor(o.ord);
+  const ut = [];
+  for(let k = 0; k < ruter; k++){
+    const t = tegnI(o, k);
+    const u = erUsikker(o, k);
+    if(!t && !u) continue;
+    ut.push({ k:k, tegn:t, usikker:u });
+  }
+  return ut;
+}
+
+/* ------------------------------------------------------------
+   Oppstillingen
+   ------------------------------------------------------------
+   Det skrevne stilles opp MOT fasiten, det blir ikke sammenlignet
+   rute for rute.
+
+   Grunnen er maalt, ikke gjettet: «MatTerialer» mot «Materialer»
+   er ÉN bokstav for mye, men rute mot rute forskyves alt etter den
+   ekstra T-en med én plass, og ett tastetrykk for mye ble til aatte
+   feil bokstaver. Da lyver bade prosenten og markeringen om hva hun
+   faktisk gjorde.
+
+   Vanlig redigeringsavstand med tre trekk: samme bokstav, feil
+   bokstav, bokstav for mye, bokstav som mangler. Alle koster ett,
+   saa en innsatt bokstav teller én gang.
+
+   En usikker rute er aldri lik noe: modellen sa selv at den ikke
+   vet, og da skal den staa som uavklart til hun har sagt hva det
+   var.
+   ------------------------------------------------------------ */
+function stillOpp(fasit, celler){
+  const n = celler.length, m = fasit.length;
+  const lik = function(i, j){
+    return !celler[i].usikker && likTegn(celler[i].tegn, fasit[j]);
+  };
+  const D = [];
+  for(let i = 0; i <= n; i++){
+    D.push(new Array(m + 1).fill(0));
+    D[i][0] = i;
+  }
+  for(let j = 0; j <= m; j++) D[0][j] = j;
+  for(let i = 1; i <= n; i++){
+    for(let j = 1; j <= m; j++){
+      D[i][j] = Math.min(
+        D[i-1][j-1] + (lik(i-1, j-1) ? 0 : 1),
+        D[i-1][j] + 1,      /* en skrevet bokstav for mye */
+        D[i][j-1] + 1       /* en bokstav mangler */
+      );
+    }
+  }
+  /* Tilbake gjennom tabellen. Skraatt foerst: staar det like mange feil
+     paa to veier, er «feil bokstav» et enklere svar enn «en for mye og
+     en som mangler», og det er ogsaa det som stemmer med hva hun gjorde. */
+  const ut = [];
+  let i = n, j = m;
+  while(i > 0 || j > 0){
+    if(i > 0 && j > 0 && D[i][j] === D[i-1][j-1] + (lik(i-1, j-1) ? 0 : 1)){
+      ut.push({
+        art: celler[i-1].usikker ? 'usikker' : (lik(i-1, j-1) ? 'lik' : 'ulik'),
+        celle: celler[i-1], riktig: fasit[j-1]
+      });
+      i--; j--;
+    }else if(i > 0 && D[i][j] === D[i-1][j] + 1){
+      ut.push({ art:'formye', celle:celler[i-1], riktig:'' });
+      i--;
+    }else{
+      ut.push({ art:'mangler', celle:null, riktig:fasit[j-1] });
+      j--;
+    }
+  }
+  return ut.reverse();
+}
+
 /* Ett ord: riktige bokstaver, om hele ordet er riktig, og om noe
    fortsatt staar uavklart. */
 function vurderOrd(o){
   const fasit = String(o.ord);
-  let riktige = 0;
-  let alt = true;
-  let uavklart = false;
-  for(let k = 0; k < fasit.length; k++){
-    if(erUsikker(o, k)){ uavklart = true; alt = false; continue; }
-    if(likTegn(tegnI(o, k), fasit[k])) riktige++;
-    else alt = false;
-  }
-  /* Et tegn i en rute BAK ordet er en bokstav for mye. */
-  const ruter = ruterFor(fasit);
-  for(let k = fasit.length; k < ruter; k++){
-    if(erUsikker(o, k)){ uavklart = true; alt = false; }
-    else if(tegnI(o, k)) alt = false;
-  }
-  return { riktige:riktige, lengde:fasit.length, alt:alt, uavklart:uavklart };
+  const opp = stillOpp(fasit, celleneI(o));
+  let riktige = 0, alt = true, uavklart = false, formye = 0, mangler = 0;
+  opp.forEach(function(s){
+    if(s.art === 'lik'){ riktige++; return; }
+    alt = false;
+    if(s.art === 'usikker') uavklart = true;
+    else if(s.art === 'formye') formye++;
+    else if(s.art === 'mangler') mangler++;
+  });
+  return { riktige:riktige, lengde:fasit.length, alt:alt, uavklart:uavklart,
+           formye:formye, mangler:mangler, opp:opp };
 }
 
 function vurder(r){
@@ -1502,50 +1666,63 @@ function visResultat(r, ny){
   if(ny) $('lagring').hidden = true;
 }
 
-/* Hvor mange ruter som VISES i resultatet. Arket har tolv til alle ord,
-   men tolv ruter der ni er tomme er stoey - og en tom rute bak ordet er
-   ikke noe hun har gjort feil. Vi viser ordets lengde, og lenger hvis
-   hun faktisk har skrevet noe der ute. Vurderingen ser fortsatt paa alle
-   tolv: en bokstav for mye skal telle. */
-function visteRuter(o){
-  const ruter = ruterFor(o.ord);
-  let sist = Math.min(String(o.ord).length, ruter);
-  for(let k = sist; k < ruter; k++){
-    if(tegnI(o, k) || erUsikker(o, k)) sist = k + 1;
-  }
-  return sist;
+/* Ett ord: en linje med ruter, én per trekk i oppstillingen. Lengden
+   foelger dermed det som faktisk skjedde, ikke de tolv rutene paa arket -
+   tolv ruter der ni er tomme er stoey, og en tom rute bak ordet er ikke
+   noe hun har gjort feil. */
+function tegnRad(o, i){
+  const v = vurderOrd(o);
+  return v.opp.map(function(s){
+    if(s.art === 'usikker'){
+      return '<button type="button" class="rute usikker" data-o="' + i + '" data-k="' + s.celle.k
+           + '" aria-label="Dette tegnet fikk jeg ikke lest. Trykk for å skrive det inn">?</button>';
+    }
+    if(s.art === 'lik'){
+      return '<span class="rute ja">' + esc(s.riktig) + '</span>';
+    }
+    if(s.art === 'formye'){
+      /* En bokstav for mye: ingen fasitbokstav aa sette under, og da er
+         den strøkne bokstaven hele beskjeden. Den staar likevel i en rute
+         med samme kant som en gal bokstav - det er samme slags feil. */
+      return '<span class="rute nei" aria-label="En bokstav for mye">'
+           + '<span class="rute-skrevet">' + esc(s.celle.tegn) + '</span></span>';
+    }
+    if(s.art === 'mangler'){
+      /* En bokstav som mangler har ingen rute paa arket. Den staar i en
+         stiplet rute, saa det synes at det er et hull og ikke et tegn. */
+      return '<span class="rute borte" aria-label="Denne bokstaven mangler">'
+           + '<span class="rute-riktig">' + esc(s.riktig) + '</span></span>';
+    }
+    return '<span class="rute nei">'
+         + '<span class="rute-skrevet">' + esc(s.celle.tegn) + '</span>'
+         + '<span class="rute-riktig">' + esc(s.riktig) + '</span></span>';
+  }).join('');
+}
+
+/* Én linje som sier hva som gikk galt, i tall. «6 av 7 bokstaver» alene
+   forteller ikke at den sjuende var én for mye. */
+function radDom(v){
+  if(v.uavklart) return 'Noe mangler';
+  if(v.alt) return 'Riktig';
+  const deler = [];
+  /* «10 av 10 bokstaver» ved siden av et ord som er galt leses som en
+     selvmotsigelse. Er alle bokstavene der, er det den overfloedige som
+     er hele historien. */
+  if(v.riktige < v.lengde) deler.push(v.riktige + ' av ' + v.lengde + ' bokstaver');
+  else deler.push('alle bokstavene');
+  if(v.formye) deler.push(v.formye === 1 ? 'én for mye' : v.formye + ' for mye');
+  if(v.mangler) deler.push(v.mangler === 1 ? 'én mangler' : v.mangler + ' mangler');
+  return deler.join(', ');
 }
 
 function tegnFasit(r){
   $('fasit').innerHTML = r.ord.map(function(o, i){
     const v = vurderOrd(o);
-    const fasit = String(o.ord);
-    const ruter = visteRuter(o);
-    let rad = '';
-    for(let k = 0; k < ruter; k++){
-      const skrevet = tegnI(o, k);
-      const riktig = k < fasit.length ? fasit[k] : '';
-      if(erUsikker(o, k)){
-        rad += '<button type="button" class="rute usikker" data-o="' + i + '" data-k="' + k
-             + '" aria-label="Ukjent tegn i rute ' + (k + 1) + '. Trykk for å skrive det inn">?</button>';
-      }else if(!skrevet && !riktig){
-        rad += '<span class="rute" aria-hidden="true"></span>';
-      }else if(likTegn(skrevet, riktig)){
-        rad += '<span class="rute ja">' + esc(riktig) + '</span>';
-      }else{
-        rad += '<span class="rute nei">'
-             + (skrevet ? '<span class="rute-skrevet">' + esc(skrevet) + '</span>' : '')
-             + (riktig ? '<span class="rute-riktig">' + esc(riktig) + '</span>' : '')
-             + '</span>';
-      }
-    }
     return '<div class="f-ord">'
          + '<div class="f-topp"><span class="f-nr">' + (i + 1) + '</span>'
-         + '<span class="f-riktig' + (v.alt ? ' ja' : '') + '">'
-         + (v.uavklart ? 'Noe mangler' : (v.alt ? 'Riktig' : v.riktige + ' av ' + v.lengde + ' bokstaver'))
-         + '</span></div>'
-         + '<div class="f-ruter">' + rad + '</div>'
-         + '<p class="f-svar">Ordet er <b>' + esc(fasit) + '</b></p>'
+         + '<span class="f-riktig' + (v.alt ? ' ja' : '') + '">' + esc(radDom(v)) + '</span></div>'
+         + '<div class="f-ruter">' + tegnRad(o, i) + '</div>'
+         + '<p class="f-svar">Ordet er <b>' + esc(String(o.ord)) + '</b></p>'
          + '</div>';
   }).join('');
 }
