@@ -6126,6 +6126,15 @@ const FAG_VERKTOY = [
         uke:  { type:'number', description:'Ukenummer. Utelat for uka som vises på skjermen.' }
       },
       required:['fag','maal']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      if(!String(arg.maal || '').trim()){
+        return 'Fjerne læringsmålet for ' + arg.fag
+             + (arg.uke ? ' i uke ' + arg.uke : ' denne uka') + '.';
+      }
+      return 'Sette læringsmål for ' + arg.fag
+           + (arg.uke ? ' i uke ' + arg.uke : ' denne uka') + ':\n\n' + arg.maal;
     }
   },
   {
@@ -6163,6 +6172,12 @@ const FAG_VERKTOY = [
                                             + 'Utelat for Andrea.' }
       },
       required:['tekst']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      return 'Legge til påminnelse: ' + arg.tekst
+           + neamFelter(arg, [{n:'dato',t:'dato', v:neamDato}, {n:'uke',t:'uke'},
+                              {n:'gjelder',t:'gjelder'}, {n:'utdypning',t:'utdypning'}]);
     }
   },
   {
@@ -6178,6 +6193,11 @@ const FAG_VERKTOY = [
         frist: { type:'string', description:'Dato på formen 2026-09-08.' }
       },
       required:['fag','tekst']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      return 'Legge til lekse i ' + arg.fag + ':\n\n· ' + arg.tekst
+           + (arg.frist ? '\n· frist: ' + neamDato(arg.frist) : '\n· uten frist');
     }
   },
   {
@@ -6194,6 +6214,19 @@ const FAG_VERKTOY = [
         ferdig: { type:'boolean' }
       },
       required:['id']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      /* Avhuking sies for seg. «ferdig: true» er ikke et felt man leser
+         seg til meningen av i forbifarten - det er handlingen selv. */
+      if(arg.ferdig !== undefined && Object.keys(arg).length === 2){
+        return (arg.ferdig ? 'Huke av ' : 'Ta bort haken på ') + neamLeksenavn(arg.id) + '.';
+      }
+      return 'Endre ' + neamLeksenavn(arg.id)
+           + neamFelter(arg, [{n:'tekst',t:'tekst'},
+                              {n:'frist',t:'frist', v:neamDato},
+                              {n:'fag',t:'flyttes til'},
+                              {n:'ferdig',t:'ferdig', v:function(v){ return v ? 'ja' : 'nei'; }}]);
     }
   },
   {
@@ -6220,6 +6253,11 @@ const FAG_VERKTOY = [
         karakter: { type:'string', description:'Bare hvis den alt er satt.' }
       },
       required:['fag','type']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      return 'Legge til ' + arg.type + ' i ' + arg.fag
+           + neamFelter(arg, [{n:'dato',t:'dato', v:neamDato}, {n:'karakter',t:'karakter'}]);
     }
   },
   {
@@ -6235,6 +6273,12 @@ const FAG_VERKTOY = [
         karakter: { type:'string' }
       },
       required:['id']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      return 'Endre ' + neamProvenavn(arg.id)
+           + neamFelter(arg, [{n:'type',t:'type'}, {n:'dato',t:'dato', v:neamDato},
+                              {n:'karakter',t:'karakter'}]);
     }
   },
   {
@@ -6258,6 +6302,14 @@ const FAG_VERKTOY = [
                   items:{ type:'string' } }
       },
       required:['fag']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      return 'Endre faget ' + arg.fag
+           + neamFelter(arg, [{n:'navn',t:'nytt navn'},
+                              {n:'laerer',t:'faglærer', v:function(v){ return v || '(fjernes)'; }},
+                              {n:'dager',t:'dager', v:function(v){
+                                 return (v && v.length) ? v.join(', ') : '(alle fjernes)'; }}]);
     }
   },
   {
@@ -6271,11 +6323,81 @@ const FAG_VERKTOY = [
         dager:  { type:'array', items:{ type:'string' } }
       },
       required:['navn']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      return 'Opprette faget ' + arg.navn
+           + neamFelter(arg, [{n:'laerer',t:'faglærer'},
+                              {n:'dager',t:'dager', v:function(v){
+                                 return (v && v.length) ? v.join(', ') : '(ingen)'; }}]);
     }
   }
 ];
 
 /* ---------------- Hjelpere ---------------- */
+
+/* ------------------------------------------------------------
+   Setningene til bekreftelsespanelet
+   ------------------------------------------------------------
+   Fra 13. september 2026 spoer ALT som skriver, ikke bare
+   sletting. Det er en omgjoering av valget over, og prisen er
+   kjent: en dialog man faar hver gang, er en dialog man slutter
+   aa lese.
+
+   Derfor er det lagt vekt paa at hver setning sier hva som
+   FAKTISK skjer, med navn og verdier - ikke «Neam vil endre en
+   lekse». En bekreftelse man kan lese paa et halvt sekund og
+   kjenne igjen, er den eneste sorten som fortsatt blir lest naar
+   den kommer ofte.
+
+   Endringene slaar opp teksten paa id-en. Panelet viser det
+   Andrea kjenner - «Les side 42» - ikke id-en Neam sendte.
+   ------------------------------------------------------------ */
+
+/* Leksa eller proeven bak en id, som en lesbar linje. Finnes den ikke,
+   sier vi det: da har Neam sendt feil id, og det er bedre aa se det i
+   panelet enn aa faa en feil etter at man har trykket ja. */
+function neamLeksenavn(id){
+  const l = fagData && fagData.lekser.find(function(x){ return x.id === id; });
+  if(!l) return 'en lekse som ikke finnes (' + id + ')';
+  return '«' + l.tekst + '» i ' + fagNavnAv(l.fagId);
+}
+
+function neamProvenavn(id){
+  const p = fagData && fagData.prover.find(function(x){ return x.id === id; });
+  if(!p) return 'en prøve som ikke finnes (' + id + ')';
+  return (p.type || 'prøve') + ' i ' + fagNavnAv(p.fagId)
+       + (p.dato ? ' ' + p.dato : '');
+}
+
+/* Datoene kommer som 2026-09-15 fra verktoeyene. I panelet skal de leses,
+   ikke tolkes: «15. september» sier med én gang om det er i morgen eller
+   om tre uker. ISO-formen blir staaende hvis den ikke lar seg tolke -
+   det er bedre enn aa skjule at Neam sendte noe rart. */
+function neamDato(v){
+  const s = String(v || '');
+  if(!s) return '(fjernes)';
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if(!m) return s;
+  const d = new Date(s + 'T12:00:00');
+  if(isNaN(d)) return s;
+  const na = new Date();
+  return d.toLocaleDateString('nb-NO', { weekday:'long', day:'numeric', month:'long' })
+       + (d.getFullYear() !== na.getFullYear() ? ' ' + d.getFullYear() : '');
+}
+
+/* Feltene som faktisk sendes, som «frist: 8. september»-linjer. Bare de
+   som er med - et felt som ikke sendes blir ikke roert, og skal derfor
+   ikke staa i panelet som om det ble det. */
+function neamFelter(arg, felter){
+  const ut = [];
+  felter.forEach(function(f){
+    const v = arg[f.n];
+    if(v === undefined || v === null) return;
+    ut.push('· ' + f.t + ': ' + (f.v ? f.v(v) : (String(v) || '(tom)')));
+  });
+  return ut.length ? '\n\n' + ut.join('\n') : '';
+}
 
 /* Kallenavnene skolene faktisk bruker. Prefiksregelen under tar
    ikke «matte»: «Matematikk» begynner paa «mat», ikke paa «matt». */
