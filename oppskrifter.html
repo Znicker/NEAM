@@ -119,6 +119,15 @@
     padding:5px 7px; font-size:var(--t-meta); font-weight:700; font-family:'Archivo',sans-serif; letter-spacing:0;
   }
   .category-filter-chip.active{ background:var(--aksent); color:#FFFFFF; }
+  /* «Velg alle» og «Velg ingen». Små og dempet: de brukes sjelden, og
+     skal ikke konkurrere med kategoriene de styrer. */
+  .kat-alle{ display:flex; gap:6px; margin-top:2px; }
+  .kat-alle button{
+    background:none; border:none; padding:5px 7px;
+    font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
+    color:var(--aksent); text-decoration:underline; text-underline-offset:3px;
+  }
+  .kat-alle button:active{ color:var(--aksent-moerk); }
 
   /* Flytende runde knapper: ny oppskrift, sortering og tilbake */
   /* Sortering: eget hjoerne, likt uansett skjermformat. Egne klassenavn
@@ -1508,6 +1517,7 @@
   #view-home .category-under{
     display:contents;   /* boksene blir egne ruter i samme rutenett */
   }
+  #view-home .kat-alle{ grid-column:1 / -1; margin-top:4px; padding-left:2px; }
   #view-home .category-filter-chip{
     display:flex; align-items:center; gap:9px;
     text-align:left; padding:8px; border-radius:10px;
@@ -1517,9 +1527,16 @@
     content:''; width:18px; height:18px; flex-shrink:0;
     border:1.5px solid var(--line); border-radius:5px; background:var(--paper);
   }
+  /* HAKE, ikke fylt boks. En fylt flate sier «her er det noe», mens en
+     hake sier «denne er valgt» - og det er det siste som er poenget når
+     de fleste står avkrysset fra start. */
   #view-home .category-filter-chip.active{ background:none; color:var(--ink); }
   #view-home .category-filter-chip.active::before{
-    background:var(--aksent); border-color:var(--aksent);
+    border-color:var(--aksent); background:var(--paper);
+    /* Selve haken tegnes som to streker i hjørnet av boksen. SVG i en
+       bakgrunn, så den skalerer med boksen og ikke trenger et element. */
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M4 9.4l3.2 3.2L14 5.8' fill='none' stroke='%234A7FA8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-size:100% 100%; background-repeat:no-repeat;
   }
 
   /* Tre grupper i spalten: soek, filtre, handlinger. Uten bokser leser de
@@ -3538,8 +3555,21 @@ function renderCategoryFilterRow(){
   wrap.innerHTML =
     HOVEDKATEGORIER.map(chip).join('') +
     `<button type="button" class="category-filter-chip annet-knapp ${annetApenNaa ? 'active' : ''}" onclick="toggleAnnetMeny()">Annet ${annetApen ? '▴' : '▾'}</button>` +
-    `<div class="category-under ${annetApen ? 'apen' : ''}">${ANNET_KATEGORIER.map(chip).join('')}</div>`;
+    `<div class="category-under ${annetApen ? 'apen' : ''}">${ANNET_KATEGORIER.map(chip).join('')}</div>` +
+    `<div class="kat-alle">
+       <button type="button" onclick="velgAlleKategorier(true)">Velg alle</button>
+       <button type="button" onclick="velgAlleKategorier(false)">Velg ingen</button>
+     </div>`;
 }
+/* Alle eller ingen. «Ingen» gir en tom liste, og det er med vilje: da ser
+   man at filteret er det som skjuler alt, i stedet for å lure på hvor
+   oppskriftene ble av. Veien tilbake er «Velg alle» rett ved siden av. */
+function velgAlleKategorier(paa){
+  categoryFilterSelected = paa ? new Set(CATEGORY_LIST) : new Set();
+  renderCategoryFilterRow();
+  renderHome();
+}
+
 function toggleAnnetMeny(){
   annetApen = !annetApen;
   renderCategoryFilterRow();
