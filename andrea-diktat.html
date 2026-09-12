@@ -1057,12 +1057,43 @@ async function neam(kropp){
 }
 
 /* Modellen svarer i JSON. Kodegjerder tas bort foer tolkning - de kommer
-   av og til selv naar den er bedt om aa la vaere. */
+   av og til selv naar den er bedt om aa la vaere.
+
+   VI KLIPPER VED DEN AVSLUTTENDE KLAMMEN, ikke ved slutten av teksten.
+   Grunnen er maalt, ikke gjettet: svaret var gyldig JSON med en linje
+   forklaring bak, og aa lese fra foerste klamme og ut ga «Unexpected
+   non-whitespace character after JSON at position 646». Innholdet var
+   helt i orden - det var det som kom ETTER som veltet det.
+
+   Teller klammer med hensyn til tekststrenger, saa en klamme inne i en
+   setning ikke teller med. */
 function somJson(tekst){
   const t = String(tekst || '').replace(/```json|```/g, '').trim();
   const start = t.search(/[[{]/);
   if(start === -1) throw new Error('Fant ingen JSON i svaret');
-  return JSON.parse(t.slice(start));
+
+  const apen = t[start];
+  const lukk = apen === '{' ? '}' : ']';
+  let dyp = 0, iTekst = false, hopp = false, slutt = -1;
+  for(let i = start; i < t.length; i++){
+    const c = t[i];
+    if(hopp){ hopp = false; continue; }
+    if(iTekst){
+      if(c === '\\') hopp = true;
+      else if(c === '"') iTekst = false;
+      continue;
+    }
+    if(c === '"') iTekst = true;
+    else if(c === apen) dyp++;
+    else if(c === lukk){
+      dyp--;
+      if(dyp === 0){ slutt = i; break; }
+    }
+  }
+  /* Fant vi ingen avslutning, er svaret kuttet paa midten - da er hele
+     teksten det beste vi har, og feilen fra JSON.parse sier hva som er
+     galt med den. */
+  return JSON.parse(slutt === -1 ? t.slice(start) : t.slice(start, slutt + 1));
 }
 
 /* ---------------- Setningene ----------------
