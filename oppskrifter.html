@@ -2903,6 +2903,85 @@ async function neamLagreOppskrift(o){
   return recipe;
 }
 
+/* ============================================================
+   Hoeyre firer: sidas egne handlinger
+   ------------------------------------------------------------
+   Fire plasser rundt tommelen: haandtaket nede til hoeyre, og de
+   tre andre rundt det.
+
+     ved    nede til venstre - NY OPPSKRIFT. Det som skaper noe
+            nytt staar naermest tommelen, som paa de andre sidene.
+     skraa  oppe til venstre - UKEMENYEN, med to valg under seg.
+     opp    oppe til hoeyre  - SORTERING.
+
+   INGEN MERKER ENNAA. `bilder/knapper/` har ingen knapper for
+   disse, og et merke som sier noe annet enn knappen gjoer, er
+   verre enn ingen. De staar med papirskive og tekst til merkene
+   er tegnet - samme reserve som Sikkerhet-knappen i fireren.
+   ============================================================ */
+window.neamSideHandlinger = function(){
+  return [
+    /* Oppe til hoeyre: sortering. Den endrer ikke noe - den endrer
+       REKKEFOELGEN - og hoerer derfor ikke sammen med de to andre. */
+    { plass:'opp', navn:'Sortering', tekst:'Sorter', behold:true,
+      gjor: function(){
+        /* Navnene leses fra knappene i sorteringsmenyen, slik at det
+           finnes ÉN liste. Legger noen til en sortering der, dukker den
+           opp her uten at noe må endres - og de to kan ikke komme i
+           utakt. SORT_MODES holder rekkefølgen. */
+        const navn = Array.from(document.querySelectorAll('.sort-fab-menu button'))
+                          .map(b => b.textContent.trim());
+        neamSideStabel('opp', SORT_MODES.map(function(id, i){
+          return {
+            navn: (navn[i] || id) + (sortMode === id ? '  ✓' : ''),
+            tekst: navn[i] || id,
+            gjor: function(){ setSortMode(id); }
+          };
+        }));
+      } },
+
+    /* Oppe til venstre: ukemenyen. To valg som hoerer sammen - aapne
+       den, eller legge noe i den. */
+    { plass:'skraa', navn:'Ukemeny', behold:true,
+      gjor: function(){
+        neamSideStabel('skraa', [
+          { navn:'Åpne ukemenyen', tekst:'Åpne ukemeny',
+            gjor: openPlanView },
+          { navn: planAddMode ? 'Slutt å legge i ukemenyen' : 'Legg retter i ukemenyen',
+            tekst: planAddMode ? 'Ferdig' : 'Legg i ukemeny',
+            farge: planAddMode ? 'slett' : 'ny',
+            gjor: togglePlanMode }
+        ]);
+      } },
+
+    /* Nede til venstre: det som skaper noe nytt. */
+    { plass:'ved', navn:'Ny oppskrift', farge:'ny',
+      gjor: openNewRecipeModal }
+  ];
+};
+
+/* Andre trykk paa haandtaket legger skjermen tilbake i utgangsstand:
+   ut av en oppskrift og tilbake til lista, uten filtre og uten
+   kalendermodus. Det er den korteste veien hjem naar man har gravd seg
+   ned i noe - og den er lik paa Andrea dash, der samme trykk gir
+   dagsvisning og dagens dato. */
+window.neamSideAndreTrykk = function(){
+  clearSearch();                       /* soek, filtre og vurdering tilbake */
+  if(planAddMode) togglePlanMode();    /* ut av kalendermodus */
+  setSortMode('rating-desc');          /* husets standardsortering */
+  goHome();                            /* og ut av en aapen oppskrift */
+};
+
+/* Haandtaket bestemmer ÉN gang, i neamBygg(), om det skal vises - og
+   neamBygg() kjoerer saa snart felles-neam.js er lastet. Her ligger
+   fellesfila FOER sidens skript, altsaa foer linjene over har kjoert, og
+   haandtaket ble derfor bygget skjult. Samme linje staar paa Andrea dash
+   og av samme grunn. */
+(function(){
+  const h = document.getElementById('neamSideHandtak');
+  if(h && typeof neamSideHarNoe === 'function') h.hidden = !neamSideHarNoe();
+})();
+
 window.neamVerktoy = async function(){
   return [neamOppskriftVerktoy()].concat(HUS_VERKTOY);
 };
