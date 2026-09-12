@@ -1725,11 +1725,17 @@ function neamBygg(){
   firer.innerHTML =
       knapp('neamTLys', 'opp', 'Enheter og lys', knappMerke('enheter'), '', true)
     + knapp('neamTApper', 'skraa', 'Andre apper', knappMerke('apper'), '', true)
-    /* INGEN knappMerke() her: merket ville sagt «Dash», og et merke skal
-       si noeyaktig det knappen gjoer. Knappen faller derfor tilbake paa
-       papirskive og tekst til et sikkerhetsmerke er tegnet - det er
-       samme reserve som brukes naar en merkefil mangler. */
-    + knapp('neamTVed', 'ved', 'Sikkerhet', '', 'Sikkerhet', false);
+    /* Appmerket, ikke et knappemerke. `bilder/knapper/` har ingen
+       sikkerhetsknapp, men appmerket baerer allerede navnet «Sikkerhet»
+       og er samme slags bilde - merke med baand. Da sier det noeyaktig
+       det knappen gjoer, som er hele kravet.
+
+       neamMerkeUrl() legger paa MERKE_V, ikke KNAPP_V: fila hoerer til
+       appmerkene og foelger deres versjon. */
+    + knapp('neamTVed', 'ved', 'Sikkerhet',
+            '<img src="' + neamMerkeUrl('/bilder/merke-sikkerhet.png') + '" alt=""'
+            + ' onerror="neamMerkeFeilet(this)">',
+            'Sikkerhet', true);
   document.body.appendChild(firer);
 
   /* Applista er sin egen boks utenfor fireren: den er fastposisjonert mot

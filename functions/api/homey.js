@@ -91,15 +91,38 @@ function lovligRedirect(u){
   return url.origin + url.pathname;
 }
 
-function nokkel(epost){ return 'auth:homey:' + epost; }
+/* ÉN noekkel for hele huset, ikke én per person.
+
+   Homey er husets, ikke den enkeltes: doera er den samme uansett hvem
+   som staar og ser paa den. Foerste utgave laa under
+   `auth:homey:<epost>`, og da maatte hver enhet godkjennes for seg -
+   Access-identiteten er ikke den samme paa PC-en og telefonen.
+
+   Dette er den ene forskjellen fra ms.js, som ER personlig: kalenderen
+   er din, huset er vaart.
+
+   Godkjenningen gjoeres av én person, og den staar for alle. Hvem det
+   var, skrives ned - ikke for aa begrense noe, men fordi den dagen
+   tilgangen skal trekkes tilbake, er det den kontoen hos Athom det
+   gjelder. */
+const NOKKEL = 'auth:homey:hus';
 
 async function lesOekt(env, epost){
-  const raa = await env.FAMILIE_KV.get(nokkel(epost));
+  let raa = await env.FAMILIE_KV.get(NOKKEL);
+  if(!raa && epost){
+    /* Fra tiden da oekta laa per person. Finnes en slik, flyttes den til
+       husnoekkelen ved foerste bruk - da slipper man aa godkjenne paa
+       nytt. Den gamle blir staaende til den er tom; en sletting som
+       ryker midtveis skal ikke koste noen tilgangen. */
+    raa = await env.FAMILIE_KV.get('auth:homey:' + epost);
+    if(raa) await env.FAMILIE_KV.put(NOKKEL, raa);
+  }
   if(!raa) return null;
   try{ return JSON.parse(raa); }catch(e){ return null; }
 }
 async function skrivOekt(env, epost, o){
-  await env.FAMILIE_KV.put(nokkel(epost), JSON.stringify(o));
+  if(epost && !o.godkjentAv) o.godkjentAv = epost;
+  await env.FAMILIE_KV.put(NOKKEL, JSON.stringify(o));
 }
 
 /* ---------- Steg 1: OAuth2 mot Athom ----------
@@ -338,7 +361,8 @@ export async function onRequestPost({ request, env }){
 
   /* ---------- Glem oekta ---------- */
   if(hva === 'ut'){
-    await env.FAMILIE_KV.delete(nokkel(epost));
+    await env.FAMILIE_KV.delete(NOKKEL);
+    await env.FAMILIE_KV.delete('auth:homey:' + epost);
     return svar({ ok:true });
   }
 
@@ -420,7 +444,8 @@ export async function onRequestGet({ request, env }){
   if(!hva || hva === 'status'){
     const o = await lesOekt(env, epost);
     return svar({ ok:true, godkjent: !!(o && o.refresh),
-                  homey: (o && o.homeyNavn) || '' });
+                  homey: (o && o.homeyNavn) || '',
+                  godkjentAv: (o && o.godkjentAv) || '' });
   }
 
   if(hva === 'enheter'){
