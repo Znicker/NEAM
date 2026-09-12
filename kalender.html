@@ -1533,8 +1533,8 @@ input,select,textarea{font-size:16px}
 <script src="/felles-graph.js?v=2"></script>
 <script src="/felles-hus.js?v=2"></script>
 <script src="/felles-data.js?v=4"></script>
-<script src="/felles-lesalt.js?v=2"></script>
-<script src="/felles-skriv.js?v=2"></script>
+<script src="/felles-lesalt.js?v=3"></script>
+<script src="/felles-skriv.js?v=3"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-filviser.js?v=2"></script>
 <script src="/felles-tale.js?v=2"></script>
@@ -5224,7 +5224,9 @@ window.neamVerktoy = async function(){
     /* les_avtaler her er rikere enn leselagets les_kalender - den gir
        id-er som kan endres. To saa like verktoey i samme liste er en
        felle, saa leselagets tas bort her. */
-    skrivVerktoy([]), lesAltVerktoy(KAL_VERKTOY.concat([{name:'les_kalender'}])), HUS_VERKTOY);
+    skrivVerktoy(KAL_VERKTOY)  /* sidas egne legg_til_avtale, endre_avtale og
+                       slett_avtale vinner her: de slaar opp avtalen i det som
+                       er lest inn paa skjermen, og tegner om etterpaa */, lesAltVerktoy(KAL_VERKTOY.concat([{name:'les_kalender'}])), HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){

@@ -305,7 +305,7 @@ async function lesAltKalender(arg){
   const q = '/calendarView?startDateTime=' + fra.toISOString()
           + '&endDateTime=' + til.toISOString()
           + '&$orderby=start/dateTime&$top=100'
-          + '&$select=subject,isAllDay,start,end,location,seriesMasterId,type';
+          + '&$select=id,subject,isAllDay,start,end,location,body,seriesMasterId,type';
 
   const ut = [];
   const feilet = [];
@@ -316,6 +316,11 @@ async function lesAltKalender(arg){
       const d = await lesAltGraph('/me/calendars/' + encodeURIComponent(c.id) + q);
       ((d && d.value) || []).forEach(function(e){
         ut.push({
+          /* Id-ene MAA vaere med: de er det eneste endre_avtale og
+             slett_avtale kan gaa paa naar man staar et annet sted enn
+             kalendersida, der det ikke finnes noen innlest liste. */
+          id: e.id,
+          kalender_id: c.id,
           kalender: c.name,
           tittel: e.subject || '(uten tittel)',
           dato: lesAltDato(e.start.dateTime + (e.start.timeZone === 'UTC' ? 'Z' : '')),
@@ -325,6 +330,10 @@ async function lesAltKalender(arg){
              : lesAltKlokke(e.end.dateTime + (e.end.timeZone === 'UTC' ? 'Z' : '')),
           hele_dagen: !!e.isAllDay,
           sted: (e.location && e.location.displayName) || null,
+          notat: (e.body && e.body.content)
+            ? String(e.body.content).replace(/<[^>]*>/g, ' ')
+                .replace(/\s+/g, ' ').trim().slice(0, 300) || null
+            : null,
           serie: !!e.seriesMasterId || e.type === 'occurrence' || e.type === 'exception'
         });
       });

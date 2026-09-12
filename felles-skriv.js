@@ -156,6 +156,95 @@ function skrivFinnVareBredt(d, arg, navn){
   return { okt: aapne[0] || skrivFinnOkt(d, arg, false), vare: null };
 }
 
+
+/* ------------------------------------------------------------
+   Kalenderen
+   ------------------------------------------------------------
+   Avtalene bor hos Microsoft, ikke i KV. Vi gaar gjennom
+   lesAltGraph() i felles-lesalt.js - den henter tokenet fra
+   gyldigToken() og virker paa alle sidene som har et. Begge
+   filene lastes overalt, saa koblingen er trygg; den er nevnt her
+   fordi den ellers ville vaert usynlig.
+
+   TRE TING ER VERDT AA VITE:
+
+   1. SERIER KREVER OMFANG. Graph tar imot baade PATCH og DELETE
+      paa en enkelt forekomst - den foerste lager et unntak, den
+      andre avlyser den ene dagen. Det farlige er tvetydigheten:
+      «flytt fotballtreningen» kan bety denne gangen eller alle.
+      Derfor kreves omfang, uten noe standardsvar.
+
+   2. INGEN INNLEST LISTE AA SLAA OPP I. Paa kalendersida finnes
+      avtalene i minnet, og verktoeyene der bruker dem. Herfra
+      finnes de ikke, saa Neam maa kjoere les_kalender foerst og
+      sende baade id og kalender_id videre.
+
+   3. IKKE MED: vedlegg, og flytting mellom kalendere. Flyttingen
+      er i praksis en ny avtale pluss en sletting, og det er for
+      mye aa la ett verktoey gjoere bak én bekreftelse.
+   ------------------------------------------------------------ */
+
+const SKRIV_TZ = 'Europe/Oslo';
+
+function skrivDatoTekst(s){
+  const t = String(s || '');
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+  if(!m) return t;
+  const d = new Date(t + 'T12:00:00');
+  if(isNaN(d)) return t;
+  return d.toLocaleDateString('nb-NO', { weekday:'long', day:'numeric', month:'long' })
+       + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : '');
+}
+
+/* Kalenderen bak et navn. Navnet trenger ikke vaere eksakt - et menneske
+   sier «Emma», ikke «Emma (skole)». */
+async function skrivFinnKalender(navn){
+  const d = await lesAltGraph('/me/calendars?$select=id,name,canEdit&$top=50');
+  const alle = (d && d.value) || [];
+  const n = String(navn || '').trim().toLowerCase();
+  if(!n) return { alle: alle, treff: null };
+  const treff = alle.filter(function(c){ return String(c.name||'').toLowerCase() === n; })[0]
+             || alle.filter(function(c){ return String(c.name||'').toLowerCase().indexOf(n) === 0; })[0]
+             || alle.filter(function(c){ return String(c.name||'').toLowerCase().indexOf(n) !== -1; })[0]
+             || null;
+  return { alle: alle, treff: treff };
+}
+
+/* Stien til det som faktisk skal endres. For hele serien maa vi foerst
+   spoerre Graph hvilken avtale som ER serien: kalendervisningen gir oss
+   forekomstene, og serien selv har en annen id. */
+async function skrivAvtaleSti(kalId, eventId, omfang){
+  const base = '/me/calendars/' + encodeURIComponent(kalId)
+             + '/events/' + encodeURIComponent(eventId);
+  if(omfang !== 'serien') return base;
+  const d = await lesAltGraph(base + '?$select=seriesMasterId');
+  const mor = d && d.seriesMasterId;
+  if(!mor) throw new Error('Fant ikke serien bak avtalen. Den må åpnes i Outlook.');
+  return '/me/calendars/' + encodeURIComponent(kalId)
+       + '/events/' + encodeURIComponent(mor);
+}
+
+async function skrivGraph(sti, metode, kropp){
+  const t = await gyldigToken();
+  if(!t) throw new Error('Ingen Microsoft-økt akkurat nå. Si at noen må innom '
+                       + 'kalendersiden og logge inn.');
+  const r = await fetch('https://graph.microsoft.com/v1.0' + sti, {
+    method: metode,
+    headers: { Authorization:'Bearer ' + t, 'Content-Type':'application/json',
+               Prefer: 'outlook.timezone="' + SKRIV_TZ + '"' },
+    body: kropp ? JSON.stringify(kropp) : undefined
+  });
+  if(r.status === 204) return null;
+  const tekst = await r.text();
+  if(!r.ok){
+    let m = 'Microsoft svarte ' + r.status;
+    try{ const d = JSON.parse(tekst); m = (d.error && d.error.message) || m; }catch(e){}
+    throw new Error(m);
+  }
+  try{ return tekst ? JSON.parse(tekst) : null; }catch(e){ return null; }
+}
+
+
 /* ------------------------------------------------------------
    Verktøyene
    ------------------------------------------------------------ */
@@ -337,6 +426,111 @@ const SKRIV_VERKTOY = [
         : 'Varene som ikke er kjøpt blir liggende i den avsluttede turen.';
       return 'Avslutte handleturen' + (arg.handletur ? ' «' + arg.handletur + '»' : '')
            + '\n\n' + hva;
+    }
+  },
+  {
+    name: 'legg_til_avtale',
+    description: 'Lager en ny avtale i en av familiens kalendere. Si hvilken kalender - '
+               + 'bruk les_kalender om du ikke vet navnene. Gjentagende avtaler kan ikke '
+               + 'lages herfra; de må settes opp i Outlook.',
+    input_schema: {
+      type:'object',
+      properties:{
+        tittel:    { type:'string', description:'Navnet på avtalen.' },
+        kalender:  { type:'string', description:'Hvilken kalender den skal i.' },
+        dato:      { type:'string', description:'Dato på formen 2026-09-08.' },
+        fra:       { type:'string', description:'Klokkeslett, 14:30. Utelat for hele dagen.' },
+        til:       { type:'string', description:'Klokkeslett, 15:30.' },
+        heleDagen: { type:'boolean', description:'true for en avtale uten klokkeslett.' },
+        sluttdato: { type:'string', description:'Bare hvis avtalen går over flere dager.' },
+        sted:      { type:'string' },
+        notat:     { type:'string' }
+      },
+      required:['tittel','dato']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      const nar = (arg.heleDagen || !arg.fra)
+        ? skrivDatoTekst(arg.dato)
+          + (arg.sluttdato && arg.sluttdato !== arg.dato
+             ? ' til ' + skrivDatoTekst(arg.sluttdato) : '') + ', hele dagen'
+        : skrivDatoTekst(arg.dato) + ' ' + arg.fra + (arg.til ? '–' + arg.til : '');
+      return 'Legge inn «' + arg.tittel + '»'
+           + (arg.kalender ? ' i ' + arg.kalender : '') + ':\n\n· ' + nar
+           + (arg.sted ? '\n· sted: ' + arg.sted : '')
+           + (arg.notat ? '\n· notat: ' + arg.notat : '');
+    }
+  },
+  {
+    name: 'endre_avtale',
+    description: 'Endrer en avtale som finnes. Du MÅ ha kjørt les_kalender først - både '
+               + 'id og kalender_id kommer derfra. Bare feltene du sender blir rørt, og '
+               + 'sender du klokkeslett må du sende begge.\n\n'
+               + 'Er avtalen gjentagende (serie:true), MÅ du spørre brukeren om det '
+               + 'gjelder denne gangen eller hele serien, og sende omfang. Ikke velg selv.',
+    input_schema: {
+      type:'object',
+      properties:{
+        id:          { type:'string', description:'Avtalens id fra les_kalender.' },
+        kalender_id: { type:'string', description:'Kalenderens id fra les_kalender.' },
+        tittel:      { type:'string' },
+        dato:        { type:'string', description:'Dato på formen 2026-09-08.' },
+        fra:         { type:'string', description:'Klokkeslett, 14:30.' },
+        til:         { type:'string', description:'Klokkeslett, 15:30.' },
+        heleDagen:   { type:'boolean' },
+        sted:        { type:'string', description:'Tom streng fjerner stedet.' },
+        notat:       { type:'string', description:'Tom streng fjerner notatet.' },
+        omfang:      { type:'string', enum:['denne','serien'],
+                       description:'Bare for gjentagende avtaler. Spør brukeren.' }
+      },
+      required:['id','kalender_id']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      const rader = [];
+      if(arg.tittel !== undefined) rader.push('· nytt navn: ' + arg.tittel);
+      if(arg.dato   !== undefined) rader.push('· dato: ' + skrivDatoTekst(arg.dato));
+      if(arg.fra    !== undefined) rader.push('· fra: ' + arg.fra);
+      if(arg.til    !== undefined) rader.push('· til: ' + arg.til);
+      if(arg.sted   !== undefined) rader.push('· sted: ' + (arg.sted || '(fjernes)'));
+      if(arg.notat  !== undefined) rader.push('· notat: ' + (arg.notat || '(fjernes)'));
+      return 'Endre en avtale i kalenderen'
+           + (rader.length ? ':\n\n' + rader.join('\n') : '.')
+           + (arg.omfang === 'serien' ? '\n\nDette gjelder ALLE gangene i serien.'
+            : arg.omfang === 'denne'  ? '\n\nDette gjelder bare denne ene dagen.' : '');
+    }
+  },
+  {
+    name: 'slett_avtale',
+    description: 'Sletter en avtale. Du MÅ ha kjørt les_kalender først - id og '
+               + 'kalender_id kommer derfra. Er avtalen gjentagende, MÅ du spørre om det '
+               + 'gjelder denne gangen eller hele serien.\n\n'
+               + 'Les opp hvilken avtale det gjelder før du spør, så brukeren vet hva '
+               + 'som forsvinner.',
+    input_schema: {
+      type:'object',
+      properties:{
+        id:          { type:'string', description:'Avtalens id fra les_kalender.' },
+        kalender_id: { type:'string', description:'Kalenderens id fra les_kalender.' },
+        tittel:      { type:'string', description:'Avtalens navn - brukes bare til å '
+                                                + 'vise brukeren hva som slettes. Send '
+                                                + 'det du fikk fra les_kalender.' },
+        omfang:      { type:'string', enum:['denne','serien'],
+                       description:'Bare for gjentagende avtaler. Spør brukeren.' }
+      },
+      required:['id','kalender_id']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      const hode = arg.omfang === 'serien'
+        ? 'SLETTE HELE SERIEN' + (arg.tittel ? ' «' + arg.tittel + '»' : '')
+        : 'SLETTE' + (arg.tittel ? ' «' + arg.tittel + '»' : ' en avtale');
+      const hale = arg.omfang === 'serien'
+        ? '\n\nAlle gangene forsvinner, ikke bare denne. Dette kan ikke angres.'
+        : arg.omfang === 'denne'
+        ? '\n\nBare denne ene dagen avlyses. Dette kan ikke angres.'
+        : '\n\nDette kan ikke angres.';
+      return hode + hale;
     }
   },
   {
@@ -596,6 +790,154 @@ async function skrivUtfor(navn, arg){
     await dataSkriv(SKRIV_HANDLELISTE, d);
     return { avsluttet:true, handletur: okt.navn,
              sto_igjen: igjen.length, gjort: gjort };
+  }
+
+
+  /* ---------------- Kalenderen ---------------- */
+  if(navn === 'legg_til_avtale'){
+    if(!String(arg.tittel || '').trim()) throw new Error('Avtalen må ha et navn.');
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(String(arg.dato || ''))){
+      throw new Error('Ugyldig dato. Bruk formen 2026-09-08.');
+    }
+    const k = await skrivFinnKalender(arg.kalender);
+    let c = k.treff;
+    if(arg.kalender && !c){
+      throw new Error('Fant ingen kalender som heter «' + arg.kalender
+                    + '». Bruk les_kalender for navnene.');
+    }
+    if(!c){
+      /* Ingen kalender oppgitt. Er det bare ÉN vi kan skrive i, er valget
+         gitt; er det flere, skal Neam spoerre - ikke gjette hvem avtalen
+         gjelder. */
+      const kan = k.alle.filter(function(x){ return x.canEdit !== false; });
+      if(kan.length !== 1){
+        throw new Error('Si hvilken kalender avtalen skal i. Bruk les_kalender '
+                      + 'for navnene.');
+      }
+      c = kan[0];
+    }
+    if(c.canEdit === false){
+      throw new Error('Kalenderen «' + c.name + '» er delt med oss som lesetilgang.');
+    }
+
+    const heleDagen = !!arg.heleDagen || !arg.fra;
+    const p = {
+      subject: String(arg.tittel).trim(),
+      isAllDay: heleDagen,
+      location: { displayName: String(arg.sted || '').trim() },
+      body: { contentType:'text', content: String(arg.notat || '').trim() }
+    };
+    if(heleDagen){
+      const d2 = arg.sluttdato || arg.dato;
+      if(d2 < arg.dato) throw new Error('Sluttdatoen er før startdatoen.');
+      /* Graph vil ha dagen ETTER som slutt paa en heldagsavtale. */
+      const etter = new Date(d2 + 'T00:00:00');
+      etter.setDate(etter.getDate() + 1);
+      const p2 = function(n){ return String(n).padStart(2, '0'); };
+      p.start = { dateTime: arg.dato + 'T00:00:00', timeZone: SKRIV_TZ };
+      p.end   = { dateTime: etter.getFullYear() + '-' + p2(etter.getMonth() + 1)
+                          + '-' + p2(etter.getDate()) + 'T00:00:00', timeZone: SKRIV_TZ };
+    }else{
+      if(!/^\d{2}:\d{2}$/.test(String(arg.fra || ''))
+      || !/^\d{2}:\d{2}$/.test(String(arg.til || ''))){
+        throw new Error('Send både fra og til som klokkeslett, for eksempel 14:30.');
+      }
+      const d2 = (arg.sluttdato && arg.sluttdato >= arg.dato) ? arg.sluttdato : arg.dato;
+      if(d2 === arg.dato && arg.til <= arg.fra){
+        throw new Error('Sluttidspunktet må være etter starten.');
+      }
+      p.start = { dateTime: arg.dato + 'T' + arg.fra + ':00', timeZone: SKRIV_TZ };
+      p.end   = { dateTime: d2 + 'T' + arg.til + ':00', timeZone: SKRIV_TZ };
+    }
+
+    const laget = await skrivGraph('/me/calendars/' + encodeURIComponent(c.id) + '/events',
+                                   'POST', p);
+    /* Staar vi PAA kalendersida, skal skjermen vise det med det samme. */
+    if(typeof refresh === 'function'){ try{ await refresh(); }catch(e){} }
+    return { lagret:true, id: laget && laget.id, kalender: c.name,
+             tittel: p.subject, dato: arg.dato };
+  }
+
+  if(navn === 'endre_avtale' || navn === 'slett_avtale'){
+    const id = String(arg.id || '').trim();
+    const kalId = String(arg.kalender_id || '').trim();
+    if(!id || !kalId){
+      throw new Error('Både id og kalender_id må med. Kjør les_kalender for tidsrommet '
+                    + 'først, og bruk verdiene derfra.');
+    }
+    /* Er den gjentagende, maa omfanget vaere avklart. Vi spoer Graph i
+       stedet for aa stole paa at Neam husket riktig fra lesingen. */
+    const info = await lesAltGraph('/me/calendars/' + encodeURIComponent(kalId)
+                                 + '/events/' + encodeURIComponent(id)
+                                 + '?$select=id,subject,type,seriesMasterId,isAllDay,start,end');
+    const erSerie = !!(info && (info.seriesMasterId
+                    || info.type === 'occurrence' || info.type === 'exception'));
+    if(erSerie && arg.omfang !== 'denne' && arg.omfang !== 'serien'){
+      throw new Error('«' + ((info && info.subject) || 'Avtalen') + '» er gjentagende. '
+                    + 'Spør brukeren om det gjelder bare denne gangen eller hele serien, '
+                    + 'og send omfang «denne» eller «serien». Ikke velg selv.');
+    }
+    const sti = await skrivAvtaleSti(kalId, id, erSerie ? arg.omfang : 'denne');
+
+    if(navn === 'slett_avtale'){
+      await skrivGraph(sti, 'DELETE', null);
+      if(typeof refresh === 'function'){ try{ await refresh(); }catch(e){} }
+      return { slettet:true, tittel: (info && info.subject) || null,
+               omfang: erSerie ? arg.omfang : 'enkeltavtale' };
+    }
+
+    const p = {};
+    if(arg.tittel !== undefined){
+      if(!String(arg.tittel).trim()) throw new Error('Avtalen må ha et navn.');
+      p.subject = String(arg.tittel).trim();
+    }
+    if(arg.sted  !== undefined) p.location = { displayName: String(arg.sted).trim() };
+    if(arg.notat !== undefined) p.body = { contentType:'text', content: String(arg.notat).trim() };
+
+    /* Tid: dato og klokkeslett henger sammen. Endres ett av dem, maa hele
+       start og slutt settes paa nytt - Graph tar ikke imot en halv tid. */
+    if(arg.dato !== undefined || arg.fra !== undefined || arg.til !== undefined){
+      const naa = new Date(String((info && info.start && info.start.dateTime) || ''));
+      const p2 = function(n){ return String(n).padStart(2, '0'); };
+      const gjeldende = isNaN(naa) ? null : {
+        dato: naa.getFullYear() + '-' + p2(naa.getMonth() + 1) + '-' + p2(naa.getDate()),
+        fra:  p2(naa.getHours()) + ':' + p2(naa.getMinutes())
+      };
+      const slutt = new Date(String((info && info.end && info.end.dateTime) || ''));
+      const dato = arg.dato || (gjeldende && gjeldende.dato);
+      if(!dato || !/^\d{4}-\d{2}-\d{2}$/.test(dato)){
+        throw new Error('Ugyldig dato. Bruk formen 2026-09-08.');
+      }
+      const heleDagen = (arg.heleDagen !== undefined) ? !!arg.heleDagen
+                      : !!(info && info.isAllDay);
+      if(heleDagen && arg.fra === undefined){
+        const dager = (!isNaN(slutt) && !isNaN(naa))
+          ? Math.max(1, Math.round((slutt - naa) / 86400000)) : 1;
+        const etter = new Date(dato + 'T00:00:00');
+        etter.setDate(etter.getDate() + dager);
+        p.isAllDay = true;
+        p.start = { dateTime: dato + 'T00:00:00', timeZone: SKRIV_TZ };
+        p.end   = { dateTime: etter.getFullYear() + '-' + p2(etter.getMonth() + 1)
+                            + '-' + p2(etter.getDate()) + 'T00:00:00', timeZone: SKRIV_TZ };
+      }else{
+        const fra = arg.fra !== undefined ? arg.fra : (gjeldende && gjeldende.fra);
+        const til = arg.til !== undefined ? arg.til
+                  : (isNaN(slutt) ? null : p2(slutt.getHours()) + ':' + p2(slutt.getMinutes()));
+        if(!/^\d{2}:\d{2}$/.test(String(fra)) || !/^\d{2}:\d{2}$/.test(String(til))){
+          throw new Error('Klokkeslett skal være på formen 14:30.');
+        }
+        if(til <= fra) throw new Error('Sluttidspunktet må være etter starten.');
+        p.isAllDay = false;
+        p.start = { dateTime: dato + 'T' + fra + ':00', timeZone: SKRIV_TZ };
+        p.end   = { dateTime: dato + 'T' + til + ':00', timeZone: SKRIV_TZ };
+      }
+    }
+
+    if(!Object.keys(p).length) throw new Error('Ingenting å endre - send minst ett felt.');
+    await skrivGraph(sti, 'PATCH', p);
+    if(typeof refresh === 'function'){ try{ await refresh(); }catch(e){} }
+    return { endret:true, tittel: p.subject || (info && info.subject) || null,
+             omfang: erSerie ? arg.omfang : 'enkeltavtale' };
   }
 
   return null;
