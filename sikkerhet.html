@@ -664,19 +664,28 @@ const LYD_PAA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"'
 
 const stroemmer = {};
 
-/* Starter avspillingen, og viser lydknappen naar bildet gaar. Avvises
-   avspillingen likevel, sier vi fra i klartekst - da staar iOS' egen
-   play-knapp der, og brukeren skal vite at det er den som gjelder. */
+/* Starter avspillingen, og viser lydknappen naar bildet gaar.
+
+   AVVISES avspillingen - iOS gjoer det av og til - skal meldingsfeltet
+   TOEMMES likevel, ikke fylles med en forklaring. Feltet ligger oppaa
+   videoen, og et trykk der aapner fullskjerm i stedet for aa starte
+   bildet. Da ble det ett trykk ekstra foer man naadde iOS' egen
+   play-knapp, som er den som faktisk gjelder.
+
+   Meldingen «Trykk på bildet for å starte» sto her i et kvarter og var
+   et godt eksempel paa en hjelpsom tekst som gjoer ting vanskeligere:
+   den var sann, og den laa i veien. */
 function spillAv(el, id){
   let p;
-  try{ p = el.play(); }catch(e){ return; }
-  if(!p || !p.then) return;
+  try{ p = el.play(); }catch(e){ kmeld(id, ''); return; }
+  if(!p || !p.then){ kmeld(id, ''); return; }
   p.then(function(){
-    kmeld(id, '');
     const l = $('lyd-' + id);
     if(l) l.hidden = false;
-  }).catch(function(){
-    kmeld(id, 'Trykk på bildet for å starte');
+  }).catch(function(){}).then(function(){
+    /* Uansett utfall: bildet er her, og feltet skal vaere borte. Er
+       avspillingen avvist, staar nettleserens egen knapp fritt. */
+    kmeld(id, '');
   });
 }
 
