@@ -84,10 +84,10 @@ async function msHarOekt(){
 
 let msFornyelse = null;
 
-/* Samme navn som paa de fem sidene som har sin egen, og med vilje: da
-   finner felles-lesalt.js den paa akkurat samme maate uansett hvilken
-   side den staar paa. Sidens egen vinner der den finnes - se toppen. */
-async function gyldigToken(){
+/* Selve henteren. Har et EGET navn saa den kan kalles ogsaa fra sider
+   som har sin egen gyldigToken() - de bruker den som reserve naar deres
+   eget refresh-token er borte eller utgaatt. Se nederst. */
+async function msToken(){
   if(!MS.token) msLes();
   if(MS.token && Date.now() < MS.expires) return MS.token;
   if(!(await msHarOekt())) return null;
@@ -124,3 +124,14 @@ async function gyldigToken(){
   }
   return msFornyelse;
 }
+
+/* Sider uten egen innlogging faar msToken() under det navnet
+   felles-lesalt.js leter etter. Har sida sin egen, erklaeres den etter
+   denne fila og vinner - en funksjonserklaering i et senere skript
+   skygger for en tidligere. Fila kan derfor legges paa alle uten at noe
+   eksisterende endrer oppfoersel.
+
+   Sider som HAR sin egen, men vil bruke oekta paa tjeneren som reserve,
+   kaller msToken() selv. Det er det dashboard, Andrea, Emma og forsiden
+   gjoer fra 13. september 2026 - se gyldigToken() i hver av dem. */
+async function gyldigToken(){ return msToken(); }

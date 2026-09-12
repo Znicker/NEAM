@@ -1791,6 +1791,7 @@ select.hu-felt{
 
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
 <script src="/felles-hus.js?v=1"></script>
+<script src="/felles-ms.js?v=1"></script>
 <script src="/felles-data.js?v=3"></script>
 <script src="/felles-lesalt.js?v=1"></script>
 <script src="/felles-graph.js?v=2"></script>
@@ -1939,7 +1940,26 @@ function nullstillProevd(){ try{ sessionStorage.removeItem('fh_reauth'); }catch(
 let fornyelse = null;
 async function gyldigToken(){
   if(S.token && Date.now() < S.expires) return S.token;
-  if(!S.refresh) return null;
+  /* Ingen egen fornyelse aa gjoere paa? Spoer tjeneren.
+     ------------------------------------------------------------
+     Denne sida veksler koden sin rett hos Microsoft, og en app av
+     typen «Single-page application» faar refresh-tokener som varer
+     24 timer - Microsofts regel, ikke en innstilling. Derfor maatte
+     man logge inn her hver dag.
+
+     Kalenderen la om 11. september 2026: der gaar vekslingen gjennom
+     /api/ms, som har klienthemmeligheten og faar 90 dager. Oekta
+     lagres som `auth:ms:<epost>` - noeklet til PERSONEN, ikke til
+     sida. Har man logget inn i kalenderen, kan denne sida hente et
+     ferskt token derfra uten aa logge inn selv.
+
+     Reserve, ikke erstatning: sidens egen flyt staar urort, og
+     finnes det verken refresh-token eller oekt, svarer vi null som
+     foer. Se felles-ms.js. */
+  if(!S.refresh){
+    if(typeof msToken !== 'function') return null;
+    try{ return await msToken(); }catch(e){ return null; }
+  }
   if(!fornyelse){
     fornyelse = bytt({grant_type:'refresh_token', refresh_token:S.refresh, scope:CFG.scopes})
       .then(function(d){ lagreToken(d); nullstillProevd(); return S.token; })

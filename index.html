@@ -19,6 +19,7 @@
      felles-dialog.js, som ligger nederst - derfor staar begge to der,
      ikke her. -->
 <script src="/felles-hus.js?v=1"></script>
+<script src="/felles-ms.js?v=1"></script>
 <script src="/felles-data.js?v=3"></script>
 <script src="/felles-lesalt.js?v=1"></script>
 <style>
@@ -585,7 +586,12 @@ function hent(){
 }
 async function gyldigToken(){
   if(A.token && Date.now() < A.expires) return A.token;
-  if(!A.refresh) return null;
+  /* Reserve: oekta paa tjeneren. Se den lange forklaringen i
+     dashboard.html - samme sak her. */
+  if(!A.refresh){
+    if(typeof msToken !== 'function') return null;
+    try{ return await msToken(); }catch(e){ return null; }
+  }
   const d = await bytt({grant_type:'refresh_token', refresh_token:A.refresh, scope:CFG.scopes});
   lagre(d);
   return A.token;
