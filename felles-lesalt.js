@@ -84,15 +84,23 @@ function lesAltBarn(navn){
 const LESALT_VERKTOY = [
   {
     name: 'les_handleliste',
-    description: 'Varene som står på handlelista nå, på tvers av handleturer. '
-               + 'Virker fra hvilken som helst side. Sier også hvilke som er '
-               + 'huket av som kjøpt.',
+    description: 'Varene som står på handlelista nå. Virker fra hvilken som helst side.\n\n'
+               + 'Bare ÅPNE handleturer, med mindre du ber om noe annet. En avsluttet '
+               + 'handletur er historie - varer som står igjen der er ikke noe som '
+               + 'gjenstår, og skal ikke nevnes som om de var det.\n\n'
+               + 'Får du flere åpne handleturer tilbake og brukeren ikke sa hvilken han '
+               + 'mente, SPØR hvilken det gjelder før du svarer. Ikke slå dem sammen til '
+               + 'én liste.',
     input_schema: {
       type:'object',
       properties:{
-        handletur: { type:'string', description:'Navnet på én handletur. Utelat for alle.' },
+        handletur: { type:'string', description:'Navnet på én handletur. Utelat for de åpne.' },
         medKjopte: { type:'boolean', description:'true tar med de avhukede også. '
-                                               + 'Standard er å utelate dem.' }
+                                               + 'Standard er å utelate dem.' },
+        medAvsluttede: { type:'boolean',
+                         description:'true tar med handleturer som er avsluttet. Bruk '
+                                   + 'bare når brukeren spør om noe som har vært - '
+                                   + '«hva kjøpte vi forrige uke».' }
       },
       required:[]
     }
@@ -162,11 +170,24 @@ async function lesAltUtfor(navn, arg){
     const items = (d && d.items) || [];
     const sok = String(arg.handletur || '').trim().toLowerCase();
 
-    const turer = okter.filter(function(o){
+    /* Avsluttet = har et sluttidspunkt og er ikke i gang. Samme regel som
+       erAvsluttet() i handleliste.html. */
+    const avsluttet = function(o){ return !!(o && o.avsluttet && !o.startet); };
+
+    let turer = okter.filter(function(o){
       return !sok || String(o.navn || '').trim().toLowerCase().indexOf(sok) !== -1;
     });
     if(sok && !turer.length){
       throw new Error('Fant ingen handletur som heter «' + arg.handletur + '».');
+    }
+    /* Er en tur navngitt, gjelder den - ogsaa om den er avsluttet. Ellers
+       er det bare de aapne som er «handlelista». */
+    const skjult = [];
+    if(!sok && !arg.medAvsluttede){
+      turer = turer.filter(function(o){
+        if(avsluttet(o)){ skjult.push(o.navn || '(uten navn)'); return false; }
+        return true;
+      });
     }
 
     return {
@@ -205,9 +226,30 @@ async function lesAltUtfor(navn, arg){
               kjopt: !!v.done
             };
           }),
-          avkortet: varer.length > 80
+          avkortet: varer.length > 80,
+          i_gang: !!o.startet,
+          avsluttet: avsluttet(o)
         };
-      })
+      }),
+      /* Hva vi utelot, og hvorfor. Uten dette ser Neam en kortere liste
+         enn han ventet og vet ikke om noe mangler. */
+      avsluttede_utelatt: skjult,
+      /* Tvetydig er det bare naar to aapne turer ligger i SAMME omraade.
+         Dagligvarer og Andre varer er to forskjellige lister for et
+         menneske, og et spoersmaal om hvilken av dem man mener er et
+         spoersmaal ingen har stilt. */
+      merknad: (function(){
+        if(sok || arg.medAvsluttede) return undefined;
+        const per = {};
+        turer.forEach(function(o){
+          const k = (o.omrade || 'mat');
+          per[k] = (per[k] || 0) + 1;
+        });
+        return Object.keys(per).some(function(k){ return per[k] > 1; })
+          ? 'Flere åpne handleturer i samme område. Spør hvilken brukeren mener '
+            + 'før du svarer.'
+          : undefined;
+      })()
     };
   }
 

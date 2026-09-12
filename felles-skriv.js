@@ -406,28 +406,11 @@ async function skrivUtfor(navn, arg){
     if(!Array.isArray(d.okter)) d.okter = [];
     if(!Array.isArray(d.items)) d.items = [];
 
-    /* Handleturen. Samme regel som sikreAktivOkt() i sida: den navngitte,
-       ellers den nyeste i omraadet, ellers en ny med ukenummeret. */
-    let okt = null;
-    const sok = String(arg.handletur || '').trim().toLowerCase();
-    if(sok){
-      okt = d.okter.filter(function(o){
-        return String(o.navn || '').trim().toLowerCase() === sok;
-      })[0] || d.okter.filter(function(o){
-        return String(o.navn || '').trim().toLowerCase().indexOf(sok) !== -1;
-      })[0] || null;
-      if(!okt) throw new Error('Fant ingen handletur som heter «' + arg.handletur
-                             + '». Bruk les_handleliste for navnene.');
-    }else{
-      const iOmr = d.okter.filter(function(o){ return (o.omrade || 'mat') === omr; })
-                          .sort(function(a, b){ return (a.opprettet || 0) - (b.opprettet || 0); });
-      okt = iOmr.length ? iOmr[iOmr.length - 1] : null;
-      if(!okt){
-        okt = { id: skrivId('o'), navn: 'Uke ' + skrivUke(new Date()),
-                omrade: omr, startet: false, startTid: null, opprettet: Date.now() };
-        d.okter.push(okt);
-      }
-    }
+    /* Handleturen. Den navngitte, ellers den nyeste AAPNE, ellers en ny.
+       skrivFinnOkt() eier regelen; foerste utgave hadde en egen kopi her
+       som ikke filtrerte bort avsluttede turer, og da kunne en vare havne
+       i en handel du var ferdig med. */
+    const okt = skrivFinnOkt(d, arg, true);
     const oktOmr = okt.omrade || 'mat';
 
     /* Varekatalogen sier hva huset pleier aa kalle en varetype. Den leses,
