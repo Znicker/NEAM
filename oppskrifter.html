@@ -2954,16 +2954,26 @@ const ANNET_KATEGORIER = ['Bakst', 'Brødbakst', 'Søtbakst', 'Snacks', 'Sauser'
                           'Krydderblandinger', 'Tilbehør'];
 const CATEGORY_LIST = HOVEDKATEGORIER.concat(ANNET_KATEGORIER);
 
-/* Disse er BYGGEKLOSSER, ikke måltider. En krydderblanding eller en saus
-   er noe man lager for å bruke i noe annet, og den hører ikke hjemme
-   mellom middagene når man blar etter noe å lage.
+/* BYGGEKLOSSER, ikke måltider. En krydderblanding, en saus eller et
+   tilbehør er noe man lager for å bruke i noe annet, og de hører ikke
+   hjemme mellom middagene når man blar etter noe å lage.
 
-   De vises derfor bare når man ber om dem - motsatt av alle andre
-   kategorier, der ingen avkryssing betyr «vis alt». Det er en av de få
-   stedene i huset der en tom liste IKKE betyr «alt». */
-const SKJULTE_KATEGORIER = ['Sauser', 'Krydderblandinger'];
+   De starter derfor UTEN avkryssing, mens alle andre starter med. Det er
+   en viktig forskjell fra hvordan filteret virket før: en tom liste betyr
+   nå «ingenting», ikke «alt». Til gjengjeld viser avkryssingene den
+   faktiske tilstanden - før sto alle tomme mens alt likevel vistes, og
+   det var ingen god forklaring på hva boksene betydde. */
+const AV_SOM_STANDARD = ['Sauser', 'Krydderblandinger', 'Tilbehør'];
+function standardKategorier(){
+  return new Set(CATEGORY_LIST.filter(c => !AV_SOM_STANDARD.includes(c)));
+}
+
+/* Kortnavn i filterraden, der plassen er trang. Selve kategorien heter
+   fortsatt «Krydderblandinger» - det er den verdien som ligger lagret på
+   oppskriftene, og et navnebytte ville gjort dem hjemløse. */
+const KATEGORI_KORT = { 'Krydderblandinger': 'Krydder' };
 let annetApen = false;
-let categoryFilterSelected = new Set();
+let categoryFilterSelected = standardKategorier();
 let sortMode = 'rating-desc';
 
 function toggleSortMenu(){
@@ -3304,7 +3314,9 @@ function clearSearch(){
   ratingFilterMin = 0;
   ratingFilterPeople.clear();
   ratingPanelExpanded = false;
-  categoryFilterSelected.clear();
+  /* Tilbake til STANDARD, ikke til tomt. Tomt ville skjult alt, og
+     «nullstill» skal gi utgangspunktet - ikke en blank skjerm. */
+  categoryFilterSelected = standardKategorier();
   const input = $('search-input');
   if(input) input.value = '';
   const panel = $('rating-people-panel');
@@ -3489,14 +3501,18 @@ async function visKrydderblanding(id){
 function renderCategoryFilterRow(){
   const wrap = $('category-filter-row');
   if(!wrap) return;
-  const chip = cat => `<button type="button" class="category-filter-chip ${categoryFilterSelected.has(cat) ? 'active' : ''}" onclick="toggleCategoryFilter('${cat}')">${cat}</button>`;
-  const annetValgt = ANNET_KATEGORIER.some(c => categoryFilterSelected.has(c));
+  const chip = cat => `<button type="button" class="category-filter-chip ${categoryFilterSelected.has(cat) ? 'active' : ''}" onclick="toggleCategoryFilter('${cat}')">${KATEGORI_KORT[cat] || cat}</button>`;
+  /* HET annetValgt og lyste naar noe under var valgt. Etter at de fleste
+     kategoriene ble avkrysset som standard, var den alltid tent - og en
+     markering som alltid staar paa, sier ingenting. Naa viser den om
+     undergruppa er FOLDET UT, som er det knappen faktisk gjoer. */
+  const annetApenNaa = annetApen;
   /* Undergruppa tegnes alltid. Om den vises avgjoeres av klassen 'apen'
      i portrett, og av landskapsblokka i CSS - som viser alle kategoriene
      og skjuler Annet-knappen helt. Da slipper vi to JS-tilstander. */
   wrap.innerHTML =
     HOVEDKATEGORIER.map(chip).join('') +
-    `<button type="button" class="category-filter-chip annet-knapp ${annetValgt ? 'active' : ''}" onclick="toggleAnnetMeny()">Annet ${annetApen ? '▴' : '▾'}</button>` +
+    `<button type="button" class="category-filter-chip annet-knapp ${annetApenNaa ? 'active' : ''}" onclick="toggleAnnetMeny()">Annet ${annetApen ? '▴' : '▾'}</button>` +
     `<div class="category-under ${annetApen ? 'apen' : ''}">${ANNET_KATEGORIER.map(chip).join('')}</div>`;
 }
 function toggleAnnetMeny(){
@@ -3511,14 +3527,10 @@ function toggleCategoryFilter(cat){
 }
 function recipePassesCategoryFilter(indexEntry){
   const cats = indexEntry.categories || [];
-  /* Byggeklossene holdes utenfor til man har bedt om dem. En oppskrift
-     som BÅDE er f.eks. Middag og Saus, vises som middag - det er nok at
-     én av kategoriene er ønsket. */
-  const bareSkjult = cats.length
-    && cats.every(c => SKJULTE_KATEGORIER.includes(c));
-  if(bareSkjult && !SKJULTE_KATEGORIER.some(c => categoryFilterSelected.has(c))) return false;
-
-  if(categoryFilterSelected.size === 0) return true;
+  /* Uten kategori i det hele tatt: alltid med. Nye oppskrifter må ha
+     minst én, men gamle kan mangle - og en oppskrift som ingen
+     avkryssing kan nå, ville vært borte for godt. */
+  if(!cats.length) return true;
   return cats.some(c => categoryFilterSelected.has(c));
 }
 function cardCategoriesHtml(indexEntry){
