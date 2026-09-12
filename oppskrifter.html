@@ -2561,11 +2561,30 @@ async function persistRecipeIndex(){
     console.error('Kunne ikke lagre indeksen', e);
   }
 }
+/* Retter opp former som ikke lar seg vise, uten aa skrive noe tilbake.
+   Grunnen: en oppskrift med feil form aapner seg ikke i det hele tatt, og
+   da kommer man heller ikke til aa rette den. Ryddingen skjer derfor ved
+   lesing, hver gang.
+
+   `tips` skal vaere rene strenger. Neam lagret dem en periode som
+   {text:...}, og de oppskriftene sto doede i lista. */
+function ryddOppskrift(r){
+  if(!r) return r;
+  if(Array.isArray(r.tips)){
+    r.tips = r.tips
+      .map(t => (t && typeof t === 'object') ? String(t.text || '') : String(t == null ? '' : t))
+      .filter(t => t.trim());
+  }else if(r.tips){
+    r.tips = [];
+  }
+  return r;
+}
+
 async function loadFullRecipe(id){
   if(recipeCache[id]) return recipeCache[id];
   try{
     const res = await window.storage.get('recipe:' + id, false);
-    const full = res && res.value ? JSON.parse(res.value) : null;
+    const full = ryddOppskrift(res && res.value ? JSON.parse(res.value) : null);
     if(full) recipeCache[id] = full;
     return full;
   }catch(e){
@@ -2843,8 +2862,14 @@ async function neamLagreOppskrift(o){
     ingredients,
     steps,
     /* Notatet legges som et tips, ikke i framgangsmaaten. «God til pasta»
-       er ikke et steg man utfoerer. */
-    tips: String(o.notat || '').trim() ? [{ text: String(o.notat).trim() }] : [],
+       er ikke et steg man utfoerer.
+
+       RENE STRENGER, ikke objekter. lesTipsRader() lager en liste med
+       tekst, og renderTips() kaller .trim() rett paa hvert element. Et
+       objekt her gjorde at oppskriften ikke lot seg AAPNE i det hele
+       tatt - den sto i lista og var doed. Feilen kom aldri til syne som
+       noe annet enn en rett som ikke reagerte paa trykk. */
+    tips: String(o.notat || '').trim() ? [String(o.notat).trim()] : [],
     tastings: [],
     chefComments: [],
     categories: kat,
