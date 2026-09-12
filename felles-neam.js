@@ -336,10 +336,53 @@ function neamStedTekst(k){
   return [k.sted, k.visning].filter(Boolean).join(' \u00B7 ');
 }
 
+/* ISO 8601, som i Norge: uke 1 er den uka som inneholder aarets foerste
+   torsdag, og uka begynner paa mandag. */
+function neamUkeNr(d){
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+  const nyttaar = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return Math.ceil(((t - nyttaar) / 86400000 + 1) / 7);
+}
+
+/* ============================================================
+   Naa
+   ------------------------------------------------------------
+   Neam visste ikke hvilken dag det var. Han kunne lese en frist
+   fra en lekse og en dato fra en avtale, men ikke avgjoere om de
+   var i morgen eller i fjor - og «legg det inn paa fredag» hadde
+   han ingen maate aa regne ut.
+
+   REGNES UT VED HVER MELDING, ikke naar sida lastes.
+   Kjoekkendashen staar vaaken i dagevis; en dato bakt inn ved
+   oppstart ville vaert gaarsdagens lenge foer noen la merke til
+   det, og en feil dato ser ut som en riktig dato.
+
+   Klokka er enhetens egen, altsaa norsk tid paa alle skjermene i
+   huset. ISO-formen staar ved siden av den lesbare fordi det er
+   den verktoeyene vil ha.
+   ============================================================ */
+function neamNaaTekst(){
+  const d = new Date();
+  const p = function(n){ return String(n).padStart(2, '0'); };
+  const iso = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  let lesbar = '';
+  try{
+    lesbar = d.toLocaleDateString('nb-NO',
+      { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  }catch(e){ lesbar = iso; }
+  return 'NAA: ' + lesbar + ', klokka ' + p(d.getHours()) + ':' + p(d.getMinutes())
+       + '. Dato paa ISO-form: ' + iso + '. Uke ' + neamUkeNr(d) + '.\n'
+       + 'Regn ut datoer herfra - «i morgen», «paa fredag», «neste uke». Ikke spoer '
+       + 'brukeren hvilken dag det er, og ikke gjett. Verktoeyene vil ha ISO-formen '
+       + '2026-09-08.\n\n';
+}
+
 function neamSystem(k, harVerktoy, bakgrunn){
   let s =
     'Du er Neam, husassistenten i familiens hub. Du svarer paa norsk (bokmaal), ' +
-    'kort og konkret. Familien er Magne, Nina, Emma og Andrea.\n\n';
+    'kort og konkret. Familien er Magne, Nina, Emma og Andrea.\n\n' +
+    neamNaaTekst();
 
   if(harVerktoy){
     s += 'Du har verktoey for denne sida. Bruk dem heller enn aa gjette - vet du ' +
