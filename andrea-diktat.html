@@ -807,6 +807,18 @@ async function lastData(){
   }
   tegnOrdliste();
   tegnRunder();
+
+  /* Mangler noen av ordene setning, henter vi dem uten aa bli bedt om
+     det. Setningene lages normalt i det ordene lagres; ligger det
+     likevel en liste uten, kom den fra en gang der kallet feilet - og
+     da er det ikke hennes jobb aa oppdage det og trykke en knapp.
+
+     Etter tegningen, saa knappen finnes og kan slaas av mens det staar
+     paa. Én gang per liste per oekt - se setningerProvd. */
+  const mangler = ordene().some(function(o){ return !((o.setninger || []).length); });
+  if(mangler && data.liste && !setningerProvd[data.liste.id]){
+    hentSetninger();
+  }
 }
 
 /* ============================================================
@@ -974,13 +986,21 @@ $('lagreOrd').addEventListener('click', async function(){
   await hentSetninger();
 });
 
-/* Setningene til ordene som ligger inne. Kalles baade rett etter lagring
-   og fra knappen - de kan feile foerste gang, og da skal det gaa an aa
-   proeve igjen uten aa skrive ordene om att. */
+/* Lister vi alt har proevd aa hente setninger til i denne oekten. Uten
+   den ville et kall som feiler bli proevd paa nytt ved hver eneste
+   tegning av sida - og en feil som gjentar seg koster like mye hver
+   gang. Den lever bare i minnet: neste gang sida lastes, er det rimelig
+   aa proeve én gang til. */
+const setningerProvd = {};
+
+/* Setningene til ordene som ligger inne. Kalles av seg selv naar noe
+   mangler, og fra knappene - de kan feile foerste gang, og da skal det
+   gaa an aa proeve igjen uten aa skrive ordene om att. */
 async function hentSetninger(){
   const ord = ordene().map(function(o){ return o.ord; });
   if(!ord.length) return;
   const listeId = data.liste.id;
+  setningerProvd[listeId] = true;
   $('setningerKnapp').disabled = true;
   si('Et øyeblikk. Jeg finner på en setning til hvert ord.');
   try{
@@ -1097,26 +1117,33 @@ function somJson(tekst){
 }
 
 /* ---------------- Setningene ----------------
-   To per ord: én med Andrea i, én noeytral. Den ene leses, den andre
-   ligger klar til «Hoer igjen» - da blir gjentakelsen ikke identisk
-   gjentakelse, som er bedre for pugging. */
+   To per ord. Den ene leses, den andre ligger klar til «Hoer igjen» -
+   da blir gjentakelsen ikke identisk gjentakelse, som er bedre for
+   pugging.
+
+   BEGGE ER NOEYTRALE. De var foerst tenkt med Andrea i den ene, men
+   navnet hennes i setningen trekker oppmerksomheten mot henne selv i
+   det oeyeblikket hun skal lytte etter et ord. Setningen er der for aa
+   gi ordet en sammenheng, ikke for aa vaere hyggelig. */
 async function lagSetninger(ord){
   const svar = await neam({
     model: MODELL,
     max_tokens: 1500,
-    system: 'Du er Neam, en vennlig og litt formell robot som hjelper Andrea på '
-          + '4. trinn med diktatordene sine. Du svarer bare med JSON.',
+    system: 'Du lager eksempelsetninger til diktatord for et barn på 4. trinn. '
+          + 'Du svarer bare med JSON, uten noe før eller etter.',
     messages: [{ role:'user', content:
         'Lag to korte norske setninger til hvert av disse ordene:\n'
       + ord.map(function(o, i){ return (i + 1) + '. ' + o; }).join('\n') + '\n\n'
       + 'Regler:\n'
       + '- Ordet må stå i setningen, i nøyaktig den formen det er oppgitt.\n'
-      + '- Første setning skal handle om Andrea og bruke navnet hennes.\n'
-      + '- Andre setning skal være nøytral, uten navn.\n'
+      + '- Setningene skal være helt nøytrale. Bruk ingen egennavn – verken '
+      + 'personer, steder eller merker.\n'
+      + '- De to setningene til samme ord skal handle om hver sin ting, så det '
+      + 'ikke blir den samme setningen to ganger.\n'
       + '- Høyst åtte ord i hver setning, og bokmål et barn på 9 år forstår.\n'
       + '- Ingen andre ord fra lista skal stå i setningen.\n\n'
       + 'Svar BARE med JSON på formen:\n'
-      + '{"ord":[{"ord":"sol","setninger":["Andrea sitter i sola.","Sola skinner i dag."]}]}'
+      + '{"ord":[{"ord":"sol","setninger":["Sola skinner på himmelen.","Vi satt i sola hele dagen."]}]}'
   }] });
   const d = somJson(svar);
   const kart = new Map();
