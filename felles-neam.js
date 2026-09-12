@@ -1826,6 +1826,15 @@ function neamBygg(){
     +     '</span>'
     +     '<button type="button" class="neam-topp-knapp modell" id="neamModell" '
     +       'title="Bytt modell"></button>'
+    +     '<button type="button" class="neam-topp-knapp tale" id="neamTale" '
+    +       'title="Les svarene høyt" aria-pressed="false">'
+    +       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+    +         'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    +         '<path d="M11 5 6 9H2v6h4l5 4V5z"/>'
+    +         '<path class="tale-bue" d="M15.5 8.5a5 5 0 0 1 0 7"/>'
+    +         '<path class="tale-bue" d="M18.5 5.5a9 9 0 0 1 0 13"/>'
+    +         '<path class="tale-kryss" d="M16 9.5l5 5M21 9.5l-5 5"/>'
+    +       '</svg></button>'
     +     '<button type="button" class="neam-topp-knapp" id="neamNy">'
     +       '<span class="lang">Ny samtale</span><span class="kort">Ny</span></button>'
     +     '<button type="button" class="neam-lukk" id="neamLukk" aria-label="Lukk">&times;</button>'
@@ -1844,6 +1853,8 @@ function neamBygg(){
   document.body.appendChild(bak);
 
   document.getElementById('neamLukk').onclick = neamLukk;
+  document.getElementById('neamTale').onclick = neamTaleBytt;
+  neamTaleTegn();
   document.getElementById('neamSend').onclick = neamSend;
   document.getElementById('neamNy').onclick   = neamNySamtale;
   document.getElementById('neamTVed').onclick = function(){
@@ -1918,10 +1929,47 @@ function neamSkrivSted(k){
   if(ut) ut.textContent = neamStedTekst(k);
 }
 
+/* ============================================================
+   Stemmen
+   ------------------------------------------------------------
+   Talelaget ligger i felles-tale.js. Her er bare knappen og
+   koblingen til svaret.
+
+   HVORFOR PAASKRUINGEN MAA SKJE I ET TRYKK: iOS nekter
+   talesyntesen aa si noe uten en brukerhandling bak seg, og
+   sperren gjelder hele oekten. taleSkruPaa() sier derfor en kort
+   setning i selve trykket - det er den som laaser opp.
+
+   Valget huskes paa ENHETEN, ikke i KV. En stemme som slaar seg
+   paa av seg selv paa kjoekkenveggen fordi noen skrudde den paa i
+   telefonen sin, er ikke en funksjon.
+   ============================================================ */
+function neamTaleTegn(){
+  const k = document.getElementById('neamTale');
+  if(!k) return;
+  const paa = (typeof taleErPaa === 'function') && taleErPaa();
+  k.classList.toggle('av', !paa);
+  k.setAttribute('aria-pressed', paa ? 'true' : 'false');
+  k.title = paa ? 'Slå av opplesning' : 'Les svarene høyt';
+  /* Finnes ikke talesyntese i det hele tatt, skal knappen vekk - en knapp
+     som ikke kan gjoere noe er verre enn ingen knapp. */
+  k.hidden = (typeof taleStottes === 'undefined') || !taleStottes;
+}
+
+function neamTaleBytt(){
+  if(typeof taleErPaa !== 'function') return;
+  if(taleErPaa()) taleSkruAv();
+  else taleSkruPaa();
+  neamTaleTegn();
+}
+
 function neamLukk(){
   /* Staar det en tabell og venter, teller lukking som «ikke naa» - ellers
      blir verktoeykallet haengende og panelet staar laast neste gang. */
   neamTabellAvbryt();
+  /* En stemme som fortsetter aa snakke etter at panelet er lukket, er en
+     stemme man ikke finner av-knappen til. */
+  if(typeof taleStopp === 'function') taleStopp();
   const bak = document.getElementById('neamBak');
   if(bak) bak.hidden = true;
 }
@@ -2151,6 +2199,17 @@ async function neamTur(){
               + (sistTekst ? '\n\nSå langt kom han:\n' + String(sistTekst.text).slice(0, 400) : '')
             : 'Neam svarte uten tekst (' + (svar.stop_reason || 'ukjent grunn') + ').' });
         }
+        /* Svaret er ferdig - da kan det leses. Bare den siste tekstblokken:
+           er det flere, er de foerste som regel noe han sa FOER et
+           verktoeykall, og det er ikke svaret. */
+        try{
+          if(typeof taleSvar === 'function'){
+            const biter = (svar.content || []).filter(function(b){
+              return b.type === 'text' && String(b.text || '').trim();
+            });
+            if(biter.length) taleSvar(biter[biter.length - 1].text);
+          }
+        }catch(e){}
         break;
       }
 

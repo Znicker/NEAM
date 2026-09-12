@@ -965,6 +965,27 @@
   font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
 }
 .neam-topp-knapp:active{ transform:scale(.96); }
+
+/* ---------- Stemmen ----------
+   Hoegttaleren er en av/paa-knapp, og tilstanden maa kunne leses paa et
+   halvt sekund fra en armlengdes avstand. PAA er fylt og i aksentfarge;
+   AV er den vanlige dempede flata med et kryss over hoegttaleren.
+
+   Ikonet er det samme i begge tilstander - det er buene og krysset som
+   byttes. To forskjellige ikoner ville flyttet formen naar man trykket,
+   og da leser oeyet det som at knappen ble en annen. */
+.neam-topp-knapp.tale{
+  padding:7px 9px; line-height:0;
+  background:var(--aksent); border-color:var(--aksent); color:#FFFFFF;
+}
+.neam-topp-knapp.tale svg{ width:17px; height:17px; display:block; }
+.neam-topp-knapp.tale .tale-kryss{ display:none; }
+.neam-topp-knapp.tale.av{
+  background:var(--boks-mild); border-color:var(--line); color:var(--ink-soft);
+}
+.neam-topp-knapp.tale.av .tale-bue{ display:none; }
+.neam-topp-knapp.tale.av .tale-kryss{ display:inline; }
+.neam-topp-knapp.tale[hidden]{ display:none; }
 /* Modellen staar skrevet, ikke gjemt i en meny: en innstilling man ikke
    ser er en innstilling man glemmer at man har satt. Dempet flate - den
    skal kunne leses, ikke trekke blikket. */
