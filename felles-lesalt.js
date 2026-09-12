@@ -333,8 +333,8 @@ async function lesAltUtfor(navn, arg){
   /* ---------------- Kalenderen ---------------- */
   if(navn === 'les_kalender'){
     if(!lesAltHarToken()){
-      throw new Error('Denne siden er ikke logget inn mot Microsoft, så kalenderen kan '
-                    + 'ikke leses herfra. Si det, og foreslå kalendersiden.');
+      throw new Error('Denne siden kan ikke snakke med Microsoft. Si det, og '
+                    + 'foreslå kalendersiden.');
     }
     return await lesAltKalender(arg);
   }
@@ -368,7 +368,11 @@ function lesAltHarToken(){
 
 async function lesAltGraph(sti){
   const t = await gyldigToken();
-  if(!t) throw new Error('Ikke innlogget mot Microsoft på denne siden.');
+  /* Oekta bor paa tjeneren og lages naar noen logger inn - i praksis paa
+     kalendersida. Finnes den ikke, er det DET som mangler, ikke noe ved
+     sida man staar paa. Meldingen maa si hvor man gaar. */
+  if(!t) throw new Error('Ingen Microsoft-økt akkurat nå. Si at noen må innom '
+                       + 'kalendersiden og logge inn - da virker dette overalt etterpå.');
   const r = await fetch(LESALT_GRAPH + sti, {
     headers: { Authorization:'Bearer ' + t,
                Prefer: 'outlook.timezone="' + LESALT_TZ + '"' }
