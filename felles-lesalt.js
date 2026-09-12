@@ -330,7 +330,150 @@ async function lesAltUtfor(navn, arg){
     };
   }
 
+  /* ---------------- Kalenderen ---------------- */
+  if(navn === 'les_kalender'){
+    if(!lesAltHarToken()){
+      throw new Error('Denne siden er ikke logget inn mot Microsoft, så kalenderen kan '
+                    + 'ikke leses herfra. Si det, og foreslå kalendersiden.');
+    }
+    return await lesAltKalender(arg);
+  }
+
   return null;
+}
+
+/* ------------------------------------------------------------
+   Kalenderen
+   ------------------------------------------------------------
+   Den eneste appen som ikke bor i KV. Avtalene ligger hos
+   Microsoft og hentes med tokenet til den som er logget inn, saa
+   dette verktoeyet virker BARE paa sider som har gyldigToken():
+   forsiden, kjoekkendashen, kalenderen, Andrea og Emma.
+   Handleliste, oppskrifter og sikkerhet har ingen innlogging mot
+   Microsoft, og der tilbys det ikke - et verktoey som ikke kan
+   virke er verre enn ingen, fordi Neam lover noe han ikke kan
+   holde.
+
+   Vi bruker IKKE graph() fra felles-graph.js: den fila er ikke
+   lastet paa alle disse sidene, og hele poenget her er aa virke
+   overalt tokenet finnes. Kallet er lite nok til aa staa selv.
+   ------------------------------------------------------------ */
+
+const LESALT_GRAPH = 'https://graph.microsoft.com/v1.0';
+const LESALT_TZ = 'Europe/Oslo';
+
+function lesAltHarToken(){
+  return typeof gyldigToken === 'function';
+}
+
+async function lesAltGraph(sti){
+  const t = await gyldigToken();
+  if(!t) throw new Error('Ikke innlogget mot Microsoft på denne siden.');
+  const r = await fetch(LESALT_GRAPH + sti, {
+    headers: { Authorization:'Bearer ' + t,
+               Prefer: 'outlook.timezone="' + LESALT_TZ + '"' }
+  });
+  const tekst = await r.text();
+  if(!r.ok){
+    let m = 'Microsoft svarte ' + r.status;
+    try{ const d = JSON.parse(tekst); m = (d.error && d.error.message) || m; }catch(e){}
+    throw new Error(m);
+  }
+  try{ return JSON.parse(tekst); }
+  catch(e){ throw new Error('Uventet svar fra Microsoft.'); }
+}
+
+function lesAltKlokke(iso){
+  const d = new Date(iso);
+  if(isNaN(d)) return null;
+  const p = function(n){ return String(n).padStart(2, '0'); };
+  return p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+function lesAltDato(iso){
+  const d = new Date(iso);
+  if(isNaN(d)) return null;
+  const p = function(n){ return String(n).padStart(2, '0'); };
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+const LESALT_KAL_VERKTOY = {
+  name: 'les_kalender',
+  description: 'Avtalene i familiens kalendere i et tidsrom, på tvers av alle kalenderne. '
+             + 'Uten argumenter gis de neste sju dagene. Endringer må gjøres på '
+             + 'kalendersiden - herfra kan avtalene bare leses.',
+  input_schema: {
+    type:'object',
+    properties:{
+      fra: { type:'string', description:'Første dag, på formen 2026-09-08. Utelat for i dag.' },
+      til: { type:'string', description:'Siste dag, på formen 2026-09-08. Utelat for sju '
+                                      + 'dager fram.' },
+      kalender: { type:'string', description:'Navnet på én kalender, for eksempel Emma. '
+                                           + 'Utelat for alle.' }
+    },
+    required:[]
+  }
+};
+
+async function lesAltKalender(arg){
+  const fra = arg.fra ? new Date(arg.fra + 'T00:00:00') : new Date();
+  if(isNaN(fra)) throw new Error('Ugyldig fra-dato. Bruk formen 2026-09-08.');
+  fra.setHours(0, 0, 0, 0);
+  const til = arg.til ? new Date(arg.til + 'T23:59:59')
+                      : new Date(fra.getTime() + 7 * 86400000);
+  if(isNaN(til)) throw new Error('Ugyldig til-dato. Bruk formen 2026-09-08.');
+  if(til < fra) throw new Error('Til-datoen er før fra-datoen.');
+
+  const liste = await lesAltGraph('/me/calendars?$select=id,name&$top=50');
+  let kal = (liste && liste.value) || [];
+  const sok = String(arg.kalender || '').trim().toLowerCase();
+  if(sok){
+    kal = kal.filter(function(c){
+      return String(c.name || '').toLowerCase().indexOf(sok) !== -1;
+    });
+    if(!kal.length) throw new Error('Fant ingen kalender som heter «' + arg.kalender + '».');
+  }
+  /* Et tak paa hvor mange kalendere som spoerres. Uten det blir ett
+     spoersmaal til tolv kall mot Microsoft, og da kommer strupingen. */
+  kal = kal.slice(0, 10);
+
+  const q = '/calendarView?startDateTime=' + fra.toISOString()
+          + '&endDateTime=' + til.toISOString()
+          + '&$orderby=start/dateTime&$top=100'
+          + '&$select=subject,isAllDay,start,end,location,seriesMasterId,type';
+
+  const ut = [];
+  const feilet = [];
+  /* Etter tur, ikke alle paa én gang: samtidige kall mot Graph gir 429,
+     og det var det som fikk avtaler til aa forsvinne i kalenderen. */
+  for(const c of kal){
+    try{
+      const d = await lesAltGraph('/me/calendars/' + encodeURIComponent(c.id) + q);
+      ((d && d.value) || []).forEach(function(e){
+        ut.push({
+          kalender: c.name,
+          tittel: e.subject || '(uten tittel)',
+          dato: lesAltDato(e.start.dateTime + (e.start.timeZone === 'UTC' ? 'Z' : '')),
+          fra: e.isAllDay ? null
+             : lesAltKlokke(e.start.dateTime + (e.start.timeZone === 'UTC' ? 'Z' : '')),
+          til: e.isAllDay ? null
+             : lesAltKlokke(e.end.dateTime + (e.end.timeZone === 'UTC' ? 'Z' : '')),
+          hele_dagen: !!e.isAllDay,
+          sted: (e.location && e.location.displayName) || null,
+          serie: !!e.seriesMasterId || e.type === 'occurrence' || e.type === 'exception'
+        });
+      });
+    }catch(e){
+      /* En kalender som ikke svarte er noe helt annet enn en som er tom. */
+      feilet.push(c.name);
+    }
+  }
+  ut.sort(function(a, b){
+    return (a.dato + (a.fra || '')) < (b.dato + (b.fra || '')) ? -1 : 1;
+  });
+
+  return { antall: ut.length, avtaler: ut.slice(0, 100),
+           avkortet: ut.length > 100, kalendere_som_feilet: feilet };
 }
 
 /* Verktoeyene sida ikke alt har selv. Sidens egne vinner: de leser fra
@@ -339,5 +482,8 @@ async function lesAltUtfor(navn, arg){
 function lesAltVerktoy(egne){
   const tatt = {};
   (egne || []).forEach(function(v){ if(v && v.name) tatt[v.name] = true; });
-  return LESALT_VERKTOY.filter(function(v){ return !tatt[v.name]; });
+  const alle = lesAltHarToken()
+    ? LESALT_VERKTOY.concat([LESALT_KAL_VERKTOY])
+    : LESALT_VERKTOY;
+  return alle.filter(function(v){ return !tatt[v.name]; });
 }

@@ -5228,7 +5228,11 @@ async function kalUtfor(navn, arg){
 }
 
 window.neamVerktoy = async function(){
-  return KAL_VERKTOY.concat(HJEM_VERKTOY, lesAltVerktoy(KAL_VERKTOY), HUS_VERKTOY);
+  return KAL_VERKTOY.concat(HJEM_VERKTOY,
+    /* les_avtaler her er rikere enn leselagets les_kalender - den gir
+       id-er som kan endres. To saa like verktoey i samme liste er en
+       felle, saa leselagets tas bort her. */
+    lesAltVerktoy(KAL_VERKTOY.concat([{name:'les_kalender'}])), HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){
