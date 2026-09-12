@@ -6312,7 +6312,12 @@ function renderPlanFab(){
 // Står på til man trykker knappen igjen, også på tvers av visninger.
 function togglePlanMode(){
   planAddMode = !planAddMode;
+  /* Slaar man av modusen, gaar den valgte dagen med. Ellers ville den
+     ligget igjen og slaatt inn neste gang modusen ble paa - og da ville
+     retten havnet paa en dag man valgte for lenge siden. */
+  if(!planAddMode) planTargetDay = null;
   renderPlanFab();
+  renderPlanTargetBanner();
   renderHome();
   renderDetailPlanRow();
 }
@@ -6552,8 +6557,18 @@ async function addToPlanDay(dayNum){
   }
 
   planSaving = false;
-  planTargetDay = null;
   closeModal('day-picker');
+  /* Dagen blir STAAENDE. Kom man fra banneret («+ Legg til rett» paa en
+     bestemt dag), vil man som regel legge flere retter paa samme dag, og
+     da skal ikke valget nullstilles etter den foerste. Man gaar ut av
+     modusen med Avbryt i banneret.
+
+     FEILEN SOM LAA HER TIL 12. september 2026: planTargetDay ble satt til
+     null uten at banneret ble tegnet paa nytt. Banneret ble staaende og
+     sa «Velg rett til loerdag», mens dagen bak var borte - og da gjorde
+     hvert nytt trykk ingenting, uten at noe sa fra. En tilstand og en
+     tekst som kan komme i utakt, kommer det foer eller siden. */
+  renderPlanTargetBanner();
   if($('view-plan').classList.contains('active')) renderPlanView();
   renderHome();
   renderDetailPlanRow();
@@ -6573,6 +6588,7 @@ let planTab = 'menu';
 
 function openPlanView(){
   planTargetDay = null;
+  renderPlanTargetBanner();
   planTab = 'menu';
   switchPlanTab('menu');
   showView('view-plan');
@@ -6593,6 +6609,7 @@ function gaaTilPlanlegging(){
   planTargetDay = null;
   goHome();
   renderPlanFab();
+  renderPlanTargetBanner();
   renderHome();
 }
 // «+ Legg til rett» på en bestemt dag: hopp til oppskriftene med dagen låst,
@@ -6612,7 +6629,10 @@ function avbrytPlanleggDag(){
 function renderPlanTargetBanner(){
   const el = $('plan-target-banner');
   if(!el) return;
-  if(planTargetDay == null || !planWeek){ el.style.display = 'none'; return; }
+  /* Ogsaa planAddMode: er kalendermodus av, finnes det ingen + paa
+     kortene aa trykke paa, og et banner som ber deg velge en rett er da
+     bare villedende. */
+  if(planTargetDay == null || !planWeek || !planAddMode){ el.style.display = 'none'; return; }
   el.style.display = 'flex';
   el.innerHTML = `<span>Velg rett til ${PLAN_DAY_NAMES[planTargetDay - 1].toLowerCase()} ${planDayDate(planWeek, planTargetDay)}</span>
                   <button type="button" onclick="avbrytPlanleggDag()">Avbryt</button>`;
