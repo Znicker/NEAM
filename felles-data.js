@@ -475,7 +475,9 @@ const HUS_VERKTOY = [
                + 'butikk og om de er huket av som kjøpt. Bruk dette når du står på en '
                + 'ANNEN side enn Handlelista og trenger å vite hva som allerede står '
                + 'der. Hvilken handletur som er åpen på brukerens enhet kan ikke leses '
-               + 'utenfra, så alle levende turer gis.',
+               + 'utenfra, så alle LEVENDE turer gis - avsluttede handleturer er '
+               + 'historie og holdes utenfor. Varer som står igjen i en avsluttet tur '
+               + 'er ikke noe som gjenstår, og skal ikke nevnes som om de var det.',
     input_schema: {
       type: 'object',
       properties: {
@@ -527,11 +529,26 @@ async function husUtfor(navn, arg){
     }
     /* Taket er det samme som handlelistas egen les_handlelista bruker.
        Naas det, er svaret aa spoerre smalere - ikke aa heve taket. */
+    /* Er det flere aapne handleturer i SAMME omraade, er «handlelista»
+       tvetydig, og Neam skal spoerre i stedet for aa slaa dem sammen.
+       Dagligvarer og Andre varer er to forskjellige lister for et
+       menneske - det er ikke en tvetydighet, og et spoersmaal om hvilken
+       av dem man mener er et spoersmaal ingen har stilt. */
+    const perOmrade = {};
+    d.handleturer.forEach(function(o){
+      perOmrade[o.omrade] = (perOmrade[o.omrade] || 0) + 1;
+    });
+    const flere = Object.keys(perOmrade).some(function(k){ return perOmrade[k] > 1; });
+
     return { svar: {
       handleturer: d.handleturer,
       antall: d.varer.length,
       varer: d.varer.slice(0, 120),
-      avkortet: d.varer.length > 120
+      avkortet: d.varer.length > 120,
+      merknad: flere
+        ? 'Flere åpne handleturer i samme område. Spør hvilken brukeren mener '
+          + 'før du svarer - ikke slå dem sammen til én liste.'
+        : undefined
     }};
   }
 

@@ -13,6 +13,20 @@
    alle appene som bor i KV, og de virker likt uansett hvilken
    side de lastes paa.
 
+   HVA SOM IKKE LIGGER HER, OG HVORFOR: handlelista,
+   oppskriftsboka og ukemenyen kan alt leses fra hvor som helst -
+   de ligger i HUS_VERKTOY i felles-data.js, og har gjort det
+   lenge. Foerste utgave av denne fila bygget tre av dem om igjen
+   uten aa vite det, og resultatet var tjue verktoey der fire var
+   nesten-duplikater: `les_handleliste` ved siden av
+   `les_husets_handleliste`, `les_oppskrifter` ved siden av
+   `finn_oppskrift`. To verktoey som gjoer nesten det samme er
+   verre enn ett som gjoer litt for lite - Neam velger ett av dem,
+   og hvilket er tilfeldig.
+
+   Denne fila daekker derfor bare det som IKKE fantes fra foer:
+   skolearbeidet, diktatordene og kalenderen.
+
    INGENTING HER SKRIVER. Det er ikke en forglemmelse - det er
    hele poenget. Skriving krever at man kjenner appens egne
    regler: hvilken handletur som er aapen, hvordan en lekse
@@ -45,22 +59,10 @@
 /* Noeklene, samlet ett sted. De er spredt over fem sider i dag, og
    naar en av dem endres er dette stedet man ellers ville glemt. */
 const LESALT_NOKLER = {
-  handleliste: 'handleliste:v1',
-  oppskrifter: 'p:recipe-index',
-  oppskrift:   'p:recipe:',        /* + id */
   andreaFag:   'andrea-fag:v1',
   emmaFag:     'emma-fag:v1',
   diktat:      'andrea-diktat:v1'
 };
-
-/* Oppskriftsappen lagrer JSON som en STRENG i KV, ikke som et objekt -
-   den gaar gjennom sitt eget window.storage-lag som serialiserer selv.
-   Verdien maa derfor tolkes én gang til. De andre appene lagrer objekter
-   direkte, saa dette gjelder bare oppskriftene. */
-function lesAltTolk(v){
-  if(typeof v !== 'string') return v;
-  try{ return JSON.parse(v); }catch(e){ return null; }
-}
 
 async function lesAltHent(nokkel){
   try{ return await dataLes(nokkel); }
@@ -82,54 +84,6 @@ function lesAltBarn(navn){
    ------------------------------------------------------------ */
 
 const LESALT_VERKTOY = [
-  {
-    name: 'les_handleliste',
-    description: 'Varene som står på handlelista nå. Virker fra hvilken som helst side.\n\n'
-               + 'Bare ÅPNE handleturer, med mindre du ber om noe annet. En avsluttet '
-               + 'handletur er historie - varer som står igjen der er ikke noe som '
-               + 'gjenstår, og skal ikke nevnes som om de var det.\n\n'
-               + 'Får du flere åpne handleturer tilbake og brukeren ikke sa hvilken han '
-               + 'mente, SPØR hvilken det gjelder før du svarer. Ikke slå dem sammen til '
-               + 'én liste.',
-    input_schema: {
-      type:'object',
-      properties:{
-        handletur: { type:'string', description:'Navnet på én handletur. Utelat for de åpne.' },
-        medKjopte: { type:'boolean', description:'true tar med de avhukede også. '
-                                               + 'Standard er å utelate dem.' },
-        medAvsluttede: { type:'boolean',
-                         description:'true tar med handleturer som er avsluttet. Bruk '
-                                   + 'bare når brukeren spør om noe som har vært - '
-                                   + '«hva kjøpte vi forrige uke».' }
-      },
-      required:[]
-    }
-  },
-  {
-    name: 'les_oppskrifter',
-    description: 'Oppskriftene i oppskriftsboka, med navn, tid, porsjoner og merkelapper. '
-               + 'Bruk søkeordet for å finne fram - uten det kommer hele boka, og den kan '
-               + 'være lang. Ingredienser og framgangsmåte får du med hent_oppskrift.',
-    input_schema: {
-      type:'object',
-      properties:{
-        sok: { type:'string', description:'Del av et navn, en merkelapp eller en '
-                                        + 'ingrediens. Utelat for å liste alt.' }
-      },
-      required:[]
-    }
-  },
-  {
-    name: 'hent_oppskrift',
-    description: 'Én oppskrift med ingredienser, framgangsmåte og tips. Bruk id-en fra '
-               + 'les_oppskrifter. Skal ingrediensene på handlelista, må det gjøres fra '
-               + 'Matlaging - herfra kan de bare leses.',
-    input_schema: {
-      type:'object',
-      properties:{ id: { type:'string', description:'Oppskriftens id fra les_oppskrifter.' } },
-      required:['id']
-    }
-  },
   {
     name: 'les_skolearbeid',
     description: 'Lekser og prøver for Andrea eller Emma, med fag og frist. Virker fra '
@@ -162,169 +116,6 @@ const LESALT_VERKTOY = [
 
 async function lesAltUtfor(navn, arg){
   arg = arg || {};
-
-  /* ---------------- Handlelista ---------------- */
-  if(navn === 'les_handleliste'){
-    const d = await lesAltHent(LESALT_NOKLER.handleliste);
-    const okter = (d && d.okter) || [];
-    const items = (d && d.items) || [];
-    const sok = String(arg.handletur || '').trim().toLowerCase();
-
-    /* Avsluttet = har et sluttidspunkt og er ikke i gang. Samme regel som
-       erAvsluttet() i handleliste.html. */
-    const avsluttet = function(o){ return !!(o && o.avsluttet && !o.startet); };
-
-    let turer = okter.filter(function(o){
-      return !sok || String(o.navn || '').trim().toLowerCase().indexOf(sok) !== -1;
-    });
-    if(sok && !turer.length){
-      throw new Error('Fant ingen handletur som heter «' + arg.handletur + '».');
-    }
-    /* Er en tur navngitt, gjelder den - ogsaa om den er avsluttet. Ellers
-       er det bare de aapne som er «handlelista». */
-    const skjult = [];
-    if(!sok && !arg.medAvsluttede){
-      turer = turer.filter(function(o){
-        if(avsluttet(o)){ skjult.push(o.navn || '(uten navn)'); return false; }
-        return true;
-      });
-    }
-
-    return {
-      handleturer: turer.map(function(o){
-        let varer = items.filter(function(v){ return v.oktId === o.id; });
-        const totalt = varer.length;
-        if(!arg.medKjopte) varer = varer.filter(function(v){ return !v.done; });
-        return {
-          navn: o.navn || '(uten navn)',
-          omrade: o.omrade === 'annet' ? 'Andre varer' : 'Dagligvarer',
-          antall: totalt,
-          gjenstaar: items.filter(function(v){ return v.oktId === o.id && !v.done; }).length,
-          /* Et tak, ikke en mening om hva som er viktig: en lang liste
-             fyller hele svaret og skyver ut alt annet Neam har lest. */
-          /* Feltnavnene er handlelistas egne, og de er ikke de opplagte:
-             varen heter `name`, mengden ligger delt i `count`, `amt` og
-             `unit` med `qty` som ferdig tekst, og varetypen heter `cat`.
-             Foerste utgave herfra leste `vare`, `mengde` og `type` - de
-             finnes ikke, og hver rad kom tom tilbake. Mengden settes
-             sammen slik sida selv gjoer det: «2 × 1,5 l», ellers «3 stk». */
-          varer: varer.slice(0, 80).map(function(v){
-            const c = v.count ? String(v.count).trim() : '';
-            const a = v.amt ? String(v.amt).trim() : '';
-            const u = v.unit ? String(v.unit).trim() : '';
-            const maal = a ? (a + (u ? ' ' + u : '')).trim() : '';
-            const mengde = (c && maal) ? (c + ' × ' + maal)
-                         : c ? (c + ' stk')
-                         : maal ? maal
-                         : (v.qty || '');
-            return {
-              vare: v.name,
-              mengde: mengde || null,
-              type: v.cat || null,
-              butikk: v.store || null,
-              notat: v.notes || null,
-              kjopt: !!v.done
-            };
-          }),
-          avkortet: varer.length > 80,
-          i_gang: !!o.startet,
-          avsluttet: avsluttet(o)
-        };
-      }),
-      /* Hva vi utelot, og hvorfor. Uten dette ser Neam en kortere liste
-         enn han ventet og vet ikke om noe mangler. */
-      avsluttede_utelatt: skjult,
-      /* Tvetydig er det bare naar to aapne turer ligger i SAMME omraade.
-         Dagligvarer og Andre varer er to forskjellige lister for et
-         menneske, og et spoersmaal om hvilken av dem man mener er et
-         spoersmaal ingen har stilt. */
-      merknad: (function(){
-        if(sok || arg.medAvsluttede) return undefined;
-        const per = {};
-        turer.forEach(function(o){
-          const k = (o.omrade || 'mat');
-          per[k] = (per[k] || 0) + 1;
-        });
-        return Object.keys(per).some(function(k){ return per[k] > 1; })
-          ? 'Flere åpne handleturer i samme område. Spør hvilken brukeren mener '
-            + 'før du svarer.'
-          : undefined;
-      })()
-    };
-  }
-
-  /* ---------------- Oppskriftene ---------------- */
-  if(navn === 'les_oppskrifter'){
-    const raa = lesAltTolk(await lesAltHent(LESALT_NOKLER.oppskrifter));
-    const alle = Array.isArray(raa) ? raa : [];
-    const sok = String(arg.sok || '').trim().toLowerCase();
-
-    /* INDEKSEN HAR IKKE INGREDIENSENE. Den er med vilje liten - navn,
-       tid, kategorier og et bittelite bilde - saa oppskriftsappen aapner
-       raskt med mange retter. Soeket her gaar derfor paa NAVN og
-       KATEGORI, ikke paa innhold.
-
-       Foerste utgave lette ogsaa i `tags` og `ingredients`. Ingen av dem
-       finnes: kategoriene heter `categories`, og ingrediensene ligger
-       bare i den enkelte oppskriften. Soek paa «kylling» ga null treff
-       selv med en kyllingrett i boka. */
-    const treff = alle.filter(function(r){
-      if(!sok) return true;
-      const felt = String(r.title || '') + ' '
-                 + (Array.isArray(r.categories) ? r.categories.join(' ') : '');
-      return felt.toLowerCase().indexOf(sok) !== -1;
-    });
-
-    return {
-      sok: arg.sok || null,
-      antall: treff.length,
-      oppskrifter: treff.slice(0, 60).map(function(r){
-        return {
-          id: r.id,
-          navn: r.title || '(uten navn)',
-          tid: r.time || null,
-          kategorier: Array.isArray(r.categories) ? r.categories : []
-        };
-      }),
-      avkortet: treff.length > 60,
-      merknad: sok
-        ? 'Søket gjelder navn og kategori. Ingrediensene står bare i den '
-          + 'enkelte oppskriften - hent den med hent_oppskrift for å se dem.'
-        : undefined
-    };
-  }
-
-  if(navn === 'hent_oppskrift'){
-    const id = String(arg.id || '').trim();
-    if(!id) throw new Error('Send id-en fra les_oppskrifter.');
-    const r = lesAltTolk(await lesAltHent(LESALT_NOKLER.oppskrift + id));
-    if(!r) throw new Error('Fant ingen oppskrift med id «' + id + '». Bruk les_oppskrifter.');
-    return {
-      id: r.id || id,
-      navn: r.title || '(uten navn)',
-      tid: r.time || null,
-      /* `baseServings`, ikke `servings` - og den kan vaere null naar
-         oppskriften ikke sier noe om porsjoner. */
-      porsjoner: (typeof r.baseServings === 'number' && r.baseServings > 0)
-        ? r.baseServings : null,
-      kategorier: Array.isArray(r.categories) ? r.categories : [],
-      /* Mengden ligger enten som TALL i `amount` eller som tekst i
-         `amountText` - «1/2» og «en klype» taaler ikke aa vaere tall. */
-      ingredienser: Array.isArray(r.ingredients) ? r.ingredients.map(function(i){
-        if(typeof i === 'string') return i;
-        if(!i) return '';
-        const m = (i.amount !== null && i.amount !== undefined && i.amount !== '')
-          ? String(i.amount) : String(i.amountText || '');
-        return [m, i.unit, i.name].filter(Boolean).join(' ').trim();
-      }).filter(Boolean) : [],
-      framgangsmate: Array.isArray(r.steps) ? r.steps.map(function(s){
-        return typeof s === 'string' ? s : String((s && s.text) || '');
-      }).filter(Boolean) : [],
-      tips: Array.isArray(r.tips) ? r.tips.map(function(t){
-        return typeof t === 'string' ? t : String((t && t.text) || '');
-      }).filter(Boolean) : []
-    };
-  }
 
   /* ---------------- Skolearbeidet ---------------- */
   if(navn === 'les_skolearbeid'){
