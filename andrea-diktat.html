@@ -447,9 +447,9 @@ body.over .rekorder{ display:none; }
 /* Tolv ruter maa faa plass paa bredden: 182 mm innenfor margene, minus
    nummeret og luften etter det. 12 x 12 mm med 1,6 mm mellom blir
    161,6 mm, og da er det fortsatt et par millimeter igjen aa gaa paa om
-   skriveren skalerer litt. Radene staar 14 mm fra hverandre - god
+   skriveren skalerer litt. Radene staar 13 mm fra hverandre - god
    avstand mellom linjene er det enkeltgrepet som loefter lesningen mest. */
-.ark-rad{ display:flex; align-items:center; gap:3mm; margin-bottom:14mm; }
+.ark-rad{ display:flex; align-items:center; gap:3mm; margin-bottom:13mm; }
 .ark-nr{
   flex-shrink:0; width:9mm; height:9mm; border-radius:50%;
   border:.6mm solid #000000;
@@ -457,7 +457,45 @@ body.over .rekorder{ display:none; }
   font-size:5mm; font-weight:700;
 }
 .ark-ruter{ display:flex; gap:1.6mm; }
-.ark-rute{ width:12mm; height:14mm; border:.5mm solid #000000; border-radius:1.5mm; }
+
+/* ------------------------------------------------------------
+   Ruta med skrivelinjer
+   ------------------------------------------------------------
+   Ruta er avlang og delt i tre soner, som i en vanlig skrivebok:
+
+     topp  .....  taket for de hoeye bokstavene (b, k, l, stor I)
+     5,5mm ----- hjelpelinja: taket for de smaa (a, e, o, n)
+     5,5mm ===== hovedlinja: her staar bokstavene
+     5,5mm       kjelleren for dem som henger under (g, j, p, y)
+
+   HVORFOR: hun ble usikker paa hvor i ruta bokstaven skulle sitte.
+   En tom firkant sier ingenting om hoeyde, og da blir hver bokstav
+   et nytt valg.
+
+   OG DET LESES BEDRE: en strek uten linjer aa maale mot kan vaere
+   hva som helst. Med hovedlinje og hjelpelinje er liten i lav og
+   prikket, mens stor I gaar helt opp - forskjellen er der i bildet
+   for foerste gang. Sammenligningen behandler dem fortsatt som
+   samme tegn, men det er nå et valg og ikke en noedvendighet.
+
+   Hovedlinja er kraftigst: det er den hun skal sette bokstavene
+   paa. Hjelpelinja er svak og stiplet, saa den ikke konkurrerer -
+   og saa den ikke leses som en bindestrek i en tom rute.
+   ------------------------------------------------------------ */
+.ark-rute{
+  position:relative; width:12mm; height:16.5mm;
+  border:.5mm solid #000000; border-radius:1.5mm;
+}
+/* Hjelpelinja: 5,5 mm ned, altsaa taket for de smaa bokstavene. */
+.ark-rute::before{
+  content:''; position:absolute; left:.6mm; right:.6mm; top:5.5mm;
+  border-top:.25mm dashed #9A9A9A;
+}
+/* Hovedlinja: 11 mm ned. Under den er det plass til g og j. */
+.ark-rute::after{
+  content:''; position:absolute; left:.3mm; right:.3mm; top:11mm;
+  border-top:.45mm solid #000000;
+}
 .ark-bunn{ margin-top:6mm; font-size:3.4mm; font-weight:600; }
 </style>
 </head>
@@ -1421,7 +1459,9 @@ function tegnArk(){
     +   '<h1 class="ark-h">DIKTAT</h1>'
     +   '<p class="ark-felt">Navn: <span></span></p>'
     + '</div>'
-    + '<p class="ark-hjelp">Ett tegn i hver rute. Begynn helt til venstre.</p>'
+    + '<p class="ark-hjelp">Ett tegn i hver rute. Begynn helt til venstre. '
+    + 'De små bokstavene står mellom de to linjene, de høye går opp til taket, '
+    + 'og g, j, p og y henger under.</p>'
     + ord.map(function(o, i){
         let r = '';
         const n = ruterFor(o.ord);
@@ -1496,6 +1536,11 @@ async function lesArk(dataUrl, antall){
       { type:'text', text:
           'Dette er et diktatark med ' + antall + ' nummererte rader. Hver rad har en '
         + 'rekke tomme ruter, og et barn har skrevet ett håndskrevet tegn i noen av dem.\n\n'
+        + 'Hver rute har to trykte skrivelinjer: en stiplet hjelpelinje øverst og en '
+        + 'heltrukket hovedlinje under den. Linjene er trykt på arket og er ALDRI tegn – '
+        + 'en rute med bare linjer i er tom. Bruk dem til å se høyden på bokstaven: små '
+        + 'bokstaver fyller feltet mellom linjene, høye bokstaver går opp til toppen av '
+        + 'ruta, og g, j, p og y henger under hovedlinja.\n\n'
         + 'Les hver rad for seg, fra venstre mot høyre, og rapporter hva som står i hver '
         + 'rute.\n\n'
         + 'Regler:\n'
