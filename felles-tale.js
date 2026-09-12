@@ -223,15 +223,22 @@ function taleKort(tekst){
 /* Leser et svar, hvis stemmen er paa. Sekvensnummeret gjoer at et nytt
    svar avbryter det forrige i stedet for aa stille seg i koe - samme
    regel som ellers i huset: kast det som er utdatert. */
+/* Gir alltid et loefte som loeses NAAR HAN ER FERDIG - ogsaa naar det
+   ikke ble sagt noe. Kallstedet venter paa det for aa vite naar
+   mikrofonen kan aapnes igjen, og et loefte som loeses for tidlig er
+   verre enn ingen: da hoerer han seg selv. */
 async function taleSvar(tekst){
-  if(!taleErPaa()) return;
+  if(!taleErPaa()) return false;
   const t = taleKort(tekst);
-  if(!t) return;
+  if(!t) return false;
   taleStopp();
   const mitt = taleNr;
   if(!taleStemme) taleFinnStemme();
-  if(mitt !== taleNr) return;
+  if(mitt !== taleNr) return false;
   await taleLes(t);
+  /* Ble vi avbrutt underveis - av et nytt svar, eller av at noen trykket
+     mikrofonen - skal ikke sloeyfa fortsette som om ingenting hendte. */
+  return mitt === taleNr;
 }
 
 /* ============================================================
@@ -272,9 +279,12 @@ let lyttSiste = '';
 let lyttHorer = null;
 let lyttEndret = null;      /* av/paa, saa knappen kan tegnes om */
 
-function lyttSettHorer(naarTekst, naarEndret){
+let lyttSlutt = null;       /* kalles naar lyttingen er over: (horteNoe) */
+
+function lyttSettHorer(naarTekst, naarEndret, naarSlutt){
   lyttHorer = naarTekst || null;
   lyttEndret = naarEndret || null;
+  lyttSlutt = naarSlutt || null;
 }
 
 function lyttErPaa(){ return lyttPaa; }
@@ -327,9 +337,14 @@ function lyttStart(){
   };
 
   lytter.onend = function(){
+    const sa = lyttSiste;
     lyttPaa = false;
     lytter = null;
     if(lyttEndret) lyttEndret();
+    /* Sluttet den uten at noe ble sagt, maa kallstedet faa vite det -
+       ellers kan en samtale i et tomt rom gaa rundt i det uendelige. */
+    if(!sa && lyttSlutt) lyttSlutt(false);
+    else if(lyttSlutt) lyttSlutt(true);
   };
 
   try{

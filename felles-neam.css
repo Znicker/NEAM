@@ -1170,6 +1170,13 @@
 @media (prefers-reduced-motion: reduce){
   .neam-mik.lytter{ animation:none; }
 }
+/* SAMTALEN GAAR, men han snakker akkurat naa - mikrofonen er lukket et
+   oeyeblikk. Fylt, men uten puls: den er ikke aapen, og den skal ikke se
+   aapen ut. At den fortsatt er roed sier at samtalen ikke er slutt. */
+.neam-mik.prater:not(.lytter){
+  background:var(--danger); border-color:var(--danger); color:#FFFFFF;
+  opacity:.55; animation:none;
+}
 
 /* ---------- Sidefireren - hoeyre hjoerne ----------
    Speilvendt av venstre, og med sidas eget merke paa haandtaket.

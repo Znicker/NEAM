@@ -1907,7 +1907,7 @@ function neamBygg(){
   document.getElementById('neamMik').onclick = neamMikBytt;
   neamTaleTegn();
   neamMikTegn();
-  if(typeof lyttSettHorer === 'function') lyttSettHorer(neamMikHorte, neamMikTegn);
+  if(typeof lyttSettHorer === 'function') lyttSettHorer(neamMikHorte, neamMikTegn, neamMikSlutt);
   document.getElementById('neamSend').onclick = neamSend;
   document.getElementById('neamNy').onclick   = neamNySamtale;
   document.getElementById('neamTVed').onclick = function(){
@@ -2015,24 +2015,94 @@ function neamSkrivSted(k){
    ------------------------------------------------------------ */
 let neamMikStart = '';      /* det som sto i feltet da lyttingen begynte */
 
+/* ------------------------------------------------------------
+   Samtalemodus
+   ------------------------------------------------------------
+   Er stemmen paa naar du trykker mikrofonen, blir det en samtale:
+   han lytter, du snakker, han svarer hoeyt, og saa lytter han
+   igjen - til du trykker mikrofonen paa nytt.
+
+   HVORFOR DEN HENGER PAA HOEYTTALEREN og ikke er en egen knapp:
+   en samtale er nettopp det aa hoere og bli hoert. Er stemmen av,
+   finnes det ingen samtale aa fortsette - da er mikrofonen bare
+   en annen maate aa skrive paa. Og bunnlinja har ikke plass til
+   en knapp til.
+
+   TOMGANGSSPERREN er ikke pynt. Uten den ville sloeyfa gaatt
+   videre i det uendelige i et tomt rom: lytt, ingenting, lytt
+   igjen - med mikrofonen paa og telefonen i lomma. Tre runder
+   uten et ord, og den gir seg.
+   ------------------------------------------------------------ */
+let neamPrat = false;
+let neamPratTomme = 0;
+const NEAM_PRAT_MAKS_TOMME = 3;
+
+function neamPratAv(grunn){
+  if(!neamPrat) return;
+  neamPrat = false;
+  neamPratTomme = 0;
+  if(typeof lyttStopp === 'function') lyttStopp();
+  neamMikTegn();
+  if(grunn) neamBoble(document.getElementById('neamSamtale'), 'feil', grunn);
+}
+
+/* Kalles naar Neam er ferdig med aa svare - og med aa lese svaret hoeyt.
+   Da, og bare da, kan mikrofonen aapnes igjen: gjoer den det foer, hoerer
+   han sin egen stemme og svarer paa den. */
+function neamPratLyttIgjen(){
+  if(!neamPrat) return;
+  const bak = document.getElementById('neamBak');
+  if(!bak || bak.hidden){ neamPrat = false; neamMikTegn(); return; }
+  neamMikStart = '';
+  if(typeof lyttStart === 'function' && !lyttStart()){
+    neamPratAv('Fikk ikke åpnet mikrofonen igjen. Samtalen er avsluttet.');
+    return;
+  }
+  neamMikTegn();
+}
+
 function neamMikTegn(){
   const k = document.getElementById('neamMik');
   if(!k) return;
   const paa = (typeof lyttErPaa === 'function') && lyttErPaa();
   k.classList.toggle('lytter', paa);
-  k.setAttribute('aria-pressed', paa ? 'true' : 'false');
-  k.title = paa ? 'Stopp' : 'Snakk';
+  k.classList.toggle('prater', !!neamPrat);
+  k.setAttribute('aria-pressed', (paa || neamPrat) ? 'true' : 'false');
+  k.title = neamPrat ? 'Avslutt samtalen'
+          : paa ? 'Stopp'
+          : ((typeof taleErPaa === 'function' && taleErPaa())
+             ? 'Start en samtale' : 'Snakk');
   k.hidden = (typeof lyttStottes === 'undefined') || !lyttStottes;
 }
 
 function neamMikBytt(){
   if(typeof lyttStart !== 'function') return;
-  if(lyttErPaa()){ lyttStopp(); return; }
+
+  /* Trykk nummer to avslutter - baade den paagaaende lyttingen og
+     samtalen. Det er den ene veien ut, og den skal vaere den samme
+     knappen man startet med. */
+  if(lyttErPaa() || neamPrat){
+    neamPrat = false;
+    neamPratTomme = 0;
+    lyttStopp();
+    if(typeof taleStopp === 'function') taleStopp();
+    neamMikTegn();
+    return;
+  }
+
+  /* Er stemmen paa, blir dette en samtale som gaar til du stopper den. */
+  neamPrat = (typeof taleErPaa === 'function') && taleErPaa();
+  neamPratTomme = 0;
+
   const felt = document.getElementById('neamFelt');
   neamMikStart = felt ? felt.value.trim() : '';
   if(!lyttStart()){
+    neamPrat = false;
     neamBoble(document.getElementById('neamSamtale'), 'feil',
               'Fikk ikke startet mikrofonen på denne enheten.');
+  }else if(neamPrat){
+    neamBoble(document.getElementById('neamSamtale'), 'sys',
+              'Samtalen går til du trykker mikrofonen igjen.');
   }
   neamMikTegn();
 }
@@ -2041,10 +2111,12 @@ function neamMikHorte(tekst, ferdig, feil){
   const felt = document.getElementById('neamFelt');
   if(feil){
     if(felt) felt.value = neamMikStart;
+    neamPratAv(null);
     neamBoble(document.getElementById('neamSamtale'), 'feil', feil);
     neamMikTegn();
     return;
   }
+  if(tekst) neamPratTomme = 0;
   if(!felt) return;
   felt.value = (neamMikStart ? neamMikStart + ' ' : '') + tekst;
   /* Feltet vokser med teksten, som naar man skriver selv. */
@@ -2054,6 +2126,24 @@ function neamMikHorte(tekst, ferdig, feil){
     neamMikStart = '';
     neamSend();
   }
+}
+
+/* Lyttingen er over. Ble det sagt noe, tar neamMikHorte() seg av
+   sendingen og sloeyfa fortsetter derfra. Ble det ikke det, teller vi -
+   og gir oss etter tre tomme runder. */
+function neamMikSlutt(horteNoe){
+  neamMikTegn();
+  if(!neamPrat) return;
+  if(horteNoe) return;
+  neamPratTomme++;
+  if(neamPratTomme >= NEAM_PRAT_MAKS_TOMME){
+    neamPratAv('Jeg hørte ingenting på en stund, så jeg avsluttet samtalen. '
+             + 'Trykk mikrofonen når du vil fortsette.');
+    return;
+  }
+  /* Et lite opphold foer vi aapner igjen. Uten det starter og stopper
+     gjenkjenningen i tett foelge, og iOS gir opp etter noen runder. */
+  setTimeout(neamPratLyttIgjen, 400);
 }
 
 function neamTaleTegn(){
@@ -2070,9 +2160,17 @@ function neamTaleTegn(){
 
 function neamTaleBytt(){
   if(typeof taleErPaa !== 'function') return;
-  if(taleErPaa()) taleSkruAv();
-  else taleSkruPaa();
+  if(taleErPaa()){
+    taleSkruAv();
+    /* Uten stemmen er det ingen samtale aa fortsette - han ville lyttet
+       videre og svart paa skjermen, og mikrofonen ville staatt paa uten
+       at noe pekte paa det. */
+    neamPratAv(null);
+  }else{
+    taleSkruPaa();
+  }
   neamTaleTegn();
+  neamMikTegn();
 }
 
 function neamLukk(){
@@ -2083,6 +2181,10 @@ function neamLukk(){
      stemme man ikke finner av-knappen til. */
   if(typeof taleStopp === 'function') taleStopp();
   if(typeof lyttStopp === 'function') lyttStopp();
+  /* En samtale som gaar videre bak et lukket panel er en mikrofon ingen
+     ser at staar paa. */
+  neamPrat = false;
+  neamPratTomme = 0;
   const bak = document.getElementById('neamBak');
   if(bak) bak.hidden = true;
 }
@@ -2316,13 +2418,21 @@ async function neamTur(){
            er det flere, er de foerste som regel noe han sa FOER et
            verktoeykall, og det er ikke svaret. */
         try{
-          if(typeof taleSvar === 'function'){
-            const biter = (svar.content || []).filter(function(b){
-              return b.type === 'text' && String(b.text || '').trim();
-            });
-            if(biter.length) taleSvar(biter[biter.length - 1].text);
+          const biter = (svar.content || []).filter(function(b){
+            return b.type === 'text' && String(b.text || '').trim();
+          });
+          const tekst = biter.length ? biter[biter.length - 1].text : '';
+          if(typeof taleSvar === 'function' && tekst){
+            /* FOERST naar han er ferdig med aa snakke kan mikrofonen
+               aapnes igjen. Gjoer den det foer, hoerer han sin egen
+               stemme, svarer paa den, og svarer saa paa svaret. */
+            taleSvar(tekst).then(neamPratLyttIgjen, neamPratLyttIgjen);
+          }else{
+            /* Ingen tekst aa lese, eller stemmen er av: da er turen over
+               med det samme, og vi kan hoere etter igjen. */
+            setTimeout(neamPratLyttIgjen, 300);
           }
-        }catch(e){}
+        }catch(e){ setTimeout(neamPratLyttIgjen, 300); }
         break;
       }
 
