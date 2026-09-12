@@ -233,3 +233,134 @@ async function taleSvar(tekst){
   if(mitt !== taleNr) return;
   await taleLes(t);
 }
+
+/* ============================================================
+   Å høre etter
+   ------------------------------------------------------------
+   Lagt til 13. september 2026. Den andre halvdelen: inn.
+
+   `webkitSpeechRecognition` finnes i Safari og Chrome, men ikke i
+   Firefox. Paa iOS gaar gjenkjenningen over nettet, saa den
+   trenger forbindelse - en telefon uten dekning gir `network`,
+   ikke stillhet.
+
+   ETT TRYKK, IKKE HOLD. Trykk-og-hold er vondt paa en telefon i
+   en bil, og iOS legger dessuten en tekstmarkering og en
+   kontekstmeny oppaa et langt trykk. Her starter ett trykk
+   lyttingen, og den stopper selv naar du blir stille.
+
+   MIKROFONEN MAA AV MENS HAN SNAKKER. Gjoer den ikke det, hoerer
+   han sin egen stemme og svarer paa den - og saa svarer han paa
+   svaret. Sperren ligger i lyttStart(), som nekter aa starte mens
+   det snakkes, og i taleSvar(), som skrur av foerst.
+
+   ET ORD OM RETTIGHETER: nettleseren spoer om lov til aa bruke
+   mikrofonen foerste gang. Svaret huskes per side, ikke per app,
+   saa det kan komme opp igjen paa en side man ikke har brukt
+   stemmen paa foer.
+   ============================================================ */
+
+const LyttMotor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+let lyttStottes = !!LyttMotor;
+
+let lytter = null;          /* den paagaaende gjenkjenningen, eller null */
+let lyttPaa = false;
+let lyttSiste = '';
+
+/* Kallstedet melder seg paa her. `tekst` kommer fortloepende mens det
+   snakkes; `ferdig` er true naar setningen er avsluttet. */
+let lyttHorer = null;
+let lyttEndret = null;      /* av/paa, saa knappen kan tegnes om */
+
+function lyttSettHorer(naarTekst, naarEndret){
+  lyttHorer = naarTekst || null;
+  lyttEndret = naarEndret || null;
+}
+
+function lyttErPaa(){ return lyttPaa; }
+
+/* MAA kalles fra et trykk - baade iOS og Chrome nekter aa aapne
+   mikrofonen uten en brukerhandling bak seg. */
+function lyttStart(){
+  if(!lyttStottes || lyttPaa) return false;
+
+  /* Snakker han, skal vi ikke hoere etter. Vi stopper ham heller ikke -
+     den som trykker mikrofonen mens Neam leser, vil som regel avbryte,
+     saa vi tar det som et avbrudd og starter etterpaa. */
+  taleStopp();
+
+  try{
+    lytter = new LyttMotor();
+  }catch(e){ return false; }
+
+  lytter.lang = 'nb-NO';
+  lytter.interimResults = true;
+  /* Ikke `continuous`: én setning av gangen er det som faktisk virker i
+     Safari. Sammenhengende lytting hoerer til bilmodus, og den bygger
+     paa denne. */
+  lytter.continuous = false;
+  lytter.maxAlternatives = 1;
+
+  lyttSiste = '';
+
+  lytter.onresult = function(ev){
+    let tekst = '';
+    let ferdig = false;
+    for(let i = ev.resultIndex; i < ev.results.length; i++){
+      tekst += ev.results[i][0].transcript;
+      if(ev.results[i].isFinal) ferdig = true;
+    }
+    tekst = tekst.trim();
+    if(!tekst) return;
+    lyttSiste = tekst;
+    if(lyttHorer) lyttHorer(tekst, ferdig);
+  };
+
+  lytter.onerror = function(ev){
+    const kode = (ev && ev.error) || 'ukjent';
+    /* «no-speech» er ikke en feil et menneske trenger aa hoere om - det
+       betyr bare at ingen sa noe. Resten skal sies, med ord som peker paa
+       hva man kan gjoere. */
+    if(kode !== 'no-speech' && kode !== 'aborted' && lyttHorer){
+      lyttHorer(null, false, lyttFeilTekst(kode));
+    }
+  };
+
+  lytter.onend = function(){
+    lyttPaa = false;
+    lytter = null;
+    if(lyttEndret) lyttEndret();
+  };
+
+  try{
+    lytter.start();
+  }catch(e){
+    lyttPaa = false; lytter = null;
+    return false;
+  }
+  lyttPaa = true;
+  if(lyttEndret) lyttEndret();
+  return true;
+}
+
+function lyttStopp(){
+  if(!lytter) return;
+  /* `stop()` og ikke `abort()`: stop lar den siste setningen bli ferdig
+     tolket, abort kaster den. Trykker man av-knappen etter aa ha sagt
+     noe, er det sagt - det skal ikke forsvinne. */
+  try{ lytter.stop(); }catch(e){}
+}
+
+function lyttFeilTekst(kode){
+  if(kode === 'not-allowed' || kode === 'service-not-allowed'){
+    return 'Nettleseren fikk ikke bruke mikrofonen. Gi den tilgang i '
+         + 'innstillingene for siden, og prøv igjen.';
+  }
+  if(kode === 'network'){
+    return 'Talegjenkjenningen går over nettet, og den fikk ikke forbindelse.';
+  }
+  if(kode === 'audio-capture'){
+    return 'Fant ingen mikrofon på denne enheten.';
+  }
+  return 'Fikk ikke hørt etter (' + kode + ').';
+}

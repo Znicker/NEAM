@@ -1886,6 +1886,13 @@ function neamBygg(){
     +   '<div class="neam-bunn">'
     +     '<textarea class="neam-felt" id="neamFelt" rows="1" '
     +       'placeholder="Spør Neam om noe"></textarea>'
+    +     '<button type="button" class="neam-mik" id="neamMik" aria-label="Snakk" '
+    +       'aria-pressed="false">'
+    +       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+    +         'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    +         '<rect x="9" y="3" width="6" height="11" rx="3"/>'
+    +         '<path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/>'
+    +       '</svg></button>'
     +     '<button type="button" class="neam-send" id="neamSend" aria-label="Send">'
     +       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" '
     +         'stroke-linecap="round" stroke-linejoin="round">'
@@ -1897,7 +1904,10 @@ function neamBygg(){
 
   document.getElementById('neamLukk').onclick = neamLukk;
   document.getElementById('neamTale').onclick = neamTaleBytt;
+  document.getElementById('neamMik').onclick = neamMikBytt;
   neamTaleTegn();
+  neamMikTegn();
+  if(typeof lyttSettHorer === 'function') lyttSettHorer(neamMikHorte, neamMikTegn);
   document.getElementById('neamSend').onclick = neamSend;
   document.getElementById('neamNy').onclick   = neamNySamtale;
   document.getElementById('neamTVed').onclick = function(){
@@ -1987,6 +1997,65 @@ function neamSkrivSted(k){
    paa av seg selv paa kjoekkenveggen fordi noen skrudde den paa i
    telefonen sin, er ikke en funksjon.
    ============================================================ */
+/* ------------------------------------------------------------
+   Mikrofonen
+   ------------------------------------------------------------
+   Ett trykk starter lyttingen, og den stopper selv naar du blir
+   stille. Det som blir hoert skrives rett inn i feltet mens du
+   snakker, saa du ser at han faar det med seg - og naar setningen
+   er avsluttet, sendes den.
+
+   SENDES AV SEG SELV, uten et ekstra trykk. Det var hele poenget:
+   med iOS' egen diktatknapp maatte man trykke mikrofon, snakke,
+   og trykke send. Her er det ett trykk.
+
+   Er feltet fylt ut fra foer, legges det hoerte BAK. Har man
+   skrevet en halv setning og saa tar mikrofonen, er det et
+   tillegg, ikke en erstatning.
+   ------------------------------------------------------------ */
+let neamMikStart = '';      /* det som sto i feltet da lyttingen begynte */
+
+function neamMikTegn(){
+  const k = document.getElementById('neamMik');
+  if(!k) return;
+  const paa = (typeof lyttErPaa === 'function') && lyttErPaa();
+  k.classList.toggle('lytter', paa);
+  k.setAttribute('aria-pressed', paa ? 'true' : 'false');
+  k.title = paa ? 'Stopp' : 'Snakk';
+  k.hidden = (typeof lyttStottes === 'undefined') || !lyttStottes;
+}
+
+function neamMikBytt(){
+  if(typeof lyttStart !== 'function') return;
+  if(lyttErPaa()){ lyttStopp(); return; }
+  const felt = document.getElementById('neamFelt');
+  neamMikStart = felt ? felt.value.trim() : '';
+  if(!lyttStart()){
+    neamBoble(document.getElementById('neamSamtale'), 'feil',
+              'Fikk ikke startet mikrofonen på denne enheten.');
+  }
+  neamMikTegn();
+}
+
+function neamMikHorte(tekst, ferdig, feil){
+  const felt = document.getElementById('neamFelt');
+  if(feil){
+    if(felt) felt.value = neamMikStart;
+    neamBoble(document.getElementById('neamSamtale'), 'feil', feil);
+    neamMikTegn();
+    return;
+  }
+  if(!felt) return;
+  felt.value = (neamMikStart ? neamMikStart + ' ' : '') + tekst;
+  /* Feltet vokser med teksten, som naar man skriver selv. */
+  felt.style.height = 'auto';
+  felt.style.height = Math.min(felt.scrollHeight, 160) + 'px';
+  if(ferdig && felt.value.trim() && !neamVenter){
+    neamMikStart = '';
+    neamSend();
+  }
+}
+
 function neamTaleTegn(){
   const k = document.getElementById('neamTale');
   if(!k) return;
@@ -2013,6 +2082,7 @@ function neamLukk(){
   /* En stemme som fortsetter aa snakke etter at panelet er lukket, er en
      stemme man ikke finner av-knappen til. */
   if(typeof taleStopp === 'function') taleStopp();
+  if(typeof lyttStopp === 'function') lyttStopp();
   const bak = document.getElementById('neamBak');
   if(bak) bak.hidden = true;
 }

@@ -1136,6 +1136,41 @@
 .neam-send:disabled{ background:var(--line); cursor:default; }
 .neam-send:not(:disabled):active{ transform:scale(.94); }
 
+/* ---------- Mikrofonen ----------
+   Samme stoerrelse og form som send, men noeytral flate: den er et
+   alternativ til aa skrive, ikke en annen maate aa sende paa. Blaatt paa
+   begge to ville gjort bunnlinja til to like knapper ved siden av
+   hverandre.
+
+   LYTTENDE er fylt roedt og pulserer. Det maa vaere umulig aa ta feil av
+   om mikrofonen staar paa - en apen mikrofon man tror er av er det
+   eneste virkelig ubehagelige denne funksjonen kan gjoere. */
+.neam-mik{
+  flex-shrink:0; border:1px solid var(--line); border-radius:50%;
+  width:42px; height:42px; background:var(--boks-mild); color:var(--ink);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  /* iOS legger en tekstmarkering og en kontekstmeny oppaa et langt trykk.
+     Paa en knapp man trykker i en bil er det bare i veien. */
+  -webkit-user-select:none; user-select:none;
+  -webkit-touch-callout:none; touch-action:manipulation;
+}
+.neam-mik svg{ width:19px; height:19px; }
+.neam-mik:active{ transform:scale(.94); }
+.neam-mik[hidden]{ display:none; }
+.neam-mik.lytter{
+  background:var(--danger); border-color:var(--danger); color:#FFFFFF;
+  animation:neam-lytter 1.4s ease-in-out infinite;
+}
+@keyframes neam-lytter{
+  0%,100%{ box-shadow:0 0 0 0 rgba(166,77,60,.55); }
+  70%    { box-shadow:0 0 0 9px rgba(166,77,60,0); }
+}
+/* Den som har slaatt av bevegelse skal fortsatt SE at den lytter - bare
+   uten pulsen. Fargen alene baerer betydningen. */
+@media (prefers-reduced-motion: reduce){
+  .neam-mik.lytter{ animation:none; }
+}
+
 /* ---------- Sidefireren - hoeyre hjoerne ----------
    Speilvendt av venstre, og med sidas eget merke paa haandtaket.
    Skillet som gjelder: venstre er «ut og Neam», hoeyre er «her og naa».
