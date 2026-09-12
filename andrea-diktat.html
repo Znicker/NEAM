@@ -561,6 +561,8 @@ body.over .rekorder{ display:none; }
           <button type="button" class="knapp-blaa" id="nesteOrd">Neste ord</button>
         </div>
       </div>
+      <p class="tale-av" id="utenSetning" hidden>Dette ordet har ingen setning, så jeg sier det
+        bare to ganger. Gå tilbake og trykk «Lag setninger til ordene», så får det en.</p>
       <p class="tale-av" id="taleAv" hidden></p>
     </section>
 
@@ -641,8 +643,18 @@ const MODELL = 'claude-opus-5';
 /* Tale. Litt saktere enn vanlig tale, og litt lavere toneleie: det gir
    den stive, formelle klangen Neam skal ha, og et diktatord skal uansett
    leses roligere enn en setning. */
-const TALE_FART = 0.82;
-const TALE_TONE = 0.9;
+/* Tale. Ordet leses langsomt - det er selve oppgaven, og hun skal rekke
+   aa hoere hver lyd i det. Setningen gaar raskere: den er sammenhengen,
+   ikke noe hun skal skrive, og en setning lest bokstavelig talt i sakte
+   film blir vanskeligere aa forstaa, ikke lettere.
+
+   TONEN er tilbake paa noeytral. Et lavere toneleie ga Neam den stive
+   klangen han skal ha, men det gjoer ogsaa konsonantene mer grumsete, og
+   i en diktat er det forskjellen paa d og t som avgjoer. Karakteren maa
+   vike for tydeligheten her. */
+const TALE_FART_ORD = 0.68;
+const TALE_FART_SETNING = 0.88;
+const TALE_TONE = 1.0;
 /* Pausene i «ord - setning - ord». Lang nok til at hun rekker aa begynne
    aa skrive, kort nok til at hun ikke tror han er ferdig. */
 const PAUSE_MELLOM = 900;
@@ -950,7 +962,11 @@ async function hentSetninger(){
   }catch(e){
     console.warn('Diktat: fikk ikke laget setninger', e);
     tegnOrdliste();
-    si('Jeg fikk ikke laget setninger denne gangen, men ordene kan jeg lese.');
+    /* Feilen SELV, ikke bare at det gikk galt. «Jeg fikk det ikke til» er
+       ingenting aa gaa videre paa naar den som leser staar med telefonen
+       i haanda og ingen konsoll. */
+    si('Jeg fikk ikke laget setninger: ' + ((e && e.message) || 'ukjent feil')
+     + ' Ordene kan jeg lese uansett.');
   }
   $('setningerKnapp').disabled = false;
 }
@@ -1117,7 +1133,7 @@ if(taleStottes){
    VAKTHUNDEN er ikke pynt: i Safari hender det at `onend` aldri fyrer,
    og da ville kjeden ord-setning-ord staatt bom stille uten at noe saa
    galt ut. Tiden er anslaatt av lengden, med et gulv. */
-function les(tekst){
+function les(tekst, fart){
   return new Promise(function(ok){
     if(!taleStottes){ ok(false); return; }
     const y = new SpeechSynthesisUtterance(String(tekst));
@@ -1127,7 +1143,7 @@ function les(tekst){
        kanskje bommer paa «skjegg». */
     if(stemme) y.voice = stemme;
     y.lang = stemme ? stemme.lang : 'nb-NO';
-    y.rate = TALE_FART;
+    y.rate = fart || TALE_FART_ORD;
     y.pitch = TALE_TONE;
     let ferdig = false;
     const slutt = function(){
@@ -1138,7 +1154,10 @@ function les(tekst){
     };
     y.onend = slutt;
     y.onerror = slutt;
-    const vakt = setTimeout(slutt, Math.max(3500, String(tekst).length * 160));
+    /* Vakthunden maa foelge farten: sakte tale tar lengre tid, og en
+       vakthund satt for kort ville klippet ordet midt i. */
+    const vakt = setTimeout(slutt,
+      Math.max(3500, String(tekst).length * 160 / (y.rate || 1)));
     window.speechSynthesis.speak(y);
   });
 }
@@ -1163,17 +1182,17 @@ async function lesOppgave(annenSetning){
   const s = o.setninger || [];
   const setning = s.length ? (annenSetning && s[1] ? s[1] : s[0]) : '';
 
-  await les(o.ord);
+  await les(o.ord, TALE_FART_ORD);
   if(mitt !== taleNr) return;
   if(setning){
     await pause(PAUSE_MELLOM);
     if(mitt !== taleNr) return;
-    await les(setning);
+    await les(setning, TALE_FART_SETNING);
     if(mitt !== taleNr) return;
   }
   await pause(PAUSE_MELLOM);
   if(mitt !== taleNr) return;
-  await les(o.ord);
+  await les(o.ord, TALE_FART_ORD);
 }
 
 function tegnOving(){
@@ -1182,6 +1201,10 @@ function tegnOving(){
   $('overNr').textContent = String(ov.i + 1);
   $('nesteOrd').textContent = (ov.i + 1 >= ord.length) ? 'Ferdig' : 'Neste ord';
   $('robot').classList.add('leser');
+  /* Uten setning sier han ordet to ganger og ingenting imellom. Det ser
+     ut som en feil i opplesningen, og da skal det staa hva det er. */
+  const o = ord[ov.i];
+  $('utenSetning').hidden = !!(o && (o.setninger || []).length);
 }
 
 function startOving(){
