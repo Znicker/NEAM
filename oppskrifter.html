@@ -2352,6 +2352,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-data.js?v=3"></script>
 <script src="/felles-ms.js?v=1"></script>
 <script src="/felles-lesalt.js?v=1"></script>
+<script src="/felles-skriv.js?v=1"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-neam.js?v=66"></script>
@@ -2998,7 +2999,7 @@ window.neamVerktoy = async function(){
      oppskriftsboka kommer fra leselaget - det var her skjevheten var
      stoerst: Neam kunne fylle boka, men ikke aapne den. */
   const egne = [neamOppskriftVerktoy()];
-  return egne.concat(HJEM_VERKTOY, lesAltVerktoy(egne), HUS_VERKTOY);
+  return egne.concat(HJEM_VERKTOY, skrivVerktoy([]), lesAltVerktoy(egne), HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){
@@ -3021,6 +3022,8 @@ window.neamUtfor = async function(navn, arg){
   }
   const hjem = await hjemUtfor(navn, arg);
   if(hjem) return hjem;
+  const skr = await skrivUtfor(navn, arg);
+  if(skr) return skr;
   const alt = await lesAltUtfor(navn, arg);
   if(alt) return alt;
   const hus = await husUtfor(navn, arg);

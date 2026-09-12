@@ -1084,6 +1084,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-data.js?v=3"></script>
 <script src="/felles-ms.js?v=1"></script>
 <script src="/felles-lesalt.js?v=1"></script>
+<script src="/felles-skriv.js?v=1"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-neam.js?v=66"></script>
@@ -7082,7 +7083,9 @@ window.neamVerktoy = async function(){
      saa like navn i samme liste er en felle, og sidens egen er den beste
      her - den ser haken som ble satt for to sekunder siden. */
   return egne.concat(HJEM_VERKTOY,
-                     lesAltVerktoy(egne.concat([{name:'les_handleliste'}])));
+                     skrivVerktoy([{name:'legg_paa_handlelista'}])  /* sidas eget legg_til_varer
+                       vinner her: bare det ser hvilken handletur brukeren har
+                       oppe, og bare det tegner lista om etterpaa */, lesAltVerktoy(egne.concat([{name:'les_handleliste'}])));
 };
 
 /* ============================================================
@@ -7562,6 +7565,8 @@ window.neamUtfor = async function(navn, arg){
      uansett hvor Neam staar. */
   const hjem = await hjemUtfor(navn, arg);
   if(hjem) return hjem;
+  const skr = await skrivUtfor(navn, arg);
+  if(skr) return skr;
   const alt = await lesAltUtfor(navn, arg);
   if(alt) return alt;
   const hus = await husUtfor(navn, arg);

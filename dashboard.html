@@ -950,6 +950,7 @@ select.hu-felt{
 <script src="/felles-ms.js?v=1"></script>
 <script src="/felles-data.js?v=3"></script>
 <script src="/felles-lesalt.js?v=1"></script>
+<script src="/felles-skriv.js?v=1"></script>
 <script src="/felles-graph.js?v=2"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
@@ -3225,12 +3226,14 @@ window.neamVerktoy = async function(){
   /* Sida eier ingen data selv, saa alt Neam kan se her kommer fra
      leselaget. Uten det sto han paa kjøkkendashen uten aa vite noe som helst
      om huset utenfor husregisteret. */
-  return HJEM_VERKTOY.concat(lesAltVerktoy(HJEM_VERKTOY), HUS_VERKTOY);
+  return HJEM_VERKTOY.concat(skrivVerktoy([]), lesAltVerktoy(HJEM_VERKTOY), HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){
   const hjem = await hjemUtfor(navn, arg);
   if(hjem) return hjem;
+  const skr = await skrivUtfor(navn, arg);
+  if(skr) return skr;
   const alt = await lesAltUtfor(navn, arg);
   if(alt) return alt;
   const hus = await husUtfor(navn, arg);
