@@ -1959,25 +1959,15 @@ function nullstillLokalt(){
   render();
 }
 
-/* «Logg ut» betyr det samme her som paa de andre sidene: helt ut.
-   To sesjoner maa avsluttes — Microsoft-kontoen og Cloudflare Access.
-   Vi kan ikke sende Microsoft rett til /cdn-cgi/access/logout, for den
-   URL-en maa vaere registrert i Azure. I stedet returnerer vi til vaar
-   egen side, som allerede er registrert, og tar Access-utloggingen der. */
-function loggUt(){
-  /* Oekta paa tjeneren maa glemmes ogsaa - ellers ville neste person
-     paa samme maskin arvet den. Vi venter ikke paa svaret; utloggingen
-     skal ikke kunne henge fordi et kall er tregt. */
-  try{ fetch('/api/ms', {method:'POST', headers:{'Content-Type':'application/json'},
-                         body: JSON.stringify({hva:'ut'})}); }catch(e){}
-  nullstillLokalt();
-  try{ localStorage.removeItem('fh_navn'); }catch(_){}
-  const el = $('brandNavn');
-  if(el) el.textContent = '';
-  try{ sessionStorage.setItem('fh_ut', '1'); }catch(_){}
-  location.href = 'https://login.microsoftonline.com/common/oauth2/v2.0/logout?post_logout_redirect_uri=' +
-    encodeURIComponent(location.origin + location.pathname);
-}
+/* «Logg ut» laa her til 13. september 2026, men ingen knapp kalte den -
+   den var doed kode. Den er fjernet fordi forsiden naa eier baade
+   innloggingen og utloggingen: oekta lagres paa personen, og to steder
+   aa logge ut fra er to steder som maa holdes like.
+
+   nullstillLokalt() blir staaende. Den brukes fortsatt naar et token gaar
+   ut midt i en henting - se feilhaandteringen lenger nede - og rydder da
+   bare vaar egen tilstand uten aa kaste noen ut av Access. */
+
 /* ---------- Fullskjerm: skjul topplinje, sidepanel og bunn ---------- */
 function settFull(på){
   const shell = document.querySelector('.shell');

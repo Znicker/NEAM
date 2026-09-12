@@ -181,12 +181,27 @@ async function lesAltUtfor(navn, arg){
           gjenstaar: items.filter(function(v){ return v.oktId === o.id && !v.done; }).length,
           /* Et tak, ikke en mening om hva som er viktig: en lang liste
              fyller hele svaret og skyver ut alt annet Neam har lest. */
+          /* Feltnavnene er handlelistas egne, og de er ikke de opplagte:
+             varen heter `name`, mengden ligger delt i `count`, `amt` og
+             `unit` med `qty` som ferdig tekst, og varetypen heter `cat`.
+             Foerste utgave herfra leste `vare`, `mengde` og `type` - de
+             finnes ikke, og hver rad kom tom tilbake. Mengden settes
+             sammen slik sida selv gjoer det: «2 × 1,5 l», ellers «3 stk». */
           varer: varer.slice(0, 80).map(function(v){
+            const c = v.count ? String(v.count).trim() : '';
+            const a = v.amt ? String(v.amt).trim() : '';
+            const u = v.unit ? String(v.unit).trim() : '';
+            const maal = a ? (a + (u ? ' ' + u : '')).trim() : '';
+            const mengde = (c && maal) ? (c + ' × ' + maal)
+                         : c ? (c + ' stk')
+                         : maal ? maal
+                         : (v.qty || '');
             return {
-              vare: v.vare,
-              mengde: [v.antall, v.mengde].filter(Boolean).join(' x ') || null,
-              type: v.type || null,
-              butikk: v.butikk || null,
+              vare: v.name,
+              mengde: mengde || null,
+              type: v.cat || null,
+              butikk: v.store || null,
+              notat: v.notes || null,
               kjopt: !!v.done
             };
           }),
@@ -202,15 +217,19 @@ async function lesAltUtfor(navn, arg){
     const alle = Array.isArray(raa) ? raa : [];
     const sok = String(arg.sok || '').trim().toLowerCase();
 
+    /* INDEKSEN HAR IKKE INGREDIENSENE. Den er med vilje liten - navn,
+       tid, kategorier og et bittelite bilde - saa oppskriftsappen aapner
+       raskt med mange retter. Soeket her gaar derfor paa NAVN og
+       KATEGORI, ikke paa innhold.
+
+       Foerste utgave lette ogsaa i `tags` og `ingredients`. Ingen av dem
+       finnes: kategoriene heter `categories`, og ingrediensene ligger
+       bare i den enkelte oppskriften. Soek paa «kylling» ga null treff
+       selv med en kyllingrett i boka. */
     const treff = alle.filter(function(r){
       if(!sok) return true;
-      const felt = [r.title, r.name, r.navn].filter(Boolean).join(' ')
-                 + ' ' + (Array.isArray(r.tags) ? r.tags.join(' ') : '')
-                 + ' ' + (Array.isArray(r.ingredients)
-                            ? r.ingredients.map(function(i){
-                                return typeof i === 'string' ? i : (i && (i.name || i.vare) || '');
-                              }).join(' ')
-                            : '');
+      const felt = String(r.title || '') + ' '
+                 + (Array.isArray(r.categories) ? r.categories.join(' ') : '');
       return felt.toLowerCase().indexOf(sok) !== -1;
     });
 
@@ -220,13 +239,16 @@ async function lesAltUtfor(navn, arg){
       oppskrifter: treff.slice(0, 60).map(function(r){
         return {
           id: r.id,
-          navn: r.title || r.name || r.navn || '(uten navn)',
-          tid: r.time || r.tid || null,
-          porsjoner: r.servings || r.porsjoner || null,
-          merkelapper: Array.isArray(r.tags) ? r.tags : []
+          navn: r.title || '(uten navn)',
+          tid: r.time || null,
+          kategorier: Array.isArray(r.categories) ? r.categories : []
         };
       }),
-      avkortet: treff.length > 60
+      avkortet: treff.length > 60,
+      merknad: sok
+        ? 'Søket gjelder navn og kategori. Ingrediensene står bare i den '
+          + 'enkelte oppskriften - hent den med hent_oppskrift for å se dem.'
+        : undefined
     };
   }
 
@@ -237,18 +259,24 @@ async function lesAltUtfor(navn, arg){
     if(!r) throw new Error('Fant ingen oppskrift med id «' + id + '». Bruk les_oppskrifter.');
     return {
       id: r.id || id,
-      navn: r.title || r.name || r.navn || '(uten navn)',
-      tid: r.time || r.tid || null,
-      porsjoner: r.servings || r.porsjoner || null,
-      merkelapper: Array.isArray(r.tags) ? r.tags : [],
+      navn: r.title || '(uten navn)',
+      tid: r.time || null,
+      /* `baseServings`, ikke `servings` - og den kan vaere null naar
+         oppskriften ikke sier noe om porsjoner. */
+      porsjoner: (typeof r.baseServings === 'number' && r.baseServings > 0)
+        ? r.baseServings : null,
+      kategorier: Array.isArray(r.categories) ? r.categories : [],
+      /* Mengden ligger enten som TALL i `amount` eller som tekst i
+         `amountText` - «1/2» og «en klype» taaler ikke aa vaere tall. */
       ingredienser: Array.isArray(r.ingredients) ? r.ingredients.map(function(i){
         if(typeof i === 'string') return i;
         if(!i) return '';
-        return [i.amount || i.mengde, i.unit || i.enhet, i.name || i.vare]
-          .filter(Boolean).join(' ');
+        const m = (i.amount !== null && i.amount !== undefined && i.amount !== '')
+          ? String(i.amount) : String(i.amountText || '');
+        return [m, i.unit, i.name].filter(Boolean).join(' ').trim();
       }).filter(Boolean) : [],
       framgangsmate: Array.isArray(r.steps) ? r.steps.map(function(s){
-        return typeof s === 'string' ? s : String((s && (s.text || s.tekst)) || '');
+        return typeof s === 'string' ? s : String((s && s.text) || '');
       }).filter(Boolean) : [],
       tips: Array.isArray(r.tips) ? r.tips.map(function(t){
         return typeof t === 'string' ? t : String((t && t.text) || '');
