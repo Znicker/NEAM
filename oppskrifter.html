@@ -1000,15 +1000,23 @@
     font-size:var(--t-brod); font-weight:700; line-height:16px; text-align:center;
   }
     /* Ligger i forhold til knapperaden, så den følger med når raden fester seg */
+  /* Ukevelgeren sier hvilken uke man legger retter i. Den var en blek
+     pille i papirfarge og forsvant i bakgrunnen - naa staar den i
+     aksentfarge, saa det er tydelig at det er en innstilling som gjelder
+     alt man gjoer i kalendermodus. */
   .plan-week-line{
     position:absolute; left:50%; transform:translateX(-50%); bottom:calc(100% + 10px);
     display:flex; align-items:center; gap:2px;
-    background:var(--paper); border:1px solid var(--line); border-radius:999px;
-    padding:2px 4px; box-shadow:0 4px 12px rgba(0,0,0,0.15);
-    font-family:'IBM Plex Mono',monospace; font-size:var(--t-meta); color:var(--ink);
+    background:var(--aksent); border:1px solid var(--aksent-moerk); border-radius:999px;
+    padding:3px 5px; box-shadow:0 4px 14px rgba(44,62,80,.22);
+    font-family:'Archivo',sans-serif; font-size:var(--t-brod); font-weight:700; color:#FFFFFF;
   }
-  .plan-week-line button{ background:none; border:none; color:var(--ink); font-size:var(--t-brod); line-height:1; padding:3px 8px; }
-  .plan-week-line span{ min-width:66px; text-align:center; }
+  .plan-week-line button{
+    background:rgba(255,255,255,.18); border:none; color:#FFFFFF;
+    font-size:var(--t-stor); line-height:1; padding:4px 11px; border-radius:999px;
+  }
+  .plan-week-line button:active{ background:rgba(255,255,255,.34); }
+  .plan-week-line span{ min-width:74px; text-align:center; letter-spacing:.02em; }
   /* Bare uke-linja følger menymodus. Knappene står alltid. */
   .bottom-bar:not(.open) .plan-week-line{ display:none; }
   /* Pluss/minus og de blå dagmerkene står samlet oppe til venstre på kortet */
@@ -1047,9 +1055,13 @@
     font-family:'Archivo',sans-serif;
     font-size:var(--t-meta); color:var(--ink-soft); font-weight:600;
   }
+  /* Groent, ikke blaatt: knappen LEGGER TIL noe, og groent er husets
+     farge for det. Blaatt betyr «alt annet» og sa ingenting her.
+     Minus-utgaven er roed, som alt annet som fjerner. */
   .plan-badge{
     width:26px; height:26px; border-radius:50%; flex-shrink:0;
-    background:var(--aksent); color:#fff; border:2px solid var(--bg-solid); font-size:var(--t-pil); font-weight:700;
+    background:var(--handling-ny); color:#fff; border:2px solid var(--bg-solid);
+    font-size:var(--t-pil); font-weight:700;
     display:flex; align-items:center; justify-content:center; line-height:1; padding:0;
   }
   .plan-badge.valgt{ background:var(--danger); }
@@ -1555,10 +1567,16 @@
   #view-home .uke-ikon{ display:none; }
   #view-home .uke-knapp .fab-tekst{ max-width:none; opacity:1; transition:none; }
 
+  /* To ting deler denne raden: «Ny oppskrift» og ukevelgeren. De hoerer
+     ikke sammen - den ene skaper noe, den andre er en innstilling - saa
+     de faar hver sin linje. Ukevelgeren oeverst, fordi den gjelder alt
+     man gjoer nedenfor. */
   #view-home .bottom-bar{
-    display:flex; position:relative; inset:auto; padding:0;
+    display:flex; flex-wrap:wrap; position:relative; inset:auto; padding:0;
     justify-content:stretch; margin-top:0;
   }
+  #view-home .plan-week-line{ order:-1; }
+  #view-home .fab-pill{ width:100%; justify-content:center; }
   #view-home .fab-pill{
     background:none; border:none; border-radius:0; padding:0; width:100%;
   }
@@ -1593,7 +1611,13 @@
   /* Plusstegnet ga knappen en tredje venstrekant. Teksten sier det selv. */
   #view-home .ny-plus{ display:none; }
   #view-home .plan-fab-plus{ right:auto; bottom:auto; left:26px; top:22px; }
-  #view-home .plan-week-line{ left:0; transform:none; }
+  /* I venstrespalten er bottom-bar statisk, og en absolutt plassert
+     ukevelger landet OPPAA «Legg i ukemeny». Her flyter den med i
+     stabelen i stedet, rett under knappeboksen den hoerer til. */
+  #view-home .plan-week-line{
+    position:static; transform:none; left:auto; bottom:auto;
+    width:100%; justify-content:space-between; margin-bottom:10px;
+  }
 
   /* Ingen fast knapperad aa rulle klar av lenger. */
   body:has(#view-home.active){ padding-bottom:32px; }
