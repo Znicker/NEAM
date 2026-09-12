@@ -818,10 +818,40 @@ function ruterFor(ord){
   return RUTER_FAST > 0 ? RUTER_FAST : String(ord).length + EKSTRA_RUTER;
 }
 
+/* ------------------------------------------------------------
+   Tegn som ikke kan skilles i en rute
+   ------------------------------------------------------------
+   En rute har ingen skrivelinje. Store og smaa bokstaver er
+   derfor allerede likestilt - men to tegn er verre enn som saa:
+   stor I og liten l er NOEYAKTIG samme strek, og med blandet
+   skrift traff forvekslingen nesten annethvert ord.
+
+   Derfor slaas de sammen til én klasse: i, I, l, L, ettall og
+   loddrett strek teller som samme tegn. Det samme gjelder stor O
+   og null.
+
+   PRISEN er at «vil» og «vii» ikke skilles. Den er betalt med
+   vitende og vilje: bildet inneholder ikke informasjonen som
+   trengs for aa skille dem, saa alternativet er ikke strengere
+   retting - det er tilfeldig retting. Et barn som kan ordet
+   skriver uansett riktig bokstav; det er maskinen som ikke kan
+   se hvilken det var.
+
+   Skal det skilles en dag, maa arket gi streken noe aa maales
+   mot - en svak linje i ruta, eller ruter med ulik hoeyde. Det
+   er en arkendring, ikke en kodeendring.
+   ------------------------------------------------------------ */
+const SAMME_TEGN = { 'l':'i', '1':'i', '|':'i', '!':'i', '0':'o' };
+
+function tegnKlasse(t){
+  const s = String(t || '').trim().toLowerCase();
+  return SAMME_TEGN[s] || s;
+}
+
 /* Tegnene sammenlignes uten forskjell paa store og smaa bokstaver: et
    barn som skriver SOL har ikke skrevet feil. */
 function likTegn(a, b){
-  return String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
+  return tegnKlasse(a) === tegnKlasse(b);
 }
 
 function tegnOrdliste(){
@@ -1402,10 +1432,15 @@ async function lesArk(dataUrl, antall){
         + 'og inne i en rute finnes det ingen skrivelinje å måle høyden mot. Kan du '
         + 'ikke se forskjell, velger du bare én av dem. Det blir aldri regnet som '
         + 'feil, og det er ALDRI en grunn til å merke ruta som usikker.\n'
-        + '- Bruk usikre-lista bare når du ikke vet HVILKEN BOKSTAV det er – for '
-        + 'eksempel når streken kan være både en l, en stor I og et ettall. Er du '
-        + 'bare litt i tvil, oppgir du tegnet uten å merke det. Hver rute som merkes '
-        + 'må et barn svare på etterpå, så listen skal være kort.\n'
+        + '- LODDRETTE STREKER SKAL IKKE MERKES USIKRE. En strek uten prikk kan '
+        + 'være både en l og en stor I, og det er umulig å avgjøre i en rute. '
+        + 'Rapporter den som l og gå videre – de regnes som samme tegn her. Har '
+        + 'streken en prikk over seg, er det en i.\n'
+        + '- Bruk usikre-lista bare når du ikke vet hvilken bokstav det er i det '
+        + 'hele tatt – når skriften er så utydelig at den kan være hva som helst. '
+        + 'Er du bare litt i tvil, oppgir du tegnet uten å merke det. Hver rute som '
+        + 'merkes må et barn svare på etterpå, så listen skal være kort. På et ark '
+        + 'med tydelig barneskrift skal den som regel være tom.\n'
         + '- Merker du en rute som usikker, oppgir du likevel det du tror står der.\n'
         + '- Sett ikke sammen ord, og gjett deg ikke til et ord som gir mening. '
         + 'Rapporter det som faktisk står i ruta.\n\n'
