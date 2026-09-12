@@ -2707,11 +2707,182 @@ window.neamBakgrunn = async function(){
 
    HUS_VERKTOY staar sist i lista naar sida ogsaa har egne, saa et
    sidenavn vinner ved en navnekollisjon. */
+/* ============================================================
+   Neam legger inn oppskrifter
+   ------------------------------------------------------------
+   Man limer en liste inn i samtalen - flere oppskrifter om gangen -
+   og Neam legger dem fram som forslag med avkryssing per rad. Det
+   som hukes av, lagres.
+
+   HAN SKAL IKKE DIKTE. Beskrivelsen sier det rett ut, og grunnen er
+   at en oppskrift han har gjettet paa ser noeyaktig like riktig ut
+   som en du har gitt ham - og du oppdager forskjellen foerst naar
+   maten smaker feil. Mangler en mengde, skal den staa tom.
+
+   INGEN BILDER. Neam kan ikke lage dem, og et bilde han fant et
+   sted er en annen rett enn din.
+   ============================================================ */
+/* FUNKSJON, IKKE KONSTANT. Definisjonen leser CATEGORY_LIST, som er
+   deklarert LENGER NED i fila. En const som leses før deklarasjonen er
+   utført, kaster og tar ned HELE skriptet - da virker ingenting på sida,
+   og feilmeldingen peker på et sted som ser uskyldig ut. Samme felle som
+   `antattGrunn()` på Andrea dash.
+
+   Som funksjon leses lista først når Neam spør, og da er alt på plass. */
+function neamOppskriftVerktoy(){ return {
+  name: 'legg_inn_oppskrifter',
+  description:
+    'Legger inn én eller flere oppskrifter i oppskriftsboka. Brukes når '
+    + 'brukeren gir deg oppskrifter i meldingen sin - for eksempel en liste '
+    + 'med krydderblandinger eller en oppskrift han har skrevet av.\n\n'
+    + 'VIKTIG: bruk BARE det brukeren faktisk har gitt deg. Ikke fyll inn '
+    + 'mengder, ingredienser eller framgangsmåte du ikke har fått. Mangler '
+    + 'en mengde, la den stå tom. Skal du foreslå noe selv, spør først i '
+    + 'stedet for å legge det inn.\n\n'
+    + 'Kategorier må være blant: ' + CATEGORY_LIST.join(', ') + '. '
+    + 'En krydderblanding hører til «Krydderblandinger».',
+  neamSkriver: true,
+  neamBeskriv: function(a){
+    const n = (a && a.oppskrifter || []).length;
+    return n === 1
+      ? 'Legger inn oppskriften «' + ((a.oppskrifter[0] || {}).tittel || '') + '».'
+      : 'Legger inn ' + n + ' oppskrifter.';
+  },
+  /* Flere forslag under ett, med avkryssing per rad. Da slipper man
+     å svare ja ti ganger for ti krydderblandinger. */
+  neamTabell: function(a){
+    return (a && a.oppskrifter || []).map(function(o){
+      const ing = (o.ingredienser || []).length;
+      return {
+        tittel: o.tittel || '(uten navn)',
+        under: (o.kategorier || []).join(', ')
+             + (ing ? ' · ' + ing + ' ingrediens' + (ing > 1 ? 'er' : '') : ' · ingen ingredienser')
+      };
+    });
+  },
+  input_schema: {
+    type: 'object',
+    properties: {
+      oppskrifter: {
+        type: 'array',
+        description: 'Oppskriftene som skal legges inn.',
+        items: {
+          type: 'object',
+          properties: {
+            tittel: { type: 'string' },
+            kategorier: {
+              type: 'array', items: { type: 'string' },
+              description: 'Minst én. Må være fra den faste lista.'
+            },
+            porsjoner: { type: 'number', description: 'Utelates om det ikke er oppgitt.' },
+            tid: { type: 'string', description: 'For eksempel «20 minutter». Utelates om ukjent.' },
+            ingredienser: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  mengde: { type: 'number', description: 'Tall. Utelates om mengden er en tekst.' },
+                  mengdetekst: { type: 'string', description: 'For eksempel «1 klype» eller «etter smak».' },
+                  enhet: { type: 'string', description: 'ts, ss, g, dl …' },
+                  navn: { type: 'string' }
+                },
+                required: ['navn']
+              }
+            },
+            fremgangsmate: {
+              type: 'array', items: { type: 'string' },
+              description: 'Ett steg per element. Utelates for krydderblandinger.'
+            },
+            notat: { type: 'string', description: 'Kommentar fra brukeren, for eksempel hva den passer til.' }
+          },
+          required: ['tittel', 'kategorier']
+        }
+      }
+    },
+    required: ['oppskrifter']
+  }
+}; }
+
+/* Bygger og lagrer én oppskrift. Samme form som saveRecipe() lager -
+   se den for feltene. Ingen bilder, og derfor ingen komprimering:
+   en tekstoppskrift kommer aldri i naerheten av taket paa 5 MB. */
+async function neamLagreOppskrift(o){
+  const tittel = String(o.tittel || '').trim();
+  if(!tittel) throw new Error('Oppskriften mangler navn.');
+
+  /* Bare kategorier huset kjenner. En ukjent kategori ville blitt
+     usynlig i filteret og oppskriften umulig å finne igjen. */
+  const kat = (o.kategorier || [])
+    .map(c => CATEGORY_LIST.find(k => k.toLowerCase() === String(c).trim().toLowerCase()))
+    .filter(Boolean);
+  if(!kat.length) throw new Error('«' + tittel + '» mangler en gyldig kategori.');
+
+  const ingredients = (o.ingredienser || []).map(i => {
+    const tall = (typeof i.mengde === 'number' && !isNaN(i.mengde)) ? i.mengde : null;
+    return {
+      amount: tall,
+      amountText: tall === null ? String(i.mengdetekst || '').trim() : '',
+      unit: String(i.enhet || '').trim(),
+      name: String(i.navn || '').trim(),
+      allergens: [],
+      nutrition: null,
+      section: ''
+    };
+  }).filter(i => i.name);
+
+  const steps = (o.fremgangsmate || [])
+    .map(t => String(t || '').trim()).filter(Boolean)
+    .map(t => ({ text: t, photo: null, section: '' }));
+
+  const recipe = {
+    id: 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    title: tittel,
+    photo: null,
+    baseServings: (typeof o.porsjoner === 'number' && o.porsjoner > 0) ? o.porsjoner : null,
+    time: String(o.tid || '').trim(),
+    ingredients,
+    steps,
+    /* Notatet legges som et tips, ikke i framgangsmaaten. «God til pasta»
+       er ikke et steg man utfoerer. */
+    tips: String(o.notat || '').trim() ? [{ text: String(o.notat).trim() }] : [],
+    tastings: [],
+    chefComments: [],
+    categories: kat,
+    nutrition: null,
+    createdAt: Date.now()
+  };
+
+  await persistFullRecipe(recipe);
+  recipes.push({
+    id: recipe.id, title: recipe.title, time: recipe.time, thumb: null,
+    createdAt: recipe.createdAt, rating: 0, ratingCount: 0,
+    categories: recipe.categories
+  });
+  return recipe;
+}
+
 window.neamVerktoy = async function(){
-  return HUS_VERKTOY.slice();
+  return [neamOppskriftVerktoy()].concat(HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){
+  if(navn === 'legg_inn_oppskrifter'){
+    const liste = (arg && arg.oppskrifter) || [];
+    if(!liste.length) return { lagt_inn: 0, melding: 'Ingen oppskrifter å legge inn.' };
+
+    const inn = [], ut = [];
+    for(const o of liste){
+      try{ const r = await neamLagreOppskrift(o); inn.push(r.title); }
+      catch(e){ ut.push((o && o.tittel ? o.tittel : '(uten navn)') + ': ' + e.message); }
+    }
+    /* Indeksen skrives ÉN gang til slutt, ikke per oppskrift: ti
+       oppskrifter ville ellers gitt ti skrivinger av hele lista. */
+    if(inn.length){
+      await persistRecipeIndex();
+      renderHome();
+    }
+    return { lagt_inn: inn.length, navn: inn, feilet: ut };
+  }
   const hus = await husUtfor(navn, arg);
   if(hus) return hus.svar;
   throw new Error('Ukjent verkt\u00f8y: ' + navn);
