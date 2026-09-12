@@ -7084,7 +7084,9 @@ window.neamVerktoy = async function(){
      saa like navn i samme liste er en felle, og sidens egen er den beste
      her - den ser haken som ble satt for to sekunder siden. */
   return egne.concat(HJEM_VERKTOY,
-                     skrivVerktoy([{name:'legg_paa_handlelista'}])  /* sidas eget legg_til_varer
+                     skrivVerktoy([{name:'legg_paa_handlelista'},{name:'fjern_fra_handlelista'},
+                                   {name:'endre_vare_paa_handlelista'},{name:'ny_handletur'},
+                                   {name:'start_handletur'},{name:'avslutt_handletur'}])  /* sidas eget legg_til_varer
                        vinner her: bare det ser hvilken handletur brukeren har
                        oppe, og bare det tegner lista om etterpaa */, lesAltVerktoy(egne.concat([{name:'les_handleliste'}])));
 };

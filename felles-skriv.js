@@ -57,6 +57,105 @@ function skrivUke(d){
   return Math.ceil(((t - nyttaar) / 86400000 + 1) / 7);
 }
 
+
+/* ------------------------------------------------------------
+   Felles for handlelista
+   ------------------------------------------------------------ */
+
+/* Handleturen bak et navn, eller den nyeste i omraadet. Samme regel som
+   sikreAktivOkt() i sida: den navngitte, ellers den nyeste, ellers en ny.
+   `lagNy` styrer om vi har lov til aa lage en. */
+function skrivFinnOkt(d, arg, lagNy){
+  const omr = arg.omrade === 'annet' ? 'annet' : 'mat';
+  const sok = String(arg.handletur || '').trim().toLowerCase();
+  if(sok){
+    const t = d.okter.filter(function(o){
+      return String(o.navn || '').trim().toLowerCase() === sok;
+    })[0] || d.okter.filter(function(o){
+      return String(o.navn || '').trim().toLowerCase().indexOf(sok) !== -1;
+    })[0];
+    if(!t) throw new Error('Fant ingen handletur som heter «' + arg.handletur
+                         + '». Bruk les_handleliste for navnene.');
+    return t;
+  }
+  const iOmr = d.okter.filter(function(o){ return (o.omrade || 'mat') === omr; })
+                      .sort(function(a, b){ return (a.opprettet || 0) - (b.opprettet || 0); });
+  /* Den nyeste som IKKE er avsluttet. En avsluttet handletur er historie,
+     og nye varer hoerer ikke hjemme der. */
+  const aapne = iOmr.filter(function(o){ return !skrivErAvsluttet(o); });
+  if(aapne.length) return aapne[aapne.length - 1];
+  if(!lagNy){
+    throw new Error('Det finnes ingen åpen handletur i ' + (omr === 'annet'
+      ? 'Andre varer' : 'Dagligvarer') + '. Lag en med ny_handletur.');
+  }
+  const okt = { id: skrivId('o'), navn: 'Uke ' + skrivUke(new Date()),
+                omrade: omr, startet: false, startTid: null, opprettet: Date.now() };
+  d.okter.push(okt);
+  return okt;
+}
+
+function skrivErAvsluttet(o){
+  return !!(o && o.avsluttet && !o.startet);
+}
+
+/* Varene i en handletur som ikke er huket av. */
+function skrivIgjen(d, okt){
+  return d.items.filter(function(v){
+    return v && v.oktId === okt.id && !v.done;
+  });
+}
+
+/* Neste aapne handletur i samme omraade - dit varene flyttes naar en
+   handel avsluttes med «flytt». Samme regel som nesteOkt() i sida. */
+function skrivNesteOkt(d, okt){
+  const liste = d.okter.filter(function(o){
+    return (o.omrade || 'mat') === (okt.omrade || 'mat');
+  }).sort(function(a, b){ return (a.opprettet || 0) - (b.opprettet || 0); });
+  const i = liste.map(function(o){ return o.id; }).indexOf(okt.id);
+  if(i === -1) return null;
+  return liste.slice(i + 1).filter(function(o){ return !skrivErAvsluttet(o); })[0] || null;
+}
+
+/* Varen bak et navn i en handletur. Ukjoepte foerst: ber man om aa fjerne
+   «melk» og den staar baade kjoept og ukjoept, er det den ukjoepte man
+   mener. */
+function skrivFinnVare(d, okt, navn){
+  const n = String(navn || '').trim().toLowerCase();
+  const iTur = d.items.filter(function(v){
+    return v && v.oktId === okt.id && String(v.name || '').trim().toLowerCase() === n;
+  });
+  return iTur.filter(function(v){ return !v.done; })[0] || iTur[0] || null;
+}
+
+/* Naar ingen handletur er oppgitt, er det ikke den NYESTE man mener - det
+   er den varen faktisk staar i.
+
+   «Nyeste aapne» er riktig regel naar noe skal LEGGES TIL: da finnes
+   varen ikke ennaa, og den skal dit man handler neste gang. Men for aa
+   fjerne eller endre er den feil, og maalt feil: melk laa i Uke 38 mens
+   Uke 39 var nyest, og «huk av melk» fant ingenting.
+
+   Vi leter derfor gjennom de aapne turene i omraadet, nyeste foerst, og
+   tar den foerste som har varen. Er handleturen oppgitt, gjelder bare
+   den - da har brukeren sagt hvilken han mener. */
+function skrivFinnVareBredt(d, arg, navn){
+  if(String(arg.handletur || '').trim()){
+    const okt = skrivFinnOkt(d, arg, false);
+    return { okt: okt, vare: skrivFinnVare(d, okt, navn) };
+  }
+  const omr = arg.omrade === 'annet' ? 'annet' : 'mat';
+  const aapne = d.okter.filter(function(o){
+      return (o.omrade || 'mat') === omr && !skrivErAvsluttet(o);
+    }).sort(function(a, b){ return (b.opprettet || 0) - (a.opprettet || 0); });
+  for(const o of aapne){
+    const v = skrivFinnVare(d, o, navn);
+    if(v) return { okt: o, vare: v };
+  }
+  /* Ikke funnet noe sted. Da svarer vi med den nyeste aapne likevel, saa
+     feilmeldingen kan si HVOR vi lette. */
+  return { okt: aapne[0] || skrivFinnOkt(d, arg, false), vare: null };
+}
+
 /* ------------------------------------------------------------
    Verktøyene
    ------------------------------------------------------------ */
@@ -109,6 +208,135 @@ const SKRIV_VERKTOY = [
       return 'Legge på handlelista'
            + (arg.handletur ? ' (' + arg.handletur + ')' : '')
            + (arg.omrade === 'annet' ? ' under Andre varer' : '') + ':\n\n' + liste;
+    }
+  },
+  {
+    name: 'fjern_fra_handlelista',
+    description: 'Fjerner varer fra handlelista. Send alle i ett kall. Varer som ikke '
+               + 'finnes blir rapportert tilbake, ikke behandlet som en feil.\n\n'
+               + 'Er varen KJØPT og skal bare ut av veien, hører den hjemme der - en '
+               + 'avsluttet handletur er kvitteringen. Fjern bare når brukeren har bedt '
+               + 'om akkurat det.',
+    input_schema: {
+      type:'object',
+      properties:{
+        varer: { type:'array', items:{ type:'string' },
+                 description:'Varenavnene slik de står på lista.' },
+        omrade: { type:'string', enum:['mat','annet'] },
+        handletur: { type:'string', description:'Utelat for den nyeste åpne.' }
+      },
+      required:['varer']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      return 'Fjerne fra handlelista'
+           + (arg.handletur ? ' (' + arg.handletur + ')' : '') + ':\n\n'
+           + (arg.varer || []).map(function(v){ return '· ' + v; }).join('\n');
+    }
+  },
+  {
+    name: 'endre_vare_paa_handlelista',
+    description: 'Endrer ÉN vare som står på lista - mengde, varetype, butikk, eller om '
+               + 'den er huket av som kjøpt. Bare feltene du sender blir rørt.\n\n'
+               + 'BRUK DENNE i stedet for å fjerne og legge til på nytt: da beholder '
+               + 'varen plassen sin.',
+    input_schema: {
+      type:'object',
+      properties:{
+        vare:   { type:'string', description:'Varenavnet slik det står på lista.' },
+        mengde: { type:'string', description:'«500 g», «1,5 l». Tom streng fjerner den.' },
+        antall: { type:'string', description:'Hvor mange av mengden.' },
+        type:   { type:'string', enum:SKRIV_VARETYPER },
+        butikk: { type:'string', description:'Tom streng fjerner butikken.' },
+        kjopt:  { type:'boolean', description:'true huker av, false tar haken bort.' },
+        omrade: { type:'string', enum:['mat','annet'] },
+        handletur: { type:'string', description:'Utelat for den nyeste åpne.' }
+      },
+      required:['vare']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      /* Avhuking sies for seg - det er handlingen selv, ikke et felt. */
+      const bare = Object.keys(arg).filter(function(k){
+        return ['omrade','handletur','vare'].indexOf(k) === -1;
+      });
+      if(bare.length === 1 && bare[0] === 'kjopt'){
+        return (arg.kjopt ? 'Huke av ' : 'Ta bort haken på ') + '«' + arg.vare + '».';
+      }
+      const rader = [];
+      if(arg.mengde !== undefined) rader.push('· mengde: ' + (arg.mengde || '(fjernes)'));
+      if(arg.antall !== undefined) rader.push('· antall: ' + (arg.antall || '(fjernes)'));
+      if(arg.type   !== undefined) rader.push('· varetype: ' + arg.type);
+      if(arg.butikk !== undefined) rader.push('· butikk: ' + (arg.butikk || '(fjernes)'));
+      if(arg.kjopt  !== undefined) rader.push('· kjøpt: ' + (arg.kjopt ? 'ja' : 'nei'));
+      return 'Endre «' + arg.vare + '» på handlelista'
+           + (rader.length ? ':\n\n' + rader.join('\n') : '.');
+    }
+  },
+  {
+    name: 'ny_handletur',
+    description: 'Lager en ny handletur. Uten navn får den ukenummeret. Den blir den '
+               + 'nyeste åpne, så varer som legges til etterpå havner der.',
+    input_schema: {
+      type:'object',
+      properties:{
+        navn:   { type:'string', description:'Utelat for «Uke N».' },
+        omrade: { type:'string', enum:['mat','annet'],
+                  description:'mat = Dagligvarer, annet = Andre varer. Standard er mat.' }
+      },
+      required:[]
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      return 'Lage handleturen «' + (arg.navn || 'Uke ' + skrivUke(new Date())) + '»'
+           + (arg.omrade === 'annet' ? ' under Andre varer' : ' under Dagligvarer') + '.';
+    }
+  },
+  {
+    name: 'start_handletur',
+    description: 'Setter handleturen i handlemodus - det samme som å trykke play på '
+               + 'Matlaging. Brukes når noen er på butikken.',
+    input_schema: {
+      type:'object',
+      properties:{
+        omrade: { type:'string', enum:['mat','annet'] },
+        handletur: { type:'string', description:'Utelat for den nyeste åpne.' }
+      },
+      required:[]
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      return 'Starte handleturen' + (arg.handletur ? ' «' + arg.handletur + '»' : '') + '.';
+    }
+  },
+  {
+    name: 'avslutt_handletur',
+    description: 'Avslutter en handletur. Du MÅ si hva som skjer med varene som ikke er '
+               + 'huket av - spør brukeren, ikke velg selv:\n'
+               + '  la_staa  - de blir liggende i den avsluttede turen\n'
+               + '  flytt    - de flyttes til neste åpne handletur\n'
+               + '  forkast  - de slettes\n\n'
+               + 'Les opp hva som står igjen før du spør, så brukeren vet hva valget '
+               + 'gjelder. «forkast» kan ikke angres.',
+    input_schema: {
+      type:'object',
+      properties:{
+        rester: { type:'string', enum:['la_staa','flytt','forkast'],
+                  description:'Hva som skjer med varene som ikke er kjøpt.' },
+        omrade: { type:'string', enum:['mat','annet'] },
+        handletur: { type:'string', description:'Utelat for den nyeste åpne.' }
+      },
+      required:['rester']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      const hva = arg.rester === 'flytt'
+        ? 'Varene som ikke er kjøpt flyttes til neste handletur.'
+        : arg.rester === 'forkast'
+        ? 'Varene som ikke er kjøpt SLETTES. Det kan ikke angres.'
+        : 'Varene som ikke er kjøpt blir liggende i den avsluttede turen.';
+      return 'Avslutte handleturen' + (arg.handletur ? ' «' + arg.handletur + '»' : '')
+           + '\n\n' + hva;
     }
   },
   {
@@ -261,6 +489,130 @@ async function skrivUtfor(navn, arg){
         ? 'Varene vises på Matlaging neste gang siden åpnes.'
         : 'Ingenting ble lagt til.'
     };
+  }
+
+
+  /* ---------------- Fjerne, endre, handleturer ---------------- */
+  if(navn === 'fjern_fra_handlelista' || navn === 'endre_vare_paa_handlelista'
+  || navn === 'ny_handletur' || navn === 'start_handletur'
+  || navn === 'avslutt_handletur'){
+
+    const d = await dataLes(SKRIV_HANDLELISTE) || {};
+    if(!Array.isArray(d.okter)) d.okter = [];
+    if(!Array.isArray(d.items)) d.items = [];
+
+    if(navn === 'ny_handletur'){
+      const omr = arg.omrade === 'annet' ? 'annet' : 'mat';
+      const okt = { id: skrivId('o'),
+                    navn: String(arg.navn || '').trim() || 'Uke ' + skrivUke(new Date()),
+                    omrade: omr, startet: false, startTid: null, opprettet: Date.now() };
+      d.okter.push(okt);
+      await dataSkriv(SKRIV_HANDLELISTE, d);
+      return { laget:true, handletur: okt.navn,
+               omrade: omr === 'annet' ? 'Andre varer' : 'Dagligvarer' };
+    }
+
+    if(navn === 'fjern_fra_handlelista'){
+      const navnene = (Array.isArray(arg.varer) ? arg.varer : [])
+        .map(function(v){ return String(v || '').trim(); }).filter(Boolean);
+      if(!navnene.length) throw new Error('Ingen varer å fjerne.');
+      const fjernet = [], fant_ikke = [];
+      const turer = {};
+      navnene.forEach(function(n){
+        const t = skrivFinnVareBredt(d, arg, n);
+        if(!t.vare){ fant_ikke.push(n); return; }
+        d.items = d.items.filter(function(x){ return x.id !== t.vare.id; });
+        fjernet.push(t.vare.name);
+        turer[t.okt.navn] = true;
+      });
+      if(fjernet.length) await dataSkriv(SKRIV_HANDLELISTE, d);
+      return { handleturer: Object.keys(turer), fjernet: fjernet, fant_ikke: fant_ikke };
+    }
+
+    if(navn === 'endre_vare_paa_handlelista'){
+      const t = skrivFinnVareBredt(d, arg, arg.vare);
+      const okt = t.okt;
+      const v = t.vare;
+      if(!v) throw new Error('Fant ingen vare som heter «' + arg.vare + '»'
+                           + (String(arg.handletur || '').trim()
+                              ? ' i ' + okt.navn : ' på de åpne handleturene')
+                           + '. Bruk les_handleliste.');
+      if(arg.type !== undefined){
+        if(SKRIV_VARETYPER.indexOf(arg.type) === -1){
+          throw new Error('Ukjent varetype: ' + arg.type);
+        }
+        v.cat = arg.type;
+      }
+      if(arg.butikk !== undefined) v.store = String(arg.butikk || '').trim();
+      if(arg.kjopt  !== undefined) v.done = !!arg.kjopt;
+      if(arg.antall !== undefined) v.count = String(arg.antall || '').trim();
+      if(arg.mengde !== undefined){
+        /* Samme deling som naar varen legges inn: ser den ut som et maal,
+           skilles tall og enhet; ellers blir hele strengen staaende. */
+        const m = String(arg.mengde || '').trim();
+        const delt = /^(\d+(?:[.,]\d+)?)\s*([a-zA-ZæøåÆØÅ]+)?$/.exec(m);
+        v.qty  = delt ? '' : m;
+        v.amt  = delt ? delt[1] : '';
+        v.unit = delt ? (delt[2] || '') : '';
+      }
+      await dataSkriv(SKRIV_HANDLELISTE, d);
+      return { endret:true, vare: v.name, handletur: okt.navn, kjopt: !!v.done };
+    }
+
+    /* «Avslutt handleturen» betyr den som er I GANG, ikke den nyeste.
+       Er ingen startet, faller vi tilbake paa nyeste aapne. Uten dette
+       traff «avslutt» en tom tur laget i gaar mens den man faktisk sto og
+       handlet paa ble staaende. */
+    let okt = null;
+    if(!String(arg.handletur || '').trim()){
+      const omr = arg.omrade === 'annet' ? 'annet' : 'mat';
+      okt = d.okter.filter(function(o){
+        return (o.omrade || 'mat') === omr && o.startet && !skrivErAvsluttet(o);
+      }).sort(function(a, b){ return (b.startTid || 0) - (a.startTid || 0); })[0] || null;
+    }
+    if(!okt) okt = skrivFinnOkt(d, arg, false);
+
+    if(navn === 'start_handletur'){
+      if(skrivErAvsluttet(okt)){
+        throw new Error('«' + okt.navn + '» er avsluttet. Lag en ny med ny_handletur.');
+      }
+      if(okt.startet) return { startet:false, handletur: okt.navn,
+                               beskjed:'Den var i gang fra før.' };
+      okt.startet = true;
+      okt.startTid = Date.now();
+      await dataSkriv(SKRIV_HANDLELISTE, d);
+      return { startet:true, handletur: okt.navn };
+    }
+
+    /* avslutt_handletur */
+    if(skrivErAvsluttet(okt)){
+      return { avsluttet:false, handletur: okt.navn,
+               beskjed:'Den var avsluttet fra før.' };
+    }
+    const igjen = skrivIgjen(d, okt);
+    let gjort = 'Varene som ikke var kjøpt ble liggende.';
+
+    if(arg.rester === 'flytt' && igjen.length){
+      const neste = skrivNesteOkt(d, okt);
+      if(!neste){
+        throw new Error('Det finnes ingen annen åpen handletur å flytte '
+                      + igjen.length + ' varer til. Lag en med ny_handletur først, '
+                      + 'eller velg la_staa eller forkast.');
+      }
+      igjen.forEach(function(v){ v.oktId = neste.id; });
+      gjort = igjen.length + ' varer flyttet til «' + neste.navn + '».';
+    }else if(arg.rester === 'forkast' && igjen.length){
+      const ider = {};
+      igjen.forEach(function(v){ ider[v.id] = true; });
+      d.items = d.items.filter(function(v){ return !ider[v.id]; });
+      gjort = igjen.length + ' varer ble slettet.';
+    }
+
+    okt.startet = false;
+    okt.avsluttet = Date.now();
+    await dataSkriv(SKRIV_HANDLELISTE, d);
+    return { avsluttet:true, handletur: okt.navn,
+             sto_igjen: igjen.length, gjort: gjort };
   }
 
   return null;
