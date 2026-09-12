@@ -4792,11 +4792,18 @@ window.neamBakgrunn = async function(){
       gjennom graph() og hentVindu() - de samme veiene skjermen
       selv bruker - i stedet for å finne på en ny.
 
-   2. EN SERIE KAN IKKE RØRES. Graph lar deg ikke løfte én dag ut
-      av en gjentagende avtale uten å gå veien om serien selv, og
-      et kall som prøver ender enten med å endre ALLE dagene eller
-      med en feil som ikke sier hvorfor. Kallstedet sperrer for
-      det - se serieSperre(). Skjemaet gjør det samme allerede.
+   2. EN SERIE MÅ HA ET OMFANG. Graph tar imot både PATCH og
+      DELETE på en enkelt forekomst - den første lager et unntak,
+      den andre avlyser den ene dagen - så en serie kan godt
+      røres. Det farlige er tvetydigheten: «flytt fotballtreningen
+      til 18» kan bety denne gangen eller alle. Derfor kreves
+      omfang, uten noe standardsvar - se omfangKrev().
+
+      MERK at kommentaren ved flyttAvtale() i felles-graph.js sier
+      at en enkeltdag ikke kan løftes ut av en serie. Den gjelder
+      FLYTTING mellom kalendere, som i praksis er «lag ny, slett
+      gammel», og der er den riktig. Den gjelder ikke endring og
+      sletting, og skal ikke leses som om den gjorde det.
 
    3. Kalendere vi bare har lesetilgang til er sperret på samme
       måte. Microsoft svarer med en tilgangsfeil et stykke uti,
@@ -4847,18 +4854,50 @@ function neamAvtale(id){
   return (S.all || []).find(function(e){ return e.id === id; }) || null;
 }
 
-/* Sperrene. De kastes som feil og ikke som et pent svar, fordi de betyr
-   at kallet ikke skal gjøres i det hele tatt - ikke at det gikk dårlig. */
-function serieSperre(e){
-  if(e.serie){
-    throw new Error('«' + e.title + '» er en gjentagende avtale. Én dag kan ikke '
-                  + 'endres eller slettes for seg - hele serien må åpnes i Outlook. '
-                  + 'Si dette til brukeren i stedet for å prøve noe annet.');
-  }
+/* Sperren. Kastes som feil og ikke som et pent svar, fordi den betyr at
+   kallet ikke skal gjøres i det hele tatt - ikke at det gikk dårlig.
+
+   SERIER ER IKKE SPERRET. De var det fram til 13. september 2026, og det
+   var feil: kommentaren i felles-graph.js om at en enkeltdag ikke kan
+   løftes ut av en serie står ved flyttAvtale(), og gjelder FLYTTING
+   mellom kalendere - der er den riktig, fordi flytting i praksis er «lag
+   ny, slett gammel». Graph tar imot både PATCH og DELETE på en enkelt
+   forekomst; den første lager et unntak, den andre avlyser den ene dagen.
+
+   Det som faktisk er farlig med en serie er tvetydigheten: «flytt
+   fotballtreningen» kan bety denne gangen eller alle. Derfor kreves
+   omfang - se omfangKrev(). */
+function skrivSperre(e){
   if(!e.kanEndre){
     throw new Error('Kalenderen «' + e.calName + '» er delt med oss som lesetilgang. '
                   + 'Ingenting kan endres der herfra.');
   }
+}
+
+/* Gjelder det denne gangen eller hele serien? Spørsmålet har ikke noe
+   fornuftig standardsvar: begge er vanlige, og begge er vanskelige å
+   angre. Neam må spørre brukeren, ikke gjette. */
+function omfangKrev(e, omfang){
+  if(!e.serie) return 'enkelt';
+  if(omfang !== 'denne' && omfang !== 'serien'){
+    throw new Error('«' + e.title + '» er en gjentagende avtale. Spør brukeren om det '
+                  + 'gjelder bare denne gangen eller hele serien, og send omfang '
+                  + '«denne» eller «serien». Ikke velg selv.');
+  }
+  return omfang;
+}
+
+/* Stien til det som faktisk skal endres. For hele serien må vi først
+   spørre Graph hvilken avtale som ER serien: kalendervisningen gir oss
+   forekomstene, og serien selv har en annen id. */
+async function serieSti(e, kalId, omfang){
+  if(omfang !== 'serien') return avtaleSti(kalId, e.id);
+  const d = await graph(avtaleSti(kalId, e.id) + '?$select=seriesMasterId,type');
+  const mor = d && d.seriesMasterId;
+  if(!mor){
+    throw new Error('Fant ikke serien bak «' + e.title + '». Den må åpnes i Outlook.');
+  }
+  return avtaleSti(kalId, mor);
 }
 
 const KAL_VERKTOY = [
@@ -4874,7 +4913,8 @@ const KAL_VERKTOY = [
     description: 'Avtalene i et tidsrom, på tvers av kalenderne. Henter friskt fra '
                + 'Microsoft, så den ser også det skjermen ikke har oppe. Bruk id og '
                + 'kalender_id herfra når noe skal endres eller slettes. Avtaler merket '
-               + 'serie:true er gjentagende og kan ikke røres.',
+               + 'serie:true er gjentagende - de kan endres og slettes, men da må du '
+               + 'først spørre brukeren om det gjelder denne gangen eller hele serien.',
     input_schema: {
       type:'object',
       properties:{
@@ -4922,8 +4962,10 @@ const KAL_VERKTOY = [
   {
     name: 'endre_avtale',
     description: 'Endrer en avtale som finnes. Bare feltene du sender blir rørt. '
-               + 'Sender du klokkeslett, må du sende begge. Gjentagende avtaler og '
-               + 'kalendere vi bare kan lese blir avvist.',
+               + 'Sender du klokkeslett, må du sende begge. Er avtalen gjentagende '
+               + '(serie:true), MÅ du spørre brukeren om det gjelder denne gangen '
+               + 'eller hele serien, og sende omfang. Kalendere vi bare kan lese '
+               + 'blir avvist.',
     input_schema: {
       type:'object',
       properties:{
@@ -4934,7 +4976,11 @@ const KAL_VERKTOY = [
         fra:         { type:'string', description:'Klokkeslett, 14:30.' },
         til:         { type:'string', description:'Klokkeslett, 15:30.' },
         sted:        { type:'string', description:'Tom streng fjerner stedet.' },
-        notat:       { type:'string', description:'Tom streng fjerner notatet.' }
+        notat:       { type:'string', description:'Tom streng fjerner notatet.' },
+        omfang:      { type:'string', enum:['denne','serien'],
+                       description:'Bare for gjentagende avtaler. «denne» endrer den ene '
+                                 + 'dagen og lar resten stå, «serien» endrer alle gangene. '
+                                 + 'Spør brukeren - ikke velg selv.' }
       },
       required:['id']
     },
@@ -4950,19 +4996,27 @@ const KAL_VERKTOY = [
       if(arg.til    !== undefined) rader.push('· til: ' + arg.til);
       if(arg.sted   !== undefined) rader.push('· sted: ' + (arg.sted || '(fjernes)'));
       if(arg.notat  !== undefined) rader.push('· notat: ' + (arg.notat || '(fjernes)'));
-      return 'Endre ' + hva + (rader.length ? ':\n\n' + rader.join('\n') : '.');
+      const omf = (e && e.serie)
+        ? (arg.omfang === 'serien' ? '\n\nDette gjelder ALLE gangene i serien.'
+                                   : '\n\nDette gjelder bare denne ene dagen.')
+        : '';
+      return 'Endre ' + hva + (rader.length ? ':\n\n' + rader.join('\n') : '.') + omf;
     }
   },
   {
     name: 'slett_avtale',
-    description: 'Sletter en avtale. Gjentagende avtaler og kalendere vi bare kan lese '
-               + 'blir avvist. Er du i tvil om det er riktig avtale, les den opp først '
-               + 'og la brukeren si ja.',
+    description: 'Sletter en avtale. Er avtalen gjentagende (serie:true), MÅ du spørre '
+               + 'brukeren om det gjelder denne gangen eller hele serien, og sende '
+               + 'omfang. Kalendere vi bare kan lese blir avvist. Er du i tvil om det er '
+               + 'riktig avtale, les den opp først og la brukeren si ja.',
     input_schema: {
       type:'object',
       properties:{
         id:          { type:'string', description:'Avtalens id fra les_avtaler.' },
-        kalender_id: { type:'string', description:'Kalenderens id fra les_avtaler.' }
+        kalender_id: { type:'string', description:'Kalenderens id fra les_avtaler.' },
+        omfang:      { type:'string', enum:['denne','serien'],
+                       description:'Bare for gjentagende avtaler. «denne» avlyser den ene '
+                                 + 'dagen, «serien» sletter hele serien. Spør brukeren.' }
       },
       required:['id']
     },
@@ -4972,9 +5026,16 @@ const KAL_VERKTOY = [
       if(!e) return 'Slette en avtale som ikke er lest inn (' + arg.id + ').';
       const nar = e.allDay ? dato2str(e.start) + ', hele dagen'
                            : dato2str(e.start) + ' ' + neamKlokke(e.start);
-      return 'SLETTE «' + e.title + '» i ' + e.calName + '\n\n· ' + neamDato(dato2str(e.start))
+      const hode = (e.serie && arg.omfang === 'serien')
+        ? 'SLETTE HELE SERIEN «' + e.title + '» i ' + e.calName
+        : 'SLETTE «' + e.title + '» i ' + e.calName;
+      const hale = (e.serie && arg.omfang === 'serien')
+        ? '\n\nAlle gangene forsvinner, ikke bare denne. Dette kan ikke angres.'
+        : (e.serie ? '\n\nBare denne ene dagen avlyses. Dette kan ikke angres.'
+                   : '\n\nDette kan ikke angres.');
+      return hode + '\n\n· ' + neamDato(dato2str(e.start))
            + (e.allDay ? ', hele dagen' : ' ' + neamKlokke(e.start) + '–' + neamKlokke(e.end))
-           + '\n\nDette kan ikke angres.';
+           + hale;
     }
   }
 ];
@@ -5034,7 +5095,7 @@ async function kalUtfor(navn, arg){
           sted: e.where || null,
           notat: e.note ? String(e.note).slice(0, 400) : null,
           serie: e.serie,
-          kan_endres: e.kanEndre && !e.serie
+          kan_endres: e.kanEndre
         };
       }),
       antall: ut.length,
@@ -5102,7 +5163,8 @@ async function kalUtfor(navn, arg){
     const e = neamAvtale(arg.id);
     if(!e) throw new Error('Fant ingen avtale med den id-en blant dem som er lest inn. '
                          + 'Kjør les_avtaler for tidsrommet først.');
-    serieSperre(e);
+    skrivSperre(e);
+    const omfang = omfangKrev(e, arg.omfang);
 
     const p = {};
     if(arg.tittel !== undefined){
@@ -5140,19 +5202,24 @@ async function kalUtfor(navn, arg){
 
     if(!Object.keys(p).length) throw new Error('Ingenting å endre - send minst ett felt.');
 
-    await graph(avtaleSti(arg.kalender_id || e.calId, e.id), {method:'PATCH', body:p});
+    const kalId = arg.kalender_id || e.calId;
+    await graph(await serieSti(e, kalId, omfang), {method:'PATCH', body:p});
     await refresh();
-    return { endret:true, tittel: p.subject || e.title, kalender: e.calName };
+    return { endret:true, tittel: p.subject || e.title, kalender: e.calName,
+             omfang: e.serie ? omfang : 'enkeltavtale' };
   }
 
   if(navn === 'slett_avtale'){
     const e = neamAvtale(arg.id);
     if(!e) throw new Error('Fant ingen avtale med den id-en blant dem som er lest inn. '
                          + 'Kjør les_avtaler for tidsrommet først.');
-    serieSperre(e);
-    await graph(avtaleSti(arg.kalender_id || e.calId, e.id), {method:'DELETE'});
+    skrivSperre(e);
+    const omfang = omfangKrev(e, arg.omfang);
+    const kalId = arg.kalender_id || e.calId;
+    await graph(await serieSti(e, kalId, omfang), {method:'DELETE'});
     await refresh();
-    return { slettet:true, tittel: e.title, kalender: e.calName };
+    return { slettet:true, tittel: e.title, kalender: e.calName,
+             omfang: e.serie ? omfang : 'enkeltavtale' };
   }
 
   return null;
