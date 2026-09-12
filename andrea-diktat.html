@@ -292,6 +292,22 @@ body.over .rekorder{ display:none; }
 }
 .over-knapper{ display:grid; grid-template-columns:1fr 1fr; gap:12px; width:100%; max-width:420px; }
 .over-knapper button{ min-height:64px; font-size:var(--t-stor); }
+/* Stemmevelgeren. `-webkit-appearance:none` med eksplisitt hoeyde er
+   ikke pynt: iOS gir select-felt en egen indre stoerrelse som ikke laar
+   seg styre, og feltet blir et annet enn det ser ut som i nettleseren
+   paa PC. */
+.stemmerad{
+  display:flex; align-items:center; gap:10px; margin:16px 0 0;
+  font-size:var(--t-meta); font-weight:700; color:var(--ink-soft);
+}
+.stemmerad select{
+  flex:1; min-width:0; height:44px; padding:0 12px;
+  -webkit-appearance:none; appearance:none;
+  border:1.5px solid var(--line); border-radius:12px;
+  background:#FFFFFF; color:var(--ink);
+  font-family:inherit; font-size:16px; font-weight:600;
+}
+
 .tale-av{
   margin:14px 0 0; padding:10px 14px; border-radius:12px;
   background:var(--boks-mild); font-size:var(--t-meta); font-weight:600;
@@ -602,6 +618,10 @@ body.over .rekorder{ display:none; }
           <button type="button" class="knapp-blaa" id="nesteOrd">Neste ord</button>
         </div>
       </div>
+      <p class="stemmerad" id="stemmerad" hidden>
+        <label for="stemmeValg">Stemme</label>
+        <select id="stemmeValg"></select>
+      </p>
       <p class="tale-av" id="utenSetning" hidden>Dette ordet har ingen setning, så jeg sier det
         bare to ganger.
         <button type="button" class="o-vis" id="setningerHer">Lag setninger nå</button></p>
@@ -694,8 +714,11 @@ const MODELL = 'claude-opus-5';
    klangen han skal ha, men det gjoer ogsaa konsonantene mer grumsete, og
    i en diktat er det forskjellen paa d og t som avgjoer. Karakteren maa
    vike for tydeligheten her. */
-const TALE_FART_ORD = 0.68;
-const TALE_FART_SETNING = 0.88;
+/* Ordet leses saktere enn tale flest, men ikke saa sakte at det drar.
+   Under omtrent 0,7 begynner stemmene aa trekke vokalene ut, og det
+   hoeres mindre naturlig ut - ikke tydeligere. */
+const TALE_FART_ORD = 0.78;
+const TALE_FART_SETNING = 0.92;
 const TALE_TONE = 1.0;
 /* Pausene i «ord - setning - ord». Lang nok til at hun rekker aa begynne
    aa skrive, kort nok til at hun ikke tror han er ferdig. */
@@ -1226,9 +1249,38 @@ let taleStottes = ('speechSynthesis' in window);
 /* Hva vi faktisk fant. Staar i beskjeden naar ingen norsk stemme finnes,
    saa det gaar an aa se HVA enheten har uten aa koble til en konsoll. */
 let stemmeFunn = [];
+/* De norske, i rangert rekkefoelge - det er dem hun kan velge mellom. */
+let norskeStemmer = [];
+const VALGT_STEMME = 'neam-diktat-stemme';
 
 function normLang(v){
   return String((v && v.lang) || '').replace('_', '-').toLowerCase();
+}
+
+function erNorsk(v){
+  const l = normLang(v);
+  return /^(nb|nn|no)(-|$)/.test(l)
+      || /norsk|norwegian|bokm/i.test(String(v.name || ''));
+}
+
+/* Rangering av stemmene. Plattformene legger ut flere varianter av samme
+   stemme, og den som staar foerst i lista er sjelden den beste:
+
+   - «Premium», «Enhanced», «Neural» og «Natural» er de nedlastede
+     versjonene. De hoeres vesentlig bedre ut enn standardstemmen, og paa
+     iOS maa de hentes for haand foer de dukker opp i det hele tatt.
+   - Google-stemmene i Chrome er nettbaserte og jevnt over bedre enn
+     de innebygde i Windows.
+   - «Compact» er det motsatte: den minste og mest metalliske varianten. */
+function stemmeSkaar(v){
+  const n = String((v && v.name) || '').toLowerCase();
+  let s = 0;
+  if(/premium|enhanced|neural|natural/.test(n)) s += 6;
+  if(/google/.test(n)) s += 3;
+  if(/siri/.test(n)) s += 2;
+  if(/compact/.test(n)) s -= 4;
+  if(/^nb(-|$)/.test(normLang(v))) s += 1;   /* bokmaal foer nynorsk */
+  return s;
 }
 
 function finnStemme(){
@@ -1236,15 +1288,16 @@ function finnStemme(){
   let alle = [];
   try{ alle = window.speechSynthesis.getVoices() || []; }catch(e){ alle = []; }
   stemmeFunn = alle;
-  const treff = function(test){ return alle.filter(test)[0] || null; };
-  stemme =
-       treff(function(v){ return /^nb(-|$)/.test(normLang(v)); })
-    || treff(function(v){ return /^nn(-|$)/.test(normLang(v)); })
-    || treff(function(v){ return /^no(-|$)/.test(normLang(v)); })
-    /* Navnet som siste utvei - se kommentaren over. */
-    || treff(function(v){ return /norsk|norwegian|bokm/i.test(String(v.name || '')); })
-    || treff(function(v){ return /^(nora|iselin|finn)\b/i.test(String(v.name || '')); })
-    || null;
+  norskeStemmer = alle.filter(erNorsk).sort(function(a, b){
+    return stemmeSkaar(b) - stemmeSkaar(a);
+  });
+
+  /* Et valg som er gjort skal staa, saa lenge stemmen fortsatt finnes. */
+  let valgt = null;
+  try{ valgt = localStorage.getItem(VALGT_STEMME); }catch(e){}
+  stemme = (valgt && norskeStemmer.filter(function(v){
+      return (v.voiceURI || v.name) === valgt;
+    })[0]) || norskeStemmer[0] || null;
 }
 
 /* Spoer om igjen til lista dukker opp. Ti ganger med 300 ms er tre
@@ -1324,7 +1377,11 @@ async function lesOppgave(annenSetning){
   const s = o.setninger || [];
   const setning = s.length ? (annenSetning && s[1] ? s[1] : s[0]) : '';
 
-  await les(o.ord, TALE_FART_ORD);
+  /* Punktum bak ordet. Et enkeltord uten tegn leses av de fleste stemmer
+     med spoersmaalsaktig stigning paa slutten, som om det skulle kommet
+     mer - og det er noe av det som gjoer uttalen unaturlig. Med punktum
+     faller tonen, og ordet hoeres ferdig ut. */
+  await les(o.ord + '.', TALE_FART_ORD);
   if(mitt !== taleNr) return;
   if(setning){
     await pause(PAUSE_MELLOM);
@@ -1334,7 +1391,7 @@ async function lesOppgave(annenSetning){
   }
   await pause(PAUSE_MELLOM);
   if(mitt !== taleNr) return;
-  await les(o.ord, TALE_FART_ORD);
+  await les(o.ord + '.', TALE_FART_ORD);
 }
 
 function tegnOving(){
@@ -1403,6 +1460,24 @@ function stemmeVei(){
 }
 
 function settTaleVarsel(){
+  /* Velgeren vises bare naar det FINNES noe aa velge mellom. Én stemme
+     er ikke et valg, det er en opplysning. */
+  const rad = $('stemmerad');
+  rad.hidden = norskeStemmer.length < 2;
+  if(!rad.hidden){
+    const na = stemme ? (stemme.voiceURI || stemme.name) : '';
+    const valg = $('stemmeValg');
+    const foer = valg.value;
+    valg.innerHTML = norskeStemmer.map(function(v){
+      const id = v.voiceURI || v.name;
+      return '<option value="' + esc(id) + '"' + (id === na ? ' selected' : '') + '>'
+           + esc(v.name || id) + '</option>';
+    }).join('');
+    if(foer && foer !== valg.value && norskeStemmer.some(function(v){
+      return (v.voiceURI || v.name) === foer;
+    })) valg.value = foer;
+  }
+
   const el = $('taleAv');
   if(!taleStottes){
     el.textContent = 'Denne nettleseren kan ikke lese høyt. Prøv på iPad eller iPhone, '
@@ -1442,6 +1517,19 @@ $('nesteOrd').addEventListener('click', function(){
   lesOppgave(false);
 });
 $('avsluttOv').addEventListener('click', function(){ history.back(); });
+
+/* Et bytte skal hoeres med én gang - det er hele poenget med aa kunne
+   velge. Valget huskes paa enheten, ikke i KV: stemmene finnes ikke paa
+   tvers av enheter, saa et valg gjort paa iPaden betyr ingenting paa PC. */
+$('stemmeValg').addEventListener('change', function(){
+  const id = this.value;
+  try{ localStorage.setItem(VALGT_STEMME, id); }catch(e){}
+  const ny = norskeStemmer.filter(function(v){
+    return (v.voiceURI || v.name) === id;
+  })[0];
+  if(ny) stemme = ny;
+  if(ov) lesOppgave(false);
+});
 
 /* ============================================================
    Arket
