@@ -1065,6 +1065,35 @@
     display:flex; align-items:center; justify-content:center; line-height:1; padding:0;
   }
   .plan-badge.valgt{ background:var(--danger); }
+  /* Ingrediensnavn som peker inn i en krydderblanding. Understreket og i
+     aksentfarge - det er en lenke, og den skal se ut som en. Ikke en
+     knapp: den utfoerer ingenting, den viser noe. */
+  .krydder-lenke{
+    background:none; border:none; padding:0; font:inherit; text-align:left;
+    color:var(--aksent); font-weight:600;
+    text-decoration:underline; text-decoration-style:dotted;
+    text-underline-offset:3px; cursor:pointer;
+  }
+  .krydder-lenke:active{ color:var(--aksent-moerk); }
+  .krydder-overskrift{
+    margin:0 0 2px; font-size:var(--t-etikett); font-weight:700;
+    text-transform:uppercase; letter-spacing:.1em; color:var(--ink-soft);
+  }
+  .krydder-navn{ margin:0 0 14px; font-size:var(--t-stor); font-weight:700; color:var(--ink); }
+  .krydder-tabell{ width:100%; border-collapse:collapse; margin-bottom:16px; }
+  .krydder-tabell td{
+    padding:9px 2px; border-bottom:1px solid var(--line);
+    font-size:var(--t-brod); vertical-align:baseline;
+  }
+  .krydder-tabell tr:last-child td{ border-bottom:none; }
+  .krydder-tabell td.mono{
+    text-align:right; white-space:nowrap; font-weight:700;
+    font-variant-numeric:tabular-nums; padding-left:14px;
+  }
+  .krydder-tom{ font-size:var(--t-meta); color:var(--ink-soft); margin:0 0 16px; }
+  .krydder-knapper{ display:flex; gap:8px; }
+  .krydder-knapper .btn{ flex:1; justify-content:center; }
+
   .serv-picker{
     display:flex; align-items:center; justify-content:center; gap:14px;
     background:var(--paper-soft); border-radius:12px; padding:8px; margin-bottom:14px;
@@ -2065,6 +2094,20 @@ input,select,textarea{font-size:16px}
   </div>
 </div>
 
+<!-- Innholdet i en krydderblanding, vist uten aa forlate retten man
+     staar i. Aapnes fra ingredienslista naar navnet er kjent. -->
+<div class="modal-backdrop" id="krydder-modal">
+  <div class="confirm-box" style="max-width:400px; margin:0; width:100%; text-align:left;">
+    <p class="krydder-overskrift">I blandingen</p>
+    <p class="krydder-navn" id="krydder-tittel"></p>
+    <div id="krydder-kropp"></div>
+    <div class="krydder-knapper">
+      <button type="button" class="btn btn-ghost" id="krydder-apne">Åpne oppskriften</button>
+      <button type="button" class="btn btn-ghost" onclick="closeModal('krydder')">Lukk</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="day-picker-modal">
   <div class="confirm-box" style="max-width:380px; margin:0; width:100%; text-align:left;">
     <p style="text-align:center; font-weight:700; color:var(--ink); margin:0 0 4px;" id="day-picker-title">Legg til</p>
@@ -2506,8 +2549,12 @@ async function loadRecipeIndex(){
   }catch(e){
     recipes = [];
   }
+  byggKrydderKart();
 }
 async function persistRecipeIndex(){
+  /* Kartet bygges her og ikke ved oppslag: indeksen endres sjelden, og
+     ingredienslista slaar opp mange ganger per oppskrift. */
+  byggKrydderKart();
   try{
     await storageSetWithRetry('recipe-index', JSON.stringify(recipes), false);
   }catch(e){
@@ -2732,8 +2779,18 @@ let homeMode = null; // null | 'edit' | 'delete'
    en underrad - ellers blir raden for lang til å skumme over. En oppskrift merkes
    med de spesifikke kategoriene; "Annet" er bare en samlepost i filteret. */
 const HOVEDKATEGORIER = ['Frokost', 'Lunsj', 'Middag', 'Kvelds'];
-const ANNET_KATEGORIER = ['Bakst', 'Brødbakst', 'Søtbakst', 'Snacks', 'Sauser', 'Tilbehør'];
+const ANNET_KATEGORIER = ['Bakst', 'Brødbakst', 'Søtbakst', 'Snacks', 'Sauser',
+                          'Krydderblandinger', 'Tilbehør'];
 const CATEGORY_LIST = HOVEDKATEGORIER.concat(ANNET_KATEGORIER);
+
+/* Disse er BYGGEKLOSSER, ikke måltider. En krydderblanding eller en saus
+   er noe man lager for å bruke i noe annet, og den hører ikke hjemme
+   mellom middagene når man blar etter noe å lage.
+
+   De vises derfor bare når man ber om dem - motsatt av alle andre
+   kategorier, der ingen avkryssing betyr «vis alt». Det er en av de få
+   stedene i huset der en tom liste IKKE betyr «alt». */
+const SKJULTE_KATEGORIER = ['Sauser', 'Krydderblandinger'];
 let annetApen = false;
 let categoryFilterSelected = new Set();
 let sortMode = 'rating-desc';
@@ -3196,6 +3253,67 @@ function recipePassesRatingFilter(indexEntry){
   return count > 0 && Math.round(avg) >= ratingFilterMin;
 }
 
+/* ============================================================
+   Krydderblandinger
+   ------------------------------------------------------------
+   En krydderblanding er en helt vanlig oppskrift med kategorien
+   «Krydderblandinger». Det som skiller den, er at NAVNET dens kan
+   dukke opp som en ingrediens i en annen oppskrift - «taco-krydder,
+   2 ss» - og da skal man kunne se hva som er i den uten å forlate
+   retten man står i.
+
+   Gjenkjenningen er på navn, og den er med vilje streng: bare
+   nøyaktig samme navn teller, bortsett fra store/små bokstaver og
+   luft rundt. Et løsere oppslag ville koblet «krydder» til alt.
+   ============================================================ */
+function krydderNokkel(navn){
+  /* All luft og alle bindestreker bort: «Tacokrydder», «taco-krydder» og
+     «TACO KRYDDER» er samme blanding, og folk skriver det på alle tre
+     måter. Vi krever fortsatt at HELE navnet stemmer - «krydder» alene
+     treffer ingenting - så sammenslåingen gir ikke falske treff. */
+  return String(navn || '').toLowerCase().replace(/[^a-z0-9æøå]/g, '');
+}
+
+/* navn -> oppskrifts-id. Bygges av indeksen, som allerede ligger i
+   minnet, saa oppslaget koster ingenting per ingrediens. */
+let krydderKart = {};
+function byggKrydderKart(){
+  krydderKart = {};
+  recipes.forEach(r => {
+    if(!(r.categories || []).includes('Krydderblandinger')) return;
+    const k = krydderNokkel(r.title);
+    if(k) krydderKart[k] = r.id;
+  });
+}
+function krydderIdFor(navn){
+  return krydderKart[krydderNokkel(navn)] || null;
+}
+
+/* Viser innholdet i en blanding uten aa forlate retten man staar i. */
+async function visKrydderblanding(id){
+  const r = recipes.find(x => x.id === id);
+  const full = await loadFullRecipe(id);
+  const navn = (full && full.title) || (r && r.title) || 'Krydderblanding';
+  const rader = (full && Array.isArray(full.ingredients) ? full.ingredients : [])
+    .filter(i => (i.name || '').trim());
+
+  const kropp = rader.length
+    ? `<table class="krydder-tabell">` + rader.map(i => `
+        <tr><td>${escapeHtml(i.name)}</td>
+            <td class="mono">${escapeHtml(scaledAmountLabel(i, 1))}</td></tr>`).join('')
+      + `</table>`
+    : `<p class="krydder-tom">Ingen ingredienser lagt inn ennå.</p>`;
+
+  $('krydder-tittel').textContent = navn;
+  $('krydder-kropp').innerHTML = kropp;
+  /* Knappen gaar til selve oppskriften, for den som vil endre noe. */
+  $('krydder-apne').onclick = function(){
+    closeModal('krydder');
+    openRecipe(id);
+  };
+  openModal('krydder');
+}
+
 /* ---- Kategori (klassifisering) ---- */
 function renderCategoryFilterRow(){
   const wrap = $('category-filter-row');
@@ -3221,8 +3339,15 @@ function toggleCategoryFilter(cat){
   renderHome();
 }
 function recipePassesCategoryFilter(indexEntry){
-  if(categoryFilterSelected.size === 0) return true;
   const cats = indexEntry.categories || [];
+  /* Byggeklossene holdes utenfor til man har bedt om dem. En oppskrift
+     som BÅDE er f.eks. Middag og Saus, vises som middag - det er nok at
+     én av kategoriene er ønsket. */
+  const bareSkjult = cats.length
+    && cats.every(c => SKJULTE_KATEGORIER.includes(c));
+  if(bareSkjult && !SKJULTE_KATEGORIER.some(c => categoryFilterSelected.has(c))) return false;
+
+  if(categoryFilterSelected.size === 0) return true;
   return cats.some(c => categoryFilterSelected.has(c));
 }
 function cardCategoriesHtml(indexEntry){
@@ -5388,9 +5513,19 @@ function renderIngredientViews(){
   }else{
     /* Ingrediensene grupperes etter varetype, som i ukemenyen. Rekkefølgen inne
        i hver bolk er den oppskriften selv har, så sammenhengen beholdes. */
+    /* Er ingrediensen navnet paa en krydderblanding, blir den en lenke
+       inn i blandingen. Er den ikke det, ser den ut akkurat som foer -
+       ingen ekstra pynt paa de nitti prosentene som er vanlige varer. */
+    const navnCelle = (i) => {
+      const kid = krydderIdFor(i.name);
+      return kid
+        ? `<button type="button" class="krydder-lenke" onclick="visKrydderblanding('${jsStr(kid)}')"
+                   title="Se hva som er i blandingen">${escapeHtml(i.name)}</button>`
+        : escapeHtml(i.name);
+    };
     const rad = (i, idx) => `
       <tr id="shop-${idx}">
-        <td class="name">${escapeHtml(i.name)}${(i.allergens && i.allergens.length) ? ` <button type="button" class="allergen-flag" onclick="visAllergener('${jsStr(i.name)}', '${jsStr(i.allergens.join(', '))}')">!</button>` : ''}</td>
+        <td class="name">${navnCelle(i)}${(i.allergens && i.allergens.length) ? ` <button type="button" class="allergen-flag" onclick="visAllergener('${jsStr(i.name)}', '${jsStr(i.allergens.join(', '))}')">!</button>` : ''}</td>
         <td class="amt mono">${escapeHtml(scaledAmountLabel(i, factor))}${nutritionFlagHtml(i.nutrition, i, r.baseServings)}</td>
       </tr>`;
     /* Seksjon ytterst, varetype inni. Uten seksjoner blir det bare
