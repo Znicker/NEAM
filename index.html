@@ -629,18 +629,34 @@ function loggUt(){
      og Access-sesjonen overlever (da viser toppen feil navn).
      I stedet returnerer vi til vaar egen side, som allerede er registrert,
      og tar Access-utloggingen derfra. Da fungerer det uansett. */
-  try{ sessionStorage.setItem('fh_ut', '1'); }catch(_){}
+  /* TIDSPUNKT, ikke '1'. Se fullfoerUtlogging() under. */
+  try{ sessionStorage.setItem('fh_ut', String(Date.now())); }catch(_){}
   location.href = 'https://login.microsoftonline.com/common/oauth2/v2.0/logout?post_logout_redirect_uri=' +
     encodeURIComponent(location.origin + location.pathname);
 }
 
 /* Andre etappe av utloggingen: rydder Access-sesjonen naar vi er
-   tilbake fra Microsoft. Kjoerer foer alt annet paa siden. */
+   tilbake fra Microsoft. Kjoerer foer alt annet paa siden.
+
+   FLAGGET HAR EN UTLOEPSTID, og det er ikke pynt. Foer 13. september
+   2026 sto det bare '1', uten tidspunkt. Fullfoerte man ikke rundturen
+   innom Microsoft - avbroet, lukket fanen, gikk et annet sted - ble
+   flagget liggende i sessionStorage, og fyrte foerste gang forsiden ble
+   lastet igjen. Da ble man kastet ut av Access uten aa ha bedt om det,
+   pa et helt annet tidspunkt, og det saa ut som en feil i det man
+   tilfeldigvis holdt paa med. Det var nettopp det som skjedde da Neam
+   navigerte hit.
+
+   Ett minutt er rundelig: turen innom Microsoft tar sekunder. Er det
+   gaatt lenger, kom man ikke hit fra en utlogging, og flagget kastes. */
 (function fullfoerUtlogging(){
   let flagg = null;
   try{ flagg = sessionStorage.getItem('fh_ut'); }catch(_){}
   if(!flagg) return;
   try{ sessionStorage.removeItem('fh_ut'); }catch(_){}
+  const satt = parseInt(flagg, 10);
+  /* '1' fra foer omleggingen tolkes som gammelt og ignoreres. */
+  if(!isFinite(satt) || satt < 1e12 || Date.now() - satt > 60000) return;
   location.replace('/cdn-cgi/access/logout');
 })();
 
