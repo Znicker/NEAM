@@ -53,7 +53,8 @@ Ikke kopier innhold fra dokumentene hit. Henvis til del/kapittel.
   stopp og spør.** Ikke gjett, og ikke velg noe som ser rimelig ut.
 - **Siste handling i en økt med endringer:** foreslå oppdatering av
   toppblokka i kartleggingen (nye `?v=`, brente numre, åpne tråder).
-- Commit og push bare når Magne ber om det. Nye filer må være med i commiten.
+- Commit bare når Magne ber om det, og push rett etter. Nye filer må være med
+  i commiten.
 
 ## Versjonsregelen for `?v=`
 
