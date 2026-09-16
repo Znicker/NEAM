@@ -324,6 +324,71 @@ body::before{
 }
 .gs-pille[hidden]{ display:none; }
 
+/* ---------- Bygg atom ----------
+   Trinn 2 i kartleggingen del 51. Hun faar navn, symbol og atomnummer,
+   og setter sammen atomet selv.
+
+   BAADE DRAING OG TRYKK. Designsystemet fraraader draing paa
+   beroeringsskjerm - den slaass mot rulling, og nettleseren avbryter
+   draget naar den tror du blar. Her er begge veier bygget: dra en brikke
+   fra magasinet og slipp den paa plata, ELLER trykk brikken én gang og
+   trykk deretter der den skal. Byggeplata har `touch-action:none`, saa
+   et drag som starter paa den ikke blir til rulling. Magasinet ligger
+   utenfor plata og kan rulles som vanlig.
+
+   RETTINGEN KOMMER NAAR HUN TRYKKER FERDIG, ikke mens hun bygger. Da
+   faar hun bygge ferdig sin egen tanke foerst - og feilen blir noe hun
+   ser ved siden av fasiten i stedet for en doer som ikke aapner seg. */
+.gs-bygg{ display:grid; grid-template-columns:1fr; gap:18px; }
+@media(min-width:920px){ .gs-bygg{ grid-template-columns:auto 1fr; align-items:start; } }
+
+.gs-oppgave{ display:flex; align-items:center; gap:14px; margin-bottom:6px; flex-wrap:wrap; }
+.gs-oppgave .gs-stor-rute{ margin:0; width:84px; height:84px; }
+.gs-oppgave .gs-stor-rute .gs-stor-sym{ font-size:32px; }
+.gs-oppgave-tekst{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.gs-oppgave-tekst b{ color:var(--ink); }
+
+/* Plata. touch-action:none er det som gjoer draing mulig i det hele
+   tatt paa telefon - uten den tar rullingen over pekeren. */
+.gs-plate{
+  position:relative; width:min(330px, 84vw); margin:0 auto;
+  touch-action:none; -webkit-user-select:none; user-select:none;
+}
+.gs-plate svg{ width:100%; height:auto; display:block; }
+.gs-plate.gs-slipp{ filter:drop-shadow(0 0 8px var(--lys-glod)); }
+
+.gs-magasin{ display:flex; flex-wrap:wrap; gap:10px; margin:14px 0 8px; }
+.gs-brikke{
+  display:flex; align-items:center; gap:8px; font-family:inherit;
+  font-size:var(--t-meta); font-weight:700; color:var(--ink);
+  padding:10px 15px; border-radius:999px; cursor:pointer;
+  border:2px solid var(--line); background:var(--paper);
+  touch-action:none; -webkit-user-select:none; user-select:none;
+}
+.gs-brikke.gs-valgt{ border-color:var(--messing); background:var(--boks-mild); }
+.gs-brikke[disabled]{ opacity:.38; cursor:default; }
+.gs-kule{ width:15px; height:15px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.gs-kule.gs-k-proton{ background:var(--danger); }
+.gs-kule.gs-k-elektron{ background:var(--aksent); }
+.gs-kule.gs-k-skall{
+  background:transparent; border:2px solid var(--messing); width:17px; height:17px;
+}
+/* Brikka som foelger fingeren mens hun drar. */
+.gs-flyt{
+  position:fixed; z-index:60; pointer-events:none;
+  transform:translate(-50%, -50%); opacity:.92;
+}
+
+.gs-bygg-tall{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.gs-bygg-svar{ margin-top:14px; font-size:var(--t-brod); font-weight:600; }
+.gs-bygg-svar ul{ margin:8px 0 0; padding-left:20px; }
+.gs-bygg-svar li{ margin-bottom:4px; font-weight:600; }
+.gs-bygg-svar.gs-klart{ color:var(--ink); }
+
+/* Feil skall: stiplet og dust, aldri roedt. Roedt betyr slett. */
+.gs-skall.gs-feil{ stroke-dasharray:5 5; opacity:.5; }
+.gs-skall.gs-riktig-skall{ stroke:var(--lys); stroke-width:2.4; opacity:1; }
+
 .gs-skjult{ display:none !important; }
 </style>
 </head>
@@ -339,6 +404,7 @@ body::before{
     <h1 class="gs-tittel">Grunnstoffene<span>Neams kjemiverden</span></h1>
     <div class="gs-faner">
       <button class="gs-fane gs-valgt" id="faneTabell" onclick="visFane('tabell')">Periodesystemet</button>
+      <button class="gs-fane" id="faneBygg" onclick="visFane('bygg')">Bygg atom</button>
       <button class="gs-fane" id="faneTest" onclick="visFane('test')">Test meg</button>
       <button class="gs-fane" id="faneFram" onclick="visFane('fram')">Framdrift</button>
     </div>
@@ -358,8 +424,35 @@ body::before{
       <h2 class="gs-panel-tittel">Atomnavns-laben</h2>
       <div class="gs-lab" id="lab"></div>
       <div class="gs-lab-knapper">
-        <button class="gs-knapp gs-tung" onclick="startFraLab()">Test meg på dette</button>
+        <button class="gs-knapp gs-tung" onclick="byggDette()">Bygg dette atomet</button>
+        <button class="gs-knapp" onclick="startFraLab()">Test meg på dette</button>
         <button class="gs-knapp" onclick="nesteStoff()">Neste stoff</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Bygg atom ============ -->
+  <section id="visBygg" class="gs-skjult">
+    <div class="gs-panel">
+      <h2 class="gs-panel-tittel">Bygg atomet</h2>
+      <div class="gs-oppgave" id="byggOppgave"></div>
+
+      <div class="gs-bygg">
+        <div>
+          <div class="gs-plate" id="plate"></div>
+        </div>
+        <div>
+          <p class="gs-teller">Dra en brikke ut på plata – eller trykk brikken først, og så der den skal</p>
+          <div class="gs-magasin" id="magasin"></div>
+          <p class="gs-bygg-tall" id="byggTall"></p>
+          <div class="gs-lab-knapper">
+            <button class="gs-knapp gs-tung" onclick="sjekkBygg()">Ferdig</button>
+            <button class="gs-knapp" onclick="angreBygg()">Angre</button>
+            <button class="gs-knapp" onclick="tomBygg()">Tøm</button>
+            <button class="gs-knapp" onclick="nyttByggeStoff()">Nytt stoff</button>
+          </div>
+          <div class="gs-bygg-svar" id="byggSvar"></div>
+        </div>
       </div>
     </div>
   </section>
@@ -1035,13 +1128,373 @@ function laasOppHvisFortjent(andel, antall){
 }
 
 /* ============================================================
+   Bygg atom
+   ------------------------------------------------------------
+   Hun faar navn, symbol og atomnummer, og setter sammen resten
+   selv: protoner i kjernen, skall rundt, elektroner i skallene.
+   Det gjoer atomnummeret til noe hun konstruerer i stedet for noe
+   hun husker - og det retter seg selv, fordi to i foerste skall og
+   aatte i neste er en regel og ikke en smakssak.
+
+   NOEYTRONER ER ET SENERE TRINN, og det er med vilje: antallet kan
+   ikke utledes av atomnummeret, saa hun maatte faatt det oppgitt.
+   Da er det ikke lenger noe hun regner seg fram til. Tallet ligger
+   klart i OPPBYGNING naar trinnet skal bygges - det er foerste
+   felt.
+   ============================================================ */
+const KJERNE_R = 34;      /* radius paa kjernen i SVG-koordinater */
+const SKALL_AVSTAND = 26; /* mellom skallene */
+const MAKS_SKALL = 4;     /* saa langt trinn 1 og 2 gaar (til kalsium) */
+const TREFF = 18;         /* hvor naer et skall hun maa slippe */
+
+let bygg = null;
+let valgtBrikke = null;   /* brikka hun har trykket paa, i trykk-modus */
+
+function nyttBygg(nr){
+  bygg = { nr:nr, protoner:0, skall:[], historikk:[], merker:null, forsok:0, lost:false };
+  valgtBrikke = null;
+  tegnBygg();
+  $('byggSvar').textContent = '';
+  $('byggSvar').classList.remove('gs-klart');
+}
+
+function byggDette(){
+  if(!OPPBYGNING[valgtNr]){
+    si('Dette stoffet kan ikke bygges ennå. Prøv et av de tjue første.');
+    return;
+  }
+  visFane('bygg');
+  nyttBygg(valgtNr);
+}
+
+function nyttByggeStoff(){
+  const mulige = apneStoffer().filter(function(s){
+    return OPPBYGNING[s[0]] && (!bygg || s[0] !== bygg.nr);
+  });
+  const s = mulige[Math.floor(Math.random() * mulige.length)];
+  nyttBygg(s[0]);
+}
+
+/* ---- Tegningen ---- */
+function skallRadius(i){ return KJERNE_R + (i + 1) * SKALL_AVSTAND; }
+
+/* Protonene ligger i ringer inne i kjernen: én i midten, seks rundt,
+   tolv utenfor der igjen. Da ser tjue protoner ut som en klump og ikke
+   som en stabel. */
+function kjernePlasser(n){
+  const ringer = [[0, 1], [11, 6], [21, 12], [28, 18]];
+  const ut = [];
+  let igjen = n, ring = 0;
+  while(igjen > 0 && ring < ringer.length){
+    const r = ringer[ring][0], plass = Math.min(igjen, ringer[ring][1]);
+    for(let i = 0; i < plass; i++){
+      const v = plass === 1 ? 0 : (i / plass) * Math.PI * 2 - Math.PI / 2;
+      ut.push([150 + Math.cos(v) * r, 150 + Math.sin(v) * r]);
+    }
+    igjen -= plass; ring++;
+  }
+  return ut;
+}
+
+function tegnBygg(){
+  const plate = $('plate');
+  const NS = 'http://www.w3.org/2000/svg';
+  const s = stoffAv(bygg.nr);
+
+  plate.textContent = '';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 300 300');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'Byggeplate for ' + s[2] + ': ' + bygg.protoner
+    + ' protoner i kjernen, ' + bygg.skall.length + ' skall med '
+    + (bygg.skall.join(', ') || 'ingen elektroner'));
+
+  bygg.skall.forEach(function(antall, i){
+    const r = skallRadius(i);
+    const ring = document.createElementNS(NS, 'circle');
+    let klasse = 'gs-skall';
+    if(bygg.merker) klasse += bygg.merker[i] ? ' gs-riktig-skall' : ' gs-feil';
+    ring.setAttribute('class', klasse);
+    ring.setAttribute('cx', 150); ring.setAttribute('cy', 150);
+    ring.setAttribute('r', r);
+    svg.appendChild(ring);
+
+    for(let e = 0; e < antall; e++){
+      const v = (e / Math.max(antall, 1)) * Math.PI * 2 - Math.PI / 2 + i * 0.4;
+      const p = document.createElementNS(NS, 'circle');
+      p.setAttribute('class', 'gs-elektron');
+      p.setAttribute('cx', (150 + Math.cos(v) * r).toFixed(1));
+      p.setAttribute('cy', (150 + Math.sin(v) * r).toFixed(1));
+      p.setAttribute('r', 5.5);
+      svg.appendChild(p);
+    }
+  });
+
+  /* Kjerneflata tegnes alltid, ogsaa naar den er tom: hun skal se hvor
+     protonene skal, ikke gjette hvor midten er. */
+  const flate = document.createElementNS(NS, 'circle');
+  flate.setAttribute('cx', 150); flate.setAttribute('cy', 150);
+  flate.setAttribute('r', KJERNE_R);
+  flate.setAttribute('fill', 'rgba(166,77,60,.10)');
+  flate.setAttribute('stroke', 'var(--messing)');
+  flate.setAttribute('stroke-width', '1.2');
+  flate.setAttribute('stroke-dasharray', bygg.protoner ? 'none' : '4 4');
+  svg.appendChild(flate);
+
+  kjernePlasser(bygg.protoner).forEach(function(p){
+    const k = document.createElementNS(NS, 'circle');
+    k.setAttribute('class', 'gs-kjerne');
+    k.setAttribute('cx', p[0].toFixed(1)); k.setAttribute('cy', p[1].toFixed(1));
+    k.setAttribute('r', 5.5);
+    svg.appendChild(k);
+  });
+
+  plate.appendChild(svg);
+  tegnMagasin();
+}
+
+function tegnMagasin(){
+  const s = stoffAv(bygg.nr);
+  const elektroner = bygg.skall.reduce(function(n, x){ return n + x; }, 0);
+
+  $('byggOppgave').innerHTML =
+    '<div class="gs-stor-rute gs-' + s[5] + '">'
+  + '<span class="gs-stor-nr">' + s[0] + '</span>'
+  + '<span class="gs-stor-sym">' + s[1] + '</span>'
+  + '<span class="gs-stor-navn">' + s[2] + '</span></div>'
+  + '<div class="gs-oppgave-tekst">Bygg <b>' + s[2] + '</b>.<br>'
+  + 'Atomnummer <b>' + s[0] + '</b> – symbol <b>' + s[1] + '</b>.</div>';
+
+  const igjen = { proton: bygg.nr - bygg.protoner, elektron: bygg.nr - elektroner };
+  const brikker = [
+    { type:'proton',  navn:'Proton',  igjen:igjen.proton },
+    { type:'elektron',navn:'Elektron',igjen:igjen.elektron },
+    { type:'skall',   navn:'Nytt skall', igjen:MAKS_SKALL - bygg.skall.length }
+  ];
+
+  const m = $('magasin');
+  m.textContent = '';
+  brikker.forEach(function(b){
+    const knapp = document.createElement('button');
+    knapp.type = 'button';
+    knapp.className = 'gs-brikke' + (valgtBrikke === b.type ? ' gs-valgt' : '');
+    knapp.disabled = b.igjen <= 0;
+    knapp.dataset.type = b.type;
+    knapp.innerHTML = '<span class="gs-kule gs-k-' + b.type + '"></span>' + b.navn
+      + (b.type === 'skall' ? '' : ' <span class="gs-bygg-tall">' + b.igjen + ' igjen</span>');
+    bindBrikke(knapp, b.type);
+    m.appendChild(knapp);
+  });
+
+  $('byggTall').textContent = 'I kjernen: ' + bygg.protoner + ' protoner · '
+    + 'I skallene: ' + (bygg.skall.join(', ') || 'ingen');
+}
+
+/* ---- Draing og trykk ----
+   Én funksjon plasserer, og begge veier ender i den. Draget er bygget
+   paa pointer-hendelser, ikke HTML5 drag-and-drop: den siste finnes
+   ikke paa iOS. */
+function bindBrikke(knapp, type){
+  let flyt = null, flyttet = false, start = null;
+
+  knapp.addEventListener('pointerdown', function(e){
+    if(knapp.disabled) return;
+    start = { x:e.clientX, y:e.clientY };
+    flyttet = false;
+    knapp.setPointerCapture(e.pointerId);
+  });
+
+  knapp.addEventListener('pointermove', function(e){
+    if(!start) return;
+    if(!flyttet && Math.abs(e.clientX - start.x) + Math.abs(e.clientY - start.y) < 8) return;
+    flyttet = true;
+    if(!flyt){
+      flyt = knapp.cloneNode(true);
+      flyt.className = 'gs-brikke gs-flyt';
+      document.body.appendChild(flyt);
+      $('plate').classList.add('gs-slipp');
+    }
+    flyt.style.left = e.clientX + 'px';
+    flyt.style.top = e.clientY + 'px';
+  });
+
+  knapp.addEventListener('pointerup', function(e){
+    if(!start) return;
+    const overPlata = flyttet && innenforPlata(e.clientX, e.clientY);
+    if(flyt){ flyt.remove(); flyt = null; }
+    $('plate').classList.remove('gs-slipp');
+    start = null;
+
+    if(overPlata){ plasser(type, e.clientX, e.clientY); return; }
+    if(!flyttet){
+      /* Trykk-modus: brikka blir staaende valgt til hun trykker paa
+         plata. Trykk paa den igjen legger den fra seg. */
+      valgtBrikke = (valgtBrikke === type) ? null : type;
+      tegnMagasin();
+    }
+  });
+
+  knapp.addEventListener('pointercancel', function(){
+    if(flyt){ flyt.remove(); flyt = null; }
+    $('plate').classList.remove('gs-slipp');
+    start = null;
+  });
+}
+
+function innenforPlata(x, y){
+  const r = $('plate').getBoundingClientRect();
+  return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+}
+
+$('plate').addEventListener('click', function(e){
+  if(!valgtBrikke) return;
+  plasser(valgtBrikke, e.clientX, e.clientY);
+});
+
+function plasser(type, x, y){
+  const r = $('plate').getBoundingClientRect();
+  /* Plata er kvadratisk i SVG-koordinater (300x300), saa begge aksene
+     regnes mot bredden. */
+  const px = (x - r.left) / r.width * 300;
+  const py = (y - r.top) / r.width * 300;
+  const avstand = Math.sqrt(Math.pow(px - 150, 2) + Math.pow(py - 150, 2));
+
+  /* En ny plassering betyr at forrige retting ikke gjelder lenger. */
+  bygg.merker = null;
+  $('byggSvar').textContent = '';
+
+  if(type === 'skall'){
+    if(bygg.skall.length >= MAKS_SKALL){ si('Fire skall er nok til disse stoffene.'); return; }
+    bygg.skall.push(0);
+    bygg.historikk.push({ hva:'skall' });
+    ferdigPlassert();
+    return;
+  }
+
+  if(type === 'proton'){
+    if(bygg.protoner >= bygg.nr){ si('Du har lagt ut alle protonene.'); return; }
+    if(avstand > KJERNE_R + 12){ si('Protoner hører hjemme i kjernen, midt på.'); return; }
+    bygg.protoner++;
+    bygg.historikk.push({ hva:'proton' });
+    ferdigPlassert();
+    return;
+  }
+
+  /* Elektron: naermeste skall, og bare hvis hun traff det. */
+  const brukt = bygg.skall.reduce(function(n, x){ return n + x; }, 0);
+  if(brukt >= bygg.nr){ si('Du har lagt ut alle elektronene.'); return; }
+  if(!bygg.skall.length){ si('Legg ut et skall først – elektronene går i bane.'); return; }
+
+  let naermest = -1, best = 1e9;
+  bygg.skall.forEach(function(_, i){
+    const d = Math.abs(avstand - skallRadius(i));
+    if(d < best){ best = d; naermest = i; }
+  });
+  if(best > TREFF){ si('Slipp elektronet på en av ringene.'); return; }
+
+  bygg.skall[naermest]++;
+  bygg.historikk.push({ hva:'elektron', skall:naermest });
+  ferdigPlassert();
+}
+
+function ferdigPlassert(){
+  /* Brikka blir staaende valgt: legger hun ut aatte elektroner, skal hun
+     ikke trykke paa magasinet mellom hver. */
+  tegnBygg();
+}
+
+function angreBygg(){
+  const siste = bygg.historikk.pop();
+  if(!siste){ si('Det er ingenting å angre.'); return; }
+  if(siste.hva === 'proton') bygg.protoner--;
+  if(siste.hva === 'elektron') bygg.skall[siste.skall]--;
+  if(siste.hva === 'skall'){
+    /* Et skall med elektroner i kan ikke bare forsvinne - elektronene
+       legges tilbake i magasinet sammen med det. */
+    bygg.skall.pop();
+  }
+  bygg.merker = null;
+  $('byggSvar').textContent = '';
+  tegnBygg();
+}
+
+function tomBygg(){ nyttBygg(bygg.nr); }
+
+async function sjekkBygg(){
+  const s = stoffAv(bygg.nr);
+  const fasit = OPPBYGNING[bygg.nr][1];
+  const elektroner = bygg.skall.reduce(function(n, x){ return n + x; }, 0);
+  const feil = [];
+
+  if(bygg.protoner !== bygg.nr){
+    feil.push('Kjernen har ' + bygg.protoner + ' protoner. Atomnummeret til '
+            + s[2] + ' er ' + bygg.nr + ', og det er nettopp antall protoner.');
+  }
+  if(elektroner !== bygg.nr){
+    feil.push('Du har lagt ut ' + elektroner + ' elektroner. Et nøytralt atom har '
+            + 'like mange elektroner som protoner: ' + bygg.nr + '.');
+  }
+  if(bygg.skall.length !== fasit.length){
+    feil.push('Du har ' + bygg.skall.length + ' skall. ' + s[2] + ' har '
+            + fasit.length + '.');
+  }
+  bygg.skall.forEach(function(antall, i){
+    if(fasit[i] === undefined){
+      feil.push('Skall ' + (i + 1) + ' skal ikke være der.');
+    }else if(antall !== fasit[i]){
+      feil.push('Skall ' + (i + 1) + ' har ' + antall + ' elektroner. Det skal ha '
+              + fasit[i] + '.');
+    }
+  });
+
+  bygg.merker = bygg.skall.map(function(antall, i){ return fasit[i] === antall; });
+  bygg.forsok++;
+  tegnBygg();
+
+  const svar = $('byggSvar');
+  svar.textContent = '';
+  if(feil.length){
+    svar.classList.remove('gs-klart');
+    const p = document.createElement('p');
+    p.textContent = 'Ikke helt ennå:';
+    const ul = document.createElement('ul');
+    feil.forEach(function(t){
+      const li = document.createElement('li');
+      li.textContent = t;
+      ul.appendChild(li);
+    });
+    svar.appendChild(p); svar.appendChild(ul);
+    return;
+  }
+
+  svar.classList.add('gs-klart');
+  svar.textContent = 'Riktig. Slik ser ' + s[2] + ' ut: ' + bygg.nr + ' protoner i kjernen '
+    + 'og ' + fasit.join(' + ') + ' elektroner utover.';
+
+  if(!bygg.lost){
+    bygg.lost = true;
+    data.runder.push({ id:Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                       tid:Date.now(), type:'bygg', stoff:bygg.nr, forsok:bygg.forsok });
+    tegnFramdrift();
+    await lagre();
+  }
+}
+
+/* ============================================================
    Framdrift
    ============================================================ */
 function tegnFramdrift(){
   const runder = data.runder || [];
-  const spurt = runder.reduce(function(n, r){ return n + (r.antall || 0); }, 0);
-  const rette = runder.reduce(function(n, r){ return n + (r.riktige || 0); }, 0);
-  const beste = runder.reduce(function(b, r){
+  /* Byggerundene teller ikke som spoersmaal - de har ingen andel riktige,
+     de er enten ferdige eller ikke. De staar for seg i tallene under. */
+  const tester = runder.filter(function(r){ return r.type !== 'bygg'; });
+  const bygde = runder.filter(function(r){ return r.type === 'bygg'; });
+  const ulikeBygde = {};
+  bygde.forEach(function(r){ ulikeBygde[r.stoff] = true; });
+
+  const spurt = tester.reduce(function(n, r){ return n + (r.antall || 0); }, 0);
+  const rette = tester.reduce(function(n, r){ return n + (r.riktige || 0); }, 0);
+  const beste = tester.reduce(function(b, r){
     const a = r.antall ? r.riktige / r.antall : 0;
     return a > b ? a : b;
   }, 0);
@@ -1049,10 +1502,11 @@ function tegnFramdrift(){
   const tall = $('framTall');
   tall.textContent = '';
   [['Stoffer tent', apne() + ' av 118'],
-   ['Runder spilt', String(runder.length)],
+   ['Runder spilt', String(tester.length)],
    ['Spørsmål', String(spurt)],
    ['Riktige', spurt ? Math.round(rette / spurt * 100) + ' %' : '–'],
-   ['Beste runde', runder.length ? Math.round(beste * 100) + ' %' : '–']
+   ['Beste runde', tester.length ? Math.round(beste * 100) + ' %' : '–'],
+   ['Atomer bygget', String(Object.keys(ulikeBygde).length)]
   ].forEach(function(r){
     const d = document.createElement('div');
     d.innerHTML = '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>';
@@ -1078,12 +1532,19 @@ function tegnFramdrift(){
     const p = function(n){ return String(n).padStart(2, '0'); };
     const rad = document.createElement('div');
     rad.className = 'gs-fasitrad';
-    rad.innerHTML = '<span>' + p(d.getDate()) + '.' + p(d.getMonth() + 1) + '</span>'
-      + '<span>' + (r.riktige || 0) + ' av ' + (r.antall || 0) + ' riktig – '
-      + (r.sider || []).map(function(id){
-          const s = SIDER.filter(function(x){ return x.id === id; })[0];
-          return s ? s.navn.toLowerCase() : id;
-        }).join(', ') + '</span>';
+    const dato = '<span>' + p(d.getDate()) + '.' + p(d.getMonth() + 1) + '</span>';
+    if(r.type === 'bygg'){
+      const s = stoffAv(r.stoff);
+      rad.innerHTML = dato + '<span>Bygde ' + (s ? s[2] : 'et atom')
+        + (r.forsok > 1 ? ' – ' + r.forsok + ' forsøk' : ' – på første forsøk') + '</span>';
+    }else{
+      rad.innerHTML = dato
+        + '<span>' + (r.riktige || 0) + ' av ' + (r.antall || 0) + ' riktig – '
+        + (r.sider || []).map(function(id){
+            const s = SIDER.filter(function(x){ return x.id === id; })[0];
+            return s ? s.navn.toLowerCase() : id;
+          }).join(', ') + '</span>';
+    }
     liste.appendChild(rad);
   });
 }
@@ -1093,6 +1554,7 @@ function tegnFramdrift(){
    ============================================================ */
 function visFane(navn){
   [['tabell','visTabell','faneTabell'],
+   ['bygg','visBygg','faneBygg'],
    ['test','visTest','faneTest'],
    ['fram','visFram','faneFram']].forEach(function(f){
     const pa = f[0] === navn;
@@ -1108,6 +1570,7 @@ function visFane(navn){
     $('testResultat').classList.add('gs-skjult');
     tegnValg();
   }
+  if(navn === 'bygg' && !bygg) nyttByggeStoff();
   if(navn === 'fram') tegnFramdrift();
   window.scrollTo({ top:0, behavior:'smooth' });
 }
