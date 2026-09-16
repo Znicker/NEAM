@@ -1,5 +1,5 @@
 /* ============================================================
-   Familie Hub – delt lagring (Cloudflare Pages Function)
+   Neam – delt lagring (Cloudflare Pages Function)
 
    Ligger i repoet som:  functions/api/data.js
    Gir endepunktet:      /api/data

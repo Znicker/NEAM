@@ -1,4 +1,7 @@
-# Neam (Familiehub)
+# Neam
+
+Den lokale mappa heter `Familiehub`. Det er arbeidsnavnet, og det skal ikke
+brukes i ny tekst eller nye navn.
 
 Husets egen app: statiske HTML-sider med fellesfiler i repo-rota, servert av
 Cloudflare Pages på `neam.no`, med Pages Functions i `functions/`. Ingen

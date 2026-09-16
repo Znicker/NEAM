@@ -796,7 +796,7 @@ blir en hemmelighet folk ikke finner.
 ## Merkelapper
 
 Hver ferdige app har sin egen **NEAM-merkelapp**: en rund klistremerke-figur
-med et bånd nederst der appens navn står. `merke-familie`, `merke-kjokken-dash`,
+med et bånd nederst der appens navn står. `merke-neam`, `merke-kjokken-dash`,
 `merke-matlaging`, `merke-handleliste`, `merke-kalender`. Roboten går igjen i
 alle og binder dem sammen.
 
