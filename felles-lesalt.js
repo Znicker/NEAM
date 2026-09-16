@@ -86,9 +86,10 @@ function lesAltBarn(navn){
 const LESALT_VERKTOY = [
   {
     name: 'les_skolearbeid',
-    description: 'Lekser og prøver for Andrea eller Emma, med fag og frist. Virker fra '
-               + 'hvilken som helst side. Uten argument gis begge barna. Endringer må '
-               + 'gjøres på barnets egen side.',
+    description: 'Lekser og prøver for Andrea eller Emma, med fag, frist og id. Virker '
+               + 'fra hvilken som helst side. Uten argument gis begge barna.\n\n'
+               + 'Id-ene herfra er det endre_lekse, slett_lekse og endre_prove går på. '
+               + 'Kjør denne først når noe skal endres.',
     input_schema: {
       type:'object',
       properties:{
@@ -150,11 +151,15 @@ async function lesAltUtfor(navn, arg){
       ut.push({
         barn: b.navn,
         lekser: lekser.slice(0, 40).map(function(l){
-          return { fag: fagNavn[l.fagId] || '(ukjent fag)', tekst: l.tekst,
+          /* Id-en MAA vaere med: den er det eneste endre_lekse og
+             slett_lekse i felles-skriv.js kan gaa paa naar man staar et
+             annet sted enn barnets egen dash. */
+          return { id: l.id, fag: fagNavn[l.fagId] || '(ukjent fag)', tekst: l.tekst,
                    frist: l.frist || null, ferdig: !!l.ferdig };
         }),
         prover: ((d && d.prover) || []).slice(0, 20).map(function(p){
-          return { fag: fagNavn[p.fagId] || '(ukjent fag)', type: p.type || 'prøve',
+          return { id: p.id, fag: fagNavn[p.fagId] || '(ukjent fag)',
+                   type: p.type || 'prøve',
                    dato: p.dato || null, karakter: p.karakter || null };
         })
       });

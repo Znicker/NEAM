@@ -249,6 +249,228 @@ async function skrivGraph(sti, metode, kropp){
    Verktøyene
    ------------------------------------------------------------ */
 
+/* ------------------------------------------------------------
+   Skolearbeidet - paa tvers
+   ------------------------------------------------------------
+   Lagt til 16. september 2026. Fram til da kunne lekser, proever
+   og laeringsmaal bare endres fra barnets egen dash - alt annet i
+   huset kunne gjoeres overalt.
+
+   HVEM DET GJELDER ER PAAKREVD. Staar man paa Emma dash, vet sida
+   hvem hun er. Herfra gjoer den ikke det, og et standardvalg ville
+   skrevet i feil barns lekser uten at noen ble spurt. `barn` har
+   derfor ingen standardverdi - samme regel som `omfang` paa serier.
+
+   BARE DER NOEN ER LOGGET INN SOM SEG SELV. Kjoekkenskjermen
+   kjoerer som kitchen@, og skal etter planen spoerre «hvem er
+   dette?» ved oppvaakning. Den mekanismen finnes ikke ennaa, og
+   inntil den gjoer det, tilbys ikke disse verktoeyene der: en skjerm
+   som kan endre begge barnas lekser uten at noen vet hvem som
+   trykket, hoerer ikke hjemme paa veggen. Sperren er
+   skrivSkoleTillatt(), og den gjelder baade naar verktoeylista
+   bygges og naar verktoeyet kjoeres.
+
+   SAMTIDIG SKRIVING. Noekkelen er ETT objekt med fag, lekser og
+   proever i seg. Emma kan sitte med sin egen dash aapen mens vi
+   skriver her, og KV har ingen «skriv bare hvis uendret». To ting
+   demper det, begge tatt fra sida (kartleggingen del 22):
+
+     1. Vi holder aldri paa et objekt vi leste for lenge siden.
+        Verktoeyene sender en ENDRINGSFUNKSJON til skrivFagEndre(),
+        som leser ferskt rett foer skrivingen og kjoerer endringen
+        paa DET. Den roerer én lekse, ikke hele lista.
+     2. Alle skrivinger mot samme noekkel staar i ko, saa to
+        verktoeykall i samme svar ikke leser samme utgangspunkt.
+
+   Vinduet blir dermed millisekunder i stedet for sekunder. Det er
+   IKKE lukket: skriver Emma i samme sekund, vinner den siste. Helt
+   tett krever D1, eller at sida fletter i stedet for aa lagre hele
+   objektet. Skrevet ned saa ingen tror det er loest.
+
+   FELTNAVNENE ER SLAATT OPP i ryddFag() og verktoeyene i emma.html,
+   ikke gjettet. Endres formen der, endres den her.
+   ------------------------------------------------------------ */
+
+const SKRIV_FAG_NOKLER = { emma:'emma-fag:v1', andrea:'andrea-fag:v1' };
+
+/* Verktoeyene som bare tilbys en innlogget person. */
+const SKRIV_SKOLE = ['legg_til_lekse', 'endre_lekse', 'slett_lekse',
+                     'legg_til_prove', 'endre_prove', 'sett_laeringsmaal'];
+
+/* Kontoene som ikke er en person: veggskjermen og systemkontoen. */
+const SKRIV_UPERSONLIG = ['kitchen@neam.no', 'sys@neam.no'];
+
+let skrivMeg = null;
+let skrivMegPerson = false;
+let skrivMegSpurt = false;
+
+async function skrivHentMeg(){
+  if(skrivMegSpurt) return;
+  skrivMegSpurt = true;
+  if(typeof gyldigToken !== 'function') return;
+  try{
+    const me = await skrivGraph('/me?$select=mail,userPrincipalName', 'GET');
+    const e = String((me && (me.mail || me.userPrincipalName)) || '').trim().toLowerCase();
+    if(!e) return;
+    skrivMeg = e;
+    skrivMegPerson = SKRIV_UPERSONLIG.indexOf(e) === -1;
+  }catch(e){
+    /* Ingen oekt, eller Graph svarte ikke. Da tilbys ikke skolearbeidet.
+       Et verktoey som ikke kan virke er verre enn ingen. */
+  }
+}
+/* Varmes ved sidelasting, som husregisteret i felles-data.js:
+   verktoeylista bygges ved hver melding, og da maa svaret alt vaere her. */
+setTimeout(skrivHentMeg, 0);
+
+function skrivSkoleTillatt(){ return !!skrivMegPerson; }
+
+function skrivBarnNavn(b){
+  const s = String(b || '').trim().toLowerCase();
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+}
+
+function skrivFagNokkel(barn){
+  const n = SKRIV_FAG_NOKLER[String(barn || '').trim().toLowerCase()];
+  if(!n) throw new Error('Si hvem det gjelder - Emma eller Andrea. Ikke velg selv.');
+  return n;
+}
+
+function skrivFagTom(d){
+  const o = (d && typeof d === 'object') ? d : {};
+  return { fag:    Array.isArray(o.fag)    ? o.fag    : [],
+           lekser: Array.isArray(o.lekser) ? o.lekser : [],
+           prover: Array.isArray(o.prover) ? o.prover : [] };
+}
+
+const skrivFagKoer   = {};   /* noekkel -> Promise */
+const skrivFagVakter = {};   /* noekkel -> {foer, tid, sist} */
+
+/* Les - endre - skriv. `endring` faar det ferskeste vi har og returnerer
+   det samme objektet endret. Gi den ALDRI noe du leste tidligere. */
+function skrivFagEndre(barn, endring){
+  const nokkel = skrivFagNokkel(barn);
+  const forrige = skrivFagKoer[nokkel] || Promise.resolve();
+  const jobb = function(){ return skrivFagNaa(nokkel, endring); };
+  /* Baade ved suksess og feil: en skriving som ryker skal ikke sperre
+     dem som staar bak i koen. */
+  const neste = forrige.then(jobb, jobb);
+  skrivFagKoer[nokkel] = neste.catch(function(){});
+  return neste;
+}
+
+async function skrivFagNaa(nokkel, endring){
+  const vakt = skrivFagVakter[nokkel]
+            || (skrivFagVakter[nokkel] = { foer:null, tid:0, sist:null });
+
+  let fersk = skrivFagTom(await dataLes(nokkel));
+  const ferskJson = JSON.stringify(fersk);
+
+  /* KV mellomlagrer lesinger i opptil 60 sekunder. Er svaret NOEYAKTIG
+     det som sto foer var forrige skriving, er det cachen som svarer - og
+     da er var egen siste versjon den ferskeste som finnes. Uten dette
+     skriver den andre endringen den foerste bort. Samme vakt som
+     erUtdatert() i emma.html. */
+  if(vakt.foer && vakt.sist && ferskJson === vakt.foer
+     && Date.now() - vakt.tid < 90000){
+    fersk = vakt.sist;
+  }else{
+    vakt.foer = ferskJson;
+  }
+
+  const ny = skrivFagTom(endring(fersk));
+  await dataSkriv(nokkel, ny);
+  vakt.tid  = Date.now();
+  vakt.sist = ny;
+  return ny;
+}
+
+function skrivFagId(){
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+/* Faget bak et navn. Hele navnet foerst, saa entydig delstreng. Treffer
+   flere, er det et spoersmaal til brukeren og ikke et valg vi tar. */
+function skrivFagFinn(d, navn){
+  const sok = String(navn || '').trim().toLowerCase();
+  if(!sok) throw new Error('Si hvilket fag det gjelder.');
+  const alle = d.fag || [];
+  const eksakt = alle.filter(function(f){
+    return String(f.navn || '').trim().toLowerCase() === sok;
+  });
+  const treff = eksakt.length ? eksakt : alle.filter(function(f){
+    return String(f.navn || '').toLowerCase().indexOf(sok) !== -1;
+  });
+  if(treff.length === 1) return treff[0];
+  const navnene = alle.map(function(f){ return f.navn; }).join(', ');
+  if(!treff.length) throw new Error('Fant ingen fag som heter «' + navn + '». '
+                                  + 'Fagene er: ' + navnene + '. Nye fag legges inn '
+                                  + 'på barnets egen dash.');
+  throw new Error('«' + navn + '» passer på flere fag: '
+                + treff.map(function(f){ return f.navn; }).join(', ')
+                + '. Spør brukeren hvilket det gjelder.');
+}
+
+function skrivFagNavnAv(d, fagId){
+  const f = (d.fag || []).filter(function(x){ return x.id === fagId; })[0];
+  return (f && f.navn) || '(ukjent fag)';
+}
+
+function skrivDatoKrev(s, hva){
+  const t = String(s || '').trim();
+  if(!t) return '';
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(t)){
+    throw new Error(hva + ' skal være på formen 2026-09-08.');
+  }
+  return t;
+}
+
+function skrivNaaKlokke(){
+  const d = new Date();
+  const p = function(n){ return String(n).padStart(2, '0'); };
+  return p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+function skrivDatoNokkel(d){
+  const p = function(n){ return String(n).padStart(2, '0'); };
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+/* ISO-uke med aaret som hoerer til uka - i romjula er de to ulike, og det
+   er derfor aaret ikke kan tas rett fra datoen. Samme form som
+   ukeNokkel() i sida: «2026-W38». */
+function skrivIsoUke(d){
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+  const aar = t.getUTCFullYear();
+  const nyttaar = new Date(Date.UTC(aar, 0, 1));
+  return { aar: aar, uke: Math.ceil(((t - nyttaar) / 86400000 + 1) / 7) };
+}
+
+/* Tar imot «2026-W38», «38» eller ingenting (denne uka). */
+function skrivUkeNokkel(uke){
+  const p = function(n){ return String(n).padStart(2, '0'); };
+  const raa = String(uke || '').trim().toUpperCase();
+  if(/^\d{4}-W\d{2}$/.test(raa)) return raa;
+  const naa = new Date();
+  if(/^\d{1,2}$/.test(raa)){
+    const n = Number(raa);
+    if(n < 1 || n > 53) throw new Error('Ukenummeret må være mellom 1 og 53.');
+    /* Naermeste uke med det nummeret, et halvaar hver vei - samme grep som
+       mandagIUke() i sida, saa uke 1 i januar ikke blir i fjor. */
+    for(let i = -26; i <= 26; i++){
+      const d = new Date(naa.getFullYear(), naa.getMonth(), naa.getDate() + i * 7);
+      const u = skrivIsoUke(d);
+      if(u.uke === n) return u.aar + '-W' + p(u.uke);
+    }
+    throw new Error('Fant ikke uke ' + n + '.');
+  }
+  if(raa) throw new Error('Uka skal være «2026-W38» eller et ukenummer.');
+  const u = skrivIsoUke(naa);
+  return u.aar + '-W' + p(u.uke);
+}
+
+
 const SKRIV_VERKTOY = [
   {
     name: 'legg_paa_handlelista',
@@ -554,7 +776,169 @@ const SKRIV_VERKTOY = [
     /* Ikke `neamSkriver`: navigasjon oedelegger ingenting. Men den avslutter
        samtalen, og det staar i beskrivelsen - en dialog for hvert eneste
        «ta meg til handlelista» ville vaert i veien, ikke til hjelp. */
-  }
+  },
+  {
+    name: 'legg_til_lekse',
+    description: 'Legger en lekse inn hos Emma eller Andrea, fra hvilken som helst side.\n\n'
+               + 'Si ALLTID hvem det gjelder. Vet du det ikke, spør - ikke gjett ut fra '
+               + 'hvem som snakker.\n\n'
+               + 'Faget må være et barnet har; bruk les_skolearbeid for å se hvilke. Nye '
+               + 'fag legges inn på barnets egen dash.',
+    input_schema: {
+      type:'object',
+      properties:{
+        barn:  { type:'string', enum:['Emma','Andrea'],
+                 description:'Hvem leksa er for.' },
+        fag:   { type:'string', description:'Faget, slik det står i les_skolearbeid.' },
+        tekst: { type:'string', description:'Hva som skal gjøres.' },
+        frist: { type:'string', description:'Dato på formen 2026-09-08. Utelat om det '
+                                          + 'ikke ble sagt noen frist.' }
+      },
+      required:['barn','fag','tekst']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      return 'Legge inn lekse for ' + skrivBarnNavn(arg.barn) + ' i ' + arg.fag + ':\n\n'
+           + '· ' + arg.tekst
+           + (arg.frist ? '\n· frist: ' + skrivDatoTekst(arg.frist) : '\n· uten frist');
+    }
+  },
+  {
+    name: 'endre_lekse',
+    description: 'Endrer en lekse som finnes - tekst, frist, fag, eller huker den av som '
+               + 'gjort. Du MÅ ha kjørt les_skolearbeid først: både id og barn kommer '
+               + 'derfra.\n\n'
+               + 'Bare feltene du sender blir rørt. Send `lekse` med teksten slik den '
+               + 'står nå, så brukeren ser hvilken det gjelder.',
+    input_schema: {
+      type:'object',
+      properties:{
+        barn:   { type:'string', enum:['Emma','Andrea'], description:'Hvem leksa er hos.' },
+        id:     { type:'string', description:'Leksas id fra les_skolearbeid.' },
+        lekse:  { type:'string', description:'Leksas nåværende tekst - vises til brukeren.' },
+        tekst:  { type:'string', description:'Ny tekst.' },
+        frist:  { type:'string', description:'Ny frist, 2026-09-08. Tom streng fjerner den.' },
+        ferdig: { type:'boolean', description:'true huker av, false tar bort haken.' },
+        fag:    { type:'string', description:'Flytt leksa til et annet fag.' }
+      },
+      required:['barn','id','lekse']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      const rader = [];
+      if(arg.ferdig === true)  rader.push('· huke av som gjort');
+      if(arg.ferdig === false) rader.push('· ta bort haken');
+      if(arg.tekst !== undefined) rader.push('· ny tekst: ' + arg.tekst);
+      if(arg.frist !== undefined) rader.push('· frist: '
+        + (arg.frist ? skrivDatoTekst(arg.frist) : '(fjernes)'));
+      if(arg.fag   !== undefined) rader.push('· flyttes til ' + arg.fag);
+      return 'Endre «' + arg.lekse + '» hos ' + skrivBarnNavn(arg.barn)
+           + (rader.length ? ':\n\n' + rader.join('\n') : '.');
+    }
+  },
+  {
+    name: 'slett_lekse',
+    description: 'Sletter en lekse. Du MÅ ha kjørt les_skolearbeid først - id og barn '
+               + 'kommer derfra. Les opp hvilken lekse det gjelder før du spør, så '
+               + 'brukeren vet hva som forsvinner.\n\n'
+               + 'Er leksa gjort, skal den hukes av med endre_lekse - ikke slettes.',
+    input_schema: {
+      type:'object',
+      properties:{
+        barn:  { type:'string', enum:['Emma','Andrea'], description:'Hvem leksa er hos.' },
+        id:    { type:'string', description:'Leksas id fra les_skolearbeid.' },
+        lekse: { type:'string', description:'Leksas tekst - vises til brukeren.' }
+      },
+      required:['barn','id','lekse']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      return 'SLETTE leksa «' + arg.lekse + '» hos ' + skrivBarnNavn(arg.barn)
+           + '\n\nDen forsvinner fra dashen hennes. Dette kan ikke angres.';
+    }
+  },
+  {
+    name: 'legg_til_prove',
+    description: 'Legger inn en prøve, innlevering eller framføring hos Emma eller '
+               + 'Andrea. Si alltid hvem det gjelder.',
+    input_schema: {
+      type:'object',
+      properties:{
+        barn:     { type:'string', enum:['Emma','Andrea'], description:'Hvem prøven er for.' },
+        fag:      { type:'string', description:'Faget, slik det står i les_skolearbeid.' },
+        type:     { type:'string', description:'Hva det er - «prøve», «innlevering», '
+                                             + '«framføring», «gloseprøve».' },
+        dato:     { type:'string', description:'Dato på formen 2026-09-08.' },
+        karakter: { type:'string', description:'Bare hvis den alt er satt.' }
+      },
+      required:['barn','fag','type']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      return 'Legge inn ' + (arg.type || 'prøve') + ' for ' + skrivBarnNavn(arg.barn)
+           + ' i ' + arg.fag + ':\n\n'
+           + '· ' + (arg.dato ? skrivDatoTekst(arg.dato) : 'uten dato')
+           + (arg.karakter ? '\n· karakter: ' + arg.karakter : '');
+    }
+  },
+  {
+    name: 'endre_prove',
+    description: 'Endrer en prøve som finnes - type, dato eller karakter. Du MÅ ha kjørt '
+               + 'les_skolearbeid først: id og barn kommer derfra. Bare feltene du '
+               + 'sender blir rørt.',
+    input_schema: {
+      type:'object',
+      properties:{
+        barn:     { type:'string', enum:['Emma','Andrea'], description:'Hvem prøven er hos.' },
+        id:       { type:'string', description:'Prøvens id fra les_skolearbeid.' },
+        prove:    { type:'string', description:'Prøvens type og fag slik det står nå - '
+                                             + 'vises til brukeren.' },
+        type:     { type:'string' },
+        dato:     { type:'string', description:'Ny dato, 2026-09-08.' },
+        karakter: { type:'string', description:'Tom streng fjerner karakteren.' }
+      },
+      required:['barn','id','prove']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      const rader = [];
+      if(arg.type     !== undefined) rader.push('· type: ' + arg.type);
+      if(arg.dato     !== undefined) rader.push('· dato: ' + skrivDatoTekst(arg.dato));
+      if(arg.karakter !== undefined) rader.push('· karakter: '
+        + (arg.karakter || '(fjernes)'));
+      return 'Endre ' + arg.prove + ' hos ' + skrivBarnNavn(arg.barn)
+           + (rader.length ? ':\n\n' + rader.join('\n') : '.');
+    }
+  },
+  {
+    name: 'sett_laeringsmaal',
+    description: 'Setter læringsmålet for ett fag i én uke. Målene ligger per uke, så et '
+               + 'nytt mål erstatter bare den ukas - ikke de andre.\n\n'
+               + 'Utelat uke for inneværende uke. Gjelder det uka som kommer, MÅ du si '
+               + 'det - ikke anta. Tom tekst fjerner målet.',
+    input_schema: {
+      type:'object',
+      properties:{
+        barn: { type:'string', enum:['Emma','Andrea'], description:'Hvem det gjelder.' },
+        fag:  { type:'string', description:'Faget, slik det står i les_skolearbeid.' },
+        maal: { type:'string', description:'Læringsmålet. Tom streng fjerner det som står.' },
+        uke:  { type:'string', description:'«2026-W38» eller ukenummeret. Utelat for '
+                                         + 'inneværende uke.' }
+      },
+      required:['barn','fag','maal']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      let uke;
+      try{ uke = skrivUkeNokkel(arg.uke); }catch(e){ uke = String(arg.uke || ''); }
+      const tekst = String(arg.maal || '').trim();
+      return (tekst ? 'Sette læringsmål' : 'FJERNE læringsmålet')
+           + ' i ' + arg.fag + ' for ' + skrivBarnNavn(arg.barn)
+           + ', uke ' + uke.replace(/^\d{4}-W/, '') + ' (' + uke + ')'
+           + (tekst ? ':\n\n· ' + tekst
+                    : '\n\nDet som står der nå blir borte.');
+    }
+  },
 ];
 
 const SKRIV_SIDER = {
@@ -940,6 +1324,137 @@ async function skrivUtfor(navn, arg){
              omfang: erSerie ? arg.omfang : 'enkeltavtale' };
   }
 
+  /* ---------------- Skolearbeidet ---------------- */
+
+  /* Sperren staar baade her og i skrivVerktoy(). Lista bygges ved hver
+     melding, men et verktoey Neam alt har sett i samtalen kan han forsoeke
+     igjen etterpaa - og da skal det si nei her ogsaa. */
+  if(SKRIV_SKOLE.indexOf(navn) !== -1 && !skrivSkoleTillatt()){
+    throw new Error('Skolearbeidet kan bare endres fra en skjerm der noen er logget '
+                  + 'inn som seg selv. Si at det må gjøres fra telefonen eller fra '
+                  + 'barnets egen dash.');
+  }
+
+  if(navn === 'legg_til_lekse'){
+    const tekst = String(arg.tekst || '').trim();
+    if(!tekst) throw new Error('Leksa må ha en tekst.');
+    const frist = skrivDatoKrev(arg.frist, 'Fristen');
+    let fagNavn = '';
+    await skrivFagEndre(arg.barn, function(d){
+      const f = skrivFagFinn(d, arg.fag);
+      fagNavn = f.navn;
+      /* Samme felter som legg_til_lekse i emma.html. `av` er hvem som la
+         den inn, og det er Neam - ikke den som ba om det. */
+      d.lekser.push({ id:skrivFagId(), fagId:f.id, tekst:tekst, frist:frist,
+                      ferdig:false, laget:skrivDatoNokkel(new Date()),
+                      nar:skrivNaaKlokke(), av:'Neam', bilder:[] });
+      return d;
+    });
+    return { lagt:{ barn:skrivBarnNavn(arg.barn), fag:fagNavn, tekst:tekst,
+                    frist:frist || null } };
+  }
+
+  if(navn === 'endre_lekse'){
+    const felt = {};
+    if(arg.tekst  !== undefined) felt.tekst  = String(arg.tekst).trim();
+    if(arg.frist  !== undefined) felt.frist  = skrivDatoKrev(arg.frist, 'Fristen');
+    if(arg.ferdig !== undefined) felt.ferdig = !!arg.ferdig;
+    if(!Object.keys(felt).length && arg.fag === undefined){
+      throw new Error('Ingenting å endre - send minst ett felt.');
+    }
+    let ut = null;
+    await skrivFagEndre(arg.barn, function(d){
+      const gammel = d.lekser.filter(function(l){ return l.id === arg.id; })[0];
+      if(!gammel) throw new Error('Fant ingen lekse med id «' + arg.id + '» hos '
+                                + skrivBarnNavn(arg.barn)
+                                + '. Kjør les_skolearbeid på nytt - den kan være '
+                                + 'slettet eller endret et annet sted.');
+      const endring = Object.assign({}, felt);
+      if(arg.fag !== undefined) endring.fagId = skrivFagFinn(d, arg.fag).id;
+      /* Bare denne ene raden roeres. Resten av objektet er det vi nettopp
+         leste, ikke noe vi har baaret med oss. */
+      d.lekser = d.lekser.map(function(l){
+        return l.id === arg.id ? Object.assign({}, l, endring) : l;
+      });
+      const ny = d.lekser.filter(function(l){ return l.id === arg.id; })[0];
+      ut = { barn:skrivBarnNavn(arg.barn), fag:skrivFagNavnAv(d, ny.fagId),
+             tekst:ny.tekst, frist:ny.frist || null, ferdig:!!ny.ferdig };
+      return d;
+    });
+    return { endret: ut };
+  }
+
+  if(navn === 'slett_lekse'){
+    let tekst = '';
+    await skrivFagEndre(arg.barn, function(d){
+      const l = d.lekser.filter(function(x){ return x.id === arg.id; })[0];
+      if(!l) throw new Error('Fant ingen lekse med id «' + arg.id + '» hos '
+                           + skrivBarnNavn(arg.barn) + '. Kjør les_skolearbeid på nytt.');
+      tekst = l.tekst;
+      d.lekser = d.lekser.filter(function(x){ return x.id !== arg.id; });
+      return d;
+    });
+    return { slettet:true, barn:skrivBarnNavn(arg.barn), tekst:tekst };
+  }
+
+  if(navn === 'legg_til_prove'){
+    const type = String(arg.type || '').trim();
+    if(!type) throw new Error('Prøven må ha en type - «prøve», «innlevering», «framføring».');
+    const dato = skrivDatoKrev(arg.dato, 'Datoen');
+    let fagNavn = '';
+    await skrivFagEndre(arg.barn, function(d){
+      const f = skrivFagFinn(d, arg.fag);
+      fagNavn = f.navn;
+      d.prover.push({ id:skrivFagId(), fagId:f.id, type:type, dato:dato,
+                      karakter:String(arg.karakter || '').trim(), av:'Neam' });
+      return d;
+    });
+    return { lagt:{ barn:skrivBarnNavn(arg.barn), fag:fagNavn, type:type,
+                    dato:dato || null } };
+  }
+
+  if(navn === 'endre_prove'){
+    const felt = {};
+    if(arg.type     !== undefined) felt.type     = String(arg.type).trim();
+    if(arg.dato     !== undefined) felt.dato     = skrivDatoKrev(arg.dato, 'Datoen');
+    if(arg.karakter !== undefined) felt.karakter = String(arg.karakter).trim();
+    if(!Object.keys(felt).length) throw new Error('Ingenting å endre - send minst ett felt.');
+    let ut = null;
+    await skrivFagEndre(arg.barn, function(d){
+      const p = d.prover.filter(function(x){ return x.id === arg.id; })[0];
+      if(!p) throw new Error('Fant ingen prøve med id «' + arg.id + '» hos '
+                           + skrivBarnNavn(arg.barn) + '. Kjør les_skolearbeid på nytt.');
+      d.prover = d.prover.map(function(x){
+        return x.id === arg.id ? Object.assign({}, x, felt) : x;
+      });
+      const ny = d.prover.filter(function(x){ return x.id === arg.id; })[0];
+      ut = { barn:skrivBarnNavn(arg.barn), fag:skrivFagNavnAv(d, ny.fagId),
+             type:ny.type, dato:ny.dato || null, karakter:ny.karakter || null };
+      return d;
+    });
+    return { endret: ut };
+  }
+
+  if(navn === 'sett_laeringsmaal'){
+    const uke = skrivUkeNokkel(arg.uke);
+    const tekst = String(arg.maal || '').trim();
+    let fagNavn = '';
+    await skrivFagEndre(arg.barn, function(d){
+      const f = skrivFagFinn(d, arg.fag);
+      fagNavn = f.navn;
+      /* Maalene ligger PER UKE. Vi roerer den ene uka og lar de andre
+         staa - se ryddFag() i emma.html for hvorfor. */
+      d.fag = d.fag.map(function(x){
+        if(x.id !== f.id) return x;
+        const m = Object.assign({}, x.maal || {});
+        if(tekst) m[uke] = tekst; else delete m[uke];
+        return Object.assign({}, x, { maal:m });
+      });
+      return d;
+    });
+    return { barn:skrivBarnNavn(arg.barn), fag:fagNavn, uke:uke, maal:tekst || null };
+  }
+
   return null;
 }
 
@@ -950,5 +1465,13 @@ async function skrivUtfor(navn, arg){
 function skrivVerktoy(egne){
   const tatt = {};
   (egne || []).forEach(function(v){ if(v && v.name) tatt[v.name] = true; });
-  return SKRIV_VERKTOY.filter(function(v){ return !tatt[v.name]; });
+  const skole = skrivSkoleTillatt();
+  return SKRIV_VERKTOY.filter(function(v){
+    if(tatt[v.name]) return false;
+    /* Skolearbeidet bare der noen er logget inn som seg selv - se
+       avsnittet om skolearbeidet over. Et verktoey som ikke kan virke
+       er verre enn ingen: Neam lover da noe han ikke kan holde. */
+    if(!skole && SKRIV_SKOLE.indexOf(v.name) !== -1) return false;
+    return true;
+  });
 }
