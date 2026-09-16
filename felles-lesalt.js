@@ -309,39 +309,62 @@ async function lesAltKalender(arg){
 
   const ut = [];
   const feilet = [];
-  /* Etter tur, ikke alle paa én gang: samtidige kall mot Graph gir 429,
-     og det var det som fikk avtaler til aa forsvinne i kalenderen. */
-  for(const c of kal){
-    try{
-      const d = await lesAltGraph('/me/calendars/' + encodeURIComponent(c.id) + q);
-      ((d && d.value) || []).forEach(function(e){
-        ut.push({
-          /* Id-ene MAA vaere med: de er det eneste endre_avtale og
-             slett_avtale kan gaa paa naar man staar et annet sted enn
-             kalendersida, der det ikke finnes noen innlest liste. */
-          id: e.id,
-          kalender_id: c.id,
-          kalender: c.name,
-          tittel: e.subject || '(uten tittel)',
-          dato: lesAltDato(e.start.dateTime + (e.start.timeZone === 'UTC' ? 'Z' : '')),
-          fra: e.isAllDay ? null
-             : lesAltKlokke(e.start.dateTime + (e.start.timeZone === 'UTC' ? 'Z' : '')),
-          til: e.isAllDay ? null
-             : lesAltKlokke(e.end.dateTime + (e.end.timeZone === 'UTC' ? 'Z' : '')),
-          hele_dagen: !!e.isAllDay,
-          sted: (e.location && e.location.displayName) || null,
-          notat: (e.body && e.body.content)
-            ? String(e.body.content).replace(/<[^>]*>/g, ' ')
-                .replace(/\s+/g, ' ').trim().slice(0, 300) || null
-            : null,
-          serie: !!e.seriesMasterId || e.type === 'occurrence' || e.type === 'exception'
-        });
-      });
-    }catch(e){
+  /* SEKS OM GANGEN - ikke alle paa én gang, og ikke etter tur.
+
+     Samtidige kall mot Graph gir 429, og det var DET som fikk avtaler
+     til aa forsvinne i kalenderen. Grensa staar derfor igjen, men den
+     er ikke 1: seks er tallet kalendersida alt kjoerer med (se
+     kartleggingen del 10). Merk forskjellen paa de to stedene -
+     kalendersida gaar gjennom graph() i felles-graph.js, som proever om
+     igjen ved 429. lesAltGraph her gjoer IKKE det, saa en kalender som
+     blir strupet faller rett i `feilet`. Derfor skal dette ikke opp
+     uten at gjentakelsen kommer paa plass foerst.
+
+     Maalt 16. september 2026: elleve kall etter tur var ca. 2,8 sek av
+     en svartid paa sju, hvert enkelt 160-520 ms. I bolker blir det to
+     runder à det tregeste kallet. allSettled: én kalender som feiler
+     velter ikke de andre, og svarene leses i kalenderrekkefoelge under,
+     saa utfallet er det samme som da de gikk etter tur. */
+  const GRENSE = 6;
+  const svar = [];
+  for(let i = 0; i < kal.length; i += GRENSE){
+    const bolk = await Promise.allSettled(kal.slice(i, i + GRENSE).map(function(c){
+      return lesAltGraph('/me/calendars/' + encodeURIComponent(c.id) + q);
+    }));
+    bolk.forEach(function(r){ svar.push(r); });
+  }
+
+  kal.forEach(function(c, i){
+    const r = svar[i];
+    if(r.status !== 'fulfilled'){
       /* En kalender som ikke svarte er noe helt annet enn en som er tom. */
       feilet.push(c.name);
+      return;
     }
-  }
+    ((r.value && r.value.value) || []).forEach(function(e){
+      ut.push({
+        /* Id-ene MAA vaere med: de er det eneste endre_avtale og
+           slett_avtale kan gaa paa naar man staar et annet sted enn
+           kalendersida, der det ikke finnes noen innlest liste. */
+        id: e.id,
+        kalender_id: c.id,
+        kalender: c.name,
+        tittel: e.subject || '(uten tittel)',
+        dato: lesAltDato(e.start.dateTime + (e.start.timeZone === 'UTC' ? 'Z' : '')),
+        fra: e.isAllDay ? null
+           : lesAltKlokke(e.start.dateTime + (e.start.timeZone === 'UTC' ? 'Z' : '')),
+        til: e.isAllDay ? null
+           : lesAltKlokke(e.end.dateTime + (e.end.timeZone === 'UTC' ? 'Z' : '')),
+        hele_dagen: !!e.isAllDay,
+        sted: (e.location && e.location.displayName) || null,
+        notat: (e.body && e.body.content)
+          ? String(e.body.content).replace(/<[^>]*>/g, ' ')
+              .replace(/\s+/g, ' ').trim().slice(0, 300) || null
+          : null,
+        serie: !!e.seriesMasterId || e.type === 'occurrence' || e.type === 'exception'
+      });
+    });
+  });
   ut.sort(function(a, b){
     return (a.dato + (a.fra || '')) < (b.dato + (b.fra || '')) ? -1 : 1;
   });
