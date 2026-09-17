@@ -261,7 +261,7 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
 </div>
 
 <script src="/felles-dialog.js?v=1"></script>
-<script src="/felles-hus.js?v=2"></script>
+<script src="/felles-hus.js?v=3"></script>
 <script src="/felles-data.js?v=4"></script>
 <script src="/felles-ms.js?v=2"></script>
 <script src="/felles-lesalt.js?v=5"></script>
@@ -341,6 +341,13 @@ async function taImotKode(){
    Rekkefoelgen er viktig. Verst foerst: en roykvarsler i alarm skal
    vaere roed selv om batteriet ogsaa er lavt.
    ============================================================ */
+
+/* De tre varslertypene skiller seg BARE paa hvilken kapabilitet som
+   er alarmen. Batteri, ukjent tilstand og fargevalg er felles, og skal
+   vaere det: tre nesten like grener er tre steder regelen kan gli fra
+   hverandre den dagen en av dem endres. */
+const SIK_VARSEL = { royk:'alarm_smoke', varme:'alarm_heat', vann:'alarm_water' };
+
 function verdi(d, kap){
   const o = (d && d.capabilitiesObj) || {};
   return o[kap] ? o[kap].value : undefined;
@@ -358,8 +365,10 @@ function tilstand(d, art){
     return 'blaa';
   }
 
-  if(art === 'royk'){
-    if(verdi(d,'alarm_smoke') === true) return 'rod';
+  if(SIK_VARSEL[art]){
+    if(verdi(d, SIK_VARSEL[art]) === true) return 'rod';
+    /* Bare roykvarslerne melder denne. De andre gir undefined, og
+       faller pent gjennom. */
     const st = verdi(d,'measure_smoke_status');
     if(st !== undefined && st !== null && String(st).toUpperCase() !== 'OK') return 'rod';
     if(verdi(d,'alarm_battery') === true) return 'oransje';
@@ -384,10 +393,14 @@ function underTekst(d, art){
     if(verdi(d,'alarm_contact') === true) return 'Døren står åpen';
     return verdi(d,'locked') === true ? 'Låst' : 'Ulåst';
   }
-  if(art === 'royk'){
-    if(verdi(d,'alarm_smoke') === true) return 'RØYK';
+  if(SIK_VARSEL[art]){
+    /* «ALARM», ikke «RØYK» eller «LEKKASJE»: merket baerer alt typen og
+       stedet i baandet, saa en type-tekst gjentar det man ser. Linja skal
+       si det merket IKKE kan si - at den gaar akkurat naa. */
+    if(verdi(d, SIK_VARSEL[art]) === true) return 'ALARM';
     const b = verdi(d,'measure_battery');
     if(typeof b === 'number' && b <= 20) return 'Batteri ' + b + ' %';
+    /* Bare varmevarslerne melder temperatur. */
     const t = verdi(d,'measure_temperature');
     if(typeof t === 'number') return t.toFixed(1).replace('.', ',') + ' °C';
     return '';

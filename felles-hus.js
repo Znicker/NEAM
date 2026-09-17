@@ -38,16 +38,42 @@
    ------------------------------------------------------------
    Id-ene er Homeys egne. En fast liste er riktig her, ikke en
    begrensning: merkene er TEGNET for disse enhetene, med navnet i
-   båndet. Kommer en femte røykvarsler, trengs et nytt merke uansett,
-   og da er denne lista stedet man husker det.
+   båndet. En ny varsler trenger et nytt merke uansett, og da er
+   denne lista stedet man husker det.
+
+   Rekkefølgen her er rekkefølgen på sikkerhetssida: kamera, lås, og
+   så varslerne samlet type for type. Nummereringen i merkenavnet
+   følger Homeys egen, så en varsler man står under finnes igjen her.
    ------------------------------------------------------------ */
 const VISES = [
   { id:'c692ccf9-7754-4287-8617-953ab771ef8b', art:'kamera', merke:'kamera-tunet' },
   { id:'35ee6477-1a07-4952-bdc6-c10b404e8bb4', art:'laas',   merke:'laas-ytterdor' },
+
+  /* Røykvarslerne 01-13 */
   { id:'3c1c7f3d-6774-4027-9894-60d9289d4c55', art:'royk',   merke:'royk-andrea-stue' },
   { id:'97a05d1c-8887-4d90-9e9e-bfe602c68497', art:'royk',   merke:'royk-andrea-soverom' },
   { id:'c9d5679b-a330-4226-8cb8-a0978ce041da', art:'royk',   merke:'royk-hovedsoverom' },
-  { id:'3512e7eb-5829-44ac-b66a-905c3ba4f29d', art:'royk',   merke:'royk-gang-1-etasje' }
+  { id:'3512e7eb-5829-44ac-b66a-905c3ba4f29d', art:'royk',   merke:'royk-gang-1-etasje' },
+  { id:'37bf9d6a-1fcf-4e9b-88ae-8ddbb5030069', art:'royk',   merke:'royk-stue-trapp' },
+  { id:'92d5b30c-2436-44fe-b7aa-1967746920b6', art:'royk',   merke:'royk-stue-vindu' },
+  { id:'d6b5df74-8151-4cce-aae5-7143ff2c099e', art:'royk',   merke:'royk-vaskerom' },
+  { id:'1f6ab76d-d560-4638-8610-5a300a660bf3', art:'royk',   merke:'royk-torkerom' },
+  { id:'1fc6aaa4-9d57-4d93-9ca5-fa660afdf547', art:'royk',   merke:'royk-entre' },
+  { id:'287041dc-fa1a-4b58-9b97-3ec905e28cda', art:'royk',   merke:'royk-gang-kjeller' },
+  { id:'9948216d-0d23-4d31-9802-2b4b0b975a11', art:'royk',   merke:'royk-emma' },
+  { id:'475550e1-4e94-4d46-b734-647af8b9bb0a', art:'royk',   merke:'royk-kjellerstue' },
+  { id:'01fa8674-b453-416b-89d2-9bda9cc1d8fb', art:'royk',   merke:'royk-treningsrom' },
+
+  /* Varmevarslerne 01-02 */
+  { id:'ad302a4d-197d-4b8d-99d1-cf29bbfd5f92', art:'varme',  merke:'varme-kjokken' },
+  { id:'51985d07-9093-4f6a-b989-b41783b95176', art:'varme',  merke:'varme-garasje' },
+
+  /* Vannlekkasjesensorene 01-05 */
+  { id:'017d2351-fe78-4dac-af75-a94be236d0ea', art:'vann',   merke:'vann-kjokken' },
+  { id:'02c9b704-6513-4ae6-b91a-093bbd8cac43', art:'vann',   merke:'vann-vaskerom' },
+  { id:'6c006f3b-e06a-47e0-8fe3-28184feb06c0', art:'vann',   merke:'vann-torkerom' },
+  { id:'765c836c-f027-4e98-9712-c7ad2d056c1f', art:'vann',   merke:'vann-fordelingsskap' },
+  { id:'d82c5653-eede-4f21-859d-9968dd056404', art:'vann',   merke:'vann-liten-bod' }
 ];
 
 /* Kapabiliteter vi IKKE viser - de sier ingenting for et menneske som
@@ -60,6 +86,7 @@ const NAVN = {
   locked:'Låst', lock_unlock_open:'Låsen', alarm_contact:'Dør',
   secure_lock:'Sikkerhetslås', alarm_battery:'Batterivarsel',
   alarm_smoke:'Røyk', measure_smoke_status:'Tilstand',
+  alarm_heat:'Varmealarm', alarm_water:'Lekkasje',
   measure_battery:'Batteri', alarm_muted:'Dempet', alarm_motion:'Bevegelse',
   measure_temperature:'Temperatur'
 };
@@ -160,9 +187,10 @@ function husLaasKap(o){
 const HJEM_VERKTOY = [
   {
     name: 'les_huset',
-    description: 'Tilstanden til ytterdøra, kameraet og røykvarslerne slik Homey ser '
-               + 'dem nå: om døra er låst, om den står åpen, batterinivå og om noen '
-               + 'røykvarsler har utløst. Virker fra hvilken som helst side. Bruk denne '
+    description: 'Tilstanden til ytterdøra, kameraet, røykvarslerne, varmevarslerne '
+               + 'og vannlekkasjesensorene slik Homey ser dem nå: om døra er låst, om '
+               + 'den står åpen, batterinivå, og om noen varsler har utløst - røyk, for '
+               + 'høy varme eller vann på gulvet. Virker fra hvilken som helst side. Bruk denne '
                + 'før du sier noe om huset - ikke gjett, og ikke husk fra tidligere i '
                + 'samtalen.',
     input_schema: { type:'object', properties:{}, required:[] }
