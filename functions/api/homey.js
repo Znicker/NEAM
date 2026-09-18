@@ -460,6 +460,55 @@ export async function onRequestGet({ request, env }){
     return svar({ ok:true, soner: r.data });
   }
 
+  /* ---------- Flowene ----------
+     BARE LESING.
+
+     HVORFOR DE TRENGS: kortet som utloeser en X-Sense-test er
+     app-definert og finnes IKKE som kapabilitet paa enheten. Maalt
+     17. september 2026: alt paa en roykvarsler er `setable:false`,
+     ogsaa `alarm_muted`. Veien gaar derfor gjennom en flow.
+
+     Svaret holdes lite med vilje: id, navn, om den staar paa, og
+     hvilke enhets-id-er flowen nevner. Det siste er det eneste vi
+     trenger for aa binde en flow til et merke paa sikkerhetssida.
+     Resten av en flow er ingens sak her - den kan inneholde adresser
+     og nokler vi ikke skal sende videre. */
+  if(hva === 'flyter'){
+    const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g;
+    const ut = [];
+
+    async function samle(sti, slag){
+      const r = await motHomey(env, epost, sti);
+      if(r.feil) return r.feil;
+      const d = r.data || {};
+      Object.keys(d).forEach(function(id){
+        const f = d[id] || {};
+        const egen = f.id || id;
+        /* Enhets-id-ene ligger i kortenes argumenter, men feltnavnene
+           varierer mellom vanlige og avanserte flows. Vi leter i hele
+           flowen i stedet for aa gjette paa en form. */
+        const funnet = JSON.stringify(f).match(UUID) || [];
+        ut.push({
+          id: egen,
+          navn: f.name || '',
+          slag: slag,
+          paa: f.enabled !== false,
+          enheter: funnet.filter(function(x, i){
+            return x !== egen && funnet.indexOf(x) === i;
+          })
+        });
+      });
+      return null;
+    }
+
+    const feil1 = await samle('/api/manager/flow/flow', 'vanlig');
+    /* Avanserte flows ligger for seg. At de ikke finnes er ikke en feil. */
+    await samle('/api/manager/flow/advancedflow', 'avansert');
+
+    if(!ut.length && feil1) return svar({ ok:false, feil:feil1 });
+    return svar({ ok:true, flyter: ut });
+  }
+
   return svar({ ok:false, feil:'Ukjent hva: ' + hva });
 }
 
