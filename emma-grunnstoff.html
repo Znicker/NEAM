@@ -17,37 +17,56 @@
 <style>
 /* ============================================================
    NEAM - Grunnstoffspill for Emma
-   Laget 16. september 2026. Lenket fra Emma dash.
+   Laget 16. september 2026. Bygget om 18. september 2026.
    Begrunnelsene ligger i kartleggingen del 51.
 
-   TRE TRINN, HVERT SPILLBART ALENE. Dette er trinn 1: de ti
-   foerste stoffene, med navn, symbol, atomnummer og oppbygning.
-   Trinn 2 (hun bygger atomet selv) og trinn 3 (bindinger) kommer
-   senere - derfor ligger skallene alt i datasettet, og derfor er
-   `laastOpp` et tall som kan vokse i stedet for en ferdig liste.
+   HELE TABELLEN ER TENT FRA FOERSTE STUND. Foer 18. september var de
+   laaste stoffene moerke og upolerte. Det kostet mer enn det ga: et
+   periodesystem i gruppefarger ER kartet, og et moerkt felt er ikke et
+   maal man gaar mot - det er bare et hull. Naa staar alle 118 i fargen
+   sin, og framdriften ligger i STJERNA oppe til hoeyre i ruta:
+     ingen stjerne  - hun kan lese om stoffet, men ikke proeves paa det
+     tom stjerne    - hun har tilgang, proeven er aapen
+     gullstjerne    - hun har bestaatt proeven
 
-   FRAMDRIFT SOM GEOGRAFI, IKKE SOM PROSENTSTRIPE. Hele tabellen
-   staar der fra foerste stund. De laaste stoffene er moerke og
-   upolerte; de aapne er tent. Da ser hun baade hvor hun er og hvor
-   hun skal - en stripe som fylles sier ingen av delene.
+   STJERNA ER DEN SAMME FILA I TO TILSTANDER, avfarget i CSS naar den
+   er tom - ett bilde som ikke kan komme i utakt. Samme regel som
+   mattespillet (designsystemet, «Mattespillet»).
 
-   SELVRETTENDE FOER POENGGIVENDE. Spoersmaalene har ett riktig
-   svar som finnes i datasettet, saa spillet trenger knapt logikk
-   for aa si ja eller nei.
+   PROEVEN ER VEIEN VIDERE. Fem spoersmaal om ETT stoff, og deretter maa
+   hun bygge atomet. Alle fem riktige og et riktig bygget atom gir
+   gullstjerne, 100 XP og aapner neste stoff i rekka. Oevingsrunden
+   staar ved siden av og gir XP, men aapner ingenting - da er det alltid
+   klart hva som faktisk flytter henne framover.
 
-   ET GALT SVAR ER IKKE ROEDT. Roedt betyr slett i dette huset, og
-   det skal ikke kjennes som straff aa bomme. Det gale svaret blir
-   staaende dust og overstroeket ved siden av fasiten. Gult
-   (--lys) betyr «det der gikk bra» - samme betydning som lampene
-   i mattespillet.
+   NOEYTRONET KOMMER ETTER TI STOFFER, ikke foer. Antall noeytroner kan
+   ikke utledes av atomnummeret, saa det maatte ellers bare vaert et tall
+   hun fikk oppgitt. Naar hun har aapnet stoff elleve, dukker
+   laeringsboksen opp: hun faar MASSETALLET og regner selv
+   noeytroner = massetall - atomnummer. Da er det noe hun finner ut, ikke
+   noe hun husker. Testen paa den gir 500 XP, og foerst etterpaa finnes
+   noeytroner i tegningen, i faktalista og i byggemagasinet.
 
-   INGEN NEAM-FIRER. Samtalen er en rask vei til fasiten. Veien ut
-   er merket oppe til venstre og sveip tilbake, som i de to andre
-   spillene.
+   XP OG NIVAA. 10 XP per riktig svar i oeving (50/100/150 for en feilfri
+   runde paa 5/10/15), 100 XP per gullstjerne, 500 XP for noeytrontesten.
+   Nivaagrensene er 500, 1000, 2000, 5000, 10000, 20000, 50000 og 100000.
+   Premier ved nytt nivaa er ikke bestemt ennaa - stripa staar der,
+   belooningen kommer.
 
-   KLASSENAVN ER PREFIKSET `gs-`. Fila er stor nok til at vanlige
-   ord som .tom, .ny og .aktiv alt kan bety noe annet - se
-   kartleggingen del 26.
+   SELVRETTENDE FOER POENGGIVENDE. Spoersmaalene har ett riktig svar som
+   finnes i datasettet, saa spillet trenger knapt logikk for aa si ja
+   eller nei.
+
+   ET GALT SVAR ER IKKE ROEDT. Roedt betyr slett i dette huset, og det
+   skal ikke kjennes som straff aa bomme. Det gale svaret blir staaende
+   dust og overstroeket ved siden av fasiten. Gult (--lys) betyr «det der
+   gikk bra» - samme betydning som lampene i mattespillet.
+
+   INGEN NEAM-FIRER. Samtalen er en rask vei til fasiten. Veien ut er
+   merket oppe til venstre og sveip tilbake, som i de to andre spillene.
+
+   KLASSENAVN ER PREFIKSET `gs-`. Fila er stor nok til at vanlige ord som
+   .tom, .ny og .aktiv alt kan bety noe annet - se kartleggingen del 26.
    ============================================================ */
 
 :root{
@@ -56,8 +75,8 @@
   --messing:#B8873A;
   --messing-moerk:#8A6428;
   --messing-lys:#D9AE68;
-  /* Det gule betyr «riktig» tre steder: tent stoff, riktig svar og
-     stjernene. Én farge, én betydning. */
+  /* Det gule betyr «riktig» fire steder: tom stjerne som tennes, riktig
+     svar, XP-stripa og stjernene. Én farge, én betydning. */
   --lys:#F2C14E;
   --lys-glod:rgba(242,193,78,.75);
 
@@ -101,6 +120,13 @@ body::before{
 .gs-side{ max-width:1180px; margin:0 auto; padding:10px 12px 28px; }
 @media(min-width:700px){ .gs-side{ padding:18px 20px 36px; } }
 
+/* Gradientene og skyggene til atomtegningene bor i ett eneste skjult
+   SVG, og begge tegningene peker hit med url(#...). Ett sted aa endre
+   dypet, og ingen id-er som finnes i to eksemplarer. Den ligger som
+   `position:absolute` med null stoerrelse og ikke `display:none`:
+   Safari har hatt for vane aa droppe gradienter i skjulte traer. */
+.gs-defs{ position:absolute; width:0; height:0; overflow:hidden; }
+
 /* ---------- Topplinja ---------- */
 /* Wrap er ikke pynt: paa telefon ble fanene liggende utenfor
    skjermkanten, og siden `body` har overflow-x:clip kunne de ikke naas
@@ -133,6 +159,39 @@ body::before{
 }
 .gs-fane.gs-valgt{ color:var(--ink); border-bottom-color:var(--messing); }
 
+/* ---------- XP-stripa ----------
+   Staar over fanene og gjelder alle fire, fordi poeng tjenes tre
+   forskjellige steder. Stripa fylles med det samme gule som betyr
+   «det der gikk bra» ellers i spillet. */
+.gs-xp{
+  background:var(--paper); border:2px solid var(--messing);
+  border-radius:14px; padding:10px 14px; margin-bottom:14px;
+  box-shadow:var(--shadow);
+}
+.gs-xp-hode{ display:flex; align-items:baseline; gap:10px; }
+.gs-xp-nivaa{
+  font-size:var(--t-meta); font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink);
+}
+.gs-xp-tall{ margin-left:auto; font-size:var(--t-meta); font-weight:700; color:var(--ink-soft); }
+.gs-xp-spor{
+  margin-top:7px; height:10px; border-radius:999px;
+  background:var(--boks-mild); border:1px solid var(--boks-kant); overflow:hidden;
+}
+.gs-xp-fyll{
+  height:100%; width:0; border-radius:999px;
+  background:linear-gradient(90deg, var(--messing-lys), var(--lys));
+  transition:width .6s ease;
+}
+.gs-xp-neste{ margin:6px 0 0; font-size:var(--t-etikett); font-weight:600; color:var(--ink-soft); }
+/* Stripa blinker naar den vokser. Uten det er poengene et tall som
+   endrer seg mens hun ser en annen vei. */
+.gs-xp.gs-xp-opp{ animation:gsPuls 1s ease; }
+@keyframes gsPuls{
+  0%,100%{ box-shadow:var(--shadow); }
+  35%{ box-shadow:0 0 0 4px var(--lys-glod), var(--shadow); }
+}
+
 /* ---------- Panelet: papir i messingramme ---------- */
 .gs-panel{
   background:var(--paper); border:2px solid var(--messing);
@@ -163,6 +222,7 @@ body::before{
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   line-height:1; position:relative; overflow:hidden;
 }
+.gs-rute:active{ transform:scale(.94); }
 .gs-rute .gs-nr{
   position:absolute; top:2px; left:3px;
   font-size:9px; font-weight:600; color:var(--ink-soft);
@@ -174,18 +234,26 @@ body::before{
 }
 @media(min-width:1100px){ .gs-rute .gs-navn{ font-size:8px; } }
 
-/* Tent: stoffet er laast opp. Den tynne gule kanten er det samme
-   «dette gikk bra» som stjernene. */
-.gs-rute.gs-apen{ box-shadow:inset 0 0 0 1.5px var(--lys-glod); }
-.gs-rute.gs-apen:active{ transform:scale(.94); }
-
-/* Laast: moerkt og upolert. Ikke skjult - hun skal se hvor hun skal. */
-.gs-rute.gs-laast{
-  background:#6E6A62; color:rgba(255,255,255,.62); cursor:default;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.10);
+/* Stjerna i hjoernet. Samme fil som resultatstjernene - tom er den
+   avfarget, gull er den urørt. */
+.gs-merkestjerne{
+  position:absolute; top:2px; right:2px;
+  width:11px; height:11px; display:block; pointer-events:none;
 }
-.gs-rute.gs-laast .gs-nr{ color:rgba(255,255,255,.45); }
-.gs-rute.gs-laast .gs-navn{ color:rgba(255,255,255,.45); }
+@media(min-width:700px){ .gs-merkestjerne{ width:14px; height:14px; } }
+@media(min-width:1100px){ .gs-merkestjerne{ width:16px; height:16px; } }
+.gs-merkestjerne.gs-tom-stjerne{ filter:grayscale(1) opacity(.45); }
+/* Gullstjerna faar et svakt skjaer, saa den leses som tent og ikke bare
+   som farget. */
+.gs-merkestjerne.gs-gull{ filter:drop-shadow(0 0 3px var(--lys-glod)); }
+
+/* Har hun tilgang, er ruta litt loeftet fra de andre: tynn gul kant
+   innvendig, samme «det gikk bra» som stjernene. */
+.gs-rute.gs-apen{ box-shadow:inset 0 0 0 1.5px var(--lys-glod); }
+.gs-rute.gs-mestret{ box-shadow:inset 0 0 0 2px var(--lys); }
+/* Stoffer uten tilgang er IKKE moerke lenger - de er bare litt roligere,
+   saa fargekartet staar helt fra foerste dag. */
+.gs-rute.gs-hvile{ filter:saturate(.72); }
 
 .gs-rute.gs-peker{
   background:transparent; cursor:default; color:var(--ink-soft);
@@ -193,8 +261,7 @@ body::before{
 }
 .gs-tom{ width:var(--rute); height:var(--rute); }
 
-/* Fargene per gruppe. Samme flate laast som aapen - laast-regelen
-   over vinner fordi den staar etter. */
+/* Fargene per gruppe. */
 .gs-alkali{ background:var(--gr-alkali); }
 .gs-jordalkali{ background:var(--gr-jordalkali); }
 .gs-overgang{ background:var(--gr-overgang); }
@@ -212,33 +279,71 @@ body::before{
 }
 .gs-tegnforklaring span{ display:flex; align-items:center; gap:5px; }
 .gs-prikk{ width:11px; height:11px; border-radius:3px; display:inline-block; }
+.gs-forklar-stjerne{ width:12px; height:12px; display:inline-block; }
+.gs-forklar-stjerne.gs-tom-stjerne{ filter:grayscale(1) opacity(.45); }
 
 /* ---------- Laben: ett stoff i detalj ---------- */
-.gs-lab{ display:grid; grid-template-columns:1fr; gap:16px; }
-@media(min-width:760px){ .gs-lab{ grid-template-columns:auto 1fr auto; align-items:center; } }
+.gs-lab{ display:grid; grid-template-columns:1fr; gap:18px; }
+@media(min-width:860px){ .gs-lab{ grid-template-columns:auto 1fr auto; align-items:start; } }
 
+.gs-kort{ display:flex; flex-direction:column; align-items:center; gap:10px; }
 .gs-stor-rute{
-  width:104px; height:104px; border-radius:12px; border:2px solid var(--messing);
+  width:118px; height:118px; border-radius:14px; border:2px solid var(--messing);
   display:flex; flex-direction:column; align-items:center; justify-content:center;
-  margin:0 auto; line-height:1.1;
+  margin:0 auto; line-height:1.1; position:relative;
 }
 .gs-stor-rute .gs-stor-nr{ font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); }
-.gs-stor-rute .gs-stor-sym{ font-size:40px; font-weight:700; }
+.gs-stor-rute .gs-stor-sym{ font-size:44px; font-weight:700; }
 .gs-stor-rute .gs-stor-navn{ font-size:var(--t-etikett); font-weight:600; }
+.gs-stor-rute .gs-merkestjerne{ top:5px; right:5px; width:18px; height:18px; }
 
-.gs-fakta{ margin:0; }
+.gs-status{
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-soft); text-align:center;
+}
+.gs-status.gs-status-gull{ color:var(--messing-moerk); }
+
+/* Den praktiske teksten. Den staar foerst i midtspalta med vilje: det
+   er den som svarer paa «hva ER dette» - tallene kommer etterpaa. */
+.gs-hva{
+  font-size:var(--t-brod); font-weight:600; line-height:1.45; margin:0 0 4px;
+}
+.gs-hverdag{
+  font-size:var(--t-meta); font-weight:600; line-height:1.5;
+  color:var(--ink-soft); margin:0 0 14px;
+  border-left:3px solid var(--messing-lys); padding-left:10px;
+}
+
+.gs-fakta{ margin:0; display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; }
+@media(min-width:520px){ .gs-fakta{ grid-template-columns:repeat(3, 1fr); } }
+@media(min-width:860px){ .gs-fakta{ grid-template-columns:1fr 1fr; } }
+.gs-fakta div{ min-width:0; }
 .gs-fakta dt{
   font-size:var(--t-etikett); font-weight:700; letter-spacing:.1em;
-  text-transform:uppercase; color:var(--ink-soft); margin-top:8px;
+  text-transform:uppercase; color:var(--ink-soft);
 }
-.gs-fakta dt:first-child{ margin-top:0; }
-.gs-fakta dd{ margin:1px 0 0; font-size:var(--t-brod); font-weight:600; }
+.gs-fakta dd{ margin:1px 0 0; font-size:var(--t-brod); font-weight:600; overflow-wrap:anywhere; }
 
-.gs-atom{ display:block; margin:0 auto; width:min(260px, 74vw); height:auto; }
-.gs-kjerne{ fill:var(--danger); }
-.gs-skall{ fill:none; stroke:var(--messing); stroke-width:1.4; opacity:.75; }
-.gs-elektron{ fill:var(--aksent); }
-.gs-atom text{ font-family:inherit; font-size:9px; font-weight:700; fill:var(--ink-soft); }
+/* ---------- Atomtegningen ----------
+   Stoerre enn foer (360 i SVG-koordinater mot 260), og med dybde:
+   kulene har lys ovenfra og skygge under, ringene er gravert messing
+   med lys paa den ene sida. Tegnet og ikke hentet som bilde - da finnes
+   det ingen fil som kan mangle, og modellen kan ikke komme i utakt med
+   tallene ved siden av. */
+.gs-atom{ display:block; margin:0 auto; height:auto; width:min(340px, 82vw); }
+/* `min-width` er ikke pynt, og den maa vaere et absolutt tall. En SVG
+   med viewBox har ingen egen minstebredde, saa `1fr`-spalta ved siden av
+   klemmer den ned til drøyt hundre piksler. En prosent hjelper ikke -
+   den maales mot spalta som selv maales mot innholdet, og faller
+   tilbake til null. Bare i trespaltevisningen: under 860px staar
+   tegningen alene paa linja og trenger ingen gulvhoeyde. */
+@media(min-width:860px){ .gs-atom{ min-width:280px; } }
+/* Ingen font-size her: den settes per tegning, maalt mot utsnittet. */
+.gs-atom text{ font-family:inherit; font-weight:700; letter-spacing:.12em; fill:var(--ink-soft); }
+.gs-skall{ fill:none; stroke:url(#gsRing); stroke-width:2; }
+/* Feil skall: stiplet og dust, aldri roedt. Roedt betyr slett. */
+.gs-skall.gs-feil{ stroke:var(--ink-soft); stroke-dasharray:5 5; opacity:.45; }
+.gs-skall.gs-riktig-skall{ stroke:var(--lys); stroke-width:3; }
 
 .gs-lab-knapper{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
 
@@ -255,7 +360,38 @@ body::before{
 .gs-knapp.gs-tung:active{ background:var(--aksent-moerk); }
 .gs-knapp[disabled]{ opacity:.45; cursor:default; }
 
+/* ---------- Laeringsboksen ----------
+   Brukes til noeytronet naa, og er bygget saa den kan brukes til neste
+   begrep uten en ny boks. */
+.gs-laer{ border-color:var(--lys); }
+.gs-laer-merke{
+  display:inline-block; font-size:var(--t-etikett); font-weight:700;
+  letter-spacing:.12em; text-transform:uppercase;
+  background:rgba(242,193,78,.25); border:1px solid var(--lys);
+  border-radius:999px; padding:3px 10px; margin-bottom:8px;
+}
+.gs-laer p{ font-size:var(--t-brod); font-weight:600; line-height:1.5; margin:0 0 10px; }
+.gs-laer .gs-regnestykke{
+  font-size:var(--t-stor); font-weight:700; text-align:center;
+  background:var(--boks-mild); border:1px solid var(--boks-kant);
+  border-radius:12px; padding:12px; margin:12px 0;
+}
+
 /* ---------- Test meg ---------- */
+.gs-veivalg{ display:grid; grid-template-columns:1fr; gap:12px; }
+@media(min-width:720px){ .gs-veivalg{ grid-template-columns:1fr 1fr; } }
+.gs-vei{
+  border:2px solid var(--line); border-radius:14px; padding:14px;
+  background:var(--boks-mild); cursor:pointer; font-family:inherit;
+  text-align:left; color:var(--ink);
+}
+.gs-vei.gs-pa{ border-color:var(--messing); background:var(--paper); }
+.gs-vei h3{
+  margin:0 0 4px; font-size:var(--t-meta); font-weight:700;
+  letter-spacing:.1em; text-transform:uppercase;
+}
+.gs-vei p{ margin:0; font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); line-height:1.45; }
+
 .gs-valg{ display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 16px; }
 .gs-velger{
   font-family:inherit; font-size:var(--t-brod); font-weight:700;
@@ -265,6 +401,12 @@ body::before{
 .gs-velger.gs-pa{ border-color:var(--messing); color:var(--ink); background:var(--boks-mild); }
 .gs-velger .gs-hake{ margin-right:6px; opacity:0; }
 .gs-velger.gs-pa .gs-hake{ opacity:1; }
+.gs-velger .gs-xp-lapp{ font-size:var(--t-etikett); color:var(--ink-soft); margin-left:6px; }
+
+/* Stoffvelgeren i proeven: smaa ruter i gruppefarge, samme som tabellen. */
+.gs-provevalg{ display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 16px; }
+.gs-provevalg .gs-rute{ width:46px; height:46px; }
+.gs-provevalg .gs-rute .gs-sym{ font-size:17px; }
 
 .gs-teller{
   font-size:var(--t-etikett); font-weight:700; letter-spacing:.1em;
@@ -291,6 +433,16 @@ body::before{
 
 .gs-fasit{ margin-top:14px; font-size:var(--t-brod); font-weight:600; min-height:24px; }
 
+/* Prikkene som viser hvor langt i proeven hun er. Fem spoersmaal er faa
+   nok til at en teller i tall ville vaert mindre tydelig enn fem prikker. */
+.gs-prikker{ display:flex; gap:6px; margin:8px 0 0; }
+.gs-prikker i{
+  width:10px; height:10px; border-radius:50%; display:block;
+  border:2px solid var(--line); background:transparent;
+}
+.gs-prikker i.gs-p-riktig{ background:var(--lys); border-color:var(--lys); }
+.gs-prikker i.gs-p-bom{ background:var(--ink-soft); border-color:var(--ink-soft); opacity:.45; }
+
 /* ---------- Resultatet ---------- */
 .gs-resultat{ text-align:center; }
 .gs-stjerner{ display:flex; justify-content:center; gap:6px; margin:6px 0 12px; }
@@ -298,6 +450,8 @@ body::before{
 /* Tom stjerne er den SAMME fila avfarget - ett bilde, to tilstander,
    som ikke kan komme i utakt. */
 .gs-stjerne.gs-tom-stjerne{ filter:grayscale(1) opacity(.32); }
+.gs-stor-stjerne{ width:92px; height:92px; display:block; margin:0 auto 10px;
+  filter:drop-shadow(0 0 10px var(--lys-glod)); }
 .gs-fasitliste{ text-align:left; margin-top:16px; }
 .gs-fasitrad{
   display:flex; gap:10px; padding:7px 0; border-top:1px solid var(--line);
@@ -305,6 +459,13 @@ body::before{
 }
 .gs-fasitrad span:first-child{ font-weight:700; min-width:26px; }
 .gs-fasitrad.gs-bom span:last-child{ color:var(--ink-soft); }
+
+.gs-xp-gitt{
+  display:inline-block; margin:4px 0 10px;
+  font-size:var(--t-meta); font-weight:700; letter-spacing:.06em;
+  background:rgba(242,193,78,.25); border:1px solid var(--lys);
+  border-radius:999px; padding:5px 14px;
+}
 
 /* ---------- Framdrift ---------- */
 .gs-tall{ display:flex; flex-wrap:wrap; gap:18px 28px; }
@@ -315,12 +476,20 @@ body::before{
 }
 .gs-tall dd{ margin:2px 0 0; font-size:var(--t-stor); font-weight:700; }
 
+.gs-nivaastige{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+.gs-trinn{
+  font-size:var(--t-etikett); font-weight:700; padding:5px 11px;
+  border-radius:999px; border:1px solid var(--line); color:var(--ink-soft);
+}
+.gs-trinn.gs-naadd{ border-color:var(--lys); background:rgba(242,193,78,.22); color:var(--ink); }
+
 /* ---------- Pilla som sier fra ---------- */
 .gs-pille{
   position:fixed; left:50%; transform:translateX(-50%);
   bottom:calc(18px + env(safe-area-inset-bottom));
   background:var(--ink); color:var(--paper); font-size:var(--t-meta); font-weight:600;
   padding:10px 16px; border-radius:999px; box-shadow:var(--shadow); z-index:40;
+  max-width:90vw; text-align:center;
 }
 .gs-pille[hidden]{ display:none; }
 
@@ -331,10 +500,16 @@ body::before{
    BAADE DRAING OG TRYKK. Designsystemet fraraader draing paa
    beroeringsskjerm - den slaass mot rulling, og nettleseren avbryter
    draget naar den tror du blar. Her er begge veier bygget: dra en brikke
-   fra magasinet og slipp den paa plata, ELLER trykk brikken én gang og
-   trykk deretter der den skal. Byggeplata har `touch-action:none`, saa
-   et drag som starter paa den ikke blir til rulling. Magasinet ligger
-   utenfor plata og kan rulles som vanlig.
+   fra beholderen og slipp den paa plata, ELLER trykk beholderen én gang
+   og trykk deretter der brikka skal. Byggeplata har `touch-action:none`,
+   saa et drag som starter paa den ikke blir til rulling. Beholderne
+   ligger utenfor plata og kan rulles som vanlig.
+
+   BEHOLDERNE ER UTOEMMELIGE. Foer 18. september sto det «3 igjen» paa
+   hver brikke, og knappen ble graa naar tallet naadde null. Det gjorde
+   halve oppgaven for henne: hun kunne telle magasinet i stedet for aa
+   telle atomet. Naa henter hun saa mange hun vil, og det er RETTINGEN
+   som teller.
 
    RETTINGEN KOMMER NAAR HUN TRYKKER FERDIG, ikke mens hun bygger. Da
    faar hun bygge ferdig sin egen tanke foerst - og feilen blir noe hun
@@ -343,56 +518,107 @@ body::before{
 @media(min-width:920px){ .gs-bygg{ grid-template-columns:auto 1fr; align-items:start; } }
 
 .gs-oppgave{ display:flex; align-items:center; gap:14px; margin-bottom:6px; flex-wrap:wrap; }
-.gs-oppgave .gs-stor-rute{ margin:0; width:84px; height:84px; }
-.gs-oppgave .gs-stor-rute .gs-stor-sym{ font-size:32px; }
-.gs-oppgave-tekst{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.gs-oppgave .gs-stor-rute{ margin:0; width:92px; height:92px; }
+.gs-oppgave .gs-stor-rute .gs-stor-sym{ font-size:34px; }
+.gs-oppgave-tekst{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; line-height:1.5; }
 .gs-oppgave-tekst b{ color:var(--ink); }
 
 /* Plata. touch-action:none er det som gjoer draing mulig i det hele
    tatt paa telefon - uten den tar rullingen over pekeren. */
 .gs-plate{
-  position:relative; width:min(330px, 84vw); margin:0 auto;
+  position:relative; width:min(380px, 88vw); margin:0 auto;
   touch-action:none; -webkit-user-select:none; user-select:none;
 }
 .gs-plate svg{ width:100%; height:auto; display:block; }
-.gs-plate.gs-slipp{ filter:drop-shadow(0 0 8px var(--lys-glod)); }
+.gs-plate.gs-slipp{ filter:drop-shadow(0 0 10px var(--lys-glod)); }
 
-.gs-magasin{ display:flex; flex-wrap:wrap; gap:10px; margin:14px 0 8px; }
-.gs-brikke{
-  display:flex; align-items:center; gap:8px; font-family:inherit;
-  font-size:var(--t-meta); font-weight:700; color:var(--ink);
-  padding:10px 15px; border-radius:999px; cursor:pointer;
-  border:2px solid var(--line); background:var(--paper);
-  touch-action:none; -webkit-user-select:none; user-select:none;
+/* Beholderne. Runde glass med kula i - tallet under sier hvor mange hun
+   har lagt ut, ikke hvor mange som er igjen. */
+.gs-magasin{ display:flex; flex-wrap:wrap; gap:12px; margin:16px 0 8px; justify-content:center; }
+@media(min-width:920px){ .gs-magasin{ justify-content:flex-start; } }
+.gs-beholder{
+  display:flex; flex-direction:column; align-items:center; gap:5px;
+  font-family:inherit; cursor:pointer; padding:10px 8px 8px; width:92px;
+  border:2px solid var(--line); border-radius:16px; background:var(--paper);
+  color:var(--ink); touch-action:none; -webkit-user-select:none; user-select:none;
 }
-.gs-brikke.gs-valgt{ border-color:var(--messing); background:var(--boks-mild); }
-.gs-brikke[disabled]{ opacity:.38; cursor:default; }
-.gs-kule{ width:15px; height:15px; border-radius:50%; display:inline-block; flex-shrink:0; }
-.gs-kule.gs-k-proton{ background:var(--danger); }
-.gs-kule.gs-k-elektron{ background:var(--aksent); }
+.gs-beholder.gs-valgt{ border-color:var(--messing); background:var(--boks-mild); }
+.gs-beholder-glass{
+  width:52px; height:52px; border-radius:50%;
+  border:2px solid var(--messing); display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(circle at 34% 28%, rgba(255,255,255,.9), rgba(0,0,0,.05));
+}
+.gs-beholder-navn{ font-size:var(--t-etikett); font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+.gs-beholder-tall{ font-size:var(--t-etikett); font-weight:600; color:var(--ink-soft); }
+
+/* Kulene. Samme dybde som i tegningen: lys ovenfra, skygge under. */
+.gs-kule{
+  width:26px; height:26px; border-radius:50%; display:inline-block; flex-shrink:0;
+  box-shadow:inset 0 -3px 5px rgba(0,0,0,.22), inset 0 3px 5px rgba(255,255,255,.45),
+             0 1px 3px rgba(44,62,80,.3);
+}
+.gs-kule.gs-k-proton{ background:radial-gradient(circle at 34% 28%, #D9806C, #A64D3C 72%); }
+.gs-kule.gs-k-noytron{ background:radial-gradient(circle at 34% 28%, #A9B6C2, #5A6C7D 72%); }
+.gs-kule.gs-k-elektron{ background:radial-gradient(circle at 34% 28%, #86B4D8, #4A7FA8 72%); }
 .gs-kule.gs-k-skall{
-  background:transparent; border:2px solid var(--messing); width:17px; height:17px;
+  background:transparent; border:2.5px solid var(--messing); box-shadow:none;
 }
-/* Brikka som foelger fingeren mens hun drar. */
+
+/* Brikka som foelger fingeren mens hun drar er BARE kula - ikke hele
+   beholderen med navn under. Navnet gjoer draget til en etikett som
+   dekker plata hun sikter paa. */
 .gs-flyt{
   position:fixed; z-index:60; pointer-events:none;
-  transform:translate(-50%, -50%); opacity:.92;
+  transform:translate(-50%, -50%) scale(1.25); opacity:.92;
 }
 
-.gs-bygg-tall{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.gs-bygg-status{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; text-align:center; }
+@media(min-width:920px){ .gs-bygg-status{ text-align:left; } }
 .gs-bygg-svar{ margin-top:14px; font-size:var(--t-brod); font-weight:600; }
 .gs-bygg-svar ul{ margin:8px 0 0; padding-left:20px; }
 .gs-bygg-svar li{ margin-bottom:4px; font-weight:600; }
 .gs-bygg-svar.gs-klart{ color:var(--ink); }
 
-/* Feil skall: stiplet og dust, aldri roedt. Roedt betyr slett. */
-.gs-skall.gs-feil{ stroke-dasharray:5 5; opacity:.5; }
-.gs-skall.gs-riktig-skall{ stroke:var(--lys); stroke-width:2.4; opacity:1; }
-
 .gs-skjult{ display:none !important; }
 </style>
 </head>
 <body>
+
+<!-- Dybden til begge atomtegningene. Ett sted, to brukere. -->
+<svg class="gs-defs" aria-hidden="true" focusable="false">
+  <defs>
+    <radialGradient id="gsProton" cx="34%" cy="28%" r="72%">
+      <stop offset="0%" stop-color="#E09681"/>
+      <stop offset="55%" stop-color="#BE5C48"/>
+      <stop offset="100%" stop-color="#8E4033"/>
+    </radialGradient>
+    <radialGradient id="gsNoytron" cx="34%" cy="28%" r="72%">
+      <stop offset="0%" stop-color="#B7C3CE"/>
+      <stop offset="55%" stop-color="#7A8B99"/>
+      <stop offset="100%" stop-color="#4A5866"/>
+    </radialGradient>
+    <radialGradient id="gsElektron" cx="34%" cy="28%" r="72%">
+      <stop offset="0%" stop-color="#9AC4E4"/>
+      <stop offset="55%" stop-color="#5A8FB6"/>
+      <stop offset="100%" stop-color="#3A6689"/>
+    </radialGradient>
+    <!-- Skjaeret rundt kjernen. Det er det som gjoer at kjernen ligger
+         BAK ringene i stedet for oppaa dem. -->
+    <radialGradient id="gsKjerneGlod" cx="50%" cy="50%" r="50%">
+      <stop offset="55%" stop-color="rgba(166,77,60,.20)"/>
+      <stop offset="100%" stop-color="rgba(166,77,60,0)"/>
+    </radialGradient>
+    <!-- Gravert messing: lys paa den ene sida, moerk paa den andre. -->
+    <linearGradient id="gsRing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D9AE68"/>
+      <stop offset="45%" stop-color="#B8873A"/>
+      <stop offset="100%" stop-color="#8A6428"/>
+    </linearGradient>
+    <filter id="gsSkygge" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="0" dy="1.6" stdDeviation="1.6" flood-color="#2C3E50" flood-opacity=".32"/>
+    </filter>
+  </defs>
+</svg>
 
 <div class="gs-side">
 
@@ -402,6 +628,7 @@ body::before{
            onerror="this.hidden = true">
     </a>
     <h1 class="gs-tittel">Grunnstoffene<span>Neams kjemiverden</span></h1>
+
     <div class="gs-faner">
       <button class="gs-fane gs-valgt" id="faneTabell" onclick="visFane('tabell')">Periodesystemet</button>
       <button class="gs-fane" id="faneBygg" onclick="visFane('bygg')">Bygg atom</button>
@@ -410,8 +637,20 @@ body::before{
     </div>
   </div>
 
-  <!-- ============ Periodesystemet ============ -->
+  <div class="gs-xp" id="xpLinje">
+    <div class="gs-xp-hode">
+      <span class="gs-xp-nivaa" id="xpNivaa">Nivå 1</span>
+      <span class="gs-xp-tall" id="xpTall">0 XP</span>
+    </div>
+    <div class="gs-xp-spor"><div class="gs-xp-fyll" id="xpFyll"></div></div>
+    <p class="gs-xp-neste" id="xpNeste"></p>
+  </div>
+
+  <!-- ===== Periodesystemet ===== -->
   <section id="visTabell">
+
+    <div class="gs-panel gs-laer gs-skjult" id="laerPanel"></div>
+
     <div class="gs-panel">
       <h2 class="gs-panel-tittel">Periodesystemet</h2>
       <div class="gs-tabell-ramme">
@@ -423,18 +662,15 @@ body::before{
     <div class="gs-panel" id="labPanel">
       <h2 class="gs-panel-tittel">Atomnavns-laben</h2>
       <div class="gs-lab" id="lab"></div>
-      <div class="gs-lab-knapper">
-        <button class="gs-knapp gs-tung" onclick="byggDette()">Bygg dette atomet</button>
-        <button class="gs-knapp" onclick="startFraLab()">Test meg på dette</button>
-        <button class="gs-knapp" onclick="nesteStoff()">Neste stoff</button>
-      </div>
+      <div class="gs-lab-knapper" id="labKnapper"></div>
     </div>
+
   </section>
 
-  <!-- ============ Bygg atom ============ -->
+  <!-- ===== Bygg atom ===== -->
   <section id="visBygg" class="gs-skjult">
     <div class="gs-panel">
-      <h2 class="gs-panel-tittel">Bygg atomet</h2>
+      <h2 class="gs-panel-tittel" id="byggTittel">Bygg atomet</h2>
       <div class="gs-oppgave" id="byggOppgave"></div>
 
       <div class="gs-bygg">
@@ -442,32 +678,47 @@ body::before{
           <div class="gs-plate" id="plate"></div>
         </div>
         <div>
-          <p class="gs-teller">Dra en brikke ut på plata – eller trykk brikken først, og så der den skal</p>
           <div class="gs-magasin" id="magasin"></div>
-          <p class="gs-bygg-tall" id="byggTall"></p>
-          <div class="gs-lab-knapper">
-            <button class="gs-knapp gs-tung" onclick="sjekkBygg()">Ferdig</button>
-            <button class="gs-knapp" onclick="angreBygg()">Angre</button>
-            <button class="gs-knapp" onclick="tomBygg()">Tøm</button>
-            <button class="gs-knapp" onclick="nyttByggeStoff()">Nytt stoff</button>
-          </div>
+          <p class="gs-bygg-status" id="byggStatus"></p>
+          <div class="gs-lab-knapper" id="byggKnapper"></div>
           <div class="gs-bygg-svar" id="byggSvar"></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ============ Test meg ============ -->
+  <!-- ===== Test meg ===== -->
   <section id="visTest" class="gs-skjult">
 
     <div class="gs-panel" id="testOppsett">
-      <h2 class="gs-panel-tittel">Hva vil du øve på?</h2>
-      <p class="gs-teller">Hvor mange spørsmål</p>
-      <div class="gs-valg" id="valgAntall"></div>
-      <p class="gs-teller">Hvilke sider av stoffet</p>
-      <div class="gs-valg" id="valgSider"></div>
-      <button class="gs-knapp gs-tung" id="startKnapp" onclick="startRunde()">Start</button>
-      <p class="gs-sporsmaal-sub" id="testHint" style="margin-top:12px"></p>
+      <h2 class="gs-panel-tittel">Hva vil du gjøre?</h2>
+      <div class="gs-veivalg">
+        <button type="button" class="gs-vei gs-pa" id="veiProve" onclick="velgVei('prove')">
+          <h3>Prøven</h3>
+          <p>Fem spørsmål om ett stoff, og så bygger du atomet. Alt riktig gir
+             gullstjerne, 100 XP og åpner neste stoff.</p>
+        </button>
+        <button type="button" class="gs-vei" id="veiOving" onclick="velgVei('oving')">
+          <h3>Øving</h3>
+          <p>Blandet runde på alt du har tilgang til. 10 XP for hvert riktige
+             svar. Åpner ingenting – den er til å holde ved like.</p>
+        </button>
+      </div>
+
+      <div id="oppsettProve">
+        <p class="gs-sporsmaal-sub" id="proveHint" style="margin:16px 0 0"></p>
+        <div class="gs-provevalg" id="valgProveStoff"></div>
+        <button class="gs-knapp gs-tung" id="startProveKnapp" onclick="startProve()">Start prøven</button>
+      </div>
+
+      <div id="oppsettOving" class="gs-skjult">
+        <p class="gs-sporsmaal-sub" style="margin:16px 0 0">Hvor mange spørsmål?</p>
+        <div class="gs-valg" id="valgAntall"></div>
+        <p class="gs-sporsmaal-sub" style="margin:0">Hva vil du øve på?</p>
+        <div class="gs-valg" id="valgSider"></div>
+        <button class="gs-knapp gs-tung" id="startKnapp" onclick="startRunde()">Start</button>
+        <p class="gs-sporsmaal-sub" id="testHint" style="margin-top:12px"></p>
+      </div>
     </div>
 
     <div class="gs-panel gs-skjult" id="testSpill">
@@ -476,30 +727,22 @@ body::before{
       <p class="gs-sporsmaal-sub" id="testSub"></p>
       <div class="gs-svar" id="testSvar"></div>
       <p class="gs-fasit" id="testFasit"></p>
+      <div class="gs-prikker gs-skjult" id="testPrikker"></div>
     </div>
 
     <div class="gs-panel gs-skjult" id="testResultat">
-      <div class="gs-resultat">
-        <h2 class="gs-panel-tittel">Runden er ferdig</h2>
-        <div class="gs-stjerner" id="stjerner"></div>
-        <p class="gs-sporsmaal" id="resultatTekst"></p>
-        <p class="gs-sporsmaal-sub" id="resultatSub"></p>
-        <div class="gs-lab-knapper" style="justify-content:center">
-          <button class="gs-knapp gs-tung" onclick="startRunde()">Én gang til</button>
-          <button class="gs-knapp" onclick="visFane('tabell')">Til tabellen</button>
-        </div>
-        <div class="gs-fasitliste" id="fasitliste"></div>
-      </div>
+      <div class="gs-resultat" id="resultatInnhold"></div>
     </div>
 
   </section>
 
-  <!-- ============ Framdrift ============ -->
+  <!-- ===== Framdrift ===== -->
   <section id="visFram" class="gs-skjult">
     <div class="gs-panel">
       <h2 class="gs-panel-tittel">Hvor langt du har kommet</h2>
       <dl class="gs-tall" id="framTall"></dl>
       <p class="gs-sporsmaal-sub" id="framTekst" style="margin-top:16px"></p>
+      <div class="gs-nivaastige" id="framStige"></div>
     </div>
     <div class="gs-panel">
       <h2 class="gs-panel-tittel">De siste rundene</h2>
@@ -592,7 +835,8 @@ const STOFFER = [
 /* Oppbygningen. Bare for de tjue foerste: det er der skallene kan
    tegnes uten aa lyve (fra og med skandium fylles skallene i en
    rekkefoelge som ikke kan leses av tabellen), og det er ogsaa
-   saa langt trinn 1 og 2 gaar. [noeytroner, skall...] */
+   saa langt proeven og byggingen gaar. [noeytroner, skall...]
+   Noeytrontallet er den vanligste isotopen. */
 const OPPBYGNING = {
   1:[0,[1]],      2:[2,[2]],      3:[4,[2,1]],    4:[5,[2,2]],
   5:[6,[2,3]],    6:[6,[2,4]],    7:[7,[2,5]],    8:[8,[2,6]],
@@ -607,28 +851,200 @@ const KATEGORINAVN = {
   halogen:'Halogen', edelgass:'Edelgass', lantanoid:'Lantanoid', aktinoid:'Aktinoid'
 };
 
+/* Tilstand ved romtemperatur. Bare unntakene staar i lister - resten er
+   fast stoff. De tyngste er laget i saa smaa mengder og lever saa kort
+   at ingen vet, og da skal det staa at ingen vet. */
+const GASSER = [1,2,7,8,9,10,17,18,36,54,86];
+const VAESKER = [35,80];
+function tilstandAv(nr){
+  if(GASSER.indexOf(nr) !== -1) return 'Gass';
+  if(VAESKER.indexOf(nr) !== -1) return 'Væske';
+  if(nr >= 100) return 'Ukjent';
+  return 'Fast stoff';
+}
+
+/* ============================================================
+   Hva stoffet ER
+   ------------------------------------------------------------
+   `kort` er én setning og finnes for alle 118 - den er det eneste
+   som vises for stoffer hun ikke har tilgang til ennaa, saa hun kan
+   bla i hele tabellen og likevel laere noe.
+
+   `hverdag` er den praktiske biten, og finnes for de tjue foerste:
+   hvor hun faktisk moeter stoffet. Den staar bare naar stoffet er
+   aapent - ellers hadde laben sagt alt foer hun hadde gjort noe.
+   ============================================================ */
+const INFO = {
+  1:['Det letteste stoffet som finnes. To hydrogen og ett oksygen blir vann.',
+     'Sola lager energien sin ved å slå hydrogenkjerner sammen. På jorda er nesten alt hydrogen bundet i vann.'],
+  2:['Lettere enn luft, og derfor gassen i ballonger som svever.',
+     'Gjør stemmen lys fordi lyden går tre ganger fortere gjennom helium enn gjennom luft. Brenner ikke.'],
+  3:['Et metall så mykt at du kan skjære i det med kniv.',
+     'Litiumbatteriet i telefonen din kan lades opp igjen mange hundre ganger. Litium er det letteste metallet som finnes.'],
+  4:['Lett og stivt metall som brukes i romteleskoper.',
+     'Speilet i James Webb-teleskopet er beryllium: det holder formen selv i −230 °C. Støvet er giftig og håndteres med vernedrakt.'],
+  5:['Finnes i vaskepulver og i glass som tåler å bli varmt.',
+     'Ovnsformer i borosilikatglass sprekker ikke i varmen, fordi bor gjør at glasset knapt utvider seg.'],
+  6:['Byggesteinen i alt levende. Både blyanten og diamanten er karbon.',
+     'Grafitt i blyanten er det mykeste du skriver med, diamant er det hardeste vi kjenner – samme grunnstoff, ulik stabling.'],
+  7:['Fire av fem pust du tar er nitrogen.',
+     'Luft er 78 % nitrogen. Flytende nitrogen holder −196 °C og brukes til å fryse ting på sekunder.'],
+  8:['Det du puster inn for å holde deg i live.',
+     'Luft er 21 % oksygen. Uten det verken brenner et bål eller ruster en spiker – begge deler er oksygen som fester seg.'],
+  9:['Det mest reaksjonsvillige grunnstoffet av alle.',
+     'Fluor i tannkremen bygger seg inn i emaljen og gjør den hardere mot syren fra sukker.'],
+ 10:['Gir det oransjerøde lyset i gamle lysreklamer.',
+     'Strøm gjennom neongass gir alltid oransjerødt. De andre fargene i et «neonskilt» er andre gasser.'],
+ 11:['Den ene halvparten av vanlig salt. Alene brenner det i vann.',
+     'Salt er natrium og klor bundet sammen. Hver for seg er begge farlige – sammen strør du dem på maten.'],
+ 12:['Brenner med et blendende hvitt lys.',
+     'Magnesium i nødbluss og i lette sykkelrammer. Kroppen din trenger det for at musklene skal slappe av.'],
+ 13:['Lett metall i folie, brusbokser og sykkelrammer.',
+     'Aluminium ruster ikke, men det er ikke fordi det ikke reagerer: det får straks et usynlig oksidlag som beskytter resten.'],
+ 14:['Sand og glass – og hjertet i hver eneste databrikke.',
+     'Prosessoren i telefonen din er en skive renset silisium. Sand er silisium og oksygen bundet sammen.'],
+ 15:['I fyrstikker, i gjødsel og i knoklene dine.',
+     'Den brune strykflaten på fyrstikkesken er rødt fosfor. Kroppen din har omtrent en halv kilo av det.'],
+ 16:['Gult pulver som lukter råtne egg når det brenner.',
+     'Svovel kommer opp av vulkaner som gule krystaller, og brukes til å gjøre gummi seig nok til bildekk.'],
+ 17:['Den andre halvparten av salt. Renser badevannet.',
+     'Klor i bassenget dreper bakterier. Som ren gass er det giftig – det ble brukt som våpen i første verdenskrig.'],
+ 18:['Gass som ikke vil reagere med noe som helst.',
+     'Argon mellom glassene i vinduet ditt holder varmen inne. Sveisere blåser argon over sveisen så den ikke reagerer med luft.'],
+ 19:['Nervene dine kan ikke sende signaler uten det.',
+     'Kalium fra bananer og poteter er det som gjør at nervesignalet kommer fram. Brukes også i gjødsel.'],
+ 20:['Det knoklene og tennene dine er bygget av.',
+     'Melk, kalk og skjell er kalsium. Du har omtrent ett kilo av det i kroppen, og nesten alt sitter i skjelettet.'],
+ 21:['Sjeldent metall som gjør sykkelrammer lette og sterke.'],
+ 22:['Like sterkt som stål, men nesten halvparten så tungt.'],
+ 23:['Gjør stål seigt nok til verktøy som ikke knekker.'],
+ 24:['Gir blank forkromming og fargen i rustfritt stål.'],
+ 25:['Gjør stål hardere, og sitter i vanlige batterier.'],
+ 26:['Metallet i stål – og i blodet ditt.'],
+ 27:['Gir dyp blåfarge i glass, og sitter i telefonbatterier.'],
+ 28:['I mynter og rustfritt stål. Mange får utslett av det.'],
+ 29:['Leder strøm nesten best av alle, og blir grønt av vær og vind.'],
+ 30:['Legges utenpå jern for å hindre at det ruster.'],
+ 31:['Smelter i håndflaten din. Brukes i lysdioder.'],
+ 32:['Halvleder i fiberoptikk og i de aller første transistorene.'],
+ 33:['Klassisk giftstoff, men også nyttig i halvledere.'],
+ 34:['Kroppen trenger bittelitt av det. Brukes i solceller.'],
+ 35:['Ett av bare to grunnstoff som er væske i romtemperatur.'],
+ 36:['Edelgass som gir skarpt hvitt lys i kraftige lykter.'],
+ 37:['Mykt metall som holder tida i presise atomklokker.'],
+ 38:['Gir den røde fargen i fyrverkeri og nødbluss.'],
+ 39:['I hvite lysdioder og i lasere.'],
+ 40:['Tåler ekstrem varme og brukes rundt brenselet i kjernekraftverk.'],
+ 41:['I superledende magneter, blant annet i MR-maskiner.'],
+ 42:['Holder stål sterkt selv når det blir glohett.'],
+ 43:['Det første grunnstoffet mennesker laget selv. Brukes i sykehusbilder.'],
+ 44:['Hardt metall i elektriske kontakter som må vare.'],
+ 45:['Sjeldnere enn gull. Sitter i katalysatoren og renser eksosen.'],
+ 46:['I katalysatorer, i elektronikk og i smykker.'],
+ 47:['Leder strøm best av alle grunnstoff. Blir svart av svovel i lufta.'],
+ 48:['Giftig metall som satt i gamle oppladbare batterier.'],
+ 49:['I det gjennomsiktige, strømledende laget på berøringsskjermer.'],
+ 50:['Loddetinn i elektronikk. Blandet med kobber blir det bronse.'],
+ 51:['Gjør plast og tekstiler tregere å antenne.'],
+ 52:['I solceller og i legeringer som er lette å bearbeide.'],
+ 53:['Skjoldbruskkjertelen din kan ikke jobbe uten det.'],
+ 54:['Gir det hvite lyset i sterke billykter og i fotoblitser.'],
+ 55:['Sekundet er definert ut fra svingningene i et cesiumatom.'],
+ 56:['Drikkes som hvit kontrastvæske før røntgen av magen.'],
+ 57:['I kameralinser og i batteriene til hybridbiler.'],
+ 58:['Gnisten fra en lighter er cerium som river løs.'],
+ 59:['Gir det gule glasset i sveisebriller.'],
+ 60:['De sterkeste magnetene som finnes, er neodym.'],
+ 61:['Radioaktivt, og finnes nesten ikke i naturen.'],
+ 62:['Magneter som holder seg sterke selv når de blir varme.'],
+ 63:['Gir rødt i skjermer, og får eurosedler til å lyse i UV-lys.'],
+ 64:['Kontrastvæsken som gjør MR-bilder tydeligere.'],
+ 65:['Gir den grønne fargen i skjermer og lysstoffrør.'],
+ 66:['Holder magnetene i vindmøller sterke i varme.'],
+ 67:['I laser som kirurger bruker til å skjære med.'],
+ 68:['Forsterker lyssignalet i fiberkabler under havet.'],
+ 69:['I bærbare røntgenapparater som ikke trenger strøm.'],
+ 70:['I noen av de mest nøyaktige klokkene mennesker har laget.'],
+ 71:['I detektorer som tar bilder inne i kroppen.'],
+ 72:['Tåler så høy varme at det brukes i rakettmotordyser.'],
+ 73:['I de bittesmå kondensatorene inne i mobiltelefonen din.'],
+ 74:['Høyest smeltepunkt av alle metaller – glødetråden i gamle pærer.'],
+ 75:['I jetmotorer, der metallet blir glohett gang på gang.'],
+ 76:['Det tyngste stoffet vi kjenner, målt per liter.'],
+ 77:['Nesten umulig å slite ut. Sitter i tennplugger.'],
+ 78:['Edelt metall i smykker og i katalysatoren i bilen.'],
+ 79:['Ruster aldri. Derfor har det vært verdifullt i tusener av år.'],
+ 80:['Det eneste metallet som er flytende i romtemperatur.'],
+ 81:['Svært giftig. Brukes i noen typer detektorer.'],
+ 82:['Tungt og mykt, og stopper røntgenstråler.'],
+ 83:['Danner trappeformede krystaller i regnbuefarger. I magemedisin.'],
+ 84:['Sterkt radioaktivt. Oppdaget av Marie Curie.'],
+ 85:['Det sjeldneste grunnstoffet som finnes naturlig på jorda.'],
+ 86:['Radioaktiv gass som kan sive opp i kjellere fra grunnen.'],
+ 87:['Så ustabilt at det bare finnes noen få gram av det i hele jordskorpa.'],
+ 88:['Lyste grønt i gamle klokkeskiver, før man visste hvor farlig det var.'],
+ 89:['Radioaktivt, og prøves ut i behandling mot kreft.'],
+ 90:['Radioaktivt. Kan bli brenselet i framtidas reaktorer.'],
+ 91:['Sjeldent og radioaktivt. Brukes til å datere gammelt havbunnslam.'],
+ 92:['Brenselet i kjernekraftverk over hele verden.'],
+ 93:['Laget av mennesker, og oppkalt etter planeten Neptun.'],
+ 94:['Laget av mennesker. Gir strøm til romsonder langt fra sola.'],
+ 95:['Sitter i mange av røykvarslerne som henger i taket.'],
+ 96:['Oppkalt etter Marie og Pierre Curie.'],
+ 97:['Laget av mennesker, i byen Berkeley i California.'],
+ 98:['Laget av mennesker. Brukes til å sette i gang kjernereaksjoner.'],
+ 99:['Ble funnet i støvet etter en prøvesprengning i 1952.'],
+100:['Laget av mennesker, og finnes bare i mengder for mikroskop.'],
+101:['Oppkalt etter Mendelejev, som fant ut av periodesystemet.'],
+102:['Oppkalt etter Alfred Nobel.'],
+103:['Laget av mennesker, og lever bare noen minutter.'],
+104:['Laget av mennesker, og forsvinner igjen på sekunder.'],
+105:['Laget av mennesker, i Dubna i Russland.'],
+106:['Laget av mennesker, oppkalt etter Glenn Seaborg.'],
+107:['Laget av mennesker, oppkalt etter Niels Bohr.'],
+108:['Laget av mennesker, i Tyskland.'],
+109:['Laget av mennesker, oppkalt etter Lise Meitner.'],
+110:['Laget av mennesker, i Darmstadt i Tyskland.'],
+111:['Laget av mennesker, oppkalt etter Wilhelm Röntgen.'],
+112:['Laget av mennesker, oppkalt etter Kopernikus.'],
+113:['Laget av mennesker, i Japan.'],
+114:['Laget av mennesker, oppkalt etter en russisk fysiker.'],
+115:['Laget av mennesker, oppkalt etter Moskva.'],
+116:['Laget av mennesker, i Livermore i USA.'],
+117:['Laget av mennesker, oppkalt etter delstaten Tennessee.'],
+118:['Det tyngste grunnstoffet vi har klart å lage. Lever noen millisekunder.']
+};
+
 /* ============================================================
    Tilstand og lagring
    ------------------------------------------------------------
    KV er fasit, localStorage er speilet - samme form som
    mattespillet. Rekordene er UTLEDET av rundene og lagres ikke ved
    siden av dem, saa de to ikke kan bli uenige.
+
+   `apne` er beholdt som felt selv om regelen som setter det er ny:
+   nummeret ligger alt i KV fra foer, og flett() slaar de to sidene
+   sammen med Math.max. Doeper man det om, mister hun det hun har.
    ============================================================ */
 const NOKKEL = 'emma-grunnstoff:v1';
 const LOKAL_NOKKEL = 'neam-emma-grunnstoff:v1';
 
-/* Trinn 1 er de ti foerste. Tallet vokser naar hun viser at hun kan
-   dem - se laasOppHvisFortjent(). Taket er tjue saa lenge skallene
-   bare finnes saa langt; resten av tabellen staar der for aa vise
-   hvor hun skal, ikke for aa spoerres om ennaa. */
 const START_APNE = 10;
-const MAKS_APNE = 20;
-const KRAV_FOR_LAAS = 0.9;     /* andel riktige som aapner fem nye */
-const MIN_FOR_LAAS = 10;       /* ... i en runde paa minst saa mange */
+const MAKS_APNE = 20;         /* saa langt OPPBYGNING rekker */
+const NOYTRON_FRA = 10;       /* laeringsboksen kommer naar hun har mer enn dette */
 
-let data = { runder:[], apne:START_APNE };
+const XP_STJERNE = 100;
+const XP_NOYTRON = 500;
+const XP_PER_RIKTIG = 10;
+const NIVAA = [0, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
+
+let data = { runder:[], apne:START_APNE, mestret:{}, xp:0, noytron:0 };
 let valgtNr = 1;
-let runde = null;
+let runde = null;       /* oevingsrunde */
+let prove = null;       /* proeven paa ett stoff */
+let laerTest = null;    /* noeytrontesten */
+let testVei = 'prove';
+let proveStoff = 0;
 
 function $(id){ return document.getElementById(id); }
 
@@ -636,6 +1052,7 @@ function apne(){
   return Math.max(START_APNE, Math.min(MAKS_APNE, data.apne || START_APNE));
 }
 function erApen(nr){ return nr <= apne(); }
+function erMestret(nr){ return !!(data.mestret && data.mestret[nr]); }
 function stoffAv(nr){
   return STOFFER.filter(function(s){ return s[0] === nr; })[0] || null;
 }
@@ -643,6 +1060,26 @@ function apneStoffer(){
   return STOFFER.filter(function(s){ return erApen(s[0]); })
                 .sort(function(a, b){ return a[0] - b[0]; });
 }
+function antallMestret(){
+  return Object.keys(data.mestret || {}).length;
+}
+function kanNoytron(){ return apne() > NOYTRON_FRA; }
+function visNoytron(){ return !!data.noytron; }
+function massetall(nr){
+  const o = OPPBYGNING[nr];
+  return o ? nr + o[0] : null;
+}
+
+/* Hydrogen har ETT proton og ETT elektron, og det maa staa slik.
+   «1 protoner» er den slags sløvhet som gjoer at en tekst slutter aa
+   bli lest. Samlet i én funksjon fordi tallet dukker opp i et titalls
+   setninger i rettingen. */
+function tall(n, ental, flertall){
+  return n + ' ' + (Math.abs(n) === 1 ? ental : flertall);
+}
+function protonOrd(n){ return tall(n, 'proton', 'protoner'); }
+function elektronOrd(n){ return tall(n, 'elektron', 'elektroner'); }
+function noytronOrd(n){ return tall(n, 'nøytron', 'nøytroner'); }
 
 function lokalLes(){
   try{ const t = localStorage.getItem(LOKAL_NOKKEL); return t ? JSON.parse(t) : null; }
@@ -671,7 +1108,12 @@ async function kvSkriv(nokkel, verdi){
 
 /* Rundene flettes paa id. To korte runder etter hverandre ville ellers
    mistet den foerste: KV cacher lesinger i opptil 60 sekunder, saa
-   svaret vi leser rett etter en skriving kan vaere det gamle. */
+   svaret vi leser rett etter en skriving kan vaere det gamle.
+
+   Stjernene flettes paa samme maate - en stjerne som finnes paa én av
+   sidene skal finnes etterpaa. XP tar det STOERSTE av de to og ikke
+   summen: summen ville doblet poengene hver gang to faner var aapne.
+   Derfor er XP ogsaa noe som regnes ut, ikke telles opp - se xpAv(). */
 function flett(fjern, lokal){
   const runder = {};
   [(fjern && fjern.runder) || [], (lokal && lokal.runder) || []].forEach(function(liste){
@@ -679,9 +1121,29 @@ function flett(fjern, lokal){
   });
   const ut = Object.keys(runder).map(function(k){ return runder[k]; })
                    .sort(function(a, b){ return (a.tid || 0) - (b.tid || 0); });
+
+  const mestret = {};
+  [(fjern && fjern.mestret) || {}, (lokal && lokal.mestret) || {}].forEach(function(m){
+    Object.keys(m).forEach(function(k){ mestret[k] = m[k]; });
+  });
+
+  const noytron = Math.max((fjern && fjern.noytron) || 0, (lokal && lokal.noytron) || 0);
+  const xp = Math.max((fjern && fjern.xp) || 0, (lokal && lokal.xp) || 0);
+
+  /* GULVET SETTES HER OG BARE HER. Stjernene og noeytrontesten staar
+     lagret hver for seg, saa poengene de ga kan regnes ut paa nytt hvis
+     en skriving gikk tapt. Men det maa skje ved fletting og ikke naar
+     poeng gis: skrev vi gulvet inn i selve utdelingen, ville en stjerne
+     som alt var satt telles to ganger - én gang som gulv og én gang som
+     de hundre hun nettopp fikk. */
+  const gulv = Object.keys(mestret).length * XP_STJERNE + (noytron ? XP_NOYTRON : 0);
+
   return {
-    runder: ut.slice(-60),
-    apne: Math.max((fjern && fjern.apne) || START_APNE, (lokal && lokal.apne) || START_APNE)
+    runder: ut.slice(-80),
+    apne: Math.max((fjern && fjern.apne) || START_APNE, (lokal && lokal.apne) || START_APNE),
+    mestret: mestret,
+    noytron: noytron,
+    xp: Math.max(xp, gulv)
   };
 }
 
@@ -715,8 +1177,95 @@ async function last(){
 }
 
 /* ============================================================
+   Erfaringspoeng og nivaa
+   ------------------------------------------------------------
+   XP ER ET TALL SOM TELLES OPP, og ingenting annet - girXp legger til,
+   punktum. Gulvet som redder poeng etter en tapt skriving ligger i
+   flett(), der stjernene og noeytrontesten er kjent. Det skillet er
+   hele grunnen til at utdeling og gjenoppretting ikke kan rote det til
+   for hverandre.
+   ============================================================ */
+function xpAv(){
+  return data.xp || 0;
+}
+function nivaaAv(xp){
+  let n = 1;
+  NIVAA.forEach(function(grense, i){ if(xp >= grense) n = i + 1; });
+  return n;
+}
+function nesteGrense(xp){
+  for(let i = 0; i < NIVAA.length; i++){ if(xp < NIVAA[i]) return NIVAA[i]; }
+  return null;
+}
+
+function girXp(poeng, hvorfor){
+  if(poeng <= 0) return;
+  const forNivaa = nivaaAv(xpAv());
+  data.xp = xpAv() + poeng;
+  const etterNivaa = nivaaAv(xpAv());
+  tegnXp(true);
+  if(etterNivaa > forNivaa) si('Nivå ' + etterNivaa + '! ' + (hvorfor || ''));
+  else if(hvorfor) si('+' + poeng + ' XP – ' + hvorfor);
+}
+
+function tegnXp(blink){
+  const xp = xpAv();
+  const niv = nivaaAv(xp);
+  const fra = NIVAA[niv - 1] || 0;
+  const til = nesteGrense(xp);
+
+  $('xpNivaa').textContent = 'Nivå ' + niv;
+  $('xpTall').textContent = xp.toLocaleString('nb-NO') + ' XP';
+
+  const andel = til === null ? 1 : (xp - fra) / (til - fra);
+  $('xpFyll').style.width = Math.max(2, Math.min(100, andel * 100)) + '%';
+  $('xpNeste').textContent = til === null
+    ? 'Du står på toppen av stigen.'
+    : (til - xp).toLocaleString('nb-NO') + ' XP igjen til nivå ' + (niv + 1) + '.';
+
+  if(blink){
+    const linje = $('xpLinje');
+    linje.classList.remove('gs-xp-opp');
+    void linje.offsetWidth;   /* tvinger animasjonen til aa starte paa nytt */
+    linje.classList.add('gs-xp-opp');
+  }
+}
+
+/* ============================================================
    Tabellen
    ============================================================ */
+function stjerneFor(nr){
+  /* Ingen stjerne i det hele tatt paa stoffer hun ikke har tilgang til:
+     en tredje tilstand paa samme bilde ville betydd tre ting med to
+     utseender. Tom = aapen, gull = bestaatt, ingen = ikke der ennaa. */
+  if(!erApen(nr)) return null;
+  const bilde = document.createElement('img');
+  const gull = erMestret(nr);
+  bilde.className = 'gs-merkestjerne' + (gull ? ' gs-gull' : ' gs-tom-stjerne');
+  bilde.src = '/bilder/spill/stjerne.webp?v=1';
+  bilde.alt = ''; bilde.width = 16; bilde.height = 16;
+  bilde.onerror = function(){ this.hidden = true; };
+  return bilde;
+}
+
+function lagRute(s, liten){
+  const b = document.createElement('button');
+  const apen = erApen(s[0]);
+  const gull = erMestret(s[0]);
+  b.className = 'gs-rute gs-' + s[5]
+              + (gull ? ' gs-mestret' : (apen ? ' gs-apen' : ' gs-hvile'));
+  b.type = 'button';
+  b.dataset.nr = s[0];
+  b.setAttribute('aria-label', s[2] + ', atomnummer ' + s[0] + '. '
+    + (gull ? 'Bestått med gullstjerne.' : (apen ? 'Åpen for prøve.' : 'Ikke åpnet ennå.')));
+  b.innerHTML = '<span class="gs-nr">' + s[0] + '</span>'
+              + '<span class="gs-sym">' + s[1] + '</span>'
+              + (liten ? '' : '<span class="gs-navn">' + s[2] + '</span>');
+  const stjerne = stjerneFor(s[0]);
+  if(stjerne) b.appendChild(stjerne);
+  return b;
+}
+
 function tegnTabell(){
   const rutenett = $('tabell');
   rutenett.textContent = '';
@@ -747,17 +1296,7 @@ function tegnTabell(){
         continue;
       }
 
-      const b = document.createElement('button');
-      const laast = !erApen(s[0]);
-      b.className = 'gs-rute gs-' + s[5] + (laast ? ' gs-laast' : ' gs-apen');
-      b.type = 'button';
-      b.dataset.nr = s[0];
-      b.setAttribute('aria-label', laast
-        ? s[2] + ', ikke låst opp ennå'
-        : s[2] + ', atomnummer ' + s[0]);
-      b.innerHTML = '<span class="gs-nr">' + s[0] + '</span>'
-                  + '<span class="gs-sym">' + s[1] + '</span>'
-                  + '<span class="gs-navn">' + s[2] + '</span>';
+      const b = lagRute(s, false);
       b.onclick = function(){ velgStoff(s[0]); };
       rutenett.appendChild(b);
     }
@@ -770,17 +1309,16 @@ function tegnTabell(){
     rad.innerHTML = '<i class="gs-prikk gs-' + k + '"></i>' + KATEGORINAVN[k];
     tf.appendChild(rad);
   });
-  const laast = document.createElement('span');
-  laast.innerHTML = '<i class="gs-prikk" style="background:#6E6A62"></i>Ikke låst opp ennå';
-  tf.appendChild(laast);
+  ['gs-tom-stjerne', 'gs-gull'].forEach(function(klasse, i){
+    const rad = document.createElement('span');
+    rad.innerHTML = '<img class="gs-forklar-stjerne ' + klasse
+      + '" src="/bilder/spill/stjerne.webp?v=1" alt="" width="12" height="12">'
+      + (i === 0 ? 'Åpen for prøve' : 'Bestått');
+    tf.appendChild(rad);
+  });
 }
 
 function velgStoff(nr){
-  if(!erApen(nr)){
-    const s = stoffAv(nr);
-    si(s[2] + ' er ikke låst opp ennå. Ta en test på dem du har!');
-    return;
-  }
   valgtNr = nr;
   tegnLab();
   $('labPanel').scrollIntoView({ behavior:'smooth', block:'nearest' });
@@ -794,113 +1332,652 @@ function nesteStoff(){
 }
 
 /* ============================================================
-   Laben - ett stoff i detalj
+   Atomtegningen - felles for laben og byggeplata
+   ------------------------------------------------------------
+   Én funksjon, to brukere. Byggeplata regner treff mot nøyaktig de
+   samme radiene som tegningen bruker, og da kan de to ikke komme i
+   utakt slik de kunne da de var to kopier.
+
+   Protonene og noeytronene ligger i et solsikkemoenster: hver kule
+   litt lenger ut og 137,5 grader videre rundt. Det pakker et
+   vilkaarlig antall kuler jevnt uten aa maatte velges ringvis - og
+   kjernen ser ut som en klump, ikke som en stabel.
    ============================================================ */
-function tegnLab(){
-  const s = stoffAv(valgtNr);
-  const o = OPPBYGNING[valgtNr];
-  const lab = $('lab');
-  lab.textContent = '';
+const MIDT = 180;
+const KJERNE_R = 40;
+const SKALL_AVSTAND = 30;
+const MAKS_SKALL = 4;
+const TREFF = 20;             /* hvor naer et skall hun maa slippe */
+const GYLDEN = Math.PI * (3 - Math.sqrt(5));   /* 137,5 grader i radianer */
 
-  const rute = document.createElement('div');
-  rute.className = 'gs-stor-rute gs-' + s[5];
-  rute.innerHTML = '<span class="gs-stor-nr">' + s[0] + '</span>'
-                 + '<span class="gs-stor-sym">' + s[1] + '</span>'
-                 + '<span class="gs-stor-navn">' + s[2] + '</span>';
-  lab.appendChild(rute);
+function skallRadius(i){ return KJERNE_R + (i + 1) * SKALL_AVSTAND; }
 
-  const fakta = document.createElement('dl');
-  fakta.className = 'gs-fakta';
-  const rader = [
-    ['Atomnavn', s[2]],
-    ['Kjemisk symbol', s[1]],
-    ['Atomnummer', String(s[0])],
-    ['Gruppe', KATEGORINAVN[s[5]]]
-  ];
-  if(o){
-    rader.push(['Protoner', String(s[0])]);
-    rader.push(['Nøytroner', String(o[0])]);
-    rader.push(['Elektroner', String(s[0]) + ' – fordelt på ' + o[1].join(', ')]);
+function kjernePlasser(n){
+  const ut = [];
+  if(n <= 0) return ut;
+  if(n === 1) return [[MIDT, MIDT]];
+  const kuleR = n > 26 ? 5.6 : 6.8;
+  const spenn = KJERNE_R - kuleR - 1.5;
+  for(let i = 0; i < n; i++){
+    const r = spenn * Math.sqrt(i / (n - 1));
+    const v = i * GYLDEN;
+    ut.push([MIDT + Math.cos(v) * r, MIDT + Math.sin(v) * r]);
   }
-  rader.forEach(function(r){
-    const dt = document.createElement('dt'); dt.textContent = r[0];
-    const dd = document.createElement('dd'); dd.textContent = r[1];
-    fakta.appendChild(dt); fakta.appendChild(dd);
-  });
-  lab.appendChild(fakta);
-
-  if(o) lab.appendChild(tegnAtom(s, o[1]));
+  return ut;
 }
 
-/* Skallmodellen. Kjernen i midten, ett spor per skall, og elektronene
-   fordelt jevnt rundt. Tegnet her og ikke hentet som bilde: da finnes
-   det ingen fil som kan mangle, og modellen kan ikke komme i utakt med
-   tallene ved siden av. */
-function tegnAtom(s, skall){
-  const NS = 'http://www.w3.org/2000/svg';
-  const midt = 130, r0 = 30, avstand = 22;
-  const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('class', 'gs-atom');
-  svg.setAttribute('viewBox', '0 0 260 260');
-  svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', 'Atommodell av ' + s[2] + ': '
-    + s[0] + ' protoner i kjernen og elektroner i ' + skall.length
-    + (skall.length === 1 ? ' skall' : ' skall') + ' – ' + skall.join(', '));
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function svgEl(navn, attr){
+  const e = document.createElementNS(SVG_NS, navn);
+  Object.keys(attr || {}).forEach(function(k){ e.setAttribute(k, attr[k]); });
+  return e;
+}
+
+/* En kule med dybde: gradientfylt, skygge under og et lite hvitt
+   glimt oppe til venstre. Glimtet er det som gjoer at den leses som
+   rund og ikke som en flat sirkel. */
+function kule(x, y, r, gradient){
+  const g = svgEl('g', { filter:'url(#gsSkygge)' });
+  g.appendChild(svgEl('circle', {
+    cx:x.toFixed(1), cy:y.toFixed(1), r:r, fill:'url(#' + gradient + ')'
+  }));
+  g.appendChild(svgEl('circle', {
+    cx:(x - r * 0.3).toFixed(1), cy:(y - r * 0.34).toFixed(1),
+    r:(r * 0.26).toFixed(2), fill:'#FFFFFF', opacity:'.55'
+  }));
+  return g;
+}
+
+/* o = { protoner, noytroner, skall, merker, kjerneRamme, fastRamme, aria }
+
+   RAMMA ER FAST PAA BYGGEPLATA OG TRANG I LABEN, og det er ikke en
+   smakssak. Plata regner ut hvor hun slapp brikka ved aa gange
+   museposisjonen med 360 / bredden - endret utsnittet seg mens hun la
+   ut skall, ville treffpunktene flyttet seg under fingeren hennes.
+   Laben tegner et ferdig atom som ikke skal endre seg, og der er det
+   omvendte problemet det virkelige: hydrogen med ett skall fylte 39 %
+   av et lerret laget for fire, og laa som en liten flekk i hjoernet av
+   panelet. Maalt paa 1024px 18. september 2026. */
+function tegnAtom(o){
+  const skall = o.skall || [];
+  const ytre = o.fastRamme ? MIDT : Math.max(
+    KJERNE_R + 30,
+    skall.length ? skallRadius(skall.length - 1) + 14 : 0
+  );
+  const svg = svgEl('svg', {
+    'class':'gs-atom', role:'img',
+    viewBox:(MIDT - ytre) + ' ' + (MIDT - ytre) + ' ' + (ytre * 2) + ' ' + (ytre * 2),
+    'aria-label':o.aria || 'Atommodell'
+  });
+
+  /* Skjaeret foerst, saa ringene, saa kjernen: da ligger kjernen
+     oppaa skjaeret sitt og ringene gaar bak den. */
+  svg.appendChild(svgEl('circle', {
+    cx:MIDT, cy:MIDT, r:KJERNE_R + 26, fill:'url(#gsKjerneGlod)'
+  }));
 
   skall.forEach(function(antall, i){
-    const r = r0 + (i + 1) * avstand;
-    const sirkel = document.createElementNS(NS, 'circle');
-    sirkel.setAttribute('class', 'gs-skall');
-    sirkel.setAttribute('cx', midt); sirkel.setAttribute('cy', midt);
-    sirkel.setAttribute('r', r);
-    svg.appendChild(sirkel);
+    const r = skallRadius(i);
+    let klasse = 'gs-skall';
+    if(o.merker) klasse += o.merker[i] ? ' gs-riktig-skall' : ' gs-feil';
+    svg.appendChild(svgEl('circle', { 'class':klasse, cx:MIDT, cy:MIDT, r:r }));
+  });
 
+  if(o.kjerneRamme){
+    /* Byggeplata tegner kjerneflata ogsaa naar den er tom: hun skal se
+       hvor protonene skal, ikke gjette hvor midten er. */
+    svg.appendChild(svgEl('circle', {
+      cx:MIDT, cy:MIDT, r:KJERNE_R, fill:'rgba(166,77,60,.07)',
+      stroke:'url(#gsRing)', 'stroke-width':'1.4',
+      'stroke-dasharray':(o.protoner || o.noytroner) ? 'none' : '5 5'
+    }));
+  }
+
+  /* Protoner og noeytroner legges annenhver, saa kjernen ser blandet ut
+     og ikke som to halvdeler. */
+  const p = o.protoner || 0, n = o.noytroner || 0;
+  const typer = [];
+  for(let i = 0; i < Math.max(p, n); i++){
+    if(i < p) typer.push('gsProton');
+    if(i < n) typer.push('gsNoytron');
+  }
+  const plasser = kjernePlasser(typer.length);
+  const kjerneR = typer.length > 26 ? 5.6 : 6.8;
+  plasser.forEach(function(pos, i){
+    svg.appendChild(kule(pos[0], pos[1], kjerneR, typer[i]));
+  });
+
+  skall.forEach(function(antall, i){
+    const r = skallRadius(i);
     for(let e = 0; e < antall; e++){
       /* Foerste elektron rett opp, resten jevnt rundt. Hvert skall
          forskyves litt, saa elektronene i to skall ikke staar paa
          linje og ser ut som ett. */
-      const v = (e / antall) * Math.PI * 2 - Math.PI / 2 + i * 0.4;
-      const p = document.createElementNS(NS, 'circle');
-      p.setAttribute('class', 'gs-elektron');
-      p.setAttribute('cx', (midt + Math.cos(v) * r).toFixed(1));
-      p.setAttribute('cy', (midt + Math.sin(v) * r).toFixed(1));
-      p.setAttribute('r', 5);
-      svg.appendChild(p);
+      const v = (e / Math.max(antall, 1)) * Math.PI * 2 - Math.PI / 2 + i * 0.4;
+      svg.appendChild(kule(MIDT + Math.cos(v) * r, MIDT + Math.sin(v) * r, 7, 'gsElektron'));
     }
   });
 
-  const kjerne = document.createElementNS(NS, 'circle');
-  kjerne.setAttribute('class', 'gs-kjerne');
-  kjerne.setAttribute('cx', midt); kjerne.setAttribute('cy', midt);
-  kjerne.setAttribute('r', 16);
-  svg.appendChild(kjerne);
-
-  const tekst = document.createElementNS(NS, 'text');
-  tekst.setAttribute('x', midt); tekst.setAttribute('y', midt + 32);
-  tekst.setAttribute('text-anchor', 'middle');
-  tekst.textContent = 'KJERNE';
-  svg.appendChild(tekst);
+  if(o.kjerneTekst){
+    /* Skriftstoerrelsen regnes mot utsnittet, ikke mot SVG-enheter.
+       Utsnittet varierer med hvor mange skall atomet har, og en fast
+       stoerrelse ville derfor blitt dobbelt saa stor paa hydrogen som
+       paa kalsium - samme tall, to helt ulike ord paa skjermen. */
+    const t = svgEl('text', {
+      x:MIDT, y:(MIDT + KJERNE_R + ytre * 0.085).toFixed(1),
+      'text-anchor':'middle', 'font-size':(ytre * 0.065).toFixed(2)
+    });
+    t.textContent = o.kjerneTekst;
+    svg.appendChild(t);
+  }
 
   return svg;
 }
 
 /* ============================================================
-   Test meg
+   Laben - ett stoff i detalj
+   ============================================================ */
+function tegnLab(){
+  const s = stoffAv(valgtNr);
+  const o = OPPBYGNING[valgtNr];
+  const apen = erApen(valgtNr);
+  const gull = erMestret(valgtNr);
+  const info = INFO[valgtNr] || [''];
+  const lab = $('lab');
+  lab.textContent = '';
+
+  /* --- Venstre: kortet --- */
+  const kort = document.createElement('div');
+  kort.className = 'gs-kort';
+  const rute = document.createElement('div');
+  rute.className = 'gs-stor-rute gs-' + s[5];
+  rute.innerHTML = '<span class="gs-stor-nr">' + s[0] + '</span>'
+                 + '<span class="gs-stor-sym">' + s[1] + '</span>'
+                 + '<span class="gs-stor-navn">' + s[2] + '</span>';
+  const stjerne = stjerneFor(valgtNr);
+  if(stjerne) rute.appendChild(stjerne);
+  kort.appendChild(rute);
+
+  const status = document.createElement('p');
+  status.className = 'gs-status' + (gull ? ' gs-status-gull' : '');
+  status.textContent = gull ? 'Gullstjerne' : (apen ? 'Åpen for prøve' : 'Ikke åpnet ennå');
+  kort.appendChild(status);
+  lab.appendChild(kort);
+
+  /* --- Midten: hva det er, og tallene --- */
+  const midt = document.createElement('div');
+
+  const hva = document.createElement('p');
+  hva.className = 'gs-hva';
+  hva.textContent = info[0];
+  midt.appendChild(hva);
+
+  if(apen && info[1]){
+    const hverdag = document.createElement('p');
+    hverdag.className = 'gs-hverdag';
+    hverdag.textContent = info[1];
+    midt.appendChild(hverdag);
+  }
+
+  const fakta = document.createElement('dl');
+  fakta.className = 'gs-fakta';
+  const rader = [
+    ['Symbol', s[1]],
+    ['Atomnummer', String(s[0])],
+    ['Gruppe', KATEGORINAVN[s[5]]],
+    ['Periode', s[3] <= 7 ? String(s[3]) : (s[5] === 'lantanoid' ? '6' : '7')],
+    ['Tilstand', tilstandAv(s[0]) + (tilstandAv(s[0]) === 'Ukjent' ? '' : ' ved 20 °C')]
+  ];
+  if(apen && o){
+    rader.push(['Protoner', String(s[0])]);
+    rader.push(['Elektroner', String(s[0])]);
+    rader.push(['Skall', o[1].join(' + ')]);
+    const ytterst = o[1][o[1].length - 1];
+    rader.push(['Ytterste skall', ytterst + (ytterst === 1 ? ' elektron' : ' elektroner')]);
+    if(visNoytron()){
+      rader.push(['Nøytroner', String(o[0])]);
+      rader.push(['Massetall', String(massetall(s[0])) + ' – protoner + nøytroner']);
+    }
+  }
+  if(!apen){
+    /* Over tjue finnes det ingen prøve aa bestaa - skallene kan ikke
+       leses av tabellen der, og trinn tre er ikke bygget. Da skal det
+       staa, og ikke et løfte om en doer som ikke finnes. */
+    rader.push(['Status', s[0] > MAKS_APNE
+      ? 'Hører til et senere trinn – prøven finnes for de tjue første'
+      : 'Åpnes når du har bestått prøven på ' + forrigeNavn(s[0])]);
+  }
+  rader.forEach(function(r){
+    const d = document.createElement('div');
+    const dt = document.createElement('dt'); dt.textContent = r[0];
+    const dd = document.createElement('dd'); dd.textContent = r[1];
+    d.appendChild(dt); d.appendChild(dd);
+    fakta.appendChild(d);
+  });
+  midt.appendChild(fakta);
+  lab.appendChild(midt);
+
+  /* --- Hoeyre: atomet --- */
+  if(apen && o){
+    lab.appendChild(tegnAtom({
+      protoner: s[0],
+      noytroner: visNoytron() ? o[0] : 0,
+      skall: o[1],
+      kjerneTekst: 'KJERNE',
+      aria: 'Atommodell av ' + s[2] + ': ' + protonOrd(s[0])
+        + (visNoytron() ? ' og ' + noytronOrd(o[0]) : '')
+        + ' i kjernen, og elektroner fordelt på ' + o[1].join(', ') + '.'
+    }));
+  }
+
+  tegnLabKnapper(apen, !!o);
+}
+
+/* Stoffet rett foer dette i rekka - det er det hun maa bestaa for aa
+   aapne dette. Uttrykt med navn og ikke nummer: «Natrium» sier mer enn
+   «stoff 11» naar hun staar og lurer paa hva som mangler. */
+function forrigeNavn(nr){
+  const f = stoffAv(nr - 1);
+  return f ? f[2] : 'stoffet før';
+}
+
+function tegnLabKnapper(apen, harOppbygning){
+  const boks = $('labKnapper');
+  boks.textContent = '';
+
+  function knapp(tekst, tung, fn){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'gs-knapp' + (tung ? ' gs-tung' : '');
+    b.textContent = tekst;
+    b.onclick = fn;
+    boks.appendChild(b);
+    return b;
+  }
+
+  if(apen && harOppbygning){
+    if(!erMestret(valgtNr)) knapp('Ta prøven', true, function(){ startProve(valgtNr); });
+    else knapp('Ta prøven om igjen', false, function(){ startProve(valgtNr); });
+    knapp('Øv på å bygge det', false, byggDette);
+  }
+  knapp('Neste stoff', false, nesteStoff);
+
+  if(!apen){
+    const p = document.createElement('p');
+    p.className = 'gs-sporsmaal-sub';
+    p.style.margin = '10px 0 0';
+    p.style.width = '100%';
+    p.textContent = valgtNr > MAKS_APNE
+      ? 'Du kan lese om alle 118 stoffene. Prøven og byggingen gjelder de tjue '
+        + 'første – lenger går ikke spillet ennå.'
+      : 'Du kan lese om alle 118 stoffene. Prøven og byggingen åpner seg '
+        + 'ett stoff om gangen, etter hvert som du består.';
+    boks.appendChild(p);
+  }
+}
+
+/* ============================================================
+   Laeringsboksen - noeytronet
+   ------------------------------------------------------------
+   Kommer foerst naar hun har aapnet stoff elleve. Foer det ville
+   noeytroner bare vaert et tall hun fikk oppgitt; etter den er de
+   noe hun regner ut av massetallet.
+   ============================================================ */
+const NOYTRON_SPM = [
+  { tekst:'Hva slags ladning har et nøytron?',
+    fasit:'Ingen ladning',
+    alternativ:['Ingen ladning', 'Positiv, som protonet', 'Negativ, som elektronet', 'Det kommer an på stoffet'] },
+  { tekst:'Hvor i atomet ligger nøytronene?',
+    fasit:'I kjernen, sammen med protonene',
+    alternativ:['I kjernen, sammen med protonene', 'I det innerste skallet', 'I det ytterste skallet', 'Utenfor atomet'] },
+  { tekst:'Hva er massetallet til et atom?',
+    fasit:'Protoner + nøytroner til sammen',
+    alternativ:['Protoner + nøytroner til sammen', 'Bare antall protoner', 'Protoner + elektroner', 'Antall skall ganger to'] },
+  { tekst:'Natrium har atomnummer 11 og massetall 23. Hvor mange nøytroner?',
+    fasit:'12',
+    alternativ:['12', '11', '23', '34'] },
+  { tekst:'Karbon har 6 protoner og 6 nøytroner. Hva er massetallet?',
+    fasit:'12',
+    alternativ:['12', '6', '18', '36'] }
+];
+
+function tegnLaerPanel(){
+  const panel = $('laerPanel');
+  if(!kanNoytron() || visNoytron()){
+    panel.classList.add('gs-skjult');
+    panel.textContent = '';
+    laerTest = null;
+    return;
+  }
+  panel.classList.remove('gs-skjult');
+  if(laerTest) return;   /* testen er i gang - ikke tegn teksten over den */
+
+  panel.innerHTML =
+    '<span class="gs-laer-merke">Nytt å lære</span>'
+  + '<h2 class="gs-panel-tittel">Den tredje partikkelen: nøytronet</h2>'
+  + '<p>Du har bygget ti atomer med protoner og elektroner. Men kjernen har '
+  + 'én ting til i seg: <b>nøytroner</b>. De er omtrent like tunge som '
+  + 'protonene, men de har <b>ingen ladning</b> – verken pluss eller minus.</p>'
+  + '<p>Antall nøytroner kan du ikke lese ut av atomnummeret. Derfor får du '
+  + 'oppgitt <b>massetallet</b>, som er protoner og nøytroner lagt sammen. '
+  + 'Da kan du regne ut resten selv:</p>'
+  + '<div class="gs-regnestykke">nøytroner = massetall − atomnummer</div>'
+  + '<p>Natrium har atomnummer 11 og massetall 23. Da er 23 − 11 = <b>12 '
+  + 'nøytroner</b> i kjernen.</p>'
+  + '<p>Klarer du fem spørsmål om dette, får du <b>500 XP</b> – og fra da av '
+  + 'er nøytronene med i tegningene, i faktalista og i byggeboksen.</p>';
+
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'gs-knapp gs-tung';
+  b.textContent = 'Ta nøytrontesten';
+  b.onclick = startLaerTest;
+  panel.appendChild(b);
+}
+
+function startLaerTest(){
+  laerTest = { steg:0, riktige:0 };
+  tegnLaerSporsmaal();
+  $('laerPanel').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function tegnLaerSporsmaal(){
+  const panel = $('laerPanel');
+  const sp = NOYTRON_SPM[laerTest.steg];
+  panel.textContent = '';
+
+  const teller = document.createElement('p');
+  teller.className = 'gs-teller';
+  teller.textContent = 'Nøytrontesten – spørsmål ' + (laerTest.steg + 1)
+    + ' av ' + NOYTRON_SPM.length;
+  panel.appendChild(teller);
+
+  const tekst = document.createElement('p');
+  tekst.className = 'gs-sporsmaal';
+  tekst.textContent = sp.tekst;
+  panel.appendChild(tekst);
+
+  /* Fasitlinja lages FOER knappene som skal skrive i den. Leses en
+     `const` foer den er definert, tar det ned hele sidens skript uten
+     spor - se kartleggingen del 26. At den her ville rukket aa bli
+     definert foer et klikk, gjoer den ikke mindre farlig aa skrive. */
+  const fasitlinje = document.createElement('p');
+  fasitlinje.className = 'gs-fasit';
+
+  const svarboks = document.createElement('div');
+  svarboks.className = 'gs-svar';
+  blandet(sp.alternativ).forEach(function(alt){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'gs-svar-knapp';
+    b.textContent = alt;
+    b.onclick = function(){ svarLaer(alt, b, svarboks, fasitlinje); };
+    svarboks.appendChild(b);
+  });
+  panel.appendChild(svarboks);
+  panel.appendChild(fasitlinje);
+}
+
+function svarLaer(valgt, knapp, boks, fasitlinje){
+  const sp = NOYTRON_SPM[laerTest.steg];
+  const riktig = valgt === sp.fasit;
+  if(riktig) laerTest.riktige++;
+
+  Array.prototype.forEach.call(boks.children, function(b){
+    b.disabled = true;
+    if(b.textContent === sp.fasit) b.classList.add('gs-riktig');
+  });
+  if(!riktig) knapp.classList.add('gs-galt');
+  fasitlinje.textContent = riktig ? 'Riktig.' : 'Riktig svar er ' + sp.fasit + '.';
+
+  setTimeout(function(){
+    laerTest.steg++;
+    if(laerTest.steg < NOYTRON_SPM.length) tegnLaerSporsmaal();
+    else avsluttLaerTest();
+  }, riktig ? 700 : 1700);
+}
+
+async function avsluttLaerTest(){
+  const alle = laerTest.riktige === NOYTRON_SPM.length;
+  const panel = $('laerPanel');
+  panel.textContent = '';
+
+  if(!alle){
+    panel.innerHTML =
+      '<span class="gs-laer-merke">Nytt å lære</span>'
+    + '<h2 class="gs-panel-tittel">Nesten</h2>'
+    + '<p>Du hadde ' + laerTest.riktige + ' av ' + NOYTRON_SPM.length
+    + ' riktig. Les gjennom en gang til, så tar du den på nytt – '
+    + 'den venter her til du er klar.</p>';
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'gs-knapp gs-tung';
+    b.textContent = 'Les om nøytronet igjen';
+    b.onclick = function(){ laerTest = null; tegnLaerPanel(); };
+    panel.appendChild(b);
+    return;
+  }
+
+  laerTest = null;
+  data.noytron = 1;
+  data.runder.push({ id:nyId(), tid:Date.now(), type:'noytron' });
+  girXp(XP_NOYTRON, 'nøytronet er lært.');
+
+  /* Resten av sida tegnes opp FOER kvitteringen skrives, og med hver
+     tegner for seg - ikke tegnAlt(). tegnAlt() ville kalt
+     tegnLaerPanel(), og den tømmer nettopp dette panelet naa som
+     noeytronet er laert. Kvitteringen ville altsaa slettet seg selv i
+     samme oeyeblikk den ble skrevet. */
+  tegnTabell();
+  tegnLab();
+  tegnFramdrift();
+  if(bygg) tegnBygg();
+
+  panel.classList.remove('gs-skjult');
+  panel.innerHTML =
+    '<span class="gs-laer-merke">Lært</span>'
+  + '<h2 class="gs-panel-tittel">Fem av fem</h2>'
+  + '<p>Nøytronene er med fra nå: du ser dem i grått i kjernen, massetallet '
+  + 'står i faktalista, og i byggeboksen er det kommet en beholder til. '
+  + 'Når du bygger, får du massetallet oppgitt – nøytronene regner du ut selv.</p>'
+  + '<p class="gs-xp-gitt">+500 XP</p>';
+
+  await lagre();
+}
+
+/* ============================================================
+   Spoersmaalene
+   ============================================================ */
+function blandet(liste){
+  const b = liste.slice();
+  for(let i = b.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = b[i]; b[i] = b[j]; b[j] = t;
+  }
+  return b;
+}
+
+function nyId(){
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+/* Alternativene hentes fra ANDRE stoffers ekte verdier, ikke fra
+   oppdiktede tall - da er et galt svar noe som finnes, og hun kan se
+   hvorfor det ikke passer. */
+function lagSporsmaal(s, type){
+  const andre = apneStoffer().filter(function(x){ return x[0] !== s[0]; });
+  const tre = blandet(andre).slice(0, 3);
+  const o = OPPBYGNING[s[0]];
+
+  if(type === 'navn'){
+    return { tekst:'Hvilket grunnstoff har symbolet ' + s[1] + '?',
+             sub:'Atomnummer ' + s[0] + '.',
+             fasit:s[2], alternativ:blandet([s[2]].concat(tre.map(function(x){ return x[2]; }))) };
+  }
+  if(type === 'symbol'){
+    return { tekst:'Hva er det kjemiske symbolet for ' + s[2] + '?', sub:'',
+             fasit:s[1], alternativ:blandet([s[1]].concat(tre.map(function(x){ return x[1]; }))) };
+  }
+  if(type === 'nummer'){
+    return { tekst:'Hvilket atomnummer har ' + s[2] + '?',
+             sub:'Atomnummeret er hvor mange protoner kjernen har.',
+             fasit:String(s[0]),
+             alternativ:blandet([String(s[0])].concat(tre.map(function(x){ return String(x[0]); }))) };
+  }
+  if(type === 'gruppe'){
+    const feil = [];
+    blandet(Object.keys(KATEGORINAVN)).forEach(function(k){
+      if(k !== s[5] && feil.length < 3) feil.push(KATEGORINAVN[k]);
+    });
+    return { tekst:'Hvilken gruppe hører ' + s[2] + ' til?',
+             sub:'Fargen i tabellen viser gruppa.',
+             fasit:KATEGORINAVN[s[5]], alternativ:blandet([KATEGORINAVN[s[5]]].concat(feil)) };
+  }
+  if(type === 'tilstand'){
+    /* Alternativene blandes. Sto de i fast rekkefoelge, ville «fast
+       stoff» staatt foerst hver eneste gang - og det er riktig svar for
+       de aller fleste stoffene. Da laerer hun plasseringen. */
+    const min = tilstandAv(s[0]);
+    return { tekst:'Hvilken tilstand har ' + s[2] + ' i romtemperatur?',
+             sub:'Rundt 20 °C, altså slik det er inne hos deg.',
+             fasit:min, alternativ:blandet(['Fast stoff', 'Væske', 'Gass']) };
+  }
+  if(type === 'ytterskall'){
+    const min = String(o[1][o[1].length - 1]);
+    const feil = [];
+    blandet(andre).forEach(function(x){
+      const p = OPPBYGNING[x[0]];
+      const f = p && String(p[1][p[1].length - 1]);
+      if(f && f !== min && feil.indexOf(f) === -1 && feil.length < 3) feil.push(f);
+    });
+    return { tekst:'Hvor mange elektroner har ' + s[2] + ' i det ytterste skallet?',
+             sub:'Det er det ytterste skallet som bestemmer hvordan stoffet oppfører seg.',
+             fasit:min, alternativ:blandet([min].concat(feil)) };
+  }
+  if(type === 'noytroner'){
+    /* De gale svarene er de tre naerliggende feilene: atomnummeret,
+       massetallet og summen av de to. For hydrogen faller to av dem
+       sammen med hverandre, saa lista maa lukes - to like alternativer
+       ville vaert to riktige svar paa ett spoersmaal. */
+    const min = String(o[0]);
+    const mt = massetall(s[0]);
+    const feil = [];
+    [String(s[0]), String(mt), String(mt + s[0]), String(o[0] + 2), String(Math.abs(o[0] - 2))]
+      .forEach(function(f){
+        if(f !== min && feil.indexOf(f) === -1 && feil.length < 3) feil.push(f);
+      });
+    return { tekst:'Hvor mange nøytroner har ' + s[2] + '?',
+             sub:s[2] + ' har atomnummer ' + s[0] + ' og massetall ' + mt + '.',
+             fasit:min, alternativ:blandet([min].concat(feil)) };
+  }
+  /* Oppbygningen: elektronene fordelt paa skall. */
+  const min = o[1].join(', ');
+  const feil = [];
+  blandet(andre).forEach(function(x){
+    const f = OPPBYGNING[x[0]] && OPPBYGNING[x[0]][1].join(', ');
+    if(f && f !== min && feil.indexOf(f) === -1 && feil.length < 3) feil.push(f);
+  });
+  return { tekst:'Hvordan ligger elektronene i ' + s[2] + '?',
+           sub:s[2] + ' har ' + elektronOrd(s[0]) + '. Innerste skall først.',
+           fasit:min, alternativ:blandet([min].concat(feil)) };
+}
+
+/* ============================================================
+   Proeven - fem spoersmaal om ett stoff, og saa byggingen
+   ============================================================ */
+const PROVE_TYPER = ['navn', 'symbol', 'nummer', 'skall', 'gruppe', 'tilstand', 'ytterskall'];
+
+function velgVei(vei){
+  testVei = vei;
+  $('veiProve').classList.toggle('gs-pa', vei === 'prove');
+  $('veiOving').classList.toggle('gs-pa', vei === 'oving');
+  $('oppsettProve').classList.toggle('gs-skjult', vei !== 'prove');
+  $('oppsettOving').classList.toggle('gs-skjult', vei !== 'oving');
+}
+
+function tegnProveValg(){
+  const boks = $('valgProveStoff');
+  boks.textContent = '';
+  const liste = apneStoffer().filter(function(s){ return OPPBYGNING[s[0]]; });
+
+  /* Standardvalget er det foerste hun ikke har gullstjerne paa - det er
+     nesten alltid det hun er ute etter, og da slipper hun aa lete. */
+  if(!proveStoff || liste.map(function(s){ return s[0]; }).indexOf(proveStoff) === -1){
+    const uten = liste.filter(function(s){ return !erMestret(s[0]); })[0];
+    proveStoff = (uten || liste[liste.length - 1])[0];
+  }
+
+  liste.forEach(function(s){
+    const b = lagRute(s, true);
+    if(s[0] === proveStoff) b.style.outline = '3px solid var(--messing)';
+    b.onclick = function(){ proveStoff = s[0]; tegnProveValg(); };
+    boks.appendChild(b);
+  });
+
+  const s = stoffAv(proveStoff);
+  $('proveHint').textContent = 'Velg stoffet du vil prøves i. Du står på '
+    + s[2] + ' – fem spørsmål, og så bygger du atomet.';
+  $('startProveKnapp').textContent = 'Start prøven på ' + s[2];
+}
+
+function startProve(nr){
+  const stoffNr = nr || proveStoff;
+  if(!OPPBYGNING[stoffNr]){
+    si('Prøven finnes bare for de tjue første stoffene.');
+    return;
+  }
+  if(!erApen(stoffNr)){
+    si(stoffAv(stoffNr)[2] + ' er ikke åpnet ennå.');
+    return;
+  }
+
+  const s = stoffAv(stoffNr);
+  const typer = PROVE_TYPER.slice();
+  if(visNoytron()) typer.push('noytroner');
+
+  prove = {
+    id: nyId(),
+    nr: stoffNr,
+    tid: Date.now(),
+    steg: 0,
+    svar: [],
+    sporsmaal: blandet(typer).slice(0, 5).map(function(t){
+      return Object.assign({ stoff:stoffNr, type:t }, lagSporsmaal(s, t));
+    })
+  };
+  runde = null;
+  proveStoff = stoffNr;
+
+  visFane('test', true);
+  $('testOppsett').classList.add('gs-skjult');
+  $('testResultat').classList.add('gs-skjult');
+  $('testSpill').classList.remove('gs-skjult');
+  $('testPrikker').classList.remove('gs-skjult');
+  tegnSporsmaal();
+}
+
+/* ============================================================
+   Oevingsrunden - blandet, over alt hun har tilgang til
    ------------------------------------------------------------
    Hun velger selv hvor stor testen er og hvilke sider av stoffet
    den spoer om. Da skalerer den samme sida fra to minutter i bilen
    til en oekt ved bordet, uten at det bygges to ting.
+
+   Den AAPNER INGENTING. Det gjoer bare proeven. Det er med vilje: to
+   veier som begge laaser opp ville gjort det uklart hva som teller.
    ============================================================ */
 const ANTALL = [5, 10, 15];
 const SIDER = [
-  { id:'navn',  navn:'Navn',       hint:'Hvilket stoff har dette symbolet?' },
-  { id:'symbol',navn:'Symbol',     hint:'Hva er symbolet for stoffet?' },
-  { id:'nummer',navn:'Atomnummer', hint:'Hvilket atomnummer har stoffet?' },
-  { id:'skall', navn:'Oppbygning', hint:'Hvordan ligger elektronene?' }
+  { id:'navn',      navn:'Navn',       hint:'Hvilket stoff har dette symbolet?' },
+  { id:'symbol',    navn:'Symbol',     hint:'Hva er symbolet for stoffet?' },
+  { id:'nummer',    navn:'Atomnummer', hint:'Hvilket atomnummer har stoffet?' },
+  { id:'skall',     navn:'Oppbygning', hint:'Hvordan ligger elektronene?' },
+  { id:'gruppe',    navn:'Gruppe',     hint:'Hvilken gruppe hører stoffet til?' },
+  { id:'ytterskall',navn:'Ytterskall', hint:'Hvor mange elektroner ytterst?' }
 ];
 
 let valgAntall = 10;
-let valgteSider = { navn:true, symbol:true, nummer:true, skall:false };
+let valgteSider = { navn:true, symbol:true, nummer:true, skall:false, gruppe:false, ytterskall:false };
 
 function tegnValg(){
   const a = $('valgAntall');
@@ -909,7 +1986,8 @@ function tegnValg(){
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'gs-velger' + (valgAntall === n ? ' gs-pa' : '');
-    b.textContent = n + ' spørsmål';
+    b.innerHTML = n + ' spørsmål<span class="gs-xp-lapp">inntil '
+                + (n * XP_PER_RIKTIG) + ' XP</span>';
     b.onclick = function(){ valgAntall = n; tegnValg(); };
     a.appendChild(b);
   });
@@ -931,50 +2009,8 @@ function tegnValg(){
   const noen = SIDER.some(function(x){ return valgteSider[x.id]; });
   $('startKnapp').disabled = !noen;
   $('testHint').textContent = noen
-    ? 'Du øver på de ' + apne() + ' første stoffene.'
+    ? 'Du øver på de ' + apne() + ' første stoffene. 10 XP for hvert riktige svar.'
     : 'Velg minst én side av stoffet.';
-}
-
-function blandet(liste){
-  const b = liste.slice();
-  for(let i = b.length - 1; i > 0; i--){
-    const j = Math.floor(Math.random() * (i + 1));
-    const t = b[i]; b[i] = b[j]; b[j] = t;
-  }
-  return b;
-}
-
-function lagSporsmaal(s, type){
-  const andre = apneStoffer().filter(function(x){ return x[0] !== s[0]; });
-  const tre = blandet(andre).slice(0, 3);
-
-  if(type === 'navn'){
-    return { tekst:'Hvilket grunnstoff har symbolet ' + s[1] + '?',
-             sub:'Atomnummer ' + s[0] + '.',
-             fasit:s[2], alternativ:blandet([s[2]].concat(tre.map(function(x){ return x[2]; }))) };
-  }
-  if(type === 'symbol'){
-    return { tekst:'Hva er det kjemiske symbolet for ' + s[2] + '?', sub:'',
-             fasit:s[1], alternativ:blandet([s[1]].concat(tre.map(function(x){ return x[1]; }))) };
-  }
-  if(type === 'nummer'){
-    return { tekst:'Hvilket atomnummer har ' + s[2] + '?',
-             sub:'Atomnummeret er hvor mange protoner kjernen har.',
-             fasit:String(s[0]),
-             alternativ:blandet([String(s[0])].concat(tre.map(function(x){ return String(x[0]); }))) };
-  }
-  /* Oppbygningen: elektronene fordelt paa skall. Alternativene er andre
-     stoffers ekte fordelinger, ikke oppdiktede tall - da er et galt svar
-     noe som finnes, og hun kan se hvorfor det ikke passer. */
-  const min = OPPBYGNING[s[0]][1].join(', ');
-  const feil = [];
-  blandet(andre).forEach(function(x){
-    const f = OPPBYGNING[x[0]] && OPPBYGNING[x[0]][1].join(', ');
-    if(f && f !== min && feil.indexOf(f) === -1 && feil.length < 3) feil.push(f);
-  });
-  return { tekst:'Hvordan ligger elektronene i ' + s[2] + '?',
-           sub:s[2] + ' har ' + s[0] + ' elektroner. Innerste skall først.',
-           fasit:min, alternativ:blandet([min].concat(feil)) };
 }
 
 function startRunde(){
@@ -990,7 +2026,7 @@ function startRunde(){
   }
 
   runde = {
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    id: nyId(),
     tid: Date.now(),
     sider: typer.slice(),
     apne: apne(),
@@ -998,31 +2034,36 @@ function startRunde(){
     svar: [],
     sporsmaal: pott.map(function(s){
       let t = typer[Math.floor(Math.random() * typer.length)];
-      /* Skall-spoersmaal krever at stoffet har en oppbygning i
-         datasettet. Har det ikke det, byttes typen - hun skal aldri
-         faa et spoersmaal spillet ikke kan rette. */
-      if(t === 'skall' && !OPPBYGNING[s[0]]){
-        const uten = typer.filter(function(x){ return x !== 'skall'; });
+      /* Skall- og ytterskallspoersmaal krever at stoffet har en
+         oppbygning i datasettet. Har det ikke det, byttes typen - hun
+         skal aldri faa et spoersmaal spillet ikke kan rette. */
+      if((t === 'skall' || t === 'ytterskall') && !OPPBYGNING[s[0]]){
+        const uten = typer.filter(function(x){ return x !== 'skall' && x !== 'ytterskall'; });
         t = uten.length ? uten[Math.floor(Math.random() * uten.length)] : 'navn';
       }
       return Object.assign({ stoff:s[0], type:t }, lagSporsmaal(s, t));
     })
   };
+  prove = null;
 
   $('testOppsett').classList.add('gs-skjult');
   $('testResultat').classList.add('gs-skjult');
   $('testSpill').classList.remove('gs-skjult');
+  $('testPrikker').classList.add('gs-skjult');
   tegnSporsmaal();
 }
 
-function startFraLab(){
-  visFane('test');
-  startRunde();
-}
+/* ---- Felles spoersmaalsvisning for proeven og oevingsrunden ---- */
+function aktiv(){ return prove || runde; }
 
 function tegnSporsmaal(){
-  const sp = runde.sporsmaal[runde.steg];
-  $('testTeller').textContent = 'Spørsmål ' + (runde.steg + 1) + ' av ' + runde.sporsmaal.length;
+  const a = aktiv();
+  const sp = a.sporsmaal[a.steg];
+
+  $('testTeller').textContent = prove
+    ? 'Prøven på ' + stoffAv(prove.nr)[2] + ' – spørsmål ' + (a.steg + 1)
+      + ' av ' + a.sporsmaal.length
+    : 'Spørsmål ' + (a.steg + 1) + ' av ' + a.sporsmaal.length;
   $('testSporsmaal').textContent = sp.tekst;
   $('testSub').textContent = sp.sub || '';
   $('testFasit').textContent = '';
@@ -1037,10 +2078,24 @@ function tegnSporsmaal(){
     b.onclick = function(){ svar(alt, b); };
     boks.appendChild(b);
   });
+
+  if(prove) tegnPrikker();
+}
+
+function tegnPrikker(){
+  const boks = $('testPrikker');
+  boks.textContent = '';
+  for(let i = 0; i < prove.sporsmaal.length; i++){
+    const i_ = document.createElement('i');
+    const s = prove.svar[i];
+    if(s) i_.className = s.riktig ? 'gs-p-riktig' : 'gs-p-bom';
+    boks.appendChild(i_);
+  }
 }
 
 function svar(valgt, knapp){
-  const sp = runde.sporsmaal[runde.steg];
+  const a = aktiv();
+  const sp = a.sporsmaal[a.steg];
   const riktig = valgt === sp.fasit;
 
   Array.prototype.forEach.call($('testSvar').children, function(b){
@@ -1049,8 +2104,9 @@ function svar(valgt, knapp){
   });
   if(!riktig) knapp.classList.add('gs-galt');
 
-  runde.svar.push({ stoff:sp.stoff, type:sp.type, riktig:riktig,
-                    valgt:valgt, fasit:sp.fasit });
+  a.svar.push({ stoff:sp.stoff, type:sp.type, riktig:riktig,
+                valgt:valgt, fasit:sp.fasit });
+  if(prove) tegnPrikker();
 
   const s = stoffAv(sp.stoff);
   $('testFasit').textContent = riktig
@@ -1058,8 +2114,9 @@ function svar(valgt, knapp){
     : 'Riktig svar er ' + sp.fasit + ' – ' + s[2] + '.';
 
   setTimeout(function(){
-    runde.steg++;
-    if(runde.steg < runde.sporsmaal.length) tegnSporsmaal();
+    a.steg++;
+    if(a.steg < a.sporsmaal.length) tegnSporsmaal();
+    else if(prove) avsluttProveSporsmaal();
     else avsluttRunde();
   }, riktig ? 650 : 1500);
 }
@@ -1070,38 +2127,24 @@ function stjernerAv(andel){
   return Math.max(1, Math.round(andel * 5));
 }
 
-async function avsluttRunde(){
-  const riktige = runde.svar.filter(function(s){ return s.riktig; }).length;
-  const andel = riktige / runde.svar.length;
-
-  data.runder.push({ id:runde.id, tid:runde.tid, antall:runde.svar.length,
-                     riktige:riktige, sider:runde.sider, apne:runde.apne });
-
-  const laaste = laasOppHvisFortjent(andel, runde.svar.length);
-
-  $('testSpill').classList.add('gs-skjult');
-  $('testResultat').classList.remove('gs-skjult');
-
-  const stjerner = stjernerAv(andel);
-  const boks = $('stjerner');
-  boks.textContent = '';
-  for(let i = 0; i < 5; i++){
+function stjernerad(antall, av){
+  const boks = document.createElement('div');
+  boks.className = 'gs-stjerner';
+  for(let i = 0; i < av; i++){
     const bilde = document.createElement('img');
-    bilde.className = 'gs-stjerne' + (i < stjerner ? '' : ' gs-tom-stjerne');
+    bilde.className = 'gs-stjerne' + (i < antall ? '' : ' gs-tom-stjerne');
     bilde.src = '/bilder/spill/stjerne.webp?v=1';
     bilde.alt = ''; bilde.width = 44; bilde.height = 44;
     bilde.onerror = function(){ this.hidden = true; };
     boks.appendChild(bilde);
   }
+  return boks;
+}
 
-  $('resultatTekst').textContent = riktige + ' av ' + runde.svar.length + ' riktig';
-  $('resultatSub').textContent = laaste
-    ? 'Du låste opp ' + laaste + ' nye stoffer. De er tent i tabellen nå.'
-    : (andel === 1 ? 'Alt riktig.' : 'Se gjennom dem du bommet på under.');
-
-  const liste = $('fasitliste');
-  liste.textContent = '';
-  runde.svar.forEach(function(s, i){
+function fasitliste(svarene){
+  const liste = document.createElement('div');
+  liste.className = 'gs-fasitliste';
+  svarene.forEach(function(s, i){
     const rad = document.createElement('div');
     rad.className = 'gs-fasitrad' + (s.riktig ? '' : ' gs-bom');
     const stoff = stoffAv(s.stoff);
@@ -1109,22 +2152,141 @@ async function avsluttRunde(){
       + (s.riktig ? 'riktig' : 'du svarte ' + s.valgt + ', riktig er ' + s.fasit) + '</span>';
     liste.appendChild(rad);
   });
+  return liste;
+}
 
+function knappRad(knapper){
+  const rad = document.createElement('div');
+  rad.className = 'gs-lab-knapper';
+  rad.style.justifyContent = 'center';
+  knapper.forEach(function(k){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'gs-knapp' + (k[1] ? ' gs-tung' : '');
+    b.textContent = k[0];
+    b.onclick = k[2];
+    rad.appendChild(b);
+  });
+  return rad;
+}
+
+/* ---- Proeven: fra spoersmaal til bygging ---- */
+function avsluttProveSporsmaal(){
+  const riktige = prove.svar.filter(function(s){ return s.riktig; }).length;
+  const s = stoffAv(prove.nr);
+
+  $('testSpill').classList.add('gs-skjult');
+  $('testResultat').classList.remove('gs-skjult');
+  const ut = $('resultatInnhold');
+  ut.textContent = '';
+
+  if(riktige < prove.sporsmaal.length){
+    /* Ingen stjerne, men heller ingen straff: runden lagres som oeving,
+       slik at den teller i framdrifta og gir XP for det hun fikk til. */
+    data.runder.push({ id:prove.id, tid:prove.tid, antall:prove.svar.length,
+                       riktige:riktige, sider:['prøve'], apne:apne(), stoff:prove.nr });
+    const gitt = riktige * XP_PER_RIKTIG;
+
+    ut.appendChild(stjernerad(stjernerAv(riktige / prove.sporsmaal.length), 5));
+    const t = document.createElement('p');
+    t.className = 'gs-sporsmaal';
+    t.textContent = riktige + ' av ' + prove.sporsmaal.length + ' riktig';
+    ut.appendChild(t);
+    const sub = document.createElement('p');
+    sub.className = 'gs-sporsmaal-sub';
+    sub.textContent = 'Gullstjerna krever alle fem. Se gjennom under, og ta den '
+      + 'om igjen når du vil – det koster ingenting å prøve.';
+    ut.appendChild(sub);
+    const lapp = document.createElement('p');
+    lapp.className = 'gs-xp-gitt';
+    lapp.textContent = '+' + gitt + ' XP';
+    ut.appendChild(lapp);
+
+    const nr = prove.nr;
+    ut.appendChild(knappRad([
+      ['Prøv igjen', true, function(){ startProve(nr); }],
+      ['Til tabellen', false, function(){ valgtNr = nr; tegnLab(); visFane('tabell'); }]
+    ]));
+    ut.appendChild(fasitliste(prove.svar));
+
+    girXp(gitt, 'øving på ' + s[2] + '.');
+    prove = null;
+    tegnFramdrift();
+    lagre();
+    return;
+  }
+
+  /* Alle fem: videre til byggingen. */
+  ut.appendChild(stjernerad(5, 5));
+  const t = document.createElement('p');
+  t.className = 'gs-sporsmaal';
+  t.textContent = 'Fem av fem på ' + s[2];
+  ut.appendChild(t);
+  const sub = document.createElement('p');
+  sub.className = 'gs-sporsmaal-sub';
+  sub.textContent = 'Én ting igjen før gullstjerna: bygg atomet.';
+  ut.appendChild(sub);
+
+  const nr = prove.nr;
+  ut.appendChild(knappRad([
+    ['Bygg ' + s[2], true, function(){ byggProve(nr); }]
+  ]));
+}
+
+function byggProve(nr){
+  visFane('bygg', true);
+  nyttBygg(nr, true);
+}
+
+/* ---- Oevingsrunden: resultatet ---- */
+async function avsluttRunde(){
+  const riktige = runde.svar.filter(function(s){ return s.riktig; }).length;
+  const andel = riktige / runde.svar.length;
+  const gitt = riktige * XP_PER_RIKTIG;
+
+  data.runder.push({ id:runde.id, tid:runde.tid, antall:runde.svar.length,
+                     riktige:riktige, sider:runde.sider, apne:runde.apne });
+
+  $('testSpill').classList.add('gs-skjult');
+  $('testResultat').classList.remove('gs-skjult');
+  const ut = $('resultatInnhold');
+  ut.textContent = '';
+
+  const tittel = document.createElement('h2');
+  tittel.className = 'gs-panel-tittel';
+  tittel.textContent = 'Runden er ferdig';
+  ut.appendChild(tittel);
+
+  ut.appendChild(stjernerad(stjernerAv(andel), 5));
+
+  const t = document.createElement('p');
+  t.className = 'gs-sporsmaal';
+  t.textContent = riktige + ' av ' + runde.svar.length + ' riktig';
+  ut.appendChild(t);
+
+  const lapp = document.createElement('p');
+  lapp.className = 'gs-xp-gitt';
+  lapp.textContent = '+' + gitt + ' XP';
+  ut.appendChild(lapp);
+
+  const sub = document.createElement('p');
+  sub.className = 'gs-sporsmaal-sub';
+  sub.textContent = andel === 1
+    ? 'Alt riktig. Nye stoffer åpner du med prøven.'
+    : 'Se gjennom dem du bommet på under.';
+  ut.appendChild(sub);
+
+  ut.appendChild(knappRad([
+    ['Én gang til', true, startRunde],
+    ['Til tabellen', false, function(){ visFane('tabell'); }]
+  ]));
+  ut.appendChild(fasitliste(runde.svar));
+
+  girXp(gitt, 'øving.');
+  runde = null;
   tegnTabell();
   tegnFramdrift();
   await lagre();
-}
-
-/* Fem nye stoffer naar en runde paa minst ti er 90 % riktig eller bedre.
-   Regelen staar her og ett sted til - i teksten under tabellen - saa hun
-   vet hva som skal til. Taket er MAKS_APNE: lenger gaar ikke trinn 1. */
-function laasOppHvisFortjent(andel, antall){
-  if(antall < MIN_FOR_LAAS || andel < KRAV_FOR_LAAS) return 0;
-  const naa = apne();
-  if(naa >= MAKS_APNE) return 0;
-  const ny = Math.min(MAKS_APNE, naa + 5);
-  data.apne = ny;
-  return ny - naa;
 }
 
 /* ============================================================
@@ -1136,22 +2298,19 @@ function laasOppHvisFortjent(andel, antall){
    hun husker - og det retter seg selv, fordi to i foerste skall og
    aatte i neste er en regel og ikke en smakssak.
 
-   NOEYTRONER ER ET SENERE TRINN, og det er med vilje: antallet kan
-   ikke utledes av atomnummeret, saa hun maatte faatt det oppgitt.
-   Da er det ikke lenger noe hun regner seg fram til. Tallet ligger
-   klart i OPPBYGNING naar trinnet skal bygges - det er foerste
-   felt.
+   ETTER NOEYTRONTESTEN kommer noeytronene med. Hun faar massetallet
+   oppgitt og regner selv ut hvor mange som mangler - tallet er
+   fortsatt ikke noe hun kan lese av atomnummeret, men naa er det noe
+   hun REGNER, og det er en annen sak enn aa faa det servert.
    ============================================================ */
-const KJERNE_R = 34;      /* radius paa kjernen i SVG-koordinater */
-const SKALL_AVSTAND = 26; /* mellom skallene */
-const MAKS_SKALL = 4;     /* saa langt trinn 1 og 2 gaar (til kalsium) */
-const TREFF = 18;         /* hvor naer et skall hun maa slippe */
+const MAKS_BRIKKER = 60;   /* tak som verner tegningen, ikke en fasit */
 
 let bygg = null;
 let valgtBrikke = null;   /* brikka hun har trykket paa, i trykk-modus */
 
-function nyttBygg(nr){
-  bygg = { nr:nr, protoner:0, skall:[], historikk:[], merker:null, forsok:0, lost:false };
+function nyttBygg(nr, erProve){
+  bygg = { nr:nr, protoner:0, noytroner:0, skall:[], historikk:[],
+           merker:null, forsok:0, lost:false, prove:!!erProve };
   valgtBrikke = null;
   tegnBygg();
   $('byggSvar').textContent = '';
@@ -1163,8 +2322,8 @@ function byggDette(){
     si('Dette stoffet kan ikke bygges ennå. Prøv et av de tjue første.');
     return;
   }
-  visFane('bygg');
-  nyttBygg(valgtNr);
+  visFane('bygg', true);
+  nyttBygg(valgtNr, false);
 }
 
 function nyttByggeStoff(){
@@ -1172,133 +2331,132 @@ function nyttByggeStoff(){
     return OPPBYGNING[s[0]] && (!bygg || s[0] !== bygg.nr);
   });
   const s = mulige[Math.floor(Math.random() * mulige.length)];
-  nyttBygg(s[0]);
-}
-
-/* ---- Tegningen ---- */
-function skallRadius(i){ return KJERNE_R + (i + 1) * SKALL_AVSTAND; }
-
-/* Protonene ligger i ringer inne i kjernen: én i midten, seks rundt,
-   tolv utenfor der igjen. Da ser tjue protoner ut som en klump og ikke
-   som en stabel. */
-function kjernePlasser(n){
-  const ringer = [[0, 1], [11, 6], [21, 12], [28, 18]];
-  const ut = [];
-  let igjen = n, ring = 0;
-  while(igjen > 0 && ring < ringer.length){
-    const r = ringer[ring][0], plass = Math.min(igjen, ringer[ring][1]);
-    for(let i = 0; i < plass; i++){
-      const v = plass === 1 ? 0 : (i / plass) * Math.PI * 2 - Math.PI / 2;
-      ut.push([150 + Math.cos(v) * r, 150 + Math.sin(v) * r]);
-    }
-    igjen -= plass; ring++;
-  }
-  return ut;
+  nyttBygg(s[0], false);
 }
 
 function tegnBygg(){
   const plate = $('plate');
-  const NS = 'http://www.w3.org/2000/svg';
   const s = stoffAv(bygg.nr);
 
   plate.textContent = '';
-  const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('viewBox', '0 0 300 300');
-  svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', 'Byggeplate for ' + s[2] + ': ' + bygg.protoner
-    + ' protoner i kjernen, ' + bygg.skall.length + ' skall med '
-    + (bygg.skall.join(', ') || 'ingen elektroner'));
+  plate.appendChild(tegnAtom({
+    protoner: bygg.protoner,
+    noytroner: bygg.noytroner,
+    skall: bygg.skall,
+    merker: bygg.merker,
+    kjerneRamme: true,
+    fastRamme: true,
+    aria: 'Byggeplate for ' + s[2] + ': ' + protonOrd(bygg.protoner)
+      + (visNoytron() ? ' og ' + noytronOrd(bygg.noytroner) : '')
+      + ' i kjernen, ' + bygg.skall.length + ' skall med '
+      + (bygg.skall.join(', ') || 'ingen elektroner')
+  }));
 
-  bygg.skall.forEach(function(antall, i){
-    const r = skallRadius(i);
-    const ring = document.createElementNS(NS, 'circle');
-    let klasse = 'gs-skall';
-    if(bygg.merker) klasse += bygg.merker[i] ? ' gs-riktig-skall' : ' gs-feil';
-    ring.setAttribute('class', klasse);
-    ring.setAttribute('cx', 150); ring.setAttribute('cy', 150);
-    ring.setAttribute('r', r);
-    svg.appendChild(ring);
-
-    for(let e = 0; e < antall; e++){
-      const v = (e / Math.max(antall, 1)) * Math.PI * 2 - Math.PI / 2 + i * 0.4;
-      const p = document.createElementNS(NS, 'circle');
-      p.setAttribute('class', 'gs-elektron');
-      p.setAttribute('cx', (150 + Math.cos(v) * r).toFixed(1));
-      p.setAttribute('cy', (150 + Math.sin(v) * r).toFixed(1));
-      p.setAttribute('r', 5.5);
-      svg.appendChild(p);
-    }
-  });
-
-  /* Kjerneflata tegnes alltid, ogsaa naar den er tom: hun skal se hvor
-     protonene skal, ikke gjette hvor midten er. */
-  const flate = document.createElementNS(NS, 'circle');
-  flate.setAttribute('cx', 150); flate.setAttribute('cy', 150);
-  flate.setAttribute('r', KJERNE_R);
-  flate.setAttribute('fill', 'rgba(166,77,60,.10)');
-  flate.setAttribute('stroke', 'var(--messing)');
-  flate.setAttribute('stroke-width', '1.2');
-  flate.setAttribute('stroke-dasharray', bygg.protoner ? 'none' : '4 4');
-  svg.appendChild(flate);
-
-  kjernePlasser(bygg.protoner).forEach(function(p){
-    const k = document.createElementNS(NS, 'circle');
-    k.setAttribute('class', 'gs-kjerne');
-    k.setAttribute('cx', p[0].toFixed(1)); k.setAttribute('cy', p[1].toFixed(1));
-    k.setAttribute('r', 5.5);
-    svg.appendChild(k);
-  });
-
-  plate.appendChild(svg);
   tegnMagasin();
 }
 
 function tegnMagasin(){
   const s = stoffAv(bygg.nr);
   const elektroner = bygg.skall.reduce(function(n, x){ return n + x; }, 0);
+  const mt = massetall(bygg.nr);
+
+  $('byggTittel').textContent = bygg.prove
+    ? 'Prøven på ' + s[2] + ' – siste del'
+    : 'Bygg atomet';
+
+  let oppgave = 'Bygg <b>' + s[2] + '</b>.<br>Atomnummer <b>' + s[0]
+              + '</b> – symbol <b>' + s[1] + '</b>.';
+  if(visNoytron()){
+    oppgave += '<br>Massetall <b>' + mt + '</b> – hvor mange nøytroner blir det?';
+  }
+  if(bygg.prove){
+    oppgave += '<br>Får du dette riktig, er gullstjerna din.';
+  }
 
   $('byggOppgave').innerHTML =
     '<div class="gs-stor-rute gs-' + s[5] + '">'
   + '<span class="gs-stor-nr">' + s[0] + '</span>'
   + '<span class="gs-stor-sym">' + s[1] + '</span>'
   + '<span class="gs-stor-navn">' + s[2] + '</span></div>'
-  + '<div class="gs-oppgave-tekst">Bygg <b>' + s[2] + '</b>.<br>'
-  + 'Atomnummer <b>' + s[0] + '</b> – symbol <b>' + s[1] + '</b>.</div>';
+  + '<div class="gs-oppgave-tekst">' + oppgave + '</div>';
 
-  const igjen = { proton: bygg.nr - bygg.protoner, elektron: bygg.nr - elektroner };
+  /* Beholderne er utoemmelige - tallet under er hvor mange hun HAR lagt
+     ut, ikke hvor mange hun har igjen. */
   const brikker = [
-    { type:'proton',  navn:'Proton',  igjen:igjen.proton },
-    { type:'elektron',navn:'Elektron',igjen:igjen.elektron },
-    { type:'skall',   navn:'Nytt skall', igjen:MAKS_SKALL - bygg.skall.length }
+    { type:'proton',  navn:'Protoner',  tall:bygg.protoner + ' lagt ut' }
   ];
+  if(visNoytron()){
+    brikker.push({ type:'noytron', navn:'Nøytroner', tall:bygg.noytroner + ' lagt ut' });
+  }
+  brikker.push({ type:'elektron', navn:'Elektroner', tall:elektroner + ' lagt ut' });
+  brikker.push({ type:'skall', navn:'Skall',
+                 tall:bygg.skall.length + ' av ' + MAKS_SKALL });
 
   const m = $('magasin');
   m.textContent = '';
   brikker.forEach(function(b){
     const knapp = document.createElement('button');
     knapp.type = 'button';
-    knapp.className = 'gs-brikke' + (valgtBrikke === b.type ? ' gs-valgt' : '');
-    knapp.disabled = b.igjen <= 0;
+    knapp.className = 'gs-beholder' + (valgtBrikke === b.type ? ' gs-valgt' : '');
     knapp.dataset.type = b.type;
-    knapp.innerHTML = '<span class="gs-kule gs-k-' + b.type + '"></span>' + b.navn
-      + (b.type === 'skall' ? '' : ' <span class="gs-bygg-tall">' + b.igjen + ' igjen</span>');
+    knapp.innerHTML = '<span class="gs-beholder-glass">'
+                    + '<span class="gs-kule gs-k-' + b.type + '"></span></span>'
+                    + '<span class="gs-beholder-navn">' + b.navn + '</span>'
+                    + '<span class="gs-beholder-tall">' + b.tall + '</span>';
     bindBrikke(knapp, b.type);
     m.appendChild(knapp);
   });
 
-  $('byggTall').textContent = 'I kjernen: ' + bygg.protoner + ' protoner · '
-    + 'I skallene: ' + (bygg.skall.join(', ') || 'ingen');
+  $('byggStatus').textContent = 'I kjernen: ' + protonOrd(bygg.protoner)
+    + (visNoytron() ? ' og ' + noytronOrd(bygg.noytroner) : '')
+    + ' · I skallene: ' + (bygg.skall.join(', ') || 'ingen');
+
+  tegnByggKnapper();
+}
+
+function tegnByggKnapper(){
+  const boks = $('byggKnapper');
+  boks.textContent = '';
+  [['Ferdig', true, sjekkBygg],
+   ['Angre', false, angreBygg],
+   ['Tøm', false, tomBygg],
+   [bygg.prove ? 'Avbryt prøven' : 'Nytt stoff', false,
+     bygg.prove ? avbrytProveBygg : nyttByggeStoff]
+  ].forEach(function(k){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'gs-knapp' + (k[1] ? ' gs-tung' : '');
+    b.textContent = k[0];
+    b.onclick = k[2];
+    boks.appendChild(b);
+  });
+}
+
+function avbrytProveBygg(){
+  /* Avbryt er noeytral og spoer ikke: det eneste som gaar tapt er
+     brikkene paa plata, og de kan legges ut igjen paa et minutt.
+     Se designsystemet, «Bekreftelsen kommer bare naar det finnes noe
+     aa miste». */
+  const nr = bygg.nr;
+  bygg = null;
+  si('Prøven er avbrutt. Du kan ta den om igjen når du vil.');
+  valgtNr = nr;
+  tegnLab();
+  visFane('tabell');
 }
 
 /* ---- Draing og trykk ----
    Én funksjon plasserer, og begge veier ender i den. Draget er bygget
    paa pointer-hendelser, ikke HTML5 drag-and-drop: den siste finnes
-   ikke paa iOS. */
+   ikke paa iOS.
+
+   DET SOM FOELGER FINGEREN ER BARE KULA. Foer 18. september fulgte hele
+   brikka med navnet paa - og navnet dekket nettopp det stedet paa plata
+   hun siktet mot. */
 function bindBrikke(knapp, type){
   let flyt = null, flyttet = false, start = null;
 
   knapp.addEventListener('pointerdown', function(e){
-    if(knapp.disabled) return;
     start = { x:e.clientX, y:e.clientY };
     flyttet = false;
     knapp.setPointerCapture(e.pointerId);
@@ -1309,8 +2467,8 @@ function bindBrikke(knapp, type){
     if(!flyttet && Math.abs(e.clientX - start.x) + Math.abs(e.clientY - start.y) < 8) return;
     flyttet = true;
     if(!flyt){
-      flyt = knapp.cloneNode(true);
-      flyt.className = 'gs-brikke gs-flyt';
+      flyt = document.createElement('span');
+      flyt.className = 'gs-kule gs-k-' + type + ' gs-flyt';
       document.body.appendChild(flyt);
       $('plate').classList.add('gs-slipp');
     }
@@ -1347,42 +2505,50 @@ function innenforPlata(x, y){
 }
 
 $('plate').addEventListener('click', function(e){
-  if(!valgtBrikke) return;
+  if(!valgtBrikke || !bygg) return;
   plasser(valgtBrikke, e.clientX, e.clientY);
 });
 
 function plasser(type, x, y){
+  if(!bygg) return;
   const r = $('plate').getBoundingClientRect();
-  /* Plata er kvadratisk i SVG-koordinater (300x300), saa begge aksene
+  /* Plata er kvadratisk i SVG-koordinater (360x360), saa begge aksene
      regnes mot bredden. */
-  const px = (x - r.left) / r.width * 300;
-  const py = (y - r.top) / r.width * 300;
-  const avstand = Math.sqrt(Math.pow(px - 150, 2) + Math.pow(py - 150, 2));
+  const px = (x - r.left) / r.width * 360;
+  const py = (y - r.top) / r.width * 360;
+  const avstand = Math.sqrt(Math.pow(px - MIDT, 2) + Math.pow(py - MIDT, 2));
 
   /* En ny plassering betyr at forrige retting ikke gjelder lenger. */
   bygg.merker = null;
   $('byggSvar').textContent = '';
+  $('byggSvar').classList.remove('gs-klart');
 
   if(type === 'skall'){
     if(bygg.skall.length >= MAKS_SKALL){ si('Fire skall er nok til disse stoffene.'); return; }
     bygg.skall.push(0);
     bygg.historikk.push({ hva:'skall' });
-    ferdigPlassert();
+    tegnBygg();
     return;
   }
 
-  if(type === 'proton'){
-    if(bygg.protoner >= bygg.nr){ si('Du har lagt ut alle protonene.'); return; }
-    if(avstand > KJERNE_R + 12){ si('Protoner hører hjemme i kjernen, midt på.'); return; }
-    bygg.protoner++;
-    bygg.historikk.push({ hva:'proton' });
-    ferdigPlassert();
+  if(type === 'proton' || type === 'noytron'){
+    const felt = type === 'proton' ? 'protoner' : 'noytroner';
+    if(bygg[felt] >= MAKS_BRIKKER){ si('Nå er kjernen så full at den ikke kan tegnes.'); return; }
+    if(avstand > KJERNE_R + 14){
+      si(type === 'proton'
+        ? 'Protoner hører hjemme i kjernen, midt på.'
+        : 'Nøytronene ligger i kjernen, sammen med protonene.');
+      return;
+    }
+    bygg[felt]++;
+    bygg.historikk.push({ hva:type });
+    tegnBygg();
     return;
   }
 
   /* Elektron: naermeste skall, og bare hvis hun traff det. */
   const brukt = bygg.skall.reduce(function(n, x){ return n + x; }, 0);
-  if(brukt >= bygg.nr){ si('Du har lagt ut alle elektronene.'); return; }
+  if(brukt >= MAKS_BRIKKER){ si('Nå er det flere elektroner enn ringene får plass til.'); return; }
   if(!bygg.skall.length){ si('Legg ut et skall først – elektronene går i bane.'); return; }
 
   let naermest = -1, best = 1e9;
@@ -1394,12 +2560,8 @@ function plasser(type, x, y){
 
   bygg.skall[naermest]++;
   bygg.historikk.push({ hva:'elektron', skall:naermest });
-  ferdigPlassert();
-}
-
-function ferdigPlassert(){
   /* Brikka blir staaende valgt: legger hun ut aatte elektroner, skal hun
-     ikke trykke paa magasinet mellom hver. */
+     ikke trykke paa beholderen mellom hver. */
   tegnBygg();
 }
 
@@ -1407,31 +2569,39 @@ function angreBygg(){
   const siste = bygg.historikk.pop();
   if(!siste){ si('Det er ingenting å angre.'); return; }
   if(siste.hva === 'proton') bygg.protoner--;
+  if(siste.hva === 'noytron') bygg.noytroner--;
   if(siste.hva === 'elektron') bygg.skall[siste.skall]--;
   if(siste.hva === 'skall'){
     /* Et skall med elektroner i kan ikke bare forsvinne - elektronene
-       legges tilbake i magasinet sammen med det. */
+       legges tilbake i beholderen sammen med det. */
     bygg.skall.pop();
   }
   bygg.merker = null;
   $('byggSvar').textContent = '';
+  $('byggSvar').classList.remove('gs-klart');
   tegnBygg();
 }
 
-function tomBygg(){ nyttBygg(bygg.nr); }
+function tomBygg(){ nyttBygg(bygg.nr, bygg.prove); }
 
 async function sjekkBygg(){
   const s = stoffAv(bygg.nr);
-  const fasit = OPPBYGNING[bygg.nr][1];
+  const o = OPPBYGNING[bygg.nr];
+  const fasit = o[1];
   const elektroner = bygg.skall.reduce(function(n, x){ return n + x; }, 0);
   const feil = [];
 
   if(bygg.protoner !== bygg.nr){
-    feil.push('Kjernen har ' + bygg.protoner + ' protoner. Atomnummeret til '
+    feil.push('Kjernen har ' + protonOrd(bygg.protoner) + '. Atomnummeret til '
             + s[2] + ' er ' + bygg.nr + ', og det er nettopp antall protoner.');
   }
+  if(visNoytron() && bygg.noytroner !== o[0]){
+    feil.push('Du har lagt ut ' + noytronOrd(bygg.noytroner) + '. Massetallet er '
+            + massetall(bygg.nr) + ' og atomnummeret ' + bygg.nr + ', så '
+            + massetall(bygg.nr) + ' − ' + bygg.nr + ' = ' + noytronOrd(o[0]) + '.');
+  }
   if(elektroner !== bygg.nr){
-    feil.push('Du har lagt ut ' + elektroner + ' elektroner. Et nøytralt atom har '
+    feil.push('Du har lagt ut ' + elektronOrd(elektroner) + '. Et nøytralt atom har '
             + 'like mange elektroner som protoner: ' + bygg.nr + '.');
   }
   if(bygg.skall.length !== fasit.length){
@@ -1442,7 +2612,7 @@ async function sjekkBygg(){
     if(fasit[i] === undefined){
       feil.push('Skall ' + (i + 1) + ' skal ikke være der.');
     }else if(antall !== fasit[i]){
-      feil.push('Skall ' + (i + 1) + ' har ' + antall + ' elektroner. Det skal ha '
+      feil.push('Skall ' + (i + 1) + ' har ' + elektronOrd(antall) + '. Det skal ha '
               + fasit[i] + '.');
     }
   });
@@ -1468,16 +2638,103 @@ async function sjekkBygg(){
   }
 
   svar.classList.add('gs-klart');
-  svar.textContent = 'Riktig. Slik ser ' + s[2] + ' ut: ' + bygg.nr + ' protoner i kjernen '
-    + 'og ' + fasit.join(' + ') + ' elektroner utover.';
+  svar.textContent = 'Riktig. Slik ser ' + s[2] + ' ut: ' + protonOrd(bygg.nr)
+    + (visNoytron() ? ' og ' + noytronOrd(o[0]) : '') + ' i kjernen, og '
+    + (fasit.length === 1 ? elektronOrd(fasit[0]) + ' utenpå'
+                          : fasit.join(' + ') + ' elektroner utover') + '.';
 
-  if(!bygg.lost){
+  const forstegang = !bygg.lost;
+  if(forstegang){
     bygg.lost = true;
-    data.runder.push({ id:Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-                       tid:Date.now(), type:'bygg', stoff:bygg.nr, forsok:bygg.forsok });
+    data.runder.push({ id:nyId(), tid:Date.now(), type:'bygg',
+                       stoff:bygg.nr, forsok:bygg.forsok });
+  }
+
+  if(bygg.prove){ await bestaattProve(); return; }
+
+  if(forstegang){
     tegnFramdrift();
     await lagre();
   }
+}
+
+/* ============================================================
+   Gullstjerna
+   ------------------------------------------------------------
+   Fem riktige spoersmaal OG et riktig bygget atom. Da, og bare da,
+   settes stjerna, gis 100 XP og aapnes neste stoff i rekka.
+   ============================================================ */
+async function bestaattProve(){
+  const nr = bygg.nr;
+  const s = stoffAv(nr);
+  const nytt = !erMestret(nr);
+
+  if(!data.mestret) data.mestret = {};
+  data.mestret[nr] = { tid:Date.now(), forsok:bygg.forsok };
+
+  let apnet = null;
+  if(nytt){
+    const for_ = apne();
+    data.apne = Math.max(for_, Math.min(MAKS_APNE, nr + 1));
+    if(data.apne > for_) apnet = stoffAv(data.apne);
+    girXp(XP_STJERNE, 'gullstjerne på ' + s[2] + '!');
+  }
+
+  bygg = null;
+  tegnAlt();
+
+  visFane('test', true);
+  $('testOppsett').classList.add('gs-skjult');
+  $('testSpill').classList.add('gs-skjult');
+  $('testResultat').classList.remove('gs-skjult');
+
+  const ut = $('resultatInnhold');
+  ut.textContent = '';
+
+  const stjerne = document.createElement('img');
+  stjerne.className = 'gs-stor-stjerne';
+  stjerne.src = '/bilder/spill/stjerne.webp?v=1';
+  stjerne.alt = ''; stjerne.width = 92; stjerne.height = 92;
+  stjerne.onerror = function(){ this.hidden = true; };
+  ut.appendChild(stjerne);
+
+  const t = document.createElement('p');
+  t.className = 'gs-sporsmaal';
+  t.textContent = nytt ? 'Gullstjerne på ' + s[2] : s[2] + ' sitter fortsatt';
+  ut.appendChild(t);
+
+  if(nytt){
+    const lapp = document.createElement('p');
+    lapp.className = 'gs-xp-gitt';
+    lapp.textContent = '+' + XP_STJERNE + ' XP';
+    ut.appendChild(lapp);
+  }
+
+  const sub = document.createElement('p');
+  sub.className = 'gs-sporsmaal-sub';
+  if(apnet){
+    sub.textContent = apnet[2] + ' er åpnet. Den står med tom stjerne i tabellen nå.';
+  }else if(!nytt){
+    sub.textContent = 'Du hadde stjerna fra før – den er like god etter denne runden.';
+  }else if(apne() >= MAKS_APNE){
+    sub.textContent = 'Du har tatt alle de tjue første. Trinn tre er bindinger '
+      + 'mellom stoffene, og det er ikke bygget ennå.';
+  }else{
+    sub.textContent = 'Godt jobbet.';
+  }
+  ut.appendChild(sub);
+
+  const knapper = [];
+  if(apnet){
+    knapper.push(['Ta prøven på ' + apnet[2], true, function(){ startProve(apnet[0]); }]);
+  }
+  knapper.push(['Til tabellen', !apnet, function(){
+    valgtNr = nr; tegnLab(); visFane('tabell');
+  }]);
+  ut.appendChild(knappRad(knapper));
+
+  prove = null;
+  await lagre();
 }
 
 /* ============================================================
@@ -1487,7 +2744,7 @@ function tegnFramdrift(){
   const runder = data.runder || [];
   /* Byggerundene teller ikke som spoersmaal - de har ingen andel riktige,
      de er enten ferdige eller ikke. De staar for seg i tallene under. */
-  const tester = runder.filter(function(r){ return r.type !== 'bygg'; });
+  const tester = runder.filter(function(r){ return r.type !== 'bygg' && r.type !== 'noytron'; });
   const bygde = runder.filter(function(r){ return r.type === 'bygg'; });
   const ulikeBygde = {};
   bygde.forEach(function(r){ ulikeBygde[r.stoff] = true; });
@@ -1499,9 +2756,13 @@ function tegnFramdrift(){
     return a > b ? a : b;
   }, 0);
 
+  const xp = xpAv();
   const tall = $('framTall');
   tall.textContent = '';
-  [['Stoffer tent', apne() + ' av 118'],
+  [['Nivå', String(nivaaAv(xp))],
+   ['Erfaringspoeng', xp.toLocaleString('nb-NO')],
+   ['Gullstjerner', antallMestret() + ' av ' + MAKS_APNE],
+   ['Åpne stoffer', apne() + ' av 118'],
    ['Runder spilt', String(tester.length)],
    ['Spørsmål', String(spurt)],
    ['Riktige', spurt ? Math.round(rette / spurt * 100) + ' %' : '–'],
@@ -1513,9 +2774,27 @@ function tegnFramdrift(){
     tall.appendChild(d);
   });
 
-  $('framTekst').textContent = apne() >= MAKS_APNE
-    ? 'Du har låst opp alt som hører til første trinn. Neste trinn er å bygge atomene selv.'
-    : 'Ta en runde på ' + MIN_FOR_LAAS + ' spørsmål og få minst 90 % riktig, så låses fem nye stoffer opp.';
+  const neste = STOFFER.filter(function(s){
+    return erApen(s[0]) && OPPBYGNING[s[0]] && !erMestret(s[0]);
+  }).sort(function(a, b){ return a[0] - b[0]; })[0];
+
+  $('framTekst').textContent = neste
+    ? 'Neste gullstjerne: ' + neste[2] + '. Fem spørsmål og ett bygget atom, '
+      + 'så åpner stoffet etter seg.'
+    : (apne() >= MAKS_APNE
+        ? 'Alle de tjue første har gullstjerne. Trinn tre er bindinger mellom '
+          + 'stoffene, og det er ikke bygget ennå.'
+        : 'Alt du har tilgang til er bestått.');
+
+  const stige = $('framStige');
+  stige.textContent = '';
+  NIVAA.forEach(function(grense, i){
+    const t = document.createElement('span');
+    t.className = 'gs-trinn' + (xp >= grense ? ' gs-naadd' : '');
+    t.textContent = 'Nivå ' + (i + 1)
+      + (grense ? ' · ' + grense.toLocaleString('nb-NO') + ' XP' : ' · start');
+    stige.appendChild(t);
+  });
 
   const liste = $('framRunder');
   liste.textContent = '';
@@ -1537,6 +2816,8 @@ function tegnFramdrift(){
       const s = stoffAv(r.stoff);
       rad.innerHTML = dato + '<span>Bygde ' + (s ? s[2] : 'et atom')
         + (r.forsok > 1 ? ' – ' + r.forsok + ' forsøk' : ' – på første forsøk') + '</span>';
+    }else if(r.type === 'noytron'){
+      rad.innerHTML = dato + '<span>Lærte om nøytronet – 500 XP</span>';
     }else{
       rad.innerHTML = dato
         + '<span>' + (r.riktige || 0) + ' av ' + (r.antall || 0) + ' riktig – '
@@ -1552,7 +2833,7 @@ function tegnFramdrift(){
 /* ============================================================
    Fanene, pilla og oppstart
    ============================================================ */
-function visFane(navn){
+function visFane(navn, behold){
   [['tabell','visTabell','faneTabell'],
    ['bygg','visBygg','faneBygg'],
    ['test','visTest','faneTest'],
@@ -1561,15 +2842,24 @@ function visFane(navn){
     $(f[1]).classList.toggle('gs-skjult', !pa);
     $(f[2]).classList.toggle('gs-valgt', pa);
   });
-  if(navn === 'test'){
+
+  /* `behold` settes av spillet selv naar det flytter henne videre i en
+     proeve - da skal fanen IKKE nullstilles under foettene paa henne.
+     Trykker hun paa fanen, kommer den uten flagget og starter forfra. */
+  if(navn === 'test' && !behold){
     /* Tilbake til oppsettet hver gang fanen aapnes: en halvferdig runde
        man kommer tilbake til uten aa vite hvor man var, er verre enn en
        ny. */
+    prove = null; runde = null;
     $('testOppsett').classList.remove('gs-skjult');
     $('testSpill').classList.add('gs-skjult');
     $('testResultat').classList.add('gs-skjult');
     tegnValg();
+    tegnProveValg();
+    velgVei(testVei);
   }
+  /* Et paabegynt bygg staar. Ogsaa proevens bygg: trykker hun paa fanen
+     hun alt er paa, skal ikke det hun holder paa med kastes. */
   if(navn === 'bygg' && !bygg) nyttByggeStoff();
   if(navn === 'fram') tegnFramdrift();
   window.scrollTo({ top:0, behavior:'smooth' });
@@ -1581,14 +2871,18 @@ function si(tekst){
   p.textContent = tekst;
   p.hidden = false;
   clearTimeout(pilleTid);
-  pilleTid = setTimeout(function(){ p.hidden = true; }, 2600);
+  pilleTid = setTimeout(function(){ p.hidden = true; }, 2800);
 }
 
 function tegnAlt(){
+  tegnXp(false);
+  tegnLaerPanel();
   tegnTabell();
   tegnLab();
   tegnValg();
+  tegnProveValg();
   tegnFramdrift();
+  if(bygg) tegnBygg();
 }
 
 tegnAlt();

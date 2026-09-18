@@ -1,10 +1,10 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 15. september 2026. v11 la til del 50–54 – språkmodus
+*Ført à jour 18. september 2026. v11 la til del 50–54 – språkmodus
 for Emma og Andrea, grunnstoffspillet, personlige paletter og «hvem er
 du?» på veggskjermen, svartiden som ikke er målt, og arbeidsdelingen
-mellom uttrykk og bygging. Ingen av dem er bygget – økta 15. september
-ga ingen kode. v10 la til del 39–46 – diktatspillet,
+mellom uttrykk og bygging. Grunnstoffspillet (del 51) er bygget siden; de
+fire andre står. v10 la til del 39–46 – diktatspillet,
 bekreftelse på alt som skriver, verktøylagene `felles-lesalt`,
 `felles-skriv`, `felles-hus` og `felles-tale`, innloggingen samlet på
 forsiden, Neam som vet hvilken dag det er, stemmen begge veier, og to
@@ -31,9 +31,9 @@ ny tråd alltid lander på samme sted.*
 
 ---
 
-## Nåstatus – 15. september 2026
+## Nåstatus – 18. september 2026
 
-**Hvor prosjektet er nå.** Ni sider og to spill. To økter 12.–13. september
+**Hvor prosjektet er nå.** Ni sider og tre spill. To økter 12.–13. september
 endret tyngdepunktet i huset: fra sider som hver eier sine verktøy, til
 **fellesfiler som gir Neam det samme overalt**.
 
@@ -51,19 +51,23 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-tale.js` (tale ut og inn).
 
 **Siste leverte versjoner:** `felles-neam.js ?v=71`, `felles-neam.css
-?v=56`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=3`, `felles-lesalt.js
-?v=3`, `felles-hus.js ?v=2`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
+?v=56`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=4`, `felles-lesalt.js
+?v=5`, `felles-hus.js ?v=3`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
 `felles-graph.js ?v=2`, `felles-rot.css ?v=5`, `felles-knapper.css ?v=1`;
-alle ni sidene pluss `andrea-matte.html` og `andrea-diktat.html`;
-`functions/_middleware.js`, `functions/api/` med `hent.js`, `sandnes.js`,
-`sjo.js`, `claude.js`, `data.js`, `ms.js`, `homey.js`.
-Bildeversjoner: `MERKE_V=2`, `KNAPP_V=4`, `FAG_MERKE_V=3`, spillbildene
-`?v=1`, sikkerhetsmerkene `?v=1` (21 stk i `bilder/sikkerhet/`).
+alle ni sidene pluss `andrea-matte.html`, `andrea-diktat.html` og
+`emma-grunnstoff.html`; `functions/_middleware.js`, `functions/api/` med
+`hent.js`, `sandnes.js`, `sjo.js`, `claude.js`, `data.js`, `ms.js`,
+`homey.js`.
+Bildeversjoner: `MERKE_V=2`, `KNAPP_V=4`, `FAG_MERKE_V=3`, `SIK_MERKE_V=1`,
+spillbildene `?v=1`, sikkerhetsmerkene `?v=1` (65 stk i
+`bilder/sikkerhet/`).
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–70; neam.css til og
-med 55; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–2, skriv 1–2,
-hus `?v=1`, ms `?v=1`, tale 1–4**. De siste fem ble brent 13. september ved
-å endre en fil som alt var pushet uten å heve nummeret – se del 46.
+med 55; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–4, skriv 1–3,
+hus `?v=1–2`, ms `?v=1`, tale 1–4**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
+tale 1–4 ble brent 13. september ved å endre en fil som alt var pushet uten
+å heve nummeret – se del 46. Resten er tidligere leverte numre, som alltid
+er brent i det de forlates.
 
 **Hemmeligheter i Cloudflare:** `ANTHROPIC_API_KEY`, `MS_CLIENT_SECRET`,
 `HOMEY_CLIENT_SECRET`. **En hemmelighet tas først i bruk ved neste
@@ -72,12 +76,20 @@ utrulling** – lagre den, og push eller trykk «Retry deployment».
 **Økta 15. september ga ingen kode.** Den gikk med til å tenke høyt, og
 resultatet er fem nye deler: språkmodus (del 50), grunnstoffspillet
 (del 51), personlige paletter og veggskjermen (del 52), svartiden
-(del 53) og arbeidsdelingen i design (del 54). Versjonene over står
-uendret.
+(del 53) og arbeidsdelingen i design (del 54).
+
+**Øktene 16.–18. september ga kode igjen.** 16. september: kalenderlesinga i
+`felles-lesalt.js` lagt om til seks kall om gangen i stedet for etter tur,
+Neam som kan endre skolearbeid fra alle sider, og **grunnstoffspillet** for
+Emma – trinn 1 og trinn 2 samme dag. 17. september: seksten nye varslere på
+sikkerhetssida, røyk, varme og vann. 18. september gikk i sin helhet til å
+**bygge om grunnstoffspillet**: hele tabellen tent fra start, stjerne per
+stoff, prøven som eneste vei videre, erfaringspoeng og nivå, nøytronet som
+eget læretrinn, og dypere atomtegning. Se del 51, «Slik ble det bygget».
 
 ### Åpne tråder
 
-**Besluttet, ikke bygget – seks systemer med begrunnelse i del 47–52:**
+**Besluttet, ikke bygget – fem systemer med begrunnelse i del 47–50 og 52:**
 - **Belønningssystemet** (del 47). XP for gjøremål og lekser, ukesterskel
   som utløser ukepenger, overskudd i egen pool per barn mot en milepæl.
   Alt diskutert ferdig; ingen kode. **Største risiko, uttalt av Magne:** at
@@ -91,16 +103,12 @@ uendret.
   Andrea, slått på ved å si det og av ved å si det på målspråket.
   Billigst av alt som står på lista: et modusflagg, en systemtekst og et
   gjenkjenningsspråk. **Svakheten er gjenkjenningen**, ikke modellen.
-- **Grunnstoffspillet** (del 51). Tre trinn for Emma: ti stoffer, så
-  skallmodeller hun bygger selv, så bindinger innenfor det hun har låst
-  opp. Hvert trinn spillbart alene. **Krever mer på utseende enn de to
-  andre spillene** – dette er et bilde hun sitter og ser på.
 - **Personlige paletter og «hvem er du?»** (del 52). Farger og bilder per
   person, lik layout og oppførsel; veggskjermen spør ved oppvåkning, og
   grått husmodus når ingen svarer. Hører hjemme i skallet, ikke i åtte
   sider.
 
-**Åpne spørsmål – ikke avgjort (del 53):**
+**Åpne spørsmål – ikke avgjort (del 51 og 53):**
 - **Neam bruker fem til sju sekunder på enkle spørsmål.** Det er en
   følelse, ikke et tall – ingenting er målt. Mistenkte: en verktøyrunde
   før han begynner å snakke, og husregisteret pluss verktøydefinisjonene
@@ -110,6 +118,11 @@ uendret.
   systemteksten – de er 121 og 95 kB. Verktøymodellen (som
   husregisteret) er riktig form hvis det gjøres. Uavklart om det er verdt
   vedlikeholdet.
+- **Nøytronets farge i grunnstoffspillet.** Grå (`--ink-soft`) ble valgt
+  18. september fordi nøytral farge passet en nøytral partikkel, men fargen
+  står ikke i designsystemet. I tegningen skiller den klart fra
+  elektronblått; i den lille beholderkula ligger de nærmere hverandre enn de
+  burde. Se del 51.
 
 **Avtalt som neste sak:**
 - **Robotstemme fra en TTS-tjeneste.** Nettleserens `speechSynthesis` er en
@@ -137,6 +150,9 @@ uendret.
 - **Skriving til skolearbeidet på tvers.** Det siste som bare kan gjøres fra
   sin egen side. Alt annet – handleliste, kalender, diktat, dør – virker
   overalt.
+- **Grunnstoffspillets trinn 3 – bindinger** (del 51). Hun trykker på ett
+  stoff, og de stoffene det kan binde seg med lyser opp. Begrensningen til
+  det hun har låst opp er det som gjør trinnet mulig. Trinn 1 og 2 står.
 - **Returen etter innlogging.** `loggInn()` på dashene lagrer `fh_tilbake`,
   men forsiden leser den ikke. Én linje.
 - **Reserveveien i `index.html`** kan slettes: den faller tilbake på
@@ -2463,7 +2479,7 @@ virker ikke språkmodus der heller.
 
 ---
 
-## 51. Grunnstoffspillet – besluttet 15. september 2026, ikke bygget
+## 51. Grunnstoffspillet – trinn 1 og 2 bygget 16.–18. september 2026
 
 *Emma har begynt på periodesystemet i naturfag. Tre trinn, hvert av dem
 spillbart alene – det er det som gjør at dette kan bygges i etapper i stedet
@@ -2506,6 +2522,96 @@ avgjørelsen finnes ikke i noen tabell.
 visning inni en annen side. Og **klassenavnkollisjonen fra del 26 er den
 dyreste fella i dette huset** – et nytt spill med egne klassenavn i en stor
 fil skal sjekkes mot fellesfilene før det pushes.
+
+### Slik ble det bygget – 16.–18. september 2026
+
+*`emma-grunnstoff.html`, snarvei fra Emma dash. Trinn 1 og 2 står; trinn 3
+gjenstår. Økta 18. september bygget om det som alt var levert, og avgjorde
+en rekke ting som ikke lå i beslutningen over.*
+
+**Hele tabellen er tent fra første stund.** Beslutningen sa «bare ti stoffer
+tent», og slik ble den bygget først: resten var mørke og upolerte. Det kostet
+mer enn det ga. Et periodesystem i gruppefarger ER kartet, og et mørkt felt
+er ikke et mål man går mot – det er bare et hull. Nå står alle 118 i fargen
+sin, og framdriften ligger i **stjerna oppe til høyre i ruta**: ingen stjerne
+betyr at stoffet kan leses om, men ikke prøves; tom stjerne at prøven er
+åpen; gullstjerne at den er bestått. Samme `stjerne.webp` avfarget i CSS –
+tre tilstander med to utseender, og ingen fil som kan komme i utakt.
+
+**Hun kan lese om alle 118.** Trykk på et hvilket som helst stoff åpner
+laben. Stoffer uten tilgang viser gruppefarge, tilstand og **én setning om
+hva stoffet er**; åpne stoffer får i tillegg et hverdagsavsnitt, tallene og
+atomtegningen. Én setning per grunnstoff er skrevet for alle 118,
+hverdagsavsnitt for de tjue første.
+
+**Prøven er den eneste veien videre.** Fem spørsmål om ETT stoff, og deretter
+må hun bygge atomet. Alle fem riktige og et riktig bygget atom gir
+gullstjerne, 100 XP og åpner neste stoff i rekka. Øvingsrunden står ved siden
+av og gir XP, men **åpner ingenting** – to veier som begge låste opp ville
+gjort det uklart hva som faktisk flytter henne framover. Den gamle regelen
+(fem nye stoffer for 90 % på en runde på minst ti) er borte.
+
+**Erfaringspoeng og nivå.** 10 XP per riktig øvingssvar – altså 50, 100 og
+150 for en feilfri runde på 5, 10 og 15. 100 XP per gullstjerne, 500 for
+nøytrontesten. Nivågrensene er 500, 1000, 2000, 5000, 10 000, 20 000, 50 000
+og 100 000. **Premier ved nytt nivå er ikke bestemt** – stripa står der,
+belønningen kommer senere.
+
+**Poeng deles ut ett sted og gjenopprettes et annet.** `girXp()` legger til,
+punktum. Gulvet som redder poeng etter en tapt skriving til KV ligger i
+`flett()`, der stjernene og nøytrontesten er kjent og kan regnes om til XP.
+Blandes de to, telles en stjerne som alt er satt to ganger – én gang som gulv
+og én gang som de hundre hun nettopp fikk.
+
+**Nøytronet kommer etter ti stoffer, ikke før.** Den opprinnelige
+begrunnelsen for å utelate nøytroner sto seg: antallet kan ikke utledes av
+atomnummeret, så hun måtte fått det oppgitt. Løsningen er at hun får
+**massetallet** og regner selv: `nøytroner = massetall − atomnummer`. Da er
+det noe hun finner ut i stedet for noe hun blir fortalt. Læringsboksen dukker
+opp når stoff elleve er åpnet, testen på fem spørsmål gir 500 XP, og først
+etterpå finnes nøytroner i tegningen, i faktalista og som egen beholder i
+byggeboksen.
+
+**Beholderne er utømmelige.** Før sto det «3 igjen» på hver brikke, og
+knappen ble grå når tallet nådde null. Det gjorde halve oppgaven for henne:
+hun kunne telle magasinet i stedet for å telle atomet. Nå henter hun så mange
+hun vil, og det er rettingen som teller. Tallet under beholderen sier hvor
+mange hun HAR lagt ut.
+
+**Bare kula følger fingeren.** Før fulgte hele brikka med navnet på, og
+navnet dekket nettopp det stedet på plata hun siktet mot.
+
+**Tegningen har dybde.** Kuler med lys ovenfra og skygge under, gravert
+messing i ringene, skjær rundt kjernen. Gradientene og filteret ligger i ett
+skjult `<svg class="gs-defs">` som begge tegningene peker til med `url(#…)` –
+ett sted å endre dybden, og ingen id-er i to eksemplarer. Protonene og
+nøytronene pakkes i et solsikkemønster, 137,5° per kule, som tar et
+vilkårlig antall uten å velges ringvis: kjernen blir en klump og ikke en
+stabel. Laben er 340 px mot 260 før, plata 380 mot 330.
+
+**Utsnittet er trangt i laben og fast på byggeplata**, og det er ikke en
+smakssak. Plata regner ut hvor hun slapp brikka ved å gange museposisjonen
+med 360 delt på bredden – endret utsnittet seg mens hun la ut skall, ville
+treffpunktene flyttet seg under fingeren hennes. Laben tegner et ferdig atom
+som ikke skal endre seg, og der er det motsatte problemet det virkelige:
+hydrogen med ett skall fylte 39 % av et lerret laget for fire, og lå som en
+flekk i hjørnet av panelet. Skriftstørrelsen i tegningen regnes derfor mot
+utsnittet og ikke i SVG-enheter.
+
+**Nøytronet ble grått (`--ink-soft`), og det er ikke avgjort.** Nøytral farge
+til nøytral partikkel var det nærmeste, men fargen står ikke i
+designsystemet. Se «Åpne spørsmål» i toppblokka.
+
+**Ikke gjort, med vilje:** den tomme byggeplata er glissen. Rammen må holde
+fire skall, så før hun legger ut det første ligger det en liten stiplet
+kjerne midt i 380 piksler – verst på telefon. Fire svake stiplete
+hjelperinger ville løst det og samtidig vist hvor skallene kan ligge, men det
+er et layoutvalg som ikke står i designsystemet, og det er ikke spurt om.
+
+**Nøkkelen er uendret.** `emma-grunnstoff:v1` i KV og
+`neam-emma-grunnstoff:v1` i localStorage. Ombyggingen la til felt i verdien
+(`mestret`, `xp`, `noytron`) og beholdt `apne` som tallet det var – å døpe
+det om ville vært en migrering, ikke en tekstendring (del 12).
 
 ---
 
