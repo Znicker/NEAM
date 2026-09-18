@@ -39,13 +39,15 @@
    staar ved siden av og gir XP, men aapner ingenting - da er det alltid
    klart hva som faktisk flytter henne framover.
 
-   NOEYTRONET KOMMER ETTER TI STOFFER, ikke foer. Antall noeytroner kan
-   ikke utledes av atomnummeret, saa det maatte ellers bare vaert et tall
-   hun fikk oppgitt. Naar hun har aapnet stoff elleve, dukker
-   laeringsboksen opp: hun faar MASSETALLET og regner selv
-   noeytroner = massetall - atomnummer. Da er det noe hun finner ut, ikke
-   noe hun husker. Testen paa den gir 500 XP, og foerst etterpaa finnes
-   noeytroner i tegningen, i faktalista og i byggemagasinet.
+   NOEYTRONET KOMMER PAA NIVAA 3, ikke foer. Antall noeytroner kan ikke
+   utledes av atomnummeret, saa det maatte ellers bare vaert et tall hun
+   fikk oppgitt. Laeringsboksen tar henne gjennom fire steg: kjernen har
+   to slags partikler, de veier like mye, elektronet veier ingenting - og
+   derfor ER vekta av atomet antallet i kjernen. DET antallet er
+   massetallet. Foerst naar det staar, gir noeytroner = massetall -
+   atomnummer mening. Testen paa seks spoersmaal gir 500 XP, og foerst
+   etterpaa finnes noeytroner i tegningen, i faktalista og i
+   byggeboksen.
 
    XP OG NIVAA. 10 XP per riktig svar i oeving (50/100/150 for en feilfri
    runde paa 5/10/15), 100 XP per gullstjerne, 500 XP for noeytrontesten.
@@ -371,6 +373,17 @@ body::before{
   border-radius:999px; padding:3px 10px; margin-bottom:8px;
 }
 .gs-laer p{ font-size:var(--t-brod); font-weight:600; line-height:1.5; margin:0 0 10px; }
+/* Teksten til venstre, kjernen til hoeyre. Paa telefon under hverandre -
+   og da staar tegningen ETTER teksten, fordi den er en bekreftelse paa
+   det hun nettopp leste og ikke en inngang til det. */
+.gs-laer-rad{ display:grid; grid-template-columns:1fr; gap:6px 22px; align-items:start; }
+@media(min-width:780px){ .gs-laer-rad{ grid-template-columns:1fr auto; } }
+.gs-laer-figur{ margin:0; max-width:240px; justify-self:center; }
+.gs-laer-figur .gs-atom{ width:min(200px, 58vw); min-width:0; }
+.gs-laer-figur figcaption{
+  font-size:var(--t-etikett); font-weight:600; color:var(--ink-soft);
+  text-align:center; line-height:1.4; margin-top:2px;
+}
 .gs-laer .gs-regnestykke{
   font-size:var(--t-stor); font-weight:700; text-align:center;
   background:var(--boks-mild); border:1px solid var(--boks-kant);
@@ -1031,7 +1044,13 @@ const LOKAL_NOKKEL = 'neam-emma-grunnstoff:v1';
 
 const START_APNE = 10;
 const MAKS_APNE = 20;         /* saa langt OPPBYGNING rekker */
-const NOYTRON_FRA = 10;       /* laeringsboksen kommer naar hun har mer enn dette */
+/* Noeytronet er ikke laast bak antall stoffer, men bak NIVAA: hun skal ha
+   holdt paa en stund foer en tredje partikkel kommer inn. Nivaa 3 er 1000
+   XP, og de to veiene dit moetes omtrent samme sted - ti gullstjerner er
+   nettopp 1000 XP, og da staar hun med elleve aapne stoffer. Forskjellen
+   er at oeving ogsaa teller, saa den som repeterer mye kommer dit uten aa
+   ha bestaatt alt. Det er med vilje: oeving er ekte arbeid. */
+const NOYTRON_NIVAA = 3;
 
 const XP_STJERNE = 100;
 const XP_NOYTRON = 500;
@@ -1063,7 +1082,7 @@ function apneStoffer(){
 function antallMestret(){
   return Object.keys(data.mestret || {}).length;
 }
-function kanNoytron(){ return apne() > NOYTRON_FRA; }
+function kanNoytron(){ return nivaaAv(xpAv()) >= NOYTRON_NIVAA; }
 function visNoytron(){ return !!data.noytron; }
 function massetall(nr){
   const o = OPPBYGNING[nr];
@@ -1201,11 +1220,23 @@ function nesteGrense(xp){
 function girXp(poeng, hvorfor){
   if(poeng <= 0) return;
   const forNivaa = nivaaAv(xpAv());
+  const forPort = kanNoytron();
   data.xp = xpAv() + poeng;
   const etterNivaa = nivaaAv(xpAv());
   tegnXp(true);
-  if(etterNivaa > forNivaa) si('Nivå ' + etterNivaa + '! ' + (hvorfor || ''));
-  else if(hvorfor) si('+' + poeng + ' XP – ' + hvorfor);
+  /* Noeytronet aapnes av NIVAA, ikke av antall stoffer, saa porten kan gaa
+     opp midt i en runde. Uten denne linja ville laeringsboksen ligget og
+     ventet til neste gang sida ble tegnet paa nytt. */
+  tegnLaerPanel();
+
+  /* Gikk porten opp nettopp, er DET nyheten - ikke nivaanummeret. */
+  if(!forPort && kanNoytron() && !visNoytron()){
+    si('Nivå ' + etterNivaa + '! Nøytronet er låst opp – det venter øverst på Periodesystemet.');
+  }else if(etterNivaa > forNivaa){
+    si('Nivå ' + etterNivaa + '! ' + (hvorfor || ''));
+  }else if(hvorfor){
+    si('+' + poeng + ' XP – ' + hvorfor);
+  }
 }
 
 function tegnXp(blink){
@@ -1619,27 +1650,118 @@ function tegnLabKnapper(apen, harOppbygning){
 /* ============================================================
    Laeringsboksen - noeytronet
    ------------------------------------------------------------
-   Kommer foerst naar hun har aapnet stoff elleve. Foer det ville
-   noeytroner bare vaert et tall hun fikk oppgitt; etter den er de
-   noe hun regner ut av massetallet.
+   Kommer foerst paa nivaa 3. Foer det ville noeytroner bare vaert et
+   tall hun fikk oppgitt; etter den er de noe hun regner ut.
+
+   FIRE KORTE STEG, IKKE ÉN TEKSTVEGG. Foerste utgave sa alt paa én
+   gang, og det virkelige hullet var at MASSETALLET dukket opp uten
+   opphav - det sto bare at hun «faar det oppgitt». Da er
+   noeytroner = massetall - atomnummer en oppskrift hun foelger, ikke
+   noe hun forstaar. Stegene bygger tallet opp i stedet: kjernen har to
+   slags partikler, de veier like mye, elektronet veier ingenting, og
+   derfor ER vekta av atomet antallet i kjernen. Massetallet er det
+   antallet. Foerst naar det staar, gir subtraksjonen mening.
+
+   OG DET MAA STAA HVORFOR DET MAA OPPGIS: samme grunnstoff kan ha
+   ulikt antall noeytroner. Uten den setningen ser det ut som en
+   vilkaarlig vennlighet fra spillet at hun faar tallet servert.
+
+   TEGNINGENE ER DEN SAMME TEGNEREN som resten av spillet bruker, bare
+   uten skall. Da ser kjernen i leksjonen ut som kjernen hun skal
+   bygge - ikke som en illustrasjon av noe i naerheten.
    ============================================================ */
 const NOYTRON_SPM = [
   { tekst:'Hva slags ladning har et nøytron?',
     fasit:'Ingen ladning',
-    alternativ:['Ingen ladning', 'Positiv, som protonet', 'Negativ, som elektronet', 'Det kommer an på stoffet'] },
-  { tekst:'Hvor i atomet ligger nøytronene?',
-    fasit:'I kjernen, sammen med protonene',
-    alternativ:['I kjernen, sammen med protonene', 'I det innerste skallet', 'I det ytterste skallet', 'Utenfor atomet'] },
-  { tekst:'Hva er massetallet til et atom?',
-    fasit:'Protoner + nøytroner til sammen',
-    alternativ:['Protoner + nøytroner til sammen', 'Bare antall protoner', 'Protoner + elektroner', 'Antall skall ganger to'] },
+    alternativ:['Ingen ladning', 'Positiv, som protonet',
+                'Negativ, som elektronet', 'Det kommer an på stoffet'] },
+  { tekst:'Hvorfor trenger kjernen nøytroner i det hele tatt?',
+    fasit:'Protonene frastøter hverandre – nøytronene holder kjernen samlet',
+    alternativ:['Protonene frastøter hverandre – nøytronene holder kjernen samlet',
+                'De trekker elektronene inn mot kjernen',
+                'De gjør atomet elektrisk nøytralt',
+                'De bestemmer hvilken gruppe stoffet havner i'] },
+  { tekst:'Hvor sitter nesten hele vekta til et atom?',
+    fasit:'I kjernen – elektronene veier nesten ingenting',
+    alternativ:['I kjernen – elektronene veier nesten ingenting',
+                'I det ytterste skallet',
+                'Jevnt fordelt utover hele atomet',
+                'I elektronene, fordi det er flest av dem'] },
+  { tekst:'Hva er massetallet?',
+    fasit:'Hvor mange partikler det er i kjernen til sammen',
+    alternativ:['Hvor mange partikler det er i kjernen til sammen',
+                'Bare antall protoner', 'Protoner + elektroner',
+                'Hvor mange skall atomet har'] },
+  { tekst:'Hvorfor må du få massetallet oppgitt i stedet for å regne det ut?',
+    fasit:'Samme grunnstoff kan ha ulikt antall nøytroner – massetallet må måles',
+    alternativ:['Samme grunnstoff kan ha ulikt antall nøytroner – massetallet må måles',
+                'Fordi regnestykket er for vanskelig',
+                'Fordi massetallet alltid er dobbelt så stort som atomnummeret',
+                'Fordi nøytroner er for små til å telles'] },
   { tekst:'Natrium har atomnummer 11 og massetall 23. Hvor mange nøytroner?',
     fasit:'12',
-    alternativ:['12', '11', '23', '34'] },
-  { tekst:'Karbon har 6 protoner og 6 nøytroner. Hva er massetallet?',
-    fasit:'12',
-    alternativ:['12', '6', '18', '36'] }
+    alternativ:['12', '11', '23', '34'] }
 ];
+
+/* Stegene. `figur` gir kjernen som skal tegnes ved siden av teksten. */
+const LAERESTEG = [
+  { tittel:'Den tredje partikkelen',
+    tekst:['Du har bygget atomer av to slags partikler: <b>protoner</b> i '
+         + 'kjernen og <b>elektroner</b> i skall rundt. Men kjernen har noe '
+         + 'mer i seg.',
+           'Der ligger også <b>nøytroner</b>. De har <b>ingen ladning</b> – '
+         + 'verken pluss eller minus. Det er derfor de heter det: de er '
+         + 'nøytrale.',
+           'Og de har en jobb. Alle protonene er positive, og like ladninger '
+         + '<b>frastøter hverandre</b>. En kjerne av bare protoner ville '
+         + 'sprengt seg selv fra hverandre. Nøytronene ligger imellom og '
+         + 'holder det hele samlet.'],
+    bildetekst:'Kjernen i karbon: seks røde protoner og seks grå nøytroner.',
+    figur:{ protoner:6, noytroner:6 } },
+
+  { tittel:'Hva er det som veier noe i et atom?',
+    tekst:['Et proton og et nøytron veier <b>omtrent nøyaktig like mye</b>. '
+         + 'Et elektron veier <b>1/1836</b> av et proton.',
+           'Det er så lite at det nesten ikke er der. Skal du veie et atom, '
+         + 'kan du se helt bort fra elektronene.',
+           'Altså: <b>hele vekta til atomet sitter i kjernen</b> – og vekta '
+         + 'er rett og slett hvor mange partikler som ligger der.'],
+    bildetekst:'Hydrogen: ett proton, ingen nøytroner. Den letteste kjernen som finnes.',
+    figur:{ protoner:1, noytroner:0 } },
+
+  { tittel:'Der kommer massetallet fra',
+    tekst:['Tell partiklene i kjernen – protoner og nøytroner under ett – og '
+         + 'du har <b>massetallet</b>. Det er ikke noe annet enn det '
+         + 'antallet.',
+           'Natriumkjernen har 23 partikler i seg. Derfor er massetallet til '
+         + 'natrium <b>23</b>, og stoffet skrives ofte <b>Na-23</b>.',
+           'Men massetallet kan du ikke regne deg fram til. Det må '
+         + '<b>måles</b>, ved å veie. Grunnen er at <b>samme grunnstoff kan '
+         + 'ha ulikt antall nøytroner</b>: karbon finnes både som karbon-12 '
+         + 'og karbon-14. Begge er karbon, begge har seks protoner – men den '
+         + 'ene har to nøytroner mer enn den andre.',
+           'Antall <b>protoner</b> er derimot alltid det samme for ett '
+         + 'grunnstoff. Det er nettopp derfor atomnummeret kan stå trykt i '
+         + 'tabellen, mens massetallet må oppgis hver gang.'],
+    bildetekst:'Natriumkjernen: 23 partikler til sammen. Det er massetallet.',
+    figur:{ protoner:11, noytroner:12 } },
+
+  { tittel:'Da er regnestykket enkelt',
+    tekst:['Nå vet du to ting: hvor mange partikler kjernen har til sammen '
+         + '(massetallet), og hvor mange av dem som er protoner '
+         + '(atomnummeret). Resten må være nøytroner.'],
+    regnestykke:'nøytroner = massetall − atomnummer',
+    etter:['For natrium: kjernen har <b>23</b> partikler, og <b>11</b> av dem '
+         + 'er protoner. Altså <b>23 − 11 = 12 nøytroner</b>.',
+           'Fra nå av får du massetallet oppgitt når du bygger – resten '
+         + 'regner du ut selv. Klarer du de seks spørsmålene, får du '
+         + '<b>500 XP</b>, og nøytronene blir med i tegningene, i faktalista '
+         + 'og i byggeboksen.'],
+    bildetekst:'11 røde og 12 grå. Til sammen 23.',
+    figur:{ protoner:11, noytroner:12 } }
+];
+
+let laerSteg = 0;
 
 function tegnLaerPanel(){
   const panel = $('laerPanel');
@@ -1651,28 +1773,82 @@ function tegnLaerPanel(){
   }
   panel.classList.remove('gs-skjult');
   if(laerTest) return;   /* testen er i gang - ikke tegn teksten over den */
+  tegnLaerSteg();
+}
 
-  panel.innerHTML =
-    '<span class="gs-laer-merke">Nytt å lære</span>'
-  + '<h2 class="gs-panel-tittel">Den tredje partikkelen: nøytronet</h2>'
-  + '<p>Du har bygget ti atomer med protoner og elektroner. Men kjernen har '
-  + 'én ting til i seg: <b>nøytroner</b>. De er omtrent like tunge som '
-  + 'protonene, men de har <b>ingen ladning</b> – verken pluss eller minus.</p>'
-  + '<p>Antall nøytroner kan du ikke lese ut av atomnummeret. Derfor får du '
-  + 'oppgitt <b>massetallet</b>, som er protoner og nøytroner lagt sammen. '
-  + 'Da kan du regne ut resten selv:</p>'
-  + '<div class="gs-regnestykke">nøytroner = massetall − atomnummer</div>'
-  + '<p>Natrium har atomnummer 11 og massetall 23. Da er 23 − 11 = <b>12 '
-  + 'nøytroner</b> i kjernen.</p>'
-  + '<p>Klarer du fem spørsmål om dette, får du <b>500 XP</b> – og fra da av '
-  + 'er nøytronene med i tegningene, i faktalista og i byggeboksen.</p>';
+function tegnLaerSteg(){
+  const panel = $('laerPanel');
+  const steg = LAERESTEG[laerSteg];
+  panel.textContent = '';
 
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.className = 'gs-knapp gs-tung';
-  b.textContent = 'Ta nøytrontesten';
-  b.onclick = startLaerTest;
-  panel.appendChild(b);
+  const merke = document.createElement('span');
+  merke.className = 'gs-laer-merke';
+  merke.textContent = 'Nytt å lære · ' + (laerSteg + 1) + ' av ' + LAERESTEG.length;
+  panel.appendChild(merke);
+
+  const h = document.createElement('h2');
+  h.className = 'gs-panel-tittel';
+  h.textContent = steg.tittel;
+  panel.appendChild(h);
+
+  const rad = document.createElement('div');
+  rad.className = 'gs-laer-rad';
+
+  const tekst = document.createElement('div');
+  (steg.tekst || []).forEach(function(t){
+    const el = document.createElement('p');
+    el.innerHTML = t;
+    tekst.appendChild(el);
+  });
+  if(steg.regnestykke){
+    const r = document.createElement('div');
+    r.className = 'gs-regnestykke';
+    r.textContent = steg.regnestykke;
+    tekst.appendChild(r);
+  }
+  (steg.etter || []).forEach(function(t){
+    const el = document.createElement('p');
+    el.innerHTML = t;
+    tekst.appendChild(el);
+  });
+  rad.appendChild(tekst);
+
+  if(steg.figur){
+    const boks = document.createElement('figure');
+    boks.className = 'gs-laer-figur';
+    boks.appendChild(tegnAtom({
+      protoner:steg.figur.protoner, noytroner:steg.figur.noytroner, skall:[],
+      aria:steg.bildetekst || 'Kjernen i et atom'
+    }));
+    const bt = document.createElement('figcaption');
+    bt.textContent = steg.bildetekst;
+    boks.appendChild(bt);
+    rad.appendChild(boks);
+  }
+  panel.appendChild(rad);
+
+  const knapper = document.createElement('div');
+  knapper.className = 'gs-lab-knapper';
+  if(laerSteg > 0){
+    const tilbake = document.createElement('button');
+    tilbake.type = 'button';
+    tilbake.className = 'gs-knapp';
+    tilbake.textContent = 'Tilbake';
+    tilbake.onclick = function(){ laerSteg--; tegnLaerSteg(); };
+    knapper.appendChild(tilbake);
+  }
+  const sisteSteg = laerSteg === LAERESTEG.length - 1;
+  const fram = document.createElement('button');
+  fram.type = 'button';
+  fram.className = 'gs-knapp gs-tung';
+  fram.textContent = sisteSteg ? 'Ta nøytrontesten' : 'Videre';
+  fram.onclick = sisteSteg ? startLaerTest : function(){
+    laerSteg++;
+    tegnLaerSteg();
+    $('laerPanel').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  };
+  knapper.appendChild(fram);
+  panel.appendChild(knapper);
 }
 
 function startLaerTest(){
@@ -1753,7 +1929,9 @@ async function avsluttLaerTest(){
     b.type = 'button';
     b.className = 'gs-knapp gs-tung';
     b.textContent = 'Les om nøytronet igjen';
-    b.onclick = function(){ laerTest = null; tegnLaerPanel(); };
+    /* Fra foerste steg, ikke fra det siste hun sto paa. Bommet hun paa
+       noe, er det som regel ikke regnestykket til slutt som mangler. */
+    b.onclick = function(){ laerTest = null; laerSteg = 0; tegnLaerPanel(); };
     panel.appendChild(b);
     return;
   }
@@ -1776,7 +1954,7 @@ async function avsluttLaerTest(){
   panel.classList.remove('gs-skjult');
   panel.innerHTML =
     '<span class="gs-laer-merke">Lært</span>'
-  + '<h2 class="gs-panel-tittel">Fem av fem</h2>'
+  + '<h2 class="gs-panel-tittel">Alle seks</h2>'
   + '<p>Nøytronene er med fra nå: du ser dem i grått i kjernen, massetallet '
   + 'står i faktalista, og i byggeboksen er det kommet en beholder til. '
   + 'Når du bygger, får du massetallet oppgitt – nøytronene regner du ut selv.</p>'
@@ -2778,13 +2956,23 @@ function tegnFramdrift(){
     return erApen(s[0]) && OPPBYGNING[s[0]] && !erMestret(s[0]);
   }).sort(function(a, b){ return a[0] - b[0]; })[0];
 
-  $('framTekst').textContent = neste
+  let framtid = neste
     ? 'Neste gullstjerne: ' + neste[2] + '. Fem spørsmål og ett bygget atom, '
       + 'så åpner stoffet etter seg.'
     : (apne() >= MAKS_APNE
         ? 'Alle de tjue første har gullstjerne. Trinn tre er bindinger mellom '
           + 'stoffene, og det er ikke bygget ennå.'
         : 'Alt du har tilgang til er bestått.');
+
+  /* Nivaa 3 er ikke bare et tall - det er der noeytronet kommer. Da skal
+     det staa hva hun gaar mot, og ikke bare hvor langt det er igjen. */
+  if(!visNoytron()){
+    framtid += kanNoytron()
+      ? ' Nøytronet er låst opp og venter øverst på Periodesystemet.'
+      : ' På nivå ' + NOYTRON_NIVAA + ' (' + NIVAA[NOYTRON_NIVAA - 1].toLocaleString('nb-NO')
+        + ' XP) låses nøytronet opp – den tredje partikkelen i kjernen.';
+  }
+  $('framTekst').textContent = framtid;
 
   const stige = $('framStige');
   stige.textContent = '';

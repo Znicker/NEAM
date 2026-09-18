@@ -85,7 +85,8 @@ Emma – trinn 1 og trinn 2 samme dag. 17. september: seksten nye varslere på
 sikkerhetssida, røyk, varme og vann. 18. september gikk i sin helhet til å
 **bygge om grunnstoffspillet**: hele tabellen tent fra start, stjerne per
 stoff, prøven som eneste vei videre, erfaringspoeng og nivå, nøytronet som
-eget læretrinn, og dypere atomtegning. Se del 51, «Slik ble det bygget».
+eget læretrinn bak nivå 3, og dypere atomtegning. Se del 51, «Slik ble det
+bygget».
 
 ### Åpne tråder
 
@@ -2563,14 +2564,41 @@ punktum. Gulvet som redder poeng etter en tapt skriving til KV ligger i
 Blandes de to, telles en stjerne som alt er satt to ganger – én gang som gulv
 og én gang som de hundre hun nettopp fikk.
 
-**Nøytronet kommer etter ti stoffer, ikke før.** Den opprinnelige
-begrunnelsen for å utelate nøytroner sto seg: antallet kan ikke utledes av
-atomnummeret, så hun måtte fått det oppgitt. Løsningen er at hun får
-**massetallet** og regner selv: `nøytroner = massetall − atomnummer`. Da er
-det noe hun finner ut i stedet for noe hun blir fortalt. Læringsboksen dukker
-opp når stoff elleve er åpnet, testen på fem spørsmål gir 500 XP, og først
-etterpå finnes nøytroner i tegningen, i faktalista og som egen beholder i
-byggeboksen.
+**Nøytronet kommer på nivå 3, ikke før.** Den opprinnelige begrunnelsen for
+å utelate nøytroner sto seg: antallet kan ikke utledes av atomnummeret, så
+hun måtte fått det oppgitt. Løsningen er at hun får **massetallet** og
+regner selv: `nøytroner = massetall − atomnummer`. Da er det noe hun finner
+ut i stedet for noe hun blir fortalt. Testen på seks spørsmål gir 500 XP, og
+først etterpå finnes nøytroner i tegningen, i faktalista og som egen
+beholder i byggeboksen.
+
+**Porten er nivået, ikke antall stoffer.** Første utgave åpnet nøytronet når
+stoff elleve var åpnet. `NOYTRON_NIVAA = 3` er 1000 XP, og de to veiene dit
+møtes omtrent samme sted – ti gullstjerner er nettopp 1000 XP, og da står
+hun med elleve åpne stoffer. Forskjellen er at **øving også teller**, så den
+som repeterer mye kommer dit uten å ha bestått alt. Det er med vilje: øving
+er ekte arbeid. Porten kan gå opp midt i en runde, så `girXp()` tegner
+læringsboksen på nytt – ellers ville den ligget og ventet til neste gang
+sida ble tegnet.
+
+**Massetallet må ha et opphav, ellers er regnestykket en oppskrift.** Første
+utgave av leksjonen var én tekstvegg, og hullet i den var at massetallet
+dukket opp uten forklaring – det sto bare at hun «får det oppgitt». Da er
+`massetall − atomnummer` noe hun følger, ikke noe hun forstår. Leksjonen er
+derfor bygget om til **fire korte steg som bygger tallet opp**: kjernen har
+to slags partikler; et proton og et nøytron veier like mye, og et elektron
+1/1836 av et proton; altså sitter hele vekta i kjernen, og vekta ER antallet
+partikler der; **det antallet er massetallet**. Og så, det som manglet helt:
+**hvorfor det må måles og ikke kan regnes** – samme grunnstoff kan ha ulikt
+antall nøytroner, karbon-12 og karbon-14 er begge karbon. Antall protoner er
+alltid det samme, og det er nettopp derfor atomnummeret kan stå trykt i
+tabellen mens massetallet må oppgis hver gang. Først etter dette kommer
+subtraksjonen.
+
+**Hvert steg har en kjerne tegnet ved siden av seg** – karbon 6 + 6,
+hydrogen 1 + 0, natrium 11 + 12 – med den samme tegneren som laben og
+byggeplata bruker, bare uten skall. Da ser kjernen i leksjonen ut som
+kjernen hun skal bygge, og ikke som en illustrasjon av noe i nærheten.
 
 **Beholderne er utømmelige.** Før sto det «3 igjen» på hver brikke, og
 knappen ble grå når tallet nådde null. Det gjorde halve oppgaven for henne:
