@@ -1,6 +1,6 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 18. september 2026. v11 la til del 50–54 – språkmodus
+*Ført à jour 20. september 2026. v11 la til del 50–54 – språkmodus
 for Emma og Andrea, grunnstoffspillet, personlige paletter og «hvem er
 du?» på veggskjermen, svartiden som ikke er målt, og arbeidsdelingen
 mellom uttrykk og bygging. Grunnstoffspillet (del 51) er bygget siden; de
@@ -31,7 +31,7 @@ ny tråd alltid lander på samme sted.*
 
 ---
 
-## Nåstatus – 18. september 2026
+## Nåstatus – 20. september 2026
 
 **Hvor prosjektet er nå.** Ni sider og tre spill. To økter 12.–13. september
 endret tyngdepunktet i huset: fra sider som hver eier sine verktøy, til
@@ -51,7 +51,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-tale.js` (tale ut og inn).
 
 **Siste leverte versjoner:** `felles-neam.js ?v=71`, `felles-neam.css
-?v=56`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=4`, `felles-lesalt.js
+?v=56`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=5`, `felles-lesalt.js
 ?v=5`, `felles-hus.js ?v=3`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
 `felles-graph.js ?v=2`, `felles-rot.css ?v=5`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `andrea-matte.html`, `andrea-diktat.html` og
@@ -63,7 +63,7 @@ spillbildene `?v=1`, sikkerhetsmerkene `?v=1` (65 stk i
 `bilder/sikkerhet/`).
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–70; neam.css til og
-med 55; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–4, skriv 1–3,
+med 55; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–4, skriv 1–4,
 hus `?v=1–2`, ms `?v=1`, tale 1–4**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
 tale 1–4 ble brent 13. september ved å endre en fil som alt var pushet uten
 å heve nummeret – se del 46. Resten er tidligere leverte numre, som alltid
@@ -87,6 +87,46 @@ sikkerhetssida, røyk, varme og vann. 18. september gikk i sin helhet til å
 stoff, prøven som eneste vei videre, erfaringspoeng og nivå, nøytronet som
 eget læretrinn bak nivå 3, og dypere atomtegning. Se del 51, «Slik ble det
 bygget».
+
+**20. september: gjentakelse og påminnelser.** Avtaleskjemaet i kalenderen
+kan lage **gjentagende avtaler** – hver dag, hver uke med ukedager,
+annenhver uke, hver måned, hvert år – med slutt på en dato eller etter et
+antall ganger. Serier uten slutt lages ikke: Graph har formen (`noEnd`),
+huset bruker den ikke, fordi en avtale som gjentas i det uendelige er
+lettere å lage enn å bli kvitt. Åpner man én gang i en serie, velges det
+**øverst i skjemaet** om endringen gjelder den ene dagen eller hele serien –
+ikke som et spørsmål ved lagring – og sletting spør om det samme i
+klartekst. Et mønster skjemaet ikke kan tegne, som «tredje torsdag i
+måneden», vises ikke som noe det ikke er, og `recurrence` sendes ikke med
+mindre noen har rørt feltene.
+
+Neam fikk de samme argumentene på `legg_til_avtale` – `gjentas`,
+`ukedager`, `slutter`, `ganger` – både på kalendersida og fra alle de andre.
+Begge veier går gjennom `skrivGjentakelse()` i `felles-skriv.js`, så en
+serie laget for hånd og en laget av Neam blir den samme serien.
+
+**Påminnelsene** (`huskeliste`) kan nå leses, legges til, endres, hukes av
+og slettes fra alle åtte sidene. Før fantes verktøyene bare på Emma og
+Andrea dash, og bare for å lese og legge til – kjøkkenskjermen, den man
+faktisk står ved når noen sier en beskjed, hadde ingen. Skrivingen går
+gjennom sidas egen kø der sida har en, så raden tegnes med det samme.
+**Frist og omfang settes aldri hver for seg** – `dag` legger fristen på
+datoen, `uke` på søndagen i uka; i utakt forsvinner raden fra begge
+boksene uten at noe feiler.
+
+Handlelista fikk tilbake `ny_handletur`, `start_handletur` og
+`avslutt_handletur`. De sto i utelat-lista med god grunn – fellesfila
+skriver rett til KV, bak ryggen på en side som holder hele lista i minnet –
+så de kjøres nå av sida selv, mot dens eget `data`, `render()` og `save()`.
+Samme mønster som `legg_til_varer`.
+
+**Tre feil rettet samme dag:** kjøkkendashen og kalendersida fortalte Neam
+at han ikke hadde kalenderverktøy, som ikke har vært sant siden
+13. september; `erSerie` i `endreAvtale()` leste `e.type`, et felt avtalene
+våre aldri har, så låsen på kalendervelgeren slo aldri til; og Emma og
+Andrea dash sendte de seks skoleverktøyene **to ganger** i samme kall, noe
+API-et avviser – Neam var stum på de to dashene for en innlogget person,
+men ikke for `kitchen`, der skoleverktøyene er skjult.
 
 ### Åpne tråder
 
@@ -124,6 +164,10 @@ bygget».
   står ikke i designsystemet. I tegningen skiller den klart fra
   elektronblått; i den lille beholderkula ligger de nærmere hverandre enn de
   burde. Se del 51.
+- **`recurrence: null` er ikke prøvd mot Graph.** Skrur man gjentakelsen av
+  på en serie i avtaleskjemaet, sendes null i den tro at serien blir én
+  vanlig avtale. Feiler det, kommer feilen opp i skjemaet – og da skal
+  valget fjernes i stedet for å bli stående som noe som ser ut til å virke.
 
 **Avtalt som neste sak:**
 - **Robotstemme fra en TTS-tjeneste.** Nettleserens `speechSynthesis` er en
@@ -170,6 +214,24 @@ bygget».
 - **Skolevarsler på e-post**, **Neams bolk i husregisteret**,
   **utstyrsregelen**, **knappearket for Emma dash**, **fagvinduet** –
   alle uendret.
+- **Neams etterslep mot sidene** – talt opp i koden 20. september, og det
+  som står igjen etter påminnelsene og gjentakelsen:
+  **Matlaging** kan bare fylles, ikke endres eller tømmes, og ingen kan
+  legge en middag i ukemenyen – `p:meal-plan` leses av `les_ukeplanen`, men
+  ingen skriver den.
+  **Handlelista** mangler notat på vare, tøm lista, gjenopprett handel,
+  angre import og redigering av varekatalogen.
+  **`slett_prove`** finnes i skjemaet på begge dashene, ikke som verktøy.
+  **Været** står på to skjermer og finnes ikke som verktøy.
+  **Bilder kan ikke komme tilbake som verktøysvar** – `neamKjor()` gjør
+  `JSON.stringify` tre steder – og det stopper både kamerastillbildet og
+  bildene på leksene. Bilder er lovlige i et `tool_result`, så det er én
+  hjelper og tre kallsteder. **PDF kan ikke komme den veien i det hele
+  tatt**: `neamStart()` er eneste inngang for dokumenter, og den nekter
+  mens Neam jobber. Det er derfor kalendervedlegg og Andreas ukeplan er den
+  harde enden av lista – veien dit er enten et underkall til `/api/claude`
+  som leser dokumentet og gir teksten tilbake, eller tekstutpakking på
+  serveren.
 
 **Den store endringen (`hub.html`) skal ta med seg:**
 1. `fh:` → `neam:`. **NB:** `auth:ms:` og `auth:homey:` ligger UTENFOR
