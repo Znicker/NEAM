@@ -1865,7 +1865,7 @@ select.hu-felt{
 <script src="/felles-ms.js?v=2"></script>
 <script src="/felles-data.js?v=4"></script>
 <script src="/felles-lesalt.js?v=5"></script>
-<script src="/felles-skriv.js?v=4"></script>
+<script src="/felles-skriv.js?v=5"></script>
 <script src="/felles-graph.js?v=2"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
@@ -7523,8 +7523,13 @@ window.neamVerktoy = async function(){
   const egne = FAG_VERKTOY.concat(DIKTAT_VERKTOY);
   /* les_diktat og les_diktatord er to navn paa samme sporsmaal. Sidens
      egen svarer rikere, saa leselagets tas bort her. */
+  /* `egne` inn i skrivVerktoy(), ikke en tom liste: fellesfila har de
+     samme navnene - lekser, proever, laeringsmaal og fra 20. september
+     ogsaa paaminnelsene. To verktoey med SAMME navn i samme kall avvises
+     av API-et, og da svarer ikke Neam i det hele tatt paa denne sida.
+     Sidens egne vinner: de leser lista som alt staar paa skjermen. */
   return egne.concat(HJEM_VERKTOY,
-                     skrivVerktoy([]), lesAltVerktoy(egne.concat([{name:'les_diktatord'}])), HUS_VERKTOY);
+                     skrivVerktoy(egne), lesAltVerktoy(egne.concat([{name:'les_diktatord'}])), HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){

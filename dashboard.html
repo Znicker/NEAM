@@ -950,7 +950,7 @@ select.hu-felt{
 <script src="/felles-ms.js?v=2"></script>
 <script src="/felles-data.js?v=4"></script>
 <script src="/felles-lesalt.js?v=5"></script>
-<script src="/felles-skriv.js?v=4"></script>
+<script src="/felles-skriv.js?v=5"></script>
 <script src="/felles-graph.js?v=2"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
@@ -3215,8 +3215,10 @@ window.neamBakgrunn = async function(){
     + 'ofte mens noen lager mat, og ingen logger seg ut av den.\n\n'
     + 'DØGNET SKIFTER KLOKKA 20. Etter det viser skjermen morgendagen, og '
     + 'etiketten sier «I morgen».\n\n'
-    + 'DU HAR INGEN KALENDERVERKTØY ENNÅ. Blir du spurt om hva som skjer en '
-    + 'dag, si at du ikke kan lese avtalene ennå - ikke gjett.';
+    + 'DU KAN LESE OG ENDRE KALENDEREN HERFRA. les_kalender gir avtalene i et '
+    + 'tidsrom, og legg_til_avtale, endre_avtale og slett_avtale endrer dem. '
+    + 'Slå opp før du svarer på hva som skjer en dag - ikke gjett, og ikke svar '
+    + 'av hukommelsen hvis noe kan ha endret seg.';
   const hus = await husregisterTekst();
   return (hus ? (om + '\n\n' + hus) : om) + '\n\n' + HUS_BAKGRUNN;
 };

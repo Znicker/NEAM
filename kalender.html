@@ -657,6 +657,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   letter-spacing:.1em;color:var(--ink-soft);margin-bottom:6px;
 }
 .fld input[type=text],.fld input[type=date],.fld input[type=time],
+.fld input[type=number],
 .fld select,.fld textarea{
   width:100%;font-family:'Archivo',sans-serif;font-size:var(--t-brod);color:var(--ink);
   background:var(--bg-2);border:1px solid var(--line);border-radius:10px;
@@ -676,6 +677,19 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .fld-row > *{flex:1;min-width:0}
 .chk{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:var(--t-brod);font-weight:600}
 .chk input{width:20px;height:20px;accent-color:var(--ink);cursor:pointer}
+/* Ukedagene i en ukentlig gjentakelse. Samme moenster og samme navn
+   som fagskjemaet paa Emma og Andrea dash - det er den samme
+   handlingen, og to utgaver av den ville vaert to ting aa holde like. */
+.dag-velg{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.dag-velg[hidden]{display:none}
+.dag-velg button{
+  flex:1;min-width:34px;border:1.5px solid var(--line);background:var(--bg-2);
+  color:var(--ink-soft);border-radius:9px;padding:8px 2px;cursor:pointer;
+  font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;
+  text-transform:uppercase;letter-spacing:.04em;
+}
+.dag-velg button.paa{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+#fGjentaSlutt[hidden]{display:none}
 .dlg-msg{font-size:var(--t-meta);color:#B4443A;line-height:1.5;margin-top:12px;flex-shrink:0}
 .dlg-msg[hidden]{display:none}
 
@@ -1467,6 +1481,17 @@ input,select,textarea{font-size:16px}
     </div>
 
     <div class="dlg-body">
+      <!-- Bare naar avtalen er én gang i en serie. Staar oeverst fordi den
+           bestemmer hva alt under gjelder - da ser man det mens man fyller
+           ut, i stedet for aa bli spurt naar man er ferdig. -->
+      <div class="fld" id="fOmfangRad" hidden>
+        <label for="fOmfang">Endringen gjelder</label>
+        <select id="fOmfang" onchange="omfangByttet()">
+          <option value="denne">Bare denne dagen</option>
+          <option value="serien">Hele serien</option>
+        </select>
+      </div>
+
       <div class="fld">
         <label for="fTitle">Hva</label>
         <input type="text" id="fTitle" placeholder="F.eks. Håndballtrening" autocomplete="off">
@@ -1494,6 +1519,30 @@ input,select,textarea{font-size:16px}
         <div class="fld-row">
           <input type="time" id="fFrom" step="300">
           <input type="time" id="fTo" step="300">
+        </div>
+      </div>
+
+      <!-- Gjentakelsen hoerer til NAAR avtalen er, ikke til hva den er,
+           og staar derfor rett under dato og klokkeslett. -->
+      <div class="fld" id="fGjentaRad">
+        <label for="fGjenta">Gjentas</label>
+        <select id="fGjenta" onchange="gjentaRort = true; gjentaToggle();">
+          <option value="">Ikke</option>
+          <option value="daglig">Hver dag</option>
+          <option value="ukentlig">Hver uke</option>
+          <option value="annenhver">Annenhver uke</option>
+          <option value="manedlig">Hver måned</option>
+          <option value="arlig">Hvert år</option>
+        </select>
+        <div class="dag-velg" id="fGjentaDager" hidden></div>
+        <div class="fld-row" id="fGjentaSlutt" hidden>
+          <select id="fSluttType" onchange="gjentaRort = true; gjentaToggle();">
+            <option value="dato">Til og med</option>
+            <option value="antall">Antall ganger</option>
+          </select>
+          <input type="date" id="fSluttDato" onchange="gjentaRort = true;">
+          <input type="number" id="fSluttAntall" min="1" max="999" step="1"
+                 placeholder="F.eks. 10" onchange="gjentaRort = true;" hidden>
         </div>
       </div>
 
@@ -1534,7 +1583,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-hus.js?v=3"></script>
 <script src="/felles-data.js?v=4"></script>
 <script src="/felles-lesalt.js?v=5"></script>
-<script src="/felles-skriv.js?v=4"></script>
+<script src="/felles-skriv.js?v=5"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-filviser.js?v=2"></script>
 <script src="/felles-tale.js?v=5"></script>
@@ -3346,6 +3395,10 @@ function nyAvtale(time, minutt, calId){
   $('fWhere').value = '';
   $('fNote').value  = '';
   vedleggNullstill();
+  serieMor = null;
+  gjentaNullstill();
+  $('fOmfangRad').hidden = true;
+  $('fGjentaRad').hidden = false;
   $('btnSlett').hidden = true;
 
   const antall = fyllKalendervalg(calId || null);
@@ -3502,16 +3555,34 @@ function endreAvtale(id){
      avtalen lages paa nytt i maalkalenderen og originalen slettes. Det
      virker bare paa en enkeltstaaende avtale - en enkeltdag kan ikke
      loeftes ut av en serie, saa da staar velgeren laast. */
-  const erSerie = !!(e.type && e.type !== 'singleInstance');
+  /* ERSERIE LESES AV e.serie. Proeven sto foer paa e.type, og det feltet
+     finnes ikke paa avtalene vaare: hentVindu() bygger dem uten type, og
+     cachen pakker det heller ikke. Proeven var derfor alltid usann, og
+     laasen paa kalendervelgeren slo aldri til. */
+  const erSerie = !!e.serie;
   $('fCal').disabled = erSerie || !e.kanEndre;
   $('btnSlett').hidden = !e.kanEndre;
   $('btnLagre').disabled = !e.kanEndre;
+
+  /* Serien: omfanget velges oeverst, og skjemaet viser foerst den ene
+     dagen. Velger man hele serien, hentes selve serien fra Graph - den
+     har egen id, egen starttid og moensteret. */
+  serieMor = null;
+  gjentaNullstill();
+  $('fOmfangRad').hidden = !erSerie;
+  if(erSerie){
+    $('fOmfang').value = 'denne';
+    $('fOmfang').disabled = !e.kanEndre;
+  }
+  /* Én gang i en serie kan ikke selv gjoeres gjentagende. */
+  $('fGjentaRad').hidden = erSerie;
   allDagToggle();
 
   dlgFeil(!e.kanEndre
     ? 'Denne kalenderen er skrivebeskyttet — avtalen kan bare leses.'
-    : (e.serie ? 'Dette er én gjentakelse i en serie. Endringen gjelder bare denne dagen.' : ''));
-  if(e.serie && e.kanEndre) $('dlgMsg').style.color = 'var(--ink-soft)';
+    : (erSerie ? 'Dette er én gang i en serie. Velg øverst om endringen gjelder '
+               + 'denne dagen eller hele serien.' : ''));
+  if(erSerie && e.kanEndre) $('dlgMsg').style.color = 'var(--ink-soft)';
 
   huskDialog();
   $('veil').hidden = false;
@@ -3606,7 +3677,246 @@ function bygg(){
     p.start = { dateTime: d1 + 'T' + t1 + ':00', timeZone: TZ };
     p.end   = { dateTime: d2 + 'T' + t2 + ':00', timeZone: TZ };
   }
+
+  /* GJENTAKELSEN SENDES BARE NAAR NOEN HAR ROERT DEN paa en avtale som
+     finnes fra foer. En serie satt opp i Outlook kan ha et moenster dette
+     skjemaet ikke tegner - «tredje torsdag i maaneden» - og en uroert
+     lagring ville da gjort serien om til noe annet enn den var. */
+  if(!$('fGjentaRad').hidden && (!redigerer || gjentaRort)){
+    const g = byggGjentakelse(d1);
+    if(g){
+      if(($('fDate2').value || d1) > d1){
+        throw new Error('En gjentagende avtale kan ikke gå over flere dager. '
+                      + 'Sett samme dato i begge datofeltene.');
+      }
+      p.recurrence = g;
+    }else if(redigerer && redigerer.serie){
+      /* Gjentakelsen skrudd av paa en serie: Graph tar imot null og gjoer
+         serien om til én enkelt avtale. */
+      p.recurrence = null;
+    }
+  }
   return p;
+}
+
+/* ============================================================
+   Gjentakelse
+   ------------------------------------------------------------
+   Fire moenstre av Graphs egne: daily, weekly (med ukedager og
+   intervall 1 eller 2), absoluteMonthly og absoluteYearly. Serien
+   slutter paa en dato (`endDate`) eller etter et antall ganger
+   (`numbered`) - ogsaa det Graphs egne former.
+
+   EN SERIE UTEN SLUTT finnes i Graph (`noEnd`), men tilbys ikke
+   her: en avtale som gjentas i det uendelige er lettere aa lage
+   enn aa bli kvitt. Aapner man en slik serie laget i Outlook,
+   staar sluttfeltet tomt og skjemaet sier fra.
+
+   MOENSTRE VI IKKE TEGNER - «tredje torsdag i maaneden», «hver
+   tredje uke» - roeres ikke. Velgeren staar tom, skjemaet sier
+   hvorfor, og lagringen sender ikke `recurrence` med mindre noen
+   faktisk har roert feltene. Alternativet - aa vise det naermeste
+   vi har - ville gjort serien om til noe annet enn den var, og
+   det uten at noen ba om det.
+   ============================================================ */
+
+/* Graphs egne navn, i Date.getDay()-rekkefoelge: soendag er 0. */
+const GJENTA_DAGER = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+const GJENTA_KORT  = ['søn','man','tir','ons','tor','fre','lør'];
+/* Hele navnet er det byggeren i felles-skriv.js tar imot - den snakker
+   norsk inn og Graph ut, saa begge veier inn gaar gjennom samme port. */
+const GJENTA_NAVN  = ['søndag','mandag','tirsdag','onsdag','torsdag','fredag','lørdag'];
+/* Uka begynner paa mandag i knapperaden, som ellers i huset. */
+const GJENTA_REKKE = [1, 2, 3, 4, 5, 6, 0];
+
+let gjentaDagerValgt = [];   /* getDay-numre */
+let gjentaRort = false;      /* har noen roert feltene i denne runden? */
+let serieMor = null;         /* selve serien, naar «hele serien» er valgt */
+
+function gjentaNullstill(){
+  gjentaDagerValgt = [];
+  $('fGjenta').value = '';
+  $('fSluttType').value = 'dato';
+  $('fSluttDato').value = '';
+  $('fSluttAntall').value = '';
+  tegnGjentaDager();
+  gjentaToggle();
+  gjentaRort = false;        /* gjentaToggle kan ha tent en dag selv */
+}
+
+function tegnGjentaDager(){
+  $('fGjentaDager').innerHTML = GJENTA_REKKE.map(function(n){
+    return '<button type="button" class="' + (gjentaDagerValgt.indexOf(n) !== -1 ? 'paa' : '') + '"'
+         + ' onclick="vekslGjentaDag(' + n + ')">' + GJENTA_KORT[n] + '</button>';
+  }).join('');
+}
+
+function vekslGjentaDag(n){
+  const p = gjentaDagerValgt.indexOf(n);
+  if(p === -1) gjentaDagerValgt.push(n); else gjentaDagerValgt.splice(p, 1);
+  gjentaRort = true;
+  tegnGjentaDager();
+}
+
+function gjentaToggle(){
+  const v = $('fGjenta').value;
+  const ukentlig = (v === 'ukentlig' || v === 'annenhver');
+  $('fGjentaSlutt').hidden = !v;
+  $('fGjentaDager').hidden = !ukentlig;
+  const antall = $('fSluttType').value === 'antall';
+  $('fSluttDato').hidden = antall;
+  $('fSluttAntall').hidden = !antall;
+
+  /* Uten en eneste dag tent ville ukesmoensteret sett tomt ut, mens
+     serien likevel foelger ukedagen i startdatoen. Da tennes den dagen,
+     saa knapperaden viser det som faktisk kommer til aa skje. */
+  if(ukentlig && !gjentaDagerValgt.length && $('fDate').value){
+    const d = new Date($('fDate').value + 'T00:00:00');
+    if(!isNaN(d)){ gjentaDagerValgt = [d.getDay()]; tegnGjentaDager(); }
+  }
+}
+
+/* Hva en lagring eller sletting gjelder. En avtale utenfor en serie
+   har ikke spoersmaalet. */
+function gjeldendeOmfang(){
+  if(!redigerer || !redigerer.serie) return 'enkelt';
+  return $('fOmfang').value === 'serien' ? 'serien' : 'denne';
+}
+
+/* Skjemaet -> Graphs `recurrence`.
+
+   SELVE FORMEN LAGES ETT STED: skrivGjentakelse() i felles-skriv.js,
+   som Neam ogsaa gaar gjennom. En serie laget for haand og en laget av
+   Neam blir da den samme serien, og et moenster som maa rettes rettes
+   ett sted.
+
+   SLUTTEN SJEKKES HER FOERST, med setninger skrevet for den som staar i
+   skjemaet. Byggeren sier det samme til Neam, med hans ord - «spør
+   brukeren» - og den setningen skal ingen lese i et skjema. Sjekker vi
+   foerst, naar den aldri dit. */
+function byggGjentakelse(d1){
+  const v = $('fGjenta').value;
+  if(!v) return null;
+
+  const arg = { gjentas: v };
+
+  if(v === 'ukentlig' || v === 'annenhver'){
+    const dager = (gjentaDagerValgt.length
+                    ? gjentaDagerValgt
+                    : [new Date(d1 + 'T00:00:00').getDay()])
+                  .slice().sort(function(a, b){ return a - b; });
+    arg.ukedager = dager.map(function(n){ return GJENTA_NAVN[n]; });
+  }
+
+  if($('fSluttType').value === 'antall'){
+    const n = parseInt($('fSluttAntall').value, 10);
+    if(!(n >= 1)) throw new Error('Si hvor mange ganger avtalen skal gjentas.');
+    arg.ganger = n;
+  }else{
+    const til = $('fSluttDato').value;
+    if(!til) throw new Error('Velg datoen serien går til og med - eller bytt til antall ganger.');
+    if(til < d1) throw new Error('Serien kan ikke slutte før den begynner.');
+    arg.slutter = til;
+  }
+
+  return skrivGjentakelse(arg, d1);
+}
+
+/* Graph -> skjemaet. Returnerer en merknad naar serien er noe skjemaet
+   ikke kan tegne, ellers tom streng. */
+function fyllGjentakelseFra(r){
+  gjentaDagerValgt = [];
+  $('fGjenta').value = '';
+  $('fSluttType').value = 'dato';
+  $('fSluttDato').value = '';
+  $('fSluttAntall').value = '';
+
+  const p = r && r.pattern;
+  const rg = (r && r.range) || {};
+  let merknad = '';
+
+  if(p){
+    if(p.type === 'daily' && p.interval === 1) $('fGjenta').value = 'daglig';
+    else if(p.type === 'weekly' && (p.interval === 1 || p.interval === 2)){
+      $('fGjenta').value = p.interval === 2 ? 'annenhver' : 'ukentlig';
+      gjentaDagerValgt = (p.daysOfWeek || [])
+        .map(function(n){ return GJENTA_DAGER.indexOf(String(n).toLowerCase()); })
+        .filter(function(n){ return n !== -1; });
+    }
+    else if(p.type === 'absoluteMonthly' && p.interval === 1) $('fGjenta').value = 'manedlig';
+    else if(p.type === 'absoluteYearly'  && p.interval === 1) $('fGjenta').value = 'arlig';
+    else merknad = 'Gjentakelsen i denne serien er satt opp i Outlook på en måte '
+                 + 'skjemaet ikke kan vise. Tid, tekst og sted kan endres her - '
+                 + 'selve gjentakelsen blir stående som den er.';
+  }
+
+  if(rg.type === 'numbered'){
+    $('fSluttType').value = 'antall';
+    $('fSluttAntall').value = rg.numberOfOccurrences || '';
+  }else if(rg.endDate && rg.endDate.slice(0, 4) !== '0001'){
+    $('fSluttDato').value = rg.endDate;
+  }else if(rg.type === 'noEnd'){
+    merknad = merknad || 'Serien er satt opp uten slutt. Lagrer du den her, må du '
+                       + 'sette en sluttdato eller et antall ganger.';
+  }
+
+  tegnGjentaDager();
+  gjentaToggle();
+  gjentaRort = false;        /* fylt av oss, ikke roert av noen */
+  return merknad;
+}
+
+/* Bytte mellom den ene dagen og hele serien. Serien har sin egen id,
+   sin egen starttid og moensteret, og hentes derfor friskt: det lista
+   inneholder er forekomsten, ikke serien. */
+async function omfangByttet(){
+  if(!redigerer) return;
+
+  if($('fOmfang').value !== 'serien'){
+    /* Tilbake til den ene dagen: skjemaet bygges paa nytt fra lista,
+       saa ingenting av serien blir staaende igjen i feltene. */
+    endreAvtale(redigerer.id);
+    return;
+  }
+
+  $('btnLagre').disabled = true;
+  dlgFeil('Henter serien …');
+  $('dlgMsg').style.color = 'var(--ink-soft)';
+  try{
+    const forekomst = await graph(avtaleSti(redigerer.calId, redigerer.id)
+                                + '?$select=seriesMasterId');
+    const morId = forekomst && forekomst.seriesMasterId;
+    if(!morId) throw new Error('Fant ikke serien bak «' + redigerer.title + '». '
+                             + 'Den må åpnes i Outlook.');
+    const m = await graph(avtaleSti(redigerer.calId, morId)
+            + '?$select=id,subject,isAllDay,start,end,location,body,recurrence');
+    serieMor = m;
+
+    $('fTitle').value = m.subject || '';
+    $('fAllDay').checked = !!m.isAllDay;
+    $('fWhere').value = (m.location && m.location.displayName) || '';
+    $('fNote').value  = htmlTilTekst(m.body && m.body.content, m.body && m.body.contentType);
+
+    const s  = new Date(m.start.dateTime + (m.start.timeZone === 'UTC' ? 'Z' : ''));
+    const sl = new Date(m.end.dateTime   + (m.end.timeZone   === 'UTC' ? 'Z' : ''));
+    $('fDate').value  = dato2str(s);
+    $('fDate2').value = dato2str(m.isAllDay ? new Date(sl.getTime() - 86400000) : sl);
+    $('fFrom').value  = m.isAllDay ? '09:00' : tid2str(s);
+    $('fTo').value    = m.isAllDay ? '10:00' : tid2str(sl);
+    allDagToggle();
+
+    $('fGjentaRad').hidden = false;
+    const merknad = fyllGjentakelseFra(m.recurrence);
+    dlgFeil(merknad || 'Endringen gjelder ALLE gangene i serien.');
+    $('dlgMsg').style.color = 'var(--ink-soft)';
+  }catch(err){
+    serieMor = null;
+    $('fOmfang').value = 'denne';
+    $('fGjentaRad').hidden = true;
+    dlgFeil(err.message);
+  }finally{
+    $('btnLagre').disabled = !redigerer.kanEndre;
+  }
 }
 
 /* ============================================================
@@ -3941,7 +4251,14 @@ async function lagreAvtale(){
         kalId = valgtKal;
       } else {
         $('btnLagre').textContent = 'Lagrer …';
-        await graph(avtaleSti(redigerer.calId, redigerer.id), {method:'PATCH', body:p});
+        /* Hele serien: det er SERIEN som endres, ikke dagen man kom fra.
+           Den har egen id, og den ble hentet da omfanget ble valgt. */
+        const serien = gjeldendeOmfang() === 'serien';
+        if(serien && !(serieMor && serieMor.id)){
+          throw new Error('Serien er ikke hentet. Velg «Hele serien» på nytt.');
+        }
+        await graph(avtaleSti(redigerer.calId, serien ? serieMor.id : redigerer.id),
+                    {method:'PATCH', body:p});
         id = redigerer.id;
       }
     } else {
@@ -3964,11 +4281,26 @@ async function lagreAvtale(){
 
 async function slettAvtale(){
   if(!redigerer) return;
-  if(!(await bekreft('Slette «' + redigerer.title + '»?', {jaTekst:'Slett', fare:true}))) return;
+
+  /* Omfanget staar i spoersmaalet, ikke bare i velgeren over: det som
+     slettes er ikke til aa angre paa, og «hele serien» skal ikke kunne
+     skje fordi man glemte hva som sto oeverst i skjemaet. */
+  const serien = gjeldendeOmfang() === 'serien';
+  const sp = serien
+    ? 'Slette HELE serien «' + redigerer.title + '»? Alle gangene forsvinner.'
+    : (redigerer.serie
+        ? 'Slette «' + redigerer.title + '» denne ene dagen? Resten av serien står.'
+        : 'Slette «' + redigerer.title + '»?');
+  if(!(await bekreft(sp, {jaTekst:'Slett', fare:true}))) return;
+  if(serien && !(serieMor && serieMor.id)){
+    dlgFeil('Serien er ikke hentet. Velg «Hele serien» på nytt.');
+    return;
+  }
 
   $('btnSlett').disabled = true;
   try{
-    await graph(avtaleSti(redigerer.calId, redigerer.id), {method:'DELETE'});
+    await graph(avtaleSti(redigerer.calId, serien ? serieMor.id : redigerer.id),
+                {method:'DELETE'});
     lukk();
     await refresh();
   }catch(err){
@@ -4758,10 +5090,10 @@ window.neamBakgrunn = async function(){
     + 'Magne, Nina, Emma og Andrea - og i tillegg finnes Familien for det som '
     + 'gjelder alle. En avtale h\u00f8rer til \u00e9n kalender, og fargen og initialen '
     + 'f\u00f8lger av hvilken.\n\n'
-    + 'DU HAR INGEN KALENDERVERKT\u00d8Y ENN\u00c5. Du ser hvilken periode brukeren st\u00e5r '
-    + 'p\u00e5, men ikke selve avtalene. Blir du spurt om hva som skjer en dag, si at '
-    + 'du ikke kan lese avtalene enn\u00e5 - ikke gjett, og ikke finn p\u00e5 en '
-    + 'forklaring p\u00e5 hvorfor.';
+    + 'DU EIER KALENDEREN P\u00c5 DENNE SIDA. les_kalendere gir navnene, les_avtaler '
+    + 'henter avtalene friskt fra Microsoft, og legg_til_avtale, endre_avtale og '
+    + 'slett_avtale endrer dem. Kontekstlinja sier hvilken periode brukeren st\u00e5r '
+    + 'p\u00e5, men ikke hva som st\u00e5r der - sl\u00e5 det opp med les_avtaler, ikke gjett.';
   const hus = await husregisterTekst();
   return (hus ? (om + '\n\n' + hus) : om) + '\n\n' + HUS_BAKGRUNN;
 };
@@ -4924,8 +5256,12 @@ const KAL_VERKTOY = [
   {
     name: 'legg_til_avtale',
     description: 'Lager en ny avtale. Si hvilken kalender den skal i - bruk '
-               + 'les_kalendere om du ikke vet navnene. Gjentagende avtaler kan ikke '
-               + 'lages herfra; de må settes opp i Outlook.',
+               + 'les_kalendere om du ikke vet navnene.\n\n'
+               + 'SKAL DEN GJENTA SEG, sett gjentas. Da MÅ du også si når serien '
+               + 'slutter - en dato i slutter, eller et antall i ganger. Spør '
+               + 'brukeren om det; en serie uten slutt er lettere å lage enn å bli '
+               + 'kvitt, og huset lager dem ikke. En gjentagende avtale kan ikke gå '
+               + 'over flere dager.',
     input_schema: {
       type:'object',
       properties:{
@@ -4936,6 +5272,17 @@ const KAL_VERKTOY = [
         til:       { type:'string', description:'Klokkeslett, 15:30.' },
         heleDagen: { type:'boolean', description:'true for en avtale uten klokkeslett.' },
         sluttdato: { type:'string', description:'Bare hvis avtalen går over flere dager.' },
+        gjentas:   { type:'string', enum:['daglig','ukentlig','annenhver','manedlig','arlig'],
+                     description:'Gjentakelse. «annenhver» er annenhver uke, «manedlig» samme '
+                               + 'dato hver måned, «arlig» samme dato hvert år. Utelat for en '
+                               + 'avtale som bare skjer én gang.' },
+        ukedager:  { type:'array', items:{ type:'string' },
+                     description:'Bare ved ukentlig eller annenhver: ukedagene på norsk, for '
+                               + 'eksempel ["mandag","torsdag"]. Utelat for ukedagen datoen '
+                               + 'faller på.' },
+        slutter:   { type:'string', description:'Siste dato serien kan falle på, 2026-12-15.' },
+        ganger:    { type:'integer', description:'Antall ganger serien skal gå, i stedet for '
+                                               + 'en sluttdato.' },
         sted:      { type:'string' },
         notat:     { type:'string' }
       },
@@ -4947,8 +5294,10 @@ const KAL_VERKTOY = [
         ? neamDato(arg.dato) + (arg.sluttdato && arg.sluttdato !== arg.dato
             ? ' til ' + neamDato(arg.sluttdato) : '') + ', hele dagen'
         : neamDato(arg.dato) + ' ' + arg.fra + (arg.til ? '–' + arg.til : '');
+      const gjentas = skrivGjentaTekst(arg);
       return 'Legge inn «' + arg.tittel + '»'
            + (arg.kalender ? ' i ' + arg.kalender : '') + ':\n\n· ' + nar
+           + (gjentas ? '\n· gjentas: ' + gjentas : '')
            + (arg.sted ? '\n· sted: ' + arg.sted : '')
            + (arg.notat ? '\n· notat: ' + arg.notat : '');
     }
@@ -5146,6 +5495,11 @@ async function kalUtfor(navn, arg){
       p.start = { dateTime: arg.dato + 'T' + arg.fra + ':00', timeZone: TZ };
       p.end   = { dateTime: d2 + 'T' + arg.til + ':00', timeZone: TZ };
     }
+
+    /* Byggeren ligger i felles-skriv.js og brukes ogsaa av skjemaet, saa
+       en serie laget av Neam er den samme som en laget for haand. */
+    const gjenta = skrivGjentakelse(arg, arg.dato);
+    if(gjenta) p.recurrence = gjenta;
 
     const laget = await graph('/me/calendars/' + enc(c.id) + '/events', {method:'POST', body:p});
     await refresh();

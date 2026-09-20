@@ -1084,7 +1084,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-data.js?v=4"></script>
 <script src="/felles-ms.js?v=2"></script>
 <script src="/felles-lesalt.js?v=5"></script>
-<script src="/felles-skriv.js?v=4"></script>
+<script src="/felles-skriv.js?v=5"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
@@ -7083,10 +7083,16 @@ window.neamVerktoy = async function(){
   /* les_handlelista og les_handleliste skiller seg med én bokstav. To
      saa like navn i samme liste er en felle, og sidens egen er den beste
      her - den ser haken som ble satt for to sekunder siden. */
+  /* DE TRE HANDLETURVERKTOEYENE sto her i utelat-lista, og da fantes de
+     ikke paa den ene sida der man faktisk staar og handler. Definisjonen
+     ligger fortsatt i felles-skriv.js - én ordlyd, uansett hvor Neam staar -
+     men UTFOERELSEN er sidas egen, se neamNyHandletur() og de to under den.
+     Fellesfila skriver rett til KV, og denne sida holder hele `data` i
+     minnet: en tur laget bak ryggen paa sida var borte i det noen la en
+     vare i lista og save() skrev over den. */
   return egne.concat(HJEM_VERKTOY,
                      skrivVerktoy([{name:'legg_paa_handlelista'},{name:'fjern_fra_handlelista'},
-                                   {name:'endre_vare_paa_handlelista'},{name:'ny_handletur'},
-                                   {name:'start_handletur'},{name:'avslutt_handletur'}])  /* sidas eget legg_til_varer
+                                   {name:'endre_vare_paa_handlelista'}])  /* sidas eget legg_til_varer
                        vinner her: bare det ser hvilken handletur brukeren har
                        oppe, og bare det tegner lista om etterpaa */, lesAltVerktoy(egne));
 };
@@ -7469,6 +7475,97 @@ function neamOktNavn(arg){
   return neamOmrade(arg) === 'annet' ? 'Andre varer' : 'Dagligvarer';
 }
 
+/* ------------------------------------------------------------
+   Handleturene - Neams tre
+   ------------------------------------------------------------
+   Verktoeyene er definert i felles-skriv.js og kjoeres derfra paa de
+   andre sidene, rett mot KV. Her maa de gaa gjennom sidas eget `data`
+   og sidas egen save(), av samme grunn som legg_til_varer gjoer det:
+   skjermen holder hele lista i minnet, og det som skrives utenom den
+   er borte ved neste lagring herfra.
+   ------------------------------------------------------------ */
+
+/* «Avslutt handleturen» betyr den som er I GANG, ikke den nyeste -
+   samme regel som fellesfila. Uten den traff avslutningen en tom tur
+   fra i gaar mens den man faktisk sto og handlet paa ble staaende. */
+function neamHandleturIGang(arg){
+  if (String((arg && arg.handletur) || '').trim()) return neamFinnOkt(arg, false);
+  const igang = sorterteOkter(neamOmrade(arg))
+    .filter(o => o.startet && !erAvsluttet(o))
+    .sort((a, b) => (b.startTid || 0) - (a.startTid || 0))[0];
+  return igang || neamFinnOkt(arg, false);
+}
+
+/* Turen Neam roerte skal ogsaa vaere den skjermen viser. Ellers staar
+   start-knappen og tittelen for en annen tur enn den som ble startet. */
+function neamVisOkt(okt){
+  viewOktId[oktOmrade(okt)] = okt.id;
+  renderOktLabel();
+  render();
+}
+
+/* Lagringen kaster her, i stedet for aa vise en toast som ellers:
+   feilen skal tilbake til Neam, saa han kan si at det ikke gikk i
+   stedet for aa svare som om turen finnes. */
+async function neamLagreOkter(hva){
+  const ok = await medLaas(async () => await save());
+  if (ok === false) throw new Error('Handleturen ble ' + hva + ' paa skjermen, '
+                                  + 'men ikke lagret. Si fra om det, og be om at det proeves igjen.');
+}
+
+async function neamNyHandletur(arg){
+  const omr = neamOmrade(arg);
+  const okt = opprettOkt(arg && arg.navn, omr);
+  neamVisOkt(okt);
+  await neamLagreOkter('laget');
+  return { laget:true, handletur: oktNavn(okt),
+           omrade: omr === 'annet' ? 'Andre varer' : 'Dagligvarer' };
+}
+
+async function neamStartHandletur(arg){
+  const okt = neamHandleturIGang(arg);
+  if (!okt) throw new Error('Det finnes ingen handletur her. Lag en med ny_handletur.');
+  if (erAvsluttet(okt)) throw new Error('«' + oktNavn(okt) + '» er avsluttet. '
+                                      + 'Lag en ny med ny_handletur.');
+  if (okt.startet) return { startet:false, handletur: oktNavn(okt),
+                            beskjed:'Den var i gang fra før.' };
+  okt.startet = true;
+  okt.startTid = Date.now();
+  neamVisOkt(okt);
+  await neamLagreOkter('startet');
+  return { startet:true, handletur: oktNavn(okt) };
+}
+
+async function neamAvsluttHandletur(arg){
+  const okt = neamHandleturIGang(arg);
+  if (!okt) throw new Error('Det finnes ingen handletur å avslutte.');
+  if (erAvsluttet(okt)) return { avsluttet:false, handletur: oktNavn(okt),
+                                 beskjed:'Den var avsluttet fra før.' };
+
+  const igjen = data.items.filter(v => v.oktId === okt.id && !v.done);
+  let gjort = 'Varene som ikke var kjøpt ble liggende.';
+
+  if (arg.rester === 'flytt' && igjen.length){
+    const neste = nesteOkt(okt);
+    if (!neste) throw new Error('Det finnes ingen annen åpen handletur å flytte '
+                              + igjen.length + ' varer til. Lag en med ny_handletur '
+                              + 'først, eller velg la_staa eller forkast.');
+    igjen.forEach(v => { v.oktId = neste.id; });
+    gjort = igjen.length + ' varer flyttet til «' + oktNavn(neste) + '».';
+  } else if (arg.rester === 'forkast' && igjen.length){
+    const ider = new Set(igjen.map(v => v.id));
+    data.items = data.items.filter(v => !ider.has(v.id));
+    gjort = igjen.length + ' varer ble slettet.';
+  }
+
+  okt.startet = false;
+  okt.avsluttet = Date.now();
+  neamVisOkt(okt);
+  await neamLagreOkter('avsluttet');
+  return { avsluttet:true, handletur: oktNavn(okt),
+           sto_igjen: igjen.length, gjort: gjort };
+}
+
 /* Taket paa 200 er et tak paa svaret til Neam, ikke paa lista. En
    handletur som er lengre enn det er uansett ikke noe han bør faa
    servert i sin helhet. */
@@ -7562,6 +7659,11 @@ window.neamUtfor = async function(navn, arg){
   if (navn === 'finn_opprydding') return neamFinnOpprydding(arg);
   if (navn === 'slaa_sammen')    return await neamSlaaSammen(arg);
   if (navn === 'foresla_opprydding') return await neamOpprydding(arg);
+
+  /* Handleturene: definisjonen i felles-skriv.js, utfoerelsen her. */
+  if (navn === 'ny_handletur')      return await neamNyHandletur(arg);
+  if (navn === 'start_handletur')   return await neamStartHandletur(arg);
+  if (navn === 'avslutt_handletur') return await neamAvsluttHandletur(arg);
 
   /* Husets leseverktoey - de samme paa alle fem sidene. Ligger i
      felles-data.js, ikke her, saa formuleringen og avkortingen er lik

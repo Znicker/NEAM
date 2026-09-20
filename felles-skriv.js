@@ -471,6 +471,223 @@ function skrivUkeNokkel(uke){
 }
 
 
+/* ============================================================
+   Gjentakelse - én bygger, to veier inn
+   ------------------------------------------------------------
+   Skjemaet i kalender.html og Neam skal ikke kunne lage hver sin
+   sort serie, saa formen paa `recurrence` lages ETT sted. Sida
+   kaller denne ogsaa - den laster felles-skriv.js fra foer.
+
+   Samme fire moenstre som skjemaet tilbyr, og samme krav: en serie
+   maa ha en slutt. En dato, eller et antall ganger. Graph har en
+   tredje form (`noEnd`), og den er med vilje utelatt begge steder.
+   ============================================================ */
+
+/* Norsk inn, Graphs egne navn ut. Begge skrivemaatene av loerdag og
+   soendag staar med: en modell som skriver «lordag» skal ikke faa en
+   feilmelding om en bokstav. */
+const SKRIV_GJENTA_DAGER = {
+  'mandag':'monday', 'tirsdag':'tuesday', 'onsdag':'wednesday',
+  'torsdag':'thursday', 'fredag':'friday',
+  'lørdag':'saturday', 'lordag':'saturday',
+  'søndag':'sunday',  'sondag':'sunday'
+};
+
+/* getDay()-rekkefoelge: soendag er 0. */
+const SKRIV_GJENTA_UKEDAG = ['sunday','monday','tuesday','wednesday','thursday',
+                             'friday','saturday'];
+
+function skrivGjentakelse(arg, dato){
+  const v = String((arg && arg.gjentas) || '').trim().toLowerCase();
+  if(!v) return null;
+
+  if(['daglig','ukentlig','annenhver','manedlig','arlig'].indexOf(v) === -1){
+    throw new Error('Ukjent gjentakelse «' + arg.gjentas + '». Bruk daglig, ukentlig, '
+                  + 'annenhver, manedlig eller arlig.');
+  }
+  if(arg.sluttdato && arg.sluttdato !== dato){
+    throw new Error('En gjentagende avtale kan ikke gå over flere dager. Send samme '
+                  + 'dato, eller la sluttdato stå tom.');
+  }
+  const start = new Date(dato + 'T00:00:00');
+  if(isNaN(start)) throw new Error('Ugyldig dato for en gjentagende avtale.');
+
+  const p = { interval: v === 'annenhver' ? 2 : 1 };
+  if(v === 'daglig') p.type = 'daily';
+  else if(v === 'ukentlig' || v === 'annenhver'){
+    p.type = 'weekly';
+    const inn = Array.isArray(arg.ukedager) ? arg.ukedager : [];
+    const dager = inn.map(function(d){
+      const n = SKRIV_GJENTA_DAGER[String(d || '').trim().toLowerCase()];
+      if(!n) throw new Error('Ukjent ukedag «' + d + '». Skriv dem på norsk: mandag, '
+                           + 'tirsdag, onsdag, torsdag, fredag, lørdag, søndag.');
+      return n;
+    });
+    p.daysOfWeek = dager.length ? dager : [SKRIV_GJENTA_UKEDAG[start.getDay()]];
+    /* Uten firstDayOfWeek regner Graph annenhver uke fra soendag, og en
+       mandagstrening havner i feil uke annenhver gang. */
+    p.firstDayOfWeek = 'monday';
+  }
+  else if(v === 'manedlig'){ p.type = 'absoluteMonthly'; p.dayOfMonth = start.getDate(); }
+  else { p.type = 'absoluteYearly'; p.dayOfMonth = start.getDate();
+         p.month = start.getMonth() + 1; }
+
+  const r = { startDate: dato, recurrenceTimeZone: SKRIV_TZ };
+  const til = String((arg && arg.slutter) || '').trim();
+  const ganger = parseInt(arg && arg.ganger, 10);
+
+  if(til){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(til)){
+      throw new Error('Ugyldig sluttdato. Bruk formen 2026-12-15.');
+    }
+    if(til < dato) throw new Error('Serien kan ikke slutte før den begynner.');
+    r.type = 'endDate';
+    r.endDate = til;
+  }else if(ganger >= 1){
+    r.type = 'numbered';
+    r.numberOfOccurrences = ganger;
+  }else{
+    throw new Error('En gjentagende avtale må ha en slutt. Spør brukeren om den skal gå '
+                  + 'til en dato (slutter) eller et antall ganger (ganger) - ikke velg '
+                  + 'selv.');
+  }
+  return { pattern: p, range: r };
+}
+
+/* Setningen bekreftelsen viser. Tom naar avtalen ikke gjentas. */
+function skrivGjentaTekst(arg){
+  const v = String((arg && arg.gjentas) || '').trim().toLowerCase();
+  if(!v) return '';
+  const navn = { daglig:'hver dag', ukentlig:'hver uke', annenhver:'annenhver uke',
+                 manedlig:'hver måned', arlig:'hvert år' };
+  const dager = Array.isArray(arg.ukedager) && arg.ukedager.length
+    ? ' (' + arg.ukedager.join(', ') + ')' : '';
+  const slutt = String(arg.slutter || '').trim()
+    ? ', til og med ' + skrivDatoTekst(arg.slutter)
+    : (parseInt(arg.ganger, 10) >= 1 ? ', ' + parseInt(arg.ganger, 10) + ' ganger' : '');
+  return (navn[v] || v) + dager + slutt;
+}
+
+/* ============================================================
+   Paaminnelsene - huskelista paa tvers
+   ------------------------------------------------------------
+   Lagt til 20. september 2026. Én KV-noekkel, `huskeliste`, og tre
+   skjermer som viser den samme lista: kjoekkendashen kaller radene
+   MERKNADER, Emma og Andrea kaller dem PAAMINNELSER.
+
+   FOER DETTE fantes verktoeyene bare paa barnas to skjermer, og
+   bare for aa lese og legge til. Veggskjermen - den man staar ved
+   naar noen sier «roerleggeren kommer torsdag» - hadde ingen. Det
+   var ikke et valg; det var bare der lista ble TEGNET.
+
+   FRIST OG OMFANG HENGER SAMMEN, og settes aldri hver for seg:
+     omfang 'dag'  -> frist er datoen, og raden staar i dagsboksen
+     omfang 'uke'  -> frist er SOENDAGEN i uka, og raden staar i
+                      ukesboksen - det er slik ukeAv() finner sine
+   Settes de i utakt, forsvinner raden fra begge boksene, og
+   ingenting feiler.
+
+   SKRIVINGEN GAAR GJENNOM SIDAS EGEN KO der sida har en: de tre
+   skjermene leser friskt, fletter, lagrer og tegner om. Da ser man
+   raden komme mens man staar der. Har sida ingen, skriver vi selv.
+   ============================================================ */
+const SKRIV_HUSKE = 'huskeliste';
+
+/* Navnene skjermene fargelegger etter. Et navn utenfor lista gir en
+   rad uten farge og uten bokstavmerke, saa den avvises heller. */
+const SKRIV_HUSKE_HVEM = ['Familie', 'Magne', 'Nina', 'Emma', 'Andrea'];
+
+/* Sist leste liste. Bekreftelsesteksten er synkron og kan ikke slaa opp
+   selv - og Neam har alltid kjoert les_paaminnelser for aa faa en id. */
+let skrivHuskeSiste = [];
+
+async function skrivHuskeLes(){
+  let d = null;
+  try{ d = await dataLes(SKRIV_HUSKE); }catch(e){ d = null; }
+  if(typeof d === 'string'){ try{ d = JSON.parse(d); }catch(e){ d = null; } }
+  skrivHuskeSiste = Array.isArray(d) ? d : [];
+  return skrivHuskeSiste;
+}
+
+async function skrivHuskeEndre(endring){
+  /* Sidas egen ko leser friskt, fletter, lagrer OG tegner om. Den er
+     bedre enn vaar egen skriving overalt der den finnes. */
+  if(typeof endreHuske === 'function') return await endreHuske(endring);
+  const ny = endring(await skrivHuskeLes());
+  await dataSkriv(SKRIV_HUSKE, ny);
+  skrivHuskeSiste = ny;
+  return ny;
+}
+
+function skrivHuskeFinn(liste, id){
+  const nokkel = String(id || '').trim();
+  const m = liste.filter(function(x){ return x && x.id === nokkel; })[0];
+  if(!m) throw new Error('Fant ingen påminnelse med id «' + id + '». Kjør '
+                       + 'les_paaminnelser først, og bruk id-en derfra.');
+  return m;
+}
+
+/* Til bekreftelsen: navnet, ikke id-en. Er den ikke lest inn, sies det -
+   det ses foer man trykker ja, ikke etterpaa. */
+function skrivHuskeNavn(id){
+  const m = skrivHuskeSiste.filter(function(x){ return x && x.id === id; })[0];
+  return m ? ('«' + (m.overskrift || 'uten tekst') + '»')
+           : ('en påminnelse som ikke er lest inn (' + id + ')');
+}
+
+/* skrivDatoNokkel() staar lenger opp i fila - den er felles. */
+
+/* Soendagen i uka - der ukesboksen leter etter sine punkter. */
+function skrivUkeSlutt(uke){
+  const n = skrivUkeNokkel(uke);              /* «2026-W38» */
+  const aar = Number(n.slice(0, 4));
+  const nr  = Number(n.slice(6));
+  /* 4. januar ligger alltid i uke 1. Derfra er det hele uker. */
+  const d = new Date(aar, 0, 4);
+  d.setDate(d.getDate() - ((d.getDay() || 7) - 1) + (nr - 1) * 7 + 6);
+  return d;
+}
+
+function skrivHuskeHvem(navn){
+  const s = String(navn || '').trim().toLowerCase();
+  if(!s) return 'Familie';
+  const treff = SKRIV_HUSKE_HVEM.filter(function(p){ return p.toLowerCase() === s; })[0];
+  if(!treff) throw new Error('«' + navn + '» er ikke en av dem huset kjenner. Bruk '
+                           + SKRIV_HUSKE_HVEM.join(', ') + '.');
+  return treff;
+}
+
+/* Dato eller uke inn, frist og omfang ut - se blokka over. */
+function skrivHuskeNaar(arg){
+  const dato = String((arg && arg.dato) || '').trim();
+  if(dato){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(dato)){
+      throw new Error('Ugyldig dato. Bruk formen 2026-09-08.');
+    }
+    return { omfang:'dag', frist: dato };
+  }
+  return { omfang:'uke', frist: skrivDatoNokkel(skrivUkeSlutt(arg && arg.uke)) };
+}
+
+function skrivHuskeLinje(m){
+  return { id: m.id,
+           tekst: m.overskrift || '',
+           utdypning: m.tekst || null,
+           dato: m.frist || null,
+           hvor: m.omfang === 'uke' ? 'Påminnelser denne uken' : 'Påminnelser i dag',
+           gjelder: m.gjelder || '',
+           ferdig: !!m.ferdig,
+           av: m.av || null };
+}
+
+/* Setningen for hvor raden havner - den samme i alle bekreftelsene. */
+function skrivHuskeNaarTekst(arg){
+  const naar = skrivHuskeNaar(arg);
+  return naar.omfang === 'dag'
+    ? skrivDatoTekst(naar.frist) + ', i dagsboksen'
+    : 'uke ' + skrivIsoUke(skrivUkeSlutt(arg && arg.uke)).uke + ', i ukesboksen';
+}
+
 const SKRIV_VERKTOY = [
   {
     name: 'legg_paa_handlelista',
@@ -651,10 +868,131 @@ const SKRIV_VERKTOY = [
     }
   },
   {
+    name: 'les_paaminnelser',
+    description: 'Påminnelsene huset har liggende - det kjøkkenskjermen kaller '
+               + 'MERKNADER og barnas skjermer kaller PÅMINNELSER. Én liste, sett '
+               + 'fra tre steder. Gir id, tekst, hvem den gjelder, hvilken boks den '
+               + 'står i og om den er huket av. Bruk id-ene herfra i de andre '
+               + 'verktøyene.\n\n'
+               + 'LEKSENE som vises i samme boks er IKKE påminnelser. De bor i faget '
+               + 'og hentes med les_skolearbeid - en lekse lagt inn her ville blitt '
+               + 'to ting som er uenige første gang noen huker av.',
+    input_schema: {
+      type:'object',
+      properties:{
+        gjelder:    { type:'string', description:'Bare én persons: Familie, Magne, Nina, '
+                                               + 'Emma eller Andrea. Utelat for alle.' },
+        medFerdige: { type:'boolean', description:'true tar med de avhukede også.' }
+      },
+      required:[]
+    }
+  },
+  {
+    name: 'legg_til_paaminnelse',
+    description: 'Legger en påminnelse på skjermene. Brukes til beskjeder som skal '
+               + 'huskes: at noen kommer, at noe skal leveres, at noe må med.\n\n'
+               + 'MED DATO havner den i dagsboksen på den datoen. UTEN DATO gjelder '
+               + 'den uka, og havner i ukesboksen - send da uke, ellers havner den i '
+               + 'uka det er nå.\n\n'
+               + 'SI HVEM DEN GJELDER. Uten det står den på Familie, og en beskjed '
+               + 'til én person blir da liggende som om den gjaldt alle.\n\n'
+               + 'SEND ALDRI EN LEKSE HIT - lekser hører til et fag og går gjennom '
+               + 'legg_til_lekse.',
+    input_schema: {
+      type:'object',
+      properties:{
+        tekst:     { type:'string', description:'Kort overskrift. Det er denne som leses '
+                                              + 'på skjermen - hold den på få ord.' },
+        utdypning: { type:'string', description:'Valgfri lengre tekst, vises når '
+                                              + 'påminnelsen åpnes.' },
+        dato:      { type:'string', description:'Dato på formen 2026-09-08. Utelat for '
+                                              + 'noe som gjelder uka.' },
+        uke:       { type:'integer', description:'Ukenummer. Bare for påminnelser uten '
+                                               + 'dato. Utelat for uka det er nå.' },
+        gjelder:   { type:'string', description:'Familie, Magne, Nina, Emma eller Andrea.' }
+      },
+      required:['tekst']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      return 'Legge til påminnelse for ' + skrivHuskeHvem(arg.gjelder) + ':\n\n· '
+           + String(arg.tekst || '') + '\n· ' + skrivHuskeNaarTekst(arg)
+           + (arg.utdypning ? '\n· utdypning: ' + arg.utdypning : '');
+    }
+  },
+  {
+    name: 'endre_paaminnelse',
+    description: 'Endrer en påminnelse som finnes. Bare feltene du sender blir rørt. '
+               + 'Sender du dato, flyttes den til dagsboksen den dagen; sender du dato '
+               + 'som tom streng, flyttes den til ukesboksen.',
+    input_schema: {
+      type:'object',
+      properties:{
+        id:        { type:'string', description:'Fra les_paaminnelser.' },
+        tekst:     { type:'string', description:'Ny overskrift.' },
+        utdypning: { type:'string', description:'Tom streng fjerner den.' },
+        dato:      { type:'string', description:'Dato på formen 2026-09-08. Tom streng '
+                                              + 'flytter den til ukesboksen.' },
+        uke:       { type:'integer', description:'Ukenummer. Bare sammen med tom dato.' },
+        gjelder:   { type:'string', description:'Familie, Magne, Nina, Emma eller Andrea.' }
+      },
+      required:['id']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      const rader = [];
+      if(arg.tekst     !== undefined) rader.push('· ny tekst: ' + arg.tekst);
+      if(arg.utdypning !== undefined) rader.push('· utdypning: ' + (arg.utdypning || '(fjernes)'));
+      if(arg.gjelder   !== undefined) rader.push('· gjelder: ' + skrivHuskeHvem(arg.gjelder));
+      if(arg.dato !== undefined || arg.uke !== undefined){
+        rader.push('· flyttes til ' + skrivHuskeNaarTekst(arg));
+      }
+      return 'Endre ' + skrivHuskeNavn(arg.id)
+           + (rader.length ? ':\n\n' + rader.join('\n') : '.');
+    }
+  },
+  {
+    name: 'huk_av_paaminnelse',
+    description: 'Huker av en påminnelse, eller tar haken bort igjen. Den blir stående '
+               + 'på skjermen med strek over - den forsvinner ikke.',
+    input_schema: {
+      type:'object',
+      properties:{
+        id:     { type:'string', description:'Fra les_paaminnelser.' },
+        ferdig: { type:'boolean', description:'Utelat for å huke av. false tar haken bort.' }
+      },
+      required:['id']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      return (arg.ferdig === false ? 'Ta bort haken på ' : 'Huke av ')
+           + skrivHuskeNavn(arg.id) + '.';
+    }
+  },
+  {
+    name: 'slett_paaminnelse',
+    description: 'Sletter en påminnelse. Skal den bare bort fra skjermen fordi den er '
+               + 'gjort, bruk huk_av_paaminnelse i stedet - da ser den som lurer på om '
+               + 'det ble gjort at det ble gjort.',
+    input_schema: {
+      type:'object',
+      properties:{ id: { type:'string', description:'Fra les_paaminnelser.' } },
+      required:['id']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      return 'SLETTE ' + skrivHuskeNavn(arg.id) + '. Den kan ikke hentes tilbake.';
+    }
+  },
+  {
     name: 'legg_til_avtale',
     description: 'Lager en ny avtale i en av familiens kalendere. Si hvilken kalender - '
-               + 'bruk les_kalender om du ikke vet navnene. Gjentagende avtaler kan ikke '
-               + 'lages herfra; de må settes opp i Outlook.',
+               + 'bruk les_kalender om du ikke vet navnene.\n\n'
+               + 'SKAL DEN GJENTA SEG, sett gjentas. Da MÅ du også si når serien '
+               + 'slutter - en dato i slutter, eller et antall i ganger. Spør '
+               + 'brukeren om det; en serie uten slutt er lettere å lage enn å bli '
+               + 'kvitt, og huset lager dem ikke. En gjentagende avtale kan ikke gå '
+               + 'over flere dager.',
     input_schema: {
       type:'object',
       properties:{
@@ -665,6 +1003,17 @@ const SKRIV_VERKTOY = [
         til:       { type:'string', description:'Klokkeslett, 15:30.' },
         heleDagen: { type:'boolean', description:'true for en avtale uten klokkeslett.' },
         sluttdato: { type:'string', description:'Bare hvis avtalen går over flere dager.' },
+        gjentas:   { type:'string', enum:['daglig','ukentlig','annenhver','manedlig','arlig'],
+                     description:'Gjentakelse. «annenhver» er annenhver uke, «manedlig» samme '
+                               + 'dato hver måned, «arlig» samme dato hvert år. Utelat for en '
+                               + 'avtale som bare skjer én gang.' },
+        ukedager:  { type:'array', items:{ type:'string' },
+                     description:'Bare ved ukentlig eller annenhver: ukedagene på norsk, for '
+                               + 'eksempel ["mandag","torsdag"]. Utelat for ukedagen datoen '
+                               + 'faller på.' },
+        slutter:   { type:'string', description:'Siste dato serien kan falle på, 2026-12-15.' },
+        ganger:    { type:'integer', description:'Antall ganger serien skal gå, i stedet for '
+                                               + 'en sluttdato.' },
         sted:      { type:'string' },
         notat:     { type:'string' }
       },
@@ -677,8 +1026,10 @@ const SKRIV_VERKTOY = [
           + (arg.sluttdato && arg.sluttdato !== arg.dato
              ? ' til ' + skrivDatoTekst(arg.sluttdato) : '') + ', hele dagen'
         : skrivDatoTekst(arg.dato) + ' ' + arg.fra + (arg.til ? '–' + arg.til : '');
+      const gjentas = skrivGjentaTekst(arg);
       return 'Legge inn «' + arg.tittel + '»'
            + (arg.kalender ? ' i ' + arg.kalender : '') + ':\n\n· ' + nar
+           + (gjentas ? '\n· gjentas: ' + gjentas : '')
            + (arg.sted ? '\n· sted: ' + arg.sted : '')
            + (arg.notat ? '\n· notat: ' + arg.notat : '');
     }
@@ -1177,6 +1528,86 @@ async function skrivUtfor(navn, arg){
   }
 
 
+  /* ---------------- Paaminnelsene ---------------- */
+  if(navn === 'les_paaminnelser'){
+    const liste = await skrivHuskeLes();
+    const hvem = String(arg.gjelder || '').trim() ? skrivHuskeHvem(arg.gjelder) : null;
+    const ut = liste.filter(function(m){
+      if(!m) return false;
+      if(hvem && String(m.gjelder || '').trim() !== hvem) return false;
+      if(!arg.medFerdige && m.ferdig) return false;
+      return true;
+    });
+    /* Samme grunn til et tak som ellers: et svar som fyller budsjettet
+       gaar ut over det Neam selv skal rekke aa si etterpaa. */
+    return { antall: ut.length,
+             paaminnelser: ut.slice(0, 80).map(skrivHuskeLinje),
+             avkortet: ut.length > 80 };
+  }
+
+  if(navn === 'legg_til_paaminnelse'){
+    const tekst = String(arg.tekst || '').trim();
+    if(!tekst) throw new Error('Påminnelsen må ha en tekst.');
+    const naar = skrivHuskeNaar(arg);
+    const ny = {
+      id: skrivId('m'),
+      laget: new Date().toISOString(),
+      overskrift: tekst,
+      tekst: String(arg.utdypning || '').trim(),
+      frist: naar.frist,
+      omfang: naar.omfang,
+      gjelder: skrivHuskeHvem(arg.gjelder),
+      av: 'Neam'
+    };
+    await skrivHuskeEndre(function(liste){ return liste.concat([ny]); });
+    return { lagt:{ tekst: tekst, gjelder: ny.gjelder, dato: ny.frist,
+                    hvor: naar.omfang === 'uke' ? 'Påminnelser denne uken'
+                                                : 'Påminnelser i dag' } };
+  }
+
+  if(navn === 'endre_paaminnelse' || navn === 'huk_av_paaminnelse'
+  || navn === 'slett_paaminnelse'){
+    const liste = await skrivHuskeLes();
+    const m = skrivHuskeFinn(liste, arg.id);
+
+    if(navn === 'slett_paaminnelse'){
+      await skrivHuskeEndre(function(l){
+        return l.filter(function(x){ return x.id !== m.id; });
+      });
+      return { slettet:true, tekst: m.overskrift || '' };
+    }
+
+    const endring = {};
+    if(navn === 'huk_av_paaminnelse'){
+      endring.ferdig = arg.ferdig === undefined ? true : !!arg.ferdig;
+    }else{
+      if(arg.tekst !== undefined){
+        if(!String(arg.tekst).trim()) throw new Error('Påminnelsen må ha en tekst.');
+        endring.overskrift = String(arg.tekst).trim();
+      }
+      if(arg.utdypning !== undefined) endring.tekst = String(arg.utdypning || '').trim();
+      if(arg.gjelder   !== undefined) endring.gjelder = skrivHuskeHvem(arg.gjelder);
+      if(arg.dato !== undefined || arg.uke !== undefined){
+        const naar = skrivHuskeNaar(arg);
+        endring.frist  = naar.frist;
+        endring.omfang = naar.omfang;
+      }
+      if(!Object.keys(endring).length){
+        throw new Error('Ingenting å endre - send minst ett felt utenom id.');
+      }
+      endring.endret = new Date().toISOString();
+    }
+
+    await skrivHuskeEndre(function(l){
+      return l.map(function(x){
+        return x.id === m.id ? Object.assign({}, x, endring) : x;
+      });
+    });
+    return navn === 'huk_av_paaminnelse'
+      ? { ferdig: endring.ferdig, tekst: m.overskrift || '' }
+      : { endret:true, tekst: endring.overskrift || m.overskrift || '' };
+  }
+
   /* ---------------- Kalenderen ---------------- */
   if(navn === 'legg_til_avtale'){
     if(!String(arg.tittel || '').trim()) throw new Error('Avtalen må ha et navn.');
@@ -1233,6 +1664,9 @@ async function skrivUtfor(navn, arg){
       p.start = { dateTime: arg.dato + 'T' + arg.fra + ':00', timeZone: SKRIV_TZ };
       p.end   = { dateTime: d2 + 'T' + arg.til + ':00', timeZone: SKRIV_TZ };
     }
+
+    const gjenta = skrivGjentakelse(arg, arg.dato);
+    if(gjenta) p.recurrence = gjenta;
 
     const laget = await skrivGraph('/me/calendars/' + encodeURIComponent(c.id) + '/events',
                                    'POST', p);
