@@ -87,13 +87,14 @@ a:focus-visible{ outline:3px solid var(--aksent); outline-offset:2px; }
   }
 }
 
-/* Bildene: roboten til mattespillet, og strektegninger til de to
-   andre - samme oker som de hadde paa dashen. Faller roboten bort,
-   skjules den, og kortet staar igjen med navnet sitt. */
-.spill-bilde{ width:72px; height:72px; flex-shrink:0; display:block; object-fit:contain; }
+/* Bildene: hvert spill har sin egen logo, et rundt merke med navnet i
+   (bilder/spill/logo-*.webp, 512x512, klippet fra Magnes ark 10. oktober
+   2026). Faller et bilde bort, skjules det, og kortet staar igjen med
+   navnet sitt. */
+.spill-bilde{ width:96px; height:96px; flex-shrink:0; display:block; object-fit:contain; }
 .spill-bilde[hidden]{ display:none; }
-svg.spill-bilde{ color:var(--handling-endre); }
-@media(min-width:700px){ .spill-bilde{ width:140px; height:140px; } }
+/* Paa iPad staaende er kortet smalere enn 200 - da krymper logoen. */
+@media(min-width:700px){ .spill-bilde{ width:min(200px, 100%); height:auto; aspect-ratio:1; } }
 
 .spill-navn{ display:block; font-size:var(--t-stor); font-weight:700; line-height:1.2; }
 .spill-sub{ display:block; margin-top:3px; font-size:var(--t-brod); color:var(--ink-soft); font-weight:600; line-height:1.35; }
@@ -121,33 +122,19 @@ svg.spill-bilde{ color:var(--handling-endre); }
     <ul class="spillene">
       <li>
         <a class="spill-lenke" href="/andrea-matte.html">
-          <img class="spill-bilde" src="/bilder/spill/robot.webp?v=1" alt="" width="388" height="360" onerror="this.hidden = true">
+          <img class="spill-bilde" src="/bilder/spill/logo-matte.webp?v=1" alt="" width="512" height="512" onerror="this.hidden = true">
           <span><span class="spill-navn">Mattespill</span><span class="spill-sub">Hjelp Neam hjem</span></span>
         </a>
       </li>
       <li>
         <a class="spill-lenke" href="/andrea-diktat.html">
-          <svg class="spill-bilde" viewBox="0 0 48 48" fill="none" stroke="currentColor"
-               stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="5" y="9" width="11" height="13" rx="2"/>
-            <rect x="18.5" y="9" width="11" height="13" rx="2"/>
-            <rect x="32" y="9" width="11" height="13" rx="2"/>
-            <path d="M9 17.5 12 13l3 4.5M10 16h4"/>
-            <path d="M22 22V9h3.2a3.4 3.4 0 0 1 0 6.8H22"/>
-            <path d="M25 33H8M25 40H8"/>
-            <path d="M36.5 29.5 42 35l-8.5 8.5-5.5.5.5-5.5z"/>
-          </svg>
+          <img class="spill-bilde" src="/bilder/spill/logo-diktat.webp?v=1" alt="" width="512" height="512" onerror="this.hidden = true">
           <span><span class="spill-navn">Diktat</span><span class="spill-sub">Neam leser ordene</span></span>
         </a>
       </li>
       <li>
         <a class="spill-lenke" href="/andrea-klokke.html">
-          <svg class="spill-bilde" viewBox="0 0 48 48" fill="none" stroke="currentColor"
-               stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="24" cy="24" r="19"/>
-            <path d="M24 7.5v3M24 37.5v3M7.5 24h3M37.5 24h3"/>
-            <path d="M24 24V13.5M24 24l7.5 4.5"/>
-          </svg>
+          <img class="spill-bilde" src="/bilder/spill/logo-klokke.webp?v=1" alt="" width="512" height="512" onerror="this.hidden = true">
           <span><span class="spill-navn">Klokka</span><span class="spill-sub">Hva er klokka?</span></span>
         </a>
       </li>
