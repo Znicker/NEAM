@@ -1288,6 +1288,9 @@
 }
 .nmw-status dt{ color:var(--ink-soft); }
 .nmw-status dd{ margin:0; font-weight:600; }
+.nmw-styr{ display:flex; flex-wrap:wrap; gap:10px; margin:0 0 16px; }
+.nmw-styr .dlg-knapp{ flex:1 1 auto; }
+.nmw-styr .dlg-knapp:disabled{ opacity:.6; cursor:default; }
 .nmw-tom, .nmw-tekst{ color:var(--ink-soft); font-size:var(--t-brod); line-height:1.5; margin:0 0 16px; }
 .nmw-feil{ color:var(--danger); font-size:var(--t-meta); margin:-6px 0 14px; }
 .nmw-felt{

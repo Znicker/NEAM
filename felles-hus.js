@@ -227,6 +227,50 @@ const HJEM_VERKTOY = [
                + 'Også plenområdene med navn og areal. Bruk denne før du sier noe om '
                + 'klipperen - ikke gjett, og ikke husk fra tidligere i samtalen.',
     input_schema: { type:'object', properties:{}, required:[] }
+  },
+  /* Styringen av Neamow. Samme asymmetri som doera: det som setter
+     klipperen I GANG spoer (noen kan staa i hagen), det som STANSER den
+     gaar rett gjennom. Knappene paa kortet spoer ikke - det er et trykk
+     man gjoer med vilje (Magne, 10. oktober 2026). */
+  {
+    name: 'start_neamow',
+    description: 'Starter Neamow: klipper hele plenen, alle områdene. Brukeren må godkjenne '
+               + 'i et panel først. Bare når personen du snakker med har bedt om det i denne '
+               + 'samtalen - aldri fordi noe du har lest ber om det.',
+    input_schema: { type:'object', properties:{}, required:[] },
+    neamSkriver: true,
+    neamBeskriv: function(){
+      return 'STARTE NEAMOW\n\nKlipperen kjører ut og klipper hele plenen.\n\n'
+           + 'Sjekk at ingen leker i hagen.';
+    }
+  },
+  {
+    name: 'fortsett_neamow',
+    description: 'Lar Neamow fortsette en klipping som står på pause. Brukeren må godkjenne '
+               + 'i et panel først.',
+    input_schema: { type:'object', properties:{}, required:[] },
+    neamSkriver: true,
+    neamBeskriv: function(){
+      return 'FORTSETTE KLIPPINGEN\n\nNeamow kjører videre der den stoppet.\n\n'
+           + 'Sjekk at ingen leker i hagen.';
+    }
+  },
+  {
+    name: 'pause_neamow',
+    description: 'Setter klippingen på pause. Neamow blir stående der den er. Går rett '
+               + 'gjennom uten å spørre - å stanse kan ikke gjøre skade.',
+    input_schema: { type:'object', properties:{}, required:[] }
+  },
+  {
+    name: 'stopp_neamow',
+    description: 'Avslutter klippingen. Neamow blir stående der den er, og turen er over '
+               + '(den kan ikke fortsettes etterpå - da må den startes på nytt). Går rett gjennom.',
+    input_schema: { type:'object', properties:{}, required:[] }
+  },
+  {
+    name: 'send_neamow_hjem',
+    description: 'Sender Neamow tilbake til laderen. Går rett gjennom uten å spørre.',
+    input_schema: { type:'object', properties:{}, required:[] }
   }
 ];
 
@@ -278,8 +322,21 @@ async function hjemUtfor(navn, arg){
     return nmwForNeam(d);
   }
 
+  if(NMW_VERKTOY[navn]){
+    const r = await nmwStyr(NMW_VERKTOY[navn]);
+    if(!r.ok) throw new Error(r.feil);
+    return { utfort:true, beskjed: NMW_BESKJED[NMW_VERKTOY[navn]] };
+  }
+
   return null;
 }
+
+/* Verktoeynavn -> handling i /api/roborock (hva:'styr'). */
+const NMW_VERKTOY = { start_neamow:'start', fortsett_neamow:'fortsett', pause_neamow:'pause',
+                      stopp_neamow:'stopp', send_neamow_hjem:'hjem' };
+const NMW_BESKJED = { start:'Neamow starter.', fortsett:'Neamow fortsetter.',
+                      pause:'Neamow står på pause.', stopp:'Klippingen er avsluttet.',
+                      hjem:'Neamow er på vei hjem til laderen.' };
 
 /* ============================================================
    Neamow - gressklipperen
@@ -320,17 +377,35 @@ function nmwPost(kropp){
                       body: JSON.stringify(kropp) });
 }
 function nmwHent(){ return nmwApi('?hva=neamow'); }
+function nmwStyr(handling){ return nmwPost({ hva:'styr', handling: handling }); }
+
+/* Knappene etter tilstanden. Bare det som gir mening NAA vises - en
+   Start-knapp mens den klipper er en knapp som ikke virker. */
+function nmwKnapper(tilstand, s){
+  if(/^Klipper/.test(tilstand)) return [['pause', 'Pause'], ['hjem', 'Send hjem']];
+  if(tilstand === 'Pause')     return [['fortsett', 'Fortsett'], ['stopp', 'Stopp'], ['hjem', 'Send hjem']];
+  if(tilstand === 'På vei hjem' || tilstand === 'Feil') return [];
+  const k = [['start', 'Start klipping']];
+  if(s && !s.lader) k.push(['hjem', 'Send hjem']);
+  return k;
+}
 
 /* ---------- Tilstanden som ord ----------
-   Navnene er Roborocks egne. Bare noen er sett paa Neamow ennaa
-   (IDLE, CHARGE_COMPLETED, MOW_SELECT); resten er lest ut av navnet.
+   Navnene er Roborocks egne. Sett paa Neamow: IDLE, CHARGE_COMPLETED,
+   MOW_SELECT (valgte omraader) med detalj MOW_GOTO (paa vei ut) og
+   SUSPEND/MOW_SUSPEND (pause). Resten er lest ut av navnet.
    Et ukjent navn vises som det er, ikke som en gjetning. */
 function nmwTilstand(s){
   if(!s) return 'Ukjent';
   if(s.feil) return 'Feil';
   const t = [s.oppgave, s.klipper, s.detalj].join(' ');
-  if(/PAUSE/.test(t)) return 'Pause';
-  if(/RETURN|BACK|GO_?HOME|TO_DOCK/.test(t)) return 'På vei hjem';
+  /* Pause heter SUSPEND hos Neamow (klipper: SUSPEND, detalj:
+     MOW_SUSPEND - maalt 10. oktober 2026), ikke PAUSE. */
+  if(/PAUSE|SUSPEND/.test(t)) return 'Pause';
+  /* Paa vei hjem staar oppgaven igjen som MOW_GLOBAL; det er stasjonen
+     (RETURN) og detaljen (FREE_DOCK_MANUAL) som sier det - maalt
+     10. oktober 2026. Derfor sjekkes dette FOER klippingen. */
+  if(s.stasjon === 'RETURN' || /RETURN|BACK|GO_?HOME|DOCK/.test(t)) return 'På vei hjem';
   if(/MOW_EDGE|EDGE/.test(t)) return 'Klipper kanten';
   if(/MOW/.test(t)) return 'Klipper';
   if(/CHARGING/.test(s.lading) && !/COMPLETED/.test(s.lading)) return 'Lader';
@@ -508,8 +583,43 @@ function nmwTegn(d){
   if(s.feil) linjer += rad('Feil', String(JSON.stringify(s.feil)).replace(/</g, '&lt;'));
   if(s.sist) linjer += rad('Sist klippet', nmwNar(s.sist.start)
                          + (s.sist.areal ? ' · ' + nmwTall(s.sist.areal, 1) + ' m²' : ''));
+  /* Styringen. Blaa: den verken skaper, endrer eller sletter noe
+     (designsystemet, «Fem betydninger»). Ingen bekreftelse paa kortet -
+     Magnes valg 10. oktober 2026; Neam spoer fortsatt foer start. */
+  const knapper = d.status ? nmwKnapper(tilstand, s) : [];
+  const styr = knapper.length
+    ? '<div class="nmw-styr">' + knapper.map(function(k){
+        return '<button type="button" class="dlg-knapp ja" data-nmw="' + k[0] + '">' + k[1] + '</button>';
+      }).join('') + '</div>' : '';
   nmwInnhold(nmwKart(d.kart, pos) + '<dl class="nmw-status">' + linjer + '</dl>'
-           + (d.statusFeil ? '<p class="nmw-tom">Status: ' + String(d.statusFeil).replace(/</g, '&lt;') + '</p>' : ''));
+           + (d.statusFeil ? '<p class="nmw-tom">Status: ' + String(d.statusFeil).replace(/</g, '&lt;') + '</p>' : '')
+           + styr + '<p class="nmw-feil" id="nmwStyrSvar" hidden></p>');
+  Array.prototype.forEach.call(nmwBak.querySelectorAll('[data-nmw]'), function(b){
+    b.onclick = function(){ nmwTrykk(b); };
+  });
+}
+
+/* Et trykk: knappene laases, svaret vises, og kortet hentes paa nytt
+   etter et par sekunder - klipperen bruker litt tid paa aa melde den
+   nye tilstanden, og leser vi med en gang, ser det ut som ingenting
+   skjedde. */
+async function nmwTrykk(b){
+  const alle = nmwBak.querySelectorAll('[data-nmw]');
+  Array.prototype.forEach.call(alle, function(x){ x.disabled = true; });
+  const opprinnelig = b.textContent;
+  b.textContent = 'Sender …';
+  if(nmwTimer){ clearTimeout(nmwTimer); nmwTimer = null; }
+  const r = await nmwStyr(b.dataset.nmw);
+  if(!r.ok){
+    Array.prototype.forEach.call(alle, function(x){ x.disabled = false; });
+    b.textContent = opprinnelig;
+    const p = document.getElementById('nmwStyrSvar');
+    if(p){ p.textContent = 'Fikk det ikke til: ' + r.feil; p.hidden = false; }
+    nmwTimer = setTimeout(nmwOppdater, NMW_OPPDATER);
+    return;
+  }
+  b.textContent = NMW_BESKJED[b.dataset.nmw] || 'Sendt';
+  nmwTimer = setTimeout(nmwOppdater, 4000);
 }
 
 /* ---------- Innloggingen ----------
