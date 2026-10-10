@@ -764,6 +764,10 @@ function plukkStatus(s){
     soner: (mp.regions || []).map(function(r){
       return { id: r.id, dekket: rund(tall(r.cur_coverage_rate), 1) };
     }),
+    /* Naar kartfila sist ble endret - samme form som kartets eget felt
+       (#34, «2026-10-10-19-26-05»). Nettleseren henter kartet paa nytt
+       bare naar denne endrer seg. */
+    kartEndret: String(((s.map_abstracts || [])[0] || {}).file_change_time || ''),
     posisjon: pose && tall(pose.f_x) !== null && tall(pose.f_y) !== null
       ? { x: rund(pose.f_x, 2), y: rund(pose.f_y, 2), vinkel: rund(tall(pose.f_yaw), 3) } : null,
     sist: sist.start ? {
@@ -774,6 +778,66 @@ function plukkStatus(s){
       prosent: rund(tall(sist.percentage), 1),
       avbrutt: sist.abnormal_end === true
     } : null
+  };
+}
+
+/* ---------- Detaljene til den egne sida ----------
+   Samme regel som plukkStatus: feltene plukkes ett for ett. Utelatt med
+   vilje: mobiloperatoer, RTK-oppsett og «random_gngga_config» (et tall
+   som hoerer til posisjoneringen). Feltnavnene er maalt paa Neamow
+   11. oktober 2026. */
+async function hentDetaljer(kommando){
+  const spor = async function(type){
+    try{
+      const r = await kommando('remote_pb', { id: String(Date.now()), type: type });
+      return typeof r === 'string' ? JSON.parse(r) : r;
+    }catch(e){ return null; }
+  };
+  const pref = await spor('GET_MOW_PREFERENCE_CONFIG');
+  const bruker = await spor('GET_USER_MODE_CONFIG');
+  const plan = await spor('GET_MOW_SCHEDULE');
+  const feil = await spor('GET_FAULT_RECORDS');
+  const egen = await spor('GET_FEATURE_INFO');
+
+  const pc = (pref && pref.preference_config) || {};
+  const g = pc.global || {};
+  const uc = (bruker && bruker.user_mode_config) || {};
+  const regn = uc.rainfall_config || {};
+  const ro = (uc.not_disturb_config && uc.not_disturb_config.time) || [];
+  const tyv = uc.anti_theft_config || {};
+  const sku = (egen && egen.feature_info && egen.feature_info.sku_info) || {};
+  const hoyde = sku.main_cutter_height || {};
+  const ms = (plan && plan.mow_schedule) || {};
+  return {
+    innstilling: {
+      modus: String(pc.mode || g.mode || ''),
+      hoyde: typeof g.height === 'number' ? g.height : null,
+      ganger: typeof g.mow_times === 'number' ? g.mow_times : null,
+      effekt: String(g.effective || ''),
+      retning: typeof g.direction === 'number' ? g.direction : null,
+      kant: typeof g.keep_edge === 'number' ? g.keep_edge : null,
+      soner: (pc.custom || []).map(function(c){
+        return { id: c.area_id, navn: String(c.area_name || ''), hoyde: c.height,
+                 ganger: c.mow_times, effekt: String(c.effective || '') };
+      })
+    },
+    hoydeGrenser: { min: hoyde.min_height || 20, max: hoyde.max_height || 70, steg: hoyde.step_height || 1 },
+    regn: { paa: regn.enable === true, venteTimer: typeof regn.delay_time === 'number' ? regn.delay_time : null,
+            regner: regn.type ? regn.type !== 'RAIN_NO' : null },
+    ro: ro.map(function(t){
+      return { fra: (t.start && t.start.hour) || 0, fraMin: (t.start && t.start.minute) || 0,
+               til: (t.end && t.end.hour) || 0, tilMin: (t.end && t.end.minute) || 0 };
+    }),
+    tyverisikring: tyv.enable === true,
+    /* Tidsplanen har bare tidssonen naar ingen plan er satt. Formen med
+       planer er ikke sett ennaa - da sendes den som den er, uten noe
+       som kan peke ut huset (den har ingen posisjon). */
+    plan: Object.keys(ms).filter(function(k){ return k !== 'time_zone'; }).length ? ms : null,
+    feil: ((feil && feil.fault_records && feil.fault_records.cards) || []).map(function(c){
+      return { kode: c.e_code, ganger: c.occur_count,
+               sist: ((c.items || [])[0] || {}).fault_time || '' };
+    }),
+    modell: String(sku.market_name || '')
   };
 }
 
@@ -846,14 +910,51 @@ export async function onRequestPost({ request, env }){
      her er det bare oversettelsen. */
   if(hva === 'styr'){
     const KNAPPER = { start: 'MOW_GLOBAL', pause: 'MOW_PAUSE', fortsett: 'MOW_RESUME',
-                      stopp: 'MOW_END', hjem: 'CHARGE' };
-    const knapp = KNAPPER[String(inn.handling || '')];
-    if(!knapp) return svar({ ok:false, feil:'Ukjent handling' });
+                      stopp: 'MOW_END', hjem: 'CHARGE', omraade: 'MOW_SELECT', kant: 'MOW_EDGE' };
+    const handling = String(inn.handling || '');
+    const knapp = KNAPPER[handling];
+    if(!knapp && handling !== 'hoyde') return svar({ ok:false, feil:'Ukjent handling' });
+
+    /* Omraadene som { id, navn } - samme form som appen
+       (modify_map.boundaries, se ha-roborock-mower). Id-ene er tall og
+       navnene korte; alt annet avvises i stedet for aa sendes videre. */
+    let grenser = null;
+    if(handling === 'omraade' || handling === 'kant'){
+      const liste = Array.isArray(inn.omraader) ? inn.omraader : [];
+      grenser = liste.filter(function(o){
+        return o && Number.isInteger(o.id) && o.id >= 0 && o.id < 100000;
+      }).slice(0, 20).map(function(o){ return { id: o.id, name: String(o.navn || '').slice(0, 40) }; });
+      if(handling === 'omraade' && !grenser.length) return svar({ ok:false, feil:'Velg minst ett område' });
+    }
+    let hoyde = null;
+    if(handling === 'hoyde'){
+      hoyde = Number(inn.hoyde);
+      if(!Number.isInteger(hoyde) || hoyde < 20 || hoyde > 70) return svar({ ok:false, feil:'Klippehøyden må være 20–70 mm' });
+    }
+
     const okt = await lesOkt(env);
     if(!okt || !okt.duid) return svar({ ok:false, feil:'Neamow er ikke koblet til', maaGodkjenne:true });
     try{
-      const r = await motKlipper(okt, function(kommando){
-        return kommando('remote_pb', { id: String(Date.now()), type: 'APP_BUTTON', app_button: knapp });
+      const r = await motKlipper(okt, async function(kommando){
+        if(handling === 'hoyde'){
+          /* Som appen: hoeyden settes med det samme, og skrives saa inn i
+             innstillingen saa den gjelder for neste tur ogsaa. Klipperen
+             ERSTATTER hele innstillingen, saa den leses foerst og sendes
+             tilbake med bare hoeyden endret - en halv innstilling ville
+             nullstilt retning, antall ganger og kant (ha-roborock-mower). */
+          const a = await kommando('remote_pb', { id: String(Date.now()), type: 'REMOTE_CMD',
+            remote_cmd: { type: 'MAIN_CUTTER_HEIGHT', main_cutter_height: hoyde } });
+          const p = await kommando('remote_pb', { id: String(Date.now()), type: 'GET_MOW_PREFERENCE_CONFIG' });
+          const pc = (typeof p === 'string' ? JSON.parse(p) : p) || {};
+          const g = pc.preference_config && pc.preference_config.global;
+          if(!g) throw new Error('Fikk ikke lest innstillingene – høyden gjelder bare denne turen');
+          await kommando('remote_pb', { id: String(Date.now()), type: 'SET_MOW_PREFERENCE',
+            mow_preference: Object.assign({}, g, { height: hoyde }) });
+          return a;
+        }
+        const melding = { id: String(Date.now()), type: 'APP_BUTTON', app_button: knapp };
+        if(grenser && grenser.length) melding.modify_map = { boundaries: grenser };
+        return kommando('remote_pb', melding);
       });
       /* Klipperen svarer «fail» naar den ikke kan (ha-roborock-mower). */
       const avvist = r === 'fail' || (Array.isArray(r) && r.indexOf('fail') !== -1);
@@ -891,10 +992,15 @@ export async function onRequestGet({ request, env }){
   if(!okt || !okt.duid) return svar({ ok:false, feil:'Neamow er ikke koblet til', maaGodkjenne:true });
 
   /* ---------- Kart og status, i én forbindelse ---------- */
+  /* `kart=0`: bare status. Mens klipperen kjoerer, spoer nettleseren
+     hvert andre sekund, og kartet er det tunge - det hentes bare naar
+     kartfila er endret (status.kartEndret). */
   if(hva === 'neamow'){
+    let utenKart = false;
+    try{ utenKart = new URL(request.url).searchParams.get('kart') === '0'; }catch(e){}
     try{
       const ut = await motKlipper(okt, async function(kommando){
-        const kart = lesKart(await kommando('get_map_diff', undefined, true));
+        const kart = utenKart ? null : lesKart(await kommando('get_map_diff', undefined, true));
         let status = null, statusFeil = '';
         try{
           const s = await kommando('remote_pb', { id: String(Date.now()), type: 'GET_ROBOT_STATUS' });
@@ -903,6 +1009,16 @@ export async function onRequestGet({ request, env }){
         return { kart: kart, status: status, statusFeil: statusFeil };
       });
       return svar(Object.assign({ ok:true, navn: okt.navn }, ut));
+    }catch(e){
+      return svar({ ok:false, feil: String(e.message || e) });
+    }
+  }
+
+  /* ---------- Detaljene til den egne sida ---------- */
+  if(hva === 'detaljer'){
+    try{
+      const d = await motKlipper(okt, hentDetaljer);
+      return svar(Object.assign({ ok:true }, d));
     }catch(e){
       return svar({ ok:false, feil: String(e.message || e) });
     }

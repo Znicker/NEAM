@@ -1255,13 +1255,15 @@
    ikke «i orden» eller «skaper noe». Valgt av Magne 10. oktober 2026 -
    dempet, saa det ikke leses som en knapp. Klipperen og laderen er
    messing, samme lyse og moerke metall som klokka. */
-.nmw-kort{
+/* Fargene ligger paa kartet, ikke paa kortet: kartet staar ogsaa paa
+   neamow.html, utenfor kortet. Der ble det svart da de laa paa .nmw-kort. */
+.nmw-kart{
   --nmw-gress:#DDE7D2;
   --nmw-gress-kant:#7C9B6F;
   --nmw-messing:#D9B370;
   --nmw-messing-moerk:#241503;
-  max-width:460px; max-height:calc(100dvh - 40px); overflow:auto;
 }
+.nmw-kort{ max-width:460px; max-height:calc(100dvh - 40px); overflow:auto; }
 /* .dlg-rad har display:flex, som ellers vinner over hidden. */
 .nmw-kort .dlg-rad[hidden]{ display:none; }
 .nmw-tittel{
@@ -1275,12 +1277,20 @@
   border-radius:12px; margin:0 0 16px;
 }
 .nmw-sone{ fill:var(--nmw-gress); stroke:var(--nmw-gress-kant); stroke-linejoin:round; }
+/* Valgt omraade (den egne sida): «valgt»-fargen, ikke en ny. */
+.nmw-sone.nmw-valgt{ fill:var(--aksent-lys); stroke:var(--aksent); }
+.nmw-sone[data-sone]{ cursor:pointer; }
+.nmw-mer{
+  margin-right:auto; align-self:center;
+  color:var(--aksent); font-weight:700; font-size:var(--t-brod); text-decoration:none;
+}
+.nmw-mer:active{ opacity:.7; }
+.nmw-sonenavn{ pointer-events:none; }
 .nmw-sonenavn{
   fill:var(--ink-soft); font-family:'Archivo',sans-serif; font-weight:700;
 }
 .nmw-lader{ fill:var(--nmw-messing-moerk); stroke:var(--nmw-messing); }
 .nmw-klipper{ fill:var(--nmw-messing); stroke:var(--nmw-messing-moerk); }
-.nmw-retning{ stroke:var(--nmw-messing-moerk); stroke-linecap:round; }
 
 .nmw-status{
   display:grid; grid-template-columns:auto 1fr; gap:6px 16px;

@@ -271,6 +271,33 @@ const HJEM_VERKTOY = [
     name: 'send_neamow_hjem',
     description: 'Sender Neamow tilbake til laderen. Går rett gjennom uten å spørre.',
     input_schema: { type:'object', properties:{}, required:[] }
+  },
+  {
+    name: 'klipp_neamow_omraade',
+    description: 'Starter Neamow på ett eller flere av plenområdene, ikke hele plenen. '
+               + 'Områdene heter det de heter i appen (les_neamow gir navnene, f.eks. A1). '
+               + 'Brukeren må godkjenne i et panel først.',
+    input_schema: { type:'object', properties:{
+      omraader: { type:'array', items:{ type:'string' }, description:'Navnene på områdene, f.eks. ["A1","A3"]' }
+    }, required:['omraader'] },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      const n = ((arg && arg.omraader) || []).join(', ');
+      return 'KLIPPE ' + (n || '(ingen områder oppgitt)') + '\n\nNeamow kjører ut og klipper '
+           + (n ? 'bare ' + n : '–') + '.\n\nSjekk at ingen leker i hagen.';
+    }
+  },
+  {
+    name: 'sett_neamow_klippehoyde',
+    description: 'Endrer klippehøyden på Neamow, i hele millimeter fra 20 til 70. Gjelder med '
+               + 'det samme og for senere turer. Brukeren må godkjenne i et panel først.',
+    input_schema: { type:'object', properties:{
+      mm: { type:'integer', description:'Klippehøyden i millimeter, 20-70' }
+    }, required:['mm'] },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      return 'Sette klippehøyden på Neamow til ' + (arg && arg.mm) + ' mm.';
+    }
   }
 ];
 
@@ -322,6 +349,31 @@ async function hjemUtfor(navn, arg){
     return nmwForNeam(d);
   }
 
+  if(navn === 'klipp_neamow_omraade'){
+    /* Navn til id: kartet er fasiten, ikke en liste her. */
+    const d = await nmwHent();
+    if(!d.ok) throw new Error('Fikk ikke kontakt med Neamow: ' + d.feil);
+    const soner = (d.kart && d.kart.soner) || [];
+    const onsket = (arg.omraader || []).map(function(x){ return String(x).trim().toLowerCase(); });
+    const valgt = soner.filter(function(z){ return onsket.indexOf(z.navn.toLowerCase()) !== -1; });
+    const ukjent = onsket.filter(function(n){
+      return !soner.some(function(z){ return z.navn.toLowerCase() === n; });
+    });
+    if(ukjent.length) throw new Error('Fant ikke området ' + ukjent.join(', ') + '. Områdene heter '
+      + soner.map(function(z){ return z.navn; }).join(', ') + '.');
+    const r = await nmwPost({ hva:'styr', handling:'omraade',
+      omraader: valgt.map(function(z){ return { id:z.id, navn:z.navn }; }) });
+    if(!r.ok) throw new Error(r.feil);
+    return { utfort:true, beskjed:'Neamow starter på ' + valgt.map(function(z){ return z.navn; }).join(', ') + '.' };
+  }
+
+  if(navn === 'sett_neamow_klippehoyde'){
+    const mm = Math.round(Number(arg.mm));
+    const r = await nmwPost({ hva:'styr', handling:'hoyde', hoyde: mm });
+    if(!r.ok) throw new Error(r.feil);
+    return { utfort:true, beskjed:'Klippehøyden er satt til ' + mm + ' mm.' };
+  }
+
   if(NMW_VERKTOY[navn]){
     const r = await nmwStyr(NMW_VERKTOY[navn]);
     if(!r.ok) throw new Error(r.feil);
@@ -336,7 +388,9 @@ const NMW_VERKTOY = { start_neamow:'start', fortsett_neamow:'fortsett', pause_ne
                       stopp_neamow:'stopp', send_neamow_hjem:'hjem' };
 const NMW_BESKJED = { start:'Neamow starter.', fortsett:'Neamow fortsetter.',
                       pause:'Neamow står på pause.', stopp:'Klippingen er avsluttet.',
-                      hjem:'Neamow er på vei hjem til laderen.' };
+                      hjem:'Neamow er på vei hjem til laderen.',
+                      omraade:'Neamow starter på de valgte områdene.',
+                      kant:'Neamow klipper kanten.', hoyde:'Klippehøyden er endret.' };
 
 /* ============================================================
    Neamow - gressklipperen
@@ -357,6 +411,9 @@ const NMW_BESKJED = { start:'Neamow starter.', fortsett:'Neamow fortsetter.',
    ============================================================ */
 
 const NMW_OPPDATER = 10000;
+/* Versjonen paa klippersymbolet i kartet - samme regel som MERKE_V og de
+   andre bildekonstantene: byttes fila under samme navn, skal tallet opp. */
+const NMW_SYMBOL_V = 1;
 let nmwBak = null;
 let nmwTimer = null;
 let nmwSteg = '';        /* '', 'konto', 'kode' - innloggingen */
@@ -376,7 +433,34 @@ function nmwPost(kropp){
   return nmwApi('', { method:'POST', headers:{'Content-Type':'application/json'},
                       body: JSON.stringify(kropp) });
 }
-function nmwHent(){ return nmwApi('?hva=neamow'); }
+/* Kartet huskes mellom hentingene og hentes bare paa nytt naar
+   klipperen melder at kartfila er endret (status.kartEndret mot
+   kart.endret). Statusen - med posisjonen - hentes hver gang. */
+let nmwKartBuffer = null;
+async function nmwHent(){
+  if(nmwKartBuffer){
+    const d = await nmwApi('?hva=neamow&kart=0');
+    if(!d.ok) return d;
+    const ny = d.status && d.status.kartEndret;
+    if(!ny || ny === nmwKartBuffer.endret){
+      d.kart = nmwKartBuffer;
+      return d;
+    }
+  }
+  const d = await nmwApi('?hva=neamow');
+  if(d.ok && d.kart) nmwKartBuffer = d.kart;
+  return d;
+}
+
+/* Hvor ofte kortet og sida spoer. Hver henting er en ny innlogging paa
+   Roborocks MQTT og et kall i Cloudflare, saa takten foelger det som
+   skjer: hvert andre sekund bare mens klipperen beveger seg (Magne
+   ville se den kjoere), ellers sjeldnere. Stoppes helt naar ingen ser. */
+function nmwIntervall(tilstand){
+  if(/^Klipper|På vei hjem/.test(tilstand || '')) return 2000;
+  if(tilstand === 'Pause') return 10000;
+  return 30000;
+}
 function nmwStyr(handling){ return nmwPost({ hva:'styr', handling: handling }); }
 
 /* Knappene etter tilstanden. Bare det som gir mening NAA vises - en
@@ -456,7 +540,10 @@ function nmwForNeam(d){
    Meter i klipperens eget kart. y snus, saa nord (eller det som er
    «opp» i appen) staar opp. Alt skaleres til boksen; streker og tekst
    regnes i meter, saa de holder stoerrelsen uansett hagens stoerrelse. */
-function nmwKart(kart, pos){
+/* `valg` (valgfri, den egne sida): { valgte:[id], dekning:{id:prosent} }.
+   Omraadene faar data-sone saa sida kan gjoere dem trykkbare; valgte
+   omraader faar «valgt»-fargen fra designsystemet (--aksent-lys). */
+function nmwKart(kart, pos, valg){
   const soner = (kart && kart.soner) || [];
   const alle = [];
   soner.forEach(function(z){ z.punkter.forEach(function(p){ alle.push(p); }); });
@@ -477,17 +564,23 @@ function nmwKart(kart, pos){
 
   let svg = '<svg class="nmw-kart" viewBox="' + f(x0) + ' ' + f(y0) + ' ' + f(x1 - x0) + ' ' + f(y1 - y0)
           + '" role="img" aria-label="Kart over plenen">';
+  const valgte = (valg && valg.valgte) || [];
+  const dekning = (valg && valg.dekning) || null;
   soner.forEach(function(z){
-    svg += '<polygon class="nmw-sone" stroke-width="' + f(enhet * 0.35) + '" points="'
+    svg += '<polygon class="nmw-sone' + (valgte.indexOf(z.id) !== -1 ? ' nmw-valgt' : '') + '"'
+         + (valg ? ' data-sone="' + z.id + '"' : '')
+         + ' stroke-width="' + f(enhet * 0.35) + '" points="'
          + z.punkter.map(function(p){ return f(p[0]) + ',' + f(-p[1]); }).join(' ') + '"/>';
   });
   soner.forEach(function(z){
     let sx = 0, sy = 0;
     z.punkter.forEach(function(p){ sx += p[0]; sy += -p[1]; });
     sx /= z.punkter.length; sy /= z.punkter.length;
+    const d = dekning && dekning[z.id] !== undefined && dekning[z.id] !== null
+            ? ' · ' + nmwTall(dekning[z.id]) + ' %' : '';
     svg += '<text class="nmw-sonenavn" x="' + f(sx) + '" y="' + f(sy) + '" font-size="' + f(enhet * 2.2)
          + '" text-anchor="middle" dominant-baseline="middle">'
-         + String(z.navn).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</text>';
+         + String(z.navn).replace(/&/g, '&amp;').replace(/</g, '&lt;') + d + '</text>';
   });
   if(kart && kart.lader){
     const s = enhet * 1.6;
@@ -495,15 +588,22 @@ function nmwKart(kart, pos){
          + '" width="' + f(s) + '" height="' + f(s) + '" rx="' + f(s * 0.2) + '" stroke-width="' + f(enhet * 0.3) + '"/>';
   }
   if(pos){
+    /* Klipperen er Magnes eget symbol, sett ovenfra (bilder/symbol-neamow.png,
+       11. oktober 2026). Fronten - lysene og stoetfangeren - peker NED i
+       bildet. Vinkelen er klipperens egen (radianer, mot klokka fra x-aksen);
+       med y snudd blir den -v paa skjermen, og bildet dreies saa fronten
+       (90 grader) peker dit: -v - 90.
+       Messingskiva under er reserven: laster ikke bildet, staar den igjen. */
     const r = enhet * 1.1;
     const cx = pos.x, cy = -pos.y;
     svg += '<circle class="nmw-klipper" cx="' + f(cx) + '" cy="' + f(cy) + '" r="' + f(r)
          + '" stroke-width="' + f(enhet * 0.3) + '"/>';
-    if(pos.vinkel !== null && pos.vinkel !== undefined){
-      const v = pos.vinkel;
-      svg += '<line class="nmw-retning" x1="' + f(cx) + '" y1="' + f(cy) + '" x2="' + f(cx + Math.cos(v) * r * 2)
-           + '" y2="' + f(cy - Math.sin(v) * r * 2) + '" stroke-width="' + f(enhet * 0.4) + '"/>';
-    }
+    const s = enhet * 3.4;
+    const grader = pos.vinkel !== null && pos.vinkel !== undefined
+                 ? Math.round((-pos.vinkel * 180 / Math.PI - 90) * 10) / 10 : 0;
+    svg += '<image class="nmw-symbol" href="/bilder/symbol-neamow.png?v=' + NMW_SYMBOL_V + '"'
+         + ' x="' + f(cx - s / 2) + '" y="' + f(cy - s / 2) + '" width="' + f(s) + '" height="' + f(s) + '"'
+         + ' transform="rotate(' + grader + ' ' + f(cx) + ' ' + f(cy) + ')"/>';
   }
   return svg + '</svg>';
 }
@@ -518,7 +618,12 @@ function nmwBygg(){
       '<div class="dlg-kort nmw-kort" role="dialog" aria-modal="true" aria-label="Neamow">'
     +   '<h2 class="nmw-tittel">Neamow</h2>'
     +   '<div class="nmw-innhold"></div>'
-    +   '<div class="dlg-rad"><button type="button" class="dlg-knapp nei nmw-lukk">Lukk</button></div>'
+    /* «Mer om Neamow» er tekst uten flate: den tar deg et sted
+       (designsystemet, formregelen). Skjules paa sida selv. */
+    +   '<div class="dlg-rad">'
+    +     (/^\/neamow(\.html)?$/.test(location.pathname) ? ''
+          : '<a class="nmw-mer" href="/neamow.html">Mer om Neamow</a>')
+    +     '<button type="button" class="dlg-knapp nei nmw-lukk">Lukk</button></div>'
     + '</div>';
   document.body.appendChild(nmwBak);
   nmwBak.querySelector('.nmw-lukk').onclick = nmwLukk;
@@ -556,16 +661,20 @@ async function nmwApne(){
 async function nmwOppdater(){
   if(nmwTimer){ clearTimeout(nmwTimer); nmwTimer = null; }
   if(!nmwBak || nmwBak.hidden || nmwSteg) return;
+  /* Skjult fane: ingen spoer Roborock om noe ingen ser. Sjekker igjen
+     om litt, og henter med det samme fanen er framme. */
+  if(document.hidden){ nmwTimer = setTimeout(nmwOppdater, 5000); return; }
   const d = await nmwHent();
   if(!nmwBak || nmwBak.hidden || nmwSteg) return;
   if(!d.ok && d.maaGodkjenne){ nmwVisKonto(); return; }
   if(!d.ok){
     nmwInnhold('<p class="nmw-tom">Fikk ikke kontakt med Neamow: '
              + String(d.feil).replace(/</g, '&lt;') + '</p>');
-  }else{
+  }
+  else{
     nmwTegn(d);
   }
-  nmwTimer = setTimeout(nmwOppdater, NMW_OPPDATER);
+  nmwTimer = setTimeout(nmwOppdater, d.ok ? nmwIntervall(nmwTilstand(d.status)) : NMW_OPPDATER);
 }
 
 function nmwTegn(d){

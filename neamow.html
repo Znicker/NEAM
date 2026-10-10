@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Neamow">
+<meta name="theme-color" content="#F5F5F5">
+<meta name="robots" content="noindex, nofollow">
+<title>Neamow – Neam</title>
+<link rel="apple-touch-icon" href="/bilder/neam-robot.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/felles-rot.css?v=5">
+<link rel="stylesheet" href="/felles-dialog.css?v=1">
+<link rel="stylesheet" href="/felles-neam.css?v=59">
+<style>
+/* ============================================================
+   NEAM – Neamow, gressklipperen
+   Bygget 11. oktober 2026.
+
+   Kortet under Enheter har det vanligste. Denne sida har resten:
+   stort kart der omraadene kan velges, klipping av valgte omraader og
+   kanten, klippehoeyden, innstillingene og det klipperen husker om
+   turer og feil. Naas bare fra kortet («Mer om Neamow») - ikke fra
+   applista, som skal holdes kort.
+
+   ALT GAAR GJENNOM felles-hus.js (nmw*) og /api/roborock. Kartet,
+   tilstandsordene og knappevalget er de samme som paa kortet, saa de
+   to aldri kan si forskjellige ting.
+   ============================================================ */
+
+*{ box-sizing:border-box; }
+[hidden]{ display:none !important; }
+html,body{ margin:0; }
+body{
+  font-family:'Archivo',system-ui,-apple-system,sans-serif;
+  color:var(--ink); background:var(--side-bakgrunn);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden; overflow-x:clip;
+}
+button{ font-family:inherit; cursor:pointer;
+        -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-offset:2px; }
+
+.skjerm{
+  min-height:100vh; min-height:100dvh; max-width:1240px; margin:0 auto;
+  display:flex; flex-direction:column; gap:18px;
+  padding:max(16px, env(safe-area-inset-top)) 20px
+          calc(120px + env(safe-area-inset-bottom));
+}
+@media(min-width:700px){ .skjerm{ padding-left:28px; padding-right:28px; } }
+
+/* ---------- Toppen ---------- */
+.topp{ display:flex; align-items:center; gap:14px; flex-shrink:0; }
+.merke{ display:block; width:76px; flex-shrink:0; }
+.merke img{ width:100%; height:auto; display:block; }
+.tittel{ margin:0; font-size:var(--t-stor); font-weight:700;
+         text-transform:uppercase; letter-spacing:.05em; line-height:1.15; }
+.status{ margin:3px 0 0; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+@media(min-width:700px){ .merke{ width:104px; } }
+
+/* ---------- Oppsettet ----------
+   Kartet til venstre og resten til hoeyre paa brede skjermer; under
+   hverandre ellers. Kartet foerst: det er det man kom for. */
+.flate{ display:grid; gap:18px; align-items:start; }
+@media(min-width:900px){ .flate{ grid-template-columns:minmax(0, 1.25fr) minmax(0, 1fr); } }
+.spalte{ display:flex; flex-direction:column; gap:18px; }
+
+.kort{
+  background:var(--paper); border-radius:var(--radius); box-shadow:var(--shadow);
+  padding:18px 18px 20px;
+}
+/* Korttitler: svarte, --t-meta, versaler, .1em (designsystemet, «Mønstre»). */
+.kort-tittel{
+  margin:0 0 12px; color:#000000; font-size:var(--t-meta); font-weight:700;
+  text-transform:uppercase; letter-spacing:.1em;
+}
+.hint{ margin:10px 0 0; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; line-height:1.45; }
+
+/* Kartet arver .nmw-kart fra felles-neam.css. Paa sida faar det
+   bli hoeyere enn paa kortet. */
+.kart-kort .nmw-kart{ max-height:70dvh; margin:0; }
+
+.linjer{
+  display:grid; grid-template-columns:auto 1fr; gap:7px 16px; margin:0;
+  font-size:var(--t-brod);
+}
+.linjer dt{ color:var(--ink-soft); }
+.linjer dd{ margin:0; font-weight:600; }
+
+.rad{ display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+.rad .dlg-knapp{ flex:1 1 auto; }
+.dlg-knapp:disabled{ opacity:.6; cursor:default; }
+/* Oker: endrer noe som finnes (designsystemet, «Fem betydninger»). */
+.dlg-knapp.endre{ background:var(--handling-endre); color:#FFFFFF; }
+.dlg-knapp.endre:active{ background:var(--handling-endre-moerk); }
+.svar{ margin:10px 0 0; font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); }
+.svar.feil-tekst{ color:var(--danger); }
+
+/* ---------- Klippehoeyden ---------- */
+.hoyde-rad{ display:flex; align-items:center; gap:14px; }
+.hoyde-rad input{ flex:1; accent-color:var(--handling-endre); }
+.hoyde-verdi{ min-width:5.5ch; text-align:right; font-size:var(--t-stor); font-weight:700;
+              font-variant-numeric:tabular-nums; }
+
+.feil{
+  background:#FBEDEA; border:1px solid var(--danger); color:var(--danger);
+  border-radius:12px; padding:12px 16px; font-size:var(--t-meta); font-weight:600;
+}
+.tom{ margin:0; font-size:var(--t-brod); color:var(--ink-soft); }
+@media(prefers-reduced-motion:reduce){ *{ animation:none !important; transition:none !important; } }
+</style>
+</head>
+<body>
+
+<div class="skjerm">
+
+  <header class="topp">
+    <a class="merke" href="/" aria-label="Til forsiden">
+      <img src="/bilder/merke-neamow.png?v=2" alt="Neamow" width="512" height="494">
+    </a>
+    <div>
+      <h1 class="tittel">Neamow</h1>
+      <p class="status" id="sideStatus">Henter …</p>
+    </div>
+  </header>
+
+  <div class="feil" id="sideFeil" hidden></div>
+
+  <div class="flate" id="sideFlate" hidden>
+    <div class="spalte">
+      <section class="kort kart-kort">
+        <h2 class="kort-tittel">Kartet</h2>
+        <div id="sideKart"></div>
+        <p class="hint">Trykk på et område for å velge det.</p>
+      </section>
+    </div>
+
+    <div class="spalte">
+      <section class="kort">
+        <h2 class="kort-tittel">Nå</h2>
+        <dl class="linjer" id="sideNaa"></dl>
+        <div class="rad" id="sideKnapper"></div>
+        <p class="svar" id="sideSvar" hidden></p>
+      </section>
+
+      <section class="kort">
+        <h2 class="kort-tittel">Klipp områder</h2>
+        <p class="tom" id="sideValgte">Ingen områder valgt.</p>
+        <div class="rad">
+          <button type="button" class="dlg-knapp ja" id="sideKlippValgte" disabled>Klipp valgte</button>
+          <button type="button" class="dlg-knapp ja" id="sideKant">Klipp kanten</button>
+        </div>
+        <p class="svar" id="sideValgSvar" hidden></p>
+      </section>
+
+      <section class="kort">
+        <h2 class="kort-tittel">Klippehøyde</h2>
+        <div class="hoyde-rad">
+          <input type="range" id="sideHoyde" min="20" max="70" step="1" aria-label="Klippehøyde i millimeter">
+          <span class="hoyde-verdi" id="sideHoydeVerdi">–</span>
+        </div>
+        <div class="rad">
+          <button type="button" class="dlg-knapp endre" id="sideSettHoyde" disabled>Sett høyden</button>
+        </div>
+        <p class="svar" id="sideHoydeSvar" hidden></p>
+      </section>
+
+      <section class="kort">
+        <h2 class="kort-tittel">Innstillinger</h2>
+        <dl class="linjer" id="sideInnst"><dt>Henter …</dt><dd></dd></dl>
+        <p class="hint">Endres i Roborock-appen.</p>
+      </section>
+
+      <section class="kort">
+        <h2 class="kort-tittel">Tidsplan</h2>
+        <p class="tom" id="sidePlan">Henter …</p>
+      </section>
+
+      <section class="kort">
+        <h2 class="kort-tittel">Historikk</h2>
+        <dl class="linjer" id="sideHist"><dt>Henter …</dt><dd></dd></dl>
+      </section>
+    </div>
+  </div>
+
+</div>
+
+<script src="/felles-dialog.js?v=1"></script>
+<script src="/felles-hus.js?v=6"></script>
+<script src="/felles-data.js?v=4"></script>
+<script src="/felles-ms.js?v=2"></script>
+<script src="/felles-lesalt.js?v=5"></script>
+<script src="/felles-skriv.js?v=5"></script>
+<script src="/felles-tale.js?v=5"></script>
+<script src="/felles-neam.js?v=72"></script>
+<script>
+'use strict';
+
+/* Neam paa denne sida: det samme som de andre sidene som ikke har egne
+   verktoey - huset, skrivingen, lesingen og husregisteret. */
+window.neamVerktoy = async function(){
+  return HJEM_VERKTOY.concat(skrivVerktoy([]), lesAltVerktoy(HJEM_VERKTOY), HUS_VERKTOY);
+};
+window.neamUtfor = async function(navn, arg){
+  const mitt = await hjemUtfor(navn, arg);
+  if(mitt) return mitt;
+  const skr = await skrivUtfor(navn, arg);
+  if(skr) return skr;
+  const alt = await lesAltUtfor(navn, arg);
+  if(alt) return alt;
+  const hus = await husUtfor(navn, arg);
+  if(hus) return hus.svar;
+  throw new Error('Ukjent verktøy: ' + navn);
+};
+
+/* Alt annet i en lukket funksjon: sida laster aatte fellesfiler, og
+   vanlige navn som `tegn`, `hent` og `status` er tatt - felles-hus.js
+   kaller til og med `tegn()` og `hentEnheter()` hvis de finnes. */
+(function(){
+
+const $ = function(id){ return document.getElementById(id); };
+function esc(t){
+  return String(t).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+/* Effektmodusene. «Standard» og «Effektiv» er appens egne norske ord;
+   MANICURE er ikke funnet paa norsk i appen - se kartleggingen. */
+const EFFEKT = { DAILY:'Standard', EFFICIENT:'Effektiv', MANICURE:'Grundig' };
+
+let siste = null;          /* siste svar fra ?hva=neamow */
+let detaljer = null;       /* siste svar fra ?hva=detaljer */
+let valgte = [];           /* valgte omraader, id-er */
+let timer = null;
+
+function vis(el, tekst, feil){
+  el.textContent = tekst;
+  el.classList.toggle('feil-tekst', !!feil);
+  el.hidden = !tekst;
+}
+
+/* ---------- Naa: kart, status og knapper ---------- */
+function tegnSide(){
+  const d = siste;
+  if(!d) return;
+  const s = d.status || {};
+  const tilstand = nmwTilstand(d.status);
+  const pos = s.posisjon || (d.kart && d.kart.klipper) || null;
+
+  /* Dekningen vises bare under en tur - etterpaa er den forrige turs. */
+  let dekning = null;
+  if(/Klipper|Pause/.test(tilstand)){
+    dekning = {};
+    (s.soner || []).forEach(function(z){ dekning[z.id] = z.dekket; });
+  }
+  $('sideKart').innerHTML = nmwKart(d.kart, pos, { valgte: valgte, dekning: dekning });
+  Array.prototype.forEach.call($('sideKart').querySelectorAll('[data-sone]'), function(p){
+    p.addEventListener('click', function(){ velg(Number(p.dataset.sone)); });
+  });
+
+  $('sideStatus').textContent = tilstand
+    + (s.batteri !== null && s.batteri !== undefined ? ' · ' + nmwTall(s.batteri) + ' %' : '');
+
+  const rad = function(k, v){ return '<dt>' + k + '</dt><dd>' + v + '</dd>'; };
+  let l = rad('Status', esc(tilstand));
+  l += rad('Batteri', s.batteri === null || s.batteri === undefined ? '–'
+           : nmwTall(s.batteri) + ' %' + (s.lader ? ' · lader' : ''));
+  if(s.fremdrift && dekning) l += rad('Fremdrift', nmwTall(s.fremdrift) + ' %');
+  if(s.hoyde) l += rad('Klippehøyde', nmwTall(s.hoyde) + ' mm');
+  if(s.feil) l += rad('Feil', esc(JSON.stringify(s.feil)));
+  $('sideNaa').innerHTML = l;
+
+  const knapper = d.status ? nmwKnapper(tilstand, s) : [];
+  $('sideKnapper').innerHTML = knapper.map(function(k){
+    return '<button type="button" class="dlg-knapp ja" data-styr="' + k[0] + '">' + k[1] + '</button>';
+  }).join('');
+  Array.prototype.forEach.call($('sideKnapper').querySelectorAll('[data-styr]'), function(b){
+    b.onclick = function(){ styr(b, b.dataset.styr, {}, $('sideSvar')); };
+  });
+
+  tegnValgte();
+  tegnHistorikk();
+}
+
+function velg(id){
+  const i = valgte.indexOf(id);
+  if(i === -1) valgte.push(id); else valgte.splice(i, 1);
+  tegnSide();
+}
+function sonene(){ return (siste && siste.kart && siste.kart.soner) || []; }
+function tegnValgte(){
+  const navn = sonene().filter(function(z){ return valgte.indexOf(z.id) !== -1; })
+                       .map(function(z){ return z.navn; });
+  $('sideValgte').textContent = navn.length ? 'Valgt: ' + navn.join(', ') : 'Ingen områder valgt.';
+  $('sideKlippValgte').disabled = !navn.length;
+}
+
+/* Et trykk paa en styreknapp. Ingen bekreftelse - samme valg som paa
+   kortet (Magne, 10. oktober 2026). */
+async function styr(knapp, handling, ekstra, svarEl){
+  const alle = document.querySelectorAll('.rad .dlg-knapp');
+  Array.prototype.forEach.call(alle, function(x){ x.disabled = true; });
+  vis(svarEl, 'Sender …');
+  const r = await nmwPost(Object.assign({ hva:'styr', handling: handling }, ekstra));
+  Array.prototype.forEach.call(alle, function(x){ x.disabled = false; });
+  tegnValgte();
+  if(!r.ok){ vis(svarEl, 'Fikk det ikke til: ' + r.feil, true); return false; }
+  vis(svarEl, NMW_BESKJED[handling] || 'Sendt.');
+  setTimeout(function(){ vis(svarEl, ''); }, 6000);
+  planlegg(4000);
+  return true;
+}
+
+$('sideKlippValgte').onclick = function(){
+  const omr = sonene().filter(function(z){ return valgte.indexOf(z.id) !== -1; })
+                      .map(function(z){ return { id: z.id, navn: z.navn }; });
+  styr(this, 'omraade', { omraader: omr }, $('sideValgSvar')).then(function(ok){
+    if(ok){ valgte = []; tegnSide(); }
+  });
+};
+/* Kanten: de valgte omraadene, eller alle naar ingen er valgt - som
+   appen, som ber om omraader foerst (ha-roborock-mower). */
+$('sideKant').onclick = function(){
+  const alle = sonene();
+  const omr = (valgte.length ? alle.filter(function(z){ return valgte.indexOf(z.id) !== -1; }) : alle)
+                .map(function(z){ return { id: z.id, navn: z.navn }; });
+  styr(this, 'kant', { omraader: omr }, $('sideValgSvar'));
+};
+
+/* ---------- Klippehoeyden ---------- */
+let hoydeLest = null;
+$('sideHoyde').oninput = function(){
+  $('sideHoydeVerdi').textContent = this.value + ' mm';
+  $('sideSettHoyde').disabled = Number(this.value) === hoydeLest;
+};
+$('sideSettHoyde').onclick = async function(){
+  const mm = Number($('sideHoyde').value);
+  const ok = await styr(this, 'hoyde', { hoyde: mm }, $('sideHoydeSvar'));
+  if(ok){ hoydeLest = mm; $('sideSettHoyde').disabled = true; }
+};
+
+/* ---------- Detaljene: innstillinger, plan og historikk ---------- */
+function klokke(t, m){ return String(t).padStart(2, '0') + ':' + String(m || 0).padStart(2, '0'); }
+
+async function hentDetaljer(){
+  const d = await nmwApi('?hva=detaljer');
+  if(!d.ok){
+    $('sideInnst').innerHTML = '<dt>Fikk ikke hentet</dt><dd>' + esc(d.feil) + '</dd>';
+    return;
+  }
+  const i = d.innstilling || {};
+  const g = d.hoydeGrenser || {};
+  const h = $('sideHoyde');
+  h.min = g.min || 20; h.max = g.max || 70; h.step = g.steg || 1;
+  if(i.hoyde !== null && i.hoyde !== undefined){
+    hoydeLest = i.hoyde;
+    h.value = i.hoyde;
+    $('sideHoydeVerdi').textContent = i.hoyde + ' mm';
+    $('sideSettHoyde').disabled = true;
+  }
+
+  const rad = function(k, v){ return '<dt>' + k + '</dt><dd>' + v + '</dd>'; };
+  let l = '';
+  l += rad('Klippeeffektivitet', esc(EFFEKT[i.effekt] || i.effekt || '–'));
+  if(i.ganger) l += rad('Ganger over', i.ganger + (i.ganger === 1 ? ' gang' : ' ganger'));
+  if(i.retning !== null && i.retning !== undefined) l += rad('Klipperetning', i.retning + '°');
+  l += rad('Oppsett', i.modus === 'CUSTOM' ? 'Eget per område' : 'Likt for hele plenen');
+  if(d.regn) l += rad('Regnpause', d.regn.paa
+       ? 'På' + (d.regn.venteTimer ? ', venter ' + d.regn.venteTimer + ' t etter regn' : '')
+       : 'Av');
+  (d.ro || []).forEach(function(r){
+    l += rad('Ikke forstyrr', klokke(r.fra, r.fraMin) + '–' + klokke(r.til, r.tilMin));
+  });
+  l += rad('Tyverisikring', d.tyverisikring ? 'På' : 'Av');
+  $('sideInnst').innerHTML = l;
+
+  /* Tidsplanen: formen naar en plan ER satt, er ikke sett ennaa. Da
+     vises at det finnes en, ikke en gjetning om hva den sier. */
+  $('sidePlan').textContent = d.plan ? 'Det finnes en tidsplan i appen, men sida kan ikke lese den ennå.'
+                                     : 'Ingen tidsplan er satt i appen.';
+
+  detaljer = d;
+  tegnHistorikk();
+}
+
+/* Historikken: klipperen husker siste tur (fra statusen) og feilene (fra
+   detaljene). Tegnes naar EN av dem kommer - de hentes hver for seg, og
+   den som kom sist skal ikke viske ut den andre. */
+function datoMedUkedag(iso){
+  const t = new Date(String(iso) + 'T12:00:00');
+  if(isNaN(t)) return String(iso || '');
+  return t.toLocaleDateString('nb-NO', { weekday:'short', day:'numeric', month:'short' });
+}
+function tegnHistorikk(){
+  const rad = function(k, v){ return '<dt>' + k + '</dt><dd>' + v + '</dd>'; };
+  const d = detaljer || {};
+  let hl = '';
+  const s = siste && siste.status;
+  if(s && s.sist){
+    const t = s.sist;
+    hl += rad('Sist klippet', nmwNar(t.start));
+    if(t.sekunder) hl += rad('Varighet', t.sekunder < 90 ? t.sekunder + ' sek' : Math.round(t.sekunder / 60) + ' min');
+    if(t.areal !== null) hl += rad('Klippet', nmwTall(t.areal, 1) + ' m²'
+                               + (t.prosent !== null ? ' · ' + nmwTall(t.prosent) + ' %' : ''));
+    if(t.avbrutt) hl += rad('Slutt', 'Avbrutt');
+  }
+  (d.feil || []).forEach(function(f){
+    hl += rad('Feilkode ' + esc(f.kode), esc(datoMedUkedag(f.sist)) + (f.ganger > 1 ? ' · ' + f.ganger + ' ganger' : ''));
+  });
+  $('sideHist').innerHTML = hl || (detaljer ? '<dt>Ingenting ennå</dt><dd></dd>' : '<dt>Henter …</dt><dd></dd>');
+}
+
+/* ---------- Henting ----------
+   Takten er den samme som kortets (nmwIntervall i felles-hus.js): hvert
+   andre sekund mens klipperen beveger seg, sjeldnere ellers. Skjult
+   fane: ingen spoersmaal til Roborock. */
+function planlegg(ms){
+  if(timer) clearTimeout(timer);
+  timer = setTimeout(hent, ms);
+}
+async function hent(){
+  if(document.hidden) return;
+  const d = await nmwHent();
+  if(!d.ok){
+    if(d.maaGodkjenne){
+      $('sideFeil').textContent = 'Neamow er ikke koblet til. Åpne Neamow under Enheter i venstre hjørne og logg inn der.';
+    }else{
+      $('sideFeil').textContent = 'Fikk ikke kontakt med Neamow: ' + d.feil;
+    }
+    $('sideFeil').hidden = false;
+    $('sideStatus').textContent = 'Ikke tilkoblet';
+    planlegg(d.maaGodkjenne ? 30000 : 10000);
+    return;
+  }
+  $('sideFeil').hidden = true;
+  $('sideFlate').hidden = false;
+  siste = d;
+  tegnSide();
+  planlegg(nmwIntervall(nmwTilstand(d.status)));
+}
+document.addEventListener('visibilitychange', function(){
+  if(!document.hidden) hent();
+});
+
+hent().then(hentDetaljer);
+
+})();
+</script>
+</body>
+</html>
