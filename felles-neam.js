@@ -1541,10 +1541,13 @@ function neamVisEnheter(){
     return;
   }
 
+  /* `merke:true` - ikonet er et merkebilde med navnet i seg, som
+     knappene i fireren. Navnet foelger med skjult, og kommer fram om
+     bildet ikke laster - se neamKnappInnhold(). */
   boks.innerHTML = liste.map(function(e, i){
-    return '<button type="button" class="neam-enhet" data-nr="' + i + '" '
+    return '<button type="button" class="neam-enhet' + (e.merke ? ' merke' : '') + '" data-nr="' + i + '" '
          +   'title="' + e.navn + '" aria-label="' + e.navn + '">'
-         +   (e.ikon || '') + '</button>';
+         +   (e.merke ? neamKnappInnhold(e.ikon, e.navn, true) : (e.ikon || '')) + '</button>';
   }).join('');
   Array.prototype.forEach.call(boks.querySelectorAll('.neam-enhet'), function(k){
     k.onclick = function(){

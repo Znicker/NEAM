@@ -1245,3 +1245,54 @@
     border-radius:var(--radius) var(--radius) 0 0;
   }
 }
+
+/* ---------- Neamow ----------
+   Kortet for gressklipperen, aapnet fra Enheter. Bygges av felles-hus.js
+   og staar paa dialogens bakteppe og kort (felles-dialog.css); her er
+   bare det som er eget.
+
+   Kartfargene er et UNNTAK fra de fem betydningene: groent her er gress,
+   ikke «i orden» eller «skaper noe». Valgt av Magne 10. oktober 2026 -
+   dempet, saa det ikke leses som en knapp. Klipperen og laderen er
+   messing, samme lyse og moerke metall som klokka. */
+.nmw-kort{
+  --nmw-gress:#DDE7D2;
+  --nmw-gress-kant:#7C9B6F;
+  --nmw-messing:#D9B370;
+  --nmw-messing-moerk:#241503;
+  max-width:460px; max-height:calc(100dvh - 40px); overflow:auto;
+}
+/* .dlg-rad har display:flex, som ellers vinner over hidden. */
+.nmw-kort .dlg-rad[hidden]{ display:none; }
+.nmw-tittel{
+  margin:0 0 14px; color:#000000;
+  font-size:var(--t-meta); font-weight:700;
+  text-transform:uppercase; letter-spacing:.1em;
+}
+.nmw-kart{
+  display:block; width:100%; height:auto; max-height:46dvh;
+  background:var(--boks-mild); border:1px solid var(--boks-kant);
+  border-radius:12px; margin:0 0 16px;
+}
+.nmw-sone{ fill:var(--nmw-gress); stroke:var(--nmw-gress-kant); stroke-linejoin:round; }
+.nmw-sonenavn{
+  fill:var(--ink-soft); font-family:'Archivo',sans-serif; font-weight:700;
+}
+.nmw-lader{ fill:var(--nmw-messing-moerk); stroke:var(--nmw-messing); }
+.nmw-klipper{ fill:var(--nmw-messing); stroke:var(--nmw-messing-moerk); }
+.nmw-retning{ stroke:var(--nmw-messing-moerk); stroke-linecap:round; }
+
+.nmw-status{
+  display:grid; grid-template-columns:auto 1fr; gap:6px 16px;
+  margin:0 0 18px; font-size:var(--t-brod); color:var(--ink);
+}
+.nmw-status dt{ color:var(--ink-soft); }
+.nmw-status dd{ margin:0; font-weight:600; }
+.nmw-tom, .nmw-tekst{ color:var(--ink-soft); font-size:var(--t-brod); line-height:1.5; margin:0 0 16px; }
+.nmw-feil{ color:var(--danger); font-size:var(--t-meta); margin:-6px 0 14px; }
+.nmw-felt{
+  display:block; width:100%; box-sizing:border-box; margin:0 0 16px;
+  padding:12px 14px; border:1.5px solid var(--line); border-radius:12px;
+  background:var(--bg-solid); color:var(--ink);
+  font-family:'Archivo',sans-serif; font-size:16px;
+}
