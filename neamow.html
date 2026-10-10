@@ -97,6 +97,55 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
 /* Oker: endrer noe som finnes (designsystemet, «Fem betydninger»). */
 .dlg-knapp.endre{ background:var(--handling-endre); color:#FFFFFF; }
 .dlg-knapp.endre:active{ background:var(--handling-endre-moerk); }
+/* Groent lagrer eller legger til, roedt sletter (designsystemet,
+   «Knappeklasser»). Slett staar til venstre, unna Lagre. */
+.dlg-knapp.ny{ background:var(--handling-ny); color:#FFFFFF; }
+.dlg-knapp.ny:active{ background:var(--handling-ny-moerk); }
+.dlg-knapp.slett{ background:var(--danger); color:#FFFFFF; margin-right:auto; flex:0 0 auto; }
+.dlg-knapp.slett:active{ background:var(--danger-moerk); }
+
+/* ---------- Skjemaene ----------
+   Bare nedtrekk, glidere og avkrysning - ingen tekstfelt, saa tastaturet
+   aldri kommer opp. iOS tegner select med egen drakt (designsystemet,
+   «Skjemaer og tastatur»): den slaas av, og pila tegnes inn igjen. */
+.skjema{ display:flex; flex-direction:column; gap:14px; }
+.felt{ display:flex; flex-direction:column; gap:6px; font-size:var(--t-meta); font-weight:700; color:var(--ink-soft); }
+.felt em{ font-style:normal; font-weight:600; }
+.felt.avkryss{ flex-direction:row; align-items:center; gap:10px; color:var(--ink); font-size:var(--t-brod); }
+.felt.avkryss input{ width:22px; height:22px; accent-color:var(--aksent); margin:0; }
+.skjema select{
+  -webkit-appearance:none; appearance:none;
+  height:46px; padding:0 40px 0 14px; text-align:left;
+  border:1.5px solid var(--line); border-radius:12px; background-color:var(--bg-solid);
+  color:var(--ink); font-family:inherit; font-size:16px; font-weight:600;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%235A6C7D' stroke-width='2'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 14px center;
+}
+.klokke{ display:flex; gap:8px; }
+.klokke select{ flex:1; }
+.ro-rad{ display:flex; gap:8px; align-items:center; }
+.ro-rad select{ flex:1; }
+.ro-rad .strek{ color:var(--ink-soft); font-weight:700; }
+.tekstknapp{
+  align-self:flex-start; background:none; border:none; padding:6px 0;
+  color:var(--aksent); font-size:var(--t-brod); font-weight:700;
+}
+.tekstknapp.fjern{ color:var(--danger); padding:6px 4px; }
+.dager{ display:flex; flex-wrap:wrap; gap:8px; }
+/* En valgt dag har «valgt»-fargen, som et valgt omraade i kartet. */
+.dag{
+  min-width:48px; height:42px; border-radius:999px; padding:0 12px;
+  border:1.5px solid var(--line); background:var(--paper); color:var(--ink);
+  font-size:var(--t-meta); font-weight:700;
+}
+.dag.valgt{ background:var(--aksent-lys); border-color:var(--aksent); color:var(--aksent-moerk); }
+.plan{ display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); }
+.plan:last-child{ border-bottom:none; }
+.plan-tekst{ flex:1; font-size:var(--t-brod); font-weight:600; }
+.plan-tekst small{ display:block; color:var(--ink-soft); font-size:var(--t-meta); font-weight:600; }
+/* felles-dialog.css gir .dlg-knapp full bredde under 400px; i en planrad
+   klemte det teksten til to ord per linje. */
+.plan .dlg-knapp{ padding:9px 18px; width:auto; flex:0 0 auto; }
 .svar{ margin:10px 0 0; font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); }
 .svar.feil-tekst{ color:var(--danger); }
 
@@ -171,13 +220,55 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
 
       <section class="kort">
         <h2 class="kort-tittel">Innstillinger</h2>
-        <dl class="linjer" id="sideInnst"><dt>Henter …</dt><dd></dd></dl>
-        <p class="hint">Endres i Roborock-appen.</p>
+        <!-- Visningen. Skjemaet under tar over plassen naar man trykker Endre. -->
+        <div id="sideInnstVis">
+          <dl class="linjer" id="sideInnst"><dt>Henter …</dt><dd></dd></dl>
+          <div class="rad"><button type="button" class="dlg-knapp endre" id="sideInnstEndre" disabled>Endre</button></div>
+        </div>
+        <div class="skjema" id="sideInnstSkjema" hidden>
+          <label class="felt"><span>Klippeeffektivitet</span>
+            <select id="fEffekt"><option value="DAILY">Standard</option><option value="EFFICIENT">Effektiv</option></select></label>
+          <label class="felt"><span>Kanter</span>
+            <select id="fKant"><option value="1">Full</option><option value="2">Kanter</option></select></label>
+          <label class="felt"><span>Ganger over plenen <em>(vises ikke i appen)</em></span>
+            <select id="fGanger"><option>1</option><option>2</option><option>3</option></select></label>
+          <label class="felt"><span>Klipperetning</span>
+            <span class="hoyde-rad"><input type="range" id="fRetning" min="0" max="180" step="1">
+              <span class="hoyde-verdi" id="fRetningVerdi">–</span></span></label>
+          <label class="felt avkryss"><input type="checkbox" id="fRegnPaa"><span>Regnpause</span></label>
+          <label class="felt"><span>Etter regn</span>
+            <select id="fRegnVente"><option value="0">Klipp like etter regn</option>
+              <option value="3">Vent 3 t</option><option value="8">Vent 8 t</option></select></label>
+          <div class="felt"><span>Ikke forstyrr</span>
+            <div id="fRo"></div>
+            <button type="button" class="tekstknapp" id="fRoNy">Legg til tidsrom</button></div>
+          <label class="felt avkryss"><input type="checkbox" id="fTyveri">
+            <span>Tyverisikring <em>(ikke prøvd herfra ennå)</em></span></label>
+          <div class="rad">
+            <button type="button" class="dlg-knapp nei" id="fInnstAvbryt">Avbryt</button>
+            <button type="button" class="dlg-knapp ny" id="fInnstLagre">Lagre</button>
+          </div>
+        </div>
+        <p class="svar" id="sideInnstSvar" hidden></p>
       </section>
 
       <section class="kort">
         <h2 class="kort-tittel">Tidsplan</h2>
-        <p class="tom" id="sidePlan">Henter …</p>
+        <div id="sidePlanVis">
+          <div id="sidePlan"><p class="tom">Henter …</p></div>
+          <div class="rad"><button type="button" class="dlg-knapp ny" id="sidePlanNy" disabled>Ny plan</button></div>
+        </div>
+        <div class="skjema" id="sidePlanSkjema" hidden>
+          <div class="felt"><span>Dager</span><div class="dager" id="pDager"></div></div>
+          <div class="felt"><span>Fra</span><span class="klokke"><select id="pFraT"></select><select id="pFraM"></select></span></div>
+          <div class="felt"><span>Til</span><span class="klokke"><select id="pTilT"></select><select id="pTilM"></select></span></div>
+          <div class="rad">
+            <button type="button" class="dlg-knapp slett" id="pSlett" hidden>Slett</button>
+            <button type="button" class="dlg-knapp nei" id="pAvbryt">Avbryt</button>
+            <button type="button" class="dlg-knapp ny" id="pLagre">Lagre</button>
+          </div>
+        </div>
+        <p class="svar" id="sidePlanSvar" hidden></p>
       </section>
 
       <section class="kort">
@@ -305,7 +396,8 @@ function tegnValgte(){
 /* Et trykk paa en styreknapp. Ingen bekreftelse - samme valg som paa
    kortet (Magne, 10. oktober 2026). */
 async function styr(knapp, handling, ekstra, svarEl){
-  const alle = document.querySelectorAll('.rad .dlg-knapp');
+  /* Bare styreknappene - ikke Endre og Ny plan, som har sin egen tilstand. */
+  const alle = document.querySelectorAll('#sideKnapper .dlg-knapp, #sideKlippValgte, #sideKant, #sideSettHoyde');
   Array.prototype.forEach.call(alle, function(x){ x.disabled = true; });
   vis(svarEl, 'Sender …');
   const r = await nmwPost(Object.assign({ hva:'styr', handling: handling }, ekstra));
@@ -366,29 +458,239 @@ async function hentDetaljer(){
     $('sideSettHoyde').disabled = true;
   }
 
+  visDetaljer(d);
+}
+
+/* Tegner alt som kommer fra ?hva=detaljer. Kalles ogsaa etter en
+   lagring: serveren svarer med detaljene slik klipperen har dem ETTER
+   endringen, saa sida viser det som faktisk ble lagret. */
+function visDetaljer(d){
+  detaljer = d;
+  tegnInnst();
+  tegnPlaner();
+  tegnHistorikk();
+}
+
+const KANT = { 1:'Full', 2:'Kanter' };
+const DAGNAVN = { MONDAY:'Man', TUESDAY:'Tir', WEDNESDAY:'Ons', THURSDAY:'Tor',
+                  FRIDAY:'Fre', SATURDAY:'Lør', SUNDAY:'Søn' };
+const DAGREKKE = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+
+function tegnInnst(){
+  const d = detaljer || {};
+  const i = d.innstilling || {};
   const rad = function(k, v){ return '<dt>' + k + '</dt><dd>' + v + '</dd>'; };
   let l = '';
   l += rad('Klippeeffektivitet', esc(EFFEKT[i.effekt] || i.effekt || '–'));
+  if(i.kant) l += rad('Kanter', esc(KANT[i.kant] || i.kant));
   if(i.ganger) l += rad('Ganger over', i.ganger + (i.ganger === 1 ? ' gang' : ' ganger'));
   if(i.retning !== null && i.retning !== undefined) l += rad('Klipperetning', i.retning + '°');
   l += rad('Oppsett', i.modus === 'CUSTOM' ? 'Eget per område' : 'Likt for hele plenen');
   if(d.regn) l += rad('Regnpause', d.regn.paa
-       ? 'På' + (d.regn.venteTimer ? ', venter ' + d.regn.venteTimer + ' t etter regn' : '')
+       ? (d.regn.venteTimer ? 'Venter ' + d.regn.venteTimer + ' t etter regn' : 'Klipper like etter regn')
        : 'Av');
+  if(!(d.ro || []).length) l += rad('Ikke forstyrr', 'Av');
   (d.ro || []).forEach(function(r){
     l += rad('Ikke forstyrr', klokke(r.fra, r.fraMin) + '–' + klokke(r.til, r.tilMin));
   });
   l += rad('Tyverisikring', d.tyverisikring ? 'På' : 'Av');
   $('sideInnst').innerHTML = l;
-
-  /* Tidsplanen: formen naar en plan ER satt, er ikke sett ennaa. Da
-     vises at det finnes en, ikke en gjetning om hva den sier. */
-  $('sidePlan').textContent = d.plan ? 'Det finnes en tidsplan i appen, men sida kan ikke lese den ennå.'
-                                     : 'Ingen tidsplan er satt i appen.';
-
-  detaljer = d;
-  tegnHistorikk();
+  /* Per omraade kan ikke skrives herfra (avvist av klipperen). Staar
+     oppsettet paa «eget per omraade», sier sida det i stedet for aa
+     endre noe som ikke gjelder. */
+  $('sideInnstEndre').disabled = !d.innstilling;
 }
+
+/* ---------- Skjemaet for innstillingene ----------
+   Avbryt gaar rett ut: alt her er valg, og valg koster ingenting aa
+   gjoere om (designsystemet, «Avbryt-regelen»). Lagre sender bare
+   delene som er endret. */
+function timevalg(valgt){
+  let s = '';
+  for(let t = 0; t < 24; t++) s += '<option value="' + t + '"' + (t === valgt ? ' selected' : '') + '>'
+                                 + String(t).padStart(2, '0') + ':00</option>';
+  return s;
+}
+function roRad(fra, til){
+  const div = document.createElement('div');
+  div.className = 'ro-rad';
+  div.innerHTML = '<select aria-label="Fra">' + timevalg(fra) + '</select><span class="strek">–</span>'
+                + '<select aria-label="Til">' + timevalg(til) + '</select>'
+                + '<button type="button" class="tekstknapp fjern">Fjern</button>';
+  div.querySelector('.fjern').onclick = function(){ div.remove(); $('fRoNy').hidden = false; };
+  $('fRo').appendChild(div);
+  $('fRoNy').hidden = $('fRo').children.length >= 3;
+}
+function lesRo(){
+  return Array.prototype.map.call($('fRo').children, function(r){
+    const s = r.querySelectorAll('select');
+    return { fra: Number(s[0].value), til: Number(s[1].value) };
+  });
+}
+
+$('sideInnstEndre').onclick = function(){
+  const d = detaljer || {};
+  const i = d.innstilling || {};
+  $('fEffekt').value = i.effekt === 'EFFICIENT' ? 'EFFICIENT' : 'DAILY';
+  $('fKant').value = String(i.kant === 2 ? 2 : 1);
+  $('fGanger').value = String(i.ganger || 1);
+  $('fRetning').value = i.retning || 0;
+  $('fRetningVerdi').textContent = (i.retning || 0) + '°';
+  $('fRegnPaa').checked = !!(d.regn && d.regn.paa);
+  $('fRegnVente').value = String(d.regn && [0, 3, 8].indexOf(d.regn.venteTimer) !== -1 ? d.regn.venteTimer : 3);
+  $('fRo').innerHTML = '';
+  (d.ro || []).forEach(function(r){ roRad(r.fra, r.til); });
+  $('fRoNy').hidden = $('fRo').children.length >= 3;
+  $('fTyveri').checked = !!d.tyverisikring;
+  $('sideInnstVis').hidden = true;
+  $('sideInnstSkjema').hidden = false;
+  vis($('sideInnstSvar'), '');
+};
+$('fRetning').oninput = function(){ $('fRetningVerdi').textContent = this.value + '°'; };
+$('fRoNy').onclick = function(){ roRad(22, 7); };
+$('fInnstAvbryt').onclick = function(){
+  $('sideInnstSkjema').hidden = true;
+  $('sideInnstVis').hidden = false;
+};
+
+$('fInnstLagre').onclick = async function(){
+  const d = detaljer || {};
+  const i = d.innstilling || {};
+  const deler = [];
+  const klipp = { del:'klipping', effekt: $('fEffekt').value, kant: Number($('fKant').value),
+                  ganger: Number($('fGanger').value), retning: Number($('fRetning').value) };
+  if(klipp.effekt !== i.effekt || klipp.kant !== i.kant || klipp.ganger !== i.ganger || klipp.retning !== i.retning){
+    deler.push(klipp);
+  }
+  const regn = { del:'regn', paa: $('fRegnPaa').checked, venteTimer: Number($('fRegnVente').value) };
+  if(!d.regn || regn.paa !== d.regn.paa || regn.venteTimer !== d.regn.venteTimer) deler.push(regn);
+  const ro = lesRo();
+  const roFor = (d.ro || []).map(function(r){ return { fra: r.fra, til: r.til }; });
+  if(JSON.stringify(ro) !== JSON.stringify(roFor)){
+    if(ro.some(function(r){ return r.fra === r.til; })){
+      vis($('sideInnstSvar'), 'Et tidsrom kan ikke starte og slutte samme time.', true);
+      return;
+    }
+    deler.push({ del:'ro', ro: ro });
+  }
+  if($('fTyveri').checked !== !!d.tyverisikring) deler.push({ del:'tyveri', paa: $('fTyveri').checked });
+
+  if(!deler.length){ $('fInnstAvbryt').onclick(); return; }
+  const knapper = $('sideInnstSkjema').querySelectorAll('button');
+  Array.prototype.forEach.call(knapper, function(b){ b.disabled = true; });
+  vis($('sideInnstSvar'), 'Lagrer …');
+  let sist = null, feil = '';
+  for(const del of deler){
+    const r = await nmwPost(Object.assign({ hva:'innstill' }, del));
+    if(!r.ok){ feil = r.feil; break; }
+    sist = r;
+  }
+  Array.prototype.forEach.call(knapper, function(b){ b.disabled = false; });
+  if(sist) visDetaljer(sist);
+  if(feil){ vis($('sideInnstSvar'), 'Fikk ikke lagret alt: ' + feil, true); return; }
+  vis($('sideInnstSvar'), 'Lagret.');
+  setTimeout(function(){ vis($('sideInnstSvar'), ''); }, 5000);
+  $('fInnstAvbryt').onclick();
+};
+
+/* ---------- Tidsplanene ---------- */
+let planId = null;          /* planen som endres, eller null for ny */
+let planDager = [];
+
+function tegnPlaner(){
+  const planer = (detaljer && detaljer.planer) || [];
+  $('sidePlanNy').disabled = !detaljer;
+  if(!planer.length){
+    $('sidePlan').innerHTML = '<p class="tom">Ingen tidsplan.</p>';
+    return;
+  }
+  $('sidePlan').innerHTML = planer.map(function(p){
+    const dager = DAGREKKE.filter(function(x){ return p.dager.indexOf(x) !== -1; })
+                          .map(function(x){ return DAGNAVN[x]; }).join(', ');
+    return '<div class="plan"><div class="plan-tekst">' + esc(dager || '–') + ' · ' + esc(p.fra) + '–' + esc(p.til)
+         + (p.aktiv ? '' : '<small>Av</small>')
+         + (p.type !== 'WEEKLY' ? '<small>Kan bare endres i appen</small>' : '') + '</div>'
+         + (p.type === 'WEEKLY' ? '<button type="button" class="dlg-knapp endre" data-plan="' + p.id + '">Endre</button>' : '')
+         + '</div>';
+  }).join('');
+  Array.prototype.forEach.call($('sidePlan').querySelectorAll('[data-plan]'), function(b){
+    b.onclick = function(){ aapnePlan(Number(b.dataset.plan)); };
+  });
+}
+
+function minuttvalg(valgt){
+  let s = '';
+  for(let m = 0; m < 60; m += 5) s += '<option value="' + m + '"' + (m === valgt ? ' selected' : '') + '>'
+                                    + String(m).padStart(2, '0') + '</option>';
+  return s;
+}
+function tegnDager(){
+  $('pDager').innerHTML = DAGREKKE.map(function(x){
+    return '<button type="button" class="dag' + (planDager.indexOf(x) !== -1 ? ' valgt' : '') + '" data-dag="' + x + '"'
+         + ' aria-pressed="' + (planDager.indexOf(x) !== -1) + '">' + DAGNAVN[x] + '</button>';
+  }).join('');
+  Array.prototype.forEach.call($('pDager').querySelectorAll('[data-dag]'), function(b){
+    b.onclick = function(){
+      const i = planDager.indexOf(b.dataset.dag);
+      if(i === -1) planDager.push(b.dataset.dag); else planDager.splice(i, 1);
+      tegnDager();
+    };
+  });
+}
+function aapnePlan(id){
+  const p = id === null ? null : ((detaljer && detaljer.planer) || []).filter(function(x){ return x.id === id; })[0];
+  planId = p ? p.id : null;
+  planDager = p ? p.dager.slice() : [];
+  const fra = (p ? p.fra : '10:00').split(':').map(Number);
+  const til = (p ? p.til : '12:00').split(':').map(Number);
+  $('pFraT').innerHTML = timevalg(fra[0]).replace(/:00</g, '<');
+  $('pTilT').innerHTML = timevalg(til[0]).replace(/:00</g, '<');
+  /* Minuttene i trinn paa fem. En plan fra appen med et annet minutt
+     faar det med som eget valg, saa den ikke flyttes ved en lagring. */
+  $('pFraM').innerHTML = minuttvalg(fra[1]) + (fra[1] % 5 ? '<option selected value="' + fra[1] + '">' + String(fra[1]).padStart(2, '0') + '</option>' : '');
+  $('pTilM').innerHTML = minuttvalg(til[1]) + (til[1] % 5 ? '<option selected value="' + til[1] + '">' + String(til[1]).padStart(2, '0') + '</option>' : '');
+  tegnDager();
+  $('pSlett').hidden = !p;
+  $('sidePlanVis').hidden = true;
+  $('sidePlanSkjema').hidden = false;
+  vis($('sidePlanSvar'), '');
+}
+function lukkPlan(){
+  $('sidePlanSkjema').hidden = true;
+  $('sidePlanVis').hidden = false;
+}
+$('sidePlanNy').onclick = function(){ aapnePlan(null); };
+$('pAvbryt').onclick = lukkPlan;
+
+async function sendPlan(kropp, ferdig){
+  const knapper = $('sidePlanSkjema').querySelectorAll('button');
+  Array.prototype.forEach.call(knapper, function(b){ b.disabled = true; });
+  vis($('sidePlanSvar'), 'Lagrer …');
+  const r = await nmwPost(Object.assign({ hva:'innstill' }, kropp));
+  Array.prototype.forEach.call(knapper, function(b){ b.disabled = false; });
+  if(!r.ok){ vis($('sidePlanSvar'), 'Fikk det ikke til: ' + r.feil, true); return; }
+  visDetaljer(r);
+  lukkPlan();
+  vis($('sidePlanSvar'), ferdig);
+  setTimeout(function(){ vis($('sidePlanSvar'), ''); }, 5000);
+}
+$('pLagre').onclick = function(){
+  if(!planDager.length){ vis($('sidePlanSvar'), 'Velg minst én dag.', true); return; }
+  const to = function(t, m){ return String(t).padStart(2, '0') + ':' + String(m).padStart(2, '0'); };
+  const fra = to($('pFraT').value, $('pFraM').value), til = to($('pTilT').value, $('pTilM').value);
+  if(til <= fra){ vis($('sidePlanSvar'), 'Slutten må være etter starten.', true); return; }
+  const kropp = { del: planId === null ? 'plan_lag' : 'plan_endre', dager: planDager, fra: fra, til: til };
+  if(planId !== null) kropp.id = planId;
+  sendPlan(kropp, planId === null ? 'Planen er laget.' : 'Planen er endret.');
+};
+/* Sletting spoer: en plan er lagt inn med dager og tider, og finnes ikke
+   noe annet sted (designsystemet, «Avbryt-regelen», ledd 1). */
+$('pSlett').onclick = async function(){
+  if(planId === null) return;
+  const ja = await bekreft('Slette planen? Neamow klipper ikke lenger på disse dagene.',
+                           { jaTekst:'Slett', fare:true });
+  if(ja) sendPlan({ del:'plan_slett', id: planId }, 'Planen er slettet.');
+};
 
 /* Historikken: klipperen husker siste tur (fra statusen) og feilene (fra
    detaljene). Tegnes naar EN av dem kommer - de hentes hver for seg, og

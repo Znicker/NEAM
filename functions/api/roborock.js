@@ -786,6 +786,34 @@ function plukkStatus(s){
    vilje: mobiloperatoer, RTK-oppsett og «random_gngga_config» (et tall
    som hoerer til posisjoneringen). Feltnavnene er maalt paa Neamow
    11. oktober 2026. */
+/* ---------- Klokka i Oslo ----------
+   Tidsplanene har start og slutt som tidspunkt (sekunder), og det er
+   klokkeslettet i dem - i klipperens tidssone - som gjelder hver valgte
+   dag. Cloudflare kjoerer i UTC, saa sommertid regnes med Intl. */
+const OSLO = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Oslo', year: 'numeric',
+  month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+function osloDeler(sek){
+  const d = {};
+  OSLO.formatToParts(new Date(sek * 1000)).forEach(function(p){ d[p.type] = Number(p.value); });
+  return d;
+}
+function osloKlokke(sek){
+  const d = osloDeler(Number(sek));
+  return String(d.hour).padStart(2, '0') + ':' + String(d.minute).padStart(2, '0');
+}
+/* Sekundene for et klokkeslett paa en dato i Oslo. Gjettes som UTC og
+   rettes med forskjellen; to runder holder ogsaa over sommertidsskiftet. */
+function osloTid(aar, mnd, dag, time, min){
+  const maal = Date.UTC(aar, mnd - 1, dag, time, min) / 1000;
+  let t = maal;
+  for(let i = 0; i < 2; i++){
+    const d = osloDeler(t);
+    t += maal - Date.UTC(d.year, d.month - 1, d.day, d.hour, d.minute) / 1000;
+  }
+  return t;
+}
+const UKEDAGER_RR = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+
 async function hentDetaljer(kommando){
   const spor = async function(type){
     try{
@@ -815,6 +843,7 @@ async function hentDetaljer(kommando){
       ganger: typeof g.mow_times === 'number' ? g.mow_times : null,
       effekt: String(g.effective || ''),
       retning: typeof g.direction === 'number' ? g.direction : null,
+      /* 1 = «Full», 2 = «Kanter» i appen (Magne, 11. oktober 2026). */
       kant: typeof g.keep_edge === 'number' ? g.keep_edge : null,
       soner: (pc.custom || []).map(function(c){
         return { id: c.area_id, navn: String(c.area_name || ''), hoyde: c.height,
@@ -829,10 +858,16 @@ async function hentDetaljer(kommando){
                til: (t.end && t.end.hour) || 0, tilMin: (t.end && t.end.minute) || 0 };
     }),
     tyverisikring: tyv.enable === true,
-    /* Tidsplanen har bare tidssonen naar ingen plan er satt. Formen med
-       planer er ikke sett ennaa - da sendes den som den er, uten noe
-       som kan peke ut huset (den har ingen posisjon). */
-    plan: Object.keys(ms).filter(function(k){ return k !== 'time_zone'; }).length ? ms : null,
+    /* Tidsplanene, maalt 11. oktober 2026 paa en plan Magne laget i
+       appen: { id, type:WEEKLY, status:OPEN, start, end, days:[{type}],
+       mode, config }. Bare ukeplaner er sett; andre typer vises, men kan
+       ikke endres herfra. */
+    planer: (ms.plans || []).map(function(p){
+      return { id: p.id, type: String(p.type || ''), aktiv: p.status === 'OPEN',
+               dager: (p.days || []).map(function(d){ return String(d.type || ''); }),
+               fra: p.start ? osloKlokke(p.start) : '', til: p.end ? osloKlokke(p.end) : '',
+               modus: String(p.mode || '') };
+    }),
     feil: ((feil && feil.fault_records && feil.fault_records.cards) || []).map(function(c){
       return { kode: c.e_code, ganger: c.occur_count,
                sist: ((c.items || [])[0] || {}).fault_time || '' };
@@ -960,6 +995,132 @@ export async function onRequestPost({ request, env }){
       const avvist = r === 'fail' || (Array.isArray(r) && r.indexOf('fail') !== -1);
       if(avvist) return svar({ ok:false, feil:'Neamow avviste det akkurat nå' });
       return svar({ ok:true });
+    }catch(e){
+      return svar({ ok:false, feil: String(e.message || e) });
+    }
+  }
+
+  /* ---------- Endre innstillinger ----------
+     Lukket liste: bare delene under, og bare feltene i hver. Alt LESES
+     foerst og skrives tilbake med de valgte feltene endret - klipperen
+     erstatter hele delen, og en halv innstilling nullstiller resten.
+     Etterpaa leses alt paa nytt, saa sida viser det klipperen faktisk
+     lagret, ikke det vi sendte.
+
+     Maalt 11. oktober 2026 (endret, lest tilbake, satt tilbake):
+     SET_MOW_PREFERENCE, SET_RAINFALL, SET_NOT_DISTURB,
+     CREATE/CHANGE/DELETE_MOWING_PLAN. IKKE proevd: SET_ANTI_THEFT
+     (Magne vil teste den selv). Per omraade (SET_CUSTOM_MOW_PREFERENCE)
+     ble avvist og er ikke med. */
+  if(hva === 'innstill'){
+    const del = String(inn.del || '');
+    const okt = await lesOkt(env);
+    if(!okt || !okt.duid) return svar({ ok:false, feil:'Neamow er ikke koblet til', maaGodkjenne:true });
+    const helTime = function(x){ return Number.isInteger(x) && x >= 0 && x <= 23; };
+    const klokke = function(s){
+      const m = /^(\d{1,2}):(\d{2})$/.exec(String(s || ''));
+      if(!m || Number(m[1]) > 23 || Number(m[2]) > 59) return null;
+      return { t: Number(m[1]), m: Number(m[2]) };
+    };
+    const dagerInn = function(liste){
+      const d = (Array.isArray(liste) ? liste : []).map(String)
+        .filter(function(x){ return UKEDAGER_RR.indexOf(x) !== -1; });
+      return UKEDAGER_RR.filter(function(x){ return d.indexOf(x) !== -1; });
+    };
+    try{
+      const ut = await motKlipper(okt, async function(kommando){
+        const les = async function(type){
+          const r = await kommando('remote_pb', { id: String(Date.now()), type: type });
+          return typeof r === 'string' ? JSON.parse(r) : r;
+        };
+        const skriv = async function(type, felt, verdi){
+          const m = { id: String(Date.now()), type: type };
+          m[felt] = verdi;
+          const r = await kommando('remote_pb', m);
+          if(r === 'fail' || (Array.isArray(r) && r.indexOf('fail') !== -1)){
+            throw new Error('Neamow avviste endringen');
+          }
+        };
+
+        if(del === 'klipping'){
+          const effekt = String(inn.effekt || '');
+          const ganger = Number(inn.ganger), retning = Number(inn.retning), kant = Number(inn.kant);
+          if(['DAILY', 'EFFICIENT'].indexOf(effekt) === -1) throw new Error('Ugyldig klippeeffektivitet');
+          if(!Number.isInteger(ganger) || ganger < 1 || ganger > 3) throw new Error('Antall ganger må være 1–3');
+          if(!Number.isInteger(retning) || retning < 0 || retning > 180) throw new Error('Klipperetningen må være 0–180°');
+          if(kant !== 1 && kant !== 2) throw new Error('Ugyldig kantvalg');
+          const pc = (await les('GET_MOW_PREFERENCE_CONFIG')).preference_config;
+          if(!pc || !pc.global) throw new Error('Fikk ikke lest innstillingene');
+          await skriv('SET_MOW_PREFERENCE', 'mow_preference', Object.assign({}, pc.global,
+            { effective: effekt, mow_times: ganger, direction: retning, keep_edge: kant }));
+        }
+        else if(del === 'regn'){
+          const vente = Number(inn.venteTimer);
+          if([0, 3, 8].indexOf(vente) === -1) throw new Error('Ventetiden må være 0, 3 eller 8 timer');
+          const uc = (await les('GET_USER_MODE_CONFIG')).user_mode_config || {};
+          await skriv('SET_RAINFALL', 'rainfall_config', Object.assign({}, uc.rainfall_config || {},
+            { enable: inn.paa === true, delay_time: vente }));
+        }
+        else if(del === 'ro'){
+          const liste = Array.isArray(inn.ro) ? inn.ro.slice(0, 3) : [];
+          if(!liste.every(function(r){ return r && helTime(r.fra) && helTime(r.til) && r.fra !== r.til; })){
+            throw new Error('Ugyldig tidsrom');
+          }
+          await skriv('SET_NOT_DISTURB', 'not_disturb_config', {
+            time: liste.map(function(r){ return { start: { hour: r.fra }, end: { hour: r.til } }; })
+          });
+        }
+        else if(del === 'tyveri'){
+          const uc = (await les('GET_USER_MODE_CONFIG')).user_mode_config || {};
+          await skriv('SET_ANTI_THEFT', 'anti_theft_config', Object.assign({}, uc.anti_theft_config || {},
+            { enable: inn.paa === true }));
+        }
+        else if(del === 'plan_lag' || del === 'plan_endre'){
+          const dager = dagerInn(inn.dager);
+          const fra = klokke(inn.fra), til = klokke(inn.til);
+          if(!dager.length) throw new Error('Velg minst én dag');
+          if(!fra || !til || til.t * 60 + til.m <= fra.t * 60 + fra.m) throw new Error('Slutten må være etter starten');
+          const ms = (await les('GET_MOW_SCHEDULE')).mow_schedule || {};
+          let plan, dato;
+          if(del === 'plan_endre'){
+            const id = Number(inn.id);
+            plan = (ms.plans || []).filter(function(p){ return p.id === id; })[0];
+            if(!plan) throw new Error('Fant ikke planen');
+            if(plan.type !== 'WEEKLY') throw new Error('Bare ukeplaner kan endres herfra');
+            dato = osloDeler(Number(plan.start));
+          }else{
+            /* Appen lager id-en selv. Uten id fikk planen ingen, og
+               DELETE uten id slettet den id-loese (maalt). Derfor alltid
+               en egen, og aldri en som finnes fra foer. */
+            const brukt = (ms.plans || []).map(function(p){ return p.id; });
+            let id;
+            do{ id = tilfeldigTall(1, 2000000000); }while(brukt.indexOf(id) !== -1);
+            plan = { id: id, type: 'WEEKLY', status: 'OPEN', mode: 'GLOBAL', config: { mode: 'GLOBAL' } };
+            dato = osloDeler(Math.floor(Date.now() / 1000));
+          }
+          const ny = Object.assign({}, plan, {
+            days: dager.map(function(d){ return { type: d }; }),
+            start: String(osloTid(dato.year, dato.month, dato.day, fra.t, fra.m)),
+            end: String(osloTid(dato.year, dato.month, dato.day, til.t, til.m))
+          });
+          delete ny.fsm_state;
+          await skriv(del === 'plan_lag' ? 'CREATE_MOWING_PLAN' : 'CHANGE_MOWING_PLAN', 'mowing_plan', ny);
+        }
+        else if(del === 'plan_slett'){
+          const id = Number(inn.id);
+          const ms = (await les('GET_MOW_SCHEDULE')).mow_schedule || {};
+          /* Id-en MAA finnes: DELETE uten treff kan ta en annen plan. */
+          if(!Number.isInteger(id) || !(ms.plans || []).some(function(p){ return p.id === id; })){
+            throw new Error('Fant ikke planen');
+          }
+          await skriv('DELETE_MOWING_PLAN', 'mowing_plan', { id: id });
+        }
+        else{
+          throw new Error('Ukjent innstilling');
+        }
+        return hentDetaljer(kommando);
+      });
+      return svar(Object.assign({ ok:true }, ut));
     }catch(e){
       return svar({ ok:false, feil: String(e.message || e) });
     }
