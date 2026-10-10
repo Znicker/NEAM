@@ -1,6 +1,9 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 10. oktober 2026: del 55 lagt til – klokkespillet for
+*Ført à jour 11. oktober 2026: del 56 lagt til – Neamow, gressklipperen
+(Roborock RockMow Z115) gjennom Roborocks sky: kort under Enheter, egen
+side, styring, innstillinger og tidsplaner. Ført à jour 10. oktober 2026:
+del 55 lagt til – klokkespillet for
 Andrea og spillsida som samler spillene hennes. Ført à jour
 20. september 2026. v11 la til del 50–54 – språkmodus
 for Emma og Andrea, grunnstoffspillet, personlige paletter og «hvem er
@@ -33,7 +36,7 @@ ny tråd alltid lander på samme sted.*
 
 ---
 
-## Nåstatus – 10. oktober 2026
+## Nåstatus – 11. oktober 2026
 
 **Hvor prosjektet er nå.** Ni sider og fire spill, og Andreas tre spill
 nås fra én egen spillside. To økter 12.–13. september
@@ -53,22 +56,23 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=71`, `felles-neam.css
-?v=56`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=5`, `felles-lesalt.js
-?v=5`, `felles-hus.js ?v=3`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
+**Siste leverte versjoner:** `felles-neam.js ?v=72`, `felles-neam.css
+?v=59`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=5`, `felles-lesalt.js
+?v=5`, `felles-hus.js ?v=6`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
 `felles-graph.js ?v=2`, `felles-rot.css ?v=5`, `felles-knapper.css ?v=1`;
-alle ni sidene pluss `andrea-matte.html`, `andrea-diktat.html`,
+alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html` og spillsida
 `andrea-spill.html`; `functions/_middleware.js`, `functions/api/` med
 `hent.js`, `sandnes.js`, `sjo.js`, `claude.js`, `data.js`, `ms.js`,
-`homey.js`.
+`homey.js`, `roborock.js`.
 Bildeversjoner: `MERKE_V=2`, `KNAPP_V=4`, `FAG_MERKE_V=3`, `SIK_MERKE_V=1`,
+`NMW_SYMBOL_V=1` (klippersymbolet i kartet, i `felles-hus.js`),
 spillbildene `?v=1`, sikkerhetsmerkene `?v=1` (65 stk i
-`bilder/sikkerhet/`).
+`bilder/sikkerhet/`). `merke-neamow.png` går under `MERKE_V`.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–70; neam.css til og
-med 55; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–4, skriv 1–4,
-hus `?v=1–2`, ms `?v=1`, tale 1–4**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–71; neam.css til og
+med 58; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–4, skriv 1–4,
+hus `?v=1–5`, ms `?v=1`, tale 1–4**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
 tale 1–4 ble brent 13. september ved å endre en fil som alt var pushet uten
 å heve nummeret – se del 46. Resten er tidligere leverte numre, som alltid
 er brent i det de forlates.
@@ -144,6 +148,18 @@ designsystemets «et kort per spill er feil form», og at diktatkortet ble
 stående når en avtale åpnet seg. Se del 55. **Ingen `?v=`-numre er brukt
 eller brent** – ingen fellesfiler ble rørt.
 
+**10.–11. oktober: Neamow, gressklipperen.** Magne kjøpte en Roborock
+RockMow Z115 og kalte den Neamow. Homey har ingen app for klipperne, og
+Roborock har ikke noe åpent API – veien er den samme som Roborock-appen
+bruker: kode på e-post, og meldinger til klipperen over Roborocks MQTT.
+Alt er skrevet i `functions/api/roborock.js` uten npm (MD5, AES, MQTT og
+protobuf for hånd), og prøvd mot Node sin crypto før det ble rullet ut.
+Neamow ligger under **Enheter** i venstre firer på alle åtte sidene
+(`window.neamEnheter`, som sto tom), med kort for kart og status og
+`neamow.html` for resten: styring, klipping av områder, klippehøyde,
+innstillinger og ukeplaner. Neam fikk `les_neamow` og sju verktøy som
+styrer. Se del 56.
+
 ### Åpne tråder
 
 **Besluttet, ikke bygget – fem systemer med begrunnelse i del 47–50 og 52:**
@@ -212,6 +228,15 @@ eller brent** – ingen fellesfiler ble rørt.
 - **Mattespillet i Safari.** Aldri kjørt på en ekte iPad.
 - **Klokkespillet på iPad – å dra viserne med fingeren.** Prøvd med
   simulerte trykk og i nettleserens iPad-størrelse, ikke med en finger.
+- **Neamow ute på plenen** (del 56), med Magne til stede:
+  - klipping av valgte områder (`MOW_SELECT`) og kanten (`MOW_EDGE`)
+  - om fronten på klippersymbolet peker i kjøreretningen, eller 180° feil
+  - at kortet og sida henter hvert andre sekund mens den kjører
+  - om kniven faktisk følger klippehøyden (den meldte 69 mm etter at
+    70 ble satt, mens den sto i laderen)
+- **Tyverisikringen på Neamow.** Bygget, ikke prøvd – Magne ville teste
+  den selv. Å slå den på kan låse klipperen eller utløse alarm; da trengs
+  appen eller PIN-koden.
 
 **Bygging som gjenstår (avtalt):**
 - **Skriving til skolearbeidet på tvers.** Det siste som bare kan gjøres fra
@@ -231,6 +256,13 @@ eller brent** – ingen fellesfiler ble rørt.
 - **Home Assistant.** Magne bestiller maskinvare. Krever Cloudflare Tunnel –
   som også er veien til **sjøtemperaturen**.
 - **Importverktøyet sender hele lista** i stedet for endringene. Se del 38.
+- **Neamow – det som står igjen** (del 56):
+  - **Innstillinger per område.** `SET_CUSTOM_MOW_PREFERENCE` ble avvist i
+    alle tre formene mens oppsettet sto på «likt for hele plenen». Må
+    prøves igjen med oppsettet satt til eget per område i appen.
+  - **Neam kan ikke endre innstillinger eller tidsplaner** – bare sida kan.
+  - **Det realistiske kartet** (fargebildet appen viser) – se del 56,
+    «Det realistiske kartet». Parkert.
 - **Steg to for krydderblandinger.** Se del 35.
 - **Knappemerker** for oppskriftssidas firer og for Sikkerhet-knappen.
 - **Skolevarsler på e-post**, **Neams bolk i husregisteret**,
@@ -2923,6 +2955,175 @@ en avtale åpnes. Diktatkortet hadde aldri stått der, og ble stående.
 Spillenes eget merke går fortsatt rett til Andrea dash. Sveip tilbake fra
 et spill kommer til spillsida.
 
+## 56. Neamow – gressklipperen – 10.–11. oktober 2026
+
+Roborock RockMow Z115, modell `roborock.mower.a235`, kalt **Neamow**.
+Fem commits: `ebdfacf` (kort og innlogging), `126fad6` (styring),
+`cc5104e` (egen side, symbol, raskere henting), `954aa98`
+(effektivitetsnavn), `8a3d97e` (innstillinger og tidsplaner).
+
+### Veien inn – og hvorfor ikke Homey eller Home Assistant
+
+**Homey har ingen Roborock-app for klipperne**, bare for støvsugerne.
+**Roborock har ikke noe åpent API.** Det som finnes er hobbyprosjekter som
+gjør det samme som appen: `python-roborock` (biblioteket),
+`jweingardt12/roborock_mower` (Home Assistant, testet på nettopp a235) og
+`Matze89x/ha-roborock-mower` (Home Assistant, testet på RockNeo Q105, med
+kart). Home Assistant ble vurdert og valgt bort: det gir det samme, men
+krever en maskin som står på, en vei inn utenfra og et nytt lag.
+
+**Først prøvd på PC-en, i Python.** Innloggingen og kartet ble prøvd med
+python-roborock og Matze89x sine verktøy i en mappe utenfor repoet
+(`C:\Users\Magne\neamow-test`), før noe ble skrevet for Cloudflare. Det
+var der det viste seg at kartet kommer (se under), og at a235 svarer på
+det samme som Q105.
+
+**To veier, med hver sin grunn:**
+- **HTTPS** – innlogging med kode på e-post, og **én gang** for å finne
+  klipperen og dens lokale nøkkel. python-roborock holder hjemmedata-kallet
+  under 5 i timen og 40 i døgnet; vi spør bare ved innlogging.
+- **MQTT** – alt som skjer nå: kart, status, styring, innstillinger. Én
+  kort forbindelse per spørsmål (`connect()` fra `cloudflare:sockets`, TLS
+  mot `mqtt-eu-5.roborock.com:8883`). Ingen vedvarende forbindelse – en
+  Pages Function kan ikke holde en.
+
+**Alt er skrevet for hånd i `roborock.js`, uten npm:** MD5 og AES-ECB
+finnes ikke i WebCrypto i den formen protokollen vil ha, og repoet har
+ikke noe byggesteg. MD5, AES (ECB og CBC), CRC32, MQTT 3.1.1 og
+protobuf-lesing er testet mot Node sin crypto før utrulling, og hele
+kjeden mot Neamow fra en lokal testserver som kjører den ekte fila.
+
+**Økta ligger i KV under `auth:roborock:hus`** – én for huset, som
+Homey, og **utenfor `fh:`** av samme grunn (del 30). Ventende kode under
+`auth:roborock:venter` (15 min). Nettleseren ser aldri tokener, den
+lokale nøkkelen eller GPS.
+
+### Hva som plukkes bort
+
+`GET_ROBOT_STATUS` er stor og har **GPS** (`navigation.robot_gps`),
+RTK-data og nettverksdetaljer. `GET_USER_MODE_CONFIG` har mobiloperatøren.
+Nettleseren får **bare feltene som plukkes ett for ett** (`plukkStatus`,
+`hentDetaljer`) – et nytt felt fra Roborock blir da borte, ikke lekket.
+Posisjonen sendes i **klipperens egne meter fra ladestasjonen**
+(`navigation.map.robot_pose`), ikke koordinater som peker ut huset.
+
+### Kartet
+
+`get_map_diff` over **kartkanalen** (forespørselen bærer et endepunkt og en
+engangsnøkkel; svaret kommer som protokoll 301, AES-CBC og gzip). Over den
+vanlige kanalen svarer klipperen bare `ok`. Formatet (protobuf, «pb» foran):
+`#10` kartområde → `#7` **sonene** (`#1` id, `#3` navn, `#6` punkter,
+`#10` areal), `#20` posisjoner (`#1` klipperen, `#2` laderen), `#34` sist
+endret. **ha-roborock-mower tar bare første `#7`** – Neamow har tre soner
+(A1–A3) i ett område, og alle må med.
+
+Posisjonen i kartfila står stille mens den kjører; posisjonen i statusen
+flytter seg (2,5 m på 8 sekunder, målt). Kortet bruker statusens.
+
+**Hentetakten** (`nmwIntervall`): hvert **2. sekund** mens den klipper
+eller kjører hjem, hvert 10. på pause, hvert 30. når den hviler – og
+ingenting når fanen er skjult. **Kartet hentes bare når kartfila er
+endret** (`status.kartEndret` mot `kart.endret`); ellers bare statusen
+(`&kart=0`). Grunnen: hver henting er en ny MQTT-innlogging og et kall i
+Cloudflare. 2 sekunder hele døgnet fra én skjerm ville vært over 40 000
+kall – nesten halve gratiskvoten – og Roborock kan sperre en konto som
+logger inn så ofte.
+
+**Klippersymbolet** er Magnes eget (`bilder/symbol-neamow.png`, sett
+ovenfra, **fronten ned i bildet**), dreid etter vinkelen: `-v·180/π − 90`.
+Om fronten peker riktig vei er ikke sett ute ennå.
+
+### Tilstandene – målt, ikke gjettet
+
+| Klipperen melder | Kortet sier |
+|---|---|
+| `IDLE`, `CHARGE_COMPLETED`, lader | Hviler i laderen |
+| `MOW_GLOBAL` / `MOW_SELECT`, detalj `MOW_GOTO` | Klipper (på vei ut) |
+| klipper `SUSPEND`, detalj `MOW_SUSPEND` | Pause – **ikke** `PAUSE` |
+| oppgave fortsatt `MOW_GLOBAL`, **stasjon `RETURN`**, detalj `FREE_DOCK_MANUAL` | På vei hjem |
+| `IDLE`, ikke i laderen | Hviler |
+
+**Hjemturen kjennes på stasjonen, ikke på oppgaven** – oppgaven står igjen
+som `MOW_GLOBAL` hele veien hjem. **Fremdriften blir stående fra forrige
+tur** og vises derfor bare under en tur.
+
+### Styringen
+
+`remote_pb` med `type: APP_BUTTON`: `MOW_GLOBAL` (start), `MOW_PAUSE`,
+`MOW_RESUME`, `MOW_END` (stopp – blir stående), `CHARGE` (hjem). Alle fem
+prøvd på Neamow med Magne ute 10. oktober. Område og kant er `MOW_SELECT`
+og `MOW_EDGE` med `modify_map.boundaries: [{id, name}]` – **ikke prøvd**.
+Klipperen svarer `fail` når den ikke kan.
+
+**Bekreftelse:** knappene på kortet og sida spør **ikke** – Magnes valg,
+et trykk man gjør med vilje. Neam følger hovedregelen med samme asymmetri
+som døra: `start_neamow`, `fortsett_neamow`, `klipp_neamow_omraade` og
+`sett_neamow_klippehoyde` spør; `pause_neamow`, `stopp_neamow` og
+`send_neamow_hjem` går rett gjennom – å stanse kan ikke gjøre skade.
+
+### Innstillinger og tidsplaner
+
+**Klipperen erstatter hele delen** – alt leses først og skrives tilbake
+med bare de valgte feltene endret. En halv innstilling ville nullstilt
+resten. Etter lagring leses alt på nytt, så sida viser det klipperen
+lagret. Hver skriving er prøvd ved å **endre én verdi, lese tilbake og
+sette den tilbake** – å skrive samme verdi beviser ingenting, for «virket»
+og «ble ignorert» ser like ut.
+
+| Melding | Felt | Prøvd |
+|---|---|---|
+| `REMOTE_CMD` `MAIN_CUTTER_HEIGHT` + `SET_MOW_PREFERENCE` | høyde 20–70 | ja |
+| `SET_MOW_PREFERENCE` → `mow_preference` | `effective` DAILY/EFFICIENT, `mow_times` 1–3, `direction` 0–180, `keep_edge` 1/2 | ja |
+| `SET_RAINFALL` → `rainfall_config` | `enable`, `delay_time` 0/3/8 | ja |
+| `SET_NOT_DISTURB` → `not_disturb_config` | `time: [{start:{hour}, end:{hour}}]`, tom liste = av | ja |
+| `CREATE_` / `CHANGE_` / `DELETE_MOWING_PLAN` → `mowing_plan` | se under | ja |
+| `SET_ANTI_THEFT` → `anti_theft_config` | `enable` | **nei** |
+| `SET_CUSTOM_MOW_PREFERENCE` | per område | **avvist** |
+
+**Appens navn** (fra Magne): effektivitet «Standard» (DAILY) og «Effektiv»
+(EFFICIENT) – MANICURE står på områdene, men har ikke noe navn i appen;
+kanter «Full» (1) og «Kanter» (2); regn «Klipp like etter regn» / 3 t /
+8 t. **Antall ganger over plenen** (`mow_times`) vises ikke i appen, men
+klipperen godtar 1–3 – Magne ville ha det med.
+
+**Tidsplanene:** `{ id, type:'WEEKLY', status:'OPEN', start, end,
+days:[{type:'TUESDAY'}], mode:'GLOBAL', config:{mode:'GLOBAL'} }`. `start`
+og `end` er tidspunkter i sekunder, og **klokkeslettet i dem i
+Europe/Oslo** gjelder hver valgte dag (Cloudflare kjører i UTC – `osloTid`
+regner om med Intl, prøvd over sommertidsskiftet). **Appen lager id-en
+selv.** En plan laget uten id fikk ingen, og `DELETE` uten id slettet
+den id-løse. Derfor lager `roborock.js` alltid en ny id, og sletter bare
+en id som finnes.
+
+**Hvor navnene kom fra:** Roborock-appen laster ned et tillegg per modell
+(38,7 MB for a235). Strengtabellen i det har alle `GET_*`/`SET_*`-navnene,
+og protobuf-feilmeldingene («`RemoteMsg.rainfall_config`: object
+expected») sier hvilket felt hver melding bærer. Feltene inni leses av
+lesesvarene – skriving og lesing har samme form.
+
+### Det realistiske kartet
+
+Appen har et fargebilde av hagen (`navigation.rgb_map_info`: 416 × 571
+piksler, 5 cm per piksel – **samme rutenett som kartet vi tegner**).
+Det finnes på Neamow (`is_blank: false`), men **hentingen er ikke
+funnet**: `GET_PANORAMA_MAP*` svarer `fail`; `GET_FULL_MAP` med
+`rgb_map.png` svarer `ok` uten å sende noe; appens forespørsel kan ikke
+leses (se under). Når appen ber om det, sender klipperen store
+protokoll-300-meldinger i biter til endepunktet `abc`. Eneste vei videre
+er å avlytte telefonappen med en mellomtjener – valgt bort.
+
+### Lærdommer
+
+- **En pause heter ikke det samme overalt.** `SUSPEND`, ikke `PAUSE` – og
+  hjemturen sto i stasjonen. Tilstandsord må måles mens maskinen gjør det.
+- **CSS-variabler på kortet fulgte ikke kartet ut av kortet.** På
+  `neamow.html` ble sonene svarte; fargene ligger nå på `.nmw-kart`.
+- **`.dlg-knapp` er full bredde under 400 px** (`felles-dialog.css`). I en
+  rad med tekst klemte det teksten – overstyr i radene.
+- **Telefonappen lytter på det samme.** Med appen åpen kom svarene på
+  appens spørsmål inn i våre forbindelser, med samme endepunkt. Lukk appen
+  før man feilsøker meldinger.
+
 ---
 
 **Avkreftet – ikke prøv igjen (tillegg 12. september):** en funksjon i
@@ -2939,3 +3140,13 @@ modellinstruks som viser hva som er *usikkert* (eksempelet blir
 instruksen); å endre en pushet fellesfil uten å heve `?v=`; en tom
 `neamBeskriv` for å hoppe over bekreftelsen (den faller tilbake på en
 generisk dialog); `location.href` uten opphold etter et Neam-svar.
+
+**Avkreftet – ikke prøv igjen (tillegg 11. oktober, Neamow):** Homey for
+klipperen (ingen app); hjemmedata over HTTPS som løpende status (5 i
+timen); `GET_FULL_MAP` over den vanlige kanalen for kartet (bare `ok`);
+å abonnere på inngangen `rr/m/i/…` for å se hva appen sender – også med
+jokertegn (Roborock nekter); `GET_PANORAMA_MAP*` og `GET_FULL_MAP` med
+`rgb_map.png` for det realistiske kartet; `SET_CUSTOM_MOW_PREFERENCE`,
+`SET_MOW_PREFERENCE` med område-id og `SET_MOW_PREFERENCE_CONFIG` for
+innstillinger per område mens oppsettet er likt for hele plenen; å skrive
+samme verdi som før for å teste en skriving; `CREATE_MOWING_PLAN` uten id.

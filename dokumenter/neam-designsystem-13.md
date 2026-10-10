@@ -12,7 +12,8 @@ valg – og da bør det inn.
 sider. Det er åtte pluss fire spill og en spillside nå (`index`,
 `dashboard`, `kalender`, `handleliste`, `oppskrifter`, `emma`, `andrea`,
 `sikkerhet`, spillene `andrea-matte`, `andrea-diktat`, `andrea-klokke`,
-`emma-grunnstoff`, og spillsida `andrea-spill`). Tallet er
+`emma-grunnstoff`, spillsida `andrea-spill`, og fra 11. oktober 2026
+`neamow`). Tallet er
 ikke rettet overalt – meningen er «alle», og det er greit å vite hvorfor det
 står fem.*
 
@@ -22,7 +23,11 @@ Mye ligger nå i **fellesfiler** (`felles-rot.css`, `felles-skall.css`,
 `felles-skriv.js`, `felles-hus.js`, `felles-ms.js`, `felles-tale.js`). Det som ennå er kopiert per fil, holdes likt av dette
 dokumentet – det er fortsatt fasiten for hva som skal være likt på tvers.
 
-*Sist oppdatert 10. oktober 2026: klokkespillet og spillsida ført inn;
+*Sist oppdatert 11. oktober 2026: Neamow ført inn – egen seksjon, et
+unntak fra de fem betydningene (gress i kartet), enhetsknapper med merke i
+fireren, bekreftelsen for en maskin som settes i gang, og
+`NMW_SYMBOL_V` under bildene. Begrunnelsene ligger i kartleggingen del 56.
+Forrige oppdatering 10. oktober 2026: klokkespillet og spillsida ført inn;
 «Spillet har ingen vei til andre spill» flyttet fra «Ikke bestemt ennå»
 til besluttet under Andrea dash – ett kort som åpner spillsida. Forrige
 oppdatering 15. september 2026 (v13): tre nye prinsippkapitler som er
@@ -137,6 +142,14 @@ sammen` og `Ferdig` gjør ingen av delene, men skal fortsatt være blå. Regelen
 er derfor negativ – blått er det som blir igjen når de fire andre ikke passer.
 Det gjør den lett å bruke og betyr at en ny farge må begrunnes mot de fire,
 ikke mot blå.
+
+**Unntak: grønt i Neamow-kartet er gress.** Plenområdene er dempet grønt
+(`--nmw-gress` `#DDE7D2`, kant `--nmw-gress-kant` `#7C9B6F`), og det betyr
+verken «skaper noe» eller «i orden». Valgt av Magne 11. oktober 2026.
+Fargen er dempet nok til at den ikke leses som en knapp, og den bor bare
+i kartet (`.nmw-kart`). Et **valgt** område bruker «valgt»-fargen
+(`--aksent-lys` med `--aksent`-kant), ikke en ny farge. Klipperen og
+laderen er messing, samme lyse og mørke metall som flip-klokka.
 
 De fire første gjør noe **her**. Lilla flytter noe **dit** – den er en annen
 kategori, ikke en femte handlingstype. Det er begrunnelsen for at den fikk
@@ -784,6 +797,13 @@ man vil nå uten å lete. Knappen har **ikke** merke — et «Dash»-merke ville
 løyet, og et merke skal si nøyaktig det knappen gjør. Den står med
 papirskive og tekst til et sikkerhetsmerke er tegnet.
 
+**Enheter er en kolonne over knappen, fylt av `window.neamEnheter`** –
+en liste av `{navn, ikon, gjor, merke}`. Den sto tom til 10. oktober 2026;
+nå setter `felles-hus.js` den, så alle sidene med Neam får de samme
+enhetene. **`merke:true`** gjør ikonet til et merkebilde med navnet i seg,
+som knappene i fireren: skiva faller bort, og navnet følger med skjult og
+kommer fram om bildet ikke laster. Første enhet er Neamow.
+
 **Fireren bor i Neam-laget, ikke i `felles-skall.css`.** Den flytter til
 skallet den dagen `hub.html` eier navigasjonen.
 
@@ -1070,6 +1090,54 @@ seg ved siden av hverandre av seg selv.
 
 **En videostrøm er tilstand — se «Praktiske feller».**
 
+## Neamow
+
+Gressklipperen (Roborock RockMow Z115). Bygget 10.–11. oktober 2026; veien
+inn og alt som er målt står i kartleggingen del 56.
+
+**To flater, og de sier aldri forskjellige ting.** **Kortet** åpnes fra
+Neamow under Enheter: kart, status og knappene for det man gjør oftest.
+**`neamow.html`** har resten: valg av områder, klippehøyde, innstillinger,
+tidsplaner og historikk. Begge tegner med det samme fra `felles-hus.js`
+(`nmwKart`, `nmwTilstand`, `nmwKnapper`) – en ny tilstand rettes ett sted.
+
+**Sida nås bare fra kortet** («Mer om Neamow», tekst uten flate – den tar
+deg et sted). Ikke fra applista, som skal holdes kort (se fiskebeinets
+tak).
+
+**Kortet står på dialogens bakteppe og kort** (`felles-dialog.css`), med
+egne `.nmw-*`-klasser for det som er eget. Korttittelen følger «Mønstre».
+
+**Kartet:** gress-grønt (se unntaket under «Fem betydninger»), områdenavn i
+midten, dekning per område bak navnet **bare under en tur** – etterpå er
+tallene forrige turs og sier ingenting om nå. Klipperen er Magnes eget
+symbol sett ovenfra, dreid etter retningen; messingskiva under er reserven
+om bildet ikke laster.
+
+**Knappene følger tilstanden.** Bare det som gir mening nå vises:
+Start når den hviler, Pause og Send hjem når den klipper, Fortsett, Stopp
+og Send hjem på pause, ingen knapper på vei hjem. En knapp som ikke virker
+er verre enn ingen knapp. Alle er blå – de verken skaper, endrer eller
+sletter.
+
+**Innstillinger og tidsplaner følger «Sletting ligger bak Endre».** Det
+lagrede vises som tekst med én oker **Endre**; skjemaet åpnes i kortet med
+**Lagre** (grønn), **Avbryt** (nøytral) og for planer **Slett** (rød, med
+bekreftelse). **Ny plan** er grønn. Avbryt går rett ut – alt i skjemaene er
+valg. **Skjemaene har bare nedtrekk, glidere og avkrysning**, aldri
+tekstfelt, så tastaturet aldri kommer opp. Etter lagring vises det
+klipperen faktisk lagret, ikke det som ble sendt.
+
+**Navnene er appens.** «Standard» og «Effektiv», «Full» og «Kanter»,
+«Klipp like etter regn». Et navn appen ikke har (MANICURE) vises som det
+er – aldri et ord vi fant på.
+
+**Hentetakten følger det som skjer:** hvert 2. sekund mens den klipper
+eller kjører hjem, hvert 10. på pause, hvert 30. når den hviler, og
+ingenting når fanen er skjult. Kartet hentes bare når kartfila er endret.
+Hver henting er en innlogging hos Roborock og et kall i Cloudflare – en
+skjerm som står oppe hele dagen skal ikke koste mer enn det den viser.
+
 ## Oppskriftssida
 
 **Fireren tok over hjørnene.** `ved` = Ny oppskrift (det som skaper),
@@ -1155,7 +1223,8 @@ kontrolleres når den er det.
 ## Bilder – merker og knapper
 
 **Alle bildeadresser har versjon.** `MERKE_V` (appmerker), `KNAPP_V`
-(knappemerker), `FAG_MERKE_V` (fagmerker). Byttes en fil under samme navn:
+(knappemerker), `FAG_MERKE_V` (fagmerker), `NMW_SYMBOL_V` (klippersymbolet
+i Neamow-kartet, i `felles-hus.js`). Byttes en fil under samme navn:
 øk tallet. **Gjenbruk aldri et tall som kan ha vært forespurt mens fila
 manglet** – Cloudflare cacher forsidens 200-svar mot adressen for alltid.
 Knapper `?v=1` er brent slik.
@@ -1348,7 +1417,8 @@ finnes.
 **Fire lag, i denne rekkefølgen når verktøylista bygges:**
 
 1. **Sidas egne** – det bare denne sida kan
-2. **`felles-hus.js`** – Homey: dør, kamera, røykvarslere
+2. **`felles-hus.js`** – Homey: dør, kamera, røykvarslere; og Neamow,
+   gressklipperen (`les_neamow` og sju som styrer – se «Neamow»)
 3. **`felles-skriv.js`** – skriving på tvers, og navigasjon
 4. **`felles-lesalt.js`** – lesing på tvers
 5. **`HUS_VERKTOY`** i `felles-data.js` – husregister, oppskrifter,
@@ -1419,6 +1489,17 @@ gjemt i en funksjon.
 
 **Asymmetri skal være strukturell.** `laas_doera` går rett gjennom,
 `laas_opp_doera` bekreftes. Å låse kan ikke gjøre skade; å låse opp kan.
+
+**Samme regel for en maskin som settes i gang.** Det som setter Neamow i
+gang spør (`start_neamow`, `fortsett_neamow`, `klipp_neamow_omraade`) –
+noen kan stå i hagen – og setningen sier det: *Sjekk at ingen leker i
+hagen.* Det som stanser den går rett gjennom (`pause_neamow`,
+`stopp_neamow`, `send_neamow_hjem`). En innstilling som endres spør
+(`sett_neamow_klippehoyde`).
+
+**Unntak: knappene på Neamow-kortet og -sida spør ikke**, heller ikke
+Start. Magnes valg 10. oktober 2026: et trykk på en knapp man ser, er
+gjort med vilje. Regelen over gjelder det Neam gjør på egen hånd.
 
 ---
 
