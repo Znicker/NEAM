@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Spill">
+<meta name="theme-color" content="#F5F5F5">
+<meta name="robots" content="noindex, nofollow">
+<title>Spill – Neam</title>
+<link rel="apple-touch-icon" href="/bilder/neam-robot.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/felles-rot.css?v=5">
+<style>
+/* ============================================================
+   NEAM – Spillene til Andrea
+   Laget 10. oktober 2026. Lenket fra Andrea dash (kortSpill).
+
+   Én dør inn til spillene i stedet for ett kort per spill paa
+   dashen. Kommer det et nytt spill, legges det til her - dashen
+   roeres ikke.
+
+   Ingen skript og ingen Neam-firer: sida er tre lenker. Veien ut
+   er merket oppe til venstre og sveip tilbake. Spillene lenker
+   selv til Andrea dash fra merket sitt; sveip tilbake fra et spill
+   kommer hit.
+   ============================================================ */
+
+*{ box-sizing:border-box; }
+html, body{ margin:0; }
+body{
+  font-family:'Archivo', system-ui, -apple-system, sans-serif;
+  color:var(--ink);
+  background:var(--side-bakgrunn);
+  -webkit-font-smoothing:antialiased;
+}
+a:focus-visible{ outline:3px solid var(--aksent); outline-offset:2px; }
+
+.side{
+  min-height:100vh; min-height:100dvh;
+  max-width:1100px; margin:0 auto;
+  display:flex; flex-direction:column; gap:22px;
+  padding:max(14px, env(safe-area-inset-top)) 16px
+          calc(20px + env(safe-area-inset-bottom));
+}
+@media(min-width:700px){ .side{ padding-left:28px; padding-right:28px; gap:30px; } }
+
+/* ---------- Toppen (som i spillene) ---------- */
+.topp{ display:flex; align-items:center; gap:14px; }
+.merke{ flex-shrink:0; display:block; width:64px; height:64px; }
+.merke img{ width:100%; height:100%; object-fit:contain; display:block; }
+.tittel{
+  margin:0; font-size:clamp(26px, 4.2vw, 44px); font-weight:700;
+  line-height:1.05; letter-spacing:-.01em;
+}
+.ingress{
+  margin:6px 0 0;
+  font-size:var(--t-brod); line-height:1.45; color:var(--ink-soft); font-weight:600;
+}
+@media(min-width:700px){ .merke{ width:96px; height:96px; } }
+
+/* ---------- Spillene ----------
+   Stablet paa telefon, tre i bredden ellers. Hvert kort er hele
+   lenken - det er ingen knapp inni som man maa treffe. */
+.spillene{
+  list-style:none; margin:0; padding:0;
+  display:grid; grid-template-columns:1fr; gap:14px;
+}
+@media(min-width:700px){ .spillene{ grid-template-columns:repeat(3, minmax(0,1fr)); gap:18px; } }
+
+.spill-lenke{
+  display:flex; align-items:center; gap:16px; height:100%;
+  padding:16px 20px;
+  background:var(--paper); border-radius:var(--radius); box-shadow:var(--shadow);
+  text-decoration:none; color:inherit;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .12s ease;
+}
+.spill-lenke:active{ transform:scale(.98); }
+@media(min-width:700px){
+  .spill-lenke{
+    flex-direction:column; justify-content:center; text-align:center;
+    gap:14px; padding:30px 20px 28px; min-height:300px;
+  }
+}
+
+/* Bildene: roboten til mattespillet, og strektegninger til de to
+   andre - samme oker som de hadde paa dashen. Faller roboten bort,
+   skjules den, og kortet staar igjen med navnet sitt. */
+.spill-bilde{ width:72px; height:72px; flex-shrink:0; display:block; object-fit:contain; }
+.spill-bilde[hidden]{ display:none; }
+svg.spill-bilde{ color:var(--handling-endre); }
+@media(min-width:700px){ .spill-bilde{ width:140px; height:140px; } }
+
+.spill-navn{ display:block; font-size:var(--t-stor); font-weight:700; line-height:1.2; }
+.spill-sub{ display:block; margin-top:3px; font-size:var(--t-brod); color:var(--ink-soft); font-weight:600; line-height:1.35; }
+
+@media(prefers-reduced-motion:reduce){
+  *{ transition:none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="side">
+
+  <header class="topp">
+    <a class="merke" href="/andrea.html" aria-label="Til Andrea dash">
+      <img src="/bilder/merke-andrea-dash.png?v=2" alt="Andrea dash" width="512" height="517">
+    </a>
+    <div>
+      <h1 class="tittel">Spill</h1>
+      <p class="ingress">Hva vil du spille?</p>
+    </div>
+  </header>
+
+  <main>
+    <ul class="spillene">
+      <li>
+        <a class="spill-lenke" href="/andrea-matte.html">
+          <img class="spill-bilde" src="/bilder/spill/robot.webp?v=1" alt="" width="388" height="360" onerror="this.hidden = true">
+          <span><span class="spill-navn">Mattespill</span><span class="spill-sub">Hjelp Neam hjem</span></span>
+        </a>
+      </li>
+      <li>
+        <a class="spill-lenke" href="/andrea-diktat.html">
+          <svg class="spill-bilde" viewBox="0 0 48 48" fill="none" stroke="currentColor"
+               stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="5" y="9" width="11" height="13" rx="2"/>
+            <rect x="18.5" y="9" width="11" height="13" rx="2"/>
+            <rect x="32" y="9" width="11" height="13" rx="2"/>
+            <path d="M9 17.5 12 13l3 4.5M10 16h4"/>
+            <path d="M22 22V9h3.2a3.4 3.4 0 0 1 0 6.8H22"/>
+            <path d="M25 33H8M25 40H8"/>
+            <path d="M36.5 29.5 42 35l-8.5 8.5-5.5.5.5-5.5z"/>
+          </svg>
+          <span><span class="spill-navn">Diktat</span><span class="spill-sub">Neam leser ordene</span></span>
+        </a>
+      </li>
+      <li>
+        <a class="spill-lenke" href="/andrea-klokke.html">
+          <svg class="spill-bilde" viewBox="0 0 48 48" fill="none" stroke="currentColor"
+               stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="24" cy="24" r="19"/>
+            <path d="M24 7.5v3M24 37.5v3M7.5 24h3M37.5 24h3"/>
+            <path d="M24 24V13.5M24 24l7.5 4.5"/>
+          </svg>
+          <span><span class="spill-navn">Klokka</span><span class="spill-sub">Hva er klokka?</span></span>
+        </a>
+      </li>
+    </ul>
+  </main>
+
+</div>
+
+</body>
+</html>

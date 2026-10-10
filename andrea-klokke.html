@@ -1,0 +1,1972 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Klokkespill">
+<meta name="theme-color" content="#F5F5F5">
+<meta name="robots" content="noindex, nofollow">
+<title>Klokkespill – Neam</title>
+<link rel="apple-touch-icon" href="/bilder/neam-robot.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/felles-rot.css?v=5">
+<link rel="stylesheet" href="/felles-dialog.css?v=1">
+<style>
+/* ============================================================
+   NEAM – Klokkespill for Andrea
+   Laget 10. oktober 2026. Lenket fra Andrea dash.
+
+   Samme ramme som mattespillet (andrea-matte.html): Neam er
+   nesten tom for stroem og staar i den ene enden av et messing-
+   roer, laderen i den andre. Hvert riktige svar flytter ham ett
+   skritt. Rammen er kopiert, ikke delt - de to sidene laster
+   ingen felles spillfil, og scenen, rekordene og lagringen staar
+   tegn for tegn likt der det gaar.
+
+   Fire oppgavetyper, valgt fritt som regneartene i mattespillet:
+     les      - viserklokke, hun skriver tiden paa tastaturet
+     still    - digital tid, hun drar viserne paa plass
+     ord      - viserklokke, hun velger blant fire uttrykk
+     tjuefire - 24-timersklokka, i to former (se lagOppgave)
+   Fire nivaaer etter hva klokka kan vise: hele og halve, kvarter,
+   hvert femte minutt, hvert minutt.
+
+   HVORFOR NEAM-HJOERNET IKKE ER HER: samme grunn som i matte-
+   spillet - haandtaket ville staatt oppaa tastaturet, og
+   samtalen er en rask vei til svaret.
+   ============================================================ */
+
+:root{
+  /* Messing - kontur og ramme, aldri fylt flate. */
+  --messing:#B8873A;
+  --messing-moerk:#8A6428;
+  /* «Det der gikk bra» - lampa, riktig svar og stjernene. Samme
+     gule som i mattespillet, og samme ene betydning. */
+  --lys:#F2C14E;
+  --lys-glod:rgba(242,193,78,.75);
+  --metall:#E6E1D6;
+  --metall-moerk:#C9C2B4;
+  --robot-rod:#A64D3C;
+
+  /* Scenen, telefon foerst. */
+  --kant:16px;
+  --robot-h:92px;
+  --lader-h:70px;
+  --ror-h:16px;
+  --lampe:12px;
+  --boble-plass:66px;
+  /* Sideforholdet til bildefilene: robot 388x360, batteri 175x263. */
+  --robot-w:calc(var(--robot-h) * 1.078);
+  --lader-w:calc(var(--lader-h) * .665);
+
+  --tast-h:56px;
+  --tast-w:min(29vw, 104px);
+  --stykke:40px;
+  /* Urskiva. Paa telefon staar den ved siden av svaret, ikke over
+     det - ellers blir det ikke plass til tastaturet under. */
+  --ur:min(48vw, 190px);
+  /* Naar hun skal stille klokka, er skiva selve kontrollen, og
+     den faar hele bredden. Digitaltida legger seg over den. */
+  --ur-stor:max(220px, min(86vw, 340px, calc(100vh - 440px)));
+}
+@media(min-width:700px) and (min-height:600px){
+  :root{
+    --kant:28px;
+    --robot-h:172px; --lader-h:118px; --ror-h:24px; --lampe:18px;
+    --boble-plass:72px;
+    --tast-h:74px; --tast-w:104px; --stykke:72px;
+    --ur:300px; --ur-stor:max(280px, min(400px, calc(100vh - 400px)));
+  }
+}
+@media(min-width:1300px) and (min-height:600px){
+  :root{
+    --kant:40px;
+    --robot-h:176px; --lader-h:122px; --ror-h:24px; --lampe:18px;
+    --boble-plass:72px;
+    --tast-h:72px; --tast-w:104px; --stykke:72px;
+    --ur:320px; --ur-stor:max(280px, min(420px, calc(100vh - 400px)));
+  }
+}
+/* iPad staaende har mye hoeyde og stabler alt. */
+@media(min-width:700px) and (min-height:1000px) and (orientation:portrait){
+  :root{
+    --robot-h:208px; --lader-h:140px; --ror-h:26px; --lampe:20px;
+    --tast-h:88px; --tast-w:140px; --stykke:92px;
+    --ur:380px; --ur-stor:max(300px, min(440px, calc(100vh - 580px)));
+  }
+}
+/* Korte skjermer (SE, iPad med tastatur paa tvers): tastaturet og
+   skiva krymper foer noe annet. */
+@media(max-height:640px){
+  :root{ --tast-h:48px; --boble-plass:58px; --stykke:36px; --ur:min(42vw, 160px); --ur-stor:min(64vw, 250px); }
+}
+
+*{ box-sizing:border-box; }
+[hidden]{ display:none !important; }
+html, body{ margin:0; }
+body{
+  font-family:'Archivo', system-ui, -apple-system, sans-serif;
+  color:var(--ink);
+  background:var(--side-bakgrunn);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+button{
+  font-family:inherit; color:inherit;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  cursor:pointer;
+}
+button:focus-visible, a:focus-visible, svg:focus-visible{
+  outline:3px solid var(--aksent); outline-offset:2px;
+}
+
+/* Klippet vannrett - se andrea-matte.html. */
+.side{
+  overflow-x:hidden; overflow-x:clip;
+  min-height:100vh; min-height:100dvh;
+  max-width:1240px; margin:0 auto;
+  display:flex; flex-direction:column; gap:14px;
+  padding:max(14px, env(safe-area-inset-top)) var(--kant)
+          calc(20px + env(safe-area-inset-bottom));
+}
+
+/* ---------- Toppen ---------- */
+.topp{ display:flex; align-items:center; gap:14px; }
+.merke{ flex-shrink:0; display:block; width:64px; height:64px; }
+.merke img{ width:100%; height:100%; object-fit:contain; display:block; }
+.tittel{
+  margin:0; font-size:clamp(26px, 4.2vw, 44px); font-weight:700;
+  line-height:1.05; letter-spacing:-.01em;
+}
+.ingress{
+  margin:6px 0 0; max-width:54ch;
+  font-size:var(--t-brod); line-height:1.45; color:var(--ink-soft); font-weight:600;
+}
+@media(min-width:700px){ .merke{ width:96px; height:96px; } }
+body.spiller .topp{ display:none; }
+
+/* ---------- Scenen (som i mattespillet) ---------- */
+.scene{
+  position:relative; flex-shrink:0;
+  height:calc(var(--boble-plass) + var(--robot-h) + var(--ror-h));
+}
+.ror{
+  position:absolute; bottom:0;
+  left:calc(-1 * var(--kant) - 20px);
+  right:calc(var(--lader-w) / 2);
+  height:var(--ror-h);
+  background-color:var(--messing);
+  background-image:url('/bilder/deler/ror-glatt.png?v=2');
+  background-size:auto 100%; background-repeat:repeat-x;
+  box-shadow:0 2px 5px rgba(44,62,80,.34);
+}
+.lamper{ position:absolute; inset:0; pointer-events:none; }
+.lampe{
+  position:absolute;
+  bottom:calc((var(--ror-h) - var(--lampe)) / 2);
+  left:calc(var(--x) * (100% - var(--lader-w) - var(--robot-w)) + var(--robot-w) / 2);
+  width:var(--lampe); height:var(--lampe); margin-left:calc(var(--lampe) / -2);
+  border-radius:50%;
+  background:#6E7883;
+  box-shadow:0 0 0 2px var(--messing-moerk), inset 0 2px 3px rgba(0,0,0,.35);
+  transition:background .3s ease, box-shadow .3s ease;
+}
+.lampe.tent{
+  background:var(--lys);
+  box-shadow:0 0 0 2px var(--messing-moerk), 0 0 12px 3px var(--lys-glod);
+}
+
+.lader{
+  position:absolute; right:0; bottom:calc(var(--ror-h) * .35);
+  width:var(--lader-w); height:var(--lader-h);
+}
+.lader img{ width:100%; height:100%; object-fit:contain; object-position:bottom; display:block;
+             transition:filter .5s ease; }
+.lader.fulladet img{
+  filter:drop-shadow(0 0 10px var(--lys-glod)) drop-shadow(0 0 24px var(--lys-glod));
+}
+
+.robot{
+  position:absolute; bottom:calc(var(--ror-h) - 3px);
+  left:calc(var(--x, 0) * (100% - var(--lader-w) - var(--robot-w)));
+  width:var(--robot-w); height:var(--robot-h);
+  transition:left .7s cubic-bezier(.45,.05,.3,1);
+  z-index:2;
+}
+.robot-kropp{ width:100%; height:100%; transform-origin:50% 100%; }
+.robot-kropp img{
+  width:100%; height:100%; object-fit:contain; object-position:bottom; display:block;
+}
+.robot-kropp .reserve{
+  display:none; width:100%; height:100%; border-radius:50%;
+  background:var(--metall); border:3px solid var(--messing-moerk);
+  align-items:center; justify-content:center;
+  font-size:calc(var(--robot-h) * .42); font-weight:700; color:var(--robot-rod);
+}
+.robot.uten-bilde img{ display:none; }
+.robot.uten-bilde .reserve{ display:flex; }
+
+.robot.gaar .robot-kropp{ animation:gaa .7s ease-in-out; }
+@keyframes gaa{
+  0%,100%{ transform:translateY(0) rotate(0); }
+  25%{ transform:translateY(-5px) rotate(-3deg); }
+  50%{ transform:translateY(0) rotate(0); }
+  75%{ transform:translateY(-5px) rotate(3deg); }
+}
+.robot.rister .robot-kropp{ animation:rist .5s ease-in-out; }
+@keyframes rist{
+  0%,100%{ transform:rotate(0); }
+  20%{ transform:rotate(-5deg); } 40%{ transform:rotate(4deg); }
+  60%{ transform:rotate(-3deg); } 80%{ transform:rotate(2deg); }
+}
+.robot.jubler .robot-kropp{ animation:jubel .9s ease-in-out 2; }
+@keyframes jubel{
+  0%,100%{ transform:translateY(0) scale(1); }
+  30%{ transform:translateY(-16px) scale(1.04); }
+  55%{ transform:translateY(0) scale(.97,1.03); }
+}
+
+.boble{
+  position:absolute; bottom:calc(var(--robot-h) * .42);
+  left:calc(100% + 10px);
+  width:max-content; max-width:min(320px, 60vw);
+  padding:10px 14px;
+  background:var(--paper); color:var(--ink);
+  border:2px solid var(--messing); border-radius:16px;
+  font-size:var(--t-brod); font-weight:600; line-height:1.35;
+  box-shadow:var(--shadow);
+}
+.boble::after{
+  content:''; position:absolute; bottom:14px; left:-8px;
+  width:14px; height:14px;
+  background:var(--paper);
+  border-left:2px solid var(--messing); border-bottom:2px solid var(--messing);
+  transform:rotate(45deg);
+}
+.robot.til-venstre .boble{ left:auto; right:calc(100% + 10px); }
+.robot.til-venstre .boble::after{
+  left:auto; right:-8px; border-left:none; border-bottom:none;
+  border-right:2px solid var(--messing); border-top:2px solid var(--messing);
+}
+.boble:empty{ display:none; }
+
+/* ---------- Flata under scenen ---------- */
+.flate{ display:flex; flex-direction:column; gap:14px; }
+@media(min-width:900px){
+  .flate{
+    display:grid; grid-template-columns:minmax(0,1.45fr) minmax(280px,1fr);
+    gap:18px; align-items:start;
+  }
+  body.spiller .flate{ grid-template-columns:1fr; }
+}
+body.spiller .rekorder{ display:none; }
+
+.kort{
+  background:var(--paper); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:18px 20px;
+}
+@media(min-width:700px){ .kort{ padding:22px 26px; } }
+
+.kort-h{
+  margin:0 0 12px; font-size:var(--t-stor); font-weight:700; line-height:1.2;
+}
+
+/* ---------- Valgene ---------- */
+.valg{
+  background:var(--paper); border:1px solid var(--line); border-radius:14px;
+  color:var(--ink); font-weight:700;
+  transition:background .15s ease, border-color .15s ease;
+}
+.valg:active{ transform:scale(.97); }
+.valg[aria-pressed="true"], .valg[aria-checked="true"]{
+  background:var(--aksent-lys); border-color:var(--aksent);
+  box-shadow:inset 0 0 0 1px var(--aksent);
+}
+
+/* Fire typer: to og to paa telefon, alle paa én rad ellers. */
+.arter{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; }
+@media(min-width:700px){ .arter{ grid-template-columns:repeat(4, minmax(0,1fr)); } }
+.art{
+  min-height:92px; padding:10px 6px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
+  font-size:var(--t-brod);
+}
+.art-tegn{
+  height:36px; display:flex; align-items:center; justify-content:center;
+  font-size:24px; line-height:1; font-weight:700; font-variant-numeric:tabular-nums;
+}
+.art-tegn svg{ width:36px; height:36px; display:block; }
+.art-sub{ font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); line-height:1.25; }
+
+.nivaer{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
+@media(min-width:700px){ .nivaer{ grid-template-columns:repeat(4, minmax(0,1fr)); } }
+.niva{
+  min-height:76px; padding:10px 4px; text-align:center;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+}
+.niva-navn{ font-size:clamp(16px, 4.4vw, 20px); }
+.niva-sub{ font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); line-height:1.3; }
+
+.start-rad{ margin-top:22px; }
+.start-hint{
+  margin:0 0 10px; min-height:1.3em;
+  font-size:var(--t-meta); font-weight:600; color:var(--ink-soft);
+}
+.knapp-blaa, .knapp-noytral{
+  border-radius:999px; font-weight:700; font-size:var(--t-stor);
+  padding:16px 24px; letter-spacing:.01em;
+}
+.knapp-blaa{ background:var(--aksent); color:#FFFFFF; border:1px solid var(--aksent); }
+.knapp-blaa:active{ background:var(--aksent-moerk); }
+.knapp-blaa:disabled{ background:var(--paper-soft); color:var(--ink-soft); border-color:var(--line); cursor:default; }
+.knapp-noytral{ background:var(--paper); color:var(--ink); border:1px solid var(--line); }
+.knapp-noytral:active{ background:var(--paper-soft); }
+.start-knapp{ width:100%; min-height:64px; font-size:24px; }
+
+/* ---------- Spillet ---------- */
+.spill{ display:flex; flex-direction:column; gap:10px; }
+.spill-topp{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.teller{ font-size:var(--t-brod); font-weight:700; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+.avslutt{
+  border:1px solid var(--line); background:var(--paper); border-radius:999px;
+  padding:8px 16px; font-size:var(--t-meta); font-weight:700; color:var(--ink-soft);
+}
+
+/* Spoersmaalet staar over klokka, kort. Det er det som skiller
+   «les» fra «24 timer» naar begge viser en viserklokke. */
+.k-sporsmal{
+  margin:0; text-align:center;
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:6px 10px;
+  font-size:var(--t-stor); font-weight:700; line-height:1.25;
+}
+.k-sporsmal.ny{ animation:inn .25s ease-out; }
+@keyframes inn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+/* Delen av doegnet i 24-timersoppgavene. Mild flate, ikke en knapp. */
+.k-dagsdel{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:4px 12px 4px 8px; border-radius:999px;
+  background:var(--boks-mild); border:1px solid var(--boks-kant);
+  font-size:var(--t-brod); font-weight:700; color:var(--ink);
+}
+.k-dagsdel svg{ width:22px; height:22px; display:block; color:var(--messing-moerk); }
+
+.k-inn{ display:flex; flex-direction:column; align-items:center; gap:14px; }
+.k-svar{
+  align-self:stretch;
+  display:flex; flex-direction:column; align-items:center; gap:14px;
+}
+@media(min-width:900px) and (min-aspect-ratio:5/4){
+  .k-inn{ flex-direction:row; justify-content:space-around; align-items:center; }
+  .k-svar{ align-self:center; flex:0 1 520px; }
+  /* Naar hun stiller klokka, er det bare Svar-knappen i svarkolonnen.
+     Da faar digitaltida og skiva bredden, og staar side om side. */
+  .spill.stiller .k-svar{ flex:0 0 auto; }
+}
+/* Klokka og det som hoerer til den staar ved siden av hverandre
+   ogsaa paa telefon - stablet blir det ikke plass til tastaturet. */
+.k-vis{
+  display:flex; align-items:center; justify-content:center;
+  gap:14px; flex-wrap:wrap;
+}
+
+/* Den digitale klokka: det som skal stilles inn. En mild flate med
+   tall, ikke et skrivefelt - hun skal lese den, ikke skrive i den. */
+.k-digital{
+  padding:.12em .3em; border-radius:.18em;
+  background:var(--boks-mild); border:3px solid var(--boks-kant);
+  /* Taket gir skiva plassen paa iPad staaende - der er --stykke 92px. */
+  font-size:min(var(--stykke), 64px); font-weight:700; line-height:1.1;
+  font-variant-numeric:tabular-nums; letter-spacing:.02em; white-space:nowrap;
+}
+
+/* ---- Urskiva ----
+   Tegnet i SVG med midten i (0,0), saa viserne dreies rundt
+   origo. Messing er rammen, som ellers i spillet. Viserne er blekk;
+   den korte er tykk og den lange tynn - slik skolens klokker er. */
+.urskive{
+  width:var(--ur); height:var(--ur); display:block; flex-shrink:0;
+  overflow:visible; -webkit-user-select:none; user-select:none;
+  transition:filter .3s ease;
+}
+.urskive.stor{ width:var(--ur-stor); height:var(--ur-stor); }
+.u-ring{ fill:#FFFFFF; stroke:var(--messing); stroke-width:5; transition:stroke .3s ease; }
+.u-strek{ stroke:var(--ink-soft); stroke-width:1.3; stroke-linecap:round; }
+.u-strek.hel{ stroke:var(--ink); stroke-width:3.2; }
+.u-tall{
+  fill:var(--ink); font-family:'Archivo', system-ui, sans-serif;
+  font-size:17px; font-weight:700; text-anchor:middle; dominant-baseline:central;
+}
+.u-viser{ transform-box:view-box; transform-origin:0 0; transition:transform .55s cubic-bezier(.45,.05,.3,1); }
+/* Viserne er formet som paa en ekte klokke: bred ved midten, med en
+   spiss mot tallet. Den korte er tydelig bredere enn den lange, saa
+   de ikke kan forveksles - ogsaa naar de ligger over hverandre. */
+.u-viser .v-form{ fill:var(--ink); stroke:var(--ink); stroke-width:1.5; stroke-linejoin:round; }
+.u-midt{ fill:var(--ink); }
+/* Knottene finnes bare naar viserne kan dras. Blaa: det er en
+   kontroll, og den verken skaper, endrer eller sletter noe. De er
+   store med vilje - det er dem fingeren skal treffe. */
+/* Gjennomskinnelige, saa viseren synes gjennom knotten - en fylt
+   knott paa den korte viseren skjulte nesten hele viseren. */
+.u-knott{
+  display:none; fill:var(--aksent); fill-opacity:.28; stroke:var(--aksent); stroke-width:3.5;
+  transform-box:fill-box; transform-origin:center;
+  transition:transform .15s ease;
+}
+.urskive.kan-stilles{ touch-action:none; cursor:grab; }
+.urskive.kan-stilles .u-knott{ display:block; }
+.urskive.drar{ cursor:grabbing; }
+.urskive.drar .u-viser, .urskive.uten-overgang .u-viser{ transition:none; }
+/* Viseren hun holder i vokser litt, saa hun ser hvilken hun fikk tak i. */
+.u-viser.aktiv .u-knott{ transform:scale(1.25); }
+.urskive.drar .u-viser.aktiv .u-knott{ transition:transform .15s ease; }
+/* Galt stilt: der hun satte viserne blir staaende blekt, og de
+   ekte viserne gaar til riktig tid. Ikke roedt - se mattespillet. */
+.u-spokelse .v-form{ fill:var(--ink-soft); stroke:var(--ink-soft); stroke-width:1.5; stroke-linejoin:round; opacity:.3; }
+.urskive.riktig{ filter:drop-shadow(0 0 12px var(--lys-glod)); }
+.urskive.riktig .u-ring{ stroke:var(--lys); }
+
+/* ---- Svarrubrikken ----
+   Fast bredde, stor nok til «12:45» - se designsystemet. */
+.svar-boks{
+  display:inline-flex; align-items:center; justify-content:center; gap:.18em;
+  width:3.5em; height:1.4em; padding:0 .18em;
+  font-size:var(--stykke); font-weight:700; line-height:1;
+  font-variant-numeric:tabular-nums; white-space:nowrap;
+  background:#FFFFFF; border:3px solid var(--messing); border-radius:.2em;
+  transition:box-shadow .25s ease, border-color .25s ease;
+}
+/* `ingen`, ikke `tom` - se klassenavnkollisjonen i mattespillet. */
+.svar-boks.ingen::after{
+  content:''; width:3px; height:.8em; background:var(--ink-soft);
+  animation:blink 1.1s steps(1) infinite;
+}
+@keyframes blink{ 50%{ opacity:0; } }
+.svar-boks.riktig{ border-color:var(--messing-moerk); box-shadow:0 0 0 4px var(--lys), 0 0 18px 6px var(--lys-glod); }
+.svar-boks.feil{ border-color:var(--ink-soft); width:auto; min-width:3.5em; }
+.svar-feil{ font-size:.5em; color:var(--ink-soft); text-decoration:line-through; text-decoration-thickness:3px; }
+.rister{ animation:boksrist .35s ease-in-out; }
+@keyframes boksrist{ 25%{ transform:translateX(-6px); } 75%{ transform:translateX(6px); } }
+
+.tastatur{
+  display:grid; grid-template-columns:repeat(3, var(--tast-w));
+  grid-auto-rows:var(--tast-h); gap:9px;
+}
+.tast{
+  border:1px solid var(--line); background:#FFFFFF; border-radius:16px;
+  font-size:calc(var(--tast-h) * .44); font-weight:700; font-variant-numeric:tabular-nums;
+  box-shadow:0 2px 0 var(--line);
+  display:flex; align-items:center; justify-content:center;
+}
+.tast:active{ transform:translateY(2px); box-shadow:none; background:var(--paper-soft); }
+.tast:disabled{ opacity:.4; cursor:default; }
+.tast-slett svg{ width:.9em; height:.9em; }
+.tast-svar{
+  background:var(--aksent); color:#FFFFFF; border-color:var(--aksent);
+  box-shadow:0 2px 0 var(--aksent-moerk); font-size:calc(var(--tast-h) * .32);
+}
+.tast-svar:active{ background:var(--aksent-moerk); }
+
+/* ---- Fire uttrykk aa velge mellom ---- */
+.k-alternativer{
+  display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px;
+  width:100%; max-width:520px;
+}
+.k-alt{
+  min-height:64px; padding:10px 12px;
+  font-size:var(--t-stor); line-height:1.2; text-align:center;
+}
+.k-alt:disabled{ cursor:default; }
+.k-alt:disabled:active{ transform:none; }
+.k-alt.riktig{ border-color:var(--messing-moerk); box-shadow:0 0 0 4px var(--lys), 0 0 16px 4px var(--lys-glod); }
+/* Det hun valgte, strøket i graatt. Det riktige faar en tydelig
+   ramme i blekk - ikke gult, gult er for det SOM gikk bra. */
+.k-alt.valgt-feil{ color:var(--ink-soft); text-decoration:line-through; text-decoration-thickness:2px; }
+.k-alt.fasit{ border:3px solid var(--ink); }
+.k-alt.bort{ opacity:.45; }
+
+.k-knapp{ min-width:200px; min-height:58px; }
+
+/* ---------- Resultatet ---------- */
+.resultat{ text-align:center; }
+.stjerner{ display:flex; justify-content:center; gap:6px; margin:4px 0 10px; }
+.stjerne{ width:clamp(44px, 11vw, 64px); height:auto; display:block; }
+.stjerne:not(.fylt){ filter:grayscale(1) brightness(1.45) opacity(.42); }
+.stjerner.vis .stjerne{ animation:stjerne .45s cubic-bezier(.3,1.6,.5,1) both; animation-delay:calc(var(--i) * .14s); }
+@keyframes stjerne{ from{ transform:scale(0) rotate(-40deg); opacity:0; } to{ transform:none; opacity:1; } }
+.poeng{ margin:0; font-size:28px; font-weight:700; font-variant-numeric:tabular-nums; }
+.rekord-melding{
+  display:inline-block; margin:12px 0 0; padding:7px 16px; border-radius:999px;
+  border:2px solid var(--messing); background:#FFF6DD;
+  font-size:var(--t-brod); font-weight:700;
+}
+.ov{ margin:20px auto 0; max-width:460px; text-align:left; }
+.ov-h{ margin:0 0 8px; font-size:var(--t-brod); font-weight:700; }
+.ov-liste{ list-style:none; margin:0; padding:0; display:grid; gap:6px; }
+.ov-liste li{
+  display:flex; justify-content:space-between; gap:12px; align-items:baseline;
+  padding:9px 12px; border-radius:10px; background:var(--boks-mild);
+  font-size:var(--t-brod); font-weight:600; font-variant-numeric:tabular-nums;
+}
+.ov-oppgave{ font-weight:700; }
+.ov-du{ color:var(--ink-soft); font-size:var(--t-meta); text-align:right; }
+.lagring{ margin:14px 0 0; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.knapperad{ display:flex; gap:10px; justify-content:center; margin-top:22px; flex-wrap:wrap; }
+.knapperad button{ flex:1 1 0; max-width:220px; padding-left:14px; padding-right:14px; }
+
+/* ---------- Rekordene ---------- */
+.niva-rekorder{ list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.nr{
+  display:grid; grid-template-columns:auto 1fr; gap:2px 12px; align-items:center;
+  padding:10px 12px; border-radius:12px; background:var(--boks-mild);
+}
+.nr-navn{ font-weight:700; font-size:var(--t-brod); }
+.nr-stjerner{ grid-row:span 2; display:flex; gap:2px; }
+.nr-detalj{ grid-column:2; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.mini{ width:20px; height:auto; display:block; }
+.mini:not(.fylt){ filter:grayscale(1) brightness(1.45) opacity(.4); }
+.samlet{ margin:12px 0 0; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.siste{ list-style:none; margin:0; padding:0; }
+.siste li{
+  display:grid; grid-template-columns:auto 1fr; gap:1px 12px; align-items:center;
+  padding:9px 0; border-bottom:1px solid var(--line);
+}
+.siste li:last-child{ border-bottom:none; }
+.siste li.ny{ background:#FFF6DD; margin:0 -10px; padding:9px 10px; border-radius:10px; border-bottom-color:transparent; }
+.s-stjerner{ grid-row:span 2; display:flex; gap:1px; }
+.s-stjerner .mini{ width:16px; height:16px; }
+.s-topp{ font-size:var(--t-brod); font-weight:700; font-variant-numeric:tabular-nums; }
+.s-under{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.tom{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; margin:0; }
+
+/* ---------- Redigering (magne@ og sys@) ---------- */
+.runder-topp{ display:flex; align-items:baseline; gap:12px; margin-top:22px; }
+.runder-topp .kort-h{ margin:0; }
+.rediger-knapp{
+  margin-left:auto; border:1px solid var(--line); background:var(--paper);
+  border-radius:999px; padding:6px 14px;
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--ink-soft);
+}
+.rediger-knapp:active{ background:var(--paper-soft); }
+.rediger-knapp.paa{ background:var(--aksent-lys); border-color:var(--aksent); color:var(--aksent-moerk); }
+.siste.redigerer{ max-height:330px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.siste li.rad-redigeres{ grid-template-columns:auto 1fr auto; }
+.slett-rad{
+  grid-row:span 2; align-self:center;
+  border:1px solid var(--danger); background:var(--paper); color:var(--danger);
+  border-radius:999px; width:34px; height:34px; font-size:var(--t-stor); line-height:1;
+  display:flex; align-items:center; justify-content:center;
+}
+.slett-rad:active{ background:var(--danger); color:#FFFFFF; }
+.slett-alle{
+  display:block; width:100%; margin-top:14px;
+  border:1px solid var(--danger); background:var(--paper); color:var(--danger);
+  border-radius:999px; padding:11px 16px; font-size:var(--t-brod); font-weight:700;
+}
+.slett-alle:active{ background:var(--danger); color:#FFFFFF; }
+.slett-alle[hidden]{ display:none; }
+
+@media(prefers-reduced-motion:reduce){
+  *, *::before, *::after{ animation:none !important; transition:none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="side">
+
+  <header class="topp">
+    <a class="merke" href="/andrea.html" aria-label="Til Andrea dash">
+      <img src="/bilder/merke-andrea-dash.png?v=2" alt="Andrea dash" width="512" height="517">
+    </a>
+    <div>
+      <h1 class="tittel">Hva er klokka?</h1>
+      <p class="ingress">Neams klokke har stoppet. Hvert riktige svar gir ham kraft til ett skritt mot laderen.</p>
+    </div>
+  </header>
+
+  <section class="scene" id="scene">
+    <div class="ror" aria-hidden="true"></div>
+    <div class="lamper" id="lamper" aria-hidden="true"></div>
+
+    <div class="lader" id="lader" aria-hidden="true">
+      <img src="/bilder/spill/batteri.webp?v=1" alt="" width="175" height="263">
+    </div>
+
+    <div class="robot" id="robot">
+      <div class="boble" id="boble" role="status" aria-live="polite"></div>
+      <div class="robot-kropp" aria-hidden="true">
+        <img src="/bilder/spill/robot.webp?v=1" alt="" width="388" height="360"
+             onerror="this.closest('.robot').classList.add('uten-bilde')">
+        <span class="reserve">N</span>
+      </div>
+    </div>
+  </section>
+
+  <main class="flate">
+
+    <!-- ===== Oppsett ===== -->
+    <section class="kort oppsett" id="oppsett" aria-label="Velg oppgaver">
+      <h2 class="kort-h">Hva vil du øve på?</h2>
+      <div class="arter" role="group" aria-label="Oppgavetype">
+        <button type="button" class="valg art" data-art="les" aria-pressed="false">
+          <span class="art-tegn" aria-hidden="true">
+            <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+              <circle cx="18" cy="18" r="15"/><path d="M18 18V8M18 18l6 4"/>
+            </svg>
+          </span>
+          <span>Les klokka</span><span class="art-sub">Skriv hva den viser</span></button>
+        <button type="button" class="valg art" data-art="still" aria-pressed="false">
+          <span class="art-tegn" aria-hidden="true">
+            <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="18" cy="18" r="15"/><path d="M18 18l7-7"/><circle cx="25" cy="11" r="2.6" fill="currentColor"/>
+            </svg>
+          </span>
+          <span>Still klokka</span><span class="art-sub">Dra viserne</span></button>
+        <button type="button" class="valg art" data-art="ord" aria-pressed="false">
+          <span class="art-tegn" aria-hidden="true">Aa</span>
+          <span>Med ord</span><span class="art-sub">«Kvart over tre»</span></button>
+        <button type="button" class="valg art" data-art="tjuefire" aria-pressed="false">
+          <span class="art-tegn" aria-hidden="true">24</span>
+          <span>24 timer</span><span class="art-sub">15:00 er tre</span></button>
+      </div>
+
+      <h2 class="kort-h" style="margin-top:22px">Hvor vanskelig?</h2>
+      <div class="nivaer" id="nivaer" role="radiogroup" aria-label="Vanskelighet"></div>
+
+      <div class="start-rad">
+        <p class="start-hint" id="startHint" aria-live="polite"></p>
+        <button type="button" class="knapp-blaa start-knapp" id="startKnapp">Start</button>
+      </div>
+    </section>
+
+    <!-- ===== Spillet ===== -->
+    <section class="kort spill" id="spill" hidden aria-label="Oppgaver">
+      <div class="spill-topp">
+        <span class="teller" id="teller"></span>
+        <button type="button" class="avslutt" id="avsluttKnapp">Avslutt</button>
+      </div>
+      <p class="k-sporsmal" id="sporsmal"></p>
+      <div class="k-inn">
+        <div class="k-vis">
+          <div class="k-digital" id="digital" hidden></div>
+          <svg class="urskive" id="urskive" viewBox="-100 -100 200 200" role="img" aria-label="Klokke">
+            <circle class="u-ring" r="95"/>
+            <g id="uStreker"></g>
+            <g id="uTall"></g>
+            <!-- Viserformene staar to steder (spoekelset og de ekte); endres
+                 den ene, endres den andre. Knottene sitter der KNOTT_R i
+                 skriptet sier - samme tall. -->
+            <g class="u-spokelse" id="uSpokelse" hidden>
+              <g class="u-viser" id="sTime"><path class="v-form" d="M0 -54 L8.5 -38 L6.5 13 L-6.5 13 L-8.5 -38 Z"/></g>
+              <g class="u-viser" id="sMin"><path class="v-form" d="M0 -84 L5 -70 L3.5 15 L-3.5 15 L-5 -70 Z"/></g>
+            </g>
+            <g class="u-viser u-timeviser" id="uTime">
+              <path class="v-form" d="M0 -54 L8.5 -38 L6.5 13 L-6.5 13 L-8.5 -38 Z"/>
+              <circle class="u-knott" cx="0" cy="-36" r="13"/>
+            </g>
+            <g class="u-viser u-minuttviser" id="uMin">
+              <path class="v-form" d="M0 -84 L5 -70 L3.5 15 L-3.5 15 L-5 -70 Z"/>
+              <circle class="u-knott" cx="0" cy="-68" r="12"/>
+            </g>
+            <circle class="u-midt" r="8"/>
+          </svg>
+          <span class="svar-boks ingen" id="svarBoks" aria-label="Ditt svar" hidden></span>
+        </div>
+        <div class="k-svar">
+          <div class="tastatur" id="tastatur" role="group" aria-label="Tall" hidden>
+            <button type="button" class="tast" data-tall="1">1</button>
+            <button type="button" class="tast" data-tall="2">2</button>
+            <button type="button" class="tast" data-tall="3">3</button>
+            <button type="button" class="tast" data-tall="4">4</button>
+            <button type="button" class="tast" data-tall="5">5</button>
+            <button type="button" class="tast" data-tall="6">6</button>
+            <button type="button" class="tast" data-tall="7">7</button>
+            <button type="button" class="tast" data-tall="8">8</button>
+            <button type="button" class="tast" data-tall="9">9</button>
+            <button type="button" class="tast tast-slett" id="tastSlett" aria-label="Slett siste tall">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/>
+                <path d="M17 9l-6 6M11 9l6 6"/>
+              </svg>
+            </button>
+            <button type="button" class="tast" data-tall="0">0</button>
+            <button type="button" class="tast tast-svar" id="tastSvar">Svar</button>
+          </div>
+          <div class="k-alternativer" id="alternativer" role="group" aria-label="Velg svar" hidden></div>
+          <button type="button" class="knapp-blaa k-knapp" id="kKnapp" hidden>Svar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Resultatet ===== -->
+    <section class="kort resultat" id="resultat" hidden aria-label="Resultat">
+      <div class="stjerner" id="stjerner"></div>
+      <p class="poeng" id="poeng"></p>
+      <p class="rekord-melding" id="rekordMelding" hidden></p>
+      <div class="ov" id="ovBolk" hidden>
+        <h3 class="ov-h">Disse kan vi øve mer på</h3>
+        <ul class="ov-liste" id="ovListe"></ul>
+      </div>
+      <p class="lagring" id="lagring" hidden></p>
+      <div class="knapperad">
+        <button type="button" class="knapp-noytral" id="endreKnapp">Endre valg</button>
+        <button type="button" class="knapp-blaa" id="igjenKnapp">Spill igjen</button>
+      </div>
+    </section>
+
+    <!-- ===== Rekordene ===== -->
+    <aside class="kort rekorder" id="rekorder" aria-label="Rekorder">
+      <h2 class="kort-h">Rekorder</h2>
+      <ul class="niva-rekorder" id="nivaRekorder"></ul>
+      <p class="samlet" id="samlet"></p>
+      <div class="runder-topp">
+        <h2 class="kort-h" id="runderH">Siste runder</h2>
+        <!-- Bare for magne@ og sys@. Se sjekkRedaktor(). -->
+        <button type="button" class="rediger-knapp" id="redigerKnapp" hidden>Rediger</button>
+      </div>
+      <ul class="siste" id="siste"></ul>
+      <button type="button" class="slett-alle" id="slettAlle" hidden>Slett alle runder</button>
+    </aside>
+
+  </main>
+</div>
+
+<script src="/felles-dialog.js?v=1"></script>
+<script>
+'use strict';
+
+/* ============================================================
+   Konstanter
+   ============================================================ */
+
+/* Samme form som andrea-matte:v1. Rekordene er utledet av rundene. */
+const NOKKEL = 'andrea-klokke:v1';
+const LOKAL_NOKKEL = 'neam-andrea-klokke:v1';
+const MAKS_RUNDER = 1000;
+
+/* Nivaaet er hva klokka kan vise. `steg` er minuttene tidene
+   trekkes fra; `forrige` er steget til nivaaet under, og brukes
+   til aa vekte det som er NYTT paa nivaaet - paa Middels er det
+   kvarter over og kvarter paa, ikke hele og halve timer igjen.
+   `snapp` er hvor viserne smekker naar hun stiller klokka: hvert
+   femte minutt til og med Vanskelig, saa hun ikke maa treffe et
+   enkelt minutt med fingeren, og hvert minutt paa Ekspert. */
+const NIVAER = {
+  lett:      { navn:'Lett',      sub:'Hele og halve', steg:30, forrige:0,  snapp:5, antall:10, rang:1 },
+  middels:   { navn:'Middels',   sub:'Kvarter',       steg:15, forrige:30, snapp:5, antall:10, rang:2 },
+  vanskelig: { navn:'Vanskelig', sub:'Hvert 5. min',  steg:5,  forrige:15, snapp:5, antall:15, rang:3 },
+  ekspert:   { navn:'Ekspert',   sub:'Hvert minutt',  steg:1,  forrige:5,  snapp:1, antall:15, rang:4 }
+};
+const NIVA_REKKE = ['lett', 'middels', 'vanskelig', 'ekspert'];
+
+const ARTER = {
+  les:      { navn:'les klokka' },
+  still:    { navn:'still klokka' },
+  ord:      { navn:'klokka med ord' },
+  tjuefire: { navn:'24 timer' }
+};
+const ART_REKKE = ['les', 'still', 'ord', 'tjuefire'];
+
+const PAUSE_RIKTIG = 1100;
+
+/* Klokka med ord, slik skolen laerer den: «halv fire» er 3:30, og
+   minuttene mellom kvart over og kvart paa regnes fra halv - 3:20
+   er «ti paa halv fire», 3:40 er «ti over halv fire». */
+const TIME_ORD = ['tolv', 'ett', 'to', 'tre', 'fire', 'fem', 'seks',
+                  'sju', 'åtte', 'ni', 'ti', 'elleve', 'tolv'];
+const TALL_ORD = ['', 'ett', 'to', 'tre', 'fire', 'fem', 'seks', 'sju',
+                  'åtte', 'ni', 'ti', 'elleve', 'tolv', 'tretten', 'fjorten'];
+
+const REPLIKK = {
+  hilsen: 'Å, Andrea! Klokka mi har stoppet, og batteriet er nesten tomt. Vil du hjelpe meg å finne ut hva klokka er?',
+  start: [
+    'Tusen takk! Jeg er klar når du er.',
+    'Så snilt av deg. Tikk takk, la oss begynne.',
+    'Utmerket. Jeg retter antennen mot laderen.'
+  ],
+  riktig: [
+    'Riktig! Tikk takk, ett skritt til.',
+    'Helt korrekt. Jeg kjenner kraften komme.',
+    'Utmerket lest, Andrea.',
+    'Nøyaktig på minuttet!',
+    'Riktig! Tannhjulene mine snurrer igjen.',
+    'Strålende! Laderen er nærmere nå.',
+    'Ja, det stemmer på prikken.'
+  ],
+  feil: [
+    'Å, du godeste. Den var lur!',
+    'Nesten, Andrea. Se på svaret, så tar vi neste.',
+    'Hm, ikke helt. Jeg står stille denne gangen, men det gjør ingenting.',
+    'Ingen fare. Neste blir bedre, skal du se.'
+  ],
+  minutter: 'Skriv både timer og minutter. Klokka tre skrives 3:00.',
+  viserne: 'Ikke helt. Den lange viseren viser minuttene, den korte viser timene.'
+};
+
+/* ============================================================
+   Tilstand
+   ============================================================ */
+
+let valg = { arter:['les'], niva:'lett' };
+let data = { versjon:1, runder:[] };
+let runde = null;
+let sisteRunde = null;
+let valgRort = false;
+let visning = 'oppsett';
+/* Klokka hun stiller: minutter fra 12:00, 0-719. */
+let stilt = 0;
+let drar = null;          /* null | 'time' | 'min' */
+
+const $ = function(id){ return document.getElementById(id); };
+
+/* ============================================================
+   Lagring - KV med speil paa enheten (som i mattespillet)
+   ============================================================ */
+
+async function kvLes(nokkel){
+  const r = await fetch('/api/data?key=' + encodeURIComponent(nokkel),
+                        { headers:{ 'Accept':'application/json' }, cache:'no-store' });
+  if(!r.ok) throw new Error('KV les ' + r.status);
+  const d = await r.json();
+  return (d && d.value !== undefined) ? d.value : null;
+}
+
+async function kvSkriv(nokkel, verdi){
+  const r = await fetch('/api/data?key=' + encodeURIComponent(nokkel), {
+    method:'PUT', headers:{ 'Content-Type':'application/json' },
+    body:JSON.stringify(verdi)
+  });
+  if(!r.ok) throw new Error('KV skriv ' + r.status);
+  return true;
+}
+
+function gyldigRunde(r){
+  return r && typeof r.id === 'string' && NIVAER[r.niva]
+      && Array.isArray(r.arter) && typeof r.riktige === 'number'
+      && typeof r.antall === 'number' && r.antall > 0;
+}
+
+function flettData(a, b){
+  const kart = new Map();
+  [a, b].forEach(function(d){
+    const liste = (d && Array.isArray(d.runder)) ? d.runder : [];
+    liste.forEach(function(r){ if(gyldigRunde(r)) kart.set(r.id, r); });
+  });
+  let runder = Array.from(kart.values())
+    .sort(function(x, y){ return x.tid < y.tid ? -1 : x.tid > y.tid ? 1 : 0; });
+  if(runder.length > MAKS_RUNDER) runder = runder.slice(-MAKS_RUNDER);
+  return { versjon:1, runder:runder };
+}
+
+function lokalLes(){
+  try{
+    const t = localStorage.getItem(LOKAL_NOKKEL);
+    return t ? JSON.parse(t) : null;
+  }catch(e){ return null; }
+}
+
+function lokalSkriv(usendt){
+  try{
+    localStorage.setItem(LOKAL_NOKKEL, JSON.stringify({ data:data, usendt:!!usendt }));
+  }catch(e){ /* full eller privat modus - KV er fortsatt kilden */ }
+}
+
+async function synk(){
+  const fjern = await kvLes(NOKKEL);
+  const flett = flettData(fjern, data);
+  await kvSkriv(NOKKEL, flett);
+  data = flett;
+  lokalSkriv(false);
+}
+
+async function lastData(){
+  const lokal = lokalLes();
+  if(lokal && lokal.data){
+    data = flettData(lokal.data, null);
+    brukSisteValg();
+    tegnRekorder();
+  }
+  try{
+    const fjern = await kvLes(NOKKEL);
+    data = flettData(fjern, data);
+    if(lokal && lokal.usendt){
+      await kvSkriv(NOKKEL, data);
+    }
+    lokalSkriv(false);
+  }catch(e){
+    console.warn('Klokkespill: fikk ikke lest KV', e);
+  }
+  brukSisteValg();
+  tegnRekorder();
+}
+
+/* ============================================================
+   Tider og ord
+   ============================================================ */
+
+function blandet(liste){
+  const b = liste.slice();
+  for(let i = b.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = b[i]; b[i] = b[j]; b[j] = t;
+  }
+  return b;
+}
+function tilfeldig(liste){ return liste[Math.floor(Math.random() * liste.length)]; }
+function to(n){ return (n < 10 ? '0' : '') + n; }
+/* Timen paa en viserklokke, 1-12, fra et hvilket som helst heltall. */
+function rundt(h){ return ((h - 1) % 12 + 12) % 12 + 1; }
+
+/* «3:15» paa en viserklokke, «15:15» og «07:30» paa 24-timersklokka. */
+function tid12(h, m){ return h + ':' + to(m); }
+function tid24(h, m){ return to(h) + ':' + to(m); }
+
+/* 1 = «ett minutt», 5 og 10 som de sies, resten med «minutter». */
+function minuttOrd(n){
+  if(n === 1) return 'ett minutt';
+  if(n === 5 || n === 10) return TALL_ORD[n];
+  return TALL_ORD[n] + ' minutter';
+}
+
+function klokkeOrd(h, m){
+  const neste = rundt(h + 1);
+  if(m === 0)  return 'klokka ' + TIME_ORD[h];
+  if(m < 15)   return minuttOrd(m) + ' over ' + TIME_ORD[h];
+  if(m === 15) return 'kvart over ' + TIME_ORD[h];
+  if(m < 30)   return minuttOrd(30 - m) + ' på halv ' + TIME_ORD[neste];
+  if(m === 30) return 'halv ' + TIME_ORD[neste];
+  if(m < 45)   return minuttOrd(m - 30) + ' over halv ' + TIME_ORD[neste];
+  if(m === 45) return 'kvart på ' + TIME_ORD[neste];
+  return minuttOrd(60 - m) + ' på ' + TIME_ORD[neste];
+}
+/* Bruker uttrykket «halv»? Da er timen den NESTE - den klassiske
+   feilen er aa si «halv tre» om 3:30. */
+function brukerHalv(m){ return m > 15 && m < 45; }
+
+/* Delen av doegnet for 24-timersoppgavene. */
+function dagsdel(h24){
+  if(h24 < 6)  return { ord:'om natta',        sol:false };
+  if(h24 < 9)  return { ord:'om morgenen',     sol:true };
+  if(h24 < 12) return { ord:'om formiddagen',  sol:true };
+  if(h24 < 18) return { ord:'om ettermiddagen', sol:true };
+  return { ord:'om kvelden', sol:false };
+}
+
+/* Et minutt for nivaaet. Det som er nytt paa nivaaet kommer oftere
+   enn det hun kunne fra nivaaet under. */
+function trekkMinutt(niva){
+  const n = NIVAER[niva];
+  const alle = [];
+  for(let m = 0; m < 60; m += n.steg) alle.push(m);
+  const nye = n.forrige ? alle.filter(function(m){ return m % n.forrige !== 0; }) : [];
+  return (nye.length && Math.random() < .6) ? tilfeldig(nye) : tilfeldig(alle);
+}
+
+/* Fire uttrykk: det riktige, og tre som ligner. Den timen foer og
+   etter er alltid med naar det er plass - det er der feilen gjoeres. */
+function lagAlternativer(h, m, niva){
+  const riktig = klokkeOrd(h, m);
+  const kandidater = blandet([
+    { h:rundt(h + 1), m:m },
+    { h:rundt(h - 1), m:m }
+  ]).concat(blandet([
+    { h:rundt(Math.round(m / 5) || 12), m:(h % 12) * 5 },   /* viserne byttet om */
+    { h:h, m:(60 - m) % 60 },                               /* over og paa byttet */
+    { h:rundt(h + 1), m:(60 - m) % 60 }
+  ]));
+  const brukt = {}; brukt[riktig] = true;
+  const ut = [];
+  function prov(t){
+    if(ut.length >= 3) return;
+    const o = klokkeOrd(t.h, t.m);
+    if(brukt[o]) return;
+    brukt[o] = true;
+    ut.push({ tekst:o, h:t.h, m:t.m });
+  }
+  prov(kandidater[0]);
+  blandet(kandidater.slice(1)).forEach(prov);
+  for(let i = 0; ut.length < 3 && i < 40; i++){
+    prov({ h:1 + Math.floor(Math.random() * 12), m:trekkMinutt(niva) });
+  }
+  ut.push({ tekst:riktig, h:h, m:m, riktig:true });
+  return blandet(ut);
+}
+
+/* Én oppgave av én type. 24-timersklokka har to former, trukket
+   tilfeldig: les viserklokka med delen av doegnet og skriv den som
+   24-timersklokke, eller still viserklokka etter en 24-timerstid. */
+function lagOppgave(art, niva){
+  const m = trekkMinutt(niva);
+  if(art === 'tjuefire'){
+    /* Ettermiddag og kveld oftest - det er der tallene skiller seg. */
+    const h24 = Math.random() < .65 ? 13 + Math.floor(Math.random() * 11)
+                                     : 1 + Math.floor(Math.random() * 12);
+    return { art:art, type:Math.random() < .5 ? 't24les' : 't24still',
+             h:rundt(h24), m:m, h24:h24 };
+  }
+  const h = 1 + Math.floor(Math.random() * 12);
+  const o = { art:art, type:art, h:h, m:m };
+  if(art === 'ord') o.alternativer = lagAlternativer(h, m, niva);
+  return o;
+}
+
+function likeTider(x, y){ return x && y && x.h === y.h && x.m === y.m; }
+
+function lagOppgaver(){
+  const N = NIVAER[valg.niva].antall;
+  const arter = blandet(valg.arter);
+  let typer = [];
+  arter.forEach(function(art, i){
+    const n = Math.floor(N / arter.length) + (i < N % arter.length ? 1 : 0);
+    for(let k = 0; k < n; k++) typer.push(art);
+  });
+  typer = blandet(typer);
+  const ut = [];
+  typer.forEach(function(art){
+    let o;
+    /* Samme tid to ganger paa rad ser ut som en feil i spillet, og
+       12:00 er ingen oppgave naar klokka starter der. */
+    for(let f = 0; f < 20; f++){
+      o = lagOppgave(art, valg.niva);
+      const startTid = (o.type === 'still' || o.type === 't24still') && o.h === 12 && o.m === 0;
+      if(!likeTider(o, ut[ut.length - 1]) && !startTid) break;
+    }
+    ut.push(o);
+  });
+  return ut;
+}
+
+/* 5 for alt riktig, saa ned i femtedeler, med 1 som gulv. */
+function stjernerFor(riktige, antall){
+  const k = riktige / antall;
+  if(k >= 1) return 5;
+  if(k >= .8) return 4;
+  if(k >= .6) return 3;
+  if(k >= .4) return 2;
+  return 1;
+}
+
+/* ============================================================
+   Urskiva
+   ============================================================ */
+
+function byggUrskive(){
+  const ns = 'http://www.w3.org/2000/svg';
+  const streker = $('uStreker');
+  for(let i = 0; i < 60; i++){
+    const hel = i % 5 === 0;
+    const l = document.createElementNS(ns, 'line');
+    l.setAttribute('class', 'u-strek' + (hel ? ' hel' : ''));
+    l.setAttribute('x1', 0); l.setAttribute('x2', 0);
+    l.setAttribute('y1', -(hel ? 80 : 85)); l.setAttribute('y2', -90);
+    l.setAttribute('transform', 'rotate(' + (i * 6) + ')');
+    streker.appendChild(l);
+  }
+  const tall = $('uTall');
+  for(let n = 1; n <= 12; n++){
+    const v = n * Math.PI / 6;
+    const t = document.createElementNS(ns, 'text');
+    t.setAttribute('class', 'u-tall');
+    t.setAttribute('x', (Math.sin(v) * 66).toFixed(2));
+    t.setAttribute('y', (-Math.cos(v) * 66).toFixed(2));
+    t.textContent = n;
+    tall.appendChild(t);
+  }
+}
+
+/* Viserne for en tid i minutter fra 12:00. Timeviseren gaar jevnt,
+   som paa en ekte klokke - kvart paa fire staar den nesten paa fire. */
+function settViserne(minutter, animer){
+  const u = $('urskive');
+  if(!animer){ u.classList.add('uten-overgang'); }
+  $('uTime').style.transform = 'rotate(' + (minutter * .5) + 'deg)';
+  $('uMin').style.transform  = 'rotate(' + ((minutter % 60) * 6) + 'deg)';
+  if(!animer){ void u.getBoundingClientRect(); u.classList.remove('uten-overgang'); }
+}
+
+function settSpokelse(minutter){
+  $('sTime').style.transform = 'rotate(' + (minutter * .5) + 'deg)';
+  $('sMin').style.transform  = 'rotate(' + ((minutter % 60) * 6) + 'deg)';
+  $('uSpokelse').hidden = false;
+}
+
+function minutterFra(h, m){ return (h % 12) * 60 + m; }
+function tidAv(minutter){ return { h:rundt(Math.floor(minutter / 60)), m:minutter % 60 }; }
+
+/* ---- Stille klokka med fingeren ----
+   Minuttviseren drar timeviseren med seg, som naar man vrir paa en
+   ekte klokke: gaar hun forbi tolv, gaar timen ett hakk. Timeviseren
+   kan ogsaa dras for seg, og havner da paa den timen som passer med
+   minuttene - kvart paa fire staar den rett foer fire. */
+function pekerVinkel(ev){
+  const r = $('urskive').getBoundingClientRect();
+  const dx = ev.clientX - (r.left + r.width / 2);
+  const dy = ev.clientY - (r.top + r.height / 2);
+  let v = Math.atan2(dx, -dy) * 180 / Math.PI;
+  if(v < 0) v += 360;
+  return { v:v, r:Math.sqrt(dx * dx + dy * dy) / (r.width / 2) * 100 };
+}
+function vinkelAvstand(a, b){ const d = Math.abs(a - b) % 360; return Math.min(d, 360 - d); }
+
+/* Hvor langt ut paa viseren knotten sitter, i skivas enheter (radius
+   100). Samme tall som cy paa knottene i SVG-en. */
+const KNOTT_R = { time:36, min:68 };
+
+function knottAvstand(p, vinkel, radius){
+  const a = p.v * Math.PI / 180, b = vinkel * Math.PI / 180;
+  const dx = p.r * Math.sin(a) - radius * Math.sin(b);
+  const dy = p.r * Math.cos(a) - radius * Math.cos(b);
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+/* Hvilken viser fingeren tok. Knotten naermest vinner hvis den er
+   innen rekkevidde - en fingertupp er bred, og knottene er det hun
+   sikter paa. Ellers: langt ut er minuttviseren, naer midten den
+   av de to som peker mest mot fingeren. */
+function velgViser(p){
+  const dt = knottAvstand(p, stilt * .5, KNOTT_R.time);
+  const dm = knottAvstand(p, (stilt % 60) * 6, KNOTT_R.min);
+  if(Math.min(dt, dm) < 26) return dt < dm ? 'time' : 'min';
+  if(p.r >= 52) return 'min';
+  return vinkelAvstand(p.v, (stilt % 60) * 6) < vinkelAvstand(p.v, stilt * .5) ? 'min' : 'time';
+}
+
+/* `forste` er trykket som tok tak. Da settes minuttene der fingeren
+   er uten at timen roeres - et trykk paa ti over skal ikke flytte
+   timen fordi viseren tilfeldigvis sto paa femti. Timen foelger
+   bare med naar hun DRAR minuttviseren rundt forbi tolv. */
+function flyttViser(ev, forste){
+  const p = pekerVinkel(ev);
+  const snapp = NIVAER[runde.valg.niva].snapp;
+  if(drar === 'min'){
+    const ny = (Math.round(p.v / 6 / snapp) * snapp) % 60;
+    if(forste){
+      stilt = Math.floor(stilt / 60) * 60 + ny;
+      settViserne(stilt, false);
+      merkUrskive();
+      return;
+    }
+    let d = ny - stilt % 60;
+    if(d > 30) d -= 60;
+    if(d < -30) d += 60;
+    stilt = ((stilt + d) % 720 + 720) % 720;
+  }else{
+    const m = stilt % 60;
+    const h = ((Math.round(p.v / 30 - m / 60) % 12) + 12) % 12;
+    stilt = h * 60 + m;
+  }
+  settViserne(stilt, false);
+  merkUrskive();
+}
+
+function kanStilles(){
+  return !!(runde && !runde.venter && runde.kanStilles);
+}
+
+$('urskive').addEventListener('pointerdown', function(ev){
+  if(!kanStilles()) return;
+  const p = pekerVinkel(ev);
+  if(p.r > 115) return;
+  drar = velgViser(p);
+  this.setPointerCapture(ev.pointerId);
+  this.classList.add('drar');
+  $(drar === 'min' ? 'uMin' : 'uTime').classList.add('aktiv');
+  flyttViser(ev, true);
+  ev.preventDefault();
+});
+$('urskive').addEventListener('pointermove', function(ev){
+  if(!drar || !kanStilles()) return;
+  flyttViser(ev);
+});
+function slipp(){
+  drar = null;
+  $('urskive').classList.remove('drar');
+  $('uMin').classList.remove('aktiv');
+  $('uTime').classList.remove('aktiv');
+}
+$('urskive').addEventListener('pointerup', slipp);
+$('urskive').addEventListener('pointercancel', slipp);
+
+function merkUrskive(){
+  $('urskive').setAttribute('aria-label', 'Klokka viser ' + tid12(tidAv(stilt).h, tidAv(stilt).m));
+}
+
+/* ============================================================
+   Scenen
+   ============================================================ */
+
+function tegnLamper(antall, tent){
+  const boks = $('lamper');
+  let html = '';
+  for(let i = 1; i <= antall; i++){
+    html += '<span class="lampe' + (i <= tent ? ' tent' : '') + '" style="--x:' + (i / antall) + '"></span>';
+  }
+  boks.innerHTML = html;
+}
+
+function tennLampe(nr){
+  const l = $('lamper').children[nr - 1];
+  if(l) l.classList.add('tent');
+}
+
+function plasserRobot(skritt, antall, bevegelse){
+  const r = $('robot');
+  const x = antall ? skritt / antall : 0;
+  r.style.setProperty('--x', x);
+  plasserBoble();
+  if(bevegelse) spill1(r, bevegelse);
+  $('lader').classList.toggle('fulladet', antall > 0 && skritt >= antall);
+}
+
+function plasserBoble(){
+  const r = $('robot');
+  const W = $('scene').clientWidth;
+  const rw = r.offsetWidth;
+  const lw = $('lader').offsetWidth;
+  const x = Number(r.style.getPropertyValue('--x')) || 0;
+  const venstreKant = x * (W - lw - rw);
+  const plassHoyre = W - lw - (venstreKant + rw) - 16;
+  const plassVenstre = venstreKant - 10;
+  const tilVenstre = plassVenstre > plassHoyre;
+  r.classList.toggle('til-venstre', tilVenstre);
+  const plass = tilVenstre ? plassVenstre : plassHoyre;
+  $('boble').style.maxWidth = Math.max(150, Math.min(320, plass - 4)) + 'px';
+}
+window.addEventListener('resize', plasserBoble);
+
+function spill1(el, klasse){
+  el.classList.remove('gaar', 'rister', 'jubler');
+  void el.offsetWidth;
+  el.classList.add(klasse);
+}
+
+function spillPaa(el, klasse){
+  el.classList.remove(klasse); void el.offsetWidth; el.classList.add(klasse);
+}
+
+function si(tekst){ $('boble').textContent = tekst || ''; }
+
+/* ============================================================
+   Oppsettet
+   ============================================================ */
+
+function byggOppsett(){
+  $('nivaer').innerHTML = NIVA_REKKE.map(function(k){
+    const v = NIVAER[k];
+    return '<button type="button" class="valg niva" role="radio" aria-checked="false" data-niva="' + k + '">'
+      + '<span class="niva-navn">' + v.navn + '</span>'
+      + '<span class="niva-sub">' + v.sub + '<br>' + v.antall + ' oppgaver</span>'
+      + '</button>';
+  }).join('');
+
+  document.querySelectorAll('.art').forEach(function(b){
+    b.addEventListener('click', function(){
+      const a = b.dataset.art;
+      const i = valg.arter.indexOf(a);
+      if(i === -1) valg.arter.push(a); else valg.arter.splice(i, 1);
+      valgRort = true;
+      tegnValg();
+    });
+  });
+  document.querySelectorAll('.niva').forEach(function(b){
+    b.addEventListener('click', function(){
+      valg.niva = b.dataset.niva;
+      valgRort = true;
+      tegnValg();
+    });
+  });
+  $('startKnapp').addEventListener('click', function(){ startSpill(false); });
+}
+
+function mangler(){
+  if(!valg.arter.length) return 'Velg minst én ting å øve på.';
+  return '';
+}
+
+function tegnValg(){
+  document.querySelectorAll('.art').forEach(function(b){
+    b.setAttribute('aria-pressed', valg.arter.indexOf(b.dataset.art) !== -1 ? 'true' : 'false');
+  });
+  document.querySelectorAll('.niva').forEach(function(b){
+    b.setAttribute('aria-checked', b.dataset.niva === valg.niva ? 'true' : 'false');
+  });
+  const m = mangler();
+  $('startHint').textContent = m;
+  $('startKnapp').disabled = !!m;
+
+  if(visning === 'oppsett'){
+    tegnLamper(NIVAER[valg.niva].antall, 0);
+    plasserRobot(0, NIVAER[valg.niva].antall);
+  }
+}
+
+function brukSisteValg(){
+  if(valgRort || !data.runder.length) return;
+  const r = data.runder[data.runder.length - 1];
+  const arter = (r.arter || []).filter(function(a){ return ARTER[a]; });
+  if(!arter.length) return;
+  valg = { arter:arter.slice(), niva:NIVAER[r.niva] ? r.niva : 'lett' };
+  tegnValg();
+}
+
+/* ============================================================
+   Visningene og historikken (som i mattespillet)
+   ============================================================ */
+
+function vis(navn){
+  visning = navn;
+  $('oppsett').hidden  = navn !== 'oppsett';
+  $('spill').hidden    = navn !== 'spill';
+  $('resultat').hidden = navn !== 'resultat';
+  document.body.classList.toggle('spiller', navn === 'spill');
+  if(navn === 'oppsett'){
+    si(REPLIKK.hilsen);
+    tegnValg();
+    $('lader').classList.remove('fulladet');
+  }
+  window.scrollTo(0, 0);
+}
+
+function harSvart(){ return !!(runde && (runde.i > 0 || runde.venter)); }
+
+window.addEventListener('popstate', async function(ev){
+  const st = ev.state || {};
+  const maal = st.visning || 'oppsett';
+
+  if(runde && maal !== 'spill'){
+    if(harSvart() && !runde.avbrytGodkjent){
+      history.pushState({ fh:true, visning:'spill' }, '');
+      const ja = await bekreft('Avslutte runden? Svarene så langt blir ikke lagret.',
+                               { jaTekst:'Avslutt', neiTekst:'Fortsett' });
+      if(ja && runde){ runde.avbrytGodkjent = true; history.back(); }
+      return;
+    }
+    avbrytRunde();
+    vis('oppsett');
+    return;
+  }
+  if(maal === 'spill'){
+    if(!runde){ history.back(); return; }
+    vis('spill');
+    return;
+  }
+  if(maal === 'resultat' && sisteRunde){ visResultat(sisteRunde, false); return; }
+  vis('oppsett');
+});
+
+function avbrytRunde(){
+  if(runde && runde.timer) clearTimeout(runde.timer);
+  runde = null;
+  slipp();
+}
+
+/* ============================================================
+   Spillet
+   ============================================================ */
+
+function startSpill(igjen){
+  if(mangler()) return;
+  valgRort = true;
+  avbrytRunde();
+  const antall = NIVAER[valg.niva].antall;
+  runde = {
+    oppgaver: lagOppgaver(),
+    antall: antall,
+    i: 0,
+    riktige: 0,
+    feil: [],
+    svar: '',
+    venter: null,          /* null | 'riktig' | 'feil' */
+    kanStilles: false,
+    timer: null,
+    avbrytGodkjent: false,
+    valg: { arter:valg.arter.slice(), niva:valg.niva }
+  };
+  if(igjen) history.replaceState({ fh:true, visning:'spill' }, '');
+  else      history.pushState({ fh:true, visning:'spill' }, '');
+  vis('spill');
+  tegnLamper(antall, 0);
+  plasserRobot(0, antall);
+  si(tilfeldig(REPLIKK.start));
+  visOppgave();
+}
+
+/* Hva som vises for hver type:
+     les       viserklokke + rubrikk + tastatur
+     t24les    viserklokke + delen av doegnet + rubrikk + tastatur
+     still     digital tid + viserklokke som kan stilles + Svar
+     t24still  som still, med 24-timerstid
+     ord       viserklokke + fire uttrykk */
+function visOppgave(){
+  const o = runde.oppgaver[runde.i];
+  $('teller').textContent = 'Oppgave ' + (runde.i + 1) + ' av ' + runde.antall;
+  runde.svar = '';
+  runde.venter = null;
+
+  const skriv = o.type === 'les' || o.type === 't24les';
+  const stille = o.type === 'still' || o.type === 't24still';
+  runde.kanStilles = stille;
+
+  /* Spoersmaalet */
+  const sp = $('sporsmal');
+  if(o.type === 'les') sp.textContent = 'Hva er klokka?';
+  else if(o.type === 'ord') sp.textContent = 'Hva sier vi når klokka ser slik ut?';
+  else if(stille) sp.textContent = 'Still klokka på';
+  else{
+    const d = dagsdel(o.h24);
+    sp.innerHTML = '<span>Skriv som 24-timersklokke:</span>'
+      + '<span class="k-dagsdel">' + (d.sol ? SOL : MAANE) + esc(d.ord) + '</span>';
+  }
+  sp.classList.remove('ny'); void sp.offsetWidth; sp.classList.add('ny');
+
+  /* Den digitale klokka */
+  $('digital').hidden = !stille;
+  $('digital').textContent = o.type === 't24still' ? tid24(o.h24, o.m) : stille ? tid12(o.h, o.m) : '';
+
+  /* Urskiva */
+  const u = $('urskive');
+  u.classList.remove('riktig', 'drar');
+  u.classList.toggle('kan-stilles', stille);
+  u.classList.toggle('stor', stille);
+  $('spill').classList.toggle('stiller', stille);
+  $('uSpokelse').hidden = true;
+  if(stille){
+    stilt = 0;
+    settViserne(0, false);
+    u.setAttribute('tabindex', '0');
+    merkUrskive();
+  }else{
+    settViserne(minutterFra(o.h, o.m), false);
+    u.removeAttribute('tabindex');
+    u.setAttribute('aria-label', 'Viserklokke');
+  }
+
+  /* Svaret */
+  const boks = $('svarBoks');
+  boks.hidden = !skriv;
+  boks.className = 'svar-boks ingen';
+  boks.textContent = '';
+  boks.setAttribute('aria-label', 'Ditt svar');
+  $('tastatur').hidden = !skriv;
+  $('tastSvar').textContent = 'Svar';
+  settTaster(true);
+
+  const alt = $('alternativer');
+  alt.hidden = o.type !== 'ord';
+  alt.innerHTML = o.type === 'ord' ? o.alternativer.map(function(a, i){
+    return '<button type="button" class="valg k-alt" data-i="' + i + '">' + esc(a.tekst) + '</button>';
+  }).join('') : '';
+
+  const k = $('kKnapp');
+  k.hidden = !stille;
+  k.textContent = 'Svar';
+}
+
+/* Sol og maane til delen av doegnet. Strek, ikke flate - de er
+   merker, ikke knapper. */
+const SOL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">'
+  + '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>';
+const MAANE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+  + '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg>';
+
+function settTaster(paa){
+  document.querySelectorAll('.tast[data-tall], #tastSlett').forEach(function(t){ t.disabled = !paa; });
+}
+
+/* Kolon settes inn foran de to siste sifrene, slik hun ville
+   skrevet det: 3 1 5 blir 3:15, 1 2 3 0 blir 12:30. */
+function visTid(s){ return s.length >= 3 ? s.slice(0, -2) + ':' + s.slice(-2) : s; }
+
+function tegnSvar(){
+  const boks = $('svarBoks');
+  boks.textContent = visTid(runde.svar);
+  boks.classList.toggle('ingen', runde.svar === '');
+}
+
+function trykkTall(d){
+  if(!runde || runde.venter) return;
+  if(runde.svar.length >= 4) return;
+  runde.svar += d;
+  tegnSvar();
+}
+
+function slettTall(){
+  if(!runde || runde.venter) return;
+  runde.svar = runde.svar.slice(0, -1);
+  tegnSvar();
+}
+
+/* Felles for alle typene naar svaret er avgjort. */
+function riktigSvar(){
+  runde.riktige++;
+  runde.venter = 'riktig';
+  runde.kanStilles = false;
+  tennLampe(runde.riktige);
+  plasserRobot(runde.riktige, runde.antall, 'gaar');
+  si(tilfeldig(REPLIKK.riktig));
+  runde.timer = setTimeout(neste, PAUSE_RIKTIG);
+}
+
+function galtSvar(tekst, du, replikk){
+  runde.feil.push({ tekst:tekst, du:du });
+  runde.venter = 'feil';
+  runde.kanStilles = false;
+  spill1($('robot'), 'rister');
+  si(replikk || tilfeldig(REPLIKK.feil));
+}
+
+function sendSkrevet(){
+  const o = runde.oppgaver[runde.i];
+  const boks = $('svarBoks');
+  if(runde.svar.length < 3){
+    spillPaa(boks, 'rister');
+    if(runde.svar !== '') si(REPLIKK.minutter);
+    return;
+  }
+  const h = Number(runde.svar.slice(0, -2));
+  const m = Number(runde.svar.slice(-2));
+  settTaster(false);
+
+  /* Viserklokka vet ikke om det er dag eller natt: 3:15 og 15:15
+     er begge riktige. 24-timersklokka vet det. */
+  const ok = o.type === 'les'
+    ? (m === o.m && h <= 23 && h % 12 === o.h % 12)
+    : (m === o.m && h === o.h24);
+
+  if(ok){
+    boks.classList.add('riktig');
+    riktigSvar();
+    return;
+  }
+  const fasit = o.type === 'les' ? tid12(o.h, o.m) : tid24(o.h24, o.m);
+  const hennes = visTid(runde.svar);
+  boks.className = 'svar-boks feil';
+  boks.innerHTML = '<span class="svar-feil">' + esc(hennes) + '</span><span>' + fasit + '</span>';
+  boks.setAttribute('aria-label', 'Du svarte ' + hennes + '. Riktig svar er ' + fasit);
+  $('tastSvar').textContent = 'Neste';
+
+  let replikk = '';
+  if(o.type === 'les' && m === o.m && h % 12 === rundt(o.h + 1) % 12 && o.m > 0){
+    /* Timeviseren har nesten naadd neste time - og hun leste den. */
+    replikk = 'Nesten! Den korte viseren har ikke kommet til ' + rundt(o.h + 1)
+            + ' ennå, så timen er fortsatt ' + o.h + '.';
+  }else if(o.type === 't24les' && m === o.m && h % 12 === o.h24 % 12 && h !== o.h24){
+    replikk = o.h24 > 12
+      ? 'Nesten! ' + capitalize(dagsdel(o.h24).ord) + ' legger vi til tolv: ' + o.h + ' + 12 = ' + o.h24 + '.'
+      : 'Nesten! ' + capitalize(dagsdel(o.h24).ord) + ' er timen den samme som på viserklokka.';
+  }
+  galtSvar(o.type === 'les'
+             ? 'Klokka viste ' + fasit
+             : tid12(o.h, o.m) + ' ' + dagsdel(o.h24).ord + ' er ' + fasit,
+           'du svarte ' + hennes, replikk);
+}
+
+function sendStilt(){
+  const o = runde.oppgaver[runde.i];
+  slipp();
+  const maal = minutterFra(o.h, o.m);
+  const u = $('urskive');
+  u.classList.remove('kan-stilles');
+  if(stilt === maal){
+    u.classList.add('riktig');
+    riktigSvar();
+    return;
+  }
+  const hennes = tidAv(stilt);
+  settSpokelse(stilt);
+  settViserne(maal, true);
+  u.setAttribute('aria-label', 'Du stilte ' + tid12(hennes.h, hennes.m)
+    + '. Riktig er ' + tid12(o.h, o.m));
+  $('kKnapp').textContent = 'Neste';
+
+  let replikk = REPLIKK.viserne;
+  if(o.type === 't24still' && o.h24 > 12 && hennes.m === o.m && hennes.h !== o.h){
+    replikk = o.h24 + ' minus 12 er ' + o.h + '. Den korte viseren skal peke på ' + o.h + '.';
+  }else if(hennes.m === o.m){
+    /* Timeviseren gaar jevnt, saa den staar bare rett paa timen naar
+       klokka er hel. */
+    replikk = 'Minuttene er riktige! Men den korte viseren skal stå '
+      + (o.m === 0 ? 'på ' + o.h : 'mellom ' + o.h + ' og ' + rundt(o.h + 1)) + '.';
+  }
+  galtSvar(o.type === 't24still' && o.h24 > 12
+             ? tid24(o.h24, o.m) + ' er ' + tid12(o.h, o.m) + ' på viserklokka'
+             : 'Still på ' + tid12(o.h, o.m),
+           'du stilte ' + tid12(hennes.h, hennes.m), replikk);
+}
+
+function velgAlternativ(i){
+  if(!runde || runde.venter) return;
+  const o = runde.oppgaver[runde.i];
+  const a = o.alternativer[i];
+  if(!a) return;
+  const knapper = $('alternativer').querySelectorAll('.k-alt');
+  knapper.forEach(function(b){ b.disabled = true; });
+  if(a.riktig){
+    knapper[i].classList.add('riktig');
+    knapper.forEach(function(b, j){ if(j !== i) b.classList.add('bort'); });
+    riktigSvar();
+    return;
+  }
+  knapper.forEach(function(b, j){
+    if(j === i) b.classList.add('valgt-feil');
+    else if(o.alternativer[j].riktig) b.classList.add('fasit');
+    else b.classList.add('bort');
+  });
+  const k = $('kKnapp');
+  k.hidden = false;
+  k.textContent = 'Neste';
+
+  let replikk = '';
+  if(brukerHalv(o.m) && a.m === o.m && a.h !== o.h){
+    const neste = TIME_ORD[rundt(o.h + 1)];
+    replikk = 'Husk: «halv ' + neste + '» er en halvtime før ' + neste + '.';
+  }
+  galtSvar(tid12(o.h, o.m) + ' er «' + klokkeOrd(o.h, o.m) + '»', 'du valgte «' + a.tekst + '»', replikk);
+}
+
+function neste(){
+  if(!runde) return;
+  if(runde.timer){ clearTimeout(runde.timer); runde.timer = null; }
+  runde.i++;
+  if(runde.i >= runde.antall){ ferdig(); return; }
+  visOppgave();
+}
+
+$('tastatur').addEventListener('click', function(ev){
+  const t = ev.target.closest('.tast');
+  if(!t || t.disabled || !runde) return;
+  if(t.dataset.tall !== undefined) trykkTall(t.dataset.tall);
+  else if(t.id === 'tastSlett') slettTall();
+  else if(t.id === 'tastSvar'){
+    if(runde.venter === 'feil') neste();
+    else if(!runde.venter) sendSkrevet();
+  }
+});
+
+$('alternativer').addEventListener('click', function(ev){
+  const b = ev.target.closest('.k-alt');
+  if(b) velgAlternativ(Number(b.dataset.i));
+});
+
+$('kKnapp').addEventListener('click', function(){
+  if(!runde) return;
+  if(runde.venter === 'feil'){ neste(); return; }
+  if(runde.venter) return;
+  const o = runde.oppgaver[runde.i];
+  if(o.type === 'still' || o.type === 't24still') sendStilt();
+});
+
+/* Tastaturet paa PC-en: tall, slett og Enter; piler stiller klokka
+   (venstre/hoeyre minutter, opp/ned timer); 1-4 velger et uttrykk. */
+document.addEventListener('keydown', function(ev){
+  if(visning !== 'spill' || !runde) return;
+  if(document.querySelector('.dlg-bak:not([hidden])')) return;
+  const o = runde.oppgaver[runde.i];
+  if(ev.key === 'Enter'){
+    ev.preventDefault();
+    if(runde.venter === 'feil'){ neste(); return; }
+    if(runde.venter) return;
+    if(o.type === 'les' || o.type === 't24les') sendSkrevet();
+    else if(o.type === 'still' || o.type === 't24still') sendStilt();
+    return;
+  }
+  if(o.type === 'les' || o.type === 't24les'){
+    if(/^[0-9]$/.test(ev.key)){ trykkTall(ev.key); ev.preventDefault(); }
+    else if(ev.key === 'Backspace'){ slettTall(); ev.preventDefault(); }
+  }else if(o.type === 'ord'){
+    if(/^[1-4]$/.test(ev.key)){ velgAlternativ(Number(ev.key) - 1); ev.preventDefault(); }
+  }else if(kanStilles()){
+    const snapp = NIVAER[runde.valg.niva].snapp;
+    const steg = { ArrowRight:snapp, ArrowLeft:-snapp, ArrowUp:60, ArrowDown:-60 }[ev.key];
+    if(steg){
+      stilt = ((stilt + steg) % 720 + 720) % 720;
+      settViserne(stilt, false);
+      merkUrskive();
+      ev.preventDefault();
+    }
+  }
+});
+
+$('avsluttKnapp').addEventListener('click', async function(){
+  if(!runde) return;
+  if(harSvart()){
+    const ja = await bekreft('Avslutte runden? Svarene så langt blir ikke lagret.',
+                             { jaTekst:'Avslutt', neiTekst:'Fortsett' });
+    if(!ja || !runde) return;
+  }
+  runde.avbrytGodkjent = true;
+  history.back();
+});
+
+/* ============================================================
+   Resultatet
+   ============================================================ */
+
+function bedre(x, y){
+  if(x.stjerner !== y.stjerner) return x.stjerner > y.stjerner;
+  return x.riktige / x.antall > y.riktige / y.antall;
+}
+
+function ferdig(){
+  const rd = runde;
+  runde = null;
+  slipp();
+  const stj = stjernerFor(rd.riktige, rd.antall);
+  const r = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    tid: new Date().toISOString(),
+    niva: rd.valg.niva,
+    arter: ART_REKKE.filter(function(a){ return rd.valg.arter.indexOf(a) !== -1; }),
+    riktige: rd.riktige,
+    antall: rd.antall,
+    stjerner: stj,
+    feil: rd.feil
+  };
+
+  const tidligere = data.runder.filter(function(x){ return x.niva === r.niva; });
+  let best = null;
+  tidligere.forEach(function(x){ if(!best || bedre(x, best)) best = x; });
+  const femmere = tidligere.filter(function(x){ return x.stjerner === 5; }).length;
+  let melding = '';
+  if(best && bedre(r, best)) melding = 'Ny rekord på ' + NIVAER[r.niva].navn + '!';
+  else if(stj === 5 && femmere > 0) melding = 'Fem stjerner for ' + (femmere + 1) + '. gang på ' + NIVAER[r.niva].navn + '!';
+  r.melding = melding;
+
+  sisteRunde = r;
+  history.replaceState({ fh:true, visning:'resultat' }, '');
+  visResultat(r, true);
+  lagreRunde(r);
+}
+
+function sluttReplikk(r){
+  const k = r.riktige, n = r.antall;
+  if(k >= n) return 'Fulladet! Og klokka mi går igjen. Tusen takk, Andrea!';
+  if(k === 0) return 'Jeg står fortsatt her, men jeg gir ikke opp. Skal vi prøve igjen?';
+  if(k / n >= .8) return 'Jeg kom ' + k + ' skritt! Den siste biten triller jeg selv. Takk, Andrea.';
+  if(k / n >= .4) return 'Takk for hjelpen! Jeg kom ' + k + ' av ' + n + ' skritt. Vil du prøve igjen?';
+  return 'Jeg kom ' + k + ' skritt av sted. Skal vi prøve en gang til sammen?';
+}
+
+function visResultat(r, ny){
+  vis('resultat');
+  tegnLamper(r.antall, r.riktige);
+  plasserRobot(r.riktige, r.antall, (ny && r.riktige >= r.antall) ? 'jubler' : null);
+  si(sluttReplikk(r));
+
+  let s = '';
+  for(let i = 0; i < 5; i++){
+    s += '<img class="stjerne' + (i < r.stjerner ? ' fylt' : '') + '" style="--i:' + i
+       + '" src="' + STJERNE + '" alt="" width="128" height="122">';
+  }
+  const sb = $('stjerner');
+  sb.innerHTML = s;
+  sb.setAttribute('role', 'img');
+  sb.setAttribute('aria-label', r.stjerner + ' av 5 stjerner');
+  sb.classList.remove('vis');
+  if(ny){ void sb.offsetWidth; sb.classList.add('vis'); }
+
+  $('poeng').textContent = r.riktige + ' av ' + r.antall + ' riktige';
+  $('rekordMelding').textContent = r.melding || '';
+  $('rekordMelding').hidden = !r.melding;
+
+  const feil = r.feil || [];
+  $('ovBolk').hidden = !feil.length;
+  $('ovListe').innerHTML = feil.map(function(f){
+    return '<li><span class="ov-oppgave">' + esc(f.tekst) + '</span>'
+         + '<span class="ov-du">' + esc(f.du) + '</span></li>';
+  }).join('');
+  if(ny) $('lagring').hidden = true;
+  tegnRekorder(r.id);
+}
+
+async function lagreRunde(r){
+  data.runder.push(r);
+  lokalSkriv(true);
+  tegnRekorder(r.id);
+  try{
+    await synk();
+    tegnRekorder(r.id);
+  }catch(e){
+    console.warn('Klokkespill: fikk ikke lagret i KV', e);
+    const l = $('lagring');
+    l.textContent = 'Resultatet ligger på denne enheten og sendes neste gang du åpner spillet med nett.';
+    l.hidden = false;
+  }
+}
+
+$('igjenKnapp').addEventListener('click', function(){ startSpill(true); });
+$('endreKnapp').addEventListener('click', function(){
+  if(history.state && history.state.visning === 'resultat' && history.length > 1){
+    history.back();
+  }else{
+    history.replaceState({ fh:true, visning:'oppsett' }, '');
+    vis('oppsett');
+  }
+});
+
+/* ============================================================
+   Rekordene
+   ============================================================ */
+
+const STJERNE = '/bilder/spill/stjerne.webp?v=1';
+
+function miniStjerner(n){
+  let s = '';
+  for(let i = 0; i < 5; i++){
+    s += '<img class="mini' + (i < n ? ' fylt' : '') + '" src="' + STJERNE + '" alt="" width="128" height="122">';
+  }
+  return s;
+}
+
+function esc(t){
+  return String(t).replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+function capitalize(t){ return t.charAt(0).toUpperCase() + t.slice(1); }
+
+/* «Les klokka, still klokka og 24 timer». */
+function beskriv(r){
+  const deler = ART_REKKE.filter(function(a){ return r.arter.indexOf(a) !== -1; })
+                         .map(function(a){ return ARTER[a].navn; });
+  if(!deler.length) return '';
+  const t = deler.length === 1 ? deler[0]
+          : deler.slice(0, -1).join(', ') + ' og ' + deler[deler.length - 1];
+  return capitalize(t);
+}
+
+function kortDato(iso){
+  try{ return new Date(iso).toLocaleDateString('nb-NO', { day:'numeric', month:'short' }); }
+  catch(e){ return ''; }
+}
+
+/* ============================================================
+   Redigering av rekordene - som i mattespillet, med samme
+   nedskrevne svakhet: Access-sesjonen kan henge igjen som
+   forrige bruker paa en delt iPad.
+   ============================================================ */
+const REDAKTORER = ['magne@neam.no', 'sys@neam.no'];
+let erRedaktor = false;
+let redigerer = false;
+
+async function sjekkRedaktor(){
+  try{
+    const r = await fetch('/cdn-cgi/access/get-identity?_=' + Date.now(), { cache:'no-store' });
+    if(!r.ok) return;
+    const d = await r.json();
+    const e = String((d && d.email) || '').trim().toLowerCase();
+    erRedaktor = REDAKTORER.indexOf(e) !== -1;
+  }catch(e){ /* ingen Access lokalt - da ingen knapp */ }
+  if(erRedaktor){
+    $('redigerKnapp').hidden = false;
+    tegnRekorder();
+  }
+}
+
+$('redigerKnapp').addEventListener('click', function(){
+  redigerer = !redigerer;
+  this.classList.toggle('paa', redigerer);
+  this.textContent = redigerer ? 'Ferdig' : 'Rediger';
+  tegnRekorder();
+});
+
+async function slettRunder(ider, sporsmaal){
+  const ja = await bekreft(sporsmaal, { jaTekst:'Slett', fare:true });
+  if(!ja) return;
+  try{
+    const fjern = await kvLes(NOKKEL);
+    const flett = flettData(fjern, data);
+    flett.runder = flett.runder.filter(function(r){ return ider.indexOf(r.id) === -1; });
+    await kvSkriv(NOKKEL, flett);
+    data = flett;
+    lokalSkriv(false);
+    tegnRekorder();
+  }catch(e){
+    console.warn('Klokkespill: fikk ikke slettet', e);
+    varsle('Fikk ikke slettet. Prøv igjen om litt.');
+  }
+}
+
+$('slettAlle').addEventListener('click', function(){
+  const n = data.runder.length;
+  if(!n) return;
+  slettRunder(data.runder.map(function(r){ return r.id; }),
+    'Slette alle ' + n + (n === 1 ? ' runde' : ' runder') + '? Da står rekordene tomme.');
+});
+
+$('siste').addEventListener('click', function(ev){
+  const k = ev.target.closest('.slett-rad');
+  if(!k) return;
+  const r = data.runder.filter(function(x){ return x.id === k.dataset.id; })[0];
+  if(!r) return;
+  slettRunder([r.id], 'Slette runden ' + NIVAER[r.niva].navn + ', '
+    + r.riktige + ' av ' + r.antall + ' fra ' + kortDato(r.tid) + '?');
+});
+
+function tegnRekorder(nyId){
+  const runder = data.runder;
+
+  $('nivaRekorder').innerHTML = NIVA_REKKE.map(function(k){
+    const paa = runder.filter(function(r){ return r.niva === k; });
+    let best = null;
+    paa.forEach(function(r){ if(!best || bedre(r, best)) best = r; });
+    let detalj;
+    if(!best) detalj = 'Ikke prøvd ennå';
+    else if(best.stjerner === 5){
+      const g = paa.filter(function(r){ return r.stjerner === 5; }).length;
+      detalj = g === 1 ? 'Fem stjerner én gang' : 'Fem stjerner ' + g + ' ganger';
+    }else detalj = 'Beste: ' + best.riktige + ' av ' + best.antall;
+    return '<li class="nr">'
+      + '<span class="nr-stjerner" aria-label="' + (best ? best.stjerner : 0) + ' av 5 stjerner">'
+      + miniStjerner(best ? best.stjerner : 0) + '</span>'
+      + '<span class="nr-navn">' + NIVAER[k].navn + '</span>'
+      + '<span class="nr-detalj">' + detalj + '</span></li>';
+  }).join('');
+
+  const sum = runder.reduce(function(s, r){ return s + (r.stjerner || 0); }, 0);
+  $('samlet').textContent = runder.length
+    ? 'Du har samlet ' + sum + (sum === 1 ? ' stjerne' : ' stjerner')
+      + ' på ' + runder.length + (runder.length === 1 ? ' runde.' : ' runder.')
+    : '';
+
+  const siste = (redigerer ? runder.slice() : runder.slice(-5)).reverse();
+  $('runderH').textContent = redigerer
+    ? (runder.length === 1 ? 'Én runde' : 'Alle ' + runder.length + ' rundene')
+    : 'Siste runder';
+  $('siste').classList.toggle('redigerer', redigerer);
+  $('slettAlle').hidden = !(redigerer && runder.length);
+  $('siste').innerHTML = siste.length
+    ? siste.map(function(r){
+        const klasser = (r.id === nyId ? 'ny ' : '') + (redigerer ? 'rad-redigeres' : '');
+        return '<li' + (klasser.trim() ? ' class="' + klasser.trim() + '"' : '') + '>'
+          + '<span class="s-stjerner" aria-label="' + r.stjerner + ' av 5 stjerner">' + miniStjerner(r.stjerner) + '</span>'
+          + '<span class="s-topp">' + NIVAER[r.niva].navn + ', ' + r.riktige + ' av ' + r.antall + '</span>'
+          + (redigerer ? '<button type="button" class="slett-rad" data-id="' + esc(r.id)
+               + '" aria-label="Slett denne runden">&times;</button>' : '')
+          + '<span class="s-under">' + esc(beskriv(r)) + ', ' + kortDato(r.tid) + '</span></li>';
+      }).join('')
+    : '<li><p class="tom">Ingen runder ennå. Når du har spilt, står de her.</p></li>';
+}
+
+/* ============================================================
+   Oppstart
+   ============================================================ */
+
+history.replaceState({ fh:true, visning:'oppsett' }, '');
+byggUrskive();
+byggOppsett();
+vis('oppsett');
+tegnRekorder();
+lastData();
+sjekkRedaktor();
+</script>
+</body>
+</html>
