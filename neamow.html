@@ -229,9 +229,11 @@ function esc(t){
   });
 }
 
-/* Effektmodusene. «Standard» og «Effektiv» er appens egne norske ord;
-   MANICURE er ikke funnet paa norsk i appen - se kartleggingen. */
-const EFFEKT = { DAILY:'Standard', EFFICIENT:'Effektiv', MANICURE:'Grundig' };
+/* Klippeeffektiviteten. Appen har bare to valg, «Standard» og «Effektiv»
+   (Magne, 11. oktober 2026). MANICURE staar paa omraadene i innstillingen,
+   men brukes ikke saa lenge oppsettet er likt for hele plenen - og har
+   ikke noe navn i appen. Et ukjent navn vises som det er, ikke oversatt. */
+const EFFEKT = { DAILY:'Standard', EFFICIENT:'Effektiv' };
 
 let siste = null;          /* siste svar fra ?hva=neamow */
 let detaljer = null;       /* siste svar fra ?hva=detaljer */
