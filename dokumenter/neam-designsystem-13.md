@@ -9,9 +9,10 @@ Står det her, gjelder det **alle sidene**. Står det ikke her, er det et nytt
 valg – og da bør det inn.
 
 *«Alle fem» står flere steder nedenfor og er skrevet da huset hadde fem
-sider. Det er åtte pluss to spill nå (`index`, `dashboard`, `kalender`,
-`handleliste`, `oppskrifter`, `emma`, `andrea`, `sikkerhet`, og spillene
-`andrea-matte`, `andrea-diktat`). Tallet er
+sider. Det er åtte pluss fire spill og en spillside nå (`index`,
+`dashboard`, `kalender`, `handleliste`, `oppskrifter`, `emma`, `andrea`,
+`sikkerhet`, spillene `andrea-matte`, `andrea-diktat`, `andrea-klokke`,
+`emma-grunnstoff`, og spillsida `andrea-spill`). Tallet er
 ikke rettet overalt – meningen er «alle», og det er greit å vite hvorfor det
 står fem.*
 
@@ -21,7 +22,10 @@ Mye ligger nå i **fellesfiler** (`felles-rot.css`, `felles-skall.css`,
 `felles-skriv.js`, `felles-hus.js`, `felles-ms.js`, `felles-tale.js`). Det som ennå er kopiert per fil, holdes likt av dette
 dokumentet – det er fortsatt fasiten for hva som skal være likt på tvers.
 
-*Sist oppdatert 15. september 2026 (v13): tre nye prinsippkapitler som er
+*Sist oppdatert 10. oktober 2026: klokkespillet og spillsida ført inn;
+«Spillet har ingen vei til andre spill» flyttet fra «Ikke bestemt ennå»
+til besluttet under Andrea dash – ett kort som åpner spillsida. Forrige
+oppdatering 15. september 2026 (v13): tre nye prinsippkapitler som er
 besluttet, ikke bygget – «Språk og læring» og «Paletter per person»;
 ny regel om gjenkjenningsspråk under Stemmen; og arbeidsdelingen mellom
 uttrykk og bygging ført inn under Arbeidsmåte. Begrunnelsene ligger i
@@ -912,10 +916,15 @@ et verktøy. Skoleplanverktøyene fra Emma dash er tatt ut her.
 **Timeplanen kan ha to fag i samme time** («Norsk/Matte»). Splittes på
 skråstrek; dagen teller for begge.
 
-**Snarveier til spill og lignende er et kort nederst i høyrekolonnen,** ikke
+**Snarveien til spillene er ett kort nederst i høyrekolonnen,** ikke
 en fjerde knapp i hjørnet. Alle tre plassene i høyre firer er tatt, og
 applista er felles for hele huset. Kortet viker sammen med
 påminnelsesboksene når en avtale åpnes, og vises bare i Dag-visningen.
+
+**Ett kort, ikke ett per spill.** Kortet åpner spillsida
+(`andrea-spill.html`), og det er der hun velger. Et nytt spill legges til
+på spillsida – dashen røres ikke. Besluttet 10. oktober 2026, da det tredje
+spillet kom.
 
 ## Mattespillet
 
@@ -979,6 +988,45 @@ tilbake, er det arket som må endres, ikke koden.
 
 **Panelet er ikke på denne sida.** Samtalen ville vært en rask vei til
 fasiten.
+
+## Klokkespillet
+
+*Bygget 10. oktober 2026. `andrea-klokke.html`.*
+
+Samme ramme som mattespillet, og alt under «Mattespillet» gjelder her også
+– ingen Neam-firer, galt svar er ikke rødt, gult betyr «det der gikk bra».
+Det som kommer i tillegg:
+
+**Viserklokka er tegnet i SVG.** Messing er rammen, viserne er blekk. Den
+korte viseren er tydelig bredere enn den lange, så de ikke forveksles.
+
+**Skiva er større når den skal stilles enn når den skal leses.** Da er den
+selve kontrollen. Størrelsen har tak i høyden, så Svar-knappen alltid er
+synlig.
+
+**Knottene på viserne finnes bare når viserne kan dras.** Når hun bare
+skal lese klokka, er det ingenting å ta i.
+
+**En viserklokke vet ikke om det er dag eller natt.** Der viserklokka
+leses, er både 3:15 og 15:15 riktig. Bare 24-timersoppgavene skiller.
+
+**Klokka med ord følger skolen:** minuttene mellom kvart over og kvart på
+regnes fra halv – «ti på halv fire», «ti over halv fire».
+
+**Ikke bestemt:** tre utseendevalg ble tatt under byggingen og står til
+godkjenning – digitalklokka som mild flate, gjennomskinnelige blå knotter,
+og en blek grå viser der hun stilte feil. Se kartleggingen del 55.
+
+## Spillsida
+
+*Bygget 10. oktober 2026. `andrea-spill.html`.*
+
+**Tre lenker, ingen skript.** Hele kortet er lenken. Kortene står stablet
+på telefon og tre i bredden ellers, med samme bilder som kortene hadde på
+dashen.
+
+**Spillenes merke går til Andrea dash, ikke hit.** Sveip tilbake fra et
+spill kommer hit.
 
 ---
 
@@ -1883,8 +1931,6 @@ kalenderen, været. Grått tilhører alle uten å velge side – og det er den
   og ble rettet i kalenderen mens den spredte seg i de tre andre. Enten må
   mer av dashene ned i fellesfiler, eller så må «rett i alle fire» bli en
   fast del av enhver retting. Ikke avgjort.
-- **Spillet har ingen vei til andre spill.** Kortet på Andrea dash peker på
-  ett spill. Kommer det flere, er et kort per spill feil form.
 - **Index er blitt en meny, ikke en hjemmeside.** Stor logo, klokke, fire
   fliser. Dashboardet viser faktisk noe; index gjør det ikke. På telefon
   koster det ett trykk før man ser noe nyttig. Verdt å vurdere om index heller

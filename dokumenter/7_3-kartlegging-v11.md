@@ -1,6 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 20. september 2026. v11 la til del 50–54 – språkmodus
+*Ført à jour 10. oktober 2026: del 55 lagt til – klokkespillet for
+Andrea og spillsida som samler spillene hennes. Ført à jour
+20. september 2026. v11 la til del 50–54 – språkmodus
 for Emma og Andrea, grunnstoffspillet, personlige paletter og «hvem er
 du?» på veggskjermen, svartiden som ikke er målt, og arbeidsdelingen
 mellom uttrykk og bygging. Grunnstoffspillet (del 51) er bygget siden; de
@@ -31,9 +33,10 @@ ny tråd alltid lander på samme sted.*
 
 ---
 
-## Nåstatus – 20. september 2026
+## Nåstatus – 10. oktober 2026
 
-**Hvor prosjektet er nå.** Ni sider og tre spill. To økter 12.–13. september
+**Hvor prosjektet er nå.** Ni sider og fire spill, og Andreas tre spill
+nås fra én egen spillside. To økter 12.–13. september
 endret tyngdepunktet i huset: fra sider som hver eier sine verktøy, til
 **fellesfiler som gir Neam det samme overalt**.
 
@@ -54,8 +57,9 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 ?v=56`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=5`, `felles-lesalt.js
 ?v=5`, `felles-hus.js ?v=3`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
 `felles-graph.js ?v=2`, `felles-rot.css ?v=5`, `felles-knapper.css ?v=1`;
-alle ni sidene pluss `andrea-matte.html`, `andrea-diktat.html` og
-`emma-grunnstoff.html`; `functions/_middleware.js`, `functions/api/` med
+alle ni sidene pluss `andrea-matte.html`, `andrea-diktat.html`,
+`andrea-klokke.html`, `emma-grunnstoff.html` og spillsida
+`andrea-spill.html`; `functions/_middleware.js`, `functions/api/` med
 `hent.js`, `sandnes.js`, `sjo.js`, `claude.js`, `data.js`, `ms.js`,
 `homey.js`.
 Bildeversjoner: `MERKE_V=2`, `KNAPP_V=4`, `FAG_MERKE_V=3`, `SIK_MERKE_V=1`,
@@ -128,6 +132,18 @@ Andrea dash sendte de seks skoleverktøyene **to ganger** i samme kall, noe
 API-et avviser – Neam var stum på de to dashene for en innlogget person,
 men ikke for `kitchen`, der skoleverktøyene er skjult.
 
+**10. oktober: klokkespillet og spillsida.** Andrea fikk et fjerde
+læringsspill, `andrea-klokke.html` – samme ramme som mattespillet, med
+Neam som går mot laderen. Fire oppgavetyper: lese viserklokka, stille
+viserne, klokka med ord («ti på halv fire») og 24-timersklokka. Fire
+nivåer etter hva klokka kan vise, fra hele og halve timer ned til hvert
+minutt. Rundene lagres i `andrea-klokke:v1`. Samme dag ble de tre
+spillkortene på Andrea dash erstattet av **ett kort** som åpner
+`andrea-spill.html`, der hun velger spill. Det løste to ting på én gang:
+designsystemets «et kort per spill er feil form», og at diktatkortet ble
+stående når en avtale åpnet seg. Se del 55. **Ingen `?v=`-numre er brukt
+eller brent** – ingen fellesfiler ble rørt.
+
 ### Åpne tråder
 
 **Besluttet, ikke bygget – fem systemer med begrunnelse i del 47–50 og 52:**
@@ -168,6 +184,10 @@ men ikke for `kitchen`, der skoleverktøyene er skjult.
   på en serie i avtaleskjemaet, sendes null i den tro at serien blir én
   vanlig avtale. Feiler det, kommer feilen opp i skjemaet – og da skal
   valget fjernes i stedet for å bli stående som noe som ser ut til å virke.
+- **Tre utseendevalg i klokkespillet** ble tatt under byggingen og er ikke
+  godkjent: den digitale klokka som mild flate (`--boks-mild`) og ikke et
+  mørkt display; viserknottene i gjennomsiktig blått (`--aksent`); og der
+  hun stilte feil som blek grå viser. Se del 55.
 
 **Avtalt som neste sak:**
 - **Robotstemme fra en TTS-tjeneste.** Nettleserens `speechSynthesis` er en
@@ -190,6 +210,8 @@ men ikke for `kitchen`, der skoleverktøyene er skjult.
 - **Kameraet utenfor hjemmenettet.** Se del 32.
 - **Fiskebeinet med åtte apper** på iPad og telefon.
 - **Mattespillet i Safari.** Aldri kjørt på en ekte iPad.
+- **Klokkespillet på iPad – å dra viserne med fingeren.** Prøvd med
+  simulerte trykk og i nettleserens iPad-størrelse, ikke med en finger.
 
 **Bygging som gjenstår (avtalt):**
 - **Skriving til skolearbeidet på tvers.** Det siste som bare kan gjøres fra
@@ -2826,6 +2848,80 @@ dem midt i en økt er dyrt.
 
 **Kjent felle:** et bilde kan være nydelig og likevel ryke på en iPad i
 høydeformat. Briefen skal leses mot enhetene, ikke bare mot smaken.
+
+---
+
+## 55. Klokkespillet og spillsida – 10. oktober 2026
+
+**Klokkespillet er mattespillet med en klokke i stedet for et stykke.**
+`andrea-klokke.html` har samme scene, samme rør og lamper, samme stjerner,
+rekorder per nivå og redigering for `magne@` og `sys@`. Rammen er
+**kopiert, ikke delt** – de to spillene laster ingen felles spillfil. Det
+er samme valg som dashene: raskt, og prisen er at en retting i rammen må
+gjøres to steder.
+
+**Fire oppgavetyper, valgt fritt som regneartene i mattespillet:**
+- **Les klokka** – viserklokke, hun skriver tiden på tastaturet. Kolon
+  settes inn foran de to siste sifrene, så 3 1 5 blir 3:15. **3:15 og
+  15:15 regnes begge som riktige**: en viserklokke vet ikke om det er dag
+  eller natt.
+- **Still klokka** – digital tid, hun drar viserne på plass.
+- **Med ord** – fire uttrykk å velge mellom. De gale er laget av de
+  vanlige feilene: timen før og etter (alltid med når det er plass),
+  viserne byttet om, og «over» og «på» byttet om.
+- **24 timer** – to former trukket tilfeldig: les viserklokka med delen av
+  døgnet («om ettermiddagen») og skriv den som 24-timersklokke, eller still
+  viserklokka etter en tid som 15:15. Ettermiddag og kveld kommer oftest –
+  det er der tallene skiller seg.
+
+**Fire nivåer etter hva klokka viser:** Lett (hele og halve), Middels
+(kvarter), Vanskelig (hvert 5. minutt), Ekspert (hvert minutt). **Det som
+er nytt på et nivå kommer oftere** enn det hun kunne fra nivået under – på
+Middels er det kvart over og kvart på, ikke hele timer igjen.
+
+**Klokka med ord følger skolen:** minuttene mellom kvart over og kvart på
+regnes fra halv. 3:20 er «ti på halv fire», 3:40 er «ti over halv fire».
+Hele timer skrives «klokka tre» – «tre» alene så tynt ut som et svar.
+
+**Neam forklarer de vanlige feilene** i stedet for bare å si «nesten»:
+«halv fire er en halvtime før fire», «den korte viseren har ikke kommet
+til fire ennå», «om ettermiddagen legger vi til tolv: 3 + 12 = 15».
+
+### Viserne – lagt om samme kveld
+
+Første utgave var for vanskelig å stille med fingeren. Tre ting ble
+endret:
+
+- **Skiva vokser når den skal stilles.** Da er den selve kontrollen og
+  får bredden: rundt 335 px på telefon mot 180 før. Størrelsen har tak i
+  høyden, ellers havner Svar-knappen under kanten – målt på telefon,
+  iPhone SE, iPad stående og liggende. På iPad liggende måtte svarkolonnen
+  krympe til knappen for at digitaltida skulle få stå ved siden av skiva.
+- **Knotten nærmest fingeren vinner.** Viseren velges etter avstand til
+  knottene, ikke bare etter vinkel. En fingertupp er bred, og knottene er
+  det hun sikter på.
+- **Et trykk flytter ikke timen.** Første trykk setter minuttene der
+  fingeren er uten å røre timen. Timen følger bare med når minuttviseren
+  **dras** rundt forbi tolv – som når man vrir på en ekte klokke.
+
+**Fylte knotter skjulte den korte viseren.** Knotten sitter midt på
+viseren, og på den korte dekket den nesten alt. Knottene er derfor
+gjennomskinnelige.
+
+**Feilsøkingsnotat:** dra-tester i nettleserpanelet ga tilfeldige tider.
+Panelet skalerer en emulert skjerm ned, og koordinatene fra skjermbildet
+treffer ikke det sida mottar. Logikken ble prøvd med `PointerEvent`-er
+sendt rett til skiva i stedet – da stemte alt på første forsøk.
+
+### Spillsida
+
+`andrea-spill.html` er tre lenker og ingen skript. Kortet på Andrea dash
+peker hit, og et nytt spill legges til her uten at dashen røres. Kortet
+beholdt id-en `kortSpill`, så det står fortsatt i `HOYRE_KORT` og viker når
+en avtale åpnes. Diktatkortet hadde aldri stått der, og ble stående.
+
+Spillenes eget merke går fortsatt rett til Andrea dash. Sveip tilbake fra
+et spill kommer til spillsida.
 
 ---
 
