@@ -281,7 +281,7 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
 </div>
 
 <script src="/felles-dialog.js?v=1"></script>
-<script src="/felles-hus.js?v=6"></script>
+<script src="/felles-hus.js?v=7"></script>
 <script src="/felles-data.js?v=4"></script>
 <script src="/felles-ms.js?v=2"></script>
 <script src="/felles-lesalt.js?v=5"></script>
@@ -721,7 +721,7 @@ function tegnHistorikk(){
 
 /* ---------- Henting ----------
    Takten er den samme som kortets (nmwIntervall i felles-hus.js): hvert
-   andre sekund mens klipperen beveger seg, sjeldnere ellers. Skjult
+   tredje sekund mens klipperen beveger seg, sjeldnere ellers. Skjult
    fane: ingen spoersmaal til Roborock. */
 function planlegg(ms){
   if(timer) clearTimeout(timer);
@@ -733,12 +733,14 @@ async function hent(){
   if(!d.ok){
     if(d.maaGodkjenne){
       $('sideFeil').textContent = 'Neamow er ikke koblet til. Åpne Neamow under Enheter i venstre hjørne og logg inn der.';
+    }else if(d.nyInnlogging){
+      $('sideFeil').textContent = d.feil + ' Åpne Neamow under Enheter i venstre hjørne for å logge inn på nytt.';
     }else{
       $('sideFeil').textContent = 'Fikk ikke kontakt med Neamow: ' + d.feil;
     }
     $('sideFeil').hidden = false;
     $('sideStatus').textContent = 'Ikke tilkoblet';
-    planlegg(d.maaGodkjenne ? 30000 : 10000);
+    planlegg(d.maaGodkjenne || d.nyInnlogging ? 60000 : 10000);
     return;
   }
   $('sideFeil').hidden = true;

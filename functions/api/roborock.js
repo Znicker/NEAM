@@ -555,7 +555,9 @@ async function mqttForbindelse(rriot){
   const ack = await neste(Date.now() + MQTT_VENT);
   if(!ack || (ack.type >> 4) !== 2 || ack.kropp[1] !== 0){
     try{ sokkel.close(); }catch(e){}
-    throw new Error('Roborocks MQTT slapp oss ikke inn' + (ack ? ' (kode ' + ack.kropp[1] + ')' : ''));
+    const e = new Error('Roborocks MQTT slapp oss ikke inn' + (ack ? ' (kode ' + ack.kropp[1] + ')' : ''));
+    e.mqttKode = ack ? ack.kropp[1] : null;
+    throw e;
   }
 
   return {
@@ -596,6 +598,80 @@ async function mqttForbindelse(rriot){
 
 /* Én kort oekt mot klipperen. `arbeid` faar en funksjon som sender en
    kommando og venter paa svaret. */
+/* ---------- Vakten rundt motKlipper ----------
+   Kode 5 fra Roborocks MQTT («not authorized») betyr ENTEN at vi har
+   logget inn for ofte, ELLER at noeklene ikke lenger gjelder - Roborock
+   sier ikke hvilken (python-roborock, MqttSessionUnauthorized). Maalt
+   11. oktober 2026: noeklene fra neam.no ble avvist mens testinnloggingen
+   paa PC-en slapp inn - altsaa noeklene, ikke kontoen.
+
+   Det verste vi kan gjoere da er aa fortsette: python-roborock venter
+   opptil seks timer. Derfor husker vi avvisningen i KV og spoer ikke
+   Roborock paa 15 minutter - skjermene faar svaret herfra. En ny
+   innlogging gir nye noekler og loeser det som regel; feilen sier fra om
+   det (`nyInnlogging`), og kortet viser knappen. */
+const SPERRE_MIN = 15;
+
+/* ---------- Mellomlageret for ?hva=neamow ----------
+   Cloudflares cache, per datasenter - ikke KV, som er for treg til
+   sekunder. Nokkelen er en adresse som ikke finnes; den er bare et navn.
+   Levetid: 2 sekunder mens klipperen beveger seg (nettleseren spoer hvert
+   tredje), 10 ellers. Toemmes
+   etter hver styring og lagring, saa et trykk aldri viser det gamle. */
+function nmwLagerNokkel(utenKart){
+  return new Request('https://neam.no/__neamow-lager/' + (utenKart ? 'status' : 'alt'));
+}
+async function nmwLagerHent(utenKart){
+  if(typeof caches === 'undefined') return null;
+  try{
+    const r = await caches.default.match(nmwLagerNokkel(utenKart));
+    return r ? await r.json() : null;
+  }catch(e){ return null; }
+}
+async function nmwLagerLegg(utenKart, data){
+  if(typeof caches === 'undefined') return;
+  const s = data.status || {};
+  const beveger = /MOW|RETURN/.test([s.klipper, s.oppgave, s.stasjon].join(' '))
+               && !/SUSPEND/.test([s.klipper, s.detalj].join(' '));
+  try{
+    await caches.default.put(nmwLagerNokkel(utenKart), new Response(JSON.stringify(data), {
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=' + (beveger ? 2 : 10) }
+    }));
+  }catch(e){}
+}
+async function nmwLagerTom(){
+  if(typeof caches === 'undefined') return;
+  try{
+    await caches.default.delete(nmwLagerNokkel(true));
+    await caches.default.delete(nmwLagerNokkel(false));
+  }catch(e){}
+}
+async function motKlipperVakt(env, okt, arbeid){
+  if(okt.sperretTil && Date.now() < okt.sperretTil){
+    const e = new Error('Roborock slapp oss ikke inn sist. Prøver igjen om '
+      + Math.max(1, Math.ceil((okt.sperretTil - Date.now()) / 60000)) + ' min – eller logg inn på nytt.');
+    e.nyInnlogging = true;
+    throw e;
+  }
+  try{
+    return await motKlipper(okt, arbeid);
+  }catch(e){
+    /* 4 = feil brukernavn/passord (noeklene gjelder ikke), 5 = ikke
+       tillatt (for mange innlogginger, eller noekler trukket tilbake).
+       Maalt: feil passord gir 4. Begge stoppes - aa proeve igjen hjelper
+       ikke paa 4, og forverrer 5. */
+    if(e.mqttKode === 4 || e.mqttKode === 5){
+      okt.sperretTil = Date.now() + SPERRE_MIN * 60000;
+      try{ await env.FAMILIE_KV.put(NOKKEL, JSON.stringify(okt)); }catch(x){}
+      const ny = new Error('Roborock slapp oss ikke inn (for mange innlogginger, eller utløpte nøkler). '
+        + 'Prøver igjen om ' + SPERRE_MIN + ' min – eller logg inn på nytt.');
+      ny.nyInnlogging = true;
+      throw ny;
+    }
+    throw e;
+  }
+}
+
 async function motKlipper(okt, arbeid){
   const m = await mqttForbindelse(okt.rriot);
   const ut  = 'rr/m/i/' + okt.rriot.u + '/' + m.bruker + '/' + okt.duid;
@@ -934,6 +1010,7 @@ export async function onRequestPost({ request, env }){
     Object.assign(okt, k);
     await env.FAMILIE_KV.put(NOKKEL, JSON.stringify(okt));
     await env.FAMILIE_KV.delete(VENTER);
+    await nmwLagerTom();
     return svar({ ok:true, navn:k.navn, modell:k.modell });
   }
 
@@ -970,7 +1047,7 @@ export async function onRequestPost({ request, env }){
     const okt = await lesOkt(env);
     if(!okt || !okt.duid) return svar({ ok:false, feil:'Neamow er ikke koblet til', maaGodkjenne:true });
     try{
-      const r = await motKlipper(okt, async function(kommando){
+      const r = await motKlipperVakt(env, okt, async function(kommando){
         if(handling === 'hoyde'){
           /* Som appen: hoeyden settes med det samme, og skrives saa inn i
              innstillingen saa den gjelder for neste tur ogsaa. Klipperen
@@ -994,9 +1071,10 @@ export async function onRequestPost({ request, env }){
       /* Klipperen svarer «fail» naar den ikke kan (ha-roborock-mower). */
       const avvist = r === 'fail' || (Array.isArray(r) && r.indexOf('fail') !== -1);
       if(avvist) return svar({ ok:false, feil:'Neamow avviste det akkurat nå' });
+      await nmwLagerTom();
       return svar({ ok:true });
     }catch(e){
-      return svar({ ok:false, feil: String(e.message || e) });
+      return svar({ ok:false, feil: String(e.message || e), nyInnlogging: !!e.nyInnlogging });
     }
   }
 
@@ -1028,7 +1106,7 @@ export async function onRequestPost({ request, env }){
       return UKEDAGER_RR.filter(function(x){ return d.indexOf(x) !== -1; });
     };
     try{
-      const ut = await motKlipper(okt, async function(kommando){
+      const ut = await motKlipperVakt(env, okt, async function(kommando){
         const les = async function(type){
           const r = await kommando('remote_pb', { id: String(Date.now()), type: type });
           return typeof r === 'string' ? JSON.parse(r) : r;
@@ -1120,9 +1198,10 @@ export async function onRequestPost({ request, env }){
         }
         return hentDetaljer(kommando);
       });
+      await nmwLagerTom();
       return svar(Object.assign({ ok:true }, ut));
     }catch(e){
-      return svar({ ok:false, feil: String(e.message || e) });
+      return svar({ ok:false, feil: String(e.message || e), nyInnlogging: !!e.nyInnlogging });
     }
   }
 
@@ -1154,13 +1233,17 @@ export async function onRequestGet({ request, env }){
 
   /* ---------- Kart og status, i én forbindelse ---------- */
   /* `kart=0`: bare status. Mens klipperen kjoerer, spoer nettleseren
-     hvert andre sekund, og kartet er det tunge - det hentes bare naar
+     hvert tredje sekund, og kartet er det tunge - det hentes bare naar
      kartfila er endret (status.kartEndret). */
   if(hva === 'neamow'){
     let utenKart = false;
     try{ utenKart = new URL(request.url).searchParams.get('kart') === '0'; }catch(e){}
+    /* Felles mellomlager: flere skjermer som spoer samtidig, deler én
+       henting i stedet for én innlogging hos Roborock hver. */
+    const lagret = await nmwLagerHent(utenKart);
+    if(lagret) return svar(lagret);
     try{
-      const ut = await motKlipper(okt, async function(kommando){
+      const ut = await motKlipperVakt(env, okt, async function(kommando){
         const kart = utenKart ? null : lesKart(await kommando('get_map_diff', undefined, true));
         let status = null, statusFeil = '';
         try{
@@ -1169,19 +1252,21 @@ export async function onRequestGet({ request, env }){
         }catch(e){ statusFeil = String(e.message || e); }
         return { kart: kart, status: status, statusFeil: statusFeil };
       });
-      return svar(Object.assign({ ok:true, navn: okt.navn }, ut));
+      const hel = Object.assign({ ok:true, navn: okt.navn }, ut);
+      await nmwLagerLegg(utenKart, hel);
+      return svar(hel);
     }catch(e){
-      return svar({ ok:false, feil: String(e.message || e) });
+      return svar({ ok:false, feil: String(e.message || e), nyInnlogging: !!e.nyInnlogging });
     }
   }
 
   /* ---------- Detaljene til den egne sida ---------- */
   if(hva === 'detaljer'){
     try{
-      const d = await motKlipper(okt, hentDetaljer);
+      const d = await motKlipperVakt(env, okt, hentDetaljer);
       return svar(Object.assign({ ok:true }, d));
     }catch(e){
-      return svar({ ok:false, feil: String(e.message || e) });
+      return svar({ ok:false, feil: String(e.message || e), nyInnlogging: !!e.nyInnlogging });
     }
   }
 

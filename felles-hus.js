@@ -454,10 +454,12 @@ async function nmwHent(){
 
 /* Hvor ofte kortet og sida spoer. Hver henting er en ny innlogging paa
    Roborocks MQTT og et kall i Cloudflare, saa takten foelger det som
-   skjer: hvert andre sekund bare mens klipperen beveger seg (Magne
-   ville se den kjoere), ellers sjeldnere. Stoppes helt naar ingen ser. */
+   skjer: hvert tredje sekund bare mens klipperen beveger seg (Magne
+   ville se den kjoere), ellers sjeldnere. Stoppes helt naar ingen ser.
+   Var 2 sekunder til 11. oktober 2026: da avviste Roborock noeklene
+   (kode 5, trolig for mange innlogginger). Magne valgte 3. */
 function nmwIntervall(tilstand){
-  if(/^Klipper|På vei hjem/.test(tilstand || '')) return 2000;
+  if(/^Klipper|På vei hjem/.test(tilstand || '')) return 3000;
   if(tilstand === 'Pause') return 10000;
   return 30000;
 }
@@ -667,6 +669,16 @@ async function nmwOppdater(){
   const d = await nmwHent();
   if(!nmwBak || nmwBak.hidden || nmwSteg) return;
   if(!d.ok && d.maaGodkjenne){ nmwVisKonto(); return; }
+  if(!d.ok && d.nyInnlogging){
+    /* Roborock slapp oss ikke inn (kode 5). Serveren holder seg unna en
+       stund av seg selv; en ny innlogging gir nye noekler og loeser det
+       som regel med det samme. Se roborock.js, motKlipperVakt. */
+    nmwInnhold('<p class="nmw-tekst">' + String(d.feil).replace(/</g, '&lt;') + '</p>'
+             + '<div class="dlg-rad"><button type="button" class="dlg-knapp ja" id="nmwNyInn">Logg inn på nytt</button></div>');
+    document.getElementById('nmwNyInn').onclick = function(){ nmwVisKonto(); };
+    nmwTimer = setTimeout(nmwOppdater, 60000);
+    return;
+  }
   if(!d.ok){
     nmwInnhold('<p class="nmw-tom">Fikk ikke kontakt med Neamow: '
              + String(d.feil).replace(/</g, '&lt;') + '</p>');
