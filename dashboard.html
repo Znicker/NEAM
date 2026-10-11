@@ -320,12 +320,6 @@ body{
 .av-foot .knapp-gronn{border-color:var(--handling-ny)}
 .av-foot .knapp-endre{border-color:var(--handling-endre)}
 
-/* Under dagens avtaler, i full bredde. */
-.ny-avtale{
-  flex-shrink:0;width:100%;margin-top:12px;
-  font-size:var(--t-meta);padding:11px 15px;
-}
-
 /* ---------- Vær ---------- */
 .vaer-t{flex:1;text-align:center;padding:8px 2px;border-radius:11px;background:#F7F9FA}
 
@@ -906,7 +900,9 @@ select.hu-felt{
       <div class="kort-kropp" id="plan">
         <div class="tom">Henter …</div>
       </div>
-      <button class="knapp-gronn ny-avtale" onclick="nyAvtale()">Legg til avtale i kalenderen</button>
+      <!-- «Legg til avtale i kalenderen» sto her til 11. oktober. Den
+           ligger naa paa skraa i hoeyre tommelknapp, som paa Emma og
+           Andrea dash - to veier til samme handling er én for mye. -->
     </div>
 
     <div class="hoyre">
@@ -3190,7 +3186,12 @@ window.neamSideHandlinger = function(){
                + '<path d="M12 12v5M9.5 14.5h5"/></svg>',
             gjor: function(){ apneHuskeSkjema('uke'); } }
         ]);
-      } }
+      } },
+
+    /* Avtaleknappen under dagens avtaler flyttet hit 11. oktober. */
+    { plass:'skraa', navn:'Legg til avtale i kalenderen', tekst:'Avtale', farge:'ny',
+      merke:true, ikon:knappMerke('avtale'),
+      gjor: nyAvtale }
   ];
 };
 
