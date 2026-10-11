@@ -1132,11 +1132,18 @@ klipperen faktisk lagret, ikke det som ble sendt.
 «Klipp like etter regn». Et navn appen ikke har (MANICURE) vises som det
 er – aldri et ord vi fant på.
 
-**Hentetakten følger det som skjer:** hvert 2. sekund mens den klipper
+**Hentetakten følger det som skjer:** hvert 3. sekund mens den klipper
 eller kjører hjem, hvert 10. på pause, hvert 30. når den hviler, og
 ingenting når fanen er skjult. Kartet hentes bare når kartfila er endret.
 Hver henting er en innlogging hos Roborock og et kall i Cloudflare – en
 skjerm som står oppe hele dagen skal ikke koste mer enn det den viser.
+**2 sekunder var for ofte**: Roborock sa nei (kode 5) etter én dag.
+Flere skjermer deler én henting gjennom et mellomlager på serveren.
+
+**Når Roborock sier nei, prøver vi ikke igjen med en gang.** Serveren
+venter 15 minutter av seg selv, og kortet viser hva som skjedde og en
+knapp for å logge inn på nytt – ikke bare en feilmelding. En feil man
+ikke kan gjøre noe med, er en feil man slutter å lese.
 
 ## Oppskriftssida
 

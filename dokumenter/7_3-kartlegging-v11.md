@@ -58,7 +58,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 
 **Siste leverte versjoner:** `felles-neam.js ?v=72`, `felles-neam.css
 ?v=59`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=5`, `felles-lesalt.js
-?v=5`, `felles-hus.js ?v=6`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
+?v=5`, `felles-hus.js ?v=7`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
 `felles-graph.js ?v=2`, `felles-rot.css ?v=5`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html` og spillsida
@@ -72,7 +72,7 @@ spillbildene `?v=1`, sikkerhetsmerkene `?v=1` (65 stk i
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–71; neam.css til og
 med 58; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–4, skriv 1–4,
-hus `?v=1–5`, ms `?v=1`, tale 1–4**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
+hus `?v=1–6`, ms `?v=1`, tale 1–4**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
 tale 1–4 ble brent 13. september ved å endre en fil som alt var pushet uten
 å heve nummeret – se del 46. Resten er tidligere leverte numre, som alltid
 er brent i det de forlates.
@@ -231,7 +231,8 @@ styrer. Se del 56.
 - **Neamow ute på plenen** (del 56), med Magne til stede:
   - klipping av valgte områder (`MOW_SELECT`) og kanten (`MOW_EDGE`)
   - om fronten på klippersymbolet peker i kjøreretningen, eller 180° feil
-  - at kortet og sida henter hvert andre sekund mens den kjører
+  - at kortet og sida henter hvert tredje sekund mens den kjører, **uten
+    at Roborock sier nei igjen** (kode 5 – se del 56)
   - om kniven faktisk følger klippehøyden (den meldte 69 mm etter at
     70 ble satt, mens den sto i laderen)
 - **Tyverisikringen på Neamow.** Bygget, ikke prøvd – Magne ville teste
@@ -2958,9 +2959,10 @@ et spill kommer til spillsida.
 ## 56. Neamow – gressklipperen – 10.–11. oktober 2026
 
 Roborock RockMow Z115, modell `roborock.mower.a235`, kalt **Neamow**.
-Fem commits: `ebdfacf` (kort og innlogging), `126fad6` (styring),
+Seks commits: `ebdfacf` (kort og innlogging), `126fad6` (styring),
 `cc5104e` (egen side, symbol, raskere henting), `954aa98`
-(effektivitetsnavn), `8a3d97e` (innstillinger og tidsplaner).
+(effektivitetsnavn), `8a3d97e` (innstillinger og tidsplaner), `8a0cec9`
+(vakt ved kode 5, ny innlogging, mellomlager, 3 sekunder).
 
 ### Veien inn – og hvorfor ikke Homey eller Home Assistant
 
@@ -3020,7 +3022,7 @@ endret. **ha-roborock-mower tar bare første `#7`** – Neamow har tre soner
 Posisjonen i kartfila står stille mens den kjører; posisjonen i statusen
 flytter seg (2,5 m på 8 sekunder, målt). Kortet bruker statusens.
 
-**Hentetakten** (`nmwIntervall`): hvert **2. sekund** mens den klipper
+**Hentetakten** (`nmwIntervall`): hvert **3. sekund** mens den klipper
 eller kjører hjem, hvert 10. på pause, hvert 30. når den hviler – og
 ingenting når fanen er skjult. **Kartet hentes bare når kartfila er
 endret** (`status.kartEndret` mot `kart.endret`); ellers bare statusen
@@ -3028,6 +3030,34 @@ endret** (`status.kartEndret` mot `kart.endret`); ellers bare statusen
 Cloudflare. 2 sekunder hele døgnet fra én skjerm ville vært over 40 000
 kall – nesten halve gratiskvoten – og Roborock kan sperre en konto som
 logger inn så ofte.
+
+### Kode 5 – Roborock sa nei (11. oktober 2026)
+
+Takten var først **2 sekunder**. Dagen etter fikk Magne «Roborocks MQTT
+slapp oss ikke inn (kode 5)». Testinnloggingen på PC-en, med andre nøkler,
+slapp inn samtidig – så det var **nøklene fra neam.no, ikke kontoen**.
+Med vilje feile nøkler gir **kode 4** (feil brukernavn/passord); kode 5
+(«not authorized») betyr at Roborock kjente nøklene og nektet likevel.
+python-roborock sier kode 5 er **enten for mange innlogginger eller
+nøkler trukket tilbake**, og venter selv opptil seks timer. Mest
+sannsynlig: én innlogging per henting, hvert 2. sekund, fra hver skjerm.
+
+Det verste var at neam.no **fortsatte å prøve** hvert 10. sekund. Tre
+grep (`8a0cec9`):
+- **Vakten** (`motKlipperVakt`): ved kode 4 eller 5 lagres `sperretTil`
+  i økta i KV, og Roborock spørres ikke på **15 minutter**. Skjermene får
+  svaret fra serveren. Prøvd med feile nøkler: andre kall ga ingen ny
+  forbindelse.
+- **«Logg inn på nytt»** i kortet (`nyInnlogging` i svaret). Nye nøkler
+  løser det som regel med det samme.
+- **Felles mellomlager** i Cloudflares cache (`caches.default`, ikke KV –
+  for treg til sekunder): 2 sekunder mens den kjører, 10 ellers, tømt
+  etter styring, lagring og ny innlogging. Flere skjermer deler da én
+  henting.
+
+Takten mens den kjører ble satt til **3 sekunder** (Magnes valg) – 20
+innlogginger i minuttet fra én skjerm i stedet for 30. Holder heller ikke
+det, er neste steg lenger takt, ikke flere forsøk.
 
 **Klippersymbolet** er Magnes eget (`bilder/symbol-neamow.png`, sett
 ovenfra, **fronten ned i bildet**), dreid etter vinkelen: `-v·180/π − 90`.
@@ -3149,4 +3179,6 @@ jokertegn (Roborock nekter); `GET_PANORAMA_MAP*` og `GET_FULL_MAP` med
 `rgb_map.png` for det realistiske kartet; `SET_CUSTOM_MOW_PREFERENCE`,
 `SET_MOW_PREFERENCE` med område-id og `SET_MOW_PREFERENCE_CONFIG` for
 innstillinger per område mens oppsettet er likt for hele plenen; å skrive
-samme verdi som før for å teste en skriving; `CREATE_MOWING_PLAN` uten id.
+samme verdi som før for å teste en skriving; `CREATE_MOWING_PLAN` uten id;
+å hente hvert 2. sekund med en ny MQTT-innlogging hver gang (Roborock sa
+nei, kode 5); å prøve igjen hvert 10. sekund etter kode 5.
