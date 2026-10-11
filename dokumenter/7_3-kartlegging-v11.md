@@ -1,6 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 11. oktober 2026: del 56 lagt til – Neamow, gressklipperen
+*Ført à jour 11. oktober 2026, kveld: Rommene – lys, varme og
+stikkontakter fra Homey under Enheter (se toppblokka). Ført à jour
+11. oktober 2026: del 56 lagt til – Neamow, gressklipperen
 (Roborock RockMow Z115) gjennom Roborocks sky: kort under Enheter, egen
 side, styring, innstillinger og tidsplaner. Ført à jour 10. oktober 2026:
 del 55 lagt til – klokkespillet for
@@ -57,8 +59,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-tale.js` (tale ut og inn).
 
 **Siste leverte versjoner:** `felles-neam.js ?v=72`, `felles-neam.css
-?v=60`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=5`, `felles-lesalt.js
-?v=5`, `felles-hus.js ?v=8`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
+?v=61`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=5`, `felles-lesalt.js
+?v=5`, `felles-hus.js ?v=9`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
 `felles-graph.js ?v=2`, `felles-rot.css ?v=5`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html` og spillsida
@@ -72,8 +74,8 @@ spillbildene `?v=1`, sikkerhetsmerkene `?v=1` (65 stk i
 `bilder/sikkerhet/`). `merke-neamow.png` går under `MERKE_V`.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–71; neam.css til og
-med 59; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–4, skriv 1–4,
-hus `?v=1–7`, ms `?v=1`, tale 1–4**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
+med 60; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–4, skriv 1–4,
+hus `?v=1–8`, ms `?v=1`, tale 1–4**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
 tale 1–4 ble brent 13. september ved å endre en fil som alt var pushet uten
 å heve nummeret – se del 46. Resten er tidligere leverte numre, som alltid
 er brent i det de forlates.
@@ -161,6 +163,20 @@ Neamow ligger under **Enheter** i venstre firer på alle åtte sidene
 innstillinger og ukeplaner. Neam fikk `les_neamow` og sju verktøy som
 styrer. Se del 56.
 
+**11. oktober, kveld: Rommene – enhetsstyring gjennom Homey.** En ny knapp
+under Enheter, **Rommene**, åpner ett kort med alt Homey kan styre, samlet
+per rom: av/på, lysstyrke (glider), ønsket temperatur (− og +) og modus
+(valgliste). Knappene bygges av `setable`, og lista er Homeys – en ny
+lampe dukker opp av seg selv. **Rommet tas fra navnet** (før første « - »),
+ikke fra sonen, fordi sonene er delt i underrom; navn uten bindestrek får
+sonen. **Utenfor:** låser, alt i `VISES` og sensorer (veggbrytere).
+Neam fikk `les_enheter` og `styr_enhet`, fra alle sidene; styring spør
+**alltid**, også av – en ovn eller billader er ikke en lampe. Flere
+enheter kan tas på én godkjenning. Alt ligger i `felles-hus.js` (`hsk`-
+prefiks) og `felles-neam.css`. Magne har prøvd det og sier det fungerer.
+**Formen er midlertidig** – layout og funksjoner tas opp igjen sammen med
+plantegningen.
+
 ### Åpne tråder
 
 **Besluttet, ikke bygget – fem systemer med begrunnelse i del 47–50 og 52:**
@@ -205,8 +221,15 @@ styrer. Se del 56.
   godkjent: den digitale klokka som mild flate (`--boks-mild`) og ikke et
   mørkt display; viserknottene i gjennomsiktig blått (`--aksent`); og der
   hun stilte feil som blek grå viser. Se del 55.
+- **Fire utseendevalg på Rommene-kortet** er tatt under byggingen og er
+  ikke godkjent: navnet «Rommene», lyspæra som ikon (strektegning, ikke
+  merke), blå knapper (som Neamow) og glideren i `--aksent`.
 
 **Avtalt som neste sak:**
+- **Interaktiv plantegning av huset.** Magne lager en plantegning, og den
+  skal bli den egentlige flaten for enhetene – Rommene-kortet er
+  mellomstasjonen. Styringen i `felles-hus.js` kan brukes som den er;
+  tegningen trenger bare å vite hvor hver enhet (Homeys id) står.
 - **Klippesporet på Neamow-kartet** (del 56), neste gang den klipper:
   Magne sier fra, og kartet (`get_map_diff`) leses **mens den kjører** for
   å se om det har klippet område eller spor, slik appen viser det. Finnes
