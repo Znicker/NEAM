@@ -57,8 +57,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-tale.js` (tale ut og inn).
 
 **Siste leverte versjoner:** `felles-neam.js ?v=72`, `felles-neam.css
-?v=59`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=5`, `felles-lesalt.js
-?v=5`, `felles-hus.js ?v=7`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
+?v=60`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=5`, `felles-lesalt.js
+?v=5`, `felles-hus.js ?v=8`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
 `felles-graph.js ?v=2`, `felles-rot.css ?v=5`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html` og spillsida
@@ -67,12 +67,13 @@ alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `homey.js`, `roborock.js`.
 Bildeversjoner: `MERKE_V=2`, `KNAPP_V=4`, `FAG_MERKE_V=3`, `SIK_MERKE_V=1`,
 `NMW_SYMBOL_V=1` (klippersymbolet i kartet, i `felles-hus.js`),
+hagebildet `NMW_HAGE.v=1` (`bilder/neamow-hage.webp`, i `felles-hus.js`),
 spillbildene `?v=1`, sikkerhetsmerkene `?v=1` (65 stk i
 `bilder/sikkerhet/`). `merke-neamow.png` går under `MERKE_V`.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–71; neam.css til og
-med 58; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–4, skriv 1–4,
-hus `?v=1–6`, ms `?v=1`, tale 1–4**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
+med 59; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–4, skriv 1–4,
+hus `?v=1–7`, ms `?v=1`, tale 1–4**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
 tale 1–4 ble brent 13. september ved å endre en fil som alt var pushet uten
 å heve nummeret – se del 46. Resten er tidligere leverte numre, som alltid
 er brent i det de forlates.
@@ -206,6 +207,11 @@ styrer. Se del 56.
   hun stilte feil som blek grå viser. Se del 55.
 
 **Avtalt som neste sak:**
+- **Klippesporet på Neamow-kartet** (del 56), neste gang den klipper:
+  Magne sier fra, og kartet (`get_map_diff`) leses **mens den kjører** for
+  å se om det har klippet område eller spor, slik appen viser det. Finnes
+  det ikke, tegnes sporet av posisjonene kortet og sida alt henter hvert
+  3. sekund – da finnes det bare så lenge noen ser på.
 - **Robotstemme fra en TTS-tjeneste.** Nettleserens `speechSynthesis` er en
   avspiller, ikke en lydkilde – vi får aldri signalet, og kan derfor verken
   legge på effekter eller importere en stemme. En tjeneste som returnerer
@@ -2961,10 +2967,11 @@ et spill kommer til spillsida.
 ## 56. Neamow – gressklipperen – 10.–11. oktober 2026
 
 Roborock RockMow Z115, modell `roborock.mower.a235`, kalt **Neamow**.
-Seks commits: `ebdfacf` (kort og innlogging), `126fad6` (styring),
+Sju commits: `ebdfacf` (kort og innlogging), `126fad6` (styring),
 `cc5104e` (egen side, symbol, raskere henting), `954aa98`
 (effektivitetsnavn), `8a3d97e` (innstillinger og tidsplaner), `8a0cec9`
-(vakt ved kode 5, ny innlogging, mellomlager, 3 sekunder).
+(vakt ved kode 5, ny innlogging, mellomlager, 3 sekunder), `75ba0ba`
+(hagebildet under kartet).
 
 ### Veien inn – og hvorfor ikke Homey eller Home Assistant
 
@@ -3151,6 +3158,33 @@ med `file_name`, `map_name` eller `type` kommer ingenting. `RGB_MAP` og
 `RGB_MAP_INFO` som meldingstype svarer `fail`. `GET_MAP_MOW_SNAPSHOT` og
 `GET_MAP_DIFFS` svarer `ok` uten å sende noe etterpå. Vi graver ikke
 videre i appen selv – kartet venter på de offentlige prosjektene.
+
+### Hagebildet – skjermbilde fra appen (11. oktober 2026, `75ba0ba`)
+
+I stedet ligger et **skjermbilde av appens realistiske kart** under sonene,
+på kortet og sida. Magne sender det i samtalen; Claude gjør resten (skript
+i `C:\Users\Magne\neamow-test\hage`, `steg1`–`steg3`):
+- **Klippet** til kartet, og appens bakgrunn gjort gjennomsiktig med
+  flomfyll fra kantene. Bakgrunnen er svakt blålig hvit, appens linjer
+  svakt grønnlig – fargetonen skiller dem.
+- **Tatt ut av bildet:** appens hvite linjer (fylt innenfra med fargene
+  rundt), A1–A3-teksten, og laderen med klipperikonet (gress fra venstre,
+  grasskanten trukket rett mellom radene over og under). Vi tegner vår egen
+  lader og klipper, som følger den ekte posisjonen.
+- **Tilpasset** med ICP: punkter langs sonekantene mot appens hvite linjer,
+  likedannethet (skala, rotasjon, flytt). Snittavvik 1,9 px ≈ 4,5 cm,
+  rotasjon −0,69°. Appens **ytre** linje ligger 30–40 cm innenfor grensen –
+  slik appen tegner den; delelinjene inni faller nøyaktig sammen.
+- **Lagret** som `bilder/neamow-hage.webp` (811 × 1171, 45 KB) med
+  plasseringen i `NMW_HAGE` i `felles-hus.js`. Nytt bilde: ny fil eller nytt
+  `v`, og plasseringen regnes ut på nytt.
+
+**Repoet er offentlig, og bildet ligger åpent på GitHub** – Magnes valg.
+En opplasting fra sida til KV (utenfor repoet) ble bygget og prøvd, og så
+tatt bort igjen: Magne ville heller sende bildet gjennom Claude.
+
+Med bilde under får sonene **hvit kant og hvite navn** med mørk kant, og
+bare et svakt slør – som i appen.
 
 ### Lærdommer
 

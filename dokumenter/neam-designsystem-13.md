@@ -1114,6 +1114,12 @@ tallene forrige turs og sier ingenting om nå. Klipperen er Magnes eget
 symbol sett ovenfra, dreid etter retningen; messingskiva under er reserven
 om bildet ikke laster.
 
+**Med hagebilde under** (`NMW_HAGE`, et tilpasset skjermbilde av appens
+realistiske kart): sonene får **hvit kant og hvite navn** med mørk kant, og
+bare et svakt hvitt slør – som i Roborock-appen, så de to ser like ut.
+Gress-grønt brukes bare når det ikke er noe bilde. Bildet skal ikke vise
+noe vi også tegner selv: appens linjer, navn og lader tas ut av det.
+
 **Knappene følger tilstanden.** Bare det som gir mening nå vises:
 Start når den hviler, Pause og Send hjem når den klipper, Fortsett, Stopp
 og Send hjem på pause, ingen knapper på vei hjem. En knapp som ikke virker
