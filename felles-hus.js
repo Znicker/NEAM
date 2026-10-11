@@ -542,7 +542,27 @@ function nmwForNeam(d){
    Meter i klipperens eget kart. y snus, saa nord (eller det som er
    «opp» i appen) staar opp. Alt skaleres til boksen; streker og tekst
    regnes i meter, saa de holder stoerrelsen uansett hagens stoerrelse. */
+/* ---------- Hagebildet ----------
+   Skjermbilde av appens realistiske kart, sendt av Magne i samtalen og
+   tilpasset til kartet for hånd (11. oktober 2026): klippet, bakgrunnen
+   gjort gjennomsiktig, appens navn og klipperikon tatt bort. Ligger i
+   bilder/ - repoet er offentlig, og Magne valgte det likevel.
+
+   Plasseringen: bildets midtpunkt i (x, y) i kartets SVG-rom (meter, y
+   snudd), dreid `rot` grader, og `skala` meter per piksel. Regnet ut ved
+   aa legge appens hvite sonelinjer i bildet over sonepunktene.
+   Nytt bilde: ny fil eller nytt `v`, og plassen regnes ut paa nytt.
+   null = ingen bilde, kartet tegnes som foer.
+   Tilpasningen (11. oktober 2026): ICP mot appens delelinjer, snittavvik
+   1,9 px = ca. 4,5 cm. Appens ytre hvite linje ligger 30-40 cm innenfor
+   grensen - slik appen tegner den - og er tatt ut av bildet. */
+const NMW_HAGE = {
+  fil: '/bilder/neamow-hage.webp', v: 1, bredde: 811, hoyde: 1171,
+  plass: { skala: 0.023322, rot: -0.69, x: 12.848, y: -18.904 }
+};
+
 /* `valg` (valgfri, den egne sida): { valgte:[id], dekning:{id:prosent} }.
+   `valg.hage` (begge flatene): NMW_HAGE - hagebildet under sonene.
    Omraadene faar data-sone saa sida kan gjoere dem trykkbare; valgte
    omraader faar «valgt»-fargen fra designsystemet (--aksent-lys). */
 function nmwKart(kart, pos, valg){
@@ -564,8 +584,16 @@ function nmwKart(kart, pos, valg){
   const enhet = storst / 40;          /* én «strek» */
   const f = function(n){ return (Math.round(n * 100) / 100); };
 
-  let svg = '<svg class="nmw-kart" viewBox="' + f(x0) + ' ' + f(y0) + ' ' + f(x1 - x0) + ' ' + f(y1 - y0)
+  const hage = valg && valg.hage;
+  let svg = '<svg class="nmw-kart' + (hage ? ' nmw-med-bilde' : '') + '" viewBox="' + f(x0) + ' ' + f(y0) + ' ' + f(x1 - x0) + ' ' + f(y1 - y0)
           + '" role="img" aria-label="Kart over plenen">';
+  if(hage){
+    const p = hage.plass;
+    svg += '<image class="nmw-hagebilde" href="' + hage.fil + '?v=' + hage.v + '"'
+         + ' width="' + hage.bredde + '" height="' + hage.hoyde + '" preserveAspectRatio="none"'
+         + ' transform="translate(' + p.x + ' ' + p.y + ') rotate(' + p.rot + ') scale(' + p.skala + ')'
+         + ' translate(' + (-hage.bredde / 2) + ' ' + (-hage.hoyde / 2) + ')"/>';
+  }
   const valgte = (valg && valg.valgte) || [];
   const dekning = (valg && valg.dekning) || null;
   soner.forEach(function(z){
@@ -712,7 +740,8 @@ function nmwTegn(d){
     ? '<div class="nmw-styr">' + knapper.map(function(k){
         return '<button type="button" class="dlg-knapp ja" data-nmw="' + k[0] + '">' + k[1] + '</button>';
       }).join('') + '</div>' : '';
-  nmwInnhold(nmwKart(d.kart, pos) + '<dl class="nmw-status">' + linjer + '</dl>'
+  nmwInnhold(nmwKart(d.kart, pos, { hage: NMW_HAGE })
+           + '<dl class="nmw-status">' + linjer + '</dl>'
            + (d.statusFeil ? '<p class="nmw-tom">Status: ' + String(d.statusFeil).replace(/</g, '&lt;') + '</p>' : '')
            + styr + '<p class="nmw-feil" id="nmwStyrSvar" hidden></p>');
   Array.prototype.forEach.call(nmwBak.querySelectorAll('[data-nmw]'), function(b){

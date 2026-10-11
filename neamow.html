@@ -15,7 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/felles-rot.css?v=5">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=59">
+<link rel="stylesheet" href="/felles-neam.css?v=60">
 <style>
 /* ============================================================
    NEAM – Neamow, gressklipperen
@@ -281,7 +281,7 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
 </div>
 
 <script src="/felles-dialog.js?v=1"></script>
-<script src="/felles-hus.js?v=7"></script>
+<script src="/felles-hus.js?v=8"></script>
 <script src="/felles-data.js?v=4"></script>
 <script src="/felles-ms.js?v=2"></script>
 <script src="/felles-lesalt.js?v=5"></script>
@@ -351,7 +351,7 @@ function tegnSide(){
     dekning = {};
     (s.soner || []).forEach(function(z){ dekning[z.id] = z.dekket; });
   }
-  $('sideKart').innerHTML = nmwKart(d.kart, pos, { valgte: valgte, dekning: dekning });
+  $('sideKart').innerHTML = nmwKart(d.kart, pos, { valgte: valgte, dekning: dekning, hage: NMW_HAGE });
   Array.prototype.forEach.call($('sideKart').querySelectorAll('[data-sone]'), function(p){
     p.addEventListener('click', function(){ velg(Number(p.dataset.sone)); });
   });

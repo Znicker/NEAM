@@ -1277,6 +1277,13 @@
   border-radius:12px; margin:0 0 16px;
 }
 .nmw-sone{ fill:var(--nmw-gress); stroke:var(--nmw-gress-kant); stroke-linejoin:round; }
+/* Med hagebilde under: hvit kant og hvite navn, som i Roborock-appen, og
+   bare et svakt slor i sonene, saa bildet synes. Uten bildet er de fylt
+   og groenne som foer. */
+.nmw-med-bilde .nmw-sone{ fill:#FFFFFF; fill-opacity:.06; stroke:#FFFFFF; stroke-opacity:.9; }
+.nmw-med-bilde .nmw-sone.nmw-valgt{ fill:var(--aksent-lys); fill-opacity:.45; }
+.nmw-med-bilde .nmw-sonenavn{ fill:#FFFFFF; paint-order:stroke; stroke:rgba(0,0,0,.55); stroke-width:.25px; }
+
 /* Valgt omraade (den egne sida): «valgt»-fargen, ikke en ny. */
 .nmw-sone.nmw-valgt{ fill:var(--aksent-lys); stroke:var(--aksent); }
 .nmw-sone[data-sone]{ cursor:pointer; }
