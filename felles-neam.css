@@ -1316,3 +1316,40 @@
   background:var(--bg-solid); color:var(--ink);
   font-family:'Archivo',sans-serif; font-size:16px;
 }
+
+/* ---------- Rommene ----------
+   Lys, varme og stikkontakter fra Homey - se «Rommene» i felles-hus.js.
+   MIDLERTIDIG FORM (11. oktober 2026): en liste per rom, til merker og
+   et eget uttrykk er bestemt. Bare husets eksisterende flater og
+   farger: knappene er blaa (de verken skaper, endrer eller sletter -
+   samme som Neamow), glideren og valglista er noeytrale. */
+.hsk-kort{ max-width:460px; max-height:calc(100dvh - 40px); overflow:auto; }
+.hsk-tittel{
+  margin:0 0 14px; color:#000000;
+  font-size:var(--t-meta); font-weight:700;
+  text-transform:uppercase; letter-spacing:.1em;
+}
+.hsk-rom{ margin:0 0 18px; }
+.hsk-romnavn{
+  margin:0 0 8px; color:var(--ink);
+  font-size:var(--t-brod); font-weight:700;
+}
+.hsk-enhet{ padding:10px 0; border-top:1px solid var(--line); }
+.hsk-enhet.hsk-borte{ opacity:.55; }
+.hsk-navn{ color:var(--ink); font-size:var(--t-brod); font-weight:600; }
+.hsk-tilstand{ color:var(--ink-soft); font-size:var(--t-meta); margin-top:2px; }
+.hsk-styr{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:8px; }
+.hsk-styr:empty{ display:none; }
+/* .dlg-knapp blir full bredde paa smal skjerm - ikke her. */
+.hsk-styr .dlg-knapp{ width:auto; padding:8px 18px; }
+.hsk-glider{ flex:1 1 140px; min-width:0; accent-color:var(--aksent); }
+.hsk-temp{ display:inline-flex; align-items:center; gap:10px; }
+.hsk-temp .dlg-knapp{ padding:8px 14px; min-width:44px; }
+.hsk-tall{ min-width:64px; text-align:center; font-weight:700; color:var(--ink); }
+.hsk-valg{
+  padding:8px 12px; border:1.5px solid var(--line); border-radius:12px;
+  background:var(--bg-solid); color:var(--ink);
+  font-family:'Archivo',sans-serif; font-size:16px;
+}
+.hsk-tom{ color:var(--ink-soft); font-size:var(--t-brod); line-height:1.5; margin:0 0 16px; }
+.hsk-feil{ color:var(--danger); font-size:var(--t-meta); margin:0 0 14px; }
