@@ -228,13 +228,11 @@ styrer. Se del 56.
 - **Mattespillet i Safari.** Aldri kjørt på en ekte iPad.
 - **Klokkespillet på iPad – å dra viserne med fingeren.** Prøvd med
   simulerte trykk og i nettleserens iPad-størrelse, ikke med en finger.
-- **Neamow ute på plenen** (del 56), med Magne til stede:
-  - klipping av valgte områder (`MOW_SELECT`) og kanten (`MOW_EDGE`)
-  - om fronten på klippersymbolet peker i kjøreretningen, eller 180° feil
-  - at kortet og sida henter hvert tredje sekund mens den kjører, **uten
-    at Roborock sier nei igjen** (kode 5 – se del 56)
-  - om kniven faktisk følger klippehøyden (den meldte 69 mm etter at
-    70 ble satt, mens den sto i laderen)
+- **Neamow – kniven og klippehøyden** (del 56): om kniven faktisk følger
+  høyden som settes (den meldte 69 mm etter at 70 ble satt, mens den sto i
+  laderen). **Bekreftet ute av Magne 11. oktober:** klipping av valgte
+  områder og kanten, at fronten på klippersymbolet peker i kjøreretningen,
+  og at 3-sekunderstakten holder uten ny kode 5 etter ny innlogging.
 - **Tyverisikringen på Neamow.** Bygget, ikke prøvd – Magne ville teste
   den selv. Å slå den på kan låse klipperen eller utløse alarm; da trengs
   appen eller PIN-koden.
@@ -263,7 +261,11 @@ styrer. Se del 56.
     prøves igjen med oppsettet satt til eget per område i appen.
   - **Neam kan ikke endre innstillinger eller tidsplaner** – bare sida kan.
   - **Det realistiske kartet** (fargebildet appen viser) – se del 56,
-    «Det realistiske kartet». Parkert.
+    «Det realistiske kartet». Parkert til python-roborock eller Matze89x
+    får det til; sjekkes med jevne mellomrom.
+  - **Flyfoto under sonene** (idé, parkert): Kartverkets «Norge i bilder»
+    lagt under kartet, plassert med to punktpar GPS ↔ klipperens meter.
+    Venter til hagen – opparbeidet høsten 2026 – er med på et nytt flyfoto.
 - **Steg to for krydderblandinger.** Se del 35.
 - **Knappemerker** for oppskriftssidas firer og for Sikkerhet-knappen.
 - **Skolevarsler på e-post**, **Neams bolk i husregisteret**,
@@ -3142,6 +3144,14 @@ leses (se under). Når appen ber om det, sender klipperen store
 protokoll-300-meldinger i biter til endepunktet `abc`. Eneste vei videre
 er å avlytte telefonappen med en mellomtjener – valgt bort.
 
+**Prøvd i tillegg 11. oktober:** `MAP_FILE_REQUEST` med
+`map_file_request: {name}` gir **vektorkartet**, ukryptert (p301 med
+endepunkt av nullbytes, id 0, gzip), **uansett hvilket navn** som sendes;
+med `file_name`, `map_name` eller `type` kommer ingenting. `RGB_MAP` og
+`RGB_MAP_INFO` som meldingstype svarer `fail`. `GET_MAP_MOW_SNAPSHOT` og
+`GET_MAP_DIFFS` svarer `ok` uten å sende noe etterpå. Vi graver ikke
+videre i appen selv – kartet venter på de offentlige prosjektene.
+
 ### Lærdommer
 
 - **En pause heter ikke det samme overalt.** `SUSPEND`, ikke `PAUSE` – og
@@ -3181,4 +3191,6 @@ jokertegn (Roborock nekter); `GET_PANORAMA_MAP*` og `GET_FULL_MAP` med
 innstillinger per område mens oppsettet er likt for hele plenen; å skrive
 samme verdi som før for å teste en skriving; `CREATE_MOWING_PLAN` uten id;
 å hente hvert 2. sekund med en ny MQTT-innlogging hver gang (Roborock sa
-nei, kode 5); å prøve igjen hvert 10. sekund etter kode 5.
+nei, kode 5); å prøve igjen hvert 10. sekund etter kode 5;
+`MAP_FILE_REQUEST` med et filnavn for det realistiske kartet (navnet
+overses, vektorkartet kommer); `RGB_MAP`/`RGB_MAP_INFO` som meldingstype.
