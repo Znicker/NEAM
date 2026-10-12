@@ -304,7 +304,7 @@ const HJEM_VERKTOY = [
      lampe, og en regel per klasse ville vaert en liste aa holde ved like. */
   {
     name: 'les_enheter',
-    description: 'Lys, varme, stikkontakter, TV-er og annet Homey kan styre, samlet per rom: '
+    description: 'Lys, varme, stikkontakter, TV-er og annet Homey kan styre, samlet per etasje og rom: '
                + 'om de er på eller av, lysstyrke, ønsket og målt temperatur, modus, og hva '
                + 'som kan endres på hver. Ytterdøra og varslerne er ikke med - de står i '
                + 'les_huset. Bruk denne før du sier noe om enhetene eller styrer dem - ikke '
@@ -412,7 +412,7 @@ async function hjemUtfor(navn, arg){
   if(navn === 'les_enheter'){
     await hskHent();
     return { rom: hskRom().map(function(r){
-      return { rom: r.navn, enheter: r.enheter.map(hskForNeam) };
+      return { etasje: r.etasje, rom: r.navn, enheter: r.enheter.map(hskForNeam) };
     }) };
   }
 
@@ -857,41 +857,71 @@ function nmwVisKode(feil){
 }
 
 /* ============================================================
-   Rommene - lys, varme og stikkontakter
+   Rommene - alle enhetene i huset, etasje for etasje
    ------------------------------------------------------------
-   Laget 11. oktober 2026. MIDLERTIDIG FORM: ett kort under Enheter
-   med alt Homey kan styre, samlet per rom, i stedet for tegnede
-   merker per enhet. Magnes valg: «egne midlertidige kort».
+   Laget 11. oktober 2026, lagt om 12. oktober 2026. MIDLERTIDIG
+   FORM til plantegningen kommer: ett kort under Enheter, med en fane
+   per etasje og rommene under. Magnes valg: «egne midlertidige kort».
 
    LISTA ER HOMEYS, IKKE VAAR. Sikkerhetsenhetene over er en fast
    liste fordi merkene er tegnet for dem. Her finnes ingen merker, og
    en ny lampe skal dukke opp av seg selv. Knappene bygges av
    `setable` paa kapabilitetene, som designsystemet sier.
 
-   ROMMET TAS FRA NAVNET (foer foerste « - »), ikke fra Homeys sone:
-   stedet staar i enhetsnavnet med vilje, og sonene er delt i
-   underrom - «Stue» finnes baade i Andreas rom og i huset. Har navnet
-   ingen bindestrek, brukes sonen.
+   ETASJE OG ROM TAS FRA HOMEYS SONER: Hjem > etasje > rom > ... .
+   Sonetreet er satt opp slik (lest 12. oktober 2026), og det er den
+   ene kilden som allerede vet hvor alt staar. Ligger en enhet rett i
+   en etasje (Garasje), er etasjen ogsaa rommet. Navnet beholder
+   stedet sitt i Homey med vilje; her kuttes bare det som gjentar
+   rommet kortet allerede staar i.
 
-   UTENFOR: laaser (doera har egne verktoey, og opplaasing spoer
-   alltid), alt i VISES, og sensorer - en bryter paa veggen er ikke
-   noe man styrer, den styrer noe annet.
+   ALT VISES, MEN IKKE ALT STYRES. Roykvarslere, varslere, kamera og
+   ytterdoera vises med tilstand, uten knapper. Laasen styres fra
+   sikkerhetssida og av Neam, der opplaasing alltid spoer.
    ============================================================ */
 
-/* Det som vises og styres. Resten - fargetone, volum, barnesikring,
-   lademaal - venter til noen savner det. Valglister (modus, vifte)
-   tas med av seg selv, unntatt de som bare bytter maaten lyset styres
-   paa. */
+/* Det som styres. Resten - volum, barnesikring, lademaal - venter til
+   noen savner det. Valglister (modus, vifte) tas med av seg selv,
+   unntatt den som bare bytter maaten lyset styres paa: den settes av
+   fargehjulet. */
 const HSK_SETT = ['onoff', 'dim', 'target_temperature'];
 const HSK_IKKE_VALG = ['light_mode'];
 const HSK_IKKE_KLASSE = ['lock', 'sensor'];
 const HSK_OPPDATER = 10000;
 
+/* Fanenes rekkefoelge. Homey har ingen rekkefoelge paa sonene; etasjer
+   som ikke staar her, kommer sist i alfabetisk orden. */
+const HSK_ETASJE_REKKE = ['første etasje', 'kjeller', 'garasje', 'hage', 'terrasse'];
+
+/* Symbolene. Strektegninger som de andre ikonene i fireren
+   (24x24, strek 2, currentColor). Rekkefoelgen her er rekkefoelgen i
+   rommet: det man styrer foerst, det man bare ser til sist. */
+const HSK_ART = {
+  lys:       { navn:'Lys',            sti:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3z"/>' },
+  stikk:     { navn:'Stikkontakt',    sti:'<path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0zM12 17v5"/>' },
+  termostat: { navn:'Termostat',      sti:'<path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0zM12 11v6"/>' },
+  bereder:   { navn:'Varmtvann',      sti:'<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 9c-1.6 2-2.4 3.3-2.4 4.6a2.4 2.4 0 0 0 4.8 0C14.4 12.3 13.6 11 12 9z"/>' },
+  tv:        { navn:'TV',             sti:'<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/>' },
+  spill:     { navn:'Spillkonsoll',   sti:'<path d="M17.3 6H6.7a4 4 0 0 0-3.9 3.4L2 15.5a2.8 2.8 0 0 0 5 2L9 15h6l2 2.5a2.8 2.8 0 0 0 5-2l-.8-6.1A4 4 0 0 0 17.3 6zM7 10v4M5 12h4M15.5 11h.01M18 13h.01"/>' },
+  maskin:    { navn:'Hvitevare',      sti:'<rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="13" r="4.5"/><path d="M8 5.5h.01M11 5.5h2"/>' },
+  billader:  { navn:'Billader',       sti:'<rect x="4" y="3" width="10" height="18" rx="2"/><path d="M14 9h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0V9l-2-2M10 8l-2 4h3l-2 4"/>' },
+  laas:      { navn:'Lås',             sti:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>' },
+  kamera:    { navn:'Kamera',         sti:'<rect x="2" y="7" width="13" height="10" rx="2"/><path d="M15 10.5l6-3.5v10l-6-3.5"/>' },
+  royk:      { navn:'Røykvarsler',    sti:'<path d="M3 3h18M5 3v1.5a7 5 0 0 0 14 0V3M12 6.5h.01M8 21c-1.3-1.5 1.3-2.5 0-4.2M12 22c-1.3-1.5 1.3-2.5 0-4.2M16 21c-1.3-1.5 1.3-2.5 0-4.2"/>' },
+  varme:     { navn:'Varmevarsler',   sti:'<path d="M12 2c.5 3.5 5 5.5 5 11a5 5 0 0 1-10 0c0-2.6 1.4-4.2 2.4-5.4.3 1.8 1.1 2.9 2.1 3.4-.5-3.4.1-6.4.5-9z"/>' },
+  vann:      { navn:'Lekkasjesensor', sti:'<path d="M12 3c-3.2 4.2-6 7.4-6 11a6 6 0 0 0 12 0c0-3.6-2.8-6.8-6-11z"/>' },
+  bryter:    { navn:'Bryter',         sti:'<rect x="7" y="2" width="10" height="20" rx="2"/><rect x="10" y="6" width="4" height="7" rx="1"/>' },
+  annet:     { navn:'Enhet',          sti:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/>' }
+};
+const HSK_ART_REKKE = Object.keys(HSK_ART);
+
 let hskSoner = null;
 let hskBak = null;
 let hskTimer = null;
-let hskRor = false;      /* en glider holdes - da tegnes kortet ikke paa nytt */
+let hskRor = false;      /* en glider eller fargehjulet holdes - da tegnes kortet ikke paa nytt */
 let hskFeil = '';
+let hskEtasje = '';      /* valgt fane, husket mens sida er aapen */
+let hskApenFarge = '';   /* enheten som har fargehjulet oppe */
 
 function hskVask(s){
   return String(s === undefined || s === null ? '' : s)
@@ -905,6 +935,15 @@ function hskTittel(t, reserve){
   return t.no || t.nb || t.en || reserve;
 }
 
+/* Sammenligning av navn: «Entre» og «Entré», «Emma Sitt Rom» og
+   «Emma sitt rom» er det samme. */
+function hskNorm(s){
+  return String(s || '').toLowerCase().normalize('NFD')
+    .replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function hskStor(s){ s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); }
+
 /* Sonene endrer seg nesten aldri og hentes én gang per side. */
 async function hskHent(){
   if(!hskSoner){
@@ -914,8 +953,40 @@ async function hskHent(){
   return husHent();
 }
 
-/* De styrbare kapabilitetene paa en enhet, i fast rekkefoelge. */
-function hskKap(d){
+/* Sonestien fra toppen: ['Hjem', 'Kjeller', 'Kjellerstue']. */
+function hskSti(soneId){
+  const ut = [];
+  let z = hskSoner && hskSoner[soneId];
+  let vakt = 0;
+  while(z && vakt++ < 10){ ut.unshift(z.name); z = hskSoner[z.parent]; }
+  return ut;
+}
+
+function hskArt(d){
+  const o = d.capabilitiesObj || {};
+  if(o.alarm_smoke) return 'royk';
+  if(o.alarm_heat)  return 'varme';
+  if(o.alarm_water) return 'vann';
+  const k = { light:'lys', socket:'stikk', thermostat:'termostat', heater:'bereder', tv:'tv',
+              gameconsole:'spill', evcharger:'billader', washer_and_dryer:'maskin', lock:'laas',
+              camera:'kamera', remote:'bryter', sensor:'bryter' }[d.class];
+  if(k) return k;
+  /* Vaskemaskinen kommer gjennom Bosch-appen som «other». */
+  if(Object.keys(o).some(function(x){ return /^bshc_/.test(x); })) return 'maskin';
+  return 'annet';
+}
+
+function hskSymbol(art){
+  const a = HSK_ART[art] || HSK_ART.annet;
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+       + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + a.sti + '</svg>';
+}
+
+/* De styrbare kapabilitetene paa en enhet, i fast rekkefoelge. Laaser,
+   sensorer og alt i VISES styres ikke herfra. */
+function hskKap(id, d){
+  if(HSK_IKKE_KLASSE.indexOf(d.class) !== -1) return [];
+  if(VISES.some(function(v){ return v.id === id; })) return [];
   const o = d.capabilitiesObj || {};
   const ut = HSK_SETT.filter(function(k){ return o[k] && o[k].setable; });
   Object.keys(o).forEach(function(k){
@@ -925,48 +996,107 @@ function hskKap(d){
   return ut;
 }
 
-/* [{navn, enheter:[{id, navn, kort, d, kap}]}], rom og enheter i
-   alfabetisk rekkefoelge. */
-function hskRom(){
-  const fast = VISES.map(function(v){ return v.id; });
-  const rom = {};
+/* Fargelys: baade fargetone og metning maa kunne settes. */
+function hskHarFarge(id, d){
+  const o = d.capabilitiesObj || {};
+  return d.class === 'light' && !!(o.light_hue && o.light_hue.setable
+                                && o.light_saturation && o.light_saturation.setable);
+}
+
+/* Navnet uten det som gjentar stedet: «Hage - Plen - Uplight Venstre»
+   under Hage > Plen blir «Uplight Venstre». Ledd som ikke er en sone
+   paa veien («Stue» inne i Andreas rom) blir staaende - de sier noe. */
+function hskKort(navn, sti){
+  const ledd = String(navn || '').split(' - ').map(function(x){ return x.trim(); });
+  const soner = sti.map(hskNorm);
+  const rom = soner[soner.length - 1] || '';
+  while(ledd.length > 1){
+    const l = hskNorm(ledd[0]);
+    if(soner.indexOf(l) === -1 && !(rom && l.indexOf(rom + ' ') === 0)) break;
+    ledd.shift();
+  }
+  return ledd.join(' - ');
+}
+
+/* [{navn, rom:[{navn, enheter:[{id, navn, kort, d, kap, art, farge}]}]}]
+   - etasjene i HSK_ETASJE_REKKE, rommene og enhetene sortert. */
+function hskEtasjer(){
+  const etasjer = {};
   Object.keys(enheter).forEach(function(id){
     const d = enheter[id];
-    if(!d || fast.indexOf(id) !== -1 || HSK_IKKE_KLASSE.indexOf(d.class) !== -1) return;
-    const kap = hskKap(d);
-    if(!kap.length) return;
-    const navn = String(d.name || '');
-    const i = navn.indexOf(' - ');
-    let romNavn = i > 0 ? navn.slice(0, i) : '';
-    if(!romNavn){
-      const z = hskSoner && hskSoner[d.zone];
-      romNavn = (z && z.name) || 'Uten rom';
-    }
-    /* «Emma Sitt Rom» og «Emma sitt rom» er samme rom. */
-    const nokkel = romNavn.toLowerCase();
-    if(!rom[nokkel]) rom[nokkel] = { navn: romNavn, enheter: [] };
-    rom[nokkel].enheter.push({ id: id, navn: navn, kort: i > 0 ? navn.slice(i + 3) : navn,
-                               d: d, kap: kap });
+    if(!d) return;
+    const sti = hskSti(d.zone);
+    const etasje = sti[1] || 'Uten etasje';
+    const rom = sti[2] || etasje;
+    const ek = hskNorm(etasje), rk = hskNorm(rom);
+    if(!etasjer[ek]) etasjer[ek] = { navn: hskStor(etasje), rom: {} };
+    const E = etasjer[ek];
+    if(!E.rom[rk]) E.rom[rk] = { navn: hskStor(rom), etasje: E.navn, enheter: [] };
+    E.rom[rk].enheter.push({
+      id: id, navn: String(d.name || ''), kort: hskKort(d.name, sti), d: d,
+      kap: hskKap(id, d), art: hskArt(d), farge: hskHarFarge(id, d)
+    });
   });
-  const liste = Object.keys(rom).map(function(k){ return rom[k]; });
-  liste.sort(function(a, b){ return a.navn.localeCompare(b.navn, 'nb'); });
-  liste.forEach(function(r){
-    r.enheter.sort(function(a, b){ return a.kort.localeCompare(b.kort, 'nb'); });
+  const plass = function(k){ const i = HSK_ETASJE_REKKE.indexOf(k); return i === -1 ? 99 : i; };
+  return Object.keys(etasjer).sort(function(a, b){
+    return (plass(a) - plass(b)) || a.localeCompare(b, 'nb');
+  }).map(function(k){
+    const E = etasjer[k];
+    const rom = Object.keys(E.rom).map(function(r){ return E.rom[r]; });
+    rom.sort(function(a, b){ return a.navn.localeCompare(b.navn, 'nb'); });
+    rom.forEach(function(r){
+      r.enheter.sort(function(a, b){
+        return (HSK_ART_REKKE.indexOf(a.art) - HSK_ART_REKKE.indexOf(b.art))
+            || a.kort.localeCompare(b.kort, 'nb');
+      });
+    });
+    return { navn: E.navn, rom: rom };
   });
-  return liste;
+}
+
+/* Rommene med det som kan STYRES - det Neam faar se og bruke. */
+function hskRom(){
+  const ut = [];
+  hskEtasjer().forEach(function(E){
+    E.rom.forEach(function(r){
+      const styres = r.enheter.filter(function(e){ return e.kap.length; });
+      if(styres.length) ut.push({ navn: r.navn, etasje: E.navn, enheter: styres });
+    });
+  });
+  return ut;
 }
 
 function hskTemp(v){ return String(Math.round(v * 10) / 10).replace('.', ',') + ' °C'; }
 
-/* Linja under navnet: på/av, lysstyrke og maalt temperatur. */
+/* Er en varsler utloest? Da er linja roed - samme regel som merkene
+   paa sikkerhetssida: fargen ER tilstanden, og verst foerst. */
+function hskAlarm(e){
+  const o = e.d.capabilitiesObj || {};
+  return ['alarm_smoke', 'alarm_heat', 'alarm_water'].some(function(k){ return o[k] && o[k].value === true; });
+}
+
+/* Linja under navnet. Verst foerst. */
 function hskTilstand(e){
   const o = e.d.capabilitiesObj || {};
   const deler = [];
   if(e.d.available === false) deler.push('Uten kontakt');
+  [['alarm_smoke', 'RØYK'], ['alarm_heat', 'FOR VARMT'], ['alarm_water', 'LEKKASJE']].forEach(function(a){
+    if(o[a[0]]) deler.push(o[a[0]].value ? a[1] : 'I orden');
+  });
+  if(o.alarm_battery && o.alarm_battery.value) deler.push('Lavt batteri');
+  if(o.locked && e.art === 'laas') deler.push(o.locked.value ? 'Låst' : 'Ulåst');
+  if(o.alarm_contact && e.art === 'laas') deler.push(o.alarm_contact.value ? 'Åpen' : 'Lukket');
+  if(o.alarm_motion && o.alarm_motion.value) deler.push('Bevegelse');
   if(o.onoff) deler.push(o.onoff.value ? 'På' : 'Av');
   if(o.dim && typeof o.dim.value === 'number') deler.push(Math.round(o.dim.value * 100) + ' %');
-  if(o.measure_temperature && typeof o.measure_temperature.value === 'number'){
+  /* Lamper og brytere maaler sin egen innvendige temperatur - den sier
+     ingenting om rommet. */
+  if(o.measure_temperature && typeof o.measure_temperature.value === 'number'
+     && ['termostat', 'bereder', 'varme'].indexOf(e.art) !== -1){
     deler.push(hskTemp(o.measure_temperature.value) + ' nå');
+  }
+  if(o.measure_battery && typeof o.measure_battery.value === 'number'){
+    deler.push('Batteri ' + Math.round(o.measure_battery.value) + ' %');
   }
   return deler.join(' · ');
 }
@@ -1090,6 +1220,42 @@ function hskBeskriv(arg){
   return linje + ':\n\n' + (arg.enheter || []).map(function(n){ return '· ' + n; }).join('\n');
 }
 
+/* ---------- Fargehjulet ----------
+   Fargetonen rundt hjulet (roedt oeverst, med klokka - samme rekkefoelge
+   som conic-gradient tegner), metningen fra midten og ut: hvitt i
+   midten, full farge ytterst. Homey vil ha begge som 0-1. */
+
+/* Fargen et menneske ser, for prikken og merket i hjulet. */
+function hskFargeCss(h, s){
+  return 'hsl(' + Math.round(h * 360) + ',100%,' + Math.round(100 - 50 * s) + '%)';
+}
+function hskFargeNaa(e){
+  const o = e.d.capabilitiesObj || {};
+  return { h: Number(o.light_hue && o.light_hue.value) || 0,
+           s: Number(o.light_saturation && o.light_saturation.value) || 0 };
+}
+function hskHjulPunkt(h, s){
+  const a = h * 2 * Math.PI;
+  return { x: 50 + 50 * s * Math.sin(a), y: 50 - 50 * s * Math.cos(a) };
+}
+/* Trykket i hjulet som {h, s}. */
+function hskHjulLes(hjul, ev){
+  const r = hjul.getBoundingClientRect();
+  const dx = ev.clientX - (r.left + r.width / 2);
+  const dy = ev.clientY - (r.top + r.height / 2);
+  const s = Math.min(1, Math.sqrt(dx * dx + dy * dy) / (r.width / 2));
+  let h = Math.atan2(dx, -dy) / (2 * Math.PI);
+  if(h < 0) h += 1;
+  return { h: Math.round(h * 1000) / 1000, s: Math.round(s * 1000) / 1000 };
+}
+function hskHjulVis(hjul, f){
+  const m = hjul.querySelector('.hsk-hjul-merke');
+  const p = hskHjulPunkt(f.h, f.s);
+  if(m){ m.style.left = p.x + '%'; m.style.top = p.y + '%'; m.style.background = hskFargeCss(f.h, f.s); }
+  const prikk = hskBak && hskBak.querySelector('button[data-farge="' + hjul.dataset.hjul + '"]');
+  if(prikk) prikk.style.background = hskFargeCss(f.h, f.s);
+}
+
 /* ---------- Kortet ---------- */
 
 function hskBygg(){
@@ -1107,18 +1273,37 @@ function hskBygg(){
   hskBak.querySelector('.hsk-lukk').onclick = hskLukk;
   hskBak.addEventListener('click', function(ev){
     if(ev.target === hskBak){ hskLukk(); return; }
-    const b = ev.target.closest && ev.target.closest('button[data-kap]');
+    const t = ev.target.closest ? ev.target : null;
+    if(!t) return;
+
+    const fane = t.closest('button[data-etasje]');
+    if(fane){
+      hskEtasje = fane.dataset.etasje;
+      hskApenFarge = '';
+      hskTegn();
+      hskBak.querySelector('.hsk-kort').scrollTop = 0;
+      return;
+    }
+
+    const prikk = t.closest('button[data-farge]');
+    if(prikk){
+      hskApenFarge = hskApenFarge === prikk.dataset.farge ? '' : prikk.dataset.farge;
+      hskTegn();
+      return;
+    }
+
+    const b = t.closest('button[data-kap]');
     if(!b) return;
     const d = enheter[b.dataset.hsk];
     const c = d && d.capabilitiesObj && d.capabilitiesObj[b.dataset.kap];
     if(!c) return;
-    if(b.dataset.kap === 'onoff'){ hskSett(b.dataset.hsk, 'onoff', !c.value); return; }
+    if(b.dataset.kap === 'onoff'){ hskSett(b.dataset.hsk, [['onoff', !c.value]]); return; }
     /* Temperaturen: ett steg av gangen, innenfor det enheten taaler. */
     const steg = (c.step || 0.5) * Number(b.dataset.steg);
-    let t = Math.round(((Number(c.value) || 0) + steg) * 10) / 10;
-    if(typeof c.min === 'number' && t < c.min) t = c.min;
-    if(typeof c.max === 'number' && t > c.max) t = c.max;
-    hskSett(b.dataset.hsk, 'target_temperature', t);
+    let v = Math.round(((Number(c.value) || 0) + steg) * 10) / 10;
+    if(typeof c.min === 'number' && v < c.min) v = c.min;
+    if(typeof c.max === 'number' && v > c.max) v = c.max;
+    hskSett(b.dataset.hsk, [['target_temperature', v]]);
   });
   hskBak.addEventListener('change', function(ev){
     const el = ev.target;
@@ -1126,22 +1311,41 @@ function hskBygg(){
     hskRor = false;
     const v = el.dataset.kap === 'dim' ? Number(el.value) / 100 : el.value;
     el.blur();
-    hskSett(el.dataset.hsk, el.dataset.kap, v);
+    hskSett(el.dataset.hsk, [[el.dataset.kap, v]]);
   });
+
   /* Kortet tegnes paa nytt hvert tiende sekund. Midt i et drag ville
-     glideren hoppe tilbake under fingeren. */
+     glideren eller merket i hjulet hoppe tilbake under fingeren. */
+  let hjul = null;
   hskBak.addEventListener('pointerdown', function(ev){
-    if(ev.target.classList && ev.target.classList.contains('hsk-glider')) hskRor = true;
+    if(ev.target.classList && ev.target.classList.contains('hsk-glider')){ hskRor = true; return; }
+    const h = ev.target.closest && ev.target.closest('.hsk-hjul');
+    if(!h) return;
+    ev.preventDefault();
+    hjul = h;
+    hskRor = true;
+    try{ h.setPointerCapture(ev.pointerId); }catch(e){}
+    hskHjulVis(h, hskHjulLes(h, ev));
   });
-  hskBak.addEventListener('pointerup', function(){ hskRor = false; });
-  hskBak.addEventListener('pointercancel', function(){ hskRor = false; });
+  hskBak.addEventListener('pointermove', function(ev){
+    if(hjul) hskHjulVis(hjul, hskHjulLes(hjul, ev));
+  });
+  const slipp = function(ev, send){
+    hskRor = false;
+    if(!hjul) return;
+    const h = hjul;
+    hjul = null;
+    if(send) hskSettFarge(h.dataset.hjul, hskHjulLes(h, ev));
+  };
+  hskBak.addEventListener('pointerup', function(ev){ slipp(ev, true); });
+  hskBak.addEventListener('pointercancel', function(ev){ slipp(ev, false); });
   return hskBak;
 }
 
 function hskInnhold(html){ hskBygg().querySelector('.hsk-innhold').innerHTML = html; }
 
-/* Er noen midt i noe - holder en glider, eller har en valgliste
-   aapen - skal kortet staa stille. */
+/* Er noen midt i noe - holder en glider eller hjulet, eller har en
+   valgliste aapen - skal kortet staa stille. */
 function hskOpptatt(){
   const a = document.activeElement;
   return hskRor || !!(hskBak && a && hskBak.contains(a) && a.tagName === 'SELECT');
@@ -1179,40 +1383,92 @@ function hskStyring(e){
          + '</select>';
     }
   });
-  return '<div class="hsk-styr">' + h + '</div>';
+  if(e.farge){
+    const f = hskFargeNaa(e);
+    h += '<button type="button" class="hsk-farge' + (hskApenFarge === e.id ? ' aapen' : '') + '"'
+       + ' data-farge="' + hskVask(e.id) + '" style="background:' + hskFargeCss(f.h, f.s) + '"'
+       + ' aria-label="Velg farge for ' + hskVask(e.kort) + '" aria-expanded="' + (hskApenFarge === e.id) + '"></button>';
+  }
+  let ut = h ? '<div class="hsk-styr">' + h + '</div>' : '';
+  if(e.farge && hskApenFarge === e.id){
+    const f = hskFargeNaa(e);
+    const p = hskHjulPunkt(f.h, f.s);
+    ut += '<div class="hsk-hjul" data-hjul="' + hskVask(e.id) + '" role="img" aria-label="Fargehjul">'
+        +   '<span class="hsk-hjul-merke" style="left:' + p.x + '%;top:' + p.y + '%;background:'
+        +     hskFargeCss(f.h, f.s) + '"></span>'
+        + '</div>';
+  }
+  return ut;
+}
+
+function hskEnhetHtml(e){
+  const t = hskTilstand(e);
+  const alarm = hskAlarm(e);
+  const art = HSK_ART[e.art] || HSK_ART.annet;
+  return '<div class="hsk-enhet' + (e.d.available === false ? ' hsk-borte' : '') + (alarm ? ' hsk-alarm' : '') + '">'
+       +   '<span class="hsk-ikon" title="' + art.navn + '">' + hskSymbol(e.art) + '</span>'
+       +   '<div class="hsk-kropp">'
+       +     '<div class="hsk-navn">' + hskVask(e.kort) + '</div>'
+       +     (t ? '<div class="hsk-tilstand">' + hskVask(t) + '</div>' : '')
+       +     hskStyring(e)
+       +   '</div>'
+       + '</div>';
 }
 
 function hskTegn(){
-  const rom = hskRom();
-  if(!rom.length){ hskInnhold('<p class="hsk-tom">Homey har ingen enheter å styre her.</p>'); return; }
-  hskInnhold((hskFeil ? '<p class="hsk-feil">' + hskVask(hskFeil) + '</p>' : '')
-    + rom.map(function(r){
-        return '<section class="hsk-rom"><h3 class="hsk-romnavn">' + hskVask(r.navn) + '</h3>'
-          + r.enheter.map(function(e){
-              const t = hskTilstand(e);
-              return '<div class="hsk-enhet' + (e.d.available === false ? ' hsk-borte' : '') + '">'
-                   +   '<div class="hsk-navn">' + hskVask(e.kort) + '</div>'
-                   +   (t ? '<div class="hsk-tilstand">' + hskVask(t) + '</div>' : '')
-                   +   hskStyring(e)
-                   + '</div>';
-            }).join('')
-          + '</section>';
+  const etasjer = hskEtasjer();
+  if(!etasjer.length){ hskInnhold('<p class="hsk-tom">Homey har ingen enheter.</p>'); return; }
+  let E = etasjer.filter(function(x){ return x.navn === hskEtasje; })[0];
+  if(!E){ E = etasjer[0]; hskEtasje = E.navn; }
+  const faner = '<div class="hsk-faner" role="tablist">'
+    + etasjer.map(function(x){
+        const valgt = x === E;
+        return '<button type="button" role="tab" class="hsk-fane' + (valgt ? ' aktiv' : '') + '"'
+             + ' aria-selected="' + valgt + '" data-etasje="' + hskVask(x.navn) + '">'
+             + hskVask(x.navn) + '</button>';
+      }).join('')
+    + '</div>';
+  hskInnhold(faner
+    + (hskFeil ? '<p class="hsk-feil">' + hskVask(hskFeil) + '</p>' : '')
+    + E.rom.map(function(r){
+        /* Ligger enhetene rett i etasjen, staar navnet alt paa fanen. */
+        const tittel = hskNorm(r.navn) === hskNorm(E.navn) ? ''
+                     : '<h3 class="hsk-romnavn">' + hskVask(r.navn) + '</h3>';
+        return '<section class="hsk-rom">' + tittel + r.enheter.map(hskEnhetHtml).join('') + '</section>';
       }).join(''));
 }
 
 /* Et trykk vises med det samme - Homey bruker et oeyeblikk paa aa
    melde tilbake, og et kort som staar stille ser ut som at ingenting
-   skjedde. Etterpaa hentes den ekte tilstanden. */
-async function hskSett(id, kap, verdi){
+   skjedde. Etterpaa hentes den ekte tilstanden. Endringene sendes i
+   rekkefoelge, og stopper ved foerste feil. */
+async function hskSett(id, endringer){
   const d = enheter[id];
   const o = (d && d.capabilitiesObj) || {};
-  if(o[kap]) o[kap].value = verdi;
-  if(kap === 'dim' && o.onoff) o.onoff.value = true;
+  endringer.forEach(function(x){
+    if(o[x[0]]) o[x[0]].value = x[1];
+    if(x[0] === 'dim' && o.onoff) o.onoff.value = true;
+  });
   hskFeil = '';
   hskTegn();
-  const r = await post({ hva:'sett', enhet:id, kapabilitet:kap, verdi:verdi });
-  if(!r.ok) hskFeil = 'Fikk det ikke til (' + ((d && d.name) || 'enheten') + '): ' + r.feil;
+  for(const x of endringer){
+    const r = await post({ hva:'sett', enhet:id, kapabilitet:x[0], verdi:x[1] });
+    if(!r.ok){ hskFeil = 'Fikk det ikke til (' + ((d && d.name) || 'enheten') + '): ' + r.feil; break; }
+  }
   hskPlanlegg(1500);
+}
+
+/* Fargen: lyset settes i fargemodus foerst - ellers kan en lampe som
+   staar paa hvitt ta imot fargetonen uten aa vise den - og tennes til
+   slutt om den var av. Man velger ikke farge paa et lys man vil ha av. */
+function hskSettFarge(id, f){
+  const d = enheter[id];
+  const o = (d && d.capabilitiesObj) || {};
+  const endr = [];
+  if(o.light_mode && o.light_mode.setable && o.light_mode.value !== 'color') endr.push(['light_mode', 'color']);
+  endr.push(['light_hue', f.h], ['light_saturation', f.s]);
+  if(o.onoff && o.onoff.setable && !o.onoff.value) endr.push(['onoff', true]);
+  hskSett(id, endr);
 }
 
 function hskPlanlegg(ms){
@@ -1237,6 +1493,7 @@ async function hskOppdater(){
 function hskLukk(){
   if(hskTimer){ clearTimeout(hskTimer); hskTimer = null; }
   hskRor = false;
+  hskApenFarge = '';
   if(hskBak) hskBak.hidden = true;
 }
 

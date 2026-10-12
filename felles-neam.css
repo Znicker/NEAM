@@ -1318,28 +1318,49 @@
 }
 
 /* ---------- Rommene ----------
-   Lys, varme og stikkontakter fra Homey - se «Rommene» i felles-hus.js.
-   MIDLERTIDIG FORM (11. oktober 2026): en liste per rom, til merker og
-   et eget uttrykk er bestemt. Bare husets eksisterende flater og
-   farger: knappene er blaa (de verken skaper, endrer eller sletter -
-   samme som Neamow), glideren og valglista er noeytrale. */
+   Alle enhetene fra Homey, etasje for etasje - se «Rommene» i
+   felles-hus.js. MIDLERTIDIG FORM (11.-12. oktober 2026) til
+   plantegningen kommer. Bare husets eksisterende flater og farger:
+   fanene er .tabs-formen fra felles-skall.css (som ikke lastes her),
+   knappene er blaa (de verken skaper, endrer eller sletter - samme som
+   Neamow), og roedt betyr en varsler som er utloest, som paa
+   sikkerhetssida. Fargeprikken og hjulet viser lysets egen farge. */
 .hsk-kort{ max-width:460px; max-height:calc(100dvh - 40px); overflow:auto; }
 .hsk-tittel{
   margin:0 0 14px; color:#000000;
   font-size:var(--t-meta); font-weight:700;
   text-transform:uppercase; letter-spacing:.1em;
 }
+/* Fanene bryter til en ny linje paa smal skjerm i stedet for aa rulle:
+   en etasje man maa rulle for aa se, finnes ikke for den som leter. */
+.hsk-faner{
+  display:flex; flex-wrap:wrap; gap:2px; background:var(--paper-soft); border-radius:22px;
+  padding:4px; margin:0 0 16px;
+}
+.hsk-fane{
+  flex:1 1 auto; border:none; background:none; padding:10px 12px; border-radius:999px;
+  font-weight:700; color:var(--ink-soft); text-transform:uppercase;
+  letter-spacing:.02em; font-family:'Archivo',sans-serif; font-size:var(--t-meta);
+  cursor:pointer; white-space:nowrap;
+}
+.hsk-fane.aktiv{ background:var(--aksent); color:#FFFFFF; }
 .hsk-rom{ margin:0 0 18px; }
 .hsk-romnavn{
-  margin:0 0 8px; color:var(--ink);
+  margin:0 0 4px; color:var(--ink);
   font-size:var(--t-brod); font-weight:700;
 }
-.hsk-enhet{ padding:10px 0; border-top:1px solid var(--line); }
+.hsk-enhet{
+  display:grid; grid-template-columns:28px 1fr; gap:0 12px; align-items:start;
+  padding:10px 0; border-top:1px solid var(--line);
+}
 .hsk-enhet.hsk-borte{ opacity:.55; }
+.hsk-ikon{ color:var(--ink-soft); padding-top:1px; }
+.hsk-ikon svg{ width:24px; height:24px; display:block; }
+.hsk-kropp{ min-width:0; }
 .hsk-navn{ color:var(--ink); font-size:var(--t-brod); font-weight:600; }
 .hsk-tilstand{ color:var(--ink-soft); font-size:var(--t-meta); margin-top:2px; }
+.hsk-alarm .hsk-ikon, .hsk-alarm .hsk-tilstand{ color:var(--danger); font-weight:700; }
 .hsk-styr{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:8px; }
-.hsk-styr:empty{ display:none; }
 /* .dlg-knapp blir full bredde paa smal skjerm - ikke her. */
 .hsk-styr .dlg-knapp{ width:auto; padding:8px 18px; }
 .hsk-glider{ flex:1 1 140px; min-width:0; accent-color:var(--aksent); }
@@ -1350,6 +1371,27 @@
   padding:8px 12px; border:1.5px solid var(--line); border-radius:12px;
   background:var(--bg-solid); color:var(--ink);
   font-family:'Archivo',sans-serif; font-size:16px;
+}
+/* Fargeprikken: lysets farge, og knappen som aapner hjulet. */
+.hsk-farge{
+  flex:none; width:36px; height:36px; border-radius:50%; cursor:pointer; padding:0;
+  border:2px solid var(--paper); box-shadow:0 0 0 1.5px var(--line);
+}
+.hsk-farge.aapen{ box-shadow:0 0 0 2px var(--aksent); }
+/* Fargetonen rundt, hvitt i midten. Roedt oeverst og med klokka -
+   felles-hus.js regner vinkelen paa samme maate (hskHjulLes). */
+.hsk-hjul{
+  position:relative; width:min(240px, 100%); aspect-ratio:1; margin:14px auto 4px;
+  border-radius:50%; cursor:crosshair; touch-action:none;
+  background:
+    radial-gradient(circle closest-side, #FFFFFF, rgba(255,255,255,0)),
+    conic-gradient(#FF0000, #FFFF00, #00FF00, #00FFFF, #0000FF, #FF00FF, #FF0000);
+  box-shadow:0 0 0 1px var(--line);
+}
+.hsk-hjul-merke{
+  position:absolute; width:22px; height:22px; margin:-11px 0 0 -11px; border-radius:50%;
+  border:3px solid #FFFFFF; box-shadow:0 0 0 1px rgba(0,0,0,.35), 0 2px 6px rgba(0,0,0,.3);
+  pointer-events:none;
 }
 .hsk-tom{ color:var(--ink-soft); font-size:var(--t-brod); line-height:1.5; margin:0 0 16px; }
 .hsk-feil{ color:var(--danger); font-size:var(--t-meta); margin:0 0 14px; }
