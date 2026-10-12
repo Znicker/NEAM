@@ -775,6 +775,18 @@ for å unngå struping, men `graph()` prøver nå om igjen av seg selv ved 429 p
 lesing, så strupingen håndteres der den oppstår i stedet for ved å holde
 igjen alle. Satt til 6: én runde.
 
+**Det var feil – rettet 12. oktober 2026.** Outlook tåler **4 samtidige
+kall per postkasse**, og alle kalenderne bor hos sys. Med seks fikk to av
+dem 429 ved hver eneste oppdatering, og gjentakelsen i `graph()` *er*
+ventetida: målt til 10,1 sek totalt, ca. 8 av dem venting på
+`Retry-After` (den ene 2 sek, den andre på taket på 8). Selve kallene tok
+0,2–1,8 sek. `GRENSE` er nå 4, og bolkene er byttet med en kø: fire spor,
+og et ledig spor tar neste kalender straks i stedet for å vente på hele
+runden. Samme retting i `lesAltKalender()` i `felles-lesalt.js` (`?v=6`),
+der det var verre – `lesAltGraph()` prøver ikke igjen, så to kalendere
+forsvant rett i `feilet`. **Ikke over fire igjen**, og en gjentakelse ved
+429 er ingen grunn til å heve grensa.
+
 **En regresjon fra samme dag, rettet:** lasteoverlegget ble endret til å
 vises «når `S.calendars` er tom». Men kalenderlista lagres aldri lokalt, så
 den er tom ved *hver* innlasting – ikke bare den første. Overlegget la seg
@@ -806,6 +818,15 @@ vindu på minst 225 dager, ganger seks kalendere, og kjører `htmlTilTekst`
 parsing kraftig – men det må gjøres varsomt: `bodyPreview` i stedet for
 `body` ga i sin tid stille avkorting av notater ved lagring, og den fella
 skal ikke gjenåpnes.
+
+**Delvis tatt 12. oktober 2026, og var ikke den dominerende kostnaden.**
+`hentVindu()` ber nå om notatet som ren tekst
+(`outlook.body-content-type="text"`, via `valg.prefer` i `graph()`,
+`felles-graph.js ?v=3`), så Outlooks HTML-innpakning hverken lastes ned
+eller går gjennom DOMParser – `htmlTilTekst()` slipper teksttypen rett
+gjennom. Det hjalp ikke merkbart. Målingen etterpå viste at tida gikk til
+strupingen over, ikke til notatene. Å hente notatet først ved åpning står
+fortsatt som mulighet, men er ikke lenger antatt å være den store spaken.
 
 ---
 
