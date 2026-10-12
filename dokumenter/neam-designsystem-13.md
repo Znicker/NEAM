@@ -23,7 +23,10 @@ Mye ligger nå i **fellesfiler** (`felles-rot.css`, `felles-skall.css`,
 `felles-skriv.js`, `felles-hus.js`, `felles-ms.js`, `felles-tale.js`). Det som ennå er kopiert per fil, holdes likt av dette
 dokumentet – det er fortsatt fasiten for hva som skal være likt på tvers.
 
-*Sist oppdatert 11. oktober 2026: Neamow ført inn – egen seksjon, et
+*Sist oppdatert 12. oktober 2026: kalendersida fikk egen seksjon –
+høyre firer i stedet for de runde knappene, i dag på andre trykk,
+tommelknappene nær kanten med fri bunn, og merket foran månedsnavnet.
+Forrige oppdatering 11. oktober 2026: Neamow ført inn – egen seksjon, et
 unntak fra de fem betydningene (gress i kartet), enhetsknapper med merke i
 fireren, bekreftelsen for en maskin som settes i gang, og
 `NMW_SYMBOL_V` under bildene. Begrunnelsene ligger i kartleggingen del 56.
@@ -1150,6 +1153,34 @@ Flere skjermer deler én henting gjennom et mellomlager på serveren.
 venter 15 minutter av seg selv, og kortet viser hva som skjedde og en
 knapp for å logge inn på nytt – ikke bare en feilmelding. En feil man
 ikke kan gjøre noe med, er en feil man slutter å lese.
+
+## Kalender
+
+**Fireren tok over hjørnet** (12. oktober 2026). `ved` = Ny avtale
+(grønn, med `avtale`-merket som på dashene), `skraa` = Oppdater – navnet
+bærer når kalenderen sist ble hentet – og `opp` = Kalendere, **bare for
+sys**; plassen skjules for de andre. **Andre trykk på håndtaket går til i
+dag** – veien hjem, som på Andrea dash og oppskriftssida.
+
+De fire runde knappene (`.bottom-bar .fab`) er **skjult, ikke fjernet**:
+kalendervelgeren bor fortsatt i bunnlinja, og skriptet leser `refreshBtn`
+og `idagTall`.
+
+**Tommelknappene står 8 px fra kanten, og bunnen holdes fri for dem.**
+`body{--f-marg-y:8px}`, og `.shell` har `--f-marg-y + --f-handtak + 8px`
+nederst, så innholdet slutter over håndtaket i stedet for under det.
+Gjelder bare denne sida – et unntak fra fellesverdiene i
+`felles-neam.css` – fordi rutenettet fyller hele høyden og ellers ligger
+under begge hjørnene. Settes på `body`, ikke `:root`, så den vinner over
+medieregelene uansett rekkefølge. **Liggende telefon er unntatt:** der er
+høyden dyrere enn et dekket hjørne.
+
+**Merket står foran månedsnavnet, ikke i egen rad.** `.mnav-hode` i
+første felt av `.mnav-topp`, med «Kalender» og «Neam · navn». Det var
+raden over som betalte for den frie bunnen; den (`#topp`) vises nå bare på
+innloggingsskjermen. På smal skjerm legger en lang tittel – dag og uke –
+seg under merket i stedet for å klemmes i tre linjer. I fullskjerm og på
+liggende telefon er merket skjult, som topplinja var.
 
 ## Oppskriftssida
 
