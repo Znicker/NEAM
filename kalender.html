@@ -2269,14 +2269,24 @@ async function hentVindu(a, b, bare){
      Grensen sto på 3. Med seks kalendere ble det to runder etter
      hverandre, altså dobbel ventetid. Nå prøver graph() om igjen av seg
      selv ved 429 på lesing, så strupingen er håndtert der den oppstår i
-     stedet for ved å holde igjen alle. */
-  const GRENSE = 6;
-  const resultater = [];
-  for(let i = 0; i < aktive.length; i += GRENSE){
-    const bolk = aktive.slice(i, i + GRENSE);
-    const svar = await Promise.all(bolk.map(hentEn));
-    svar.forEach(function(s){ resultater.push(s); });
+     stedet for ved å holde igjen alle.
+     12. oktober 2026: seks ga 429 på to av dem ved hver oppdatering, og
+     ventetiden før nytt forsøk var det som gjorde sida treg. Outlook
+     tåler 4 samtidige kall per postkasse, og alle kalenderne bor hos
+     sys. Nå går fire om gangen som en kø: et ledig spor tar neste
+     kalender med en gang, i stedet for å vente på hele runden. */
+  const GRENSE = 4;
+  const resultater = new Array(aktive.length);
+  let neste = 0;
+  async function spor(){
+    while(neste < aktive.length){
+      const i = neste++;
+      resultater[i] = await hentEn(aktive[i]);
+    }
   }
+  const kjoerer = [];
+  for(let k = 0; k < Math.min(GRENSE, aktive.length); k++) kjoerer.push(spor());
+  await Promise.all(kjoerer);
   return resultater;
 }
 
