@@ -1579,7 +1579,7 @@ input,select,textarea{font-size:16px}
 </div>
 
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
-<script src="/felles-graph.js?v=2"></script>
+<script src="/felles-graph.js?v=3"></script>
 <script src="/felles-hus.js?v=9"></script>
 <script src="/felles-data.js?v=4"></script>
 <script src="/felles-lesalt.js?v=5"></script>
@@ -2235,7 +2235,10 @@ async function hentVindu(a, b, bare){
       let sti = '/me/calendars/' + c.id + '/calendarView' + q;
       let raa = [];
       for(let side = 0; side < 25 && sti; side++){
-        const d = await graph(sti);
+        /* Notatet som ren tekst: Outlook pakker selv et tomt notat inn i
+           flere kB HTML, og det ble hentet og tolket for hver avtale i
+           hele vinduet. htmlTilTekst() slipper teksttypen rett gjennom. */
+        const d = await graph(sti, {prefer:'outlook.body-content-type="text"'});
         (d.value || []).forEach(function(e){ raa.push(e); });
         const neste = d['@odata.nextLink'];
         sti = neste ? neste.replace(/^https:\/\/graph\.microsoft\.com\/v1\.0/, '') : null;

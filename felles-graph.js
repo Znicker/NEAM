@@ -51,6 +51,9 @@ async function graph(sti, valg){
       Prefer: 'outlook.timezone="' + TZ + '"'
     }
   };
+  /* Flere Prefer-verdier gaar i samme header, skilt med komma.
+     Kalenderen ber om notatene som ren tekst - se hentVindu(). */
+  if(valg && valg.prefer) opt.headers.Prefer += ', ' + valg.prefer;
   if(valg && valg.body){
     opt.headers['Content-Type'] = 'application/json';
     opt.body = JSON.stringify(valg.body);
