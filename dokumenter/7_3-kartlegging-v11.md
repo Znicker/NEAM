@@ -1,7 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 12. oktober 2026: kalendernotatene hentes som ren tekst
-(se toppblokka). Ført à jour 11. oktober 2026, kveld: Rommene – lys, varme og
+*Ført à jour 12. oktober 2026: kalenderen var treg av struping (429) –
+fire samtidige kall i stedet for seks, og notatene som ren tekst (se
+toppblokka). Ført à jour 11. oktober 2026, kveld: Rommene – lys, varme og
 stikkontakter fra Homey under Enheter (se toppblokka). Ført à jour
 11. oktober 2026: del 56 lagt til – Neamow, gressklipperen
 (Roborock RockMow Z115) gjennom Roborocks sky: kort under Enheter, egen
@@ -61,7 +62,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 
 **Siste leverte versjoner:** `felles-neam.js ?v=72`, `felles-neam.css
 ?v=61`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=5`, `felles-lesalt.js
-?v=5`, `felles-hus.js ?v=9`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
+?v=6`, `felles-hus.js ?v=9`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=5`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html` og spillsida
@@ -75,7 +76,7 @@ spillbildene `?v=1`, sikkerhetsmerkene `?v=1` (65 stk i
 `bilder/sikkerhet/`). `merke-neamow.png` går under `MERKE_V`.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–71; neam.css til og
-med 60; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–4, skriv 1–4,
+med 60; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–5, skriv 1–4,
 hus `?v=1–8`, ms `?v=1`, tale 1–4, graph 1–2**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
 tale 1–4 ble brent 13. september ved å endre en fil som alt var pushet uten
 å heve nummeret – se del 46. Resten er tidligere leverte numre, som alltid
@@ -91,7 +92,8 @@ resultatet er fem nye deler: språkmodus (del 50), grunnstoffspillet
 (del 53) og arbeidsdelingen i design (del 54).
 
 **Øktene 16.–18. september ga kode igjen.** 16. september: kalenderlesinga i
-`felles-lesalt.js` lagt om til seks kall om gangen i stedet for etter tur,
+`felles-lesalt.js` lagt om til seks kall om gangen i stedet for etter tur
+(for mange – fire fra 12. oktober),
 Neam som kan endre skolearbeid fra alle sider, og **grunnstoffspillet** for
 Emma – trinn 1 og trinn 2 samme dag. 17. september: seksten nye varslere på
 sikkerhetssida, røyk, varme og vann. 18. september gikk i sin helhet til å
@@ -178,17 +180,26 @@ prefiks) og `felles-neam.css`. Magne har prøvd det og sier det fungerer.
 **Formen er midlertidig** – layout og funksjoner tas opp igjen sammen med
 plantegningen.
 
-**12. oktober: kalendernotatene som ren tekst.** Magne syntes det tok for
-lang tid før kalendersida var oppdatert. Hver oppdatering – åpning, retur
-til fanen, oppdater-knappen og hver lagring eller sletting – henter hele
-vinduet på nytt (45 dager bak, minst 180 frem) for alle seks kalenderne,
-med notatet på hver avtale. Outlook pakker selv et tomt notat inn i flere
-kB HTML, og alt ble tolket med DOMParser. `hentVindu()` ber nå om
-`outlook.body-content-type="text"`; `graph()` i `felles-graph.js` tar en
-ekstra Prefer-verdi via `valg.prefer`, og `htmlTilTekst()` slipper
-teksttypen rett gjennom. **Ingenting er målt** – det var den mistenkte
-med billigst retting, og Magne valgte å prøve den direkte. Dashene henter
-fortsatt notatene som HTML – de ble ikke rørt.
+**12. oktober: kalenderen var treg – det var strupingen.** Magne syntes
+det tok for lang tid før kalendersida var oppdatert. Første retting var
+gjetning: `hentVindu()` ber nå om notatene som ren tekst
+(`outlook.body-content-type="text"`, via ny `valg.prefer` i `graph()`,
+`felles-graph.js ?v=3`). Det hjalp ikke merkbart. **Så ble det målt**
+med `performance.getEntriesByType('resource')` rundt `refresh()`:
+**10,1 sek totalt, ca. 8 av dem ren venting.** Seks samtidige
+`calendarView`-kall ga 429 på to av dem; den ene fikk `Retry-After` på
+2 sek, den andre traff taket på 8. Selve kallene tok 0,2–1,8 sek.
+
+**Årsaken:** Outlook tåler **4 samtidige kall per postkasse**, og alle
+kalenderne bor hos sys. Grensa ble hevet fra 3 til 6 den 16. september i
+tillit til gjentakelsen i `graph()` – men gjentakelsen *er* ventetida.
+Rettet to steder, begge som en kø med fire spor (et ledig spor tar neste
+kalender straks, ingen venter på en hel bolk): `hentVindu()` i
+`kalender.html`, og `lesAltKalender()` i `felles-lesalt.js` (`?v=6`) –
+der var det verre, for `lesAltGraph()` prøver ikke igjen, så to
+kalendere forsvant rett i `feilet` når Neam leste. **Ikke over fire
+igjen.** Dashene kjører tre om gangen og ble ikke rørt; ny måling etter
+rettingen står ute.
 
 ### Åpne tråder
 
@@ -258,12 +269,14 @@ fortsatt notatene som HTML – de ble ikke rørt.
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
-- **Kalendersida etter teksthenten** (12. oktober). Om den føles raskere,
-  og om notatene ser riktige ut – det er nå Microsoft som gjør HTML om til
-  tekst, så linjeskift kan falle annerledes. Er den fortsatt treg: mål med
-  `performance.getEntriesByType('resource')` rundt `refresh()` før neste
-  retting. Neste spak er at lagring og sletting henter bare den ene
-  kalenderen det ble skrevet til, ikke alle seks.
+- **Kalendersida etter fire-om-gangen** (12. oktober). Samme måling
+  igjen etter hard oppdatering: ingen 429, og «Totalt» rundt 2 sek. Se
+  også at notatene ser riktige ut – det er nå Microsoft som gjør HTML om
+  til tekst, så linjeskift kan falle annerledes. Er den fortsatt treg, er
+  neste spak at lagring og sletting henter bare den ene kalenderen det ble
+  skrevet til, ikke alle seks.
+- **Neam leser alle kalenderne fra en annen side** – spør om uka fra
+  f.eks. kjøkkendashen og se at ingen kalender mangler.
 - **Stemmen begge veier på iPad fra hjemskjerm-appen.** Det eneste virkelig
   utestede: om `webkitSpeechRecognition` virker i standalone-modus, og om
   mikrofonen kan åpnes igjen programmatisk i samtalemodus (runde to og tre).
