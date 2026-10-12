@@ -42,9 +42,16 @@ body{
 .shell{
   height:100%;height:100dvh;
   max-width:1960px;margin:0 auto;
-  padding:16px 20px calc(12px + env(safe-area-inset-bottom));
+  /* Bunnen holdes fri for tommelknappene: innholdet slutter over
+     haandtaket i stedet for under det. Plassen kom fra raden med merket,
+     som naa staar foran maanedsnavnet. */
+  padding:16px 20px calc(var(--f-marg-y) + var(--f-handtak) + 8px + env(safe-area-inset-bottom));
   display:flex;flex-direction:column;gap:14px;
 }
+/* Tommelknappene helt ned mot kanten paa denne sida (12. oktober 2026).
+   Satt paa body og ikke :root, saa den vinner over medieregelene i
+   felles-neam.css uansett rekkefoelge. */
+body{--f-marg-y:8px}
 
 /* ---------- Topplinje ---------- */
 .top{
@@ -123,6 +130,9 @@ body{
   align-items:center;gap:14px;
 }
 .mnav-topp > .seg{justify-self:center}
+/* Merket foran maanedsnavnet. Det sto i en egen rad over, og den raden
+   gikk til at tommelknappene kunne senkes uten aa dekke kalenderen. */
+.mnav-hode{display:flex;align-items:center;gap:18px;min-width:0}
 .mnav-title{
   font-size:var(--t-stor);font-weight:700;text-transform:uppercase;
   letter-spacing:.04em;min-width:0;
@@ -141,6 +151,9 @@ body{
 @media(max-width:900px){
   .mnav-topp{grid-template-columns:1fr;justify-items:center;gap:10px}
   .mnav-title{text-align:center}
+  /* Dag- og ukestitlene er lange: faar de ikke plass ved siden av
+     merket, legger de seg under det i stedet for aa klemmes i tre linjer. */
+  .mnav-hode{gap:6px 12px;flex-wrap:wrap;justify-content:center}
 }
 
 /* ---------- Kalenderrutenett ---------- */
@@ -879,7 +892,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .caldrop{position:relative}
 .caldrop-panel{
   position:fixed;right:20px;z-index:47;
-  bottom:calc(88px + env(safe-area-inset-bottom));
+  bottom:calc(var(--f-marg-y) + var(--f-handtak) + 12px + env(safe-area-inset-bottom));
   background:var(--paper);border:1px solid var(--line);border-radius:14px;
   box-shadow:0 16px 40px rgba(44,62,80,.22);padding:20px 24px 22px;
   width:min(1120px, calc(100vw - 40px));
@@ -1032,6 +1045,10 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   pointer-events:none;
 }
 .bottom-bar > *{pointer-events:auto}
+/* Skjult, ikke fjernet (12. oktober 2026): hoeyre firer har tatt over
+   alle fire - se neamSideHandlinger. Kalendervelgeren bor fortsatt i
+   bunnlinja, og refreshBtn/idagTall leses av skriptet. */
+.bottom-bar .fab{display:none}
 .fab{
   position:relative;width:48px;height:48px;border-radius:50%;
   border:none;padding:0;
@@ -1180,6 +1197,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .fs-logo img{width:100%;height:100%;object-fit:contain;display:block}
 
 .shell.fullscreen .top{display:none}
+.shell.fullscreen .mnav-hode .brand{display:none}
 .shell.fullscreen .side{display:none}
 .shell.fullscreen .grid{grid-template-columns:1fr}
 .shell.fullscreen{padding-top:8px}
@@ -1192,7 +1210,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 /* ---------- Smale skjermer ---------- */
 @media(max-width:900px){
   body{overflow:auto;overscroll-behavior-y:none}
-  .shell{height:auto;min-height:100dvh;padding:16px 14px calc(16px + env(safe-area-inset-bottom))}
+  .shell{height:auto;min-height:100dvh;padding:16px 14px calc(var(--f-marg-y) + var(--f-handtak) + 8px + env(safe-area-inset-bottom))}
   .grid{display:flex;flex-direction:column}
   /* Fast hoeyde, ellers vokser rutene med innholdet og det finnes
      ingenting aa rulle i. flex maa nullstilles: flex-basis overstyrer
@@ -1257,6 +1275,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   body{overflow:hidden}
   .shell{height:100dvh;min-height:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));gap:8px}
   .top{display:none}                       /* logoen tar for mye hoeyde */
+  .mnav-hode .brand{display:none}
   .mnav-topp{
     grid-template-columns:auto 1fr auto;justify-items:stretch;gap:10px;
   }
@@ -1344,12 +1363,15 @@ input,select,textarea{font-size:16px}
 
   <button class="fs-logo" id="fsLogo" onclick="toggleFull()" title="Avslutt fullskjerm" aria-label="Avslutt fullskjerm"><img alt=""></button>
 
-  <div class="top">
+  <!-- Bare paa innloggingsskjermen. Inne staar merket foran
+       maanedsnavnet i stedet (12. oktober 2026), saa kalenderen faar
+       raden - se .mnav-hode. -->
+  <div class="top" id="topp">
     <a class="brand" href="./index.html">
       <span class="brand-icon"><img src="/bilder/merke-kalender.png?v=2" alt="" width="256" height="265"></span>
       <div>
         <div class="brand-title">Kalender</div>
-        <div class="brand-sub">Neam<span class="brand-navn" id="brandNavn"></span></div>
+        <div class="brand-sub">Neam</div>
       </div>
     </a>
   </div>
@@ -1368,7 +1390,16 @@ input,select,textarea{font-size:16px}
 
   <div class="mnav" id="mnav" hidden>
     <div class="mnav-topp">
-      <div class="mnav-title" id="monthTitle">—</div>
+      <div class="mnav-hode">
+        <a class="brand" href="./index.html">
+          <span class="brand-icon"><img src="/bilder/merke-kalender.png?v=2" alt="" width="256" height="265"></span>
+          <div>
+            <div class="brand-title">Kalender</div>
+            <div class="brand-sub">Neam<span class="brand-navn" id="brandNavn"></span></div>
+          </div>
+        </a>
+        <div class="mnav-title" id="monthTitle">—</div>
+      </div>
       <div class="seg" id="seg">
         <button data-m="month" class="on" onclick="settVisning('month')">Måned</button>
         <button data-m="week" onclick="settVisning('week')">Uke</button>
@@ -3027,8 +3058,12 @@ function toggleCalMeny(ev){
 }
 document.addEventListener('click', function(ev){
   const dd = $('caldrop'), p = $('caldropPanel'), btn = $('caldropBtn');
+  /* Klikket fra knappen i hoeyre firer bobler hit etter at den har
+     aapnet panelet - uten unntaket lukket det seg i samme klikk. */
+  const firer = $('neamSideFirer');
   if(dd && p && !p.hidden && !dd.contains(ev.target) &&
-     !(btn && btn.contains(ev.target))) p.hidden = true;
+     !(btn && btn.contains(ev.target)) &&
+     !(firer && firer.contains(ev.target))) p.hidden = true;
 });
 function render(){
   const inn = !!(S.token || S.oekt);
@@ -3048,6 +3083,12 @@ function render(){
   }
   $('bottomBar').hidden = !inn;
   $('mnav').hidden = !inn;
+  /* Inne staar merket i maanedslinja - topplinja er bare for porten. */
+  $('topp').hidden = inn;
+  /* Hoeyre firer: handlingene krever en oekt. neamBygg() avgjorde
+     synligheten foer dette skriptet var lest, saa den settes her. */
+  const sideH = $('neamSideHandtak');
+  if(sideH) sideH.hidden = !inn;
   oppdaterBlapiler();
   $('hurtigKal').hidden = !inn;
   if(!inn) return;
@@ -5068,6 +5109,46 @@ function renderListe(){
 
   rullTilDag(wrap, anker);
 }
+
+/* ---- Sidas egne handlinger: hoeyre firer ----
+   Lagt til 12. oktober 2026. De fire runde knappene nede til hoeyre er
+   skjult, ikke fjernet - se .bottom-bar .fab.
+
+     ved    NY AVTALE. Det som skaper noe staar naermest tommelen, med
+            samme merke som paa dashene.
+     skraa  OPPDATER. Navnet baerer naar det sist ble hentet.
+     opp    KALENDERE - bare for sys, som foer. Plassen skjules for
+            de andre.
+
+   I dag er andre trykk paa haandtaket, se neamSideAndreTrykk. */
+window.neamSideHandlinger = function(){
+  const liste = [
+    { plass:'ved', navn:'Ny avtale', tekst:'Avtale', farge:'ny',
+      merke:true, ikon:knappMerke('avtale'),
+      gjor: nyAvtale },
+
+    { plass:'skraa',
+      navn: sistHentet ? ('Oppdater – sist hentet ' + sistHentet) : 'Oppdater',
+      tekst:'Oppdater',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4.5V11h-6.5"/></svg>',
+      gjor: refresh }
+  ];
+  if(erKalAdmin){
+    liste.push({ plass:'opp', navn:'Kalendere', tekst:'Kalendere',
+      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+         + '<rect x="3" y="4.5" width="18" height="16" rx="2.5"/>'
+         + '<path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>',
+      gjor: function(){ toggleCalMeny(); } });
+  }
+  return liste;
+};
+
+/* Andre trykk paa haandtaket: tilbake til i dag. Samme tanke som paa
+   Andrea dash og oppskriftssida - det andre trykket er veien hjem. */
+window.neamSideAndreTrykk = function(){ goToday(); };
 
 /* ---- Kontrakten mot Neam ----
    Svarer paa "hvor er jeg og hva ser jeg paa". felles-neam.js sender
