@@ -329,15 +329,30 @@ async function lesAltKalender(arg){
      en svartid paa sju, hvert enkelt 160-520 ms. I bolker blir det to
      runder à det tregeste kallet. allSettled: én kalender som feiler
      velter ikke de andre, og svarene leses i kalenderrekkefoelge under,
-     saa utfallet er det samme som da de gikk etter tur. */
-  const GRENSE = 6;
-  const svar = [];
-  for(let i = 0; i < kal.length; i += GRENSE){
-    const bolk = await Promise.allSettled(kal.slice(i, i + GRENSE).map(function(c){
-      return lesAltGraph('/me/calendars/' + encodeURIComponent(c.id) + q);
-    }));
-    bolk.forEach(function(r){ svar.push(r); });
+     saa utfallet er det samme som da de gikk etter tur.
+
+     12. oktober 2026: seks var for mange. Outlook taaler 4 samtidige
+     kall per postkasse, og alle kalenderne bor hos sys - kalendersida
+     fikk 429 paa to av seks ved hver oppdatering. Her ble de to bare
+     borte i `feilet`. Naa fire om gangen som en koe: et ledig spor tar
+     neste kalender med en gang, i stedet for aa vente paa hele bolken. */
+  const GRENSE = 4;
+  const svar = new Array(kal.length);
+  let lesAltNeste = 0;
+  async function lesAltSpor(){
+    while(lesAltNeste < kal.length){
+      const i = lesAltNeste++;
+      try{
+        svar[i] = { status:'fulfilled', value: await lesAltGraph(
+          '/me/calendars/' + encodeURIComponent(kal[i].id) + q) };
+      }catch(err){
+        svar[i] = { status:'rejected', reason:err };
+      }
+    }
   }
+  const lesAltKjoerer = [];
+  for(let k = 0; k < Math.min(GRENSE, kal.length); k++) lesAltKjoerer.push(lesAltSpor());
+  await Promise.all(lesAltKjoerer);
 
   kal.forEach(function(c, i){
     const r = svar[i];
