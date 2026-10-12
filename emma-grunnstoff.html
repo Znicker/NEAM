@@ -1555,7 +1555,7 @@ function tegnLab(){
   const rader = [
     ['Symbol', s[1]],
     ['Atomnummer', String(s[0])],
-    ['Gruppe', KATEGORINAVN[s[5]]],
+    ['Kategori', KATEGORINAVN[s[5]]],
     ['Periode', s[3] <= 7 ? String(s[3]) : (s[5] === 'lantanoid' ? '6' : '7')],
     ['Tilstand', tilstandAv(s[0]) + (tilstandAv(s[0]) === 'Ukjent' ? '' : ' ved 20 °C')]
   ];
@@ -2007,8 +2007,8 @@ function lagSporsmaal(s, type){
     blandet(Object.keys(KATEGORINAVN)).forEach(function(k){
       if(k !== s[5] && feil.length < 3) feil.push(KATEGORINAVN[k]);
     });
-    return { tekst:'Hvilken gruppe hører ' + s[2] + ' til?',
-             sub:'Fargen i tabellen viser gruppa.',
+    return { tekst:'Hvilken kategori hører ' + s[2] + ' til?',
+             sub:'Fargen i tabellen viser kategorien.',
              fasit:KATEGORINAVN[s[5]], alternativ:blandet([KATEGORINAVN[s[5]]].concat(feil)) };
   }
   if(type === 'tilstand'){
@@ -2150,7 +2150,7 @@ const SIDER = [
   { id:'symbol',    navn:'Symbol',     hint:'Hva er symbolet for stoffet?' },
   { id:'nummer',    navn:'Atomnummer', hint:'Hvilket atomnummer har stoffet?' },
   { id:'skall',     navn:'Oppbygning', hint:'Hvordan ligger elektronene?' },
-  { id:'gruppe',    navn:'Gruppe',     hint:'Hvilken gruppe hører stoffet til?' },
+  { id:'gruppe',    navn:'Kategori',   hint:'Hvilken kategori hører stoffet til?' },
   { id:'ytterskall',navn:'Ytterskall', hint:'Hvor mange elektroner ytterst?' }
 ];
 
