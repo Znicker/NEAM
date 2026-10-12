@@ -1344,15 +1344,23 @@
   cursor:pointer; white-space:nowrap;
 }
 .hsk-fane.aktiv{ background:var(--aksent); color:#FFFFFF; }
-.hsk-rom{ margin:0 0 18px; }
+/* Hvert rom er en grupperingsboks (--boks-mild, designsystemets flate
+   for nettopp det), saa skillet mellom rom er tydeligere enn skillet
+   mellom enhetene inne i dem. */
+.hsk-rom{
+  margin:0 0 14px; padding:2px 14px;
+  background:var(--boks-mild); border:1px solid var(--boks-kant); border-radius:12px;
+}
 .hsk-romnavn{
-  margin:0 0 4px; color:var(--ink);
+  margin:0; padding:12px 0 8px; color:var(--ink);
   font-size:var(--t-brod); font-weight:700;
 }
 .hsk-enhet{
   display:grid; grid-template-columns:28px 1fr; gap:0 12px; align-items:start;
-  padding:10px 0; border-top:1px solid var(--line);
+  padding:10px 0; border-top:1px solid var(--boks-kant);
 }
+/* Uten romnavn (enhetene ligger rett i etasjen) er det ingen linje over den foerste. */
+.hsk-rom > .hsk-enhet:first-child{ border-top:none; }
 .hsk-enhet.hsk-borte{ opacity:.55; }
 .hsk-ikon{ color:var(--ink-soft); padding-top:1px; }
 .hsk-ikon svg{ width:24px; height:24px; display:block; }
