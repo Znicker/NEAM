@@ -1,6 +1,7 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 11. oktober 2026, kveld: Rommene – lys, varme og
+*Ført à jour 12. oktober 2026: kalendernotatene hentes som ren tekst
+(se toppblokka). Ført à jour 11. oktober 2026, kveld: Rommene – lys, varme og
 stikkontakter fra Homey under Enheter (se toppblokka). Ført à jour
 11. oktober 2026: del 56 lagt til – Neamow, gressklipperen
 (Roborock RockMow Z115) gjennom Roborocks sky: kort under Enheter, egen
@@ -38,7 +39,7 @@ ny tråd alltid lander på samme sted.*
 
 ---
 
-## Nåstatus – 11. oktober 2026
+## Nåstatus – 12. oktober 2026
 
 **Hvor prosjektet er nå.** Ni sider og fire spill, og Andreas tre spill
 nås fra én egen spillside. To økter 12.–13. september
@@ -61,7 +62,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 **Siste leverte versjoner:** `felles-neam.js ?v=72`, `felles-neam.css
 ?v=61`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=5`, `felles-lesalt.js
 ?v=5`, `felles-hus.js ?v=9`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
-`felles-graph.js ?v=2`, `felles-rot.css ?v=5`, `felles-knapper.css ?v=1`;
+`felles-graph.js ?v=3`, `felles-rot.css ?v=5`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html` og spillsida
 `andrea-spill.html`; `functions/_middleware.js`, `functions/api/` med
@@ -75,7 +76,7 @@ spillbildene `?v=1`, sikkerhetsmerkene `?v=1` (65 stk i
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–71; neam.css til og
 med 60; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–4, skriv 1–4,
-hus `?v=1–8`, ms `?v=1`, tale 1–4**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
+hus `?v=1–8`, ms `?v=1`, tale 1–4, graph 1–2**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
 tale 1–4 ble brent 13. september ved å endre en fil som alt var pushet uten
 å heve nummeret – se del 46. Resten er tidligere leverte numre, som alltid
 er brent i det de forlates.
@@ -177,6 +178,18 @@ prefiks) og `felles-neam.css`. Magne har prøvd det og sier det fungerer.
 **Formen er midlertidig** – layout og funksjoner tas opp igjen sammen med
 plantegningen.
 
+**12. oktober: kalendernotatene som ren tekst.** Magne syntes det tok for
+lang tid før kalendersida var oppdatert. Hver oppdatering – åpning, retur
+til fanen, oppdater-knappen og hver lagring eller sletting – henter hele
+vinduet på nytt (45 dager bak, minst 180 frem) for alle seks kalenderne,
+med notatet på hver avtale. Outlook pakker selv et tomt notat inn i flere
+kB HTML, og alt ble tolket med DOMParser. `hentVindu()` ber nå om
+`outlook.body-content-type="text"`; `graph()` i `felles-graph.js` tar en
+ekstra Prefer-verdi via `valg.prefer`, og `htmlTilTekst()` slipper
+teksttypen rett gjennom. **Ingenting er målt** – det var den mistenkte
+med billigst retting, og Magne valgte å prøve den direkte. Dashene henter
+fortsatt notatene som HTML – de ble ikke rørt.
+
 ### Åpne tråder
 
 **Besluttet, ikke bygget – fem systemer med begrunnelse i del 47–50 og 52:**
@@ -245,6 +258,12 @@ plantegningen.
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **Kalendersida etter teksthenten** (12. oktober). Om den føles raskere,
+  og om notatene ser riktige ut – det er nå Microsoft som gjør HTML om til
+  tekst, så linjeskift kan falle annerledes. Er den fortsatt treg: mål med
+  `performance.getEntriesByType('resource')` rundt `refresh()` før neste
+  retting. Neste spak er at lagring og sletting henter bare den ene
+  kalenderen det ble skrevet til, ikke alle seks.
 - **Stemmen begge veier på iPad fra hjemskjerm-appen.** Det eneste virkelig
   utestede: om `webkitSpeechRecognition` virker i standalone-modus, og om
   mikrofonen kan åpnes igjen programmatisk i samtalemodus (runde to og tre).
