@@ -26,7 +26,8 @@ dokumentet – det er fortsatt fasiten for hva som skal være likt på tvers.
 *Sist oppdatert 12. oktober 2026: kalendersida fikk egen seksjon –
 høyre firer i stedet for de runde knappene, i dag på andre trykk,
 tommelknappene nær kanten med fri bunn, merket foran månedsnavnet, og
-visningsvalg og initialer nederst mellom tommelknappene.
+visningsvalg og initialer nederst mellom tommelknappene – også på
+liggende telefon – og avtalene i Liste tonet oppå papir.
 Forrige oppdatering 11. oktober 2026: Neamow ført inn – egen seksjon, et
 unntak fra de fem betydningene (gress i kartet), enhetsknapper med merke i
 fireren, bekreftelsen for en maskin som settes i gang, og
@@ -1174,8 +1175,8 @@ innholdet slutter over begge i stedet for under dem.
 Gjelder bare denne sida – et unntak fra fellesverdiene i
 `felles-neam.css` – fordi rutenettet fyller hele høyden og ellers ligger
 under begge hjørnene. Settes på `body`, ikke `:root`, så den vinner over
-medieregelene uansett rekkefølge. **Liggende telefon er unntatt:** der er
-høyden dyrere enn et dekket hjørne.
+medieregelene uansett rekkefølge. Gjelder også liggende telefon, der
+kalenderen blir rundt 60 px lavere enn da hjørnene bare ble dekket.
 
 **Merket står foran månedsnavnet, ikke i egen rad.** `.mnav-hode` i
 første felt av `.mnav-topp`, med «Kalender» og «Neam · navn». Det var
@@ -1188,19 +1189,22 @@ skjult, som topplinja var.
 **Visningsvalget og initialene står nederst, mellom tommelknappene**
 (`.kal-valg`, fast i bunnen). Toppen har bare merket og tittelen. Det er
 der tommelen er, og plassen var alt holdt fri for håndtakene.
-- **PC og liggende nettbrett:** én rad mellom håndtakene.
+- **PC, liggende nettbrett og liggende telefon:** én rad mellom
+  håndtakene. På en liggende telefon (844 px) får ti initialer plass.
 - **Telefon og stående nettbrett (til 900 px):** to rader – initialene i
   full bredde over håndtakene (26 px), visningsvalget mellom dem, på linje
   med håndtakene. Mellom håndtakene på en 375 px telefon er det 227 px;
   visningsvalget er strammet inn til ca. 205.
-- **Liggende telefon:** tilbake i toppen på én linje, som før
-  (`.kal-valg{display:contents}`). Der er høyden knappest, og det er der
-  måned og uke vises på telefon.
 
 Raden ligger under dempelaget, så den tones ned når en firer åpnes.
 `renderHurtigKal()` regner kolonnene ut fra plassen raden faktisk har, og
 setter `--kv-hoyde`. Blir det flere kalendere enn én rad rommer, brytes
 initialene på en ny linje, og bunnen følger med.
+
+**Avtalene i Liste er tonet oppå papir.** Toningen er den samme som i uke
+og dag (`dus(farge, .18)`), men lista har ingen papirflate under seg, og
+alene slapp den sidebakgrunnen gjennom. Flaten er derfor
+`background-color: var(--paper)` med toningen som `background-image`.
 
 ## Oppskriftssida
 
