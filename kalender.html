@@ -45,7 +45,7 @@ body{
   /* Bunnen holdes fri for tommelknappene: innholdet slutter over
      haandtaket i stedet for under det. Plassen kom fra raden med merket,
      som naa staar foran maanedsnavnet. */
-  padding:16px 20px calc(var(--f-marg-y) + var(--f-handtak) + 8px + env(safe-area-inset-bottom));
+  padding:16px 20px calc(var(--f-marg-y) + max(var(--f-handtak), var(--kv-hoyde, 0px)) + 8px + env(safe-area-inset-bottom));
   display:flex;flex-direction:column;gap:14px;
 }
 /* Tommelknappene helt ned mot kanten paa denne sida (12. oktober 2026).
@@ -137,6 +137,25 @@ body{--f-marg-y:8px}
    merket - uke- og dagstitlene er lange - legger den seg hel under det i
    stedet for aa klemmes i tre linjer. */
 .mnav-hode .mnav-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+/* ---------- Visningsvalg og initialer nederst (12. oktober 2026) ----------
+   Mellom tommelknappene, der tommelen er. Bunnen var alt holdt fri for
+   haandtakene, og toppen faar da bare merket og tittelen.
+   Telefon: initialene i full bredde over haandtakene, visningsvalget
+   mellom dem. Liggende telefon: tilbake i toppen paa en linje - se
+   «Liggende telefon» lenger ned. --kv-hoyde settes av renderHurtigKal(),
+   saa bunnen holdes fri for hele raden ogsaa naar den er hoeyere enn
+   haandtaket. */
+.kal-valg{
+  --kv-side:calc(var(--f-marg-x) + var(--f-handtak) + 10px);
+  position:fixed;left:0;right:0;z-index:44;
+  bottom:calc(var(--f-marg-y) + env(safe-area-inset-bottom));
+  min-height:var(--f-handtak);
+  padding:0 var(--kv-side);
+  display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 16px;
+  pointer-events:none;
+}
+.kal-valg > *{pointer-events:auto}
 .mnav-title{
   font-size:var(--t-stor);font-weight:700;text-transform:uppercase;
   letter-spacing:.04em;min-width:0;
@@ -156,6 +175,20 @@ body{--f-marg-y:8px}
   .mnav-topp{grid-template-columns:1fr;justify-items:center;gap:10px}
   .mnav-title{text-align:center}
   .mnav-hode{gap:6px 12px;justify-content:center}
+  /* To rader: initialene over haandtakene i full bredde, visningsvalget
+     mellom dem. Raden med visningsvalget er like hoey som haandtaket,
+     saa de staar paa linje. */
+  .kal-valg{
+    display:grid;grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto var(--f-handtak);
+    justify-items:center;align-items:center;gap:6px;
+    padding:0 14px;
+  }
+  .kal-valg .hurtigkal{grid-row:1;gap:4px}
+  .kal-valg .seg{grid-row:2;max-width:calc(100vw - 2 * var(--kv-side))}
+  .kal-valg .seg button{padding:7px 8px}
+  .kal-valg .hk-ini{width:26px;height:26px;font-size:var(--t-rute)}
+  .kal-valg .hk-alle{height:26px;padding:0 9px}
 }
 
 /* ---------- Kalenderrutenett ---------- */
@@ -894,7 +927,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .caldrop{position:relative}
 .caldrop-panel{
   position:fixed;right:20px;z-index:47;
-  bottom:calc(var(--f-marg-y) + var(--f-handtak) + 12px + env(safe-area-inset-bottom));
+  bottom:calc(var(--f-marg-y) + max(var(--f-handtak), var(--kv-hoyde, 0px)) + 12px + env(safe-area-inset-bottom));
   background:var(--paper);border:1px solid var(--line);border-radius:14px;
   box-shadow:0 16px 40px rgba(44,62,80,.22);padding:20px 24px 22px;
   width:min(1120px, calc(100vw - 40px));
@@ -1212,7 +1245,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 /* ---------- Smale skjermer ---------- */
 @media(max-width:900px){
   body{overflow:auto;overscroll-behavior-y:none}
-  .shell{height:auto;min-height:100dvh;padding:16px 14px calc(var(--f-marg-y) + var(--f-handtak) + 8px + env(safe-area-inset-bottom))}
+  .shell{height:auto;min-height:100dvh;padding:16px 14px calc(var(--f-marg-y) + max(var(--f-handtak), var(--kv-hoyde, 0px)) + 8px + env(safe-area-inset-bottom))}
   .grid{display:flex;flex-direction:column}
   /* Fast hoeyde, ellers vokser rutene med innholdet og det finnes
      ingenting aa rulle i. flex maa nullstilles: flex-basis overstyrer
@@ -1286,6 +1319,14 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .hurtigkal{grid-column:auto;justify-self:end;justify-content:end}
   .hk-ini{width:25px;height:25px;font-size:var(--t-rute)}
   .hk-alle{height:25px;padding:0 9px}
+  /* Visningsvalg og initialer tilbake i toppen paa en linje: beholderen
+     forsvinner, og barna blir rutenettets egne felt som foer. */
+  .kal-valg{display:contents}
+  .kal-valg > .seg{justify-self:center;grid-row:auto;max-width:none}
+  .kal-valg .seg button{padding:7px 14px}
+  .kal-valg .hurtigkal{grid-row:auto;gap:6px}
+  .kal-valg .hk-ini{width:25px;height:25px}
+  .kal-valg .hk-alle{height:25px;padding:0 9px}
   .cal-panel{flex:1;min-height:0}
   /* Ta hele resthoeyden - her er hver piksel dyrebar */
   .cal{flex:1;height:auto;min-height:0}
@@ -1402,13 +1443,15 @@ input,select,textarea{font-size:16px}
         </a>
         <div class="mnav-title" id="monthTitle">—</div>
       </div>
-      <div class="seg" id="seg">
-        <button data-m="month" class="on" onclick="settVisning('month')">Måned</button>
-        <button data-m="week" onclick="settVisning('week')">Uke</button>
-        <button data-m="day" onclick="settVisning('day')">Dag</button>
-        <button data-m="liste" onclick="settVisning('liste')">Liste</button>
+      <div class="kal-valg" id="kalValg">
+        <div class="seg" id="seg">
+          <button data-m="month" class="on" onclick="settVisning('month')">Måned</button>
+          <button data-m="week" onclick="settVisning('week')">Uke</button>
+          <button data-m="day" onclick="settVisning('day')">Dag</button>
+          <button data-m="liste" onclick="settVisning('liste')">Liste</button>
+        </div>
+        <div class="hurtigkal" id="hurtigKal" hidden></div>
       </div>
-      <div class="hurtigkal" id="hurtigKal" hidden></div>
     </div>
   </div>
   <div class="grid" id="app" hidden>
@@ -3220,13 +3263,34 @@ function renderHurtigKal(){
      PC deler paa to saa raden ikke blir uforholdsmessig bred. */
   /* Maales mot raden, ikke mot beholderen selv - den er auto-bred og
      har ikke faatt sin bredde ennaa naar vi regner. */
-  const egenRad = window.matchMedia('(max-width:1000px)').matches;
-  const mnav = document.querySelector('.mnav');
-  const full = (mnav && mnav.clientWidth) || window.innerWidth - 40;
-  /* Paa egen rad har de hele bredden. Ellers deler de linja med tittel
-     og visningsknapper, og faar omtrent det som blir til overs. */
-  const bredde = egenRad ? full : Math.max(340, full - 560);
-  const boks = egenRad ? 37 : 33;
+  /* Fra 12. oktober 2026 staar de nederst (.kal-valg) - unntatt paa
+     liggende telefon, der de fortsatt deler toppen med tittelen. */
+  const kv = $('kalValg');
+  const liggende = window.matchMedia('(orientation:landscape) and (max-height:560px)').matches;
+  let bredde, boks;
+  if(liggende){
+    const egenRad = window.matchMedia('(max-width:1000px)').matches;
+    const mnav = document.querySelector('.mnav');
+    const full = (mnav && mnav.clientWidth) || window.innerWidth - 40;
+    /* Paa egen rad har de hele bredden. Ellers deler de linja med tittel
+       og visningsknapper, og faar omtrent det som blir til overs. */
+    bredde = egenRad ? full : Math.max(340, full - 560);
+    boks = egenRad ? 37 : 33;
+  } else {
+    const cs = kv ? getComputedStyle(kv) : null;
+    const indre = (kv && kv.clientWidth)
+      ? kv.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+      : window.innerWidth - 40;
+    if(window.matchMedia('(max-width:900px)').matches){
+      /* Egen rad over haandtakene: 26px pluss 4px luft. */
+      bredde = indre; boks = 30;
+    } else {
+      /* Samme rad som visningsvalget, mellom haandtakene. */
+      const seg = $('seg');
+      bredde = Math.max(140, indre - (seg ? seg.offsetWidth : 0) - 16);
+      boks = window.matchMedia('(min-width:1001px)').matches ? 33 : 37;
+    }
+  }
   const plass = Math.max(4, Math.floor(bredde / boks));
 
   let kol;
@@ -3244,6 +3308,13 @@ function renderHurtigKal(){
   alle.textContent = altPaa ? 'INGEN' : 'ALLE';
   alle.onclick = visAlleKal;
   el.appendChild(alle);
+
+  /* Bunnen holdes fri for hele raden - paa telefon er den hoeyere enn
+     haandtaket, fordi initialene ligger over det. */
+  if(kv){
+    const h = getComputedStyle(kv).display === 'contents' ? 0 : kv.offsetHeight;
+    document.documentElement.style.setProperty('--kv-hoyde', h + 'px');
+  }
 }
 
 /* Pilene vises naar man er logget inn og staar i en kalendervisning.
