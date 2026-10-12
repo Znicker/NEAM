@@ -25,7 +25,8 @@ dokumentet – det er fortsatt fasiten for hva som skal være likt på tvers.
 
 *Sist oppdatert 12. oktober 2026: kalendersida fikk egen seksjon –
 høyre firer i stedet for de runde knappene, i dag på andre trykk,
-tommelknappene nær kanten med fri bunn, og merket foran månedsnavnet.
+tommelknappene nær kanten med fri bunn, merket foran månedsnavnet, og
+visningsvalg og initialer nederst mellom tommelknappene.
 Forrige oppdatering 11. oktober 2026: Neamow ført inn – egen seksjon, et
 unntak fra de fem betydningene (gress i kartet), enhetsknapper med merke i
 fireren, bekreftelsen for en maskin som settes i gang, og
@@ -1167,8 +1168,9 @@ kalendervelgeren bor fortsatt i bunnlinja, og skriptet leser `refreshBtn`
 og `idagTall`.
 
 **Tommelknappene står 8 px fra kanten, og bunnen holdes fri for dem.**
-`body{--f-marg-y:8px}`, og `.shell` har `--f-marg-y + --f-handtak + 8px`
-nederst, så innholdet slutter over håndtaket i stedet for under det.
+`body{--f-marg-y:8px}`, og `.shell` har `--f-marg-y` + det høyeste av
+håndtaket og raden med visningsvalg (`--kv-hoyde`) + `8px` nederst, så
+innholdet slutter over begge i stedet for under dem.
 Gjelder bare denne sida – et unntak fra fellesverdiene i
 `felles-neam.css` – fordi rutenettet fyller hele høyden og ellers ligger
 under begge hjørnene. Settes på `body`, ikke `:root`, så den vinner over
@@ -1178,9 +1180,27 @@ høyden dyrere enn et dekket hjørne.
 **Merket står foran månedsnavnet, ikke i egen rad.** `.mnav-hode` i
 første felt av `.mnav-topp`, med «Kalender» og «Neam · navn». Det var
 raden over som betalte for den frie bunnen; den (`#topp`) vises nå bare på
-innloggingsskjermen. På smal skjerm legger en lang tittel – dag og uke –
-seg under merket i stedet for å klemmes i tre linjer. I fullskjerm og på
-liggende telefon er merket skjult, som topplinja var.
+innloggingsskjermen. **Tittelen brytes aldri inni seg selv:** får en lang
+tittel – dag og uke – ikke plass ved siden av merket, legger den seg hel
+under det, på alle bredder. I fullskjerm og på liggende telefon er merket
+skjult, som topplinja var.
+
+**Visningsvalget og initialene står nederst, mellom tommelknappene**
+(`.kal-valg`, fast i bunnen). Toppen har bare merket og tittelen. Det er
+der tommelen er, og plassen var alt holdt fri for håndtakene.
+- **PC og liggende nettbrett:** én rad mellom håndtakene.
+- **Telefon og stående nettbrett (til 900 px):** to rader – initialene i
+  full bredde over håndtakene (26 px), visningsvalget mellom dem, på linje
+  med håndtakene. Mellom håndtakene på en 375 px telefon er det 227 px;
+  visningsvalget er strammet inn til ca. 205.
+- **Liggende telefon:** tilbake i toppen på én linje, som før
+  (`.kal-valg{display:contents}`). Der er høyden knappest, og det er der
+  måned og uke vises på telefon.
+
+Raden ligger under dempelaget, så den tones ned når en firer åpnes.
+`renderHurtigKal()` regner kolonnene ut fra plassen raden faktisk har, og
+setter `--kv-hoyde`. Blir det flere kalendere enn én rad rommer, brytes
+initialene på en ny linje, og bunnen følger med.
 
 ## Oppskriftssida
 
