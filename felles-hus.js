@@ -889,6 +889,13 @@ const HSK_IKKE_VALG = ['light_mode'];
 const HSK_IKKE_KLASSE = ['lock', 'sensor'];
 const HSK_OPPDATER = 10000;
 
+/* «Naturlig hvitt» paa fargelampene. Homeys light_temperature gaar fra
+   0 (kaldest) til 1 (varmest); 0,8 er varmt hvitt, omtrent som en
+   vanlig lyspaere (rundt 2900 K paa Hue). Prikken viser det som en
+   lys, gul hvit. */
+const HSK_HVITT = 0.8;
+const HSK_HVITT_CSS = 'hsl(40,100%,85%)';
+
 /* Fanenes rekkefoelge. Homey har ingen rekkefoelge paa sonene; etasjer
    som ikke staar her, kommer sist i alfabetisk orden. */
 const HSK_ETASJE_REKKE = ['første etasje', 'kjeller', 'garasje', 'hage', 'terrasse'];
@@ -1285,6 +1292,9 @@ function hskBygg(){
       return;
     }
 
+    const hvitt = t.closest('button[data-hvitt]');
+    if(hvitt){ hskSettHvitt(hvitt.dataset.hvitt); return; }
+
     const prikk = t.closest('button[data-farge]');
     if(prikk){
       hskApenFarge = hskApenFarge === prikk.dataset.farge ? '' : prikk.dataset.farge;
@@ -1385,9 +1395,17 @@ function hskStyring(e){
   });
   if(e.farge){
     const f = hskFargeNaa(e);
+    /* Staar lampa paa hvitt, viser prikken hvitt - ikke fargen den
+       hadde sist, som den ikke lyser med naa. */
+    const hvit = o.light_mode && o.light_mode.value === 'temperature';
     h += '<button type="button" class="hsk-farge' + (hskApenFarge === e.id ? ' aapen' : '') + '"'
-       + ' data-farge="' + hskVask(e.id) + '" style="background:' + hskFargeCss(f.h, f.s) + '"'
+       + ' data-farge="' + hskVask(e.id) + '" style="background:' + (hvit ? HSK_HVITT_CSS : hskFargeCss(f.h, f.s)) + '"'
        + ' aria-label="Velg farge for ' + hskVask(e.kort) + '" aria-expanded="' + (hskApenFarge === e.id) + '"></button>';
+    /* Etter prikken, saa det er knappen og ikke prikken som brytes til
+       ny linje paa smal skjerm. */
+    if(o.light_temperature && o.light_temperature.setable){
+      h += '<button type="button" class="dlg-knapp ja hsk-knapp" data-hvitt="' + hskVask(e.id) + '">Naturlig hvitt</button>';
+    }
   }
   let ut = h ? '<div class="hsk-styr">' + h + '</div>' : '';
   if(e.farge && hskApenFarge === e.id){
@@ -1468,6 +1486,20 @@ function hskSettFarge(id, f){
   if(o.light_mode && o.light_mode.setable && o.light_mode.value !== 'color') endr.push(['light_mode', 'color']);
   endr.push(['light_hue', f.h], ['light_saturation', f.s]);
   if(o.onoff && o.onoff.setable && !o.onoff.value) endr.push(['onoff', true]);
+  hskSett(id, endr);
+}
+
+/* «Naturlig hvitt»: tilbake fra farge til varmt hvitt, som en vanlig
+   lyspaere. Samme rekkefoelge som fargen - modus, verdi, og tennes til
+   slutt om den var av. */
+function hskSettHvitt(id){
+  const d = enheter[id];
+  const o = (d && d.capabilitiesObj) || {};
+  const endr = [];
+  if(o.light_mode && o.light_mode.setable && o.light_mode.value !== 'temperature') endr.push(['light_mode', 'temperature']);
+  endr.push(['light_temperature', HSK_HVITT]);
+  if(o.onoff && o.onoff.setable && !o.onoff.value) endr.push(['onoff', true]);
+  hskApenFarge = '';
   hskSett(id, endr);
 }
 
