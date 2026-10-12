@@ -142,8 +142,8 @@ body{--f-marg-y:8px}
    Mellom tommelknappene, der tommelen er. Bunnen var alt holdt fri for
    haandtakene, og toppen faar da bare merket og tittelen.
    Telefon: initialene i full bredde over haandtakene, visningsvalget
-   mellom dem. Liggende telefon: tilbake i toppen paa en linje - se
-   «Liggende telefon» lenger ned. --kv-hoyde settes av renderHurtigKal(),
+   mellom dem. Liggende telefon: én rad mellom haandtakene, som PC -
+   se «Liggende telefon» lenger ned. --kv-hoyde settes av renderHurtigKal(),
    saa bunnen holdes fri for hele raden ogsaa naar den er hoeyere enn
    haandtaket. */
 .kal-valg{
@@ -1308,7 +1308,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .dagpanel,.boble.side{width:52vw;min-width:0}
 
   body{overflow:hidden}
-  .shell{height:100dvh;min-height:0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));gap:8px}
+  .shell{height:100dvh;min-height:0;padding:8px 12px calc(var(--f-marg-y) + max(var(--f-handtak), var(--kv-hoyde, 0px)) + 8px + env(safe-area-inset-bottom));gap:8px}
   .top{display:none}                       /* logoen tar for mye hoeyde */
   .mnav-hode .brand{display:none}
   .mnav-topp{
@@ -1319,12 +1319,14 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .hurtigkal{grid-column:auto;justify-self:end;justify-content:end}
   .hk-ini{width:25px;height:25px;font-size:var(--t-rute)}
   .hk-alle{height:25px;padding:0 9px}
-  /* Visningsvalg og initialer tilbake i toppen paa en linje: beholderen
-     forsvinner, og barna blir rutenettets egne felt som foer. */
-  .kal-valg{display:contents}
-  .kal-valg > .seg{justify-self:center;grid-row:auto;max-width:none}
+  /* Visningsvalg og initialer nederst som paa de andre skjermene, paa
+     én rad mellom haandtakene - bredden holder (12. oktober 2026). */
+  .kal-valg{
+    display:flex;padding:0 var(--kv-side);gap:8px 16px;
+  }
+  .kal-valg .seg{grid-row:auto;max-width:none}
   .kal-valg .seg button{padding:7px 14px}
-  .kal-valg .hurtigkal{grid-row:auto;gap:6px}
+  .kal-valg .hurtigkal{grid-row:auto;gap:5px}
   .kal-valg .hk-ini{width:25px;height:25px}
   .kal-valg .hk-alle{height:25px;padding:0 9px}
   .cal-panel{flex:1;min-height:0}
@@ -3263,33 +3265,24 @@ function renderHurtigKal(){
      PC deler paa to saa raden ikke blir uforholdsmessig bred. */
   /* Maales mot raden, ikke mot beholderen selv - den er auto-bred og
      har ikke faatt sin bredde ennaa naar vi regner. */
-  /* Fra 12. oktober 2026 staar de nederst (.kal-valg) - unntatt paa
-     liggende telefon, der de fortsatt deler toppen med tittelen. */
+  /* Fra 12. oktober 2026 staar de nederst (.kal-valg), ogsaa paa
+     liggende telefon. */
   const kv = $('kalValg');
   const liggende = window.matchMedia('(orientation:landscape) and (max-height:560px)').matches;
+  const cs = kv ? getComputedStyle(kv) : null;
+  const indre = (kv && kv.clientWidth)
+    ? kv.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+    : window.innerWidth - 40;
   let bredde, boks;
-  if(liggende){
-    const egenRad = window.matchMedia('(max-width:1000px)').matches;
-    const mnav = document.querySelector('.mnav');
-    const full = (mnav && mnav.clientWidth) || window.innerWidth - 40;
-    /* Paa egen rad har de hele bredden. Ellers deler de linja med tittel
-       og visningsknapper, og faar omtrent det som blir til overs. */
-    bredde = egenRad ? full : Math.max(340, full - 560);
-    boks = egenRad ? 37 : 33;
+  if(!liggende && window.matchMedia('(max-width:900px)').matches){
+    /* Egen rad over haandtakene: 26px pluss 4px luft. */
+    bredde = indre; boks = 30;
   } else {
-    const cs = kv ? getComputedStyle(kv) : null;
-    const indre = (kv && kv.clientWidth)
-      ? kv.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
-      : window.innerWidth - 40;
-    if(window.matchMedia('(max-width:900px)').matches){
-      /* Egen rad over haandtakene: 26px pluss 4px luft. */
-      bredde = indre; boks = 30;
-    } else {
-      /* Samme rad som visningsvalget, mellom haandtakene. */
-      const seg = $('seg');
-      bredde = Math.max(140, indre - (seg ? seg.offsetWidth : 0) - 16);
-      boks = window.matchMedia('(min-width:1001px)').matches ? 33 : 37;
-    }
+    /* Samme rad som visningsvalget, mellom haandtakene. */
+    const seg = $('seg');
+    bredde = Math.max(140, indre - (seg ? seg.offsetWidth : 0) - 16);
+    boks = liggende ? 30
+         : (window.matchMedia('(min-width:1001px)').matches ? 33 : 37);
   }
   const plass = Math.max(4, Math.floor(bredde / boks));
 
@@ -3311,10 +3304,7 @@ function renderHurtigKal(){
 
   /* Bunnen holdes fri for hele raden - paa telefon er den hoeyere enn
      haandtaket, fordi initialene ligger over det. */
-  if(kv){
-    const h = getComputedStyle(kv).display === 'contents' ? 0 : kv.offsetHeight;
-    document.documentElement.style.setProperty('--kv-hoyde', h + 'px');
-  }
+  if(kv) document.documentElement.style.setProperty('--kv-hoyde', kv.offsetHeight + 'px');
 }
 
 /* Pilene vises naar man er logget inn og staar i en kalendervisning.
@@ -4968,7 +4958,11 @@ function planItem(e, koll){
   it.className = 'plan-item';
   /* Samme fargespraak som uke- og dagvisningen: tonet flate i personens
      farge, med en litt kraftigere kant i samme farge. */
-  it.style.background  = dus(e.color, .18);
+  /* Toningen legges oppaa papirfargen. Lista har ingen papirflate under
+     seg slik uke og dag har, og alene slapp den sidebakgrunnen gjennom. */
+  const tone = dus(e.color, .18);
+  it.style.backgroundColor = 'var(--paper)';
+  it.style.backgroundImage = 'linear-gradient(' + tone + ',' + tone + ')';
   it.style.borderColor = dus(e.color, .62);
 
   const rund = document.createElement('div');
