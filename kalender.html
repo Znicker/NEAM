@@ -132,7 +132,11 @@ body{--f-marg-y:8px}
 .mnav-topp > .seg{justify-self:center}
 /* Merket foran maanedsnavnet. Det sto i en egen rad over, og den raden
    gikk til at tommelknappene kunne senkes uten aa dekke kalenderen. */
-.mnav-hode{display:flex;align-items:center;gap:18px;min-width:0}
+.mnav-hode{display:flex;align-items:center;gap:6px 18px;min-width:0;flex-wrap:wrap}
+/* Tittelen brytes aldri inni seg selv. Faar den ikke plass ved siden av
+   merket - uke- og dagstitlene er lange - legger den seg hel under det i
+   stedet for aa klemmes i tre linjer. */
+.mnav-hode .mnav-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .mnav-title{
   font-size:var(--t-stor);font-weight:700;text-transform:uppercase;
   letter-spacing:.04em;min-width:0;
@@ -151,9 +155,7 @@ body{--f-marg-y:8px}
 @media(max-width:900px){
   .mnav-topp{grid-template-columns:1fr;justify-items:center;gap:10px}
   .mnav-title{text-align:center}
-  /* Dag- og ukestitlene er lange: faar de ikke plass ved siden av
-     merket, legger de seg under det i stedet for aa klemmes i tre linjer. */
-  .mnav-hode{gap:6px 12px;flex-wrap:wrap;justify-content:center}
+  .mnav-hode{gap:6px 12px;justify-content:center}
 }
 
 /* ---------- Kalenderrutenett ---------- */
