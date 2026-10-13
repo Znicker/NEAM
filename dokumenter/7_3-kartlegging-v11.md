@@ -1,6 +1,10 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 12. oktober 2026: kalenderen var treg av struping (429) –
+*Ført à jour 13. oktober 2026: grunnstoffkortene (`kort.html`) er nye, og
+grunnstoffspillet sier «Kategori» der det sto «Gruppe» (se toppblokka).
+Ført à jour 12. oktober 2026, kveld: Rommene lagt om – etasjer som
+faner, rommene i bokser, symbol per type, fargehjul og «Naturlig hvitt»
+(se toppblokka). Ført à jour 12. oktober 2026: kalenderen var treg av struping (429) –
 fire samtidige kall i stedet for seks, og notatene som ren tekst (se
 toppblokka). Ført à jour 11. oktober 2026, kveld: Rommene – lys, varme og
 stikkontakter fra Homey under Enheter (se toppblokka). Ført à jour
@@ -61,11 +65,11 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-tale.js` (tale ut og inn).
 
 **Siste leverte versjoner:** `felles-neam.js ?v=72`, `felles-neam.css
-?v=61`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=5`, `felles-lesalt.js
-?v=6`, `felles-hus.js ?v=9`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
+?v=63`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=5`, `felles-lesalt.js
+?v=6`, `felles-hus.js ?v=11`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=5`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
-`andrea-klokke.html`, `emma-grunnstoff.html` og spillsida
+`andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html` og spillsida
 `andrea-spill.html`; `functions/_middleware.js`, `functions/api/` med
 `hent.js`, `sandnes.js`, `sjo.js`, `claude.js`, `data.js`, `ms.js`,
 `homey.js`, `roborock.js`.
@@ -76,8 +80,8 @@ spillbildene `?v=1`, sikkerhetsmerkene `?v=1` (65 stk i
 `bilder/sikkerhet/`). `merke-neamow.png` går under `MERKE_V`.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–71; neam.css til og
-med 60; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–5, skriv 1–4,
-hus `?v=1–8`, ms `?v=1`, tale 1–4, graph 1–2**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
+med 62; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–5, skriv 1–4,
+hus `?v=1–10`, ms `?v=1`, tale 1–4, graph 1–2**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
 tale 1–4 ble brent 13. september ved å endre en fil som alt var pushet uten
 å heve nummeret – se del 46. Resten er tidligere leverte numre, som alltid
 er brent i det de forlates.
@@ -170,15 +174,50 @@ styrer. Se del 56.
 under Enheter, **Rommene**, åpner ett kort med alt Homey kan styre, samlet
 per rom: av/på, lysstyrke (glider), ønsket temperatur (− og +) og modus
 (valgliste). Knappene bygges av `setable`, og lista er Homeys – en ny
-lampe dukker opp av seg selv. **Rommet tas fra navnet** (før første « - »),
-ikke fra sonen, fordi sonene er delt i underrom; navn uten bindestrek får
-sonen. **Utenfor:** låser, alt i `VISES` og sensorer (veggbrytere).
+lampe dukker opp av seg selv. **Utenfor styringen:** låser, alt i `VISES`
+og sensorer (veggbrytere).
 Neam fikk `les_enheter` og `styr_enhet`, fra alle sidene; styring spør
 **alltid**, også av – en ovn eller billader er ikke en lampe. Flere
 enheter kan tas på én godkjenning. Alt ligger i `felles-hus.js` (`hsk`-
 prefiks) og `felles-neam.css`. Magne har prøvd det og sier det fungerer.
 **Formen er midlertidig** – layout og funksjoner tas opp igjen sammen med
 plantegningen.
+
+**12. oktober: Rommene lagt om.** **Etasje og rom tas nå fra Homeys
+soner** (Hjem > etasje > rom), ikke fra navnet – sonetreet var alt satt
+opp slik. Én fane per etasje (Første etasje, Kjeller, Garasje, Hage;
+rekkefølgen står i `HSK_ETASJE_REKKE`), og fanene brytes til ny linje på
+smal skjerm i stedet for å rulle. **Hvert rom er en grupperingsboks**
+(`--boks-mild`). Navnet kortes der det gjentar rommet («Hage - Plen -
+Uplight Venstre» blir «Uplight Venstre» under Plen). **Alle enhetene
+vises nå, med symbol per type** (`HSK_ART`) – varslere, ytterdøra og
+kameraet bare med tilstand, og en utløst varsler gir rød linje som på
+sikkerhetssida. Temperatur vises bare på termostat, bereder og
+varmevarsler: lamper og brytere måler sin egen innvendige. **De ni
+fargelampene** fikk en fargeprikk som åpner et fargehjul (fargetone rundt,
+hvitt i midten) og knappen **«Naturlig hvitt»** – hvitmodus med
+`light_temperature` 0,8 (`HSK_HVITT`, rundt 2900 K). Begge tenner lampa
+om den var av. **Ikke prøvd mot Homey ennå** – bare i en forhåndsvisning
+med falske verdier.
+**Ikke med:** de doble lysbryterne i Kontor og Kjellerstue
+(`switch_1`/`switch_2`), varmt–kaldt på taklampene i Kontor og Liten
+bod, og farge fra Neam.
+
+**12.–13. oktober: grunnstoffkortene.** Ny side `kort.html`, ikke lenket
+fra noe sted ennå. **Ramma er ett bilde, teksten er tekst:**
+`bilder/kort/ramme.webp` er laget én gang, og navn, tall og fakta legges
+oppå som HTML, målt i prosent av kortet. 118 grunnstoff × seks
+raritetsnivåer gir 708 kort. Raritetsnivået er en dreining av fargetonen,
+ikke en egen ramme. Tekstfeltene krymper selv til de får plass
+(`tilpass()`). **Dataene ligger i `kort-data.json`**, som er generert fra
+regnearket `NEAM_grunnstoff_masterdata_1-118.xlsx`. Det er regnearket som
+skal rettes, ikke JSON-en. Masterdataene oppgir snl.no som kilde og er
+derfor fasit for navn og kategori. **`emma-grunnstoff.html` er rettet for
+hånd etter dem** (Scandium, Technetium, Thorium osv., og Lantanid/Aktinid),
+men har fortsatt sine egne lister og leser ikke `kort-data.json`. **I
+spillet heter feltet nå «Kategori», ikke «Gruppe».** Gruppe er den
+loddrette kolonnen (hydrogen er i gruppe 1). Det gjelder faktaboksen,
+spørsmålet og knappen i prøven. Den interne id-en `'gruppe'` er urørt.
 
 **12. oktober: kalenderen var treg – det var strupingen.** Magne syntes
 det tok for lang tid før kalendersida var oppdatert. Første retting var
@@ -245,9 +284,18 @@ rettingen står ute.
   godkjent: den digitale klokka som mild flate (`--boks-mild`) og ikke et
   mørkt display; viserknottene i gjennomsiktig blått (`--aksent`); og der
   hun stilte feil som blek grå viser. Se del 55.
-- **Fire utseendevalg på Rommene-kortet** er tatt under byggingen og er
-  ikke godkjent: navnet «Rommene», lyspæra som ikon (strektegning, ikke
-  merke), blå knapper (som Neamow) og glideren i `--aksent`.
+- **Utseendevalg på Rommene-kortet** er tatt under byggingen og er ikke
+  godkjent: navnet «Rommene», lyspæra som ikon (strektegning, ikke
+  merke), blå knapper (som Neamow), glideren i `--aksent`, symbolene per
+  type, rød linje på utløst varsler, fargeprikken og fargehjulet, og
+  fanene som brytes til ny linje. Rommenes bokser er designsystemets
+  grupperingsflate og står ikke på lista.
+- **Polonium: metall eller halvmetall?** Masterdataene sier metall,
+  grunnstoffspillet sier halvmetall. Det er en faglig uenighet, ikke en
+  datafeil, og står urørt begge steder.
+- **Utseendet på grunnstoffkortene** er valgt under byggingen og er ikke
+  godkjent: mørk bakgrunn (`#14181D`), Orbitron-skrift, cyan ramme og
+  fargene på de seks raritetsnivåene. Ingen av dem står i designsystemet.
 
 **Avtalt som neste sak:**
 - **Interaktiv plantegning av huset.** Magne lager en plantegning, og den
@@ -299,6 +347,10 @@ rettingen står ute.
   appen eller PIN-koden.
 
 **Bygging som gjenstår (avtalt):**
+- **De 118 motivene til kortene er bestilt, ikke laget.** Bestillingen med
+  stil og filnavn står i `bilder/kort/motiv-bestilling.txt`. Mangler et
+  motiv, vises kortet uten. Motivbildet får ikke `width`/`height`
+  (`new Image()` i `kort.html`), og det må rettes før motivene kommer inn.
 - **Skriving til skolearbeidet på tvers.** Det siste som bare kan gjøres fra
   sin egen side. Alt annet – handleliste, kalender, diktat, dør – virker
   overalt.
