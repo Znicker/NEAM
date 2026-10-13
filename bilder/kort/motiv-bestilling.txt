@@ -1,0 +1,494 @@
+NEAM - grunnstoffkort, bestilling av de 118 motivene
+========================================================================
+
+FORMAT      kvadratisk, minst 1024x1024. Lagres som .webp.
+PLASSERING  bilder/kort/motiv/<nnn>-<symbol>.webp, nummeret med
+            tre siffer og symbolet med smaa bokstaver.
+            Eksempel: bilder/kort/motiv/003-li.webp
+HULLET      530 x 579 piksler i kortet (48,8 % x 40 %). Bildet
+            beskjaeres midtstilt, saa motivet maa ligge i midten
+            - omtrent 5 % faller bort paa hver side.
+
+VIKTIGST    Motivet skal vaere BARE motivet. Ingen ramme, ingen
+            kortkant, ingen tekst. Rammen og all tekst legges paa
+            av kort.html. Kommer det en bokstav inn i bildet, er
+            den brent fast for alltid.
+
+STILEN (lik for alle 118, lim inn hver gang):
+  Photographic macro product shot on a dark laboratory bench. Cool cyan and steel-blue rim lighting from the upper left, deep shadows, shallow depth of field, subject centred and filling the frame, square 1:1 composition, high detail, no people.
+  NO text, NO letters, NO numbers, NO labels, NO watermarks, NO logos, NO card frame, NO border, NO UI elements.
+
+MOTIVET (ett per grunnstoff, fra masterdata):
+========================================================================
+
+  1  H   Hydrogen
+     fil: 001-h.webp
+     Glødende H₂-molekyl i et klart kammer; en stjerne og en rakett diskret i bakgrunnen.
+
+  2  He  Helium
+     fil: 002-he.webp
+     Heliumgass som lyser svakt i et utladningsrør; kryogen tank og ballong langt bak.
+
+  3  Li  Litium
+     fil: 003-li.webp
+     Blankt litiumstykke under mineralolje; moderne battericeller i bakgrunnen.
+
+  4  Be  Beryllium
+     fil: 004-be.webp
+     Ren berylliumplate med en røntgenstråle som passerer gjennom; satellittstruktur bak.
+
+  5  B   Bor
+     fil: 005-b.webp
+     Mørke, skinnende borkrystaller; varmebestandig laboratorieglass svakt i bakgrunnen.
+
+  6  C   Karbon
+     fil: 006-c.webp
+     Diamant og grafitt side om side som hovedmotiv; stål og organisk molekylstruktur diskret bak.
+
+  7  N   Nitrogen
+     fil: 007-n.webp
+     Flytende nitrogen som koker og lager tåke; atmosfære og gjødselanlegg langt bak.
+
+  8  O   Oksygen
+     fil: 008-o.webp
+     Blålig flytende oksygen i laboratoriebeholder; oksygenmaske og stålovn i bakgrunnen.
+
+  9  F   Fluor
+     fil: 009-f.webp
+     Blekgul fluorgass i en helt lukket spesialbeholder; fluoritt og kjemisk utstyr bak.
+
+ 10  Ne  Neon
+     fil: 010-ne.webp
+     Rødoransje neongass i et glassrør; byskilt og laseroptikk svakt bak.
+
+ 11  Na  Natrium
+     fil: 011-na.webp
+     Blankt natriummetall under olje; saltkrystaller og natriumlampe i bakgrunnen.
+
+ 12  Mg  Magnesium
+     fil: 012-mg.webp
+     Magnesiumbånd som brenner intenst hvitt; lettmetallramme diskret bak.
+
+ 13  Al  Aluminium
+     fil: 013-al.webp
+     Aluminiumsblokk, folie og ren metalloverflate; fly og drikkeboks som små bakgrunnselementer.
+
+ 14  Si  Silisium
+     fil: 014-si.webp
+     Ren silisiumkrystall og wafer som hovedmotiv; mikrobrikke og solcellepanel bak.
+
+ 15  P   Fosfor
+     fil: 015-p.webp
+     Rødt fosfor som hovedmotiv; DNA/ATP-symbolikk og åker svakt i bakgrunnen.
+
+ 16  S   Svovel
+     fil: 016-s.webp
+     Gule svovelkrystaller; vulkansk damp og kjemisk anlegg langt bak.
+
+ 17  Cl  Klor
+     fil: 017-cl.webp
+     Grønnlig klorgass i forseglet ampulle; vannbehandling og PVC-rør i bakgrunnen.
+
+ 18  Ar  Argon
+     fil: 018-ar.webp
+     Glødende argonplasma i rør; tydelig sveisebue som sekundært motiv.
+
+ 19  K   Kalium
+     fil: 019-k.webp
+     Kaliumstykke under olje; fiolett flammetest og gjødselgranulat bak.
+
+ 20  Ca  Kalsium
+     fil: 020-ca.webp
+     Rent kalsiummetall i inert kammer; kalkstein, sement og knokkelstruktur subtilt bak.
+
+ 21  Sc  Scandium
+     fil: 021-sc.webp
+     Scandium-metallprøve; lett flylegering og kraftig stadionlampe i bakgrunnen.
+
+ 22  Ti  Titan
+     fil: 022-ti.webp
+     Ren titankrystall/ingot; jetfly og medisinsk implantat diskret bak.
+
+ 23  V   Vanadium
+     fil: 023-v.webp
+     Vanadiumkrystall; kraftig stålgear og katalysatorrør i bakgrunnen.
+
+ 24  Cr  Krom
+     fil: 024-cr.webp
+     Speilblank kromkrystall og forkrommet ståloverflate; rustfritt utstyr bak.
+
+ 25  Mn  Mangan
+     fil: 025-mn.webp
+     Manganmetall og mørke manganmineraler; stålovn og battericelle bak.
+
+ 26  Fe  Jern
+     fil: 026-fe.webp
+     Ren jernkrystall og stålbjelke; bro og smelteverk i bakgrunnen.
+
+ 27  Co  Kobolt
+     fil: 027-co.webp
+     Koboltmetall med en dypblå koboltglassdetalj; batteripakke og turbin bak.
+
+ 28  Ni  Nikkel
+     fil: 028-ni.webp
+     Nikkelpellets og ren metalloverflate; rustfritt stål og battericelle bak.
+
+ 29  Cu  Kobber
+     fil: 029-cu.webp
+     Naturlig kobberkrystall og blank kobbertråd som hovedmotiv; elmotor bak.
+
+ 30  Zn  Sink
+     fil: 030-zn.webp
+     Zinkrystaller og galvanisert ståloverflate; takplater og messingdetalj bak.
+
+ 31  Ga  Gallium
+     fil: 031-ga.webp
+     Flytende gallium i hånd/skje som hovedmotiv; LED og halvlederlab diskret bak.
+
+ 32  Ge  Germanium
+     fil: 032-ge.webp
+     Germaniumkrystall som hovedmotiv; termisk kamera og optisk fiber bak.
+
+ 33  As  Arsen
+     fil: 033-as.webp
+     Grå, metalliske arsenkrystaller i lukket laboratoriemiljø; halvlederwafer bak.
+
+ 34  Se  Selen
+     fil: 034-se.webp
+     Rød og grå selen-allotrop som hovedmotiv; solcellepaneler i solnedgang bak.
+
+ 35  Br  Brom
+     fil: 035-br.webp
+     Rødbrun bromvæske og damp i helt forseglet glasskolbe; laboratorieutstyr bak.
+
+ 36  Kr  Krypton
+     fil: 036-kr.webp
+     Kryptongass som gløder i et klart rør; blitzlampe og laseroptikk i bakgrunnen.
+
+ 37  Rb  Rubidium
+     fil: 037-rb.webp
+     Rubidium i forseglet ampulle under vakuum; atomklokkeinstrumenter bak.
+
+ 38  Sr  Strontium
+     fil: 038-sr.webp
+     Rent strontiummetall i lukket beholder; rød fyrverkerihimmel som bakgrunn.
+
+ 39  Y   Yttrium
+     fil: 039-y.webp
+     Yttriummetall og en klar YAG-laserkrystall; LED/skjermmateriale bak.
+
+ 40  Zr  Zirkonium
+     fil: 040-zr.webp
+     Zirkoniummetall og keramisk zirkonia; reaktorrør diskret i bakgrunnen.
+
+ 41  Nb  Niob
+     fil: 041-nb.webp
+     Niobkrystall og superledende spole; MR-magnet som sekundært motiv.
+
+ 42  Mo  Molybden
+     fil: 042-mo.webp
+     Molybdenkrystall; glødende høytemperaturverktøy/turbinkomponent bak.
+
+ 43  Tc  Technetium
+     fil: 043-tc.webp
+     En liten technetium-kilde i skjermet medisinsk kapsel; gammakamera i bakgrunnen.
+
+ 44  Ru  Ruthenium
+     fil: 044-ru.webp
+     Rutheniumkrystall; mikroelektroniske kontakter og katalysator bak.
+
+ 45  Rh  Rhodium
+     fil: 045-rh.webp
+     Rhodiumkrystall og speilblank overflate; bilkatalysator i bakgrunnen.
+
+ 46  Pd  Palladium
+     fil: 046-pd.webp
+     Palladiumsvamp/metall; hydrogenbobler og katalysatorstruktur bak.
+
+ 47  Ag  Sølv
+     fil: 047-ag.webp
+     Sølvkrystall og ren sølvtråd; elektronikk og smykke som små bakgrunnselementer.
+
+ 48  Cd  Kadmium
+     fil: 048-cd.webp
+     Kadmiumprøve i lukket sikkerhetsbeholder; NiCd-celle og reaktorkontrollstav bak.
+
+ 49  In  Indium
+     fil: 049-in.webp
+     Mykt indium som bøyes lett; berøringsskjerm med pikselstruktur i bakgrunnen.
+
+ 50  Sn  Tinn
+     fil: 050-sn.webp
+     Tinnmetall og loddetinn som hovedmotiv; loddepunkt og fortinnet boks bak.
+
+ 51  Sb  Antimon
+     fil: 051-sb.webp
+     Stibnitt/antimonkrystaller som hovedmotiv; legering og flammehemmende materiale bak.
+
+ 52  Te  Tellur
+     fil: 052-te.webp
+     Tellurkrystall; termoelektrisk modul og solcelle i bakgrunnen.
+
+ 53  I   Jod
+     fil: 053-i.webp
+     Jodkrystaller med fiolett damp i lukket kolbe; medisinsk jodflaske diskret bak.
+
+ 54  Xe  Xenon
+     fil: 054-xe.webp
+     Xenonplasma i klar lampe; romfartøy med blå ionemotor i bakgrunnen.
+
+ 55  Cs  Cesium
+     fil: 055-cs.webp
+     Cesium i lukket ampulle; atomklokke som tydelig sekundært motiv.
+
+ 56  Ba  Barium
+     fil: 056-ba.webp
+     Rent barium i inert beholder; grønn flammetest og røntgenbilde diskret bak.
+
+ 57  La  Lantan
+     fil: 057-la.webp
+     Lantanmetall; kameralinse og hybridbattericelle i bakgrunnen.
+
+ 58  Ce  Cerium
+     fil: 058-ce.webp
+     Ceriummetall; katalysator-honeycomb og glasspolering med gnister bak.
+
+ 59  Pr  Praseodym
+     fil: 059-pr.webp
+     Praseodymmetall; grønt spesialglass og sterk magnet som bakgrunn.
+
+ 60  Nd  Neodym
+     fil: 060-nd.webp
+     Neodymmagnet som trekker til seg bolter; vindturbin og hodetelefon diskret bak.
+
+ 61  Pm  Promethium
+     fil: 061-pm.webp
+     Promethiumkilde i et skjermet mikrokammer; måleinstrument/radioisotopbatteri bak.
+
+ 62  Sm  Samarium
+     fil: 062-sm.webp
+     Samariummetall og SmCo-magnet; varm elmotor i bakgrunnen.
+
+ 63  Eu  Europium
+     fil: 063-eu.webp
+     Europiumprøve; sterkt rødt fosforlys på skjerm og sikkerhetsmerking bak.
+
+ 64  Gd  Gadolinium
+     fil: 064-gd.webp
+     Gadoliniummetall; MR-skanner og nøytronfangstgrafikk subtilt bak.
+
+ 65  Tb  Terbium
+     fil: 065-tb.webp
+     Terbiummetall; grønt fosforlys og magnetostriktivt materiale bak.
+
+ 66  Dy  Dysprosium
+     fil: 066-dy.webp
+     Dysprosiummetall; permanentmagnet i en varm elmotor som sekundært motiv.
+
+ 67  Ho  Holmium
+     fil: 067-ho.webp
+     Holmiummetall; tydelig grønn/IR kirurgisk laserstråle i bakgrunnen.
+
+ 68  Er  Erbium
+     fil: 068-er.webp
+     Erbiumkrystall; optisk fiber som lyser gjennom et telecom-system bak.
+
+ 69  Tm  Thulium
+     fil: 069-tm.webp
+     Thuliummetall; kompakt medisinsk laser og liten røntgenkilde bak.
+
+ 70  Yb  Ytterbium
+     fil: 070-yb.webp
+     Ytterbiummetall; kraftig fiberlaser og optisk atomklokke bak.
+
+ 71  Lu  Lutetium
+     fil: 071-lu.webp
+     Lutetiumkrystall/metall; PET-detektorring som diskret bakgrunn.
+
+ 72  Hf  Hafnium
+     fil: 072-hf.webp
+     Hafniummetall; reaktorkontrollstav og moderne mikrobrikkeport bak.
+
+ 73  Ta  Tantal
+     fil: 073-ta.webp
+     Tantalpellet/metall; stor makro av en liten elektronisk kondensator bak.
+
+ 74  W   Wolfram
+     fil: 074-w.webp
+     Wolframkrystall; hvitglødende filament og hardmetallskjær bak.
+
+ 75  Re  Rhenium
+     fil: 075-re.webp
+     Rheniummetall; glødende jetmotor-turbinblad som hovedbakgrunn.
+
+ 76  Os  Osmium
+     fil: 076-os.webp
+     Osmiumkrystall; tett metallprøve og mikroskopisk analyseoppsett bak.
+
+ 77  Ir  Iridium
+     fil: 077-ir.webp
+     Iridiumkrystall; tennplugg og glødende laboratoriedigel i bakgrunnen.
+
+ 78  Pt  Platina
+     fil: 078-pt.webp
+     Platinakrystall; katalysatorstruktur og brenselcelle bak.
+
+ 79  Au  Gull
+     fil: 079-au.webp
+     Gullkrystall/nugget og supertynn gullfolie; kretskort i bakgrunnen.
+
+ 80  Hg  Kvikksølv
+     fil: 080-hg.webp
+     Kvikksølvdråper i lukket glasskar; klassisk termometer og lampe diskret bak.
+
+ 81  Tl  Thallium
+     fil: 081-tl.webp
+     Thalliummetall i lukket prøveglass; infrarødt kamera/detektor bak.
+
+ 82  Pb  Bly
+     fil: 082-pb.webp
+     Blyingot og skjermingsplate; bilbatteri og røntgenrom bak.
+
+ 83  Bi  Vismut
+     fil: 083-bi.webp
+     Regnbuefarget vismut-hopperkrystall som hovedmotiv; medisinsk pakning og lavsmeltende legering bak.
+
+ 84  Po  Polonium
+     fil: 084-po.webp
+     En mikroskopisk poloniumkilde i tykk skjerming; tydelige alfapartikkelspor i bakgrunnen.
+
+ 85  At  Astat
+     fil: 085-at.webp
+     Astat produsert i et målkammer; alfa-terapi-molekyl og syklotron diskret bak.
+
+ 86  Rn  Radon
+     fil: 086-rn.webp
+     Radongass visualisert i sprekk fra berggrunn til målekammer; radondetektor bak.
+
+ 87  Fr  Francium
+     fil: 087-fr.webp
+     Noen få franciumatomer fanget i ionefelle; henfallsdetektor i bakgrunnen.
+
+ 88  Ra  Radium
+     fil: 088-ra.webp
+     Radiumsalt i lukket skjermet beholder; gammelt urskive-lys svært diskret i bakgrunnen.
+
+ 89  Ac  Actinium
+     fil: 089-ac.webp
+     Actiniumkilde i skjermet forskningsoppsett; målrettet alfa-terapi-grafikk bak.
+
+ 90  Th  Thorium
+     fil: 090-th.webp
+     Thoriummineral og metallprøve; moderne saltsmeltereaktor-konsept langt bak.
+
+ 91  Pa  Protactinium
+     fil: 091-pa.webp
+     Mikroskopisk protactiniumprøve i hanskeboks; uranmalmseparasjon bak.
+
+ 92  U   Uran
+     fil: 092-u.webp
+     Uranmetall/mineral og brenselpellets; reaktorkjerne diskret bak.
+
+ 93  Np  Neptunium
+     fil: 093-np.webp
+     Neptuniummetall i hanskeboks; strålingsdetektor og aktinidprøver bak.
+
+ 94  Pu  Plutonium
+     fil: 094-pu.webp
+     Plutoniumprøve/oksidpellet i hanskeboks; RTG på en romsonde diskret bak.
+
+ 95  Am  Americium
+     fil: 095-am.webp
+     Americiumkilde; åpen røykvarsler som tydelig sekundært motiv.
+
+ 96  Cm  Curium
+     fil: 096-cm.webp
+     Curiumkilde; rover-instrument for røntgenspektrometri i bakgrunnen.
+
+ 97  Bk  Berkelium
+     fil: 097-bk.webp
+     Mikroskopisk berkelium-målskive i tungionelab; akseleratorstråle bak.
+
+ 98  Cf  Californium
+     fil: 098-cf.webp
+     Californiumkilde; visualisert nøytronstråle mot måleutstyr i bakgrunnen.
+
+ 99  Es  Einsteinium
+     fil: 099-es.webp
+     Einsteinium som få lysende atomspor i varmecelle; massespektrometer bak.
+
+100  Fm  Fermium
+     fil: 100-fm.webp
+     Fermium representert som registrerte atomspor på detektor; tungioneforsøk bak.
+
+101  Md  Mendelevium
+     fil: 101-md.webp
+     Mendelevium som enkeltatomer i ionefelle; kjemisk separasjon på mikrochip bak.
+
+102  No  Nobelium
+     fil: 102-no.webp
+     Nobelium som få atomer på detektor; recoil-separator i bakgrunnen.
+
+103  Lr  Lawrencium
+     fil: 103-lr.webp
+     Lawrencium som ioner fanget i presisjonsinstrument; syklotron bak.
+
+104  Rf  Rutherfordium
+     fil: 104-rf.webp
+     Rutherfordium-atomer registrert i detektor; atomkjerne-modell og akselerator bak.
+
+105  Db  Dubnium
+     fil: 105-db.webp
+     Dubnium-atomer i kjemisk mikrooppsett; tungionelab i bakgrunnen.
+
+106  Sg  Seaborgium
+     fil: 106-sg.webp
+     Seaborgium-atomer etter tungionekollisjon; kromatografisk mikrokanal bak.
+
+107  Bh  Bohrium
+     fil: 107-bh.webp
+     Bohrium-atomer i gassfase-eksperiment; atommodell og spektrometer bak.
+
+108  Hs  Hassium
+     fil: 108-hs.webp
+     Hassium-atomer fanget som flyktig oksid i et mikroapparat; detektorbane bak.
+
+109  Mt  Meitnerium
+     fil: 109-mt.webp
+     Meitnerium som enkelthendelser i en silisiumdetektor; tungionekollisjon bak.
+
+110  Ds  Darmstadtium
+     fil: 110-ds.webp
+     Darmstadtium som atomspor i detektor; stor akseleratorhall som bakgrunn.
+
+111  Rg  Røntgenium
+     fil: 111-rg.webp
+     Røntgenium-atomer på detektor; gullaktig gruppe-11-referanse diskret bak.
+
+112  Cn  Copernicium
+     fil: 112-cn.webp
+     Copernicium-atomer i gassfase-detektor; kvikksølv-lignende gruppe-12-referanse bak.
+
+113  Nh  Nihonium
+     fil: 113-nh.webp
+     Nihonium-atomer på detektor; minimalistisk japansk forskningslab som bakgrunn.
+
+114  Fl  Flerovium
+     fil: 114-fl.webp
+     Flerovium som registrert enkeltatom; bly-lignende gruppe-14-referanse diskret bak.
+
+115  Mc  Moscovium
+     fil: 115-mc.webp
+     Moscovium som tungt atom etter kollisjon; gruppe-15 kolonne og akselerator bak.
+
+116  Lv  Livermorium
+     fil: 116-lv.webp
+     Livermorium som kort atomspor; gruppe-16-referanse og tungionelab bak.
+
+117  Ts  Tenness
+     fil: 117-ts.webp
+     Tenness som atomspor etter fusjon; halogenkolonne og detektor bak.
+
+118  Og  Oganesson
+     fil: 118-og.webp
+     Oganesson som siste ledd i en kort henfallskjede; mørk kosmisk bakgrunn og detektor.

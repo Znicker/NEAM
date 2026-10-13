@@ -1,0 +1,1906 @@
+{
+ "_om": "NEAM - grunnstoffkort. Kanonisk datagrunnlag for kort.html og for grunnstoffspillet. Generert fra NEAM_grunnstoff_masterdata_1-118.xlsx 12. oktober 2026. Rediger regnearket og generer paa nytt - ikke rett her.",
+ "_rettet": {
+  "kolonneforskyvning": "Regnearkets overskrifter lyver fra kolonne 11. Illustrasjonsideen staar under \"Ekstra fakta 3\", og de to siste kolonnene er tomme. Lest etter posisjon, ikke etter overskrift.",
+  "tilstand": [
+   "80 Hg: Fast -> Væske",
+   "81 Tl: Væske -> Fast",
+   "86 Rn: Fast -> Gass",
+   "87 Fr: Gass -> Fast"
+  ],
+  "navnOgKategori": "Masterdata er fasit for navn og kategori, fordi den oppgir snl.no som kilde og grunnstoffspillet ikke oppgir noen. emma-grunnstoff.html er rettet etter denne fila, ikke omvendt."
+ },
+ "_apent": {
+  "polonium": "Masterdata fører Polonium som Metall, grunnstoffspillet som Halvmetall. Det er en reell faglig uenighet og ikke en datafeil, saa den staar urørt begge steder."
+ },
+ "grunnstoff": [
+  {
+   "nr": 1,
+   "symbol": "H",
+   "navn": "Hydrogen",
+   "massetall": 1,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Ikke-metall",
+   "tilstand": "Gass",
+   "kortFakta": "Det letteste grunnstoffet.",
+   "bruk": "Rakettbrensel, ammoniakkproduksjon og forskning.",
+   "ekstraFakta": [
+    "Består ofte av H₂-molekyler.",
+    "Det er det vanligste grunnstoffet i universet."
+   ],
+   "illustrasjonside": "Glødende H₂-molekyl i et klart kammer; en stjerne og en rakett diskret i bakgrunnen."
+  },
+  {
+   "nr": 2,
+   "symbol": "He",
+   "navn": "Helium",
+   "massetall": 4,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Edelgass",
+   "tilstand": "Gass",
+   "kortFakta": "Har det laveste kokepunktet av alle grunnstoffer.",
+   "bruk": "Kryogen kjøling, MR-magneter og ballonger.",
+   "ekstraFakta": [
+    "Oppdaget først i Solens spektrum.",
+    "Helium reagerer nesten ikke kjemisk."
+   ],
+   "illustrasjonside": "Heliumgass som lyser svakt i et utladningsrør; kryogen tank og ballong langt bak."
+  },
+  {
+   "nr": 3,
+   "symbol": "Li",
+   "navn": "Litium",
+   "massetall": 7,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Alkalimetall",
+   "tilstand": "Fast",
+   "kortFakta": "Det letteste metallet.",
+   "bruk": "Oppladbare batterier og lette legeringer.",
+   "ekstraFakta": [
+    "Må lagres uten kontakt med luft og fuktighet.",
+    "Litiumsalter gir en karminrød flamme."
+   ],
+   "illustrasjonside": "Blankt litiumstykke under mineralolje; moderne battericeller i bakgrunnen."
+  },
+  {
+   "nr": 4,
+   "symbol": "Be",
+   "navn": "Beryllium",
+   "massetall": 9,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Jordalkalimetall",
+   "tilstand": "Fast",
+   "kortFakta": "Svært lett og stivt metall.",
+   "bruk": "Romfart, røntgenvinduer og spesiallegeringer.",
+   "ekstraFakta": [
+    "Kan være helseskadelig som støv.",
+    "Beryllium slipper røntgenstråler relativt lett gjennom."
+   ],
+   "illustrasjonside": "Ren berylliumplate med en røntgenstråle som passerer gjennom; satellittstruktur bak."
+  },
+  {
+   "nr": 5,
+   "symbol": "B",
+   "navn": "Bor",
+   "massetall": 11,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Halvmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Danner svært harde forbindelser.",
+   "bruk": "Borosilikatglass, halvledere og sterke materialer.",
+   "ekstraFakta": [
+    "Borforbindelser brukes i varmebestandig glass.",
+    "Bor er viktig i enkelte planteprosesser."
+   ],
+   "illustrasjonside": "Mørke, skinnende borkrystaller; varmebestandig laboratorieglass svakt i bakgrunnen."
+  },
+  {
+   "nr": 6,
+   "symbol": "C",
+   "navn": "Karbon",
+   "massetall": 12,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Ikke-metall",
+   "tilstand": "Fast",
+   "kortFakta": "Finnes som blant annet diamant og grafitt.",
+   "bruk": "Stål, elektroder, filtre og en lang rekke materialer.",
+   "ekstraFakta": [
+    "Diamant og grafitt er samme grunnstoff.",
+    "Karbon danner flere forbindelser enn noe annet grunnstoff."
+   ],
+   "illustrasjonside": "Diamant og grafitt side om side som hovedmotiv; stål og organisk molekylstruktur diskret bak."
+  },
+  {
+   "nr": 7,
+   "symbol": "N",
+   "navn": "Nitrogen",
+   "massetall": 14,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Ikke-metall",
+   "tilstand": "Gass",
+   "kortFakta": "Utgjør rundt 78 % av lufta.",
+   "bruk": "Gjødsel, ammoniakk og beskyttende atmosfærer.",
+   "ekstraFakta": [
+    "Flytende nitrogen koker ved rundt −196 °C.",
+    "Nitrogen er viktig i proteiner og DNA."
+   ],
+   "illustrasjonside": "Flytende nitrogen som koker og lager tåke; atmosfære og gjødselanlegg langt bak."
+  },
+  {
+   "nr": 8,
+   "symbol": "O",
+   "navn": "Oksygen",
+   "massetall": 16,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Ikke-metall",
+   "tilstand": "Gass",
+   "kortFakta": "Utgjør rundt 21 % av lufta.",
+   "bruk": "Medisin, stålproduksjon og oksygentilførsel.",
+   "ekstraFakta": [
+    "Flytende oksygen er svakt blått.",
+    "Oksygen støtter forbrenning uten selv å være brennbart."
+   ],
+   "illustrasjonside": "Blålig flytende oksygen i laboratoriebeholder; oksygenmaske og stålovn i bakgrunnen."
+  },
+  {
+   "nr": 9,
+   "symbol": "F",
+   "navn": "Fluor",
+   "massetall": 19,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Halogen",
+   "tilstand": "Gass",
+   "kortFakta": "Det mest elektronegative grunnstoffet.",
+   "bruk": "Fluorpolymerer, kjemisk industri og fluoridforbindelser.",
+   "ekstraFakta": [
+    "Fritt fluor finnes nesten ikke i naturen.",
+    "Fluorgass er blekgul."
+   ],
+   "illustrasjonside": "Blekgul fluorgass i en helt lukket spesialbeholder; fluoritt og kjemisk utstyr bak."
+  },
+  {
+   "nr": 10,
+   "symbol": "Ne",
+   "navn": "Neon",
+   "massetall": 20,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Edelgass",
+   "tilstand": "Gass",
+   "kortFakta": "Gir et karakteristisk rødoransje lys i utladningsrør.",
+   "bruk": "Lysreklame, indikatorlamper og enkelte lasere.",
+   "ekstraFakta": [
+    "Navnet betyr «ny».",
+    "Neon er en edelgass og reagerer svært lite."
+   ],
+   "illustrasjonside": "Rødoransje neongass i et glassrør; byskilt og laseroptikk svakt bak."
+  },
+  {
+   "nr": 11,
+   "symbol": "Na",
+   "navn": "Natrium",
+   "massetall": 23,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Alkalimetall",
+   "tilstand": "Fast",
+   "kortFakta": "Reagerer kraftig med vann.",
+   "bruk": "Kjemisk industri, natriumlamper og forbindelser som salt.",
+   "ekstraFakta": [
+    "Symbolet Na kommer fra natrium.",
+    "Natriumforbindelser er svært vanlige i sjøvann."
+   ],
+   "illustrasjonside": "Blankt natriummetall under olje; saltkrystaller og natriumlampe i bakgrunnen."
+  },
+  {
+   "nr": 12,
+   "symbol": "Mg",
+   "navn": "Magnesium",
+   "massetall": 24,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Jordalkalimetall",
+   "tilstand": "Fast",
+   "kortFakta": "Brenner med intenst hvitt lys.",
+   "bruk": "Lette legeringer, fyrverkeri og metallurgi.",
+   "ekstraFakta": [
+    "Finnes mye i jordskorpen.",
+    "Magnesium finnes i klorofyll."
+   ],
+   "illustrasjonside": "Magnesiumbånd som brenner intenst hvitt; lettmetallramme diskret bak."
+  },
+  {
+   "nr": 13,
+   "symbol": "Al",
+   "navn": "Aluminium",
+   "massetall": 27,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Metall",
+   "tilstand": "Fast",
+   "kortFakta": "Lav tetthet og god korrosjonsbestandighet.",
+   "bruk": "Fly, bygg, emballasje og strømledninger.",
+   "ekstraFakta": [
+    "Resirkulering krever langt mindre energi enn ny produksjon.",
+    "Aluminium er det vanligste metallet i jordskorpen."
+   ],
+   "illustrasjonside": "Aluminiumsblokk, folie og ren metalloverflate; fly og drikkeboks som små bakgrunnselementer."
+  },
+  {
+   "nr": 14,
+   "symbol": "Si",
+   "navn": "Silisium",
+   "massetall": 28,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Halvmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Et av de viktigste halvledermaterialene.",
+   "bruk": "Mikrobrikker, solceller og elektronikk.",
+   "ekstraFakta": [
+    "Silisium er svært vanlig i jordskorpen.",
+    "Silisium finnes mye som silikater og kvarts."
+   ],
+   "illustrasjonside": "Ren silisiumkrystall og wafer som hovedmotiv; mikrobrikke og solcellepanel bak."
+  },
+  {
+   "nr": 15,
+   "symbol": "P",
+   "navn": "Fosfor",
+   "massetall": 31,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Ikke-metall",
+   "tilstand": "Fast",
+   "kortFakta": "Viktig i DNA, ATP og levende celler.",
+   "bruk": "Gjødsel, kjemi og biologiske prosesser.",
+   "ekstraFakta": [
+    "Hvitt fosfor er langt mer reaktivt enn rødt fosfor.",
+    "Fosforforbindelser er viktige i gjødsel."
+   ],
+   "illustrasjonside": "Rødt fosfor som hovedmotiv; DNA/ATP-symbolikk og åker svakt i bakgrunnen."
+  },
+  {
+   "nr": 16,
+   "symbol": "S",
+   "navn": "Svovel",
+   "massetall": 32,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Ikke-metall",
+   "tilstand": "Fast",
+   "kortFakta": "Kjent som gule krystaller i ren form.",
+   "bruk": "Svovelsyre, gjødsel og kjemisk industri.",
+   "ekstraFakta": [
+    "Vulkaner kan avsette rent svovel.",
+    "Svovel brukes i vulkanologi og geokjemi som tydelig markør."
+   ],
+   "illustrasjonside": "Gule svovelkrystaller; vulkansk damp og kjemisk anlegg langt bak."
+  },
+  {
+   "nr": 17,
+   "symbol": "Cl",
+   "navn": "Klor",
+   "massetall": 35,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Halogen",
+   "tilstand": "Gass",
+   "kortFakta": "Gulgrønn og svært reaktiv gass.",
+   "bruk": "Vannbehandling, PVC og kjemisk produksjon.",
+   "ekstraFakta": [
+    "Klorforbindelser finnes blant annet i vanlig salt.",
+    "Klor er giftig som ren gass."
+   ],
+   "illustrasjonside": "Grønnlig klorgass i forseglet ampulle; vannbehandling og PVC-rør i bakgrunnen."
+  },
+  {
+   "nr": 18,
+   "symbol": "Ar",
+   "navn": "Argon",
+   "massetall": 40,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Edelgass",
+   "tilstand": "Gass",
+   "kortFakta": "En svært lite reaktiv gass.",
+   "bruk": "Sveising, lyspærer og beskyttelsesgass.",
+   "ekstraFakta": [
+    "Argon er omtrent 0,93 % av lufta.",
+    "Argon beskytter smeltet metall under sveising."
+   ],
+   "illustrasjonside": "Glødende argonplasma i rør; tydelig sveisebue som sekundært motiv."
+  },
+  {
+   "nr": 19,
+   "symbol": "K",
+   "navn": "Kalium",
+   "massetall": 39,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Alkalimetall",
+   "tilstand": "Fast",
+   "kortFakta": "Svært mykt og reaktivt metall.",
+   "bruk": "Gjødsel og kjemisk industri.",
+   "ekstraFakta": [
+    "Kaliumforbindelser gir fiolett flamme.",
+    "Kalium er viktig for nerve- og muskelfunksjon."
+   ],
+   "illustrasjonside": "Kaliumstykke under olje; fiolett flammetest og gjødselgranulat bak."
+  },
+  {
+   "nr": 20,
+   "symbol": "Ca",
+   "navn": "Kalsium",
+   "massetall": 40,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Jordalkalimetall",
+   "tilstand": "Fast",
+   "kortFakta": "Et sentralt grunnstoff i knokler og tenner.",
+   "bruk": "Sement, kalk, metallurgi og biologiske strukturer.",
+   "ekstraFakta": [
+    "Rent kalsium er et sølvhvitt metall.",
+    "Kalsiumforbindelser finnes i kalkstein."
+   ],
+   "illustrasjonside": "Rent kalsiummetall i inert kammer; kalkstein, sement og knokkelstruktur subtilt bak."
+  },
+  {
+   "nr": 21,
+   "symbol": "Sc",
+   "navn": "Scandium",
+   "massetall": 45,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Et lett metall som ofte brukes i små mengder i legeringer.",
+   "bruk": "Flylegeringer, spesiallamper og forskning.",
+   "ekstraFakta": [
+    "Navnet viser til Skandinavia.",
+    "Scandium er sjeldent som konsentrert mineral."
+   ],
+   "illustrasjonside": "Scandium-metallprøve; lett flylegering og kraftig stadionlampe i bakgrunnen."
+  },
+  {
+   "nr": 22,
+   "symbol": "Ti",
+   "navn": "Titan",
+   "massetall": 48,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Svært sterkt i forhold til vekten.",
+   "bruk": "Fly, implantater, sportsutstyr og kjemisk industri.",
+   "ekstraFakta": [
+    "Titan danner et beskyttende oksidlag.",
+    "Titan er biokompatibelt og brukes i implantater."
+   ],
+   "illustrasjonside": "Ren titankrystall/ingot; jetfly og medisinsk implantat diskret bak."
+  },
+  {
+   "nr": 23,
+   "symbol": "V",
+   "navn": "Vanadium",
+   "massetall": 51,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Kan gjøre stål betydelig sterkere.",
+   "bruk": "Stål, verktøy, katalysatorer og batterier.",
+   "ekstraFakta": [
+    "Navnet kommer fra Vanadis, et navn på Frøya.",
+    "Vanadium kan gi forbindelser med mange sterke farger."
+   ],
+   "illustrasjonside": "Vanadiumkrystall; kraftig stålgear og katalysatorrør i bakgrunnen."
+  },
+  {
+   "nr": 24,
+   "symbol": "Cr",
+   "navn": "Krom",
+   "massetall": 52,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Gir rustfritt stål korrosjonsmotstand.",
+   "bruk": "Rustfritt stål, forkromming og pigmenter.",
+   "ekstraFakta": [
+    "Navnet kommer fra gresk for «farge».",
+    "Kromforbindelser finnes i mange farger."
+   ],
+   "illustrasjonside": "Speilblank kromkrystall og forkrommet ståloverflate; rustfritt utstyr bak."
+  },
+  {
+   "nr": 25,
+   "symbol": "Mn",
+   "navn": "Mangan",
+   "massetall": 55,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Viktig for styrken i mange ståltyper.",
+   "bruk": "Stålproduksjon og batterier.",
+   "ekstraFakta": [
+    "Mangan er nødvendig i små mengder biologisk.",
+    "Mangan er vanlig i mineraler."
+   ],
+   "illustrasjonside": "Manganmetall og mørke manganmineraler; stålovn og battericelle bak."
+  },
+  {
+   "nr": 26,
+   "symbol": "Fe",
+   "navn": "Jern",
+   "massetall": 56,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Det mest brukte metallet i verden.",
+   "bruk": "Stål, bygg, maskiner og transport.",
+   "ekstraFakta": [
+    "Jern er hovedbestanddelen i stål.",
+    "Jern finnes også i meteoritter."
+   ],
+   "illustrasjonside": "Ren jernkrystall og stålbjelke; bro og smelteverk i bakgrunnen."
+  },
+  {
+   "nr": 27,
+   "symbol": "Co",
+   "navn": "Kobolt",
+   "massetall": 59,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Kan danne sterke magneter og blå forbindelser.",
+   "bruk": "Batterier, superlegeringer og magneter.",
+   "ekstraFakta": [
+    "Koboltforbindelser kan gi sterk blåfarge.",
+    "Kobolt brukes i enkelte superlegeringer for turbiner."
+   ],
+   "illustrasjonside": "Koboltmetall med en dypblå koboltglassdetalj; batteripakke og turbin bak."
+  },
+  {
+   "nr": 28,
+   "symbol": "Ni",
+   "navn": "Nikkel",
+   "massetall": 58,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Motstår korrosjon og tåler høy temperatur.",
+   "bruk": "Rustfritt stål, batterier og overflatebelegg.",
+   "ekstraFakta": [
+    "Nikkel er ferromagnetisk ved romtemperatur.",
+    "Nikkel brukes mye i mynter og legeringer."
+   ],
+   "illustrasjonside": "Nikkelpellets og ren metalloverflate; rustfritt stål og battericelle bak."
+  },
+  {
+   "nr": 29,
+   "symbol": "Cu",
+   "navn": "Kobber",
+   "massetall": 63,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "En av de beste elektriske lederne.",
+   "bruk": "Elektriske kabler, motorer og rør.",
+   "ekstraFakta": [
+    "Symbolet Cu kommer fra cuprum.",
+    "Kobber får grønn patina over tid."
+   ],
+   "illustrasjonside": "Naturlig kobberkrystall og blank kobbertråd som hovedmotiv; elmotor bak."
+  },
+  {
+   "nr": 30,
+   "symbol": "Zn",
+   "navn": "Sink",
+   "massetall": 64,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Beskytter stål mot rust ved galvanisering.",
+   "bruk": "Galvanisering, messing og batterier.",
+   "ekstraFakta": [
+    "Sink har relativt lavt smeltepunkt.",
+    "Sink er viktig i små mengder for kroppen."
+   ],
+   "illustrasjonside": "Zinkrystaller og galvanisert ståloverflate; takplater og messingdetalj bak."
+  },
+  {
+   "nr": 31,
+   "symbol": "Ga",
+   "navn": "Gallium",
+   "massetall": 69,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Metall",
+   "tilstand": "Fast",
+   "kortFakta": "Smelter ved omtrent 29,8 °C.",
+   "bruk": "LED, halvledere og høyfrekvent elektronikk.",
+   "ekstraFakta": [
+    "Gallium kan smelte i en varm hånd.",
+    "Gallium fukter glass og mange andre materialer."
+   ],
+   "illustrasjonside": "Flytende gallium i hånd/skje som hovedmotiv; LED og halvlederlab diskret bak."
+  },
+  {
+   "nr": 32,
+   "symbol": "Ge",
+   "navn": "Germanium",
+   "massetall": 74,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Halvmetall",
+   "tilstand": "Fast",
+   "kortFakta": "En halvleder som er gjennomsiktig for infrarødt lys.",
+   "bruk": "Fiberoptikk, IR-optikk og halvledere.",
+   "ekstraFakta": [
+    "Germanium var viktig i tidlige transistorer.",
+    "Germaniumdetektorer brukes til presis strålingsmåling."
+   ],
+   "illustrasjonside": "Germaniumkrystall som hovedmotiv; termisk kamera og optisk fiber bak."
+  },
+  {
+   "nr": 33,
+   "symbol": "As",
+   "navn": "Arsen",
+   "massetall": 75,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Halvmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Giftig halvmetall med lang teknologihistorie.",
+   "bruk": "Halvledere og enkelte spesiallegeringer.",
+   "ekstraFakta": [
+    "Arsenforbindelser kan være svært giftige.",
+    "Arsen var historisk brukt i pigmenter og giftstoffer."
+   ],
+   "illustrasjonside": "Grå, metalliske arsenkrystaller i lukket laboratoriemiljø; halvlederwafer bak."
+  },
+  {
+   "nr": 34,
+   "symbol": "Se",
+   "navn": "Selen",
+   "massetall": 80,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Ikke-metall",
+   "tilstand": "Fast",
+   "kortFakta": "Har både halvleder- og fotoleder-egenskaper.",
+   "bruk": "Solceller, glass, elektronikk og kopimaskiner.",
+   "ekstraFakta": [
+    "Selen er et viktig sporstoff i små mengder.",
+    "Selen kan være giftig i for store mengder."
+   ],
+   "illustrasjonside": "Rød og grå selen-allotrop som hovedmotiv; solcellepaneler i solnedgang bak."
+  },
+  {
+   "nr": 35,
+   "symbol": "Br",
+   "navn": "Brom",
+   "massetall": 79,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Halogen",
+   "tilstand": "Væske",
+   "kortFakta": "Det eneste ikke-metallet som er væske ved romtemperatur.",
+   "bruk": "Kjemi, desinfeksjon og enkelte flammehemmere.",
+   "ekstraFakta": [
+    "Brom har en kraftig og ubehagelig lukt.",
+    "Brom er rødbrunt i væskeform."
+   ],
+   "illustrasjonside": "Rødbrun bromvæske og damp i helt forseglet glasskolbe; laboratorieutstyr bak."
+  },
+  {
+   "nr": 36,
+   "symbol": "Kr",
+   "navn": "Krypton",
+   "massetall": 84,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Edelgass",
+   "tilstand": "Gass",
+   "kortFakta": "Edelgass med tydelige spektrallinjer.",
+   "bruk": "Spesialbelysning, blitzlamper og lasere.",
+   "ekstraFakta": [
+    "Navnet betyr «skjult».",
+    "Krypton finnes bare i små mengder i lufta."
+   ],
+   "illustrasjonside": "Kryptongass som gløder i et klart rør; blitzlampe og laseroptikk i bakgrunnen."
+  },
+  {
+   "nr": 37,
+   "symbol": "Rb",
+   "navn": "Rubidium",
+   "massetall": 85,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Alkalimetall",
+   "tilstand": "Fast",
+   "kortFakta": "Svært reaktivt alkalimetall.",
+   "bruk": "Atomklokker, forskning og spesialelektronikk.",
+   "ekstraFakta": [
+    "Rubidium antennes lett i luft.",
+    "Rubidium brukes i enkelte presisjonsinstrumenter."
+   ],
+   "illustrasjonside": "Rubidium i forseglet ampulle under vakuum; atomklokkeinstrumenter bak."
+  },
+  {
+   "nr": 38,
+   "symbol": "Sr",
+   "navn": "Strontium",
+   "massetall": 88,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Jordalkalimetall",
+   "tilstand": "Fast",
+   "kortFakta": "Gir en kraftig rød flammefarge.",
+   "bruk": "Fyrverkeri, signalbluss og ferrittmagneter.",
+   "ekstraFakta": [
+    "Strontium er oppkalt etter Strontian i Skottland.",
+    "Strontium forekommer naturlig som flere stabile isotoper."
+   ],
+   "illustrasjonside": "Rent strontiummetall i lukket beholder; rød fyrverkerihimmel som bakgrunn."
+  },
+  {
+   "nr": 39,
+   "symbol": "Y",
+   "navn": "Yttrium",
+   "massetall": 89,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Brukes i materialer som kan gi svært rent lys.",
+   "bruk": "LED-fosfor, lasere og spesialkeramikk.",
+   "ekstraFakta": [
+    "Yttrium er oppkalt etter Ytterby.",
+    "Yttrium inngår ofte i YAG-laserkrystaller."
+   ],
+   "illustrasjonside": "Yttriummetall og en klar YAG-laserkrystall; LED/skjermmateriale bak."
+  },
+  {
+   "nr": 40,
+   "symbol": "Zr",
+   "navn": "Zirkonium",
+   "massetall": 90,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Tåler korrosjon svært godt.",
+   "bruk": "Kjernebrensel-kledning, keramikk og medisinsk utstyr.",
+   "ekstraFakta": [
+    "Zirkonium brukes ofte som zirkoniumlegeringer.",
+    "Zirkoniumdioksid kan være svært hardt."
+   ],
+   "illustrasjonside": "Zirkoniummetall og keramisk zirkonia; reaktorrør diskret i bakgrunnen."
+  },
+  {
+   "nr": 41,
+   "symbol": "Nb",
+   "navn": "Niob",
+   "massetall": 93,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Blir superledende ved svært lave temperaturer.",
+   "bruk": "Superledende magneter, MR og spesialstål.",
+   "ekstraFakta": [
+    "Niob er oppkalt etter Niobe.",
+    "Niob-titan er et viktig superledermateriale."
+   ],
+   "illustrasjonside": "Niobkrystall og superledende spole; MR-magnet som sekundært motiv."
+  },
+  {
+   "nr": 42,
+   "symbol": "Mo",
+   "navn": "Molybden",
+   "massetall": 98,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Tåler svært høy temperatur og styrker stål.",
+   "bruk": "Legeringsstål, katalysatorer og høytemperaturutstyr.",
+   "ekstraFakta": [
+    "Molybden har et av de høyeste smeltepunktene blant vanlige metaller.",
+    "Molybden er et viktig sporstoff i enkelte enzymer."
+   ],
+   "illustrasjonside": "Molybdenkrystall; glødende høytemperaturverktøy/turbinkomponent bak."
+  },
+  {
+   "nr": 43,
+   "symbol": "Tc",
+   "navn": "Technetium",
+   "massetall": 98,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Det første grunnstoffet som ble fremstilt kunstig.",
+   "bruk": "Nukleærmedisinsk bildebehandling, særlig Tc-99m.",
+   "ekstraFakta": [
+    "Technetium har ingen stabile isotoper.",
+    "Tc-99m er en av de mest brukte isotopene i nukleærmedisin."
+   ],
+   "illustrasjonside": "En liten technetium-kilde i skjermet medisinsk kapsel; gammakamera i bakgrunnen."
+  },
+  {
+   "nr": 44,
+   "symbol": "Ru",
+   "navn": "Ruthenium",
+   "massetall": 102,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Et hardt metall i platinagruppen.",
+   "bruk": "Elektriske kontakter, katalysatorer og hardbelegg.",
+   "ekstraFakta": [
+    "Ruthenium er oppkalt etter Ruthenia.",
+    "Ruthenium kan hardne platina og palladium."
+   ],
+   "illustrasjonside": "Rutheniumkrystall; mikroelektroniske kontakter og katalysator bak."
+  },
+  {
+   "nr": 45,
+   "symbol": "Rh",
+   "navn": "Rhodium",
+   "massetall": 103,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Svært sjeldent, reflekterende metall.",
+   "bruk": "Katalysatorer, reflektive belegg og bilkatalysatorer.",
+   "ekstraFakta": [
+    "Rhodium har svært høy refleksjonsevne.",
+    "Rhodium er blant de dyreste metallene."
+   ],
+   "illustrasjonside": "Rhodiumkrystall og speilblank overflate; bilkatalysator i bakgrunnen."
+  },
+  {
+   "nr": 46,
+   "symbol": "Pd",
+   "navn": "Palladium",
+   "massetall": 106,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Kan ta opp store mengder hydrogen.",
+   "bruk": "Katalysatorer, elektronikk og hydrogenrelatert teknologi.",
+   "ekstraFakta": [
+    "Palladium er oppkalt etter asteroiden Pallas.",
+    "Palladium kan fungere som membran for hydrogen."
+   ],
+   "illustrasjonside": "Palladiumsvamp/metall; hydrogenbobler og katalysatorstruktur bak."
+  },
+  {
+   "nr": 47,
+   "symbol": "Ag",
+   "navn": "Sølv",
+   "massetall": 107,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Har den høyeste elektriske ledningsevnen av metallene.",
+   "bruk": "Elektronikk, solceller, smykker og kontakter.",
+   "ekstraFakta": [
+    "Sølv har vært brukt som betalingsmiddel i tusener av år.",
+    "Sølv har også antimikrobielle egenskaper."
+   ],
+   "illustrasjonside": "Sølvkrystall og ren sølvtråd; elektronikk og smykke som små bakgrunnselementer."
+  },
+  {
+   "nr": 48,
+   "symbol": "Cd",
+   "navn": "Kadmium",
+   "massetall": 114,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Et giftig metall som må håndteres forsiktig.",
+   "bruk": "NiCd-batterier, kontrollstaver og spesialpigmenter.",
+   "ekstraFakta": [
+    "Kadmium kan hope seg opp i kroppen.",
+    "Kadmium har vært mye brukt i pigmenter."
+   ],
+   "illustrasjonside": "Kadmiumprøve i lukket sikkerhetsbeholder; NiCd-celle og reaktorkontrollstav bak."
+  },
+  {
+   "nr": 49,
+   "symbol": "In",
+   "navn": "Indium",
+   "massetall": 115,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Metall",
+   "tilstand": "Fast",
+   "kortFakta": "Svært mykt metall med lavt smeltepunkt.",
+   "bruk": "Berøringsskjermer, LCD og loddemetaller.",
+   "ekstraFakta": [
+    "Indium kan bøyes og formes lett.",
+    "Indium-tinnoksid er både ledende og gjennomsiktig."
+   ],
+   "illustrasjonside": "Mykt indium som bøyes lett; berøringsskjerm med pikselstruktur i bakgrunnen."
+  },
+  {
+   "nr": 50,
+   "symbol": "Sn",
+   "navn": "Tinn",
+   "massetall": 120,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Metall",
+   "tilstand": "Fast",
+   "kortFakta": "Har vært brukt i legeringer i tusenvis av år.",
+   "bruk": "Lodding, fortinning og legeringer.",
+   "ekstraFakta": [
+    "Tinn kan få «tinnpest» ved lave temperaturer.",
+    "Tinn gjør kobber til bronse."
+   ],
+   "illustrasjonside": "Tinnmetall og loddetinn som hovedmotiv; loddepunkt og fortinnet boks bak."
+  },
+  {
+   "nr": 51,
+   "symbol": "Sb",
+   "navn": "Antimon",
+   "massetall": 121,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Halvmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Et sprøtt halvmetall med metallisk glans.",
+   "bruk": "Flammehemmere, legeringer og halvledere.",
+   "ekstraFakta": [
+    "Symbolet Sb kommer fra stibium.",
+    "Antimonforbindelser brukes i flammehemmende systemer."
+   ],
+   "illustrasjonside": "Stibnitt/antimonkrystaller som hovedmotiv; legering og flammehemmende materiale bak."
+  },
+  {
+   "nr": 52,
+   "symbol": "Te",
+   "navn": "Tellur",
+   "massetall": 130,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Halvmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Har gode termoelektriske egenskaper.",
+   "bruk": "Termoelektrikk, solceller og legeringer.",
+   "ekstraFakta": [
+    "Tellur er oppkalt etter Jorden.",
+    "Tellur brukes sammen med vismut i termoelektriske materialer."
+   ],
+   "illustrasjonside": "Tellurkrystall; termoelektrisk modul og solcelle i bakgrunnen."
+  },
+  {
+   "nr": 53,
+   "symbol": "I",
+   "navn": "Jod",
+   "massetall": 127,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Halogen",
+   "tilstand": "Fast",
+   "kortFakta": "Danner fiolett damp ved oppvarming.",
+   "bruk": "Antiseptiske midler, medisin og kjemi.",
+   "ekstraFakta": [
+    "Jod er viktig for skjoldbruskkjertelen.",
+    "Jod sublimerer lett fra fast stoff til damp."
+   ],
+   "illustrasjonside": "Jodkrystaller med fiolett damp i lukket kolbe; medisinsk jodflaske diskret bak."
+  },
+  {
+   "nr": 54,
+   "symbol": "Xe",
+   "navn": "Xenon",
+   "massetall": 132,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Edelgass",
+   "tilstand": "Gass",
+   "kortFakta": "En tung edelgass.",
+   "bruk": "Blitzlamper, ionemotorer og spesialbelysning.",
+   "ekstraFakta": [
+    "Xenon kan brukes som anestesigass.",
+    "Xenon er sjeldent i jordens atmosfære."
+   ],
+   "illustrasjonside": "Xenonplasma i klar lampe; romfartøy med blå ionemotor i bakgrunnen."
+  },
+  {
+   "nr": 55,
+   "symbol": "Cs",
+   "navn": "Cesium",
+   "massetall": 133,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Alkalimetall",
+   "tilstand": "Fast",
+   "kortFakta": "Grunnlaget for definisjonen av sekundet i atomklokker.",
+   "bruk": "Atomklokker, forskning og spesielle sensorer.",
+   "ekstraFakta": [
+    "Cesium-133 brukes i atomklokker.",
+    "Cesium reagerer ekstremt kraftig med vann."
+   ],
+   "illustrasjonside": "Cesium i lukket ampulle; atomklokke som tydelig sekundært motiv."
+  },
+  {
+   "nr": 56,
+   "symbol": "Ba",
+   "navn": "Barium",
+   "massetall": 138,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Jordalkalimetall",
+   "tilstand": "Fast",
+   "kortFakta": "Gir grønn flammefarge i mange forbindelser.",
+   "bruk": "Røntgenkontrast, borevæsker og grønt fyrverkeri.",
+   "ekstraFakta": [
+    "Bariumsulfat er svært lite løselig og kan brukes som kontrastmiddel.",
+    "Bariumforbindelser kan gi grønt lys i fyrverkeri."
+   ],
+   "illustrasjonside": "Rent barium i inert beholder; grønn flammetest og røntgenbilde diskret bak."
+  },
+  {
+   "nr": 57,
+   "symbol": "La",
+   "navn": "Lantan",
+   "massetall": 139,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Lantanid",
+   "tilstand": "Fast",
+   "kortFakta": "Et mykt sjeldent jordmetall.",
+   "bruk": "Kameralinser, batterier og katalysatorer.",
+   "ekstraFakta": [
+    "Lantan betyr omtrent «skjult».",
+    "Lantan inngår i enkelte nikkel-metallhydridbatterier."
+   ],
+   "illustrasjonside": "Lantanmetall; kameralinse og hybridbattericelle i bakgrunnen."
+  },
+  {
+   "nr": 58,
+   "symbol": "Ce",
+   "navn": "Cerium",
+   "massetall": 140,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Lantanid",
+   "tilstand": "Fast",
+   "kortFakta": "Det vanligste av lantanidene.",
+   "bruk": "Katalysatorer, glasspolering og tennstål.",
+   "ekstraFakta": [
+    "Cerium er oppkalt etter Ceres.",
+    "Ceriumoksid brukes til å polere glass."
+   ],
+   "illustrasjonside": "Ceriummetall; katalysator-honeycomb og glasspolering med gnister bak."
+  },
+  {
+   "nr": 59,
+   "symbol": "Pr",
+   "navn": "Praseodym",
+   "massetall": 141,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Lantanid",
+   "tilstand": "Fast",
+   "kortFakta": "Kan gi glass og keramikk grønnlige toner.",
+   "bruk": "Magneter, glass og spesiallegeringer.",
+   "ekstraFakta": [
+    "Praseodymnavnet viser til grønn farge.",
+    "Praseodym brukes i enkelte sterke magneter."
+   ],
+   "illustrasjonside": "Praseodymmetall; grønt spesialglass og sterk magnet som bakgrunn."
+  },
+  {
+   "nr": 60,
+   "symbol": "Nd",
+   "navn": "Neodym",
+   "massetall": 142,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Lantanid",
+   "tilstand": "Fast",
+   "kortFakta": "Danner noen av de sterkeste permanente magnetene.",
+   "bruk": "Sterke magneter, motorer, hodetelefoner og lasere.",
+   "ekstraFakta": [
+    "Neodym betyr «ny tvilling».",
+    "Neodymmagneter mister styrke ved høy varme uten spesialtilsetninger."
+   ],
+   "illustrasjonside": "Neodymmagnet som trekker til seg bolter; vindturbin og hodetelefon diskret bak."
+  },
+  {
+   "nr": 61,
+   "symbol": "Pm",
+   "navn": "Promethium",
+   "massetall": 145,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Lantanid",
+   "tilstand": "Fast",
+   "kortFakta": "Har ingen stabile isotoper.",
+   "bruk": "Forskning og enkelte spesialiserte radioisotopkilder.",
+   "ekstraFakta": [
+    "Promethium er oppkalt etter Prometeus.",
+    "Promethium finnes bare i svært små naturlige spor."
+   ],
+   "illustrasjonside": "Promethiumkilde i et skjermet mikrokammer; måleinstrument/radioisotopbatteri bak."
+  },
+  {
+   "nr": 62,
+   "symbol": "Sm",
+   "navn": "Samarium",
+   "massetall": 152,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Lantanid",
+   "tilstand": "Fast",
+   "kortFakta": "Kan danne svært sterke samarium-kobolt-magneter.",
+   "bruk": "Samarium-kobolt-magneter og spesialreaktorer.",
+   "ekstraFakta": [
+    "Samarium er oppkalt etter mineralet samarskitt.",
+    "Samarium-153 brukes i enkelte medisinske behandlinger."
+   ],
+   "illustrasjonside": "Samariummetall og SmCo-magnet; varm elmotor i bakgrunnen."
+  },
+  {
+   "nr": 63,
+   "symbol": "Eu",
+   "navn": "Europium",
+   "massetall": 153,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Lantanid",
+   "tilstand": "Fast",
+   "kortFakta": "Gir sterke røde fosforfarger.",
+   "bruk": "Røde fosforer, skjermer og sikkerhetsmerking.",
+   "ekstraFakta": [
+    "Europium er oppkalt etter Europa.",
+    "Europium brukes i eurosedlers sikkerhetsfunksjoner og fosforer."
+   ],
+   "illustrasjonside": "Europiumprøve; sterkt rødt fosforlys på skjerm og sikkerhetsmerking bak."
+  },
+  {
+   "nr": 64,
+   "symbol": "Gd",
+   "navn": "Gadolinium",
+   "massetall": 158,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Lantanid",
+   "tilstand": "Fast",
+   "kortFakta": "Har uvanlig sterke magnetiske egenskaper.",
+   "bruk": "MR-kontraststoffer, nøytronfangst og forskning.",
+   "ekstraFakta": [
+    "Gadolinium har stor evne til å fange nøytroner.",
+    "Gadoliniumforbindelser brukes i MR-kontrastmidler."
+   ],
+   "illustrasjonside": "Gadoliniummetall; MR-skanner og nøytronfangstgrafikk subtilt bak."
+  },
+  {
+   "nr": 65,
+   "symbol": "Tb",
+   "navn": "Terbium",
+   "massetall": 159,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Lantanid",
+   "tilstand": "Fast",
+   "kortFakta": "Gir grønt lys i mange fosformaterialer.",
+   "bruk": "Grønne fosforer, sensorer og magnetmaterialer.",
+   "ekstraFakta": [
+    "Terbium er oppkalt etter Ytterby.",
+    "Terbium brukes i enkelte magnetostriktive materialer."
+   ],
+   "illustrasjonside": "Terbiummetall; grønt fosforlys og magnetostriktivt materiale bak."
+  },
+  {
+   "nr": 66,
+   "symbol": "Dy",
+   "navn": "Dysprosium",
+   "massetall": 164,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Lantanid",
+   "tilstand": "Fast",
+   "kortFakta": "Forbedrer magneter ved høye temperaturer.",
+   "bruk": "Høytemperaturmagneter, lasere og spesiallegeringer.",
+   "ekstraFakta": [
+    "Dysprosium betyr omtrent «vanskelig å få tak i».",
+    "Dysprosium er viktig i noen magneter til elbiler og vindturbiner."
+   ],
+   "illustrasjonside": "Dysprosiummetall; permanentmagnet i en varm elmotor som sekundært motiv."
+  },
+  {
+   "nr": 67,
+   "symbol": "Ho",
+   "navn": "Holmium",
+   "massetall": 165,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Lantanid",
+   "tilstand": "Fast",
+   "kortFakta": "Har et av de største magnetiske momentene blant grunnstoffene.",
+   "bruk": "Lasere, magneter og nøytronabsorpsjon.",
+   "ekstraFakta": [
+    "Holmium er oppkalt etter Stockholm.",
+    "Holmiumlasere brukes medisinsk."
+   ],
+   "illustrasjonside": "Holmiummetall; tydelig grønn/IR kirurgisk laserstråle i bakgrunnen."
+  },
+  {
+   "nr": 68,
+   "symbol": "Er",
+   "navn": "Erbium",
+   "massetall": 166,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Lantanid",
+   "tilstand": "Fast",
+   "kortFakta": "Absorberer lys rundt viktige telekombølgelengder.",
+   "bruk": "Fiberforsterkere, lasere og telekommunikasjon.",
+   "ekstraFakta": [
+    "Erbium er oppkalt etter Ytterby.",
+    "Erbium gir karakteristisk rosa farge i enkelte glass."
+   ],
+   "illustrasjonside": "Erbiumkrystall; optisk fiber som lyser gjennom et telecom-system bak."
+  },
+  {
+   "nr": 69,
+   "symbol": "Tm",
+   "navn": "Thulium",
+   "massetall": 169,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Lantanid",
+   "tilstand": "Fast",
+   "kortFakta": "Et av de sjeldneste naturlige lantanidene.",
+   "bruk": "Lasere og kompakte røntgenkilder.",
+   "ekstraFakta": [
+    "Thulium er oppkalt etter det mytiske Thule.",
+    "Thulium kan brukes i medisinske lasere."
+   ],
+   "illustrasjonside": "Thuliummetall; kompakt medisinsk laser og liten røntgenkilde bak."
+  },
+  {
+   "nr": 70,
+   "symbol": "Yb",
+   "navn": "Ytterbium",
+   "massetall": 174,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Lantanid",
+   "tilstand": "Fast",
+   "kortFakta": "Brukes i svært stabile lasere og atomklokker.",
+   "bruk": "Fiberlasere, atomklokker og metallurgi.",
+   "ekstraFakta": [
+    "Ytterbium er oppkalt etter Ytterby.",
+    "Ytterbium brukes i meget effektive fiberlasere."
+   ],
+   "illustrasjonside": "Ytterbiummetall; kraftig fiberlaser og optisk atomklokke bak."
+  },
+  {
+   "nr": 71,
+   "symbol": "Lu",
+   "navn": "Lutetium",
+   "massetall": 175,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Lantanid",
+   "tilstand": "Fast",
+   "kortFakta": "Det siste grunnstoffet i lantanidrekken.",
+   "bruk": "PET-detektorer, katalysatorer og forskning.",
+   "ekstraFakta": [
+    "Lutetium er oppkalt etter Paris.",
+    "Lutetium-177 brukes i målrettet radionuklidbehandling."
+   ],
+   "illustrasjonside": "Lutetiumkrystall/metall; PET-detektorring som diskret bakgrunn."
+  },
+  {
+   "nr": 72,
+   "symbol": "Hf",
+   "navn": "Hafnium",
+   "massetall": 180,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Absorberer nøytroner svært godt.",
+   "bruk": "Kontrollstaver i reaktorer og mikroelektronikk.",
+   "ekstraFakta": [
+    "Hafnium er oppkalt etter København.",
+    "Hafniumoksid brukes som isolator i moderne mikrobrikker."
+   ],
+   "illustrasjonside": "Hafniummetall; reaktorkontrollstav og moderne mikrobrikkeport bak."
+  },
+  {
+   "nr": 73,
+   "symbol": "Ta",
+   "navn": "Tantal",
+   "massetall": 181,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Svært korrosjonsbestandig og har høyt smeltepunkt.",
+   "bruk": "Kondensatorer, implantater og kjemisk utstyr.",
+   "ekstraFakta": [
+    "Tantal er svært motstandsdyktig mot syrer.",
+    "Tantaloksid gir høy kapasitans i små kondensatorer."
+   ],
+   "illustrasjonside": "Tantalpellet/metall; stor makro av en liten elektronisk kondensator bak."
+  },
+  {
+   "nr": 74,
+   "symbol": "W",
+   "navn": "Wolfram",
+   "massetall": 184,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Har det høyeste smeltepunktet av alle rene metaller.",
+   "bruk": "Skjæreverktøy, elektroder og høytemperaturkomponenter.",
+   "ekstraFakta": [
+    "Wolframkarbid er ekstremt hardt.",
+    "Wolfram har svært høy tetthet."
+   ],
+   "illustrasjonside": "Wolframkrystall; hvitglødende filament og hardmetallskjær bak."
+  },
+  {
+   "nr": 75,
+   "symbol": "Re",
+   "navn": "Rhenium",
+   "massetall": 187,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Et av de sjeldneste stabile metallene.",
+   "bruk": "Jetmotorlegeringer og katalysatorer.",
+   "ekstraFakta": [
+    "Rhenium er oppkalt etter Rhinen.",
+    "Rhenium forbedrer varmeegenskaper i superlegeringer."
+   ],
+   "illustrasjonside": "Rheniummetall; glødende jetmotor-turbinblad som hovedbakgrunn."
+  },
+  {
+   "nr": 76,
+   "symbol": "Os",
+   "navn": "Osmium",
+   "massetall": 192,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Et av de tetteste naturlige grunnstoffene.",
+   "bruk": "Harde legeringer, instrumenter og mikroskopi.",
+   "ekstraFakta": [
+    "Osmiumtetroksid har sterk lukt og er svært giftig.",
+    "Osmium er ekstremt hardt og sprøtt."
+   ],
+   "illustrasjonside": "Osmiumkrystall; tett metallprøve og mikroskopisk analyseoppsett bak."
+  },
+  {
+   "nr": 77,
+   "symbol": "Ir",
+   "navn": "Iridium",
+   "massetall": 193,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Ekstremt motstandsdyktig mot korrosjon.",
+   "bruk": "Tennplugger, digler og høytemperaturutstyr.",
+   "ekstraFakta": [
+    "Iridium er blant de mest korrosjonsbestandige metallene.",
+    "Iridium finnes ofte sammen med platina."
+   ],
+   "illustrasjonside": "Iridiumkrystall; tennplugg og glødende laboratoriedigel i bakgrunnen."
+  },
+  {
+   "nr": 78,
+   "symbol": "Pt",
+   "navn": "Platina",
+   "massetall": 195,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Et edelt metall og svært god katalysator.",
+   "bruk": "Katalysatorer, smykker og brenselceller.",
+   "ekstraFakta": [
+    "Platina reagerer lite med mange kjemikalier.",
+    "Platina brukes i hydrogenrelatert katalyse."
+   ],
+   "illustrasjonside": "Platinakrystall; katalysatorstruktur og brenselcelle bak."
+  },
+  {
+   "nr": 79,
+   "symbol": "Au",
+   "navn": "Gull",
+   "massetall": 197,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Fast",
+   "kortFakta": "Kan hamres til ekstremt tynne lag.",
+   "bruk": "Elektronikk, smykker og korrosjonsbestandige kontakter.",
+   "ekstraFakta": [
+    "Gull angripes lite av luft og vann.",
+    "Gull er en svært god elektrisk leder."
+   ],
+   "illustrasjonside": "Gullkrystall/nugget og supertynn gullfolie; kretskort i bakgrunnen."
+  },
+  {
+   "nr": 80,
+   "symbol": "Hg",
+   "navn": "Kvikksølv",
+   "massetall": 202,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Væske",
+   "kortFakta": "Det eneste metallet som er flytende ved romtemperatur.",
+   "bruk": "Historiske måleinstrumenter, lamper og spesialbrytere.",
+   "ekstraFakta": [
+    "Kvikksølv danner lett legeringer kalt amalgamer.",
+    "Kvikksølvdamp er helseskadelig."
+   ],
+   "illustrasjonside": "Kvikksølvdråper i lukket glasskar; klassisk termometer og lampe diskret bak."
+  },
+  {
+   "nr": 81,
+   "symbol": "Tl",
+   "navn": "Thallium",
+   "massetall": 205,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Metall",
+   "tilstand": "Fast",
+   "kortFakta": "Svært giftig metall.",
+   "bruk": "IR-detektorer, spesialglass og forskning.",
+   "ekstraFakta": [
+    "Thalliumforbindelser er svært giftige.",
+    "Thallium ble oppdaget via en grønn spektrallinje."
+   ],
+   "illustrasjonside": "Thalliummetall i lukket prøveglass; infrarødt kamera/detektor bak."
+  },
+  {
+   "nr": 82,
+   "symbol": "Pb",
+   "navn": "Bly",
+   "massetall": 208,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Metall",
+   "tilstand": "Fast",
+   "kortFakta": "Tungt, mykt og effektivt til å skjerme stråling.",
+   "bruk": "Blybatterier og strålingsskjerming.",
+   "ekstraFakta": [
+    "Bly har vært brukt i svært lang tid, men er giftig.",
+    "Bly smelter relativt lett."
+   ],
+   "illustrasjonside": "Blyingot og skjermingsplate; bilbatteri og røntgenrom bak."
+  },
+  {
+   "nr": 83,
+   "symbol": "Bi",
+   "navn": "Vismut",
+   "massetall": 209,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Metall",
+   "tilstand": "Fast",
+   "kortFakta": "Danner karakteristiske regnbuefargede krystaller.",
+   "bruk": "Legemidler, lavtsmeltende legeringer og kosmetiske pigmenter.",
+   "ekstraFakta": [
+    "Vismut er et av de tyngste relativt lite giftige metallene.",
+    "Vismut utvider seg når det størkner."
+   ],
+   "illustrasjonside": "Regnbuefarget vismut-hopperkrystall som hovedmotiv; medisinsk pakning og lavsmeltende legering bak."
+  },
+  {
+   "nr": 84,
+   "symbol": "Po",
+   "navn": "Polonium",
+   "massetall": 209,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Metall",
+   "tilstand": "Fast",
+   "kortFakta": "Svært radioaktivt og sjeldent.",
+   "bruk": "Forskning og enkelte spesialiserte strålingskilder.",
+   "ekstraFakta": [
+    "Polonium ble oppdaget av Marie og Pierre Curie.",
+    "Polonium-210 er en intens alfakilde."
+   ],
+   "illustrasjonside": "En mikroskopisk poloniumkilde i tykk skjerming; tydelige alfapartikkelspor i bakgrunnen."
+  },
+  {
+   "nr": 85,
+   "symbol": "At",
+   "navn": "Astat",
+   "massetall": 210,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Halogen",
+   "tilstand": "Fast",
+   "kortFakta": "Et ekstremt sjeldent radioaktivt halogen.",
+   "bruk": "Forskning og målrettet alfa-terapi med At-211.",
+   "ekstraFakta": [
+    "Astat finnes bare i ekstremt små naturlige mengder.",
+    "Astat-211 undersøkes i kreftbehandling."
+   ],
+   "illustrasjonside": "Astat produsert i et målkammer; alfa-terapi-molekyl og syklotron diskret bak."
+  },
+  {
+   "nr": 86,
+   "symbol": "Rn",
+   "navn": "Radon",
+   "massetall": 222,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Edelgass",
+   "tilstand": "Gass",
+   "kortFakta": "Radioaktiv edelgass som dannes i berggrunnen.",
+   "bruk": "Radonmåling, geologi og forskning.",
+   "ekstraFakta": [
+    "Radon kan samle seg i bygninger.",
+    "Radon er en viktig kilde til naturlig stråledose innendørs."
+   ],
+   "illustrasjonside": "Radongass visualisert i sprekk fra berggrunn til målekammer; radondetektor bak."
+  },
+  {
+   "nr": 87,
+   "symbol": "Fr",
+   "navn": "Francium",
+   "massetall": 223,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Alkalimetall",
+   "tilstand": "Fast",
+   "kortFakta": "Et av de sjeldneste naturlige grunnstoffene.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Francium finnes bare i spor i naturen.",
+    "Francium ble oppdaget i 1939."
+   ],
+   "illustrasjonside": "Noen få franciumatomer fanget i ionefelle; henfallsdetektor i bakgrunnen."
+  },
+  {
+   "nr": 88,
+   "symbol": "Ra",
+   "navn": "Radium",
+   "massetall": 226,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Jordalkalimetall",
+   "tilstand": "Fast",
+   "kortFakta": "Sterkt radioaktivt jordalkalimetall.",
+   "bruk": "Forskning; historisk brukt i selvlysende maling.",
+   "ekstraFakta": [
+    "Radium ble oppdaget av Marie og Pierre Curie.",
+    "Radiumsalter kan få omkringliggende materialer til å lyse."
+   ],
+   "illustrasjonside": "Radiumsalt i lukket skjermet beholder; gammelt urskive-lys svært diskret i bakgrunnen."
+  },
+  {
+   "nr": 89,
+   "symbol": "Ac",
+   "navn": "Actinium",
+   "massetall": 227,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Aktinid",
+   "tilstand": "Fast",
+   "kortFakta": "Radioaktivt aktinid med kort geologisk levetid.",
+   "bruk": "Forskning og målrettet alfa-terapi med Ac-225.",
+   "ekstraFakta": [
+    "Actinium sender ut kraftig ioniserende stråling.",
+    "Ac-225 er viktig i moderne forskning på målrettet alfa-terapi."
+   ],
+   "illustrasjonside": "Actiniumkilde i skjermet forskningsoppsett; målrettet alfa-terapi-grafikk bak."
+  },
+  {
+   "nr": 90,
+   "symbol": "Th",
+   "navn": "Thorium",
+   "massetall": 232,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Aktinid",
+   "tilstand": "Fast",
+   "kortFakta": "Kan brukes som råstoff i enkelte reaktorkonsepter.",
+   "bruk": "Forskning på kjernekraft og enkelte spesiallegeringer.",
+   "ekstraFakta": [
+    "Thorium er flere ganger vanligere enn uran i jordskorpen.",
+    "Thorium-232 er svært langlivet."
+   ],
+   "illustrasjonside": "Thoriummineral og metallprøve; moderne saltsmeltereaktor-konsept langt bak."
+  },
+  {
+   "nr": 91,
+   "symbol": "Pa",
+   "navn": "Protactinium",
+   "massetall": 231,
+   "massetallBasis": "Naturlig hovedisotop / standardverdi",
+   "kategori": "Aktinid",
+   "tilstand": "Fast",
+   "kortFakta": "Et svært sjeldent radioaktivt grunnstoff.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Protactinium er svært sjeldent i naturen.",
+    "Protactinium-231 er den mest stabile naturlige isotopen."
+   ],
+   "illustrasjonside": "Mikroskopisk protactiniumprøve i hanskeboks; uranmalmseparasjon bak."
+  },
+  {
+   "nr": 92,
+   "symbol": "U",
+   "navn": "Uran",
+   "massetall": 238,
+   "massetallBasis": "Vanligste naturlige isotop (NIST)",
+   "kategori": "Aktinid",
+   "tilstand": "Fast",
+   "kortFakta": "Det tyngste grunnstoffet som finnes naturlig i større mengder.",
+   "bruk": "Kjernebrensel, skjerming og forskning.",
+   "ekstraFakta": [
+    "Uran-238 er den klart vanligste naturlige uranisotopen.",
+    "Uran-235 kan spaltes i en kjedereaksjon."
+   ],
+   "illustrasjonside": "Uranmetall/mineral og brenselpellets; reaktorkjerne diskret bak."
+  },
+  {
+   "nr": 93,
+   "symbol": "Np",
+   "navn": "Neptunium",
+   "massetall": 237,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Aktinid",
+   "tilstand": "Fast",
+   "kortFakta": "Det første transurane grunnstoffet i periodesystemet.",
+   "bruk": "Forskning og produksjon av enkelte andre aktinider.",
+   "ekstraFakta": [
+    "Neptunium er oppkalt etter planeten Neptun.",
+    "Neptunium-237 har svært lang halveringstid."
+   ],
+   "illustrasjonside": "Neptuniummetall i hanskeboks; strålingsdetektor og aktinidprøver bak."
+  },
+  {
+   "nr": 94,
+   "symbol": "Pu",
+   "navn": "Plutonium",
+   "massetall": 244,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Aktinid",
+   "tilstand": "Fast",
+   "kortFakta": "Har flere viktige fissile og radioaktive isotoper.",
+   "bruk": "Reaktorbrensel, kjernevåpenteknologi og radioisotopgeneratorer.",
+   "ekstraFakta": [
+    "Plutonium er oppkalt etter Pluto.",
+    "Plutonium-238 brukes som varmekilde i romsonder."
+   ],
+   "illustrasjonside": "Plutoniumprøve/oksidpellet i hanskeboks; RTG på en romsonde diskret bak."
+  },
+  {
+   "nr": 95,
+   "symbol": "Am",
+   "navn": "Americium",
+   "massetall": 243,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Aktinid",
+   "tilstand": "Fast",
+   "kortFakta": "Finnes blant annet i ioniserende røykvarslere.",
+   "bruk": "Røykvarslere, industrielle målere og forskning.",
+   "ekstraFakta": [
+    "Americium er oppkalt etter Amerika.",
+    "Americium-241 sender ut alfa- og gammastråling."
+   ],
+   "illustrasjonside": "Americiumkilde; åpen røykvarsler som tydelig sekundært motiv."
+  },
+  {
+   "nr": 96,
+   "symbol": "Cm",
+   "navn": "Curium",
+   "massetall": 247,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Aktinid",
+   "tilstand": "Fast",
+   "kortFakta": "Et sterkt radioaktivt aktinid.",
+   "bruk": "Forskning og instrumentering.",
+   "ekstraFakta": [
+    "Curium er oppkalt etter Marie og Pierre Curie.",
+    "Curium-244 har vært brukt i analyseinstrumenter på romsonder."
+   ],
+   "illustrasjonside": "Curiumkilde; rover-instrument for røntgenspektrometri i bakgrunnen."
+  },
+  {
+   "nr": 97,
+   "symbol": "Bk",
+   "navn": "Berkelium",
+   "massetall": 247,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Aktinid",
+   "tilstand": "Fast",
+   "kortFakta": "Fremstilles bare i svært små mengder.",
+   "bruk": "Målmateriale for å lage tyngre grunnstoffer.",
+   "ekstraFakta": [
+    "Berkelium er oppkalt etter Berkeley.",
+    "Berkelium brukes som målmateriale i grunnstoffsyntese."
+   ],
+   "illustrasjonside": "Mikroskopisk berkelium-målskive i tungionelab; akseleratorstråle bak."
+  },
+  {
+   "nr": 98,
+   "symbol": "Cf",
+   "navn": "Californium",
+   "massetall": 251,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Aktinid",
+   "tilstand": "Fast",
+   "kortFakta": "Kan sende ut intense nøytronstrømmer.",
+   "bruk": "Nøytronkilder, reaktoroppstart og måleteknikk.",
+   "ekstraFakta": [
+    "Californium er oppkalt etter California.",
+    "Californium-252 er en kraftig nøytronkilde."
+   ],
+   "illustrasjonside": "Californiumkilde; visualisert nøytronstråle mot måleutstyr i bakgrunnen."
+  },
+  {
+   "nr": 99,
+   "symbol": "Es",
+   "navn": "Einsteinium",
+   "massetall": 252,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Aktinid",
+   "tilstand": "Fast",
+   "kortFakta": "Ble først identifisert i rester etter en kjernefysisk prøvesprengning.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Einsteinium er oppkalt etter Albert Einstein.",
+    "Einsteinium finnes bare i mikroskopiske mengder."
+   ],
+   "illustrasjonside": "Einsteinium som få lysende atomspor i varmecelle; massespektrometer bak."
+  },
+  {
+   "nr": 100,
+   "symbol": "Fm",
+   "navn": "Fermium",
+   "massetall": 257,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Aktinid",
+   "tilstand": "Fast",
+   "kortFakta": "Fremstilles atom for atom i laboratorier.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Fermium er oppkalt etter Enrico Fermi.",
+    "Fermium ble først funnet i materiale fra en termonukleær test."
+   ],
+   "illustrasjonside": "Fermium representert som registrerte atomspor på detektor; tungioneforsøk bak."
+  },
+  {
+   "nr": 101,
+   "symbol": "Md",
+   "navn": "Mendelevium",
+   "massetall": 258,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Aktinid",
+   "tilstand": "Fast",
+   "kortFakta": "Oppkalt etter Dmitrij Mendelejev.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Mendelevium er oppkalt etter Dmitrij Mendelejev.",
+    "Mendelevium var det første grunnstoffet fremstilt atom-for-atom og identifisert kjemisk."
+   ],
+   "illustrasjonside": "Mendelevium som enkeltatomer i ionefelle; kjemisk separasjon på mikrochip bak."
+  },
+  {
+   "nr": 102,
+   "symbol": "No",
+   "navn": "Nobelium",
+   "massetall": 259,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Aktinid",
+   "tilstand": "Fast",
+   "kortFakta": "Oppkalt etter Alfred Nobel.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Nobelium er oppkalt etter Alfred Nobel.",
+    "Nobelium har bare radioaktive isotoper."
+   ],
+   "illustrasjonside": "Nobelium som få atomer på detektor; recoil-separator i bakgrunnen."
+  },
+  {
+   "nr": 103,
+   "symbol": "Lr",
+   "navn": "Lawrencium",
+   "massetall": 266,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Aktinid",
+   "tilstand": "Fast",
+   "kortFakta": "Oppkalt etter Ernest Lawrence.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Lawrencium er oppkalt etter Ernest Lawrence.",
+    "Lawrencium avslutter aktinidrekken i mange periodiske tabeller."
+   ],
+   "illustrasjonside": "Lawrencium som ioner fanget i presisjonsinstrument; syklotron bak."
+  },
+  {
+   "nr": 104,
+   "symbol": "Rf",
+   "navn": "Rutherfordium",
+   "massetall": 267,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Ukjent",
+   "kortFakta": "Et supertungt, menneskeskapt grunnstoff.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Rutherfordium er oppkalt etter Ernest Rutherford.",
+    "Rutherfordium hører til gruppe 4."
+   ],
+   "illustrasjonside": "Rutherfordium-atomer registrert i detektor; atomkjerne-modell og akselerator bak."
+  },
+  {
+   "nr": 105,
+   "symbol": "Db",
+   "navn": "Dubnium",
+   "massetall": 268,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Ukjent",
+   "kortFakta": "Fremstilles i partikkelakseleratorer.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Dubnium er oppkalt etter Dubna.",
+    "Dubnium hører til gruppe 5."
+   ],
+   "illustrasjonside": "Dubnium-atomer i kjemisk mikrooppsett; tungionelab i bakgrunnen."
+  },
+  {
+   "nr": 106,
+   "symbol": "Sg",
+   "navn": "Seaborgium",
+   "massetall": 269,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Ukjent",
+   "kortFakta": "Bare noen få atomer er studert.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Seaborgium er oppkalt etter Glenn Seaborg.",
+    "Seaborgium hører til gruppe 6."
+   ],
+   "illustrasjonside": "Seaborgium-atomer etter tungionekollisjon; kromatografisk mikrokanal bak."
+  },
+  {
+   "nr": 107,
+   "symbol": "Bh",
+   "navn": "Bohrium",
+   "massetall": 270,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Ukjent",
+   "kortFakta": "Kjent bare fra svært kortlivede isotoper.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Bohrium er oppkalt etter Niels Bohr.",
+    "Bohrium hører til gruppe 7."
+   ],
+   "illustrasjonside": "Bohrium-atomer i gassfase-eksperiment; atommodell og spektrometer bak."
+  },
+  {
+   "nr": 108,
+   "symbol": "Hs",
+   "navn": "Hassium",
+   "massetall": 269,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Ukjent",
+   "kortFakta": "Et supertungt grunnstoff med svært kort levetid.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Hassium er oppkalt etter Hessen.",
+    "Hassium hører til gruppe 8."
+   ],
+   "illustrasjonside": "Hassium-atomer fanget som flyktig oksid i et mikroapparat; detektorbane bak."
+  },
+  {
+   "nr": 109,
+   "symbol": "Mt",
+   "navn": "Meitnerium",
+   "massetall": 278,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Ukjent",
+   "kortFakta": "Kjemien er undersøkt atom for atom.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Meitnerium er oppkalt etter Lise Meitner.",
+    "Meitnerium antas å høre til gruppe 9."
+   ],
+   "illustrasjonside": "Meitnerium som enkelthendelser i en silisiumdetektor; tungionekollisjon bak."
+  },
+  {
+   "nr": 110,
+   "symbol": "Ds",
+   "navn": "Darmstadtium",
+   "massetall": 281,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Ukjent",
+   "kortFakta": "Et av de tyngste grunnstoffene som er fremstilt.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Darmstadtium er oppkalt etter Darmstadt.",
+    "Darmstadtium antas å høre til gruppe 10."
+   ],
+   "illustrasjonside": "Darmstadtium som atomspor i detektor; stor akseleratorhall som bakgrunn."
+  },
+  {
+   "nr": 111,
+   "symbol": "Rg",
+   "navn": "Røntgenium",
+   "massetall": 282,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Ukjent",
+   "kortFakta": "Antas å ligne gull kjemisk.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Røntgenium er oppkalt etter Wilhelm Röntgen.",
+    "Røntgenium antas å høre til gruppe 11."
+   ],
+   "illustrasjonside": "Røntgenium-atomer på detektor; gullaktig gruppe-11-referanse diskret bak."
+  },
+  {
+   "nr": 112,
+   "symbol": "Cn",
+   "navn": "Copernicium",
+   "massetall": 285,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Overgangsmetall",
+   "tilstand": "Ukjent",
+   "kortFakta": "Kan være mer flyktig enn lettere metaller i samme gruppe.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Copernicium er oppkalt etter Nicolaus Copernicus.",
+    "Copernicium hører til gruppe 12."
+   ],
+   "illustrasjonside": "Copernicium-atomer i gassfase-detektor; kvikksølv-lignende gruppe-12-referanse bak."
+  },
+  {
+   "nr": 113,
+   "symbol": "Nh",
+   "navn": "Nihonium",
+   "massetall": 286,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Metall",
+   "tilstand": "Ukjent",
+   "kortFakta": "Det første grunnstoffet oppdaget av et japansk forskerteam.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Nihoniumnavnet viser til Japan.",
+    "Nihonium hører til gruppe 13."
+   ],
+   "illustrasjonside": "Nihonium-atomer på detektor; minimalistisk japansk forskningslab som bakgrunn."
+  },
+  {
+   "nr": 114,
+   "symbol": "Fl",
+   "navn": "Flerovium",
+   "massetall": 290,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Metall",
+   "tilstand": "Ukjent",
+   "kortFakta": "Et ekstremt tungt grunnstoff med kortlivede isotoper.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Flerovium er oppkalt etter Flerov-laboratoriet.",
+    "Flerovium hører til gruppe 14."
+   ],
+   "illustrasjonside": "Flerovium som registrert enkeltatom; bly-lignende gruppe-14-referanse diskret bak."
+  },
+  {
+   "nr": 115,
+   "symbol": "Mc",
+   "navn": "Moscovium",
+   "massetall": 290,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Metall",
+   "tilstand": "Ukjent",
+   "kortFakta": "Bare fremstilt i svært små mengder.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Moscovium er oppkalt etter Moskva-regionen.",
+    "Moscovium hører til gruppe 15."
+   ],
+   "illustrasjonside": "Moscovium som tungt atom etter kollisjon; gruppe-15 kolonne og akselerator bak."
+  },
+  {
+   "nr": 116,
+   "symbol": "Lv",
+   "navn": "Livermorium",
+   "massetall": 293,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Metall",
+   "tilstand": "Ukjent",
+   "kortFakta": "Et syntetisk supertungt grunnstoff.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Livermorium er oppkalt etter Livermore.",
+    "Livermorium hører til gruppe 16."
+   ],
+   "illustrasjonside": "Livermorium som kort atomspor; gruppe-16-referanse og tungionelab bak."
+  },
+  {
+   "nr": 117,
+   "symbol": "Ts",
+   "navn": "Tenness",
+   "massetall": 294,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Halogen",
+   "tilstand": "Ukjent",
+   "kortFakta": "Det tyngste kjente halogenet.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Tenness er oppkalt etter Tennessee.",
+    "Tenness hører til gruppe 17."
+   ],
+   "illustrasjonside": "Tenness som atomspor etter fusjon; halogenkolonne og detektor bak."
+  },
+  {
+   "nr": 118,
+   "symbol": "Og",
+   "navn": "Oganesson",
+   "massetall": 294,
+   "massetallBasis": "Mest stabil / representativ isotop (CIAAW/IUPAC)",
+   "kategori": "Edelgass",
+   "tilstand": "Ukjent",
+   "kortFakta": "Det tyngste grunnstoffet i dagens periodesystem.",
+   "bruk": "Kun forskning.",
+   "ekstraFakta": [
+    "Oganesson er oppkalt etter Jurij Oganessian.",
+    "Oganesson hører til gruppe 18."
+   ],
+   "illustrasjonside": "Oganesson som siste ledd i en kort henfallskjede; mørk kosmisk bakgrunn og detektor."
+  }
+ ]
+}

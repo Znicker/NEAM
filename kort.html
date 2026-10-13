@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Grunnstoffkort – Neam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/felles-rot.css?v=5">
+<style>
+/* ============================================================
+   NEAM - grunnstoffkort
+   Laget 12. oktober 2026.
+
+   RAMMA ER ET BILDE, TEKSTEN ER TEKST. Det er hele poenget med denne
+   sida. Foer den ble laget gikk kortene gjennom en bildegenerator for
+   hvert grunnstoff, og da kom plassholderne «XX», «GRUNNSTOFFNAVN» og
+   «SJELDENHET» tilbake som spoekelser i JPEG-en, boksene flyttet seg,
+   og ingen to kort ble like. En bildemodell trekker en tilfeldig proeve
+   hver gang; 708 kort ville blitt 708 forskjellige kort.
+
+   Her er de tre lagene skilt:
+     1. ramma  - ETT bilde, `bilder/kort/ramme.webp`, generert én gang
+     2. teksten - ekte HTML, lagt ut i prosent oppaa ramma
+     3. motivet - ett bilde per grunnstoff, uten ramme og uten tekst
+   Da er 708 kort aritmetikk og ikke skjoenn.
+
+   ALT MAALES I PROSENT av kortet, aldri i piksler. Kortet er 1086x1448
+   (3:4), men skal kunne vises i hvilken som helst stoerrelse - paa
+   skjerm, i utskrift, som miniatyr. Ett tall i piksler, og den
+   skaleringen er brutt.
+
+   TEKSTEN KRYMPER SELV. 60 av 118 BRUK-tekster er lengre enn den som
+   alt rant ut av boksen paa det haandlagde Litium-kortet, og 49 av
+   KORT FAKTA likesaa. Maalt 12. oktober 2026. Derfor har hvert tekstfelt
+   en maksstoerrelse og en minstestoerrelse, og `tilpass()` senker
+   stoerrelsen til teksten faktisk faar plass. Uten den maatte hver av
+   708 bokser kontrolleres med oeyet.
+
+   RARITY ER EN FARGEDREINING, ikke seks rammer. Ramma er cyan (~190
+   grader), og hver rarity dreier fargetonen dit den skal. Da kan de seks
+   ikke komme i utakt med hverandre, slik seks genererte bilder ville
+   gjort.
+
+   KLASSENAVN ER PREFIKSET `kt-`. Sida laster felles-rot.css, og vanlige
+   ord er alt tatt - se kartleggingen del 26.
+   ============================================================ */
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body{
+  margin:0; padding:18px 14px 40px; color:var(--ink);
+  font-family:'Archivo', system-ui, sans-serif;
+  background:#14181D;
+}
+
+/* ---------- Styringa over kortet ---------- */
+.kt-styring{
+  max-width:1180px; margin:0 auto 20px; display:flex; flex-wrap:wrap;
+  gap:10px 14px; align-items:center;
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.14);
+  border-radius:14px; padding:12px 14px;
+}
+.kt-styring label{
+  font-size:11px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; color:#8FA6B8; display:block; margin-bottom:4px;
+}
+.kt-styring select, .kt-styring button{
+  font-family:inherit; font-size:14px; font-weight:600;
+  padding:8px 12px; border-radius:9px; cursor:pointer;
+  border:1px solid rgba(255,255,255,.22); background:#1E252C; color:#E7EEF4;
+}
+.kt-raritet{ display:flex; gap:6px; flex-wrap:wrap; }
+.kt-raritet button{ letter-spacing:.08em; font-size:11px; font-weight:700; }
+.kt-raritet button.kt-pa{ border-color:currentColor; }
+.kt-hint{ font-size:12px; color:#8FA6B8; margin-left:auto; max-width:360px; line-height:1.4; }
+
+/* ---------- Kortet ----------
+   `aspect-ratio` og prosent overalt. Hele kortet skaleres av én variabel,
+   --kort-bredde, og alt inni foelger med. */
+.kt-ark{ display:flex; flex-wrap:wrap; gap:26px; justify-content:center; }
+.kt-kort{
+  --kort-bredde:min(560px, 92vw);
+  --glod:#5BE1FF;          /* rarity-fargen, settes av JS */
+  --dreining:0deg;         /* fargedreining av ramma */
+  --metning:1;
+  position:relative; width:var(--kort-bredde); aspect-ratio:1086 / 1448;
+  flex-shrink:0; isolation:isolate;
+  font-size:calc(var(--kort-bredde) / 28);   /* ALT annet er em av denne */
+}
+/* Ramma ligger i et eget lag, saa fargedreiningen ikke treffer teksten. */
+.kt-ramme{
+  position:absolute; inset:0; z-index:2; pointer-events:none;
+  background:url('/bilder/kort/ramme.webp') center/100% 100% no-repeat;
+  filter:hue-rotate(var(--dreining)) saturate(var(--metning));
+}
+/* Motivet ligger OPPAA ramma, ikke under.
+   Maalt 12. oktober 2026: rammebildet har alfa 255 i hele
+   motivvinduet - null gjennomsiktige piksler av 17 000 maalte. Et motiv
+   bak ramma ville aldri vaert synlig i det hele tatt.
+
+   Hjoernene kuttes med `clip-path` i samme vinkel som ramma selv bruker,
+   saa et rektangulaert foto ikke skjaerer tvers over de skraa kantene
+   i vinduet. */
+.kt-motiv{
+  position:absolute; z-index:3; overflow:hidden;
+  left:25.6%; top:28%; width:48.8%; height:40%;
+  clip-path:polygon(9% 0, 91% 0, 100% 7%, 100% 93%, 91% 100%,
+                    9% 100%, 0 93%, 0 7%);
+  box-shadow:inset 0 0 2.2em rgba(0,0,0,.55);
+}
+.kt-motiv img{ width:100%; height:100%; object-fit:cover; display:block; }
+/* Teksten ligger oeverst av alt. */
+.kt-tekst{ position:absolute; inset:0; z-index:4; pointer-events:none; }
+.kt-felt{
+  position:absolute; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; text-align:center;
+  overflow:hidden; line-height:1.15; font-size:1em;
+}
+
+/* Skrifttypene: Orbitron til tall og store ord, Archivo til setninger.
+   Orbitron er bygget for nettopp dette uttrykket, men er ulesbar i
+   loepende tekst - derfor to, og ikke én. */
+.kt-display{ font-family:'Orbitron', 'Archivo', sans-serif; font-weight:900; }
+.kt-etikett{
+  font-family:'Orbitron', 'Archivo', sans-serif; font-weight:500;
+  letter-spacing:.14em; text-transform:uppercase;
+  color:#CFE8F5; font-size:.44em; margin-bottom:.12em;
+}
+.kt-verdi{ color:#FFFFFF; text-shadow:0 0 .35em var(--glod); }
+
+/* ---------- Posisjonene ----------
+   MAALT I SELVE RAMMEBILDET 12. oktober 2026, ikke anslaatt med oeyet.
+   Bildet ble tegnet paa et lerret og skannet rad for rad og kolonne for
+   kolonne etter moerke omraader: ramma er lys, hullene er moerke, saa
+   hvert felt er en sammenhengende moerk strekning mellom to lyse.
+   Tallene under er de strekningene, trukket litt inn for luft.
+   Skal et felt flyttes, maal paa nytt - ikke gjett. */
+
+/* Atomnummer og massetall i de to oktagonene oeverst. */
+.kt-nr   { left:4.8%;  top:3.8%; width:17.8%; height:10.0%; }
+.kt-mt   { left:77.4%; top:3.8%; width:17.8%; height:10.0%; }
+.kt-nr .kt-verdi, .kt-mt .kt-verdi{ font-size:1.45em; }
+
+/* Symbolet, i det moerke feltet mellom oktagonene. */
+.kt-sym{ left:33.4%; top:2.6%; width:33.2%; height:12.2%; }
+.kt-sym span{
+  font-size:3em; color:#BFF2FF; letter-spacing:.02em;
+  text-shadow:0 0 .12em #FFFFFF, 0 0 .3em var(--glod), 0 0 .7em var(--glod);
+}
+
+/* Navnet paa plata under. */
+.kt-navn{ left:15%; top:19.8%; width:70%; height:5.9%; }
+.kt-navn span{
+  font-size:1.5em; color:#EAF7FF; letter-spacing:.06em;
+  text-shadow:0 .03em .02em rgba(0,0,0,.6), 0 0 .3em var(--glod);
+}
+
+/* De fire oktagonene paa sidene - ekstrafakta. */
+.kt-ekstra{
+  font-size:.42em; font-weight:600; color:#DCEAF4; line-height:1.3;
+  font-family:'Archivo', sans-serif;
+}
+.kt-felt.kt-e1, .kt-felt.kt-e2, .kt-felt.kt-e3, .kt-felt.kt-e4{ padding:0 .35em; }
+.kt-e1{ left:6.4%;  top:34.4%; width:15.2%; height:8.3%; }
+.kt-e2{ left:6.4%;  top:49.9%; width:15.2%; height:7.7%; }
+.kt-e3{ left:78.4%; top:34.4%; width:15.2%; height:8.3%; }
+.kt-e4{ left:78.4%; top:49.9%; width:15.2%; height:7.7%; }
+
+/* De tre faste boksene nederst. Ikonet er brent inn i ramma; teksten
+   starter til hoeyre for skillestreken, og de tre feltene er ulikt
+   brede fordi ikonene er det - maalt, ikke gjettet symmetrisk. */
+.kt-boks{
+  align-items:flex-start; text-align:left; justify-content:center;
+  padding:0 .25em; font-family:'Archivo', sans-serif;
+}
+.kt-boks .kt-etikett{ margin-bottom:.2em; white-space:nowrap; letter-spacing:.1em; }
+.kt-boks .kt-bokstekst{ font-size:.44em; font-weight:600; color:#FFFFFF; line-height:1.22; }
+.kt-b1{ left:19.8%; top:69.6%; width:14.8%; height:8.2%; }
+.kt-b2{ left:46.8%; top:69.6%; width:17.3%; height:8.2%; }
+.kt-b3{ left:75.8%; top:69.6%; width:15.0%; height:8.2%; }
+
+/* Rarity-banneret nederst. */
+.kt-rar{ left:27%; top:81.5%; width:46%; height:6.6%; }
+.kt-rar span{
+  font-size:1.25em; letter-spacing:.14em; color:#FFFFFF;
+  text-shadow:0 0 .12em #FFFFFF, 0 0 .4em var(--glod), 0 0 .9em var(--glod);
+}
+
+/* Maalerutenettet. Bare et verktoey for aa stille inn prosentene -
+   det vises aldri for en spiller. */
+.kt-rutenett{
+  position:absolute; inset:0; z-index:5; pointer-events:none; display:none;
+  background-image:
+    repeating-linear-gradient(to right, rgba(255,0,110,.5) 0 1px, transparent 1px 10%),
+    repeating-linear-gradient(to bottom, rgba(255,0,110,.5) 0 1px, transparent 1px 10%);
+}
+.kt-kort.kt-vis-rutenett .kt-rutenett{ display:block; }
+.kt-kort.kt-vis-rutenett .kt-felt{ outline:1px solid rgba(0,255,120,.65); }
+
+@media(max-width:700px){ .kt-hint{ margin-left:0; } }
+</style>
+</head>
+<body>
+
+<div class="kt-styring">
+  <div>
+    <label for="velgStoff">Grunnstoff</label>
+    <select id="velgStoff"></select>
+  </div>
+  <div>
+    <label>Sjeldenhet</label>
+    <div class="kt-raritet" id="velgRaritet"></div>
+  </div>
+  <div>
+    <label for="velgAlle">Vis</label>
+    <select id="velgAlle">
+      <option value="ett">Ett kort</option>
+      <option value="seks">Alle seks sjeldenhetene</option>
+    </select>
+  </div>
+  <div>
+    <label>Verktøy</label>
+    <button type="button" id="knappRutenett">Målerutenett</button>
+  </div>
+  <p class="kt-hint" id="hint"></p>
+</div>
+
+<div class="kt-ark" id="ark"></div>
+
+<script>
+'use strict';
+
+/* Dataene hentes som JSON. Det er ÉN fil, og den er kanonisk: den
+   genereres fra regnearket, og grunnstoffspillet skal etter hvert lese
+   den samme. En kopi i JS ved siden av ville vaert to filer som kan bli
+   uenige - og uenigheten ville ingen oppdaget foer et kort sa noe annet
+   enn spillet. */
+let KORT_DATA = [];
+
+/* ============================================================
+   Sjeldenhetene
+   ------------------------------------------------------------
+   Ramma er cyan, omtrent 190 grader paa fargesirkelen. Hver rarity
+   er derfor bare en dreining derfra - ikke et nytt bilde. Det er det
+   som gjoer at de seks ikke kan komme i utakt.
+   ============================================================ */
+const RARITET = [
+  { id:'COMMON',    dreining:0,   metning:.18, glod:'#C6D4DE' },
+  { id:'UNCOMMON',  dreining:-60, metning:1,   glod:'#5BE39A' },
+  { id:'RARE',      dreining:30,  metning:1,   glod:'#5B9CFF' },
+  { id:'EPIC',      dreining:85,  metning:1,   glod:'#B36BFF' },
+  { id:'LEGENDARY', dreining:205, metning:1,   glod:'#FFB23D' },
+  { id:'ARTIFACT',  dreining:170, metning:1,   glod:'#FF5B4D' }
+];
+
+let valgtNr = 3;          /* Litium - testkortet */
+let valgtRar = 'COMMON';
+let visRutenett = false;
+
+function $(id){ return document.getElementById(id); }
+function stoffAv(nr){ return KORT_DATA.filter(function(s){ return s.nr === nr; })[0]; }
+
+/* Lager ETT kort. Samme funksjon til alle 708 - det er hele poenget.
+   Returnerer elementet, saa den som kaller kan legge det hvor den vil. */
+function lagKort(stoff, raritetId){
+  const r = RARITET.filter(function(x){ return x.id === raritetId; })[0] || RARITET[0];
+  const kort = document.createElement('div');
+  kort.className = 'kt-kort' + (visRutenett ? ' kt-vis-rutenett' : '');
+  kort.style.setProperty('--dreining', r.dreining + 'deg');
+  kort.style.setProperty('--metning', r.metning);
+  kort.style.setProperty('--glod', r.glod);
+
+  const ramme = document.createElement('div');
+  ramme.className = 'kt-ramme';
+  kort.appendChild(ramme);
+
+  /* Motivet. Mangler fila, FJERNES hele laget - da staar rammas eget
+     HUD-vindu igjen, og kortet ser helt ut i stedet for aa vise et
+     brutt bildeikon eller en tom kasse (designsystemet, «Bilder»). */
+  const motiv = document.createElement('div');
+  motiv.className = 'kt-motiv';
+  const bilde = new Image();
+  bilde.alt = '';
+  bilde.onerror = function(){ motiv.remove(); };
+  bilde.src = '/bilder/kort/motiv/' + String(stoff.nr).padStart(3, '0') + '-'
+            + stoff.symbol.toLowerCase() + '.webp';
+  motiv.appendChild(bilde);
+  kort.appendChild(motiv);
+
+  const tekst = document.createElement('div');
+  tekst.className = 'kt-tekst';
+
+  function felt(klasse, etikett, verdi, verdiKlasse){
+    const d = document.createElement('div');
+    d.className = 'kt-felt ' + klasse;
+    if(etikett){
+      const e = document.createElement('span');
+      e.className = 'kt-etikett';
+      e.textContent = etikett;
+      d.appendChild(e);
+    }
+    const v = document.createElement('span');
+    v.className = verdiKlasse || 'kt-verdi kt-display';
+    v.textContent = verdi;
+    d.appendChild(v);
+    tekst.appendChild(d);
+    return v;
+  }
+
+  felt('kt-nr', 'Atomnummer', String(stoff.nr));
+  felt('kt-mt', 'Massetall', String(stoff.massetall));
+  felt('kt-sym', '', stoff.symbol, 'kt-display');
+  felt('kt-navn', '', stoff.navn.toUpperCase(), 'kt-display');
+
+  /* Ekstrafakta fyller venstre side foerst, saa hoeyre. Finnes det
+     bare to, blir de to hoeyre oktagonene staaende tomme - det er
+     bedre enn fylltekst, og ramma ser hel ut uansett. */
+  const plasser = ['kt-e1', 'kt-e2', 'kt-e3', 'kt-e4'];
+  (stoff.ekstraFakta || []).slice(0, 4).forEach(function(t, i){
+    felt(plasser[i], '', t, 'kt-ekstra');
+  });
+
+  [['kt-b1', 'Kategori', stoff.kategori],
+   ['kt-b2', 'Kort fakta', stoff.kortFakta],
+   ['kt-b3', 'Bruk', stoff.bruk]].forEach(function(b){
+    const d = document.createElement('div');
+    d.className = 'kt-felt kt-boks ' + b[0];
+    d.innerHTML = '<span class="kt-etikett">' + b[1] + '</span>';
+    const v = document.createElement('span');
+    v.className = 'kt-bokstekst';
+    v.textContent = b[2];
+    d.appendChild(v);
+    tekst.appendChild(d);
+  });
+
+  felt('kt-rar', '', r.id, 'kt-display');
+
+  kort.appendChild(tekst);
+  const rutenett = document.createElement('div');
+  rutenett.className = 'kt-rutenett';
+  kort.appendChild(rutenett);
+  return kort;
+}
+
+/* ============================================================
+   Teksten som krymper seg selv
+   ------------------------------------------------------------
+   Dette er det som gjoer at 708 kort ikke trenger 708 kontroller.
+   Hvert tekstfelt faar senket skriftstoerrelsen til innholdet faktisk
+   faar plass i boksen. Maalt i `em` av kortets egen skriftstoerrelse,
+   saa krympingen foelger med naar kortet skaleres.
+
+   Maa kjoere ETTER at skriftene er lastet. En maaling gjort mens
+   nettleseren fortsatt viser reservefonten gir feil svar, og teksten
+   blir staaende for stor eller unoedig liten.
+   ============================================================ */
+function trangt(boks){
+  return boks.scrollHeight > boks.clientHeight + 1
+      || boks.scrollWidth  > boks.clientWidth  + 1;
+}
+
+function tilpass(kort){
+  const grunn = parseFloat(getComputedStyle(kort).fontSize);
+  Array.prototype.forEach.call(kort.querySelectorAll('.kt-felt'), function(boks){
+    /* Stoerrelsen settes paa SELVE FELTET, ikke paa tekstelementet inni.
+       Alt innhold er maalt i `em`, saa én verdi her krymper etikett og
+       verdi i takt. Krympes bare verdien, kan en lang etikett som
+       «KORT FAKTA» fortsatt sprenge boksen, og loekka under ville
+       krympet verdien i evighet uten aa loese det. */
+    boks.style.fontSize = '';
+    let n = grunn, vakt = 0;
+    /* Gulv paa 45 % av utgangspunktet. Naar gulvet naas, er teksten for
+       lang for designet - da skal den kortes i masterdata, ikke her. */
+    while(trangt(boks) && n > grunn * 0.45 && vakt++ < 60){
+      n -= grunn * 0.03;
+      boks.style.fontSize = n + 'px';
+    }
+    boks.dataset.krympet = (n / grunn).toFixed(2);
+  });
+}
+
+function tegn(){
+  const ark = $('ark');
+  ark.textContent = '';
+  const stoff = stoffAv(valgtNr);
+  const liste = $('velgAlle').value === 'seks'
+    ? RARITET.map(function(r){ return r.id; })
+    : [valgtRar];
+
+  liste.forEach(function(id){
+    const kort = lagKort(stoff, id);
+    if(liste.length > 1) kort.style.setProperty('--kort-bredde', 'min(330px, 86vw)');
+    ark.appendChild(kort);
+  });
+
+  /* Skriftene foerst, saa maalingen. */
+  const etterpaa = function(){
+    Array.prototype.forEach.call(ark.children, tilpass);
+  };
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(etterpaa);
+  else setTimeout(etterpaa, 300);
+
+  $('hint').textContent = stoff.nr + ' · ' + stoff.symbol + ' · massetall ' + stoff.massetall
+    + ' · ' + (stoff.ekstraFakta || []).length + ' ekstrafakta. Motivet hentes fra '
+    + '/bilder/kort/motiv/' + String(stoff.nr).padStart(3, '0') + '-' + stoff.symbol.toLowerCase() + '.webp';
+}
+
+function tegnStyring(){
+  const velg = $('velgStoff');
+  velg.textContent = '';
+  KORT_DATA.forEach(function(s){
+    const o = document.createElement('option');
+    o.value = s.nr;
+    o.textContent = s.nr + '  ' + s.symbol + '  ' + s.navn;
+    if(s.nr === valgtNr) o.selected = true;
+    velg.appendChild(o);
+  });
+  velg.onchange = function(){ valgtNr = +velg.value; tegn(); };
+
+  const rar = $('velgRaritet');
+  rar.textContent = '';
+  RARITET.forEach(function(r){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = r.id;
+    b.style.color = r.glod;
+    b.className = valgtRar === r.id ? 'kt-pa' : '';
+    b.onclick = function(){ valgtRar = r.id; tegnStyring(); tegn(); };
+    rar.appendChild(b);
+  });
+
+  $('velgAlle').onchange = tegn;
+  $('knappRutenett').onclick = function(){ visRutenett = !visRutenett; tegn(); };
+}
+
+/* Dataene foerst, saa sida. Feiler hentingen, skal det staa hvorfor -
+   en tom nedtrekksliste forteller ingenting. */
+fetch('/kort-data.json', { cache:'no-store' })
+  .then(function(r){ if(!r.ok) throw new Error('kort-data.json ' + r.status); return r.json(); })
+  .then(function(d){
+    KORT_DATA = d.grunnstoff;
+    tegnStyring();
+    tegn();
+  })
+  .catch(function(e){
+    $('hint').textContent = 'Fikk ikke lest kort-data.json: ' + e.message;
+    console.error(e);
+  });
+</script>
+</body>
+</html>
