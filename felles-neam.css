@@ -146,38 +146,98 @@
    gjennomroer-senter 9 fra topp, stamme-senter 22 fra venstre. t-opp
    46x25, gjennomroer-senter 16 fra topp, stamme-senter 23. */
 :root{
-  --ror-tykk:13px;
-  --ror-vann:url('/bilder/deler/ror-glatt.png?v=2');
-  --ror-lodd:url('/bilder/deler/ror-glatt-v.png?v=2');
-  --ror-skygge:0 2px 5px rgba(44,62,80,.34);
+  /* Koblingene, fra 27. oktober 2026: tynne linjer i en dempet pastell
+     som passer ikonflisene, i stedet for messingroer. Fargene er
+     variabler, saa et personlig tema kan sette sine egne.
+     ANGRE: grenen backup/layout-steampunk-2026-10-27 har roerbildene. */
+  --kobling:#A9BCD3;
+  --kobling-ende:#6F89AB;
+  --ror-tykk:6px;
+  /* Alle rette strekk - ogsaa grenene i fireren og stablene, som er
+     pseudo-elementer - tegnes gjennom disse to. En ensfarget gradient
+     gjoer dem til flater uten aa roere en eneste regel som bruker dem. */
+  --ror-vann:linear-gradient(var(--kobling), var(--kobling));
+  --ror-lodd:linear-gradient(var(--kobling), var(--kobling));
+  --ror-skygge:none;
 }
-/* Grunnstil for en roerdel tegnet av JS. */
+/* Grunnstil for en koblingsdel tegnet av JS. */
 .rdel{ position:absolute; z-index:0; pointer-events:none; }
 .rdel.flis-h{ background-image:var(--ror-vann); background-size:auto 100%;
   background-repeat:repeat-x; height:var(--ror-tykk);
-  box-shadow:var(--ror-skygge); }
+  box-shadow:var(--ror-skygge); border-radius:99px; }
 .rdel.flis-v{ background-image:var(--ror-lodd); background-size:100% auto;
   background-repeat:repeat-y; width:var(--ror-tykk);
-  box-shadow:var(--ror-skygge); }
-/* Hele deler: fast stoerrelse, over roerene de skjoeter. */
-.rdel.hel{ z-index:1; background-size:100% 100%; background-repeat:no-repeat; }
-.rdel.bend-nv{ width:31px; height:32px; background-image:url('/bilder/deler/bend-nv.png?v=2'); }
-.rdel.bend-nh{ width:31px; height:32px; background-image:url('/bilder/deler/bend-nh.png?v=2'); }
-.rdel.t-ned  { width:44px; height:29px; background-image:url('/bilder/deler/t-ned.png?v=2'); }
-.rdel.t-opp  { width:46px; height:25px; background-image:url('/bilder/deler/t-opp.png?v=2'); }
-/* Delene som manglet, laget ved aa vende de eksisterende - se
-   neamRorKolonne(). Samme maal som opphavet, bare dreid. */
-.rdel.bend-ov  { width:31px; height:32px; background-image:url('/bilder/deler/bend-ov.png?v=1'); }
-.rdel.bend-oh  { width:31px; height:32px; background-image:url('/bilder/deler/bend-oh.png?v=1'); }
-.rdel.t-venstre{ width:29px; height:44px; background-image:url('/bilder/deler/t-venstre.png?v=1'); }
-.rdel.t-hoyre  { width:29px; height:44px; background-image:url('/bilder/deler/t-hoyre.png?v=1'); }
+  box-shadow:var(--ror-skygge); border-radius:99px; }
+
+/* Hele deler: skjoetene. Boksene har fortsatt de gamle bildenes maal, for
+   det er dem neamRorKolonne() og neamRorRad() regner ut fra. Innmaten
+   tegnes her, med armene paa noeyaktig de samme sentrene som bildene
+   hadde - se maaltallene over. Armene gaar helt ut til boksens kant, som
+   bildene gjorde, saa de moeter de rette strekkene uten glipe. */
+.rdel.hel{ z-index:1; }
+.rdel.hel::before, .rdel.hel::after{
+  content:''; position:absolute; box-sizing:border-box;
+  border:0 solid var(--kobling);
+}
+/* Bend: en L med myk sving. Kanten paa boksen er armen, og
+   border-box gjoer at kantens midtlinje treffer armsenteret. */
+.rdel.bend-nv, .rdel.bend-nh, .rdel.bend-ov, .rdel.bend-oh{ width:31px; height:32px; }
+.rdel.bend-nv::before{     /* aapner ned og til venstre, senter 21,5 / 9 */
+  left:0; width:calc(21.5px + var(--ror-tykk) / 2);
+  top:calc(9px - var(--ror-tykk) / 2); bottom:0;
+  border-top-width:var(--ror-tykk); border-right-width:var(--ror-tykk);
+  border-top-right-radius:14px;
+}
+.rdel.bend-nh::before{     /* ned og til hoeyre, senter 9 / 9 */
+  left:calc(9px - var(--ror-tykk) / 2); right:0;
+  top:calc(9px - var(--ror-tykk) / 2); bottom:0;
+  border-top-width:var(--ror-tykk); border-left-width:var(--ror-tykk);
+  border-top-left-radius:14px;
+}
+.rdel.bend-ov::before{     /* opp og til venstre, senter 21,5 / 23 */
+  left:0; width:calc(21.5px + var(--ror-tykk) / 2);
+  top:0; height:calc(23px + var(--ror-tykk) / 2);
+  border-bottom-width:var(--ror-tykk); border-right-width:var(--ror-tykk);
+  border-bottom-right-radius:14px;
+}
+.rdel.bend-oh::before{     /* opp og til hoeyre, senter 9 / 23 */
+  left:calc(9px - var(--ror-tykk) / 2); right:0;
+  top:0; height:calc(23px + var(--ror-tykk) / 2);
+  border-bottom-width:var(--ror-tykk); border-left-width:var(--ror-tykk);
+  border-bottom-left-radius:14px;
+}
+/* T-stykker og kryss: to rette armer. */
+.rdel.t-ned::before, .rdel.t-ned::after,
+.rdel.t-opp::before, .rdel.t-opp::after,
+.rdel.t-venstre::before, .rdel.t-venstre::after,
+.rdel.t-hoyre::before, .rdel.t-hoyre::after,
+.rdel.kryss::before, .rdel.kryss::after{ background:var(--kobling); border-radius:99px; }
+.rdel.t-ned{ width:44px; height:29px; }           /* gjennom 9 fra topp, stamme 22 */
+.rdel.t-ned::before{ left:0; right:0; top:calc(9px - var(--ror-tykk) / 2); height:var(--ror-tykk); }
+.rdel.t-ned::after { left:calc(22px - var(--ror-tykk) / 2); width:var(--ror-tykk); top:9px; bottom:0; }
+.rdel.t-opp{ width:46px; height:25px; }           /* gjennom 16 fra topp, stamme 23 */
+.rdel.t-opp::before{ left:0; right:0; top:calc(16px - var(--ror-tykk) / 2); height:var(--ror-tykk); }
+.rdel.t-opp::after { left:calc(23px - var(--ror-tykk) / 2); width:var(--ror-tykk); top:0; height:16px; }
+.rdel.t-venstre, .rdel.t-hoyre{ width:29px; height:44px; }   /* gjennom 20 fra venstre, stamme 22 fra topp */
+.rdel.t-venstre::before, .rdel.t-hoyre::before{
+  left:calc(20px - var(--ror-tykk) / 2); width:var(--ror-tykk); top:0; bottom:0;
+}
+.rdel.t-venstre::after{ left:0; width:20px; top:calc(22px - var(--ror-tykk) / 2); height:var(--ror-tykk); }
+.rdel.t-hoyre::after  { left:20px; right:0; top:calc(22px - var(--ror-tykk) / 2); height:var(--ror-tykk); }
 /* Krysset: der stigeroeret mellom radene moeter den oevre samleren og
-   fortsetter opp i merket over. Fire armer, altsaa ikke et T-stykke.
-   56x42 css, vannrett arm-senter 15,8 fra topp, loddrett 27,8 fra
-   venstre - maalt paa fila, ikke gjettet. */
-.rdel.kryss{ width:56px; height:42px; background-image:url('/bilder/deler/kryss.png?v=1'); }
-.rdel.krage-v{ width:22px; height:13px; background-image:url('/bilder/deler/krage.png?v=2'); }
-.rdel.krage-h{ width:13px; height:22px; background-image:url('/bilder/deler/krage-h.png?v=2'); }
+   fortsetter opp i ikonet over. Vannrett arm 15,8 fra topp, loddrett
+   27,8 fra venstre - maalt paa den gamle fila. */
+.rdel.kryss{ width:56px; height:42px; }
+.rdel.kryss::before{ left:0; right:0; top:calc(15.8px - var(--ror-tykk) / 2); height:var(--ror-tykk); }
+.rdel.kryss::after { left:calc(27.8px - var(--ror-tykk) / 2); width:var(--ror-tykk); top:0; bottom:0; }
+/* Kragene i endene blir et endepunkt: en prikk i den moerkere fargen. */
+.rdel.krage-v{ width:22px; height:13px; }
+.rdel.krage-h{ width:13px; height:22px; }
+.rdel.krage-v::before, .rdel.krage-h::before{
+  left:50%; top:50%; width:calc(var(--ror-tykk) * 2.2); height:calc(var(--ror-tykk) * 2.2);
+  transform:translate(-50%, -50%); border-radius:50%;
+  background:var(--kobling-ende); box-shadow:0 0 0 2px var(--paper);
+}
 
 /* Knappene maa ligge over roeret.
 
@@ -209,7 +269,7 @@
 .neam-knapp.ved::after,
 .neam-knapp.skraa::after{
   content:''; position:absolute; z-index:-1;
-  box-shadow:var(--ror-skygge);
+  box-shadow:var(--ror-skygge); border-radius:99px;
   opacity:0; transition:opacity .15s ease .1s;
 }
 .neam-firer.oppe .neam-knapp.opp::after,

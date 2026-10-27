@@ -1,6 +1,10 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 13. oktober 2026: grunnstoffkortene (`kort.html`) er nye, og
+*Ført à jour 27. oktober 2026: nytt visuelt uttrykk, første del –
+steampunk-bakgrunnen er fjernet, klapptavla er lys, og de nye ikonene er
+koblet inn med navnet som tekst under. Sikkerhetskopi av den gamle
+layouten i grenen `backup/layout-steampunk-2026-10-27` (se toppblokka).
+Ført à jour 13. oktober 2026: grunnstoffkortene (`kort.html`) er nye, og
 grunnstoffspillet sier «Kategori» der det sto «Gruppe» (se toppblokka).
 Ført à jour 12. oktober 2026, kveld: Rommene lagt om – etasjer som
 faner, rommene i bokser, symbol per type, fargehjul og «Naturlig hvitt»
@@ -44,7 +48,7 @@ ny tråd alltid lander på samme sted.*
 
 ---
 
-## Nåstatus – 12. oktober 2026
+## Nåstatus – 27. oktober 2026
 
 **Hvor prosjektet er nå.** Ni sider og fire spill, og Andreas tre spill
 nås fra én egen spillside. To økter 12.–13. september
@@ -64,24 +68,27 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=72`, `felles-neam.css
-?v=63`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=5`, `felles-lesalt.js
-?v=6`, `felles-hus.js ?v=11`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
-`felles-graph.js ?v=3`, `felles-rot.css ?v=5`, `felles-knapper.css ?v=1`;
+**Siste leverte versjoner:** `felles-neam.js ?v=73`, `felles-neam.css
+?v=66`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=5`, `felles-lesalt.js
+?v=6`, `felles-hus.js ?v=12`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
+`felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html` og spillsida
 `andrea-spill.html`; `functions/_middleware.js`, `functions/api/` med
 `hent.js`, `sandnes.js`, `sjo.js`, `claude.js`, `data.js`, `ms.js`,
 `homey.js`, `roborock.js`.
-Bildeversjoner: `MERKE_V=2`, `KNAPP_V=4`, `FAG_MERKE_V=3`, `SIK_MERKE_V=1`,
-`NMW_SYMBOL_V=1` (klippersymbolet i kartet, i `felles-hus.js`),
+Bildeversjoner: **`IKON_V=1`** (i `felles-neam.js`) for de nye ikonene i
+`bilder/ikoner/` og `bilder/ikoner/sikkerhet/` – sidene som lenker dem
+direkte, skriver `?v=1` selv. `FAG_MERKE_V=3` (fagmerkene, fortsatt i
+bruk), `NMW_SYMBOL_V=1` (klippersymbolet i kartet, i `felles-hus.js`),
 hagebildet `NMW_HAGE.v=1` (`bilder/neamow-hage.webp`, i `felles-hus.js`),
-spillbildene `?v=1`, sikkerhetsmerkene `?v=1` (65 stk i
-`bilder/sikkerhet/`). `merke-neamow.png` går under `MERKE_V`.
+spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
+`MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
+gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–71; neam.css til og
-med 62; data.js 1–3; rot.css 2–4; knapper `?v=1`; **lesalt 1–5, skriv 1–4,
-hus `?v=1–10`, ms `?v=1`, tale 1–4, graph 1–2**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–72; neam.css til og
+med 65; data.js 1–3; rot.css 2–5; knapper `?v=1`; **lesalt 1–5, skriv 1–4,
+hus `?v=1–11`, ms `?v=1`, tale 1–4, graph 1–2**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
 tale 1–4 ble brent 13. september ved å endre en fil som alt var pushet uten
 å heve nummeret – se del 46. Resten er tidligere leverte numre, som alltid
 er brent i det de forlates.
@@ -240,6 +247,68 @@ kalendere forsvant rett i `feilet` når Neam leste. **Ikke over fire
 igjen.** Dashene kjører tre om gangen og ble ikke rørt; ny måling etter
 rettingen står ute.
 
+**24.–27. oktober: nytt visuelt uttrykk – første del.** Magne ba om en
+gjennomgang av hele det visuelle: lysere, mer modent og funksjonelt,
+roboten beholdt, og personlige fargetemaer (grått og rødt for Magne, rosa
+og lilla for jentene, nøytralt for Nina). Tre retninger ble vist som
+forhåndsvisninger utenfor repoet – A «Lys stue», B «Apparat», C
+«Fargerom» – med samme fem temaer. **Magne valgte C og laget ikonene
+selv**: et ark med enkle ikoner, avatarer, fliser for det som manglet,
+sikkerhetsfliser per type og tilstand, og robotfliser med caps og
+tommel opp («for å beholde sjelen litt»). Retningen jeg først foreslo med
+standardikoner ble avvist som for generisk.
+
+**Sikkerhetskopi:** grenen `backup/layout-steampunk-2026-10-27`, pushet,
+peker på `35a1512` – layouten slik den var før noe ble endret.
+
+**Levert i to commits:**
+- `02abac3` – **steampunk-bakgrunnen er fjernet** (bildelaget i
+  `felles-rot.css` og kopien i `emma-grunnstoff.html`; gradienten på
+  `html` står igjen). **Klapptavla er lys**: hvite kort med mørk
+  marineblå sifre (`#142036`) i stedet for tre – `tre-mork.png` og
+  `tre-lys.png` brukes ikke lenger. Bildemappene `bilder/ikoner/` og
+  `bilder/avatarer/` lagt inn.
+- `c6c3792` – **de nye ikonene koblet inn** overalt der det finnes et
+  motstykke: fireren, applista, begge håndtakene, samtalepanelet,
+  forsiden, toppen av dashene, handleliste og oppskrifter, kalender,
+  Neamow, Sikkerhet, spillsida, spillene og innloggingsportene.
+
+**Beslutningene som ligger i koden:**
+- **Navnet står som tekst under bildet, ikke i det.** Det snur regelen
+  «merker bærer navnet» i designsystemet. Stilen er arkets: Figtree,
+  halvfet, `#142036` (`.ikon-navn`). Figtree lastes med `@import` øverst i
+  `felles-neam.css` – sider uten den fila har ikke skriften.
+- **To slags bilder:** `.ikon-flis` har egen pastellbakgrunn tegnet inn;
+  `.ikon-strek` er ikonene fra det første arket uten bakgrunn, og får en
+  lys flis rundt seg i CSS. Lista over strekikoner er
+  `NEAM_IKON_STREK` i `felles-neam.js`. Bildet settes alltid gjennom
+  `neamIkonImg(navn)` eller `knappMerke(navn)` – navnet er filnavnet i
+  `bilder/ikoner/`, ikke en sti.
+- **Sikkerhet: én flis per type og tilstand** (`SIK_IKON` og
+  `sikIkonUrl()` i `sikkerhet.html`) i stedet for 65 malte merker med
+  stedet i båndet. **Stedet står som navn under, fra Homey** – det er
+  derfor stedet står i enhetsnavnet med vilje. Farger som før: grønn i
+  orden, oransje varsel eller ingen kontakt (låsen: gul), rød alarm, blå
+  ulåst dør.
+- **Rørene i fireren er byttet med koblinger** (27. oktober,
+  `felles-neam.css ?v=66`): tynne linjer i dempet pastellblå
+  (`--kobling` `#A9BCD3`), myke svinger, og endepunkter i en mørkere blå
+  (`--kobling-ende` `#6F89AB`). Bare CSS – geometrien i
+  `neamRorKolonne()`/`neamRorRad()` er urørt, og skjøtene tegnes på de
+  gamle bildenes armsentre. Fargene er variabler, så et personlig tema kan
+  sette sine. Navnene under ikonene har papirflate bak seg, så linjene går
+  bak teksten. Mattespillet og klokkespillet bruker fortsatt rørbildet i
+  selve spillet.
+- **Forsidens `.eget`-regel er tatt bort** – høyre håndtak har sirkelen
+  igjen, som på de andre sidene. Forsidelogoen er gjort mindre
+  (`clamp(96px, 13vw, 150px)`) fordi robotflisa ikke har bånd.
+
+**Står igjen med gammelt bilde, med vilje:** fagmerkene (ingen nye ennå),
+spillroboten, stjerna og batteriet, og hjemskjermikonet
+(`apple-touch-icon` – iOS fyller gjennomsiktige hjørner med svart, så
+det trenger en egen versjon med fylt bakgrunn). Avatarene i
+`bilder/avatarer/` er ikke tatt i bruk; ingen side viser bildeavatarer.
+
 ### Åpne tråder
 
 **Besluttet, ikke bygget – fem systemer med begrunnelse i del 47–50 og 52:**
@@ -317,6 +386,9 @@ rettingen står ute.
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **Ikonene og den lyse klapptavla på iPad og telefon** (27. oktober).
+  Hard oppdatering. Se særlig fiskebeinet på telefon – navnene under
+  gjør knappene tettere – og at Figtree faktisk lastes.
 - **Kalendersida etter fire-om-gangen** (12. oktober). Samme måling
   igjen etter hard oppdatering: ingen 429, og «Totalt» rundt 2 sek. Se
   også at notatene ser riktige ut – det er nå Microsoft som gjør HTML om
@@ -347,6 +419,15 @@ rettingen står ute.
   appen eller PIN-koden.
 
 **Bygging som gjenstår (avtalt):**
+- **Resten av alternativ C** (24.–27. oktober). Bare bakgrunnen,
+  klapptavla og ikonene er gjort. Gjenstår: **personlige fargetemaer**
+  (samme ti verdier per person – utkastet ligger i forhåndsvisningene,
+  ikke i repoet), **fagmerkene**, **spillroboten, stjerna og batteriet**,
+  og **hjemskjermikonet**. Strekikonene fra det første arket er bare
+  ~100 px og blir uskarpe på iPad – de bør lages i dobbel størrelse.
+  Robotflisene er ~180 kB PNG hver og kan gjøres om til WebP.
+- **Høyre hjørne dekker «Skriv inn» i Middag-kortet** på Kjøkken dash.
+  Fantes før 27. oktober, ikke rettet.
 - **De 118 motivene til kortene er bestilt, ikke laget.** Bestillingen med
   stil og filnavn står i `bilder/kort/motiv-bestilling.txt`. Mangler et
   motiv, vises kortet uten. Motivbildet får ikke `width`/`height`
@@ -380,7 +461,8 @@ rettingen står ute.
     lagt under kartet, plassert med to punktpar GPS ↔ klipperens meter.
     Venter til hagen – opparbeidet høsten 2026 – er med på et nytt flyfoto.
 - **Steg to for krydderblandinger.** Se del 35.
-- **Knappemerker** for oppskriftssidas firer og for Sikkerhet-knappen.
+- **Knappemerker** for oppskriftssidas firer. (Sikkerhet-knappen har fått
+  ikon 27. oktober.)
 - **Skolevarsler på e-post**, **Neams bolk i husregisteret**,
   **utstyrsregelen**, **knappearket for Emma dash**, **fagvinduet** –
   alle uendret.
@@ -424,6 +506,9 @@ rettingen står ute.
   Se del 36.
 
 **Dokumenter:** designsystemet er ført à jour til v13 samtidig med denne.
+**Det er ikke oppdatert for 24.–27. oktober:** bakgrunnen, klapptavla i
+tre, merkelappene som bærer navnet og knappemerkene står fortsatt
+beskrevet slik de var.
 
 ---
 
