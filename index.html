@@ -13,12 +13,12 @@
 <link rel="stylesheet" href="/felles-rot.css?v=6">
 <link rel="stylesheet" href="/felles-knapper.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=64">
+<link rel="stylesheet" href="/felles-neam.css?v=65">
 <!-- Datalaget baerer husregisteret og lastes foer sidens eget skript.
      felles-skjema.js gir avbryt-regelen paa husskjemaet og krever
      felles-dialog.js, som ligger nederst - derfor staar begge to der,
      ikke her. -->
-<script src="/felles-hus.js?v=11"></script>
+<script src="/felles-hus.js?v=12"></script>
 <script src="/felles-ms.js?v=2"></script>
 <script src="/felles-data.js?v=4"></script>
 <script src="/felles-lesalt.js?v=6"></script>
@@ -78,7 +78,7 @@ body{
    overalt - mellom 700 og 1000px blir flisene 220-274px fordi rutenettet
    da har faerre kolonner paa samme bredde, og et merke paa 274px i
    topplinja ville tatt over hele skjermen. Der bremser 17vw. */
-.brand-icon{width:clamp(120px, 17vw, 195px);height:auto;flex-shrink:0}
+.brand-icon{width:clamp(96px, 13vw, 150px);height:auto;flex-shrink:0}
 .brand-icon img{width:100%;height:auto;display:block}
 .clock{grid-column:3;justify-self:end;text-align:right;line-height:1}
 /* Font-size er alt klapptavla trenger herfra - kortene maaler seg i em.
@@ -179,9 +179,13 @@ body{
    MERK: .app.merke (0,2,0) slaar .app inne i mediesporringene over, saa
    dette maa gjentas i en egen mediesporring for lav skjermhoeyde. */
 .app.merke .app-icon{
-  width:100%;max-width:none;margin-bottom:0;
+  width:74%;max-width:none;margin-bottom:0;
   border-radius:0;overflow:visible;
 }
+/* Navnet under ikonet, fra 27. oktober 2026. Stilen kommer fra
+   .ikon-navn i felles-neam.css; her bare stoerrelsen. */
+.app .ikon-navn{font-size:var(--t-brod);margin-top:10px;max-width:100%;overflow-wrap:break-word}
+.app-icon img.ikon-strek{width:100%}
 @media(max-height:600px){
   .app.merke .app-icon{width:auto;height:74px;max-width:100%}
 }
@@ -229,11 +233,9 @@ body{
    Uten flate og uten sirkelklipp, som flisene: merket har eget omriss og
    et baand som stikker ut nederst, og en sirkel med overflow:hidden kapper
    baandet. Skyggen foelger da omrisset og ikke en usynlig boks. */
-.neam-handtak.eget{
-  background:none; box-shadow:none; overflow:visible; border-radius:0;
-  align-items:center;
-}
-.neam-handtak.eget img{ filter:drop-shadow(0 3px 9px rgba(44,62,80,.32)); }
+/* Fra 27. oktober 2026 er bildene ikoner uten baand, og haandtaket
+   beholder sirkelen som paa de andre sidene. Klassen `eget` settes
+   fortsatt av husHandtak(), men har ingen regel lenger. */
 /* Femmergeometrien, doed-regelen og flatefjerningen paa merkeknappene
    laa her til 30. august 2026. Alt tre er flyttet til felles-neam.css i
    samme slengen som femmeren ble en firer - de gjaldt alle fem sidene,
@@ -389,7 +391,7 @@ input,select,textarea{font-size:16px}
 
 <div id="port" hidden>
   <div class="kort">
-    <div class="ikon"><img src="/bilder/neam-robot.png" alt="NEAM" width="160" height="158"></div>
+    <div class="ikon"><img class="ikon-flis" alt="NEAM" src="/bilder/ikoner/familie.png?v=1" width="228" height="200"></div>
     <button class="logginn" onclick="loggInn()" aria-label="Logg inn">
       <svg viewBox="0 0 24 24" width="26" height="26" fill="none"
            stroke="currentColor" stroke-width="2.4"
@@ -406,7 +408,7 @@ input,select,textarea{font-size:16px}
 
   <div class="top">
     <div class="brand">
-      <a href="/" class="brand-icon" title="Til Neam" style="display:block;text-decoration:none"><img src="/bilder/merke-neam.png?v=2" alt="Neam" width="256" height="277"></a>
+      <a href="/" class="brand-icon" title="Til Neam" style="display:block;text-decoration:none"><img class="ikon-flis" alt="Neam" src="/bilder/ikoner/neam.png?v=1" width="348" height="359"></a>
     </div>
     <div class="clock">
       <div class="clock-time" id="clock-time">--:--</div>
@@ -422,49 +424,47 @@ input,select,textarea{font-size:16px}
       </div>
       <div class="apps skjul-planlagte" id="apps">
         <a class="app merke" href="dashboard.html" id="dashKort" hidden aria-label="Kjøkken dash">
-          <span class="app-icon"><img alt="Kjøkken dash" src="/bilder/merke-kjokken-dash.png?v=2" width="256" height="265"></span>
+          <span class="app-icon"><img class="ikon-strek" alt="" src="/bilder/ikoner/kjokken-dash.png?v=1" width="98" height="98"></span><span class="ikon-navn">Kjøkken dash</span>
         </a>
         <a class="app merke" href="emma.html" id="emmaKort" aria-label="Emma dash">
-          <span class="app-icon"><img alt="Emma dash" src="/bilder/merke-emma-dash.png?v=2" width="512" height="516"></span>
+          <span class="app-icon"><img class="ikon-flis" alt="" src="/bilder/ikoner/emma.png?v=1" width="225" height="199"></span><span class="ikon-navn">Emma dash</span>
         </a>
         <a class="app merke" href="andrea.html" id="andreaKort" aria-label="Andrea dash">
-          <span class="app-icon"><img alt="Andrea dash" src="/bilder/merke-andrea-dash.png?v=2" width="512" height="517"></span>
+          <span class="app-icon"><img class="ikon-flis" alt="" src="/bilder/ikoner/andrea.png?v=1" width="222" height="200"></span><span class="ikon-navn">Andrea dash</span>
         </a>
         <a class="app merke" href="oppskrifter.html" aria-label="Matlaging">
-          <span class="app-icon"><img alt="Matlaging" src="/bilder/merke-matlaging.png?v=2" width="256" height="270"></span>
+          <span class="app-icon"><img class="ikon-strek" alt="" src="/bilder/ikoner/matlaging.png?v=1" width="101" height="101"></span><span class="ikon-navn">Matlaging</span>
         </a>
         <a class="app merke" href="handleliste.html" aria-label="Handleliste">
-          <span class="app-icon"><img alt="Handleliste" src="/bilder/merke-handleliste.png?v=2" width="256" height="268"></span>
+          <span class="app-icon"><img class="ikon-strek" alt="" src="/bilder/ikoner/handleliste.png?v=1" width="98" height="98"></span><span class="ikon-navn">Handleliste</span>
         </a>
         <a class="app merke" href="kalender.html" aria-label="Kalender">
-          <span class="app-icon"><img alt="Kalender" src="/bilder/merke-kalender.png?v=2" width="384" height="384"></span>
+          <span class="app-icon"><img class="ikon-strek" alt="" src="/bilder/ikoner/kalender.png?v=1" width="86" height="86"></span><span class="ikon-navn">Kalender</span>
         </a>
 
         <div class="app merke soon planlagt">
-          <span class="app-icon"><img src="/bilder/merke-kvitteringer.png?v=2" alt="Kvitteringer" width="512" height="531"></span>
+          <span class="app-icon"><img class="ikon-flis" alt="" src="/bilder/ikoner/kvitteringer.png?v=1" width="348" height="358"></span><span class="ikon-navn">Kvitteringer</span>
           <span class="app-badge">Kommer</span>
         </div>
-        <!-- Merkeform, ikke flisform: merket baerer navnet sitt selv, og en
-             app-name under det ville sagt «Økonomi» to ganger. «Kommer»
-             blir staaende - det er den eneste opplysningen flisen har som
-             merket ikke har. -->
+        <!-- Navnet staar under bildet fra 27. oktober 2026 - de nye ikonene
+             baerer det ikke selv. «Kommer» blir staaende. -->
         <div class="app merke soon planlagt">
-          <span class="app-icon"><img src="/bilder/merke-okonomi.png?v=2" alt="Økonomi" width="512" height="521"></span>
+          <span class="app-icon"><img class="ikon-flis" alt="" src="/bilder/ikoner/okonomi.png?v=1" width="359" height="358"></span><span class="ikon-navn">Økonomi</span>
           <span class="app-badge">Kommer</span>
         </div>
         <div class="app merke soon planlagt">
-          <span class="app-icon"><img src="/bilder/merke-bil.png?v=2" alt="Biler" width="512" height="520"></span>
+          <span class="app-icon"><img class="ikon-flis" alt="" src="/bilder/ikoner/bil.png?v=1" width="363" height="360"></span><span class="ikon-navn">Bil</span>
           <span class="app-badge">Kommer</span>
         </div>
-        <a class="app merke" href="./sikkerhet.html">
-          <span class="app-icon"><img src="/bilder/merke-sikkerhet.png?v=2" alt="Sikkerhet" width="512" height="533"></span>
+        <a class="app merke" href="./sikkerhet.html" aria-label="Sikkerhet">
+          <span class="app-icon"><img class="ikon-strek" alt="" src="/bilder/ikoner/sikkerhet.png?v=1" width="92" height="92"></span><span class="ikon-navn">Sikkerhet</span>
         </a>
         <div class="app merke soon planlagt">
-          <span class="app-icon"><img src="/bilder/merke-arbeidsoppgaver.png?v=2" alt="Arbeidsoppgaver" width="512" height="521"></span>
+          <span class="app-icon"><img class="ikon-flis" alt="" src="/bilder/ikoner/arbeidsoppgaver.png?v=1" width="360" height="359"></span><span class="ikon-navn">Arbeidsoppgaver</span>
           <span class="app-badge">Kommer</span>
         </div>
         <div class="app merke soon planlagt">
-          <span class="app-icon"><img src="/bilder/merke-bilder.png?v=2" alt="Bilder" width="512" height="528"></span>
+          <span class="app-icon"><img class="ikon-flis" alt="" src="/bilder/ikoner/bilder.png?v=1" width="348" height="360"></span><span class="ikon-navn">Bilder</span>
           <span class="app-badge">Kommer</span>
         </div>
       </div>
@@ -1131,9 +1131,8 @@ window.neamBakgrunn = async function(){
    filnavnet endret seg, og nettleseren serverte da den gamle versjonen fra
    cache - samme felle som brente versjonsnumrene for fellesfilene. Bumpes
    naar bildet endres. */
-const MERKE_INNSTILLINGER = '/bilder/merke-innstillinger.png?v=3';
-const MERKE_HUSREGISTER   = '/bilder/merke-husregister.png?v=3';
-const MERKE_AVBRYT        = '/bilder/merke-avbryt.png?v=3';
+/* Fra 27. oktober 2026: ikonene i bilder/ikoner/, med versjon i
+   felles-neam.js (IKON_V). */
 
 function husHandtak(inne){
   /* Midtknappen er borte med fireren - haandtaket ER den, og blir
@@ -1142,12 +1141,12 @@ function husHandtak(inne){
   if(!h) return;
   h.classList.add('eget');
   if(inne){
-    h.innerHTML = '<img src="' + MERKE_AVBRYT + '" alt="">';
+    h.innerHTML = neamIkonImg('avbryt');
     h.onclick = lukkHus;
     h.title = 'Avbryt';
     h.setAttribute('aria-label', 'Lukk huset');
   }else{
-    h.innerHTML = '<img src="' + MERKE_INNSTILLINGER + '" alt="">';
+    h.innerHTML = neamIkonImg('innstillinger');
     h.onclick = neamSideFirer;
     h.title = 'Innstillinger';
     h.setAttribute('aria-label', 'Innstillinger - handlinger');
@@ -1165,7 +1164,7 @@ document.addEventListener('DOMContentLoaded', function(){ husHandtak(false); });
 window.neamSideHandlinger = function(){
   return [
     { plass:'opp', navn:'Husregisteret', merke:true,
-      ikon:'<img src="' + MERKE_HUSREGISTER + '" alt="">',
+      ikon:knappMerke('husregister'),
       gjor: aapneHus },
 
     /* System rommer flere ting og gjoer ingenting selv. Oppdater og Logg
@@ -1227,6 +1226,6 @@ window.neamUtfor = async function(navn, arg){
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=72"></script>
+<script src="/felles-neam.js?v=73"></script>
 </body>
 </html>

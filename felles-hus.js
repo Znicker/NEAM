@@ -1537,15 +1537,14 @@ async function hskApne(){
   await hskOppdater();
 }
 
-/* Enhetene i venstre firer. Funksjon og ikke liste: neamMerkeUrl()
+/* Enhetene i venstre firer. Funksjon og ikke liste: knappMerke()
    ligger i felles-neam.js, som lastes etter denne fila.
    Rommene har ikke merke ennaa - strektegning og navn, som knappene
    uten merke i fireren. */
 window.neamEnheter = function(){
   return [{
     navn: 'Neamow', merke: true, gjor: nmwApne,
-    ikon: '<img src="' + neamMerkeUrl('/bilder/merke-neamow.png') + '" alt="" width="512" height="494"'
-        + ' onerror="neamMerkeFeilet(this)">'
+    ikon: knappMerke('neamow')
   }, {
     navn: 'Rommene', gjor: hskApne,
     ikon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '

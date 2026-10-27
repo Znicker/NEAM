@@ -97,11 +97,43 @@ const NEAM_LAGER  = 'neam_samtale';
    Cloudflare, i nettleseren, og paa en iPad uten hard oppfrisking.
    BYTTES ET MERKE: oek tallet. */
 const MERKE_V = 2;
-const NEAM_MERKE  = '/bilder/merke-neam.png?v=' + MERKE_V;
 
-/* Knappemerkene i fireren. De baerer navnet sitt selv, saa knappen faar
-   ingen tekst under - se neamKnappInnhold(). Egen versjon fra merkene:
-   de to settene byttes ikke samtidig. */
+/* Ikonene fra 27. oktober 2026, i bilder/ikoner/. De erstatter merkene og
+   knappemerkene der det finnes et nytt bilde - de gamle ligger igjen i
+   bilder/ og bilder/knapper/.
+
+   To slags bilder:
+   - FLIS: har sin egen pastellbakgrunn tegnet inn (roboten, Emma, Andrea,
+     de fleste knappene).
+   - STREK: ikon uten bakgrunn fra det foerste arket. Faar en lys flis
+     rundt seg i CSS-en (.ikon-strek), saa alle ser ut som fliser.
+
+   Ingen av dem baerer navnet sitt. Navnet staar som tekst under bildet
+   (.ikon-navn) - det er den store forskjellen fra merkene.
+
+   Egen versjon: mappa er ny og ble aldri forespurt foer filene laa der. */
+const IKON_V = 1;
+const NEAM_IKON_STREK = [
+  'kjokken-dash', 'matlaging', 'handleliste', 'kalender', 'sikkerhet',
+  'neamow', 'innstillinger', 'apper', 'enheter', 'ny-avtale', 'fag',
+  'legg-til', 'lekse', 'lim-inn', 'logg-ut', 'oppdater', 'paaminnelse',
+  'endre', 'skann-ark', 'ukeplan'
+];
+/* Knappenavn som har faatt nytt bilde under et annet filnavn. */
+const NEAM_IKON_FRA = { 'avtale':'ny-avtale', 'rediger':'endre' };
+function neamIkonUrl(navn){
+  return '/bilder/ikoner/' + navn + '.png?v=' + IKON_V;
+}
+function neamIkonImg(navn, ekstra){
+  const klasse = NEAM_IKON_STREK.indexOf(navn) !== -1 ? 'ikon-strek' : 'ikon-flis';
+  return '<img class="' + klasse + '" src="' + neamIkonUrl(navn) + '" alt=""'
+       + (ekstra || '') + '>';
+}
+const NEAM_MERKE  = neamIkonUrl('neam');
+
+/* Knappemerkene i fireren. Fra 27. oktober 2026 er de ikonene i
+   bilder/ikoner/ (se IKON_V over), med navnet som tekst under. KNAPP_V
+   gjaldt de gamle filene i bilder/knapper/ og staar som historikk. */
 /* v1 er brent. To av knappene ble bedt om mens mappa ennaa ikke laa paa
    tjeneren, og Cloudflare cachet forsidens 200-svar mot nettopp de to
    adressene - permanent. Filene var der hele tiden; det var adressen som
@@ -111,8 +143,7 @@ const NEAM_MERKE  = '/bilder/merke-neam.png?v=' + MERKE_V;
    fil manglet. Oek heller. */
 const KNAPP_V = 4;
 function knappMerke(navn){
-  return '<img src="/bilder/knapper/knapp-' + navn + '.png?v=' + KNAPP_V + '" alt=""'
-       + ' onerror="neamMerkeFeilet(this)">';
+  return neamIkonImg(NEAM_IKON_FRA[navn] || navn, ' onerror="neamMerkeFeilet(this)"');
 }
 /* Modellene man kan veksle mellom, i rekkefoelge fra raskest til
    grundigst. Knappen i topplinja gaar rundt.
@@ -808,13 +839,13 @@ const NEAM_APPER = [
      der femmeren hadde fire, og «hjem» var den som taalte flyttingen:
      applista utelater uansett sida du staar paa, saa fra forsiden er den
      usynlig og fra alle andre er den én av veiene ut. */
-  { sti:'/',                 navn:'Neam',        ikon:'/bilder/merke-neam.png'        },
-  { sti:'/handleliste.html', navn:'Handleliste', ikon:'/bilder/merke-handleliste.png' },
-  { sti:'/oppskrifter.html', navn:'Matlaging',   ikon:'/bilder/merke-matlaging.png'   },
-  { sti:'/kalender.html',    navn:'Kalender',    ikon:'/bilder/merke-kalender.png'    },
-  { sti:'/dashboard.html',   navn:'Kjøkken',     ikon:'/bilder/merke-kjokken-dash.png' },
-  /* Versjonen legges paa i neamMerkeUrl(), ikke her - da staar stien
-     lesbar i lista og nummeret ett sted. */
+  { sti:'/',                 navn:'Neam',        ikon:'neam'         },
+  { sti:'/handleliste.html', navn:'Handleliste', ikon:'handleliste'  },
+  { sti:'/oppskrifter.html', navn:'Matlaging',   ikon:'matlaging'    },
+  { sti:'/kalender.html',    navn:'Kalender',    ikon:'kalender'     },
+  { sti:'/dashboard.html',   navn:'Kjøkken',     ikon:'kjokken-dash' },
+  /* `ikon` er navnet paa fila i bilder/ikoner/ - adressen og versjonen
+     legges paa i neamIkonImg(). */
   /* Emma dash og Andrea dash staar aapne paa forsiden, og da er det ingen
      grunn til at applista skal skjule dem. Argumentet mot - en snarvei til
      en doer man blir avvist i - gjelder begge veier: Emma blir avvist paa
@@ -831,9 +862,9 @@ const NEAM_APPER = [
      hoeyden maa sjekkes paa telefon foer neste app legges til: naar
      toppen naar skjermkanten, maa lista enten filtreres paa innlogget
      bruker eller faa en annen form. */
-  { sti:'/emma.html',        navn:'Emma dash',   ikon:'/bilder/merke-emma-dash.png'   },
-  { sti:'/andrea.html',      navn:'Andrea dash', ikon:'/bilder/merke-andrea-dash.png' },
-  { sti:'/sikkerhet.html',   navn:'Sikkerhet',   ikon:'/bilder/merke-sikkerhet.png'   }
+  { sti:'/emma.html',        navn:'Emma dash',   ikon:'emma'         },
+  { sti:'/andrea.html',      navn:'Andrea dash', ikon:'andrea'       },
+  { sti:'/sikkerhet.html',   navn:'Sikkerhet',   ikon:'sikkerhet'    }
 ];
 
 /* Stien til sida, normalisert.
@@ -866,23 +897,23 @@ function neamSti(sti){
 
    Noeklet paa normalisert sti - se neamSti(). */
 const NEAM_SIDEMERKE = {
-  '/handleliste': { navn:'Handleliste',  ikon:'/bilder/merke-handleliste.png'  },
-  '/oppskrifter': { navn:'Matlaging',    ikon:'/bilder/merke-matlaging.png'    },
-  '/kalender'   : { navn:'Kalender',     ikon:'/bilder/merke-kalender.png'     },
-  '/dashboard'  : { navn:'Kjøkken dash', ikon:'/bilder/merke-kjokken-dash.png' },
+  '/handleliste': { navn:'Handleliste',  ikon:'handleliste'  },
+  '/oppskrifter': { navn:'Matlaging',    ikon:'matlaging'    },
+  '/kalender'   : { navn:'Kalender',     ikon:'kalender'     },
+  '/dashboard'  : { navn:'Kjøkken dash', ikon:'kjokken-dash' },
   /* Emma dash staar bade her og i NEAM_APPER. Her fordi hoeyre haandtak
      maa vite hvilket merke det skal baere paa sida man staar paa; uten
      linja under falt det tilbake paa Neam-merket - «Denne siden» med
      feil bilde. */
-  '/emma'       : { navn:'Emma dash',    ikon:'/bilder/merke-emma-dash.png'    },
-  '/andrea'     : { navn:'Andrea dash',  ikon:'/bilder/merke-andrea-dash.png'  },
-  '/sikkerhet'  : { navn:'Sikkerhet',    ikon:'/bilder/merke-sikkerhet.png'    },
-  '/'           : { navn:'Neam',         ikon:'/bilder/merke-neam.png'         }
+  '/emma'       : { navn:'Emma dash',    ikon:'emma'         },
+  '/andrea'     : { navn:'Andrea dash',  ikon:'andrea'       },
+  '/sikkerhet'  : { navn:'Sikkerhet',    ikon:'sikkerhet'    },
+  '/'           : { navn:'Neam',         ikon:'neam'         }
 };
 
 function neamSideMerke(){
   return NEAM_SIDEMERKE[neamSti()]
-      || { navn:'Denne siden', ikon:NEAM_MERKE };
+      || { navn:'Denne siden', ikon:'neam' };
 }
 
 /* ============================================================
@@ -1566,14 +1597,15 @@ function neamVisApper(){
   if(!boks) return;
   if(!boks.hidden){ boks.hidden = true; neamGren(''); return; }
   const her = neamSti();
-  /* Én knapp per app, i samme stoerrelse som knappene i fireren. Navnet
-     staar i aria-label og ikke som tekst under: merkene baerer navnet
-     sitt selv, og skjermlesere trenger det likevel. */
+  /* Én knapp per app, i samme stoerrelse som knappene i fireren. Fra
+     27. oktober 2026 staar navnet som tekst under bildet - de nye ikonene
+     baerer det ikke selv, slik merkene gjorde. */
   const apper = NEAM_APPER.filter(function(a){ return neamSti(a.sti) !== her; });
   boks.innerHTML = apper.map(function(a){
       return '<a class="neam-app-lenke" href="' + a.sti + '" '
            +   'title="' + a.navn + '" aria-label="' + a.navn + '">'
-           +   '<img src="' + neamMerkeUrl(a.ikon) + '" alt="">'
+           +   neamIkonImg(a.ikon)
+           +   '<span class="ikon-navn">' + a.navn + '</span>'
            + '</a>';
     }).join('');
 
@@ -1730,7 +1762,7 @@ function neamBygg(){
   handtak.id = 'neamHandtak';
   handtak.title = 'Neam';
   handtak.setAttribute('aria-label', 'Snakk med Neam');
-  handtak.innerHTML = '<img src="' + NEAM_MERKE + '" alt="">';
+  handtak.innerHTML = neamIkonImg('neam');
   handtak.onclick = neamFirer;
   document.body.appendChild(handtak);
 
@@ -1769,8 +1801,8 @@ function neamBygg(){
   firer.id = 'neamFirer';
   firer.hidden = true;
 
-  /* `merke` sier at ikonet er et ferdig knappemerke med navn paa: da
-     faller papirskiva og teksten under bort, som for appmerkene. */
+  /* `merke` sier at ikonet er et ferdig bilde (ikonflis): da faller
+     papirskiva bort, og navnet staar under bildet. */
   const knapp = function(id, plass, tekst, ikon, kort, merke){
     return '<button type="button" class="neam-knapp ' + plass
          + (merke ? ' merke' : '') + '" id="' + id + '"'
@@ -1780,17 +1812,8 @@ function neamBygg(){
   firer.innerHTML =
       knapp('neamTLys', 'opp', 'Enheter og lys', knappMerke('enheter'), '', true)
     + knapp('neamTApper', 'skraa', 'Andre apper', knappMerke('apper'), '', true)
-    /* Appmerket, ikke et knappemerke. `bilder/knapper/` har ingen
-       sikkerhetsknapp, men appmerket baerer allerede navnet «Sikkerhet»
-       og er samme slags bilde - merke med baand. Da sier det noeyaktig
-       det knappen gjoer, som er hele kravet.
-
-       neamMerkeUrl() legger paa MERKE_V, ikke KNAPP_V: fila hoerer til
-       appmerkene og foelger deres versjon. */
-    + knapp('neamTVed', 'ved', 'Sikkerhet',
-            '<img src="' + neamMerkeUrl('/bilder/merke-sikkerhet.png') + '" alt=""'
-            + ' onerror="neamMerkeFeilet(this)">',
-            'Sikkerhet', true);
+    /* Samme sikkerhetsikon som i applista. */
+    + knapp('neamTVed', 'ved', 'Sikkerhet', knappMerke('sikkerhet'), 'Sikkerhet', true);
   document.body.appendChild(firer);
 
   /* Applista er sin egen boks utenfor fireren: den er fastposisjonert mot
@@ -1821,7 +1844,7 @@ function neamBygg(){
   sHandtak.id = 'neamSideHandtak';
   sHandtak.title = sm.navn;
   sHandtak.setAttribute('aria-label', sm.navn + ' - handlinger');
-  sHandtak.innerHTML = '<img src="' + neamMerkeUrl(sm.ikon) + '" alt="">';
+  sHandtak.innerHTML = neamIkonImg(sm.ikon);
   sHandtak.onclick = neamSideFirer;
   sHandtak.hidden = !neamSideHarNoe();
   document.body.appendChild(sHandtak);
@@ -1865,7 +1888,7 @@ function neamBygg(){
   bak.innerHTML =
       '<div class="neam-panel" role="dialog" aria-modal="true" aria-label="Neam">'
     +   '<div class="neam-topp">'
-    +     '<span class="neam-topp-merke"><img src="' + NEAM_MERKE + '" alt=""></span>'
+    +     '<span class="neam-topp-merke">' + neamIkonImg('neam') + '</span>'
     +     '<span class="neam-topp-tekst">'
     +       '<span class="neam-navn">Neam</span>'
     +       '<span class="neam-sted" id="neamSted"></span>'

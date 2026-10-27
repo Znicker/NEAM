@@ -15,7 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/felles-rot.css?v=6">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=64">
+<link rel="stylesheet" href="/felles-neam.css?v=65">
 <style>
 /* ============================================================
    NEAM – Sikkerhet
@@ -167,6 +167,10 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
 .enhet.uten-bilde img{ display:none; }
 .enhet.uten-bilde .reserve{ display:flex; }
 .enhet-under{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; text-align:center; }
+/* Navnet under flisa, fra 27. oktober 2026 - flisene viser bare typen.
+   Faller bildet bort, staar navnet alt i reserven og trengs ikke to ganger. */
+.enhet-navn{ font-size:var(--t-meta); max-width:100%; }
+.enhet.uten-bilde .enhet-navn{ display:none; }
 
 /* ---------- Dialogen for én enhet ---------- */
 .ark-bak{
@@ -235,7 +239,7 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
          huset: merket oeverst er det samme som flisen man trykket paa
          for aa komme hit. -->
     <a class="merke" href="/" aria-label="Til forsiden">
-      <img src="/bilder/merke-sikkerhet.png?v=2" alt="Sikkerhet" width="512" height="533">
+      <img class="ikon-strek" src="/bilder/ikoner/sikkerhet.png?v=1" alt="Sikkerhet" width="92" height="92">
     </a>
     <div>
       <h1 class="tittel">Sikkerhet</h1>
@@ -247,7 +251,7 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
 
   <!-- Porten: vises bare foer Homey er godkjent. -->
   <section class="port" id="port" hidden>
-    <img src="/bilder/sikkerhet/laas-ytterdor-blaa.webp?v=1" alt="">
+    <img class="ikon-flis" src="/bilder/ikoner/sikkerhet/ytterdor-blaa.png?v=1" alt="" width="218" height="199">
     <h2>Koble til Homey</h2>
     <p>Neam må få lov av Homey én gang. Etterpå husker den det.</p>
     <button class="knapp-blaa" id="koble">Koble til Homey</button>
@@ -261,13 +265,13 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
 </div>
 
 <script src="/felles-dialog.js?v=1"></script>
-<script src="/felles-hus.js?v=11"></script>
+<script src="/felles-hus.js?v=12"></script>
 <script src="/felles-data.js?v=4"></script>
 <script src="/felles-ms.js?v=2"></script>
 <script src="/felles-lesalt.js?v=6"></script>
 <script src="/felles-skriv.js?v=5"></script>
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=72"></script>
+<script src="/felles-neam.js?v=73"></script>
 <script>
 'use strict';
 
@@ -380,8 +384,23 @@ function tilstand(d, art){
   return 'blaa';
 }
 
-function merkeUrl(m, t){
-  return '/bilder/sikkerhet/' + m + (t ? '-' + t : '') + '.webp?v=' + SIK_MERKE_V;
+/* Fra 27. oktober 2026: én flis per TYPE og tilstand i
+   bilder/ikoner/sikkerhet/, ikke et malt merke per enhet. Stedet staar
+   ikke lenger i bildet - det staar som navn under (se tegnEnheter), og
+   navnet er Homeys eget, der stedet staar med vilje. De gamle merkene
+   ligger igjen i bilder/sikkerhet/ (SIK_MERKE_V over gjaldt dem).
+
+   Fargene betyr det samme som foer: groenn i orden, oransje varsel eller
+   ingen kontakt, roed alarm, blaa ulaast doer. */
+const SIK_IKON = {
+  laas:  { blaa:'ytterdor-blaa', gronn:'ytterdor-gronn', oransje:'ytterdor-gul', rod:'ytterdor-rod' },
+  royk:  { gronn:'royk-normal',  oransje:'royk-varsel',  rod:'royk-alarm'  },
+  vann:  { gronn:'vann-normal',  oransje:'vann-varsel',  rod:'vann-alarm'  },
+  varme: { gronn:'varme-normal', oransje:'varme-varsel', rod:'varme-alarm' }
+};
+function sikIkonUrl(art, t){
+  const tab = SIK_IKON[art] || SIK_IKON.royk;
+  return '/bilder/ikoner/sikkerhet/' + (tab[t] || tab.gronn || tab.blaa) + '.png?v=1';
 }
 
 /* Én kort linje under merket: det ene som er verdt aa se uten aa
@@ -394,9 +413,9 @@ function underTekst(d, art){
     return verdi(d,'locked') === true ? 'Låst' : 'Ulåst';
   }
   if(SIK_VARSEL[art]){
-    /* «ALARM», ikke «RØYK» eller «LEKKASJE»: merket baerer alt typen og
-       stedet i baandet, saa en type-tekst gjentar det man ser. Linja skal
-       si det merket IKKE kan si - at den gaar akkurat naa. */
+    /* «ALARM», ikke «RØYK» eller «LEKKASJE»: flisa viser typen og navnet
+       under viser stedet, saa en type-tekst gjentar det man ser. Linja skal
+       si det bildet IKKE kan si - at den gaar akkurat naa. */
     if(verdi(d, SIK_VARSEL[art]) === true) return 'ALARM';
     const b = verdi(d,'measure_battery');
     if(typeof b === 'number' && b <= 20) return 'Batteri ' + b + ' %';
@@ -466,9 +485,10 @@ function tegnEnheter(){
     const navn = (d && d.name) || v.merke;
     const under = underTekst(d, v.art);
     return '<button class="enhet" data-enhet="' + esc(v.id) + '">'
-      +   '<img src="' + merkeUrl(v.merke, t) + '" alt="' + esc(navn) + '"'
+      +   '<img class="ikon-flis" src="' + sikIkonUrl(v.art, t) + '" alt=""'
       +     ' onerror="this.closest(\'.enhet\').classList.add(\'uten-bilde\')">'
       +   '<span class="reserve">' + esc(navn) + '</span>'
+      +   '<span class="ikon-navn enhet-navn">' + esc(navn) + '</span>'
       +   (under ? '<span class="enhet-under">' + esc(under) + '</span>' : '')
       + '</button>';
   }).join('');
@@ -501,7 +521,7 @@ function aapneEnhet(id){
 
   let h = '<div class="ark-bak" id="arkBak"><div class="ark" role="dialog" aria-modal="true">'
     + '<div class="ark-topp">'
-    +   '<img src="' + merkeUrl(v.merke, tilstand(d, v.art)) + '" alt="" onerror="this.hidden=true">'
+    +   '<img class="ikon-flis" src="' + sikIkonUrl(v.art, tilstand(d, v.art)) + '" alt="" onerror="this.hidden=true">'
     +   '<div><div class="ark-navn">' + esc(d.name || '') + '</div>'
     +   '<div class="ark-sted">' + esc(soner[d.zone] || '') + '</div></div>'
     +   '<button class="ark-lukk" id="arkLukk" aria-label="Lukk">&times;</button>'

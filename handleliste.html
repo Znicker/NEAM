@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
-<link rel="stylesheet" href="/felles-neam.css?v=64">
+<link rel="stylesheet" href="/felles-neam.css?v=65">
 <!-- ?v=: bump tallet naar en fellesfil endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -625,6 +625,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html,body{max-width:100%;overflow-x:clip;overscroll-behavior-x:none}
 body{touch-action:manipulation}
 input,select,textarea{font-size:16px}
+/* Ikonet og navnet i toppen, fra 27. oktober 2026. Ikonet staar midt i
+   papirsirkelen fra felles-skall.css; .ikon-strek gir det sin egen flis,
+   som ikke trengs her - sirkelen er flisa. */
+.home-hero-icon img.ikon-strek{
+  width:60%; margin:20% auto 0; padding:0; background:none; box-shadow:none; border-radius:0;
+}
+.home-hero-navn{ font-size:var(--t-stor); margin:0 0 2px; }
 </style>
 </head>
 <body>
@@ -641,10 +648,10 @@ input,select,textarea{font-size:16px}
   <!-- HOME -->
   <section class="view active" id="view-home">
     <div class="home-hero">
-      <!-- Navnet staar i merkelappen, ikke ved siden av den. Teksten som laa
-           her er fjernet og merket gjort stoerre for aa fylle plassen. Navnet
-           ligger i alt og aria-label, saa skjermlesere finner det fortsatt. -->
-      <a href="/" class="home-hero-icon" title="Til Neam" aria-label="Handleliste - til Neam" style="display:block;text-decoration:none"><img src="/bilder/merke-handleliste.png?v=2" alt="Handleliste" width="256" height="268"></a>
+      <!-- Ikonet i sirkelen og navnet under. Fram til 27. oktober 2026 sto
+           navnet i merkelappen; de nye ikonene baerer det ikke selv. -->
+      <a href="/" class="home-hero-icon" title="Til Neam" aria-label="Handleliste - til Neam" style="display:block;text-decoration:none"><img class="ikon-strek" src="/bilder/ikoner/handleliste.png?v=1" alt="" width="98" height="98"></a>
+      <p class="ikon-navn home-hero-navn">Handleliste</p>
       <p class="home-hero-sub" id="innlogget-navn" style="font-weight:600"></p>
     </div>
 
@@ -1080,7 +1087,7 @@ input,select,textarea{font-size:16px}
   </div>
 </div>
 
-<script src="/felles-hus.js?v=11"></script>
+<script src="/felles-hus.js?v=12"></script>
 <script src="/felles-data.js?v=4"></script>
 <script src="/felles-ms.js?v=2"></script>
 <script src="/felles-lesalt.js?v=6"></script>
@@ -1088,7 +1095,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=72"></script>
+<script src="/felles-neam.js?v=73"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').

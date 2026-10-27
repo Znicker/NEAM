@@ -23,6 +23,31 @@
    felles-neam.js.
    ============================================================ */
 
+/* Skriften til navnene under ikonene - samme avrundede grotesk som paa
+   ikonarkene. @import maa staa foer alle regler i fila. */
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@500..700&display=swap');
+
+/* ---------- Ikonene (fra 27. oktober 2026) ----------
+   bilder/ikoner/ - se IKON_V i felles-neam.js.
+   .ikon-flis   bildet har egen pastellbakgrunn tegnet inn.
+   .ikon-strek  ikon uten bakgrunn; faar en lys flis rundt seg her, saa
+                det staar side om side med flisene uten aa se loest ut.
+   .ikon-navn   navnet under, i samme stil som arket: avrundet grotesk,
+                halvfet, moerk marineblaa. Bildene baerer ikke navnet. */
+.ikon-flis{
+  filter:drop-shadow(0 1px 2px rgba(20,32,54,.10)) drop-shadow(0 4px 10px rgba(20,32,54,.08));
+}
+.ikon-strek{
+  box-sizing:border-box; background:var(--paper);
+  border-radius:20%; padding:13%;
+  box-shadow:0 1px 2px rgba(20,32,54,.10), 0 4px 10px rgba(20,32,54,.08);
+}
+.ikon-navn{
+  font-family:'Figtree','Archivo',sans-serif; font-weight:650;
+  color:#142036; line-height:1.2; letter-spacing:.002em;
+  text-align:center; text-transform:none;
+}
+
 /* ---------- Haandtaket ---------- */
 /* Samme beskjaering som .home-hero-icon: merket er tegnet tett, saa
    bildets bredde ER sirkelens diameter og bildet stilles til toppen.
@@ -83,12 +108,18 @@
   width:var(--f-handtak); height:var(--f-handtak); border-radius:50%;
   border:none; padding:0; overflow:hidden;
   background:var(--paper); box-shadow:0 4px 14px rgba(44,62,80,.28);
-  display:flex; align-items:flex-start; justify-content:center;
+  display:flex; align-items:center; justify-content:center;
   cursor:pointer;
   transition:width .18s ease, height .18s ease;
 }
 .neam-handtak[hidden]{ display:none; }
-.neam-handtak img{ width:100%; height:auto; display:block; flex:none; }
+/* Flisa fyller sirkelen og klippes rundt - roboten staar i midten.
+   Et strekikon staar paa papirskiva uten egen flis. */
+.neam-handtak img{ width:100%; height:100%; object-fit:cover; display:block; flex:none; }
+.neam-handtak img.ikon-flis{ filter:none; }
+.neam-handtak img.ikon-strek{
+  width:62%; height:auto; padding:0; background:none; box-shadow:none; border-radius:0;
+}
 .neam-handtak:active{ transform:scale(.94); }
 .neam-handtak.oppe{ width:var(--f-aapen); height:var(--f-aapen); }
 
@@ -524,7 +555,7 @@
 }
 .neam-enhet:active{ transform:scale(.94); }
 .neam-enhet.merke{ background:none; box-shadow:none; overflow:visible; }
-.neam-enhet.merke img{ filter:drop-shadow(0 3px 9px rgba(44,62,80,.32)); }
+.neam-enhet.merke img{ width:66%; height:auto; }
 
 /* ---------- Flip-klokka ----------
    Ei klapptavle som paa gamle flyplassur: to kort, timer og minutter,
@@ -744,11 +775,20 @@
 .neam-enhet:not(.merke) svg{
   width:calc(var(--f-ikon) * .82); height:calc(var(--f-ikon) * .82);
 }
-/* Merkeknappene baerer navnet i selve bildet. Teksten ligger der likevel,
-   som reserve om bildet ikke laster - se neamKnappInnhold(). Da tas
-   `merke` av knappen, papirskiva kommer tilbake og navnet fram. */
+/* Bildeknappene (ikonflisene) har navnet under bildet, i ikonstilen.
+   Fram til 27. oktober 2026 baerte merkene navnet selv, og teksten var
+   skjult her. Feiler bildet, tas `merke` av knappen og papirskiva kommer
+   tilbake - se neamKnappInnhold(). */
+.neam-knapp.merke,
+.neam-enhet.merke{ flex-direction:column; gap:5px; }
 .neam-knapp.merke .neam-knapp-tekst,
-.neam-enhet.merke .neam-knapp-tekst{ display:none; }
+.neam-enhet.merke .neam-knapp-tekst{
+  font-family:'Figtree','Archivo',sans-serif; font-weight:650;
+  text-transform:none; letter-spacing:.002em; color:#142036;
+  /* Roerene gaar til midten av knappen, og dermed forbi navnet.
+     Papirflata legger teksten oppaa roeret. */
+  background:var(--paper); padding:0 5px; border-radius:6px;
+}
 
 .neam-knapp-tekst{
   font-family:'Archivo', sans-serif; font-weight:700;
@@ -790,7 +830,7 @@
 .neam-knapp.merke{
   background:none; box-shadow:none; overflow:visible;
 }
-.neam-knapp.merke img{ filter:drop-shadow(0 3px 9px rgba(44,62,80,.32)); }
+.neam-knapp.merke img{ width:66%; height:auto; }
 
 /* Applista - frie knapper paa rad over fireren, ikke et ark.
    Til 30. august 2026 laa appene i en samleboks med smaa ikoner og navn
@@ -873,14 +913,23 @@
 .neam-app-lenke{
   pointer-events:auto; flex:none;
   width:var(--f-aapen); height:var(--f-aapen); border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
+  display:flex; flex-direction:column; gap:5px;
+  align-items:center; justify-content:center;
   text-decoration:none; color:var(--ink);
-  /* Merkene har eget omriss og baand som stikker ut - ingen flate under,
-     samme vurdering som .neam-knapp.merke. */
-  filter:drop-shadow(0 3px 9px rgba(44,62,80,.32));
 }
 .neam-app-lenke:active{ transform:scale(.94); }
-.neam-app-lenke img{ width:100%; height:auto; display:block; }
+/* Samme maal som bildeknappene i fireren, og navnet under. */
+.neam-app-lenke img{ width:66%; height:auto; display:block; }
+/* Stammen i fiskebeinet gaar gjennom midten av lenka, og dermed gjennom
+   navnet. Papirflata gjoer at roeret gaar bak teksten, ikke tvers over. */
+.neam-app-lenke .ikon-navn{
+  font-size:9.5px; max-width:100%; overflow:hidden;
+  white-space:nowrap; text-overflow:ellipsis;
+  position:relative; z-index:1; background:var(--paper);
+  padding:0 5px; border-radius:6px;
+}
+@media(min-width:700px){ .neam-app-lenke .ikon-navn{ font-size:12px; } }
+@media(min-width:1300px){ .neam-app-lenke .ikon-navn{ font-size:12.5px; } }
 
 /* ---------- Panelet ---------- */
 /* Reiser seg fra haandtaket, ikke fra midten: det skal leses som at
@@ -912,7 +961,7 @@
   background:var(--paper); border:1px solid var(--line);
   display:flex; align-items:flex-start; justify-content:center;
 }
-.neam-topp-merke img{ width:100%; height:auto; display:block; }
+.neam-topp-merke img{ width:100%; height:100%; object-fit:cover; display:block; filter:none; }
 .neam-topp-tekst{ flex:1; min-width:0; }
 .neam-navn{
   font-size:var(--t-brod); font-weight:700; color:var(--ink); line-height:1.2;
