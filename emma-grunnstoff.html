@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/felles-rot.css?v=5">
+<link rel="stylesheet" href="/felles-rot.css?v=6">
 <style>
 /* ============================================================
    NEAM - Grunnstoffspill for Emma
@@ -108,16 +108,8 @@ body{
   background:var(--side-bakgrunn);
   min-height:100vh;
 }
-/* Bakgrunnsbildet ligger i et eget lag under innholdet - ikke som
-   background-attachment:fixed, som iOS regner mot dokumenthoeyden og
-   blaaser opp (kartleggingen del 17). */
-body::before{
-  content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
-  background:url('/bilder/bakgrunn.webp') center/cover no-repeat;
-}
-@media(orientation:portrait){
-  body::before{ background-image:url('/bilder/bakgrunn-staaende.webp'); }
-}
+/* Steampunk-bakgrunnen er fjernet 27. oktober 2026, som paa de andre
+   sidene - gradienten paa html i felles-rot.css staar igjen. */
 
 .gs-side{ max-width:1180px; margin:0 auto; padding:10px 12px 28px; }
 @media(min-width:700px){ .gs-side{ padding:18px 20px 36px; } }

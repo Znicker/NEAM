@@ -54,8 +54,6 @@
      innholdet oeverst. Sidene kan fortsatt overstyre variabelen lokalt
      hvis én flate trenger noe eget. */
   --side-bakgrunn:transparent;
-  /* Bildet, per retning. Byttes nederst i fila. */
-  --side-bilde:url('/bilder/bakgrunn.webp');
   /* Mild flate for grupperingsbokser. Var kjoelig blaa (#EDF3F8) og
      ble kald inne i et varmt kort. Egen variabel, ikke --aksent-lys:
      den betyr "valgt", og en boks skal ikke se ut som et valg. */
@@ -99,40 +97,15 @@
    Bakgrunnsbildet
    ------------------------------------------------------------ */
 
-/* Reserven, nederst av alt. Ligger paa html og ikke paa body, saa
-   bildelaget under her har noe aa ligge oppaa uten aa bli dekket.
-   Synes bare der bildet ikke naar - og hele bildet hvis fila mangler,
-   saa sida aldri staar naken. */
+/* Sidebakgrunnen: en rolig gradient paa html, under alt. Ligger paa
+   html og ikke paa body, saa body kan forbli gjennomsiktig.
+
+   Steampunk-bildet (bakgrunn.webp / bakgrunn-staaende.webp i et
+   fastposisjonert body::before) er fjernet 27. oktober 2026. Filene
+   ligger igjen i bilder/. Angre: legg tilbake --side-bilde og
+   body::before-laget fra sikkerhetskopigrenen
+   backup/layout-steampunk-2026-10-27. */
 html{ background:linear-gradient(160deg,#F6F1E7 0%,#EDE6D9 100%); }
-
-/* Bildet: et fastposisjonert lag bak alt innhold, ikke
-   background-attachment:fixed. Effekten er den samme - ramma staar
-   stille mens innholdet ruller - men uten iOS-feilen der Safari maaler
-   en fast bakgrunn mot DOKUMENTETS hoeyde og blaaser `cover` opp til et
-   utsnitt av det tomme midtpartiet.
-
-   `pointer-events:none` er ikke pynt: laget dekker hele vinduet, og
-   uten den ville det spist hvert eneste trykk paa sida.
-
-   ::before paa body, ikke et element i HTML-en, saa ingen av de fem
-   sidene trenger ny markup. */
-body::before{
-  content:'';
-  position:fixed; inset:0; z-index:-1;
-  background:var(--side-bilde) center center / cover no-repeat;
-  pointer-events:none;
-}
-
-/* Staaende faar den dreide fila. `orientation` er riktig maal her - det
-   er sideforholdet paa vinduet det gjelder, ikke stoerrelsen, saa dette
-   er unntaket fra regelen om at LANDSKAP-betingelsen skal ha
-   hoeydekrav. Et smalt PC-vindu skal ha den staaende av samme grunn som
-   en telefon.
-
-   Motivene er komponert hver for seg, ikke det samme bildet dreid. */
-@media (orientation: portrait){
-  :root{ --side-bilde:url('/bilder/bakgrunn-staaende.webp'); }
-}
 
 /* ------------------------------------------------------------ */
 

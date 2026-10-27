@@ -528,9 +528,9 @@
 
 /* ---------- Flip-klokka ----------
    Ei klapptavle som paa gamle flyplassur: to kort, timer og minutter,
-   der oevre halvdel av kortet vipper ned naar verdien skifter. Fargene er
-   messingens - moerk brunsvart kortflate og sifre i det lyse metallet fra
-   delarket - saa klokka leses som en del av samme maskin som roerene.
+   der oevre halvdel av kortet vipper ned naar verdien skifter. Kortene er
+   lyse og myke, med moerkt marineblaa sifre - samme uttrykk som de nye
+   ikonflisene, ikke tre og messing (byttet 27. oktober 2026).
 
    Bygges og drives av neamFlipKlokke() i felles-neam.js. Kortet arver
    font-size fra elementet det staar i, saa hver side bestemmer
@@ -554,24 +554,16 @@
 .fk-kort{
   position:relative;
   width:1.62em; height:1.28em;
-  border-radius:.1em;
-  box-shadow:0 3px 9px rgba(20,12,3,.4), inset 0 0 0 1px rgba(236,197,138,.14);
+  border-radius:.16em;
+  /* Samme myke skygge som ikonflisene: en tett kant og en bred, lys. */
+  box-shadow:0 1px 2px rgba(20,32,54,.10), 0 .08em .3em rgba(20,32,54,.12);
 }
 .fk-halv{
   position:absolute; left:0; width:100%; height:50%;
   overflow:hidden;
-  /* Kortflata er TRE, ikke lakk: moerk ved med liggende aarer, og et
-     gradientlag over som gir lyset ovenfra. Treet ligger i samme moerke
-     ende av paletten som messingen, saa kortet hoerer til maskinen. */
-  /* background-COLOR under bildet er sikringen: mangler treet - fordi
-     fila ikke er pushet, eller cachen serverer feil innhold - er kortet
-     fortsatt moerkt og klokka fortsatt en klokke. Et manglende bilde skal
-     koste tekstur, aldri lesbarhet. */
-  background-color:#241503;
-  background-image:
-    linear-gradient(to bottom, rgba(255,235,200,.10), rgba(0,0,0,0) 45%, rgba(0,0,0,.30)),
-    url('/bilder/tre-mork.png?v=2');
-  background-size:auto, 256px 256px;
+  /* Oevre halvdel er lysest - lyset kommer ovenfra. Bare farger, ingen
+     bilder: det finnes ikke noe som kan mangle og gjoere klokka uleselig. */
+  background:linear-gradient(to bottom, #FFFFFF, #F8F6F2);
   text-align:center;
   backface-visibility:hidden; -webkit-backface-visibility:hidden;
 }
@@ -579,41 +571,14 @@
   font-weight:700; font-style:normal; display:block;
   height:1.28em; line-height:1.28;
   letter-spacing:.02em;
-  /* Tallene er sitt EGET trestykke: lys ved med STAAENDE aarer, klippet
-     til glyfene. Staaende mot flatas liggende - da kan de to strukturene
-     aldri gaa i ett, uansett hvor kortet klippes. At tallet henger sammen
-     over midtlinja ordner seg selv: oevre og nedre halvdel baerer hver sin
-     kopi av hele glyfen i samme boks, saa utsnittet blir identisk.
-
-     drop-shadow foelger den klippede formen og gir tallet en moerk kant
-     mot flata - uten den floet lyst tre paa moerkt tre sammen der aarene
-     tilfeldig traff hverandre i tone. */
-  /* Samme sikring som paa flata: fargen ligger under bildet, og siden
-     clip:text klipper ALLE bakgrunnslag til glyfene, er tallene lys
-     messing selv om treet uteblir. Uten dette var tallene klippet til
-     ingenting - en usynlig klokke. */
-  background-color:#D9B370;
-  background-image:url('/bilder/tre-lys.png?v=2');
-  background-position:0 0; background-size:256px 256px;
-  -webkit-background-clip:text; background-clip:text;
-  color:transparent; -webkit-text-fill-color:transparent;
-  filter:drop-shadow(0 1px 1px rgba(0,0,0,.65));
+  /* Moerk marineblaa, samme farge som navnene under ikonflisene. */
+  color:#142036;
 }
-/* Minuttkortet faar andre utsnitt av begge tresortene enn timekortet -
-   to kort skaaret av samme planke paa noeyaktig samme sted hadde sett
-   stemplet ut. */
-.fk-kort[data-kort="m"] .fk-halv{ background-position:0 0, -97px -61px; }
-.fk-kort[data-kort="m"] .fk-halv > b{ background-position:-53px -118px; }
-.fk-o, .fk-blad-o{ top:0; border-radius:.1em .1em 0 0;
-  border-bottom:1px solid rgba(0,0,0,.65); }
-.fk-n, .fk-blad-n{ bottom:0; border-radius:0 0 .1em .1em;
-  /* Nedre halvdel: samme tre, men gradienten snus moerkere - halvdelen
-     vender bort fra lyset. */
-  background-color:#1E1202;
-  background-image:
-    linear-gradient(to bottom, rgba(0,0,0,.18), rgba(0,0,0,.38)),
-    url('/bilder/tre-mork.png?v=2');
-  background-size:auto, 256px 256px; }
+.fk-o, .fk-blad-o{ top:0; border-radius:.16em .16em 0 0;
+  border-bottom:1px solid rgba(20,32,54,.12); }
+.fk-n, .fk-blad-n{ bottom:0; border-radius:0 0 .16em .16em;
+  /* Nedre halvdel et hakk moerkere - den vender bort fra lyset. */
+  background:linear-gradient(to bottom, #F1EEE9, #EAE6DF); }
 .fk-n > b, .fk-blad-n > b{ margin-top:-.64em; }
 
 /* Bladene ligger over de statiske halvdelene og vipper om midtlinja. */
@@ -631,7 +596,7 @@
 /* Skyggen som faller over nedre halvdel mens bladet er paa vei ned. */
 .fk-kort.flipp .fk-n::after{
   content:''; position:absolute; inset:0;
-  background:rgba(0,0,0,.35);
+  background:rgba(20,32,54,.14);
   animation:fkSkygge .54s ease forwards;
 }
 @keyframes fkSkygge{ from{opacity:1} to{opacity:0} }
