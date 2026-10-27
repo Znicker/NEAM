@@ -1762,7 +1762,9 @@ function neamBygg(){
   handtak.id = 'neamHandtak';
   handtak.title = 'Neam';
   handtak.setAttribute('aria-label', 'Snakk med Neam');
-  handtak.innerHTML = neamIkonImg('neam');
+  /* Den runde NEAM-logoen, samme som oeverst paa forsiden (27. oktober
+     2026). Roboten staar fortsatt i samtalepanelet og i applista. */
+  handtak.innerHTML = neamIkonImg('neam-logo');
   handtak.onclick = neamFirer;
   document.body.appendChild(handtak);
 
