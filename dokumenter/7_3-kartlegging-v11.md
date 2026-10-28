@@ -367,6 +367,22 @@ det trenger en egen versjon med fylt bakgrunn). Avatarene i
   fargene på de seks raritetsnivåene. Ingen av dem står i designsystemet.
 
 **Avtalt som neste sak:**
+- **Økonomisida – kvitteringene fra Trumf og Coop** (påbegynt 28.–29.
+  oktober). `okonomi.html` er skjult (ingen lenke, ikke i fireren) og bare
+  for sys@. Den viser kontoene fra DNB med én rolle per konto, og en
+  innboks der transaksjonene fra felleskontoene får forslag til kategori
+  (lært per motpart, ellers kjente navn) og godkjennes med angre-stripe.
+  Banken kobles via Enable Banking (`functions/api/bank/`, «restricted
+  production», 21 DNB-kontoer – Bulder venter med vilje). Hemmeligheter i
+  Pages: `ENABLE_BANKING_KEY`, `ACCESS_TEAM`. Alt i KV under `auth:bank:`,
+  og Access-beviset sjekkes med signatur – strengere enn `ms.js` og
+  `homey.js`. Henting på forespørsel med seks timers buffer (bankens grense
+  er fire hentinger i døgnet). Trumf- og Coop-kortet finnes ikke hos Enable
+  Banking; nedbetalingen av kortgjeld kommer derfor som én sum og må få
+  varelinjene fra kvitteringene i appene. Plan og klikkbar skisse ligger
+  som artifacts («Neam Økonomi – plan», «Neam Økonomi»). **Ikke godkjent:**
+  uttrykket uten steampunk-bakgrunn og fargebruken i skissen (rødt «over»,
+  oker «trenger valg»).
 - **Interaktiv plantegning av huset.** Magne lager en plantegning, og den
   skal bli den egentlige flaten for enhetene – Rommene-kortet er
   mellomstasjonen. Styringen i `felles-hus.js` kan brukes som den er;
