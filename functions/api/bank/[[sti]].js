@@ -19,6 +19,9 @@
      GET /api/bank?hva=budsjett / POST {hva:'budsjett', standard} - standardbudsjettet
      GET /api/bank?hva=regnskap&mnd=AAAA-MM            - godkjente poster summert per kategori
      GET /api/bank?hva=varsler          - det som trenger noen (kortet paa forsiden)
+     GET /api/bank?hva=regnskap-aar     - godkjente poster per maaned og kategori, hele perioden
+     GET /api/bank?hva=formue / POST {hva:'formue', verdier, gjeld, maal} - det banken ikke gir
+     POST /api/bank {hva:'forslag', forslag:[{id, kategori, sikker}]}    - Neams kategoriforslag
      GET /api/bank?hva=hent             - vekker hentingen; ogsaa kitchen@, svarer ingenting om innholdet
      GET /api/bank?hvem=1              - diagnose: hvilke identitetskilder finnes
      POST /api/bank {hva:'roller'}     - setter rollen paa kontoer
@@ -62,6 +65,7 @@
      auth:bank:kv:<postId>     - varelinjene fra en kvittering lest fra bilde (bildet lagres ikke)
      auth:bank:sist-hentet     - naar vekkeren sist hentet
      auth:bank:trumf-feil      - siste Trumf-feil (slettes naar hentingen virker igjen)
+     auth:bank:formue          - verdier, gjeld og familiemaal, fylt inn for haand
      auth:bank:budsjett        - standardbudsjettet { kategori: kr per maaned } - ALDRI i koden,
                                  repoet er offentlig
    `/api/data` slipper familien til alt under `fh:`. Kontoer og
@@ -523,19 +527,68 @@ async function innboks(env, okt, fersk){
       }
     }
   }
-  if(nye) await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  /* «Spoer bare naar den er usikker» (Magne, 29. oktober). En post Neam
+     kjenner - samme motpart foert foer, eller et kjent navn - foeres med en
+     gang og merkes `auto`. Den vises under «Foert automatisk» og kan angres;
+     en angret post (`manuell`) foeres aldri automatisk igjen. Mulig dobbel
+     foeres aldri av seg selv. */
+  const naa = new Date().toISOString();
+  let endret = nye > 0;
+  for(const id of Object.keys(poster)){
+    const p = poster[id];
+    if(p.status !== 'ny' || p.dekketAv || p.mulDobbel || p.manuell) continue;
+    if(!p.kategori){ const f = foreslaa(p, laert); if(f.kategori){ p.kategori = f.kategori; p.kilde = f.kilde; } }
+    if(!p.kategori || (p.kilde !== 'laert' && p.kilde !== 'ord')) continue;
+    autoFoer(poster, p, naa);
+    endret = true;
+  }
+  if(endret) await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
   const alle = Object.keys(poster).map(id => poster[id]);
   /* Et banktrekk som er slaatt sammen med en kvittering, vises ikke for seg. */
   const venter = alle.filter(p => p.status === 'ny' && !p.dekketAv).sort((a, b) => b.dato.localeCompare(a.dato));
-  /* En post som kom inn uten forslag, kan ha faatt et siden - Neam kan ha
-     laert motparten paa en annen post. Bare i svaret; lagres ved godkjenning. */
   for(const p of venter){
     if(p.kategori) continue;
     const f = foreslaa(p, laert);
     if(f.kategori){ p.kategori = f.kategori; p.kilde = f.kilde; }
   }
+  /* De automatisk foerte siste 14 dager, nyeste foerst - til gjennomsyn og angre. */
+  const grense = new Date(Date.now() - 14 * 86400000).toISOString();
+  const auto = alle.filter(p => p.status === 'godkjent' && p.auto && (p.behandlet || '') >= grense)
+    .sort((a, b) => b.dato.localeCompare(a.dato)).slice(0, 60);
   return svar({ ok:true, hentet:hentet, advarsel:advarsel || undefined, fra:fra, kontoer:felles.length, trumf:trumfKoblet,
-    kategorier:KATEGORIER, poster:venter, godkjent:alle.filter(p => p.status === 'godkjent').length });
+    kategorier:KATEGORIER, poster:venter, auto:auto, godkjent:alle.filter(p => p.status === 'godkjent').length });
+}
+function autoFoer(poster, p, naa){
+  Object.assign(p, { status:'godkjent', auto:true, behandlet:naa, av:'neam' });
+  if(p.bankId && poster[p.bankId]) Object.assign(poster[p.bankId], { status:'sammenslatt', behandlet:naa, av:'neam' });
+}
+
+/* Neams forslag for poster ingen regel kjente. Sida spoer Claude (via
+   /api/claude) og sender svaret hit: { forslag:[{ id, kategori, sikker }] }.
+   Sikker -> foeres automatisk og laeres for motparten. Usikker -> blir
+   staaende med forslaget, og da spoer sida Magne. Tom kategori -> Neam
+   visste ikke; posten merkes saa den ikke sendes paa nytt. */
+async function lagreForslag(env, kropp){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const laert = await lesJson(env, LAERT_NOKKEL, {});
+  const naa = new Date().toISOString();
+  let foert = 0;
+  for(const f of [].concat(kropp.forslag || []).slice(0, 100)){
+    const p = poster[f && f.id];
+    if(!p || p.status !== 'ny') continue;
+    p.aiSpurt = true;
+    if(!f.kategori || KATEGORIER.indexOf(f.kategori) === -1) continue;
+    if(p.kategori && p.kilde !== 'ai-usikker') continue;   /* et menneskes eller en regels valg vinner */
+    p.kategori = f.kategori;
+    if(f.sikker && !p.mulDobbel && !p.manuell){
+      p.kilde = 'ai'; autoFoer(poster, p, naa); foert++;
+      const n = motpartNokkel(p);
+      if(n) laert[n] = f.kategori;
+    } else p.kilde = 'ai-usikker';
+  }
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  await env.FAMILIE_KV.put(LAERT_NOKKEL, JSON.stringify(laert));
+  return svar({ ok:true, foert:foert });
 }
 
 /* ---------- «Neam ber om input» ----------
@@ -586,6 +639,55 @@ async function lagreBudsjett(env, kropp, epost){
   await env.FAMILIE_KV.put(BUDSJETT_NOKKEL, JSON.stringify({ standard:ut, endret:new Date().toISOString(), av:epost }));
   return budsjett(env);
 }
+/* Hele perioden, maaned for maaned: { 'AAAA-MM': { kategori: beloep } }. For År-fanen. */
+async function regnskapAar(env){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const ut = {};
+  for(const id of Object.keys(poster)){
+    const p = poster[id];
+    if(p.status !== 'godkjent') continue;
+    const m = String(p.dato).slice(0, 7);
+    const deler = p.deler && p.deler.length ? p.deler : [{ kategori:p.kategori, belop:p.belop }];
+    for(const d of deler){
+      if(BUDSJETT_KATEGORIER.indexOf(d.kategori) === -1) continue;
+      if(!ut[m]) ut[m] = {};
+      const v = d.kategori.indexOf('Inntekter') === 0 ? d.belop : -d.belop;
+      ut[m][d.kategori] = Math.round(((ut[m][d.kategori] || 0) + v) * 100) / 100;
+    }
+  }
+  return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', maaneder:ut });
+}
+
+/* ---------- Verdier, gjeld og familiemaal ----------
+   Det banken ikke gir: husets verdi, bilen, fond, laan (Bulder og SPK er
+   ikke koblet) og familiemaalet. Fylles inn for haand i Oppsett, med dato
+   paa hvert tall - planen: «hvert tall viser hvor ferskt det er». Saldo
+   paa kontoer med rollen «sparing» legges til av sida, fra banken. */
+const FORMUE_NOKKEL = 'auth:bank:formue';
+async function formue(env){
+  const f = await lesJson(env, FORMUE_NOKKEL, {});
+  return svar({ ok:true, verdier:f.verdier || [], gjeld:f.gjeld || [], maal:f.maal || null });
+}
+async function lagreFormue(env, kropp, epost){
+  const rad = (r, medRente) => {
+    const navn = String(r && r.navn || '').trim().slice(0, 60);
+    const belop = Math.round(Number(r && r.belop) || 0);
+    if(!navn || belop < 0 || belop > 1e9) return null;
+    const ut = { navn:navn, belop:belop, dato:/^\d{4}-\d{2}-\d{2}$/.test(r.dato || '') ? r.dato : new Date().toISOString().slice(0, 10) };
+    if(medRente){ const rente = Number(r.rente); if(rente >= 0 && rente < 30) ut.rente = Math.round(rente * 100) / 100; }
+    return ut;
+  };
+  const verdier = [].concat(kropp.verdier || []).slice(0, 30).map(r => rad(r, false)).filter(Boolean);
+  const gjeld = [].concat(kropp.gjeld || []).slice(0, 30).map(r => rad(r, true)).filter(Boolean);
+  let maal = null;
+  if(kropp.maal && String(kropp.maal.navn || '').trim()){
+    maal = { navn:String(kropp.maal.navn).trim().slice(0, 60), belop:Math.max(0, Math.round(Number(kropp.maal.belop) || 0)),
+      spart:Math.max(0, Math.round(Number(kropp.maal.spart) || 0)), konto:String(kropp.maal.konto || '').slice(0, 80) };
+  }
+  await env.FAMILIE_KV.put(FORMUE_NOKKEL, JSON.stringify({ verdier:verdier, gjeld:gjeld, maal:maal, endret:new Date().toISOString(), av:epost }));
+  return formue(env);
+}
+
 async function regnskap(env, mnd){
   if(!/^\d{4}-\d{2}$/.test(mnd || '')) mnd = new Date().toISOString().slice(0, 7);
   const poster = await lesJson(env, POST_NOKKEL, {});
@@ -724,6 +826,8 @@ async function angre(env, kropp){
   for(const id of [].concat(kropp.ider || [])){
     const p = poster[id];
     if(!p || p.status === 'ny') continue;
+    /* En automatisk foert post som angres, foeres aldri automatisk igjen. */
+    if(p.auto){ p.manuell = true; delete p.auto; }
     p.status = 'ny'; delete p.behandlet; delete p.av; delete p.deler; n++;
     /* Banktrekket som ble slaatt sammen, gaar tilbake til «dekket». Ble
        kvitteringen stroeket, mistet den koblingen; da kobles den paa nytt,
@@ -981,6 +1085,8 @@ export async function onRequestGet({ request, env }){
     if(hva === 'kvittering') return await lagretKvittering(env, url.searchParams.get('id') || '');
     if(hva === 'budsjett') return await budsjett(env);
     if(hva === 'regnskap') return await regnskap(env, url.searchParams.get('mnd') || '');
+    if(hva === 'regnskap-aar') return await regnskapAar(env);
+    if(hva === 'formue') return await formue(env);
     if(!okt) return svar({ ok:false, feil:'Banken er ikke koblet. Åpne /api/bank/start.' });
     const fersk = url.searchParams.get('fersk') === '1';
     if(hva === 'kontoer') return await kontoer(env, okt, fersk);
@@ -1010,6 +1116,8 @@ export async function onRequestPost({ request, env }){
   if(kropp && kropp.hva === 'trumf-innlogging') return await trumfInnlogging(env, kropp, v.epost);
   if(kropp && kropp.hva === 'kvittering-ny') return await nyKvittering(env, kropp, v.epost);
   if(kropp && kropp.hva === 'budsjett') return await lagreBudsjett(env, kropp, v.epost);
+  if(kropp && kropp.hva === 'formue') return await lagreFormue(env, kropp, v.epost);
+  if(kropp && kropp.hva === 'forslag') return await lagreForslag(env, kropp);
   if(kropp && kropp.hva === 'trumf-koble-fra'){
     await env.FAMILIE_KV.delete(TRUMF_NOKKEL);
     await env.FAMILIE_KV.delete('auth:bank:buffer:trumf:liste');

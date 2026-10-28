@@ -416,6 +416,11 @@ input,select,textarea{font-size:16px}
     </div>
   </div>
 
+  <!-- Oekonomien er skjult (okonomi.html); dette kortet er eneste vei dit, og
+       det vises bare for sys@ naar noe trenger noen. Se skriptet nederst. -->
+  <a id="ixok-kort" href="/okonomi.html#innboks" hidden
+     style="margin:0 0 14px;padding:12px 16px;background:var(--paper);border-radius:var(--radius);box-shadow:var(--shadow);color:var(--ink);text-decoration:none;border-left:4px solid var(--handling-endre)"></a>
+
   <section class="apper-seksjon">
       <div class="panel-head">
         <span class="panel-title">Appene</span>
@@ -1217,6 +1222,28 @@ window.neamUtfor = async function(navn, arg){
    SKRIVINGEN av fh_navn i slippInn() staar igjen, og maa staa: oppskrifter
    og handleliste har ingen Microsoft-innlogging og henter navnet derfra.
    Innlogget bruker vises i bunnlinja (#hvem). */
+</script>
+
+<script>
+/* Oekonomien (okonomi.html) er skjult og bare for sys@. Kortet over appene
+   vises naar noe trenger noen: poster som venter, Trumf som trenger ny
+   innlogging, DNB-samtykke som snart gaar ut. /api/bank svarer bare sys@ -
+   alle andre faar {ok:false} og ser ingenting. Lagt inn 29. oktober 2026. */
+(function(){
+  var vask = function(s){ return String(s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); };
+  fetch('/api/bank?hva=varsler', { credentials:'same-origin', cache:'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(v){
+      if(!v || !v.ok || !v.varsler || !v.varsler.length) return;
+      var k = document.getElementById('ixok-kort');
+      k.innerHTML = '<span style="font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)">Økonomi</span>'
+        + v.varsler.map(function(x){ return '<div style="font-size:var(--t-brod);font-weight:600;margin-top:2px">' + vask(x.tekst) + '</div>'; }).join('');
+      /* display settes her, ikke i style-attributtet - ellers slaar den hidden. */
+      k.style.display = 'block';
+      k.hidden = false;
+    })
+    .catch(function(){});
+})();
 </script>
 
 <!-- Neam: samme femmer som paa de andre sidene. Dialog-fila foerst,

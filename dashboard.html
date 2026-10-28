@@ -3475,6 +3475,15 @@ async function oppdaterAlt(manuelt){
      skal ikke den automatiske oppdateringen dra dem tilbake. */
   setInterval(function(){ if(!document.hidden && dagOffset === 0) oppdaterAlt(false); }, 5*60*1000);
 
+  /* Oekonomien: skjermen staar paa hele dagen, saa den vekker hentingen fra
+     banken og Trumf hver sjette time (functions/api/bank, ?hva=hent).
+     Svaret sier ingenting om innholdet - kjoekkenskjermen ser ikke
+     oekonomien, den bare vekker. Banken tillater fire hentinger i doegnet;
+     bufferen i bank-funksjonen passer paa det uansett. */
+  function vekkOkonomi(){ if(!document.hidden) fetch('/api/bank?hva=hent', { credentials:'same-origin', cache:'no-store' }).catch(function(){}); }
+  setTimeout(vekkOkonomi, 60 * 1000);
+  setInterval(vekkOkonomi, 6 * 60 * 60 * 1000);
+
   /* Paaminnelsene speiles hvert TREDJE SEKUND. Kjoekkendashen og Emma
      dash deler samme noekkel i KV, men det finnes ingen kanal mellom dem
      - den ene faar vite om den andres endring foerst naar den spoer.
