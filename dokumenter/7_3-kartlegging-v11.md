@@ -1,6 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 27. oktober 2026: nytt visuelt uttrykk, første del –
+*Ført à jour 29. oktober 2026: kameraet virker utenfor hjemmenettet –
+TURN fra Cloudflare Realtime (del 32) – og Homey-beviset er bundet med
+`homeyId` (del 31). Ført à jour 27. oktober 2026: nytt visuelt uttrykk, første del –
 steampunk-bakgrunnen er fjernet, klapptavla er lys, og de nye ikonene er
 koblet inn med navnet som tekst under. Sikkerhetskopi av den gamle
 layouten i grenen `backup/layout-steampunk-2026-10-27` (se toppblokka).
@@ -76,7 +78,7 @@ alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html` og spillsida
 `andrea-spill.html`; `functions/_middleware.js`, `functions/api/` med
 `hent.js`, `sandnes.js`, `sjo.js`, `claude.js`, `data.js`, `ms.js`,
-`homey.js`, `roborock.js`.
+`homey.js`, `roborock.js`, `turn.js`.
 Bildeversjoner: **`IKON_V=1`** (i `felles-neam.js`) for de nye ikonene i
 `bilder/ikoner/` og `bilder/ikoner/sikkerhet/` – sidene som lenker dem
 direkte, skriver `?v=1` selv. `FAG_MERKE_V=3` (fagmerkene, fortsatt i
@@ -94,7 +96,9 @@ tale 1–4 ble brent 13. september ved å endre en fil som alt var pushet uten
 er brent i det de forlates.
 
 **Hemmeligheter i Cloudflare:** `ANTHROPIC_API_KEY`, `MS_CLIENT_SECRET`,
-`HOMEY_CLIENT_SECRET`. **En hemmelighet tas først i bruk ved neste
+`HOMEY_CLIENT_SECRET`, `TURN_KEY_ID`, `TURN_KEY_API_TOKEN` (de to siste
+fra Realtime → TURN Server; Realtime-abonnementet er lagt til kontoen,
+1 000 GB gratis per måned). **En hemmelighet tas først i bruk ved neste
 utrulling** – lagre den, og push eller trykk «Retry deployment».
 
 **Økta 15. september ga ingen kode.** Den gikk med til å tenke høyt, og
@@ -420,7 +424,6 @@ det trenger en egen versjon med fylt bakgrunn). Avatarene i
   (langt trykk på høyttaleren), og den verdien som sitter skrives inn som
   standard.
 - **Diktatarket med hjelpelinjer** – ett utfylt ark fotografert med iPhone.
-- **Kameraet utenfor hjemmenettet.** Se del 32.
 - **Fiskebeinet med åtte apper** på iPad og telefon.
 - **Mattespillet i Safari.** Aldri kjørt på en ekte iPad.
 - **Klokkespillet på iPad – å dra viserne med fingeren.** Prøvd med
@@ -1963,6 +1966,14 @@ går gjennom Athoms sky, som gir hver Homey Pro en offentlig `remoteUrl`.
 {remoteUrl}/api/manager/users/login`. Først da kan man spørre om enheter.
 Steg 2–4 gjentas når sesjonen dør; steg 1 holder i praksis for alltid.
 
+**Beviset er bundet til Homeyen (28. oktober 2026).** Athom ba på e-post
+om `&homeyId=<_id fra /user/me>` på `POST /delegation/token`, så beviset
+bare virker på vår Homey; ubundne bevis skal avvises senere. Svarer Athom
+400 på den bundne formen, prøves den gamle én gang (`nySesjon()` i
+`homey.js`). **Den reserven skal fjernes** når Athom slutter å godta
+ubundne bevis – da skjuler den bare at noe er galt. Athom sier fra når de
+ser bundne bevis fra klienten vår.
+
 **Refresh-tokenet fra Athom utløper ALDRI**, med mindre brukeren trekker
 tilbake tilgangen eller det går seks måneder uten et eneste kall. Mer
 holdbart enn Microsofts 90 dager – ingen timer trengs.
@@ -2054,6 +2065,33 @@ peker utover, med årsak innenfor.
 
 **Kameraet kan ikke styres.** Tapo-appen melder bare `alarm_motion`, og den
 er lesbar. Finnes ikke bryteren i Homey, finnes den ikke for oss.
+
+### Utenfor hjemmenettet – TURN, 28.–29. oktober 2026
+
+**Bildet kom bare fram på hjemme-Wi-Fi.** Med bare STUN finner hver side
+sin offentlige adresse, men på 5G og mange andre nett slipper rutere ikke
+en direkte forbindelse gjennom. **Homey har ingen TURN-server:** kameraet
+ga ikke bilde i my.homey.app på 5G heller. At Tapo-appen virker ute sier
+ingenting – den går gjennom TP-Links egen sky.
+
+**Løsningen er Cloudflare Realtime TURN.** `functions/api/turn.js` lager
+kortlivede detaljer (fire timer) fra `TURN_KEY_ID` og
+`TURN_KEY_API_TOKEN`, og sikkerhetssida henter dem før oppkoblingen og
+husker dem i tre timer (`kameraServere()`). **Port 53 filtreres bort**:
+nettleserne stenger den, og siden Homey ikke tar trickle, ville en adresse
+som aldri svarer bare spist av ventetiden. Får sida ingen detaljer, kobles
+det opp med STUN alene som før – hjemme virker det uansett. Detaljene skal
+ikke logges eller lagres.
+
+**Hjemme brukes ikke TURN** – nettleseren velger den direkte veien – og
+bare det som sendes gjennom koster. 1 000 GB per måned er gratis, deretter
+$0,05 per GB; et grovt anslag er 0,5–1 GB per time med bilde ute.
+**Bekreftet av Magne på 5G 29. oktober 2026.**
+
+**Play-knappen ute er telefonen, ikke sida.** På 5G måtte Magne trykke på
+play; hjemme ikke. Koden er den samme – Lav datamodus (og
+strømsparingsmodus) på iPhone stopper automatisk avspilling, og det kan
+ingen nettside overstyre. Magne regner det ikke som et problem.
 
 ## 33. Fireren: Sikkerhet i hjørnet – og fiskebeinets tak
 
