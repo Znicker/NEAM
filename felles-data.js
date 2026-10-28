@@ -50,6 +50,18 @@ async function dataSkriv(nokkel, verdi){
   return true;
 }
 
+/* Sletting. Funksjonen bak /api/data har stoettet DELETE hele tiden -
+   det var bare ingen som kalte den herfra, fordi ingenting i datalaget
+   slettet noe. Oppskriftene gjoer det: de bor under hver sin nokkel
+   (`p:recipe:<id>`), og fjerner man bare raden i indeksen, blir selve
+   oppskriften liggende igjen i KV for alltid. */
+async function dataSlett(nokkel){
+  const r = await fetch(DATA_API + '?key=' + encodeURIComponent(nokkel),
+                        {method:'DELETE'});
+  if(!r.ok) throw new Error('KV slett ' + r.status);
+  return true;
+}
+
 /* ============================================================
    Husregisteret
    ------------------------------------------------------------
@@ -227,6 +239,15 @@ async function lesOppskriftsindeks(){
   });
   indeksTid = Date.now();
   return indeksBuffer;
+}
+
+/* Glemmer bufferet. Kalles av den som SKRIVER til indeksen - uten det
+   ville Neam lest sin egen endring tilbake som det den var foer, i
+   inntil et minutt. Sidene merket det aldri: de holder lista i minnet
+   og gaar ikke gjennom denne funksjonen. */
+function glemOppskriftsindeks(){
+  indeksBuffer = null;
+  indeksTid = 0;
 }
 
 /* Fritekstsoek i indeksen. Ingen fuzzy-logikk: smaa bokstaver og

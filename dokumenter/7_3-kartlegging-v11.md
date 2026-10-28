@@ -1,6 +1,9 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 29. oktober 2026: kameraet virker utenfor hjemmenettet –
+*Ført à jour 29. oktober 2026, kveld: Matlaging skriver på tvers –
+oppskrifter opprettes, endres og slettes, og middager settes i ukemenyen,
+fra hvilken som helst side. Første runde av «app for app»-flyttingen; se
+«Neam på tvers» under. Ført à jour 29. oktober 2026: kameraet virker utenfor hjemmenettet –
 TURN fra Cloudflare Realtime (del 32) – og Homey-beviset er bundet med
 `homeyId` (del 31). Ført à jour 27. oktober 2026: nytt visuelt uttrykk, første del –
 steampunk-bakgrunnen er fjernet, klapptavla er lys, og de nye ikonene er
@@ -70,9 +73,9 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=73`, `felles-neam.css
-?v=66`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=5`, `felles-lesalt.js
-?v=6`, `felles-hus.js ?v=12`, `felles-ms.js ?v=2`, `felles-data.js ?v=4`,
+**Siste leverte versjoner:** `felles-neam.js ?v=74`, `felles-neam.css
+?v=66`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=6`, `felles-lesalt.js
+?v=6`, `felles-hus.js ?v=12`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html` og spillsida
@@ -88,12 +91,38 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–72; neam.css til og
-med 65; data.js 1–3; rot.css 2–5; knapper `?v=1`; **lesalt 1–5, skriv 1–4,
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–73; neam.css til og
+med 65; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–5, skriv 1–5,
 hus `?v=1–11`, ms `?v=1`, tale 1–4, graph 1–2**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
 tale 1–4 ble brent 13. september ved å endre en fil som alt var pushet uten
 å heve nummeret – se del 46. Resten er tidligere leverte numre, som alltid
 er brent i det de forlates.
+
+**Neam på tvers – hva som er flyttet, og hva som ikke er det.** Strategien
+fra del 14 var «les overalt, skriv der du står». Utløseren for å flytte
+skrivingen inn i fellesfilene – «den dagen Neam trenger sin andre ekte
+skriving på tvers» – er for lengst passert, og flyttingen gjøres nå
+**én app av gangen**, med reglene lest ut av sida og verifisert mot den.
+
+*Virker overalt (26 verktøy i `felles-skriv.js`):* handlelista (legge på,
+fjerne, endre, ny/start/avslutt handletur), kalenderen (avtaler og
+påminnelser), skolearbeidet (lekser, prøver, læringsmål), navigasjon, og
+**fra 29. oktober Matlaging**: `legg_inn_oppskrifter`, `endre_oppskrift`,
+`slett_oppskrift`, `sett_middag`, `fjern_middag`.
+
+*Virker fortsatt bare på sin egen side:* `sok_varekatalog`,
+`list_handleturer`, `sett_varetype`, `slaa_sammen`, `finn_opprydding`,
+`les_ny_pakke` og de to skjermverktøyene `foresla_import` og
+`foresla_opprydding` (handleliste); `endre_fag`, `legg_til_fag`,
+`foreslaa_lekser` (Andrea og Emma); `les_diktat` og `sett_diktatord`
+(Andrea); `list_skoleplaner` og `hent_skoleplan` (Emma).
+
+*Finnes ikke som verktøy noe sted:* husregisteret (bare skjemaet på
+forsiden – teksten går i systemteksten), spillene, vedlegg og bilder.
+
+**De to skjermverktøyene kan ikke flyttes som de er.** `foresla_import` og
+`foresla_opprydding` tegner en hel skjerm gjennom `neamSkjerm`, og sida
+eier layouten. De må bli noe annet enn en flytting, eller bli stående.
 
 **Hemmeligheter i Cloudflare:** `ANTHROPIC_API_KEY`, `MS_CLIENT_SECRET`,
 `HOMEY_CLIENT_SECRET`, `TURN_KEY_ID`, `TURN_KEY_API_TOKEN` (de to siste
@@ -451,9 +480,12 @@ det trenger en egen versjon med fylt bakgrunn). Avatarene i
   stil og filnavn står i `bilder/kort/motiv-bestilling.txt`. Mangler et
   motiv, vises kortet uten. Motivbildet får ikke `width`/`height`
   (`new Image()` i `kort.html`), og det må rettes før motivene kommer inn.
-- **Skriving til skolearbeidet på tvers.** Det siste som bare kan gjøres fra
-  sin egen side. Alt annet – handleliste, kalender, diktat, dør – virker
-  overalt.
+- **Skolearbeidet på tvers – halvveis.** Lekser, prøver og læringsmål har
+  virket overalt siden 13. september (`felles-skriv.js`, bak
+  `skrivSkoleTillatt()`). Det som fortsatt bare virker fra sin egen side,
+  er `endre_fag`, `legg_til_fag` og `foreslaa_lekser` på begge dashene,
+  pluss `list_skoleplaner` og `hent_skoleplan` på Emma. Neste runde etter
+  Matlaging – se «Neam på tvers».
 - **Grunnstoffspillets trinn 3 – bindinger** (del 51). Hun trykker på ett
   stoff, og de stoffene det kan binde seg med lyser opp. Begrensningen til
   det hun har låst opp er det som gjør trinnet mulig. Trinn 1 og 2 står.

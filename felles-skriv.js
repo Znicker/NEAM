@@ -43,6 +43,41 @@ const SKRIV_VARETYPER = [
   'Frysevarer','Snacks','Drikke','Annet'
 ];
 
+/* ------------------------------------------------------------
+   Matlaging
+   ------------------------------------------------------------
+   Oppskriftsboka skriver gjennom sin egen fullKey(), som setter
+   `p:` foran. Noeklene gjentas derfor ikke her - de staar i
+   felles-data.js (OPPSKRIFT_INDEKS, OPPSKRIFT_NOKKEL,
+   UKEPLAN_NOKKEL), som lastes foer denne fila, og én nokkel ett
+   sted er hele poenget.
+
+   TO NOEKLER, ÉN SANNHET. Hver oppskrift bor under `p:recipe:<id>`
+   med alt innholdet, og `p:recipe-index` baerer en kort rad per
+   oppskrift til forsida. Skriver man bare den ene, finnes
+   oppskriften halvveis: enten usynlig i lista, eller som en rad
+   som aapner ingenting. Alle tre verktoeyene under roerer begge.
+
+   VERDIENE ER JSON-STRENGER. window.storage i Matlaging lagrer
+   JSON.stringify(objektet), og KV-funksjonen stringifyer det den
+   faar én gang til. Vi skriver derfor dataSkriv(nokkel,
+   JSON.stringify(x)) og leser med husLesJson(), som pakker ut
+   begge lagene. Skriver man objektet raatt, staar oppskriften der
+   i en form sida ikke kan lese.
+   ------------------------------------------------------------ */
+
+/* Samme liste som CATEGORY_LIST i oppskrifter.html. Duplisert, ikke
+   delt: fellesfila kan ikke lese en const inne i sida. Endres lista
+   der, endres den her - en kategori som ikke finnes i filteret gjoer
+   oppskriften umulig aa finne igjen. */
+const SKRIV_MAT_KATEGORIER = ['Frokost', 'Lunsj', 'Middag', 'Kvelds',
+  'Bakst', 'Brødbakst', 'Søtbakst', 'Snacks', 'Sauser',
+  'Krydderblandinger', 'Tilbehør'];
+
+/* Standard porsjoner i ukemenyen naar oppskriften ikke sier noe.
+   PLAN_STD_PORSJONER i oppskrifter.html. */
+const SKRIV_MAT_PORSJONER = 4;
+
 /* Id-ene foelger sidas form: prefiks, tid, teller, litt tilfeldig. */
 let skrivTeller = 0;
 function skrivId(prefiks){
@@ -688,6 +723,111 @@ function skrivHuskeNaarTekst(arg){
     : 'uke ' + skrivIsoUke(skrivUkeSlutt(arg && arg.uke)).uke + ', i ukesboksen';
 }
 
+/* ------------------------------------------------------------
+   Matlaging - hjelperne
+   ------------------------------------------------------------ */
+
+/* Dagnummer 1-7 av et dagnavn. HUS_UKEDAGER i felles-data.js har
+   tom streng paa plass 0, saa indeksen ER dagnummeret. */
+function skrivMatDag(dag){
+  const n = String(dag || '').trim().toLowerCase();
+  const i = HUS_UKEDAGER.indexOf(n);
+  if(i < 1) throw new Error('Ukjent dag: «' + dag + '». Bruk mandag til søndag.');
+  return i;
+}
+
+/* Bare kategorier huset kjenner. En ukjent kategori blir usynlig i
+   filteret, og oppskriften umulig aa finne igjen. Samme sjekk som
+   neamLagreOppskrift() i oppskrifter.html. */
+function skrivMatKategorier(liste, tittel){
+  const kat = (liste || [])
+    .map(function(c){
+      return SKRIV_MAT_KATEGORIER.filter(function(k){
+        return k.toLowerCase() === String(c).trim().toLowerCase();
+      })[0];
+    })
+    .filter(Boolean);
+  if(!kat.length){
+    throw new Error('«' + (tittel || 'Oppskriften') + '» mangler en gyldig kategori. '
+                  + 'Gyldige: ' + SKRIV_MAT_KATEGORIER.join(', ') + '.');
+  }
+  return kat;
+}
+
+/* amount er tall, amountText det som ikke lot seg regne paa («en
+   klype»). Bare én av dem er satt - se lesOppskrift() i
+   felles-data.js, som leser dem tilbake. */
+function skrivMatIngredienser(liste){
+  return (liste || []).map(function(i){
+    const tall = (typeof i.mengde === 'number' && !isNaN(i.mengde)) ? i.mengde : null;
+    return {
+      amount: tall,
+      amountText: tall === null ? String(i.mengdetekst || '').trim() : '',
+      unit: String(i.enhet || '').trim(),
+      name: String(i.navn || '').trim(),
+      allergens: [],
+      nutrition: null,
+      section: ''
+    };
+  }).filter(function(i){ return i.name; });
+}
+
+function skrivMatSteg(liste){
+  return (liste || [])
+    .map(function(t){ return String(t || '').trim(); })
+    .filter(Boolean)
+    .map(function(t){ return { text:t, photo:null, section:'' }; });
+}
+
+/* RENE STRENGER, ikke objekter. Neam lagret tipsene som {text:...} en
+   periode, og de oppskriftene lot seg ikke AAPNE i det hele tatt - de
+   sto i lista og var doede. ryddOppskrift() i sida retter det ved
+   lesing, men den retter ikke det vi skriver. */
+function skrivMatTips(liste){
+  return (liste || [])
+    .map(function(t){ return (t && typeof t === 'object') ? String(t.text || '') : String(t == null ? '' : t); })
+    .filter(function(t){ return t.trim(); });
+}
+
+async function skrivMatIndeks(){
+  const d = await husLesJson(OPPSKRIFT_INDEKS);
+  return Array.isArray(d) ? d : [];
+}
+
+/* Begge lagene: objektet stringifyes her, og KV-funksjonen
+   stringifyer det den faar én gang til. Se blokka om JSON-strenger
+   over - skriver man objektet raatt, staar oppskriften i en form
+   sida ikke kan lese. */
+async function skrivMatSkriv(nokkel, verdi){
+  const r = await dataSkriv(nokkel, JSON.stringify(verdi));
+  /* Leselaget bufrer indeksen i 60 sekunder. Skriver vi den uten aa
+     tomme bufferet, leser Neam sin egen endring tilbake som det den
+     var foer - og retter den en gang til. */
+  if(nokkel === OPPSKRIFT_INDEKS) glemOppskriftsindeks();
+  return r;
+}
+
+async function skrivMatHent(id){
+  const r = await husLesJson(OPPSKRIFT_NOKKEL + id);
+  if(!r || typeof r !== 'object'){
+    throw new Error('Fant ingen oppskrift med id ' + id + '. Kjør finn_oppskrift først.');
+  }
+  return r;
+}
+
+/* Raden i indeksen holdes i takt med oppskriften. Feltene er de
+   persistRecipeIndex() i sida skriver; `thumb` og terningkastene
+   roeres ikke - de hoerer til bildet og vurderingene, som vi ikke
+   eier herfra. */
+function skrivMatIndeksRad(rad, r){
+  return Object.assign({}, rad, {
+    id: r.id,
+    title: r.title,
+    time: r.time,
+    categories: r.categories
+  });
+}
+
 const SKRIV_VERKTOY = [
   {
     name: 'legg_paa_handlelista',
@@ -1290,6 +1430,199 @@ const SKRIV_VERKTOY = [
                     : '\n\nDet som står der nå blir borte.');
     }
   },
+
+  /* ---------------- Matlaging ----------------
+     `legg_inn_oppskrifter` baerer samme navn som sidas eget, med
+     vilje: staar man PAA Matlaging, filtrerer skrivVerktoy() dette
+     bort og sidas eget vinner. Det tegner lista om etterpaa, og
+     det gjoer ikke vi. */
+  {
+    name: 'legg_inn_oppskrifter',
+    description:
+      'Legger inn én eller flere oppskrifter i oppskriftsboka. Virker fra '
+      + 'hvilken som helst side.\n\n'
+      + 'VIKTIG: bruk BARE det brukeren faktisk har gitt deg. Ikke fyll inn '
+      + 'mengder, ingredienser eller framgangsmåte du ikke har fått. Mangler '
+      + 'en mengde, la den stå tom. Skal du foreslå noe selv, spør først i '
+      + 'stedet for å legge det inn.\n\n'
+      + 'Kategorier må være blant: ' + SKRIV_MAT_KATEGORIER.join(', ') + '. '
+      + 'En krydderblanding hører til «Krydderblandinger».',
+    input_schema: {
+      type:'object',
+      properties:{
+        oppskrifter: {
+          type:'array',
+          description:'Oppskriftene som skal legges inn.',
+          items:{
+            type:'object',
+            properties:{
+              tittel:     { type:'string' },
+              kategorier: { type:'array', items:{type:'string'},
+                            description:'Minst én. Må være fra den faste lista.' },
+              porsjoner:  { type:'number', description:'Utelates om det ikke er oppgitt.' },
+              tid:        { type:'string', description:'For eksempel «20 minutter». Utelates om ukjent.' },
+              ingredienser: {
+                type:'array',
+                items:{
+                  type:'object',
+                  properties:{
+                    mengde:      { type:'number', description:'Tall. Utelates om mengden er en tekst.' },
+                    mengdetekst: { type:'string', description:'For eksempel «1 klype» eller «etter smak».' },
+                    enhet:       { type:'string', description:'ts, ss, g, dl …' },
+                    navn:        { type:'string' }
+                  },
+                  required:['navn']
+                }
+              },
+              fremgangsmate: { type:'array', items:{type:'string'},
+                               description:'Ett steg per element. Utelates for krydderblandinger.' },
+              notat: { type:'string', description:'Kommentar, for eksempel hva den passer til.' }
+            },
+            required:['tittel','kategorier']
+          }
+        }
+      },
+      required:['oppskrifter']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(a){
+      const n = ((a && a.oppskrifter) || []).length;
+      return n === 1
+        ? 'Legger inn oppskriften «' + ((a.oppskrifter[0] || {}).tittel || '') + '».'
+        : 'Legger inn ' + n + ' oppskrifter.';
+    },
+    /* Flere under ett, med avkryssing per rad - samme som sidas eget.
+       Da slipper man å svare ja ti ganger for ti krydderblandinger. */
+    neamTabell: function(a){
+      return ((a && a.oppskrifter) || []).map(function(o){
+        const ing = (o.ingredienser || []).length;
+        return {
+          tittel: o.tittel || '(uten navn)',
+          under: (o.kategorier || []).join(', ')
+               + (ing ? ' · ' + ing + ' ingrediens' + (ing > 1 ? 'er' : '')
+                      : ' · ingen ingredienser')
+        };
+      });
+    }
+  },
+  {
+    name: 'endre_oppskrift',
+    description:
+      'Endrer en oppskrift som alt ligger i boka. Krever id fra finn_oppskrift '
+      + 'eller les_ukeplanen – kjør en av dem først.\n\n'
+      + 'Bare feltene du sender med endres; resten står som de er. Sender du '
+      + 'ingredienser, framgangsmåte eller tips, ERSTATTER lista den som ligger '
+      + 'der – ta med alle linjene, ikke bare de nye. Bilder røres aldri.',
+    input_schema: {
+      type:'object',
+      properties:{
+        id:         { type:'string', description:'Oppskriftens id.' },
+        tittel:     { type:'string' },
+        kategorier: { type:'array', items:{type:'string'},
+                      description:'Erstatter kategoriene. Fra den faste lista: '
+                                + SKRIV_MAT_KATEGORIER.join(', ') + '.' },
+        porsjoner:  { type:'number' },
+        tid:        { type:'string', description:'For eksempel «20 minutter».' },
+        ingredienser: {
+          type:'array',
+          description:'Erstatter hele ingredienslista.',
+          items:{
+            type:'object',
+            properties:{
+              mengde:      { type:'number' },
+              mengdetekst: { type:'string' },
+              enhet:       { type:'string' },
+              navn:        { type:'string' }
+            },
+            required:['navn']
+          }
+        },
+        fremgangsmate: { type:'array', items:{type:'string'},
+                         description:'Erstatter hele framgangsmåten.' },
+        tips: { type:'array', items:{type:'string'},
+                description:'Erstatter tipsene. Tom liste fjerner dem.' }
+      },
+      required:['id']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(a){
+      a = a || {};
+      const felt = [];
+      if(a.tittel        != null) felt.push('navnet til «' + a.tittel + '»');
+      if(a.kategorier    != null) felt.push('kategoriene til ' + (a.kategorier || []).join(', '));
+      if(a.porsjoner     != null) felt.push('porsjonene til ' + a.porsjoner);
+      if(a.tid           != null) felt.push('tiden til ' + a.tid);
+      if(a.ingredienser  != null) felt.push('HELE ingredienslista (' + (a.ingredienser || []).length + ' linjer)');
+      if(a.fremgangsmate != null) felt.push('HELE framgangsmåten (' + (a.fremgangsmate || []).length + ' steg)');
+      if(a.tips          != null) felt.push((a.tips || []).length ? 'tipsene' : 'tipsene (fjernes)');
+      return 'Endrer en oppskrift i boka:\n\n· '
+           + (felt.length ? felt.join('\n· ') : 'ingenting');
+    }
+  },
+  {
+    name: 'slett_oppskrift',
+    description:
+      'Sletter en oppskrift fra boka for godt. Krever id fra finn_oppskrift. '
+      + 'Den tas samtidig ut av ukemenyen de ukene den står i.',
+    input_schema: {
+      type:'object',
+      properties:{ id: { type:'string', description:'Oppskriftens id.' } },
+      required:['id']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(){
+      return 'SLETTER en oppskrift fra boka for godt, og tar den ut av '
+           + 'ukemenyen.\n\nDen kan ikke hentes tilbake.';
+    }
+  },
+  {
+    name: 'sett_middag',
+    description:
+      'Setter en rett på en dag i ukemenyen. Krever id fra finn_oppskrift. '
+      + 'Uten uke brukes inneværende uke. Flere retter kan stå på samme dag.',
+    input_schema: {
+      type:'object',
+      properties:{
+        id:        { type:'string', description:'Oppskriftens id.' },
+        dag:       { type:'string', description:'mandag, tirsdag, onsdag, torsdag, fredag, lørdag eller søndag.' },
+        uke:       { type:'string', description:'«2026-W44», eller bare ukenummeret. Standard: denne uka.' },
+        porsjoner: { type:'number', description:'Standard: oppskriftens egne, ellers 4.' }
+      },
+      required:['id','dag']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(a){
+      a = a || {};
+      let uke;
+      try{ uke = skrivUkeNokkel(a.uke); }catch(e){ uke = String(a.uke || ''); }
+      return 'Setter en rett på ' + String(a.dag || '').toLowerCase()
+           + ' i uke ' + uke.replace(/^\d{4}-W/, '') + ' (' + uke + ')'
+           + (a.porsjoner ? ', ' + a.porsjoner + ' porsjoner' : '') + '.';
+    }
+  },
+  {
+    name: 'fjern_middag',
+    description:
+      'Tar en rett av en dag i ukemenyen. Krever id fra les_ukeplanen. '
+      + 'Oppskriften selv blir stående i boka.',
+    input_schema: {
+      type:'object',
+      properties:{
+        id:  { type:'string', description:'Oppskriftens id, fra les_ukeplanen.' },
+        dag: { type:'string', description:'mandag, tirsdag, onsdag, torsdag, fredag, lørdag eller søndag.' },
+        uke: { type:'string', description:'«2026-W44», eller bare ukenummeret. Standard: denne uka.' }
+      },
+      required:['id','dag']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(a){
+      a = a || {};
+      let uke;
+      try{ uke = skrivUkeNokkel(a.uke); }catch(e){ uke = String(a.uke || ''); }
+      return 'Tar en rett av ' + String(a.dag || '').toLowerCase()
+           + ' i uke ' + uke.replace(/^\d{4}-W/, '') + ' (' + uke + ').';
+    }
+  },
 ];
 
 const SKRIV_SIDER = {
@@ -1887,6 +2220,189 @@ async function skrivUtfor(navn, arg){
       return d;
     });
     return { barn:skrivBarnNavn(arg.barn), fag:fagNavn, uke:uke, maal:tekst || null };
+  }
+
+  /* ---------------- Matlaging ---------------- */
+
+  if(navn === 'legg_inn_oppskrifter'){
+    const inn = (Array.isArray(arg.oppskrifter) ? arg.oppskrifter : [])
+      .filter(function(o){ return o && String(o.tittel || '').trim(); });
+    if(!inn.length) throw new Error('Ingen oppskrifter å legge inn.');
+    if(inn.length > 20) throw new Error('Høyst 20 oppskrifter om gangen.');
+
+    /* Formene bygges FOERST, alle sammen. En ugyldig kategori paa nummer
+       tre skal ikke etterlate de to foerste lagret og resten ikke. */
+    const bygget = inn.map(function(o){
+      const tittel = String(o.tittel).trim();
+      return {
+        id: skrivId('r_'),
+        title: tittel,
+        photo: null,
+        baseServings: (typeof o.porsjoner === 'number' && o.porsjoner > 0) ? o.porsjoner : null,
+        time: String(o.tid || '').trim(),
+        ingredients: skrivMatIngredienser(o.ingredienser),
+        steps: skrivMatSteg(o.fremgangsmate),
+        /* Notatet blir et tips, ikke et steg: «god til pasta» er ikke
+           noe man utfoerer. */
+        tips: skrivMatTips(String(o.notat || '').trim() ? [o.notat] : []),
+        tastings: [],
+        chefComments: [],
+        categories: skrivMatKategorier(o.kategorier, tittel),
+        nutrition: null,
+        createdAt: Date.now()
+      };
+    });
+
+    /* Oppskriftene foer indeksen. Faller vi mellom de to, er det bedre
+       at en oppskrift ligger uten rad (usynlig, men hel) enn at en rad
+       peker paa noe som ikke finnes (den aapner ingenting). */
+    for(let i = 0; i < bygget.length; i++){
+      await skrivMatSkriv(OPPSKRIFT_NOKKEL + bygget[i].id, bygget[i]);
+    }
+    const indeks = await skrivMatIndeks();
+    bygget.forEach(function(r){
+      indeks.push({ id:r.id, title:r.title, time:r.time, thumb:null,
+                    createdAt:r.createdAt, rating:0, ratingCount:0,
+                    categories:r.categories });
+    });
+    await skrivMatSkriv(OPPSKRIFT_INDEKS, indeks);
+
+    return { lagt_inn: bygget.map(function(r){
+      return { id:r.id, tittel:r.title, kategorier:r.categories };
+    }) };
+  }
+
+  if(navn === 'endre_oppskrift'){
+    const id = String(arg.id || '').trim();
+    if(!id) throw new Error('Mangler id på oppskriften.');
+
+    /* Les - endre - skriv, som resten av fila. Hentes HER og ikke
+       tidligere: staar Matlaging aapen et annet sted, vil vi ha den
+       ferskeste. Vinduet kan ikke lukkes herfra - sidas lagring
+       skriver hele objektet uten fletting. */
+    const r = await skrivMatHent(id);
+    const endret = [];
+
+    if(arg.tittel != null){
+      const t = String(arg.tittel).trim();
+      if(!t) throw new Error('Tittelen kan ikke være tom.');
+      r.title = t; endret.push('tittel');
+    }
+    if(arg.kategorier != null){ r.categories = skrivMatKategorier(arg.kategorier, r.title); endret.push('kategorier'); }
+    if(arg.porsjoner != null){
+      r.baseServings = (typeof arg.porsjoner === 'number' && arg.porsjoner > 0) ? arg.porsjoner : null;
+      endret.push('porsjoner');
+    }
+    if(arg.tid != null){ r.time = String(arg.tid).trim(); endret.push('tid'); }
+    if(arg.ingredienser != null){ r.ingredients = skrivMatIngredienser(arg.ingredienser); endret.push('ingredienser'); }
+    if(arg.fremgangsmate != null){ r.steps = skrivMatSteg(arg.fremgangsmate); endret.push('framgangsmåte'); }
+    if(arg.tips != null){ r.tips = skrivMatTips(arg.tips); endret.push('tips'); }
+
+    if(!endret.length) throw new Error('Ingenting å endre - send med minst ett felt.');
+
+    await skrivMatSkriv(OPPSKRIFT_NOKKEL + r.id, r);
+
+    /* Indeksen baerer tittel, tid og kategorier. Endres de uten at raden
+       foelger med, viser forsida fortsatt det gamle. */
+    const indeks = await skrivMatIndeks();
+    let traff = false;
+    const ny = indeks.map(function(rad){
+      if(!rad || rad.id !== r.id) return rad;
+      traff = true;
+      return skrivMatIndeksRad(rad, r);
+    });
+    /* Fantes ingen rad, er oppskriften usynlig i lista. Da lager vi
+       raden i stedet for aa la den vaere borte. */
+    if(!traff){
+      ny.push({ id:r.id, title:r.title, time:r.time, thumb:null,
+                createdAt:r.createdAt || Date.now(), rating:0, ratingCount:0,
+                categories:r.categories });
+    }
+    await skrivMatSkriv(OPPSKRIFT_INDEKS, ny);
+
+    return { endret: { id:r.id, tittel:r.title, felt:endret } };
+  }
+
+  if(navn === 'slett_oppskrift'){
+    const id = String(arg.id || '').trim();
+    if(!id) throw new Error('Mangler id på oppskriften.');
+    const r = await skrivMatHent(id);
+
+    /* Indeksen foerst. Faller vi mellom de to, er en oppskrift uten rad
+       usynlig - en rad uten oppskrift aapner ingenting og ser ut som en
+       feil i appen. */
+    const indeks = await skrivMatIndeks();
+    await skrivMatSkriv(OPPSKRIFT_INDEKS, indeks.filter(function(rad){
+      return !rad || rad.id !== id;
+    }));
+    await dataSlett(OPPSKRIFT_NOKKEL + id);
+
+    /* Ut av ukemenyen ogsaa. En rett som er slettet, men staar paa
+       torsdag, er en dag ingen kan lage mat av. */
+    const plan = await husLesJson(UKEPLAN_NOKKEL);
+    let fjernet = 0;
+    if(plan && typeof plan === 'object'){
+      Object.keys(plan).forEach(function(uke){
+        const u = plan[uke]; if(!u || typeof u !== 'object') return;
+        Object.keys(u).forEach(function(dag){
+          if(!Array.isArray(u[dag])) return;
+          const igjen = u[dag].filter(function(e){ return !e || e.id !== id; });
+          fjernet += u[dag].length - igjen.length;
+          if(igjen.length) u[dag] = igjen; else delete u[dag];
+        });
+      });
+      if(fjernet) await skrivMatSkriv(UKEPLAN_NOKKEL, plan);
+    }
+
+    return { slettet: { id:id, tittel:r.title || 'Uten navn' },
+             tatt_av_ukemenyen: fjernet };
+  }
+
+  if(navn === 'sett_middag' || navn === 'fjern_middag'){
+    const id  = String(arg.id || '').trim();
+    if(!id) throw new Error('Mangler id på retten.');
+    const dag = skrivMatDag(arg.dag);
+    const uke = skrivUkeNokkel(arg.uke);
+
+    const plan = (await husLesJson(UKEPLAN_NOKKEL)) || {};
+    if(typeof plan !== 'object') throw new Error('Ukemenyen har en form vi ikke kjenner.');
+
+    if(navn === 'fjern_middag'){
+      const u = plan[uke] || {};
+      const liste = u[dag] || u[String(dag)] || [];
+      const igjen = liste.filter(function(e){ return !e || e.id !== id; });
+      if(igjen.length === liste.length){
+        throw new Error('Den retten står ikke på ' + HUS_UKEDAGER[dag]
+                      + ' i uke ' + uke + '. Kjør les_ukeplanen.');
+      }
+      if(igjen.length) u[dag] = igjen; else { delete u[dag]; delete u[String(dag)]; }
+      plan[uke] = u;
+      await skrivMatSkriv(UKEPLAN_NOKKEL, plan);
+      return { fjernet: { uke:uke, dag:HUS_UKEDAGER[dag] } };
+    }
+
+    /* Retten maa finnes. Et oppslag i indeksen holder - vi trenger bare
+       tittelen, og den fulle oppskriften kan vaere flere megabyte. */
+    const indeks = await skrivMatIndeks();
+    const rad = indeks.filter(function(x){ return x && x.id === id; })[0];
+    if(!rad) throw new Error('Fant ingen oppskrift med id ' + id + '. Kjør finn_oppskrift først.');
+
+    let porsjoner = (typeof arg.porsjoner === 'number' && arg.porsjoner > 0) ? arg.porsjoner : null;
+    if(porsjoner === null){
+      /* Oppskriftens egne, ellers husets standard - samme regel som
+         dagvelgeren i sida. */
+      try{ porsjoner = Number((await skrivMatHent(id)).baseServings) || SKRIV_MAT_PORSJONER; }
+      catch(e){ porsjoner = SKRIV_MAT_PORSJONER; }
+    }
+
+    if(!plan[uke]) plan[uke] = {};
+    const u = plan[uke];
+    if(!Array.isArray(u[dag])) u[dag] = u[String(dag)] || [];
+    u[dag].push({ id:id, title:rad.title || 'Uten navn', servings:porsjoner });
+    await skrivMatSkriv(UKEPLAN_NOKKEL, plan);
+
+    return { satt: { uke:uke, dag:HUS_UKEDAGER[dag],
+                     rett:rad.title || 'Uten navn', porsjoner:porsjoner } };
   }
 
   return null;

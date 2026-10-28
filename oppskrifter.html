@@ -2357,10 +2357,10 @@ input,select,textarea{font-size:16px}
 </div>
 
 <script src="/felles-hus.js?v=12"></script>
-<script src="/felles-data.js?v=4"></script>
+<script src="/felles-data.js?v=5"></script>
 <script src="/felles-ms.js?v=2"></script>
 <script src="/felles-lesalt.js?v=6"></script>
-<script src="/felles-skriv.js?v=5"></script>
+<script src="/felles-skriv.js?v=6"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
@@ -3008,7 +3008,12 @@ window.neamVerktoy = async function(){
      oppskriftsboka kommer fra leselaget - det var her skjevheten var
      stoerst: Neam kunne fylle boka, men ikke aapne den. */
   const egne = [neamOppskriftVerktoy()];
-  return egne.concat(HJEM_VERKTOY, skrivVerktoy([]), lesAltVerktoy(egne), HUS_VERKTOY);
+  /* `egne` inn i skrivVerktoy(), ikke en tom liste: fellesfila har nå sitt
+     eget legg_inn_oppskrifter, og uten dette ville Neam fått navnet to
+     ganger i samme liste. Sidas eget vinner - det tegner lista om
+     etterpaa, og det gjoer ikke fellesfila. Samme grep som kalender,
+     Andrea og Emma gjoer. */
+  return egne.concat(HJEM_VERKTOY, skrivVerktoy(egne), lesAltVerktoy(egne), HUS_VERKTOY);
 };
 
 window.neamUtfor = async function(navn, arg){
