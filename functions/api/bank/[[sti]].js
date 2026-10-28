@@ -7,6 +7,7 @@
      GET /api/bank?hva=kontoer         - kontoene med saldo
      GET /api/bank?hva=transaksjoner&konto=<uid>[&fra=AAAA-MM-DD]
      GET /api/bank?hvem=1              - diagnose: hvilke identitetskilder finnes
+     POST /api/bank {hva:'roller'}     - setter rollen paa kontoer
      GET /api/bank/start               - sender deg til DNB for samtykke (BankID)
      GET /api/bank/tilbake             - DNB sender deg hit igjen etterpaa
 
@@ -32,10 +33,12 @@
    Her sjekkes den, mot sertifikatene til teamet: bankdata er det
    mest foelsomme huset har, og et usignert bevis kan i prinsippet
    skrives av hvem som helst som allerede er innenfor. Bare
-   voksenkontoene i TILGANG slipper til.
+   kontoene i TILGANG slipper til.
 
    NOEKLER I KV - ALT UNDER `auth:bank:`, UTENFOR `fh:` MED VILJE
      auth:bank:hus             - oekta: session_id, kontoene, gyldig til
+     auth:bank:roller          - { <konto-uid>: rolle } - overlever et nytt samtykke
+                                 saa lenge banken gir kontoen samme uid
      auth:bank:tilstand:<rnd>  - engangsbevis for runden til DNB (15 min)
      auth:bank:buffer:<navn>   - mellomlager for svar fra banken
    `/api/data` slipper familien til alt under `fh:`. Kontoer og
@@ -53,7 +56,15 @@ const API = 'https://api.enablebanking.com';
 const APP_ID = '429ce2c9-55e4-4183-a695-d9df8763a260';   // ikke hemmelig - staar i kontrollpanelet
 const BANK = { name:'DNB', country:'NO' };
 const TILBAKE = 'https://neam.no/api/bank/tilbake';
-const TILGANG = ['magne@neam.no', 'nina@neam.no', 'sys@neam.no'];
+/* Bare sys@ mens okonomi.html er under arbeid (Magne, 28. oktober 2026).
+   magne@ og nina@ legges til naar sida tas i bruk. */
+const TILGANG = ['sys@neam.no'];
+
+/* Rollene en konto kan ha. Rollen avgjoer hvor transaksjonene havner:
+   felles -> husholdningsbudsjettet, magne/nina -> den personlige sida,
+   emma/andrea -> barnas sider, sparing -> formuen, ignorer -> ingen steder. */
+const ROLLER = ['felles', 'magne', 'nina', 'sparing', 'emma', 'andrea', 'ignorer'];
+const ROLLE_NOKKEL = 'auth:bank:roller';
 
 const NOKKEL = 'auth:bank:hus';
 const BUFFER_TID = 6 * 3600 * 1000;
@@ -137,7 +148,7 @@ async function verifisertEpost(request, env){
 async function voksen(request, env){
   const id = await verifisertEpost(request, env);
   if(!id.epost) return { ok:false, feil:'Ingen gyldig innlogging (' + id.grunn + ')' };
-  if(TILGANG.indexOf(id.epost) === -1) return { ok:false, feil:'Bankdata er bare for de voksne' };
+  if(TILGANG.indexOf(id.epost) === -1) return { ok:false, feil:'Bankdata er ikke åpnet for denne kontoen' };
   return { ok:true, epost:id.epost };
 }
 function masker(epost){
@@ -263,12 +274,17 @@ async function tilbake(env, url, epost){
     + (okt.gyldigTil ? okt.gyldigTil.slice(0, 10) : 'ukjent dato') + '. Du kan lukke denne fanen.');
 }
 
+async function lesRoller(env){
+  try{ return JSON.parse(await env.FAMILIE_KV.get(ROLLE_NOKKEL) || '{}') || {}; }catch(e){ return {}; }
+}
+
 async function kontoer(env, okt, fersk){
+  const roller = await lesRoller(env);
   const ut = [];
   let eldst = Date.now(), advarsel = '';
   for(const k of okt.kontoer){
     const r = await medBuffer(env, 'saldo:' + k.uid, fersk, () => eb(env, 'GET', '/accounts/' + encodeURIComponent(k.uid) + '/balances'));
-    if(!r.ok){ ut.push(Object.assign({}, k, { feil:r.feil })); continue; }
+    if(!r.ok){ ut.push(Object.assign({}, k, { rolle:roller[k.uid] || '', feil:r.feil })); continue; }
     if(r.advarsel) advarsel = r.advarsel;
     eldst = Math.min(eldst, r.hentet);
     const saldoer = (r.data && r.data.balances) || [];
@@ -277,6 +293,7 @@ async function kontoer(env, okt, fersk){
     saldoer.sort((a, b) => velg.indexOf(a.balance_type) - velg.indexOf(b.balance_type));
     const s = saldoer[0];
     ut.push(Object.assign({}, k, {
+      rolle: roller[k.uid] || '',
       saldo: s ? Number(s.balance_amount.amount) : null,
       saldoType: s ? s.balance_type : '',
       hentet: r.hentet
@@ -365,6 +382,30 @@ export async function onRequestGet({ request, env }){
   }
 }
 
+/* POST /api/bank  { hva:'roller', roller:{ <uid>: rolle } }
+   Fletter inn i det som er lagret; en tom rolle fjerner kontoen fra lista.
+   Bare kontoer i oekta og roller i ROLLER godtas. */
+export async function onRequestPost({ request, env }){
+  if(!env.FAMILIE_KV) return svar({ ok:false, feil:'KV ikke bundet' });
+  const v = await voksen(request, env);
+  if(!v.ok) return svar(v);
+  let kropp = null;
+  try{ kropp = await request.json(); }catch(e){ return svar({ ok:false, feil:'Ugyldig JSON' }); }
+  if(!kropp || kropp.hva !== 'roller' || typeof kropp.roller !== 'object') return svar({ ok:false, feil:'Ukjent hva' });
+  const okt = await lesOekt(env);
+  if(!okt) return svar({ ok:false, feil:'Banken er ikke koblet' });
+  const kjente = okt.kontoer.map(k => k.uid);
+  const roller = await lesRoller(env);
+  for(const uid of Object.keys(kropp.roller)){
+    if(kjente.indexOf(uid) === -1) return svar({ ok:false, feil:'Ukjent konto' });
+    const r = String(kropp.roller[uid] || '');
+    if(r && ROLLER.indexOf(r) === -1) return svar({ ok:false, feil:'Ukjent rolle: ' + r });
+    if(r) roller[uid] = r; else delete roller[uid];
+  }
+  await env.FAMILIE_KV.put(ROLLE_NOKKEL, JSON.stringify(roller));
+  return svar({ ok:true, roller:roller });
+}
+
 export async function onRequest(){
-  return svar({ ok:false, feil:'Bare GET' });
+  return svar({ ok:false, feil:'Bare GET og POST' });
 }

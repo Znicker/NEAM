@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Økonomi – Neam</title>
+<link rel="apple-touch-icon" href="/bilder/neam-hjemskjerm.png?v=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/felles-rot.css?v=6">
+<link rel="stylesheet" href="/felles-knapper.css?v=1">
+<style>
+/* ============================================================
+   NEAM - oekonomi
+   Laget 28. oktober 2026. Foerste byggesteg av planen «Neam Oekonomi
+   – plan» og skissen «Neam Oekonomi» (artifacts, se minnet).
+
+   SKJULT MED VILJE. Sida lenkes ikke fra noe sted, staar ikke i
+   fireren og ikke i HUS_VERKTOY. Man naar den bare ved aa skrive
+   adressen. Sperra som teller, ligger i /api/bank: den svarer bare
+   sys@ inntil videre (Magne, 28. oktober). Sida selv viser bare det
+   funksjonen gir den.
+
+   HVA DEN GJOER NAA: viser kontoene fra DNB og lar hver konto faa en
+   rolle (felles, Magne, Nina, sparing, Emma, Andrea, ikke i bruk).
+   Rollen avgjoer senere hvor transaksjonene havner.
+
+   UTTRYKK: minimalistisk, uten steampunk-bakgrunnen - slik planen og
+   skissen sier. Ikke avgjort for resten av huset.
+
+   KLASSENAVN ER PREFIKSET `ok-`. Sida laster felles-rot.css og
+   felles-knapper.css, og vanlige ord er alt tatt (kartleggingen del 26).
+   ============================================================ */
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+/* `hidden` maa vinne over .ok-kort{display:flex}, ellers vises skjulte kort. */
+[hidden]{ display:none !important; }
+body{
+  margin:0; color:var(--ink); background:var(--bg-1);
+  font-family:'Archivo', system-ui, sans-serif; font-size:var(--t-brod); line-height:1.45;
+  font-variant-numeric:tabular-nums;
+}
+/* Ingen steampunk-ramme bak denne sida - verken bildet eller reserven paa html. */
+html{ background:var(--bg-1); }
+body::before{ display:none; }
+
+.ok-ramme{
+  max-width:760px; margin:0 auto;
+  padding:max(20px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px));
+  display:flex; flex-direction:column; gap:18px;
+}
+.ok-topp{ display:flex; align-items:baseline; justify-content:space-between; gap:8px 16px; flex-wrap:wrap; }
+.ok-topp h1{ margin:0; font-size:var(--t-stor); font-weight:700; }
+.ok-etikett{ font-size:var(--t-etikett); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); }
+.ok-meta{ font-size:var(--t-meta); color:var(--ink-soft); margin:0; }
+
+.ok-kort{ background:var(--paper); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px 20px; display:flex; flex-direction:column; gap:12px; }
+.ok-kort h2{ margin:0; font-size:var(--t-brod); font-weight:700; }
+.ok-kort-hode{ display:flex; justify-content:space-between; align-items:baseline; gap:8px 12px; flex-wrap:wrap; }
+
+.ok-melding{ background:var(--boks-mild); border:1px solid var(--boks-kant); border-radius:12px; padding:12px 14px; font-size:var(--t-meta); }
+.ok-melding.feil{ color:var(--danger); }
+
+/* ---------- Kontoene, gruppert etter rolle ---------- */
+.ok-gruppe{ display:flex; flex-direction:column; }
+.ok-gruppe + .ok-gruppe{ margin-top:10px; }
+.ok-gruppe-hode{
+  display:flex; justify-content:space-between; gap:12px; padding:8px 0 6px;
+  border-bottom:2px solid var(--ink);
+}
+.ok-gruppe-hode b{ white-space:nowrap; }
+.ok-konto{
+  display:grid; grid-template-columns:minmax(0,1fr) auto 190px; gap:6px 14px; align-items:center;
+  padding:10px 0; border-bottom:1px solid var(--line);
+}
+.ok-konto:last-child{ border-bottom:0; }
+.ok-navn{ font-weight:600; overflow-wrap:anywhere; }
+.ok-saldo{ font-weight:700; text-align:right; white-space:nowrap; }
+@media (max-width:560px){
+  .ok-konto{ grid-template-columns:minmax(0,1fr) auto; }
+  .ok-konto select{ grid-column:1 / -1; }
+}
+/* Skjemafelt staar utenfor skalaen: iOS zoomer under 16px (designsystemet, Typeskala). */
+.ok-konto select{
+  width:100%; font-family:inherit; font-size:16px; padding:7px 10px;
+  border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink);
+}
+.ok-konto select:focus{ outline:none; border-color:var(--aksent); }
+.ok-konto.lagrer select{ opacity:.6; }
+.ok-lagret{ font-size:var(--t-meta); color:var(--ink-soft); min-height:1.2em; }
+</style>
+</head>
+<body>
+<div class="ok-ramme">
+  <header class="ok-topp">
+    <h1>Økonomi</h1>
+    <span class="ok-etikett">Under arbeid · skjult side</span>
+  </header>
+
+  <section class="ok-kort" id="ok-status-kort">
+    <div class="ok-kort-hode"><h2>Bankkobling</h2><span class="ok-meta" id="ok-status-meta"></span></div>
+    <div id="ok-status"><p class="ok-meta">Henter …</p></div>
+  </section>
+
+  <section class="ok-kort" id="ok-kontoer-kort" hidden>
+    <div class="ok-kort-hode"><h2>Kontoer</h2><span class="ok-meta" id="ok-hentet"></span></div>
+    <p class="ok-meta">Rollen avgjør hvor transaksjonene havner: felles i husholdningsbudsjettet, Magne og Nina på hver sin side, Emma og Andrea på barnas sider, sparing i formuen. «Ikke i bruk» tas ikke med.</p>
+    <div id="ok-kontoer"></div>
+    <p class="ok-lagret" id="ok-lagret" aria-live="polite"></p>
+  </section>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* Samme liste som ROLLER i functions/api/bank/[[sti]].js, i samme rekkefoelge. */
+  var OK_ROLLER = [
+    ['felles', 'Felles'], ['magne', 'Magne'], ['nina', 'Nina'], ['sparing', 'Sparing'],
+    ['emma', 'Emma'], ['andrea', 'Andrea'], ['ignorer', 'Ikke i bruk']
+  ];
+  var okKr = new Intl.NumberFormat('nb-NO', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  var okDato = new Intl.DateTimeFormat('nb-NO', { day:'numeric', month:'long', year:'numeric' });
+  var okKlokke = new Intl.DateTimeFormat('nb-NO', { hour:'2-digit', minute:'2-digit' });
+  var okKontoer = [];
+
+  function okVask(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+  function okEl(tag, cls, html){ var e = document.createElement(tag); if(cls) e.className = cls; if(html != null) e.innerHTML = html; return e; }
+  function okRolleNavn(r){ for(var i = 0; i < OK_ROLLER.length; i++) if(OK_ROLLER[i][0] === r) return OK_ROLLER[i][1]; return 'Uten rolle'; }
+
+  /* Funksjonen svarer alltid 200 med {ok}; feil har {feil}. */
+  function okHent(sti, valg){
+    return fetch(sti, Object.assign({ credentials:'same-origin', cache:'no-store' }, valg || {}))
+      .then(function(r){ return r.json(); })
+      .catch(function(){ return { ok:false, feil:'Fikk ikke kontakt med Neam' }; });
+  }
+
+  function okVisStatus(s){
+    var boks = document.getElementById('ok-status'), meta = document.getElementById('ok-status-meta');
+    boks.innerHTML = '';
+    if(!s.ok){ boks.appendChild(okEl('p', 'ok-melding feil', okVask(s.feil))); return false; }
+    if(!s.koblet){
+      boks.appendChild(okEl('p', 'ok-meta', 'Banken er ikke koblet. Du logger inn med BankID hos DNB og velger hvilke kontoer Neam får lese.'));
+      var a = okEl('a', 'btn btn-ny', 'Koble til DNB');
+      a.href = '/api/bank/start';
+      a.style.alignSelf = 'flex-start'; a.style.textDecoration = 'none';
+      boks.appendChild(a);
+      return false;
+    }
+    var til = s.gyldigTil ? okDato.format(new Date(s.gyldigTil)) : 'ukjent dato';
+    meta.textContent = s.bank + ' · ' + s.kontoer + ' kontoer';
+    boks.appendChild(okEl('p', 'ok-meta', 'Samtykket varer til ' + okVask(til) + (s.dagerIgjen != null ? ' (' + s.dagerIgjen + ' dager igjen)' : '') + '.'));
+    /* To uker foer det gaar ut, kommer lenken for aa fornye. */
+    if(s.dagerIgjen != null && s.dagerIgjen <= 14){
+      var f = okEl('a', 'btn btn-endre', 'Forny samtykket');
+      f.href = '/api/bank/start'; f.style.alignSelf = 'flex-start'; f.style.textDecoration = 'none';
+      boks.appendChild(f);
+    }
+    return true;
+  }
+
+  function okTegnKontoer(){
+    var boks = document.getElementById('ok-kontoer');
+    boks.innerHTML = '';
+    /* Uten rolle foerst - det er dem som trenger noe. Deretter i rollens rekkefoelge. */
+    var grupper = [''].concat(OK_ROLLER.map(function(r){ return r[0]; }));
+    grupper.forEach(function(rolle){
+      var liste = okKontoer.filter(function(k){ return (k.rolle || '') === rolle; });
+      if(!liste.length) return;
+      var sum = liste.reduce(function(s, k){ return s + (typeof k.saldo === 'number' ? k.saldo : 0); }, 0);
+      var g = okEl('div', 'ok-gruppe');
+      g.appendChild(okEl('div', 'ok-gruppe-hode',
+        '<span class="ok-etikett">' + okVask(okRolleNavn(rolle)) + ' · ' + liste.length + '</span>'
+        + (rolle === 'ignorer' ? '' : '<b>' + okKr.format(sum) + ' kr</b>')));
+      liste.forEach(function(k){ g.appendChild(okKontoRad(k)); });
+      boks.appendChild(g);
+    });
+  }
+
+  function okKontoRad(k){
+    var rad = okEl('div', 'ok-konto');
+    var id = 'ok-rolle-' + k.uid;
+    rad.appendChild(okEl('div', '',
+      '<div class="ok-navn">' + okVask(k.navn || 'Uten navn') + '</div>'
+      + '<p class="ok-meta">' + (k.slutt ? '•••• ' + okVask(k.slutt) : '') + (k.produkt && k.produkt !== k.navn ? ' · ' + okVask(k.produkt) : '')
+      + (k.feil ? ' · saldo mangler' : '') + '</p>'));
+    rad.appendChild(okEl('div', 'ok-saldo', typeof k.saldo === 'number' ? okKr.format(k.saldo) + ' kr' : '–'));
+    var s = document.createElement('select');
+    s.id = id;
+    s.setAttribute('aria-label', 'Rolle for ' + (k.navn || 'kontoen'));
+    s.appendChild(new Option('Velg rolle', ''));
+    OK_ROLLER.forEach(function(r){ s.appendChild(new Option(r[1], r[0])); });
+    s.value = k.rolle || '';
+    /* Et valg i nedtrekk koster ingenting aa gjoere om, saa det lagres med
+       en gang uten aa spoerre (designsystemet, Avbryt-regelen). */
+    s.addEventListener('change', function(){
+      var ny = s.value, gammel = k.rolle || '';
+      rad.classList.add('lagrer');
+      var roller = {}; roller[k.uid] = ny;
+      okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'roller', roller:roller }) })
+        .then(function(svar){
+          var melding = document.getElementById('ok-lagret');
+          if(!svar.ok){
+            s.value = gammel; rad.classList.remove('lagrer');
+            melding.textContent = 'Ble ikke lagret: ' + svar.feil;
+            return;
+          }
+          k.rolle = ny;
+          melding.textContent = (k.navn || 'Kontoen') + ' er lagret som ' + okRolleNavn(ny).toLowerCase() + '.';
+          okTegnKontoer();
+          var f = document.getElementById(id); if(f) f.focus();
+        });
+    });
+    rad.appendChild(s);
+    return rad;
+  }
+
+  okHent('/api/bank?hva=status').then(function(s){
+    if(!okVisStatus(s)) return;
+    document.getElementById('ok-kontoer-kort').hidden = false;
+    document.getElementById('ok-kontoer').innerHTML = '<p class="ok-meta">Henter kontoene fra DNB …</p>';
+    okHent('/api/bank?hva=kontoer').then(function(r){
+      if(!r.ok){ document.getElementById('ok-kontoer').innerHTML = '<p class="ok-melding feil">' + okVask(r.feil) + '</p>'; return; }
+      okKontoer = r.kontoer || [];
+      /* Hvert tall viser hvor ferskt det er (planen). */
+      document.getElementById('ok-hentet').textContent = 'Hentet kl. ' + okKlokke.format(new Date(r.hentet)) + (r.advarsel ? ' · banken svarte ikke, viser forrige henting' : '');
+      okTegnKontoer();
+    });
+  });
+})();
+</script>
+</body>
+</html>
