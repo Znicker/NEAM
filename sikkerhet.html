@@ -684,6 +684,33 @@ function kmeld(id, t){
   el.hidden = !t;
 }
 
+/* Reiseveien utenfor hjemmenettet. Homey har ingen TURN-server, saa
+   paa 5G og fremmed Wi-Fi kom bildet aldri fram (Magne, 28. oktober
+   2026) - /api/turn gir Cloudflares. Hjemme velger nettleseren den
+   direkte veien selv, og TURN brukes ikke.
+
+   Detaljene virker i fire timer (turn.js) og huskes i tre, saa et
+   kamera som kobler opp paa nytt etter et brudd ikke spoer hver gang.
+   Faar vi dem ikke, kobles det opp med STUN alene, slik det var foer:
+   hjemme virker kameraet uansett. */
+const KAMERA_STUN = [{ urls: 'stun:stun.l.google.com:19302' }];
+let turnLager = null;   /* { servere, ut } */
+async function kameraServere(){
+  if(turnLager && Date.now() < turnLager.ut) return turnLager.servere;
+  try{
+    const r = await fetch('/api/turn', { cache:'no-store' });
+    const d = JSON.parse(await r.text());
+    if(d.ok && d.iceServers && d.iceServers.length){
+      turnLager = { servere: d.iceServers.concat(KAMERA_STUN), ut: Date.now() + 3 * 3600 * 1000 };
+      return turnLager.servere;
+    }
+    console.warn('Kameraet uten TURN:', d.feil);
+  }catch(e){
+    console.warn('Kameraet uten TURN:', e && e.message);
+  }
+  return KAMERA_STUN;
+}
+
 async function startKamera(v){
   const d = enheter[v.id];
   const video = (d && d.videos && d.videos[0]) || null;
@@ -693,9 +720,7 @@ async function startKamera(v){
   kmeld(v.id, 'Kobler til kameraet …');
   let pc = null;
   try{
-    pc = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    });
+    pc = new RTCPeerConnection({ iceServers: await kameraServere() });
     stroemmer[v.id] = pc;
 
     /* Vi tar imot, sender ingenting. Datakanalen er med fordi Homey
