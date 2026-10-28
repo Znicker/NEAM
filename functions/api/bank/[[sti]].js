@@ -18,6 +18,8 @@
      GET /api/bank?hva=kvittering&id=<postId>         - varelinjene til en kvitteringspost
      GET /api/bank?hva=budsjett / POST {hva:'budsjett', standard} - standardbudsjettet
      GET /api/bank?hva=regnskap&mnd=AAAA-MM            - godkjente poster summert per kategori
+     GET /api/bank?hva=varsler          - det som trenger noen (kortet paa forsiden)
+     GET /api/bank?hva=hent             - vekker hentingen; ogsaa kitchen@, svarer ingenting om innholdet
      GET /api/bank?hvem=1              - diagnose: hvilke identitetskilder finnes
      POST /api/bank {hva:'roller'}     - setter rollen paa kontoer
      GET /api/bank/start               - sender deg til DNB for samtykke (BankID)
@@ -58,6 +60,8 @@
      auth:bank:innboks-fra     - datoen innboksen henter fra (satt foerste gang)
      auth:bank:trumf           - innloggingscookien fra trumf.no (se Trumf-delen)
      auth:bank:kv:<postId>     - varelinjene fra en kvittering lest fra bilde (bildet lagres ikke)
+     auth:bank:sist-hentet     - naar vekkeren sist hentet
+     auth:bank:trumf-feil      - siste Trumf-feil (slettes naar hentingen virker igjen)
      auth:bank:budsjett        - standardbudsjettet { kategori: kr per maaned } - ALDRI i koden,
                                  repoet er offentlig
    `/api/data` slipper familien til alt under `fh:`. Kontoer og
@@ -78,6 +82,10 @@ const TILBAKE = 'https://neam.no/api/bank/tilbake';
 /* Bare sys@ mens okonomi.html er under arbeid (Magne, 28. oktober 2026).
    magne@ og nina@ legges til naar sida tas i bruk. */
 const TILGANG = ['sys@neam.no'];
+/* Kan vekke hentingen (?hva=hent), men faar ikke se noe. Se der. */
+const HENT_TILGANG = TILGANG.concat(['kitchen@neam.no']);
+const SIST_HENTET_NOKKEL = 'auth:bank:sist-hentet';
+const TRUMF_FEIL_NOKKEL = 'auth:bank:trumf-feil';
 
 /* Rollene en konto kan ha. Rollen avgjoer hvor transaksjonene havner:
    felles -> husholdningsbudsjettet, magne/nina -> den personlige sida,
@@ -493,8 +501,11 @@ async function innboks(env, okt, fersk){
   }
   if(trumfKoblet){
     const t = await trumfListe(env, fersk);
-    if(!t.ok) advarsel = t.feil;
+    /* Feilen huskes for varselkortet: «Trumf trenger ny innlogging» skal
+       synes ogsaa naar ingen har aapnet okonomi.html. */
+    if(!t.ok){ advarsel = t.feil; await env.FAMILIE_KV.put(TRUMF_FEIL_NOKKEL, JSON.stringify({ kode:t.kode || 'format', feil:t.feil, tid:Date.now() })); }
     else{
+      await env.FAMILIE_KV.delete(TRUMF_FEIL_NOKKEL);
       if(t.advarsel) advarsel = t.advarsel;
       hentet = Math.min(hentet, t.hentet);
       for(const k of t.data){
@@ -525,6 +536,28 @@ async function innboks(env, okt, fersk){
   }
   return svar({ ok:true, hentet:hentet, advarsel:advarsel || undefined, fra:fra, kontoer:felles.length, trumf:trumfKoblet,
     kategorier:KATEGORIER, poster:venter, godkjent:alle.filter(p => p.status === 'godkjent').length });
+}
+
+/* ---------- «Neam ber om input» ----------
+   Det varselkortet paa forsiden viser. Regnes fra det som alt er hentet -
+   ingen kall til banken her, saa kortet kan spoerre hver gang forsiden
+   aapnes. Tom liste betyr at ingenting trenger noen. */
+async function varsler(env, okt){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const venter = Object.keys(poster).map(id => poster[id]).filter(p => p.status === 'ny' && !p.dekketAv);
+  const uten = venter.filter(p => !p.kategori).length;
+  const tf = await lesJson(env, TRUMF_FEIL_NOKKEL, null);
+  const sist = await lesJson(env, SIST_HENTET_NOKKEL, null);
+  const ut = [];
+  if(venter.length) ut.push({ type:'innboks', tekst:venter.length + (venter.length === 1 ? ' post venter' : ' poster venter') + ' på godkjenning'
+    + (uten ? ', ' + uten + ' uten kategori' : '') });
+  if(tf) ut.push({ type:'trumf', tekst: tf.kode === 'innlogging' ? 'Trumf trenger ny innlogging' : 'Trumf-hentingen virker ikke – sida er trolig endret' });
+  if(!okt) ut.push({ type:'bank', tekst:'Banken er ikke koblet' });
+  else{
+    const dager = okt.gyldigTil ? Math.floor((Date.parse(okt.gyldigTil) - Date.now()) / 86400000) : null;
+    if(dager != null && dager <= 14) ut.push({ type:'samtykke', tekst: dager < 0 ? 'DNB-samtykket har gått ut' : 'DNB-samtykket går ut om ' + dager + (dager === 1 ? ' dag' : ' dager') });
+  }
+  return svar({ ok:true, varsler:ut, sistHentet:sist && sist.tid });
 }
 
 /* ---------- Budsjett og regnskap ----------
@@ -901,6 +934,24 @@ export async function onRequestGet({ request, env }){
   }
 
   if(!env.FAMILIE_KV) return svar({ ok:false, feil:'KV ikke bundet' });
+
+  /* «Hent naa» - vekkeren. Kjoekkendashbordet kaller den hver sjette time
+     fordi skjermen staar paa hele dagen (Magne, 29. oktober). Den henter
+     det innboksen henter, og svarer INGENTING om innholdet: ingen poster,
+     ingen saldo, ingen antall. Derfor kan kitchen@ faa bruke den uten aa
+     faa se oekonomien. Bankens grense holdes av bufferen paa seks timer. */
+  if(url.searchParams.get('hva') === 'hent'){
+    const id = await verifisertEpost(request, env);
+    if(!id.epost || HENT_TILGANG.indexOf(id.epost) === -1) return svar({ ok:false, feil:'Ingen tilgang' });
+    const okt = await lesOekt(env);
+    if(okt){
+      try{ await innboks(env, okt, false); }
+      catch(e){ return svar({ ok:false, feil:'Hentingen feilet' }); }
+    }
+    await env.FAMILIE_KV.put(SIST_HENTET_NOKKEL, JSON.stringify({ tid:Date.now() }));
+    return svar({ ok:true });
+  }
+
   const v = await voksen(request, env);
   const iNettleser = sti.endsWith('/start') || sti.endsWith('/tilbake');
   if(!v.ok) return iNettleser ? side('Ingen tilgang', v.feil) : svar(v);
@@ -918,6 +969,7 @@ export async function onRequestGet({ request, env }){
         kontoer:okt.kontoer.length, godkjentAv:masker(okt.godkjentAv), laget:okt.laget });
     }
     if(hva === 'banker') return await banker(env);
+    if(hva === 'varsler') return await varsler(env, okt);
     /* Trumf trenger ikke banken - den har sin egen innlogging. */
     if(hva === 'trumf') return await trumfStatus(env);
     if(hva === 'trumf-kjop'){
