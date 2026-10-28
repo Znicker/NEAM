@@ -89,6 +89,50 @@ body::before{ display:none; }
 }
 .ok-konto select:focus{ outline:none; border-color:var(--aksent); }
 .ok-konto.lagrer select{ opacity:.6; }
+
+/* ---------- Innboksen ----------
+   Samme oppbygning som innboksen i skissen: poster med forslag teller med
+   i godkjenningen, poster uten kategori blir liggende. Stroeket post staar
+   dus igjen, som i handlelistas importtabell. */
+.ok-post{
+  display:grid; grid-template-columns:minmax(0,1fr) 240px 120px 36px;
+  grid-template-areas:"hva kat belop ut" "mer mer mer mer";
+  gap:4px 14px; align-items:center; padding:12px 0; border-bottom:1px solid var(--line);
+}
+.ok-post:last-child{ border-bottom:0; }
+@media (max-width:640px){
+  .ok-post{ grid-template-columns:minmax(0,1fr) auto 36px; grid-template-areas:"hva belop ut" "kat kat kat" "mer mer mer"; }
+}
+.ok-post-hva{ grid-area:hva; min-width:0; }
+.ok-post-kat{ grid-area:kat; min-width:0; }
+.ok-post-belop{ grid-area:belop; text-align:right; font-weight:700; white-space:nowrap; }
+.ok-post-mer{ grid-area:mer; }
+.ok-post select{
+  width:100%; font-family:inherit; font-size:16px; padding:7px 10px;
+  border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink);
+}
+.ok-post select:focus{ outline:none; border-color:var(--aksent); }
+.ok-post.mangler select{ border-color:var(--handling-endre); }
+.ok-ut{
+  grid-area:ut; border:0; background:none; color:var(--ink-soft); font:inherit; font-size:22px; line-height:1;
+  width:36px; height:36px; border-radius:8px; cursor:pointer;
+}
+.ok-post.ute > :not(.ok-ut){ opacity:.38; }
+.ok-post.ute .ok-navn, .ok-post.ute .ok-post-belop{ text-decoration:line-through; }
+.ok-post.ute .ok-ut{ color:var(--aksent); }
+.ok-kilde{ font-size:var(--t-etikett); font-weight:700; letter-spacing:.04em; color:var(--aksent); }
+.ok-kilde.mangler{ color:var(--handling-endre); }
+.ok-bunn{
+  position:sticky; bottom:max(12px, env(safe-area-inset-bottom, 0px)); z-index:5;
+  background:var(--paper); border-radius:var(--radius); box-shadow:var(--shadow), 0 0 0 1px var(--line);
+  padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:12px;
+}
+.ok-bunn .btn{ flex:none; }
+.ok-sum{ font-size:var(--t-stor); font-weight:700; }
+.ok-stripe{ background:var(--aksent-lys); border-radius:12px; padding:8px 8px 8px 14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.ok-stripe p{ flex:1 1 220px; margin:0; font-size:var(--t-meta); }
+/* .btn-ghost er full bredde i fellesfila; i stripa skal den staa ved teksten. */
+.ok-stripe .btn{ width:auto; padding:8px 14px; font-size:var(--t-meta); }
 .ok-lagret{ font-size:var(--t-meta); color:var(--ink-soft); min-height:1.2em; }
 </style>
 </head>
@@ -102,6 +146,20 @@ body::before{ display:none; }
   <section class="ok-kort" id="ok-status-kort">
     <div class="ok-kort-hode"><h2>Bankkobling</h2><span class="ok-meta" id="ok-status-meta"></span></div>
     <div id="ok-status"><p class="ok-meta">Henter …</p></div>
+  </section>
+
+  <section class="ok-kort" id="ok-innboks-kort" hidden>
+    <div class="ok-kort-hode"><h2>Innboks</h2><span class="ok-meta" id="ok-innboks-meta"></span></div>
+    <div class="ok-stripe" id="ok-stripe" hidden>
+      <p id="ok-stripe-tekst"></p>
+      <button type="button" class="btn btn-ghost" id="ok-angre">Angre</button>
+      <button type="button" class="ok-ut" id="ok-stripe-lukk" aria-label="Lukk stripa">×</button>
+    </div>
+    <div id="ok-innboks"></div>
+    <div class="ok-bunn" id="ok-bunn" hidden>
+      <div><div class="ok-sum" id="ok-sum"></div><p class="ok-meta" id="ok-venter"></p></div>
+      <button type="button" class="btn btn-ny" id="ok-godkjenn"></button>
+    </div>
   </section>
 
   <section class="ok-kort" id="ok-kontoer-kort" hidden>
@@ -211,14 +269,163 @@ body::before{ display:none; }
           melding.textContent = (k.navn || 'Kontoen') + ' er lagret som ' + okRolleNavn(ny).toLowerCase() + '.';
           okTegnKontoer();
           var f = document.getElementById(id); if(f) f.focus();
+          /* Felles-rollen avgjoer hva innboksen henter fra. */
+          if(ny === 'felles' || gammel === 'felles') okLastInnboks();
         });
     });
     rad.appendChild(s);
     return rad;
   }
 
+  /* ---------- Innboksen ---------- */
+  var okPoster = [], okKategorier = [], okAngre = null;
+  var okKr0 = new Intl.NumberFormat('nb-NO', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  var okKort = new Intl.DateTimeFormat('nb-NO', { day:'numeric', month:'short' });
+
+  function okPostKlar(p){ return !p.ute && !!p.kategori; }
+  /* Samme regel som motpartNokkel() i bank-funksjonen. */
+  function okMotpart(p){
+    var raa = (p.motpart || String(p.tekst || '').split(/\s+/).slice(0, 3).join(' ')).toUpperCase();
+    return raa.replace(/[0-9*#.,:\/\\-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function okLastInnboks(){
+    var kort = document.getElementById('ok-innboks-kort');
+    kort.hidden = false;
+    document.getElementById('ok-innboks').innerHTML = '<p class="ok-meta">Henter transaksjonene …</p>';
+    okHent('/api/bank?hva=innboks').then(function(r){
+      var boks = document.getElementById('ok-innboks');
+      if(!r.ok){ boks.innerHTML = '<p class="ok-melding feil">' + okVask(r.feil) + '</p>'; document.getElementById('ok-bunn').hidden = true; return; }
+      okKategorier = r.kategorier || [];
+      if(!r.kontoer){
+        boks.innerHTML = '<p class="ok-melding">Gi minst én konto rollen «Felles» nedenfor, så henter Neam transaksjonene derfra.</p>';
+        document.getElementById('ok-innboks-meta').textContent = '';
+        document.getElementById('ok-bunn').hidden = true;
+        return;
+      }
+      okPoster = (r.poster || []).map(function(p){ p.ute = false; return p; });
+      document.getElementById('ok-innboks-meta').textContent = 'Fra ' + okKort.format(new Date(r.fra)) + ' · hentet kl. '
+        + okKlokke.format(new Date(r.hentet)) + (r.advarsel ? ' · banken svarte ikke, viser forrige henting' : '');
+      okTegnInnboks();
+    });
+  }
+
+  function okTegnInnboks(){
+    var boks = document.getElementById('ok-innboks');
+    boks.innerHTML = '';
+    if(!okPoster.length){
+      boks.innerHTML = '<p class="ok-meta">Innboksen er tom. Nye transaksjoner fra felleskontoene dukker opp her.</p>';
+      document.getElementById('ok-bunn').hidden = true;
+      return;
+    }
+    okPoster.forEach(function(p){ boks.appendChild(okPostRad(p)); });
+    okTegnBunn();
+  }
+
+  function okPostRad(p){
+    var rad = okEl('div', 'ok-post' + (p.ute ? ' ute' : '') + (!p.kategori && !p.ute ? ' mangler' : ''));
+    var hva = p.motpart || p.tekst || 'Uten tekst';
+    rad.appendChild(okEl('div', 'ok-post-hva',
+      '<div class="ok-navn">' + okVask(hva) + '</div>'
+      + '<p class="ok-meta">' + okVask(okKort.format(new Date(p.dato))) + ' · ' + okVask(p.kontoNavn || '')
+      + (p.motpart && p.tekst && p.tekst !== p.motpart ? ' · ' + okVask(p.tekst) : '') + '</p>'));
+
+    var kat = okEl('div', 'ok-post-kat');
+    var s = document.createElement('select');
+    s.id = 'ok-kat-' + p.id;
+    s.setAttribute('aria-label', 'Kategori for ' + hva);
+    if(!p.kategori) s.appendChild(new Option('Velg kategori', ''));
+    /* Gruppert etter det som staar foran «·», som budsjettet. */
+    var grupper = {};
+    okKategorier.forEach(function(k){
+      var g = k.split(' · ')[0];
+      if(!grupper[g]){ grupper[g] = document.createElement('optgroup'); grupper[g].label = g; s.appendChild(grupper[g]); }
+      grupper[g].appendChild(new Option(k.split(' · ')[1] || k, k));
+    });
+    s.value = p.kategori || '';
+    s.disabled = p.ute;
+    s.addEventListener('change', function(){
+      p.kategori = s.value; p.kilde = 'valgt';
+      /* Samme motpart lenger ned uten kategori faar samme forslag med en gang -
+         to turer til Circle K skal ikke kreve to valg. */
+      var n = okMotpart(p);
+      okPoster.forEach(function(q){ if(q !== p && !q.kategori && !q.ute && n && okMotpart(q) === n){ q.kategori = p.kategori; q.kilde = 'laert'; } });
+      okTegnInnboks();
+      var f = document.getElementById(s.id); if(f) f.focus();
+    });
+    kat.appendChild(s);
+    rad.appendChild(kat);
+
+    rad.appendChild(okEl('div', 'ok-post-belop', (p.belop > 0 ? '+' : '') + okKr0.format(p.belop)));
+
+    var ut = okEl('button', 'ok-ut', '×');
+    ut.type = 'button';
+    ut.setAttribute('aria-label', p.ute ? 'Ta med ' + hva + ' igjen' : 'Stryk ' + hva);
+    ut.title = p.ute ? 'Ta med igjen' : 'Stryk – føres ikke';
+    ut.addEventListener('click', function(){ p.ute = !p.ute; okTegnInnboks(); });
+    rad.appendChild(ut);
+
+    var kilde = p.ute ? 'Føres ikke'
+      : !p.kategori ? 'Trenger kategori – blir liggende til den har en'
+      : p.kilde === 'laert' ? 'Forslag: samme som sist'
+      : p.kilde === 'ord' ? 'Forslag fra Neam' : '';
+    if(kilde) rad.appendChild(okEl('div', 'ok-post-mer', '<span class="ok-kilde' + (!p.kategori && !p.ute ? ' mangler' : '') + '">' + okVask(kilde) + '</span>'));
+    return rad;
+  }
+
+  function okTegnBunn(){
+    var klare = okPoster.filter(okPostKlar), strokne = okPoster.filter(function(p){ return p.ute; });
+    var venter = okPoster.length - klare.length - strokne.length;
+    var sum = klare.reduce(function(s, p){ return s + p.belop; }, 0);
+    document.getElementById('ok-bunn').hidden = false;
+    /* Netto: inn og ut samlet, ogsaa det som er utenfor budsjettet. */
+    document.getElementById('ok-sum').textContent = 'Netto ' + okKr0.format(sum) + ' kr';
+    document.getElementById('ok-venter').textContent = venter
+      ? venter + (venter === 1 ? ' post venter' : ' poster venter') + ' på kategori og blir liggende'
+      : 'Alt i innboksen er klart';
+    var antall = klare.length + strokne.length;
+    var knapp = document.getElementById('ok-godkjenn');
+    knapp.textContent = 'Godkjenn ' + klare.length + (klare.length === 1 ? ' post' : ' poster') + (strokne.length ? ', stryk ' + strokne.length : '');
+    knapp.disabled = antall === 0;
+  }
+
+  document.getElementById('ok-godkjenn').addEventListener('click', function(){
+    var knapp = this;
+    var klare = okPoster.filter(okPostKlar), strokne = okPoster.filter(function(p){ return p.ute; });
+    if(!klare.length && !strokne.length) return;
+    knapp.disabled = true;
+    okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({
+      hva:'godkjenn',
+      godkjenn:klare.map(function(p){ return { id:p.id, kategori:p.kategori }; }),
+      strok:strokne.map(function(p){ return p.id; })
+    }) }).then(function(r){
+      var tekst = document.getElementById('ok-stripe-tekst');
+      if(!r.ok){ tekst.textContent = 'Ble ikke lagret: ' + r.feil; document.getElementById('ok-stripe').hidden = false; knapp.disabled = false; return; }
+      var sum = klare.reduce(function(s, p){ return s + p.belop; }, 0);
+      okAngre = klare.concat(strokne).map(function(p){ return p.id; });
+      okPoster = okPoster.filter(function(p){ return okAngre.indexOf(p.id) === -1; });
+      /* Angre-stripa staar til noen gjoer noe med den (designsystemet, «Angre framfor å spørre»). */
+      tekst.textContent = klare.length + (klare.length === 1 ? ' post' : ' poster') + ' godkjent, ' + okKr0.format(sum) + ' kr.'
+        + (strokne.length ? ' ' + strokne.length + ' strøket.' : '') + ' Neam husker kategoriene til neste gang.';
+      document.getElementById('ok-stripe').hidden = false;
+      okTegnInnboks();
+    });
+  });
+  document.getElementById('ok-angre').addEventListener('click', function(){
+    if(!okAngre) return;
+    okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'angre', ider:okAngre }) })
+      .then(function(r){
+        if(!r.ok){ document.getElementById('ok-stripe-tekst').textContent = 'Kunne ikke angre: ' + r.feil; return; }
+        okAngre = null;
+        document.getElementById('ok-stripe').hidden = true;
+        okLastInnboks();
+      });
+  });
+  document.getElementById('ok-stripe-lukk').addEventListener('click', function(){ okAngre = null; document.getElementById('ok-stripe').hidden = true; });
+
   okHent('/api/bank?hva=status').then(function(s){
     if(!okVisStatus(s)) return;
+    okLastInnboks();
     document.getElementById('ok-kontoer-kort').hidden = false;
     document.getElementById('ok-kontoer').innerHTML = '<p class="ok-meta">Henter kontoene fra DNB …</p>';
     okHent('/api/bank?hva=kontoer').then(function(r){

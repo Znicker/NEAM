@@ -7,6 +7,9 @@
      GET /api/bank?hva=kontoer         - kontoene med saldo
      GET /api/bank?hva=transaksjoner&konto=<uid>[&fra=AAAA-MM-DD]
      GET /api/bank?hva=banker          - bankene Enable Banking tilbyr i Norge
+     GET /api/bank?hva=innboks         - nye transaksjoner fra felleskontoene, med forslag
+     POST /api/bank {hva:'godkjenn'}   - godkjenner og stryker poster
+     POST /api/bank {hva:'angre'}      - legger poster tilbake i innboksen
      GET /api/bank?hvem=1              - diagnose: hvilke identitetskilder finnes
      POST /api/bank {hva:'roller'}     - setter rollen paa kontoer
      GET /api/bank/start               - sender deg til DNB for samtykke (BankID)
@@ -42,6 +45,9 @@
                                  saa lenge banken gir kontoen samme uid
      auth:bank:tilstand:<rnd>  - engangsbevis for runden til DNB (15 min)
      auth:bank:buffer:<navn>   - mellomlager for svar fra banken
+     auth:bank:poster          - innboksens poster: ny / godkjent / stroket, med kategori
+     auth:bank:laert           - { motpart: kategori } - det Neam foreslaar neste gang
+     auth:bank:innboks-fra     - datoen innboksen henter fra (satt foerste gang)
    `/api/data` slipper familien til alt under `fh:`. Kontoer og
    transaksjoner skal ikke kunne leses ut derfra.
 
@@ -303,10 +309,9 @@ async function kontoer(env, okt, fersk){
   return svar({ ok:true, hentet:eldst, advarsel:advarsel || undefined, kontoer:ut });
 }
 
-async function transaksjoner(env, okt, uid, fra, fersk){
-  if(!okt.kontoer.some(k => k.uid === uid)) return svar({ ok:false, feil:'Ukjent konto' });
-  const fraDato = /^\d{4}-\d{2}-\d{2}$/.test(fra || '') ? fra
-    : new Date(Date.now() - 31 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+/* Henter og pakker om transaksjonene for én konto. Brukes av baade
+   ?hva=transaksjoner og innboksen, saa de ser det samme. */
+async function hentTransaksjoner(env, uid, fraDato, fersk){
   const r = await medBuffer(env, 'trans:' + uid + ':' + fraDato, fersk, async () => {
     /* Banken deler lange lister i sider; continuation_key peker paa neste. */
     let alle = [], neste = '', runder = 0;
@@ -320,17 +325,175 @@ async function transaksjoner(env, okt, uid, fra, fersk){
     }while(neste && ++runder < 20);
     return { ok:true, data:alle };
   });
+  if(!r.ok) return r;
+  const sett = {};
+  const liste = [];
+  for(const t of (r.data || [])){
+    const p = {
+      id: t.entry_reference || t.transaction_id || '',
+      dato: t.booking_date || t.value_date || t.transaction_date || '',
+      belop: Number(t.transaction_amount && t.transaction_amount.amount) * (t.credit_debit_indicator === 'DBIT' ? -1 : 1),
+      valuta: t.transaction_amount && t.transaction_amount.currency,
+      tekst: [].concat(t.remittance_information || []).join(' ').trim(),
+      motpart: (t.creditor && t.creditor.name) || (t.debtor && t.debtor.name) || '',
+      status: t.status || ''
+    };
+    /* Uten bankens egen id lages én av innholdet. To like kjoep samme dag
+       paa samme konto er mulig (to kaffer), saa nummeret i rekka er med. */
+    if(!p.id){
+      const grunn = [uid, p.dato, p.belop, p.tekst, p.motpart].join('|');
+      sett[grunn] = (sett[grunn] || 0) + 1;
+      p.id = 'h' + b64url(await crypto.subtle.digest('SHA-256', tekstTilBytes(grunn + '|' + sett[grunn]))).slice(0, 22);
+    }
+    liste.push(p);
+  }
+  return { ok:true, hentet:r.hentet, fraBuffer:r.fraBuffer, advarsel:r.advarsel, liste:liste };
+}
+
+async function transaksjoner(env, okt, uid, fra, fersk){
+  if(!okt.kontoer.some(k => k.uid === uid)) return svar({ ok:false, feil:'Ukjent konto' });
+  const fraDato = /^\d{4}-\d{2}-\d{2}$/.test(fra || '') ? fra
+    : new Date(Date.now() - 31 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+  const r = await hentTransaksjoner(env, uid, fraDato, fersk);
   if(!r.ok) return svar(r);
-  const ut = (r.data || []).map(t => ({
-    id: t.entry_reference || t.transaction_id || '',
-    dato: t.booking_date || t.value_date || t.transaction_date || '',
-    belop: Number(t.transaction_amount && t.transaction_amount.amount) * (t.credit_debit_indicator === 'DBIT' ? -1 : 1),
-    valuta: t.transaction_amount && t.transaction_amount.currency,
-    tekst: [].concat(t.remittance_information || []).join(' ').trim(),
-    motpart: (t.creditor && t.creditor.name) || (t.debtor && t.debtor.name) || '',
-    status: t.status || ''
-  }));
-  return svar({ ok:true, hentet:r.hentet, fraBuffer:r.fraBuffer, advarsel:r.advarsel, fra:fraDato, transaksjoner:ut });
+  return svar({ ok:true, hentet:r.hentet, fraBuffer:r.fraBuffer, advarsel:r.advarsel, fra:fraDato, transaksjoner:r.liste });
+}
+
+/* ---------- Innboksen ----------
+   Transaksjonene fra kontoene med rollen «felles» blir poster som venter
+   paa godkjenning, slik skissen viser. Neam foreslaar kategori; det som
+   mangler forslag, blir liggende til noen velger. Ingenting utloeper.
+
+   Forslaget kommer fra, i denne rekkefoelgen:
+     1. det Neam har laert - samme motpart fikk denne kategorien sist
+     2. NOKKELORD under - kjente navn som KIWI, Tibber, Netflix
+   Kategoriene foelger BUDSJETT-arket (skissen), pluss to utenfor
+   budsjettet: overfoeringer mellom egne kontoer og nedbetaling av
+   kortgjeld. Den siste er viktig: kortgjelden betales samlet fra
+   felleskontoen, mens kvitteringene viser hva den besto av. Tellet som
+   forbruk ville det blitt dobbelt. */
+const KATEGORIER = [
+  'Bolig · Boliglån', 'Bolig · Boligforsikringer', 'Bolig · Strøm', 'Bolig · Kommunale avgifter', 'Bolig · Annet',
+  'Bil · Bompenger', 'Bil · Parkering', 'Bil · Utgifter PHEV', 'Bil · Utgifter Suzuki', 'Bil · Annet',
+  'Mat · Dagligvare', 'Mat · Takeaway', 'Mat · Annet',
+  'Barna · Felles', 'Barna · Emma', 'Barna · Andrea', 'Barna · Annet',
+  'Felles fritid · TV/streaming', 'Felles fritid · Forsikring', 'Felles fritid · Annet',
+  'Andre utgifter · Magne', 'Andre utgifter · Nina', 'Andre utgifter · Felles',
+  'Inntekter · Magne', 'Inntekter · Nina', 'Inntekter · Barnetrygd', 'Inntekter · Annet',
+  'Sparing · Buffer', 'Sparing · Reise', 'Sparing · Fond', 'Sparing · Annet',
+  'Utenfor budsjett · Overføring mellom egne kontoer', 'Utenfor budsjett · Nedbetaling av kortgjeld'
+];
+/* Bare navn som entydig peker paa én kategori. Drivstoff staar ikke her:
+   Circle K kan vaere PHEV eller Suzuki, og det laerer Neam av foerste valg. */
+const NOKKELORD = [
+  [/KREDITTBANKEN|SPAREBANK 1 KRED|NORGESGRUPPEN FINANS|TRUMF|COOP MASTERCARD/, 'Utenfor budsjett · Nedbetaling av kortgjeld'],
+  [/OVERFØRING|OVERF\.|EGEN KONTO|TIL SPAREKONTO|FRA SPAREKONTO/, 'Utenfor budsjett · Overføring mellom egne kontoer'],
+  [/BARNETRYGD/, 'Inntekter · Barnetrygd'],
+  [/\b(KIWI|REMA|MENY|COOP|EXTRA|OBS|SPAR|JOKER|BUNNPRIS|PRIX|MEGA|ODA)\b/, 'Mat · Dagligvare'],
+  [/FOODORA|WOLT|PEPPES|DOLLY DIMPLES|MCDONALD|BURGER KING|MAX BURGERS/, 'Mat · Takeaway'],
+  [/TIBBER|AGDER ENERGI|NETTLEIE|ELVIA|GLITRE/, 'Bolig · Strøm'],
+  [/NETFLIX|HBO|DISNEY|SPOTIFY|YOUTUBE|TV ?2|PRIME VIDEO|TELENOR/, 'Felles fritid · TV/streaming'],
+  [/AUTOPASS|FJELLINJEN|FERDE|SKYTTEL|BOMPENGER/, 'Bil · Bompenger'],
+  [/EASYPARK|APCOA|ONEPARK|PARKERING/, 'Bil · Parkering'],
+  [/STATENS PENSJONSKASSE|\bSPK\b|BULDER/, 'Bolig · Boliglån']
+];
+const POST_NOKKEL = 'auth:bank:poster';
+const LAERT_NOKKEL = 'auth:bank:laert';
+const FRA_NOKKEL = 'auth:bank:innboks-fra';
+
+/* Motparten uten tall og stoey - «KIWI 123 LYNGDAL» og «KIWI 456 LYNGDAL»
+   er samme butikk. Mangler motpart, brukes de tre foerste ordene i teksten. */
+function motpartNokkel(p){
+  const raa = (p.motpart || String(p.tekst || '').split(/\s+/).slice(0, 3).join(' ')).toUpperCase();
+  return raa.replace(/[0-9*#.,:/\\-]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function foreslaa(p, laert){
+  const n = motpartNokkel(p);
+  if(n && laert[n]) return { kategori:laert[n], kilde:'laert' };
+  const tekst = (p.motpart + ' ' + p.tekst).toUpperCase();
+  for(const [re, kat] of NOKKELORD) if(re.test(tekst)) return { kategori:kat, kilde:'ord' };
+  return { kategori:'', kilde:'' };
+}
+async function lesJson(env, nokkel, tom){
+  try{ return JSON.parse(await env.FAMILIE_KV.get(nokkel) || 'null') || tom; }catch(e){ return tom; }
+}
+
+async function innboks(env, okt, fersk){
+  const roller = await lesRoller(env);
+  const felles = okt.kontoer.filter(k => roller[k.uid] === 'felles');
+  if(!felles.length) return svar({ ok:true, poster:[], kategorier:KATEGORIER, kontoer:0 });
+  /* Foerste gang: fra den foerste i maaneden. Datoen staar fast etterpaa,
+     saa en post som er godkjent eller stroeket, aldri kommer tilbake. */
+  let fra = await env.FAMILIE_KV.get(FRA_NOKKEL);
+  if(!fra){ fra = new Date().toISOString().slice(0, 8) + '01'; await env.FAMILIE_KV.put(FRA_NOKKEL, fra); }
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const laert = await lesJson(env, LAERT_NOKKEL, {});
+  let hentet = Date.now(), advarsel = '', nye = 0;
+  for(const k of felles){
+    const r = await hentTransaksjoner(env, k.uid, fra, fersk);
+    if(!r.ok){ advarsel = r.feil; continue; }
+    hentet = Math.min(hentet, r.hentet);
+    if(r.advarsel) advarsel = r.advarsel;
+    for(const t of r.liste){
+      /* Bare bokfoerte. En reservasjon kan endre beloep eller forsvinne. */
+      if(t.status && t.status !== 'BOOK') continue;
+      if(poster[t.id]) continue;
+      const f = foreslaa(t, laert);
+      poster[t.id] = { id:t.id, konto:k.uid, kontoNavn:k.navn, dato:t.dato, belop:t.belop, tekst:t.tekst, motpart:t.motpart,
+        status:'ny', kategori:f.kategori, kilde:f.kilde };
+      nye++;
+    }
+  }
+  if(nye) await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  const alle = Object.keys(poster).map(id => poster[id]);
+  const venter = alle.filter(p => p.status === 'ny').sort((a, b) => b.dato.localeCompare(a.dato));
+  /* En post som kom inn uten forslag, kan ha faatt et siden - Neam kan ha
+     laert motparten paa en annen post. Bare i svaret; lagres ved godkjenning. */
+  for(const p of venter){
+    if(p.kategori) continue;
+    const f = foreslaa(p, laert);
+    if(f.kategori){ p.kategori = f.kategori; p.kilde = f.kilde; }
+  }
+  return svar({ ok:true, hentet:hentet, advarsel:advarsel || undefined, fra:fra, kontoer:felles.length, kategorier:KATEGORIER,
+    poster:venter, godkjent:alle.filter(p => p.status === 'godkjent').length });
+}
+
+/* Godkjenner og stryker i én runde. Kategorien som velges, huskes for
+   motparten - neste gang foreslaas den samme. */
+async function godkjenn(env, kropp, epost){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const laert = await lesJson(env, LAERT_NOKKEL, {});
+  const naa = new Date().toISOString();
+  const ok = [], strok = [];
+  for(const g of [].concat(kropp.godkjenn || [])){
+    const p = poster[g && g.id];
+    if(!p) return svar({ ok:false, feil:'Ukjent post' });
+    if(KATEGORIER.indexOf(g.kategori) === -1) return svar({ ok:false, feil:'Ukjent kategori: ' + g.kategori });
+    Object.assign(p, { status:'godkjent', kategori:g.kategori, behandlet:naa, av:epost });
+    const n = motpartNokkel(p);
+    if(n) laert[n] = g.kategori;
+    ok.push(p.id);
+  }
+  for(const id of [].concat(kropp.strok || [])){
+    const p = poster[id];
+    if(!p) return svar({ ok:false, feil:'Ukjent post' });
+    Object.assign(p, { status:'stroket', behandlet:naa, av:epost });
+    strok.push(id);
+  }
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  await env.FAMILIE_KV.put(LAERT_NOKKEL, JSON.stringify(laert));
+  return svar({ ok:true, godkjent:ok, stroket:strok });
+}
+/* Angre-stripa: legger nettopp behandlede poster tilbake i innboksen.
+   Det Neam laerte, blir staaende - det er et forslag, ikke en foering. */
+async function angre(env, kropp){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  let n = 0;
+  for(const id of [].concat(kropp.ider || [])){
+    if(poster[id] && poster[id].status !== 'ny'){ poster[id].status = 'ny'; delete poster[id].behandlet; delete poster[id].av; n++; }
+  }
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  return svar({ ok:true, tilbake:n });
 }
 
 /* Bankene appen faar velge mellom i Norge, slik Enable Banking selv svarer.
@@ -393,6 +556,7 @@ export async function onRequestGet({ request, env }){
     const fersk = url.searchParams.get('fersk') === '1';
     if(hva === 'kontoer') return await kontoer(env, okt, fersk);
     if(hva === 'transaksjoner') return await transaksjoner(env, okt, url.searchParams.get('konto') || '', url.searchParams.get('fra'), fersk);
+    if(hva === 'innboks') return await innboks(env, okt, fersk);
     return svar({ ok:false, feil:'Ukjent hva: ' + hva });
   }catch(e){
     /* Meldingen, aldri stakken - den kan baere biter av noekkelen. */
@@ -400,15 +564,20 @@ export async function onRequestGet({ request, env }){
   }
 }
 
-/* POST /api/bank  { hva:'roller', roller:{ <uid>: rolle } }
-   Fletter inn i det som er lagret; en tom rolle fjerner kontoen fra lista.
-   Bare kontoer i oekta og roller i ROLLER godtas. */
+/* POST /api/bank
+     { hva:'roller', roller:{ <uid>: rolle } }
+       Fletter inn i det som er lagret; en tom rolle fjerner kontoen fra lista.
+       Bare kontoer i oekta og roller i ROLLER godtas.
+     { hva:'godkjenn', godkjenn:[{ id, kategori }], strok:[id] }
+     { hva:'angre', ider:[id] } */
 export async function onRequestPost({ request, env }){
   if(!env.FAMILIE_KV) return svar({ ok:false, feil:'KV ikke bundet' });
   const v = await voksen(request, env);
   if(!v.ok) return svar(v);
   let kropp = null;
   try{ kropp = await request.json(); }catch(e){ return svar({ ok:false, feil:'Ugyldig JSON' }); }
+  if(kropp && kropp.hva === 'godkjenn') return await godkjenn(env, kropp, v.epost);
+  if(kropp && kropp.hva === 'angre') return await angre(env, kropp);
   if(!kropp || kropp.hva !== 'roller' || typeof kropp.roller !== 'object') return svar({ ok:false, feil:'Ukjent hva' });
   const okt = await lesOekt(env);
   if(!okt) return svar({ ok:false, feil:'Banken er ikke koblet' });
