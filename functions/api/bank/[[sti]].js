@@ -16,6 +16,8 @@
      POST /api/bank {hva:'trumf-innlogging', cookie} / {hva:'trumf-koble-fra'}
      POST /api/bank {hva:'kvittering-ny', kvittering}   - kvittering lest fra bilde/PDF
      GET /api/bank?hva=kvittering&id=<postId>         - varelinjene til en kvitteringspost
+     GET /api/bank?hva=budsjett / POST {hva:'budsjett', standard} - standardbudsjettet
+     GET /api/bank?hva=regnskap&mnd=AAAA-MM            - godkjente poster summert per kategori
      GET /api/bank?hvem=1              - diagnose: hvilke identitetskilder finnes
      POST /api/bank {hva:'roller'}     - setter rollen paa kontoer
      GET /api/bank/start               - sender deg til DNB for samtykke (BankID)
@@ -56,6 +58,8 @@
      auth:bank:innboks-fra     - datoen innboksen henter fra (satt foerste gang)
      auth:bank:trumf           - innloggingscookien fra trumf.no (se Trumf-delen)
      auth:bank:kv:<postId>     - varelinjene fra en kvittering lest fra bilde (bildet lagres ikke)
+     auth:bank:budsjett        - standardbudsjettet { kategori: kr per maaned } - ALDRI i koden,
+                                 repoet er offentlig
    `/api/data` slipper familien til alt under `fh:`. Kontoer og
    transaksjoner skal ikke kunne leses ut derfra.
 
@@ -523,6 +527,52 @@ async function innboks(env, okt, fersk){
     kategorier:KATEGORIER, poster:venter, godkjent:alle.filter(p => p.status === 'godkjent').length });
 }
 
+/* ---------- Budsjett og regnskap ----------
+   Standardbudsjettet ligger i KV, ikke i koden: repoet er offentlig, og
+   budsjettet inneholder loenn. Det fylles inn fra okonomi.html (for haand
+   eller fra Excel-arket i nettleseren). Regnskapet er summen av de
+   godkjente postene per kategori og maaned; «Utenfor budsjett» telles ikke.
+   Fortegn: utgifter og sparing som positive beloep (det som gikk ut),
+   inntekter som positive beloep (det som kom inn). */
+const BUDSJETT_NOKKEL = 'auth:bank:budsjett';
+const BUDSJETT_KATEGORIER = KATEGORIER.filter(k => k.indexOf('Utenfor budsjett') !== 0);
+
+async function budsjett(env){
+  const b = await lesJson(env, BUDSJETT_NOKKEL, null);
+  return svar({ ok:true, kategorier:BUDSJETT_KATEGORIER, standard:(b && b.standard) || {}, endret:b && b.endret, av:b && masker(b.av) });
+}
+async function lagreBudsjett(env, kropp, epost){
+  const inn = kropp.standard || {};
+  const ut = {};
+  for(const k of Object.keys(inn)){
+    if(BUDSJETT_KATEGORIER.indexOf(k) === -1) return svar({ ok:false, feil:'Ukjent kategori: ' + k });
+    const v = Math.round(Number(inn[k]) || 0);
+    if(v < 0 || v > 1e7) return svar({ ok:false, feil:'Ugyldig beløp for ' + k });
+    if(v) ut[k] = v;
+  }
+  await env.FAMILIE_KV.put(BUDSJETT_NOKKEL, JSON.stringify({ standard:ut, endret:new Date().toISOString(), av:epost }));
+  return budsjett(env);
+}
+async function regnskap(env, mnd){
+  if(!/^\d{4}-\d{2}$/.test(mnd || '')) mnd = new Date().toISOString().slice(0, 7);
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const sum = {};
+  let antall = 0;
+  for(const id of Object.keys(poster)){
+    const p = poster[id];
+    if(p.status !== 'godkjent' || String(p.dato).slice(0, 7) !== mnd) continue;
+    antall++;
+    const deler = p.deler && p.deler.length ? p.deler : [{ kategori:p.kategori, belop:p.belop }];
+    for(const d of deler){
+      if(BUDSJETT_KATEGORIER.indexOf(d.kategori) === -1) continue;
+      const v = d.kategori.indexOf('Inntekter') === 0 ? d.belop : -d.belop;
+      sum[d.kategori] = Math.round(((sum[d.kategori] || 0) + v) * 100) / 100;
+    }
+  }
+  const fra = await env.FAMILIE_KV.get(FRA_NOKKEL);
+  return svar({ ok:true, mnd:mnd, fra:fra || '', poster:antall, regnskap:sum });
+}
+
 /* Hvor varelinjene til en kvitteringspost ligger. Trumf bufrer dem selv;
    en kvittering lest fra bilde lagres naar den kommer inn. */
 function kvitteringNokkel(p){
@@ -877,6 +927,8 @@ export async function onRequestGet({ request, env }){
     }
     if(hva === 'trumf-kvittering') return await trumfKvittering(env, url.searchParams.get('id') || '');
     if(hva === 'kvittering') return await lagretKvittering(env, url.searchParams.get('id') || '');
+    if(hva === 'budsjett') return await budsjett(env);
+    if(hva === 'regnskap') return await regnskap(env, url.searchParams.get('mnd') || '');
     if(!okt) return svar({ ok:false, feil:'Banken er ikke koblet. Åpne /api/bank/start.' });
     const fersk = url.searchParams.get('fersk') === '1';
     if(hva === 'kontoer') return await kontoer(env, okt, fersk);
@@ -905,6 +957,7 @@ export async function onRequestPost({ request, env }){
   if(kropp && kropp.hva === 'angre') return await angre(env, kropp);
   if(kropp && kropp.hva === 'trumf-innlogging') return await trumfInnlogging(env, kropp, v.epost);
   if(kropp && kropp.hva === 'kvittering-ny') return await nyKvittering(env, kropp, v.epost);
+  if(kropp && kropp.hva === 'budsjett') return await lagreBudsjett(env, kropp, v.epost);
   if(kropp && kropp.hva === 'trumf-koble-fra'){
     await env.FAMILIE_KV.delete(TRUMF_NOKKEL);
     await env.FAMILIE_KV.delete('auth:bank:buffer:trumf:liste');
