@@ -423,10 +423,37 @@ async function lesJson(env, nokkel, tom){
   try{ return JSON.parse(await env.FAMILIE_KV.get(nokkel) || 'null') || tom; }catch(e){ return tom; }
 }
 
+/* ---------- Trumf-kvitteringene i innboksen ----------
+   Et Trumf-kjoep kan vaere betalt fra felleskontoen - da finnes det to
+   ganger: som banktrekk og som kvittering. De slaas sammen: kvitteringen
+   blir posten (den har varene), og banktrekket merkes `dekketAv` og vises
+   ikke for seg. Er banktrekket alt godkjent naar kvitteringen kommer,
+   kan de ikke slaas sammen stille; da merkes kvitteringen `mulDobbel`, og
+   sida stryker den til noen sier noe annet. Betalt med Trumf-kortet
+   finnes kjoepet ikke i banken, og kvitteringen er eneste post.
+
+   Lik: samme beloep (til oeret) og hoeyst tre dager mellom datoene - et
+   kortkjoep bokfoeres gjerne en dag eller to etter. */
+function dagerMellom(a, b){ return Math.abs(Date.parse(a) - Date.parse(b)) / 86400000; }
+function erLik(bank, kv){
+  return Math.abs(Math.abs(bank.belop) - Math.abs(kv.belop)) < 0.005 && dagerMellom(bank.dato, kv.dato) <= 3;
+}
+function kobleKvittering(poster, kv){
+  if(kv.bankId || kv.mulDobbel) return;
+  for(const id of Object.keys(poster)){
+    const b = poster[id];
+    if(b.fra === 'trumf' || b.dekketAv || b.belop >= 0 || !erLik(b, kv)) continue;
+    if(b.status === 'ny'){ b.dekketAv = kv.id; kv.bankId = b.id; kv.bankKonto = b.kontoNavn; }
+    else if(b.status === 'godkjent'){ kv.mulDobbel = b.id; kv.bankKonto = b.kontoNavn; }
+    return;
+  }
+}
+
 async function innboks(env, okt, fersk){
   const roller = await lesRoller(env);
   const felles = okt.kontoer.filter(k => roller[k.uid] === 'felles');
-  if(!felles.length) return svar({ ok:true, poster:[], kategorier:KATEGORIER, kontoer:0 });
+  const trumfKoblet = !!(await lesJson(env, TRUMF_NOKKEL, null));
+  if(!felles.length && !trumfKoblet) return svar({ ok:true, poster:[], kategorier:KATEGORIER, kontoer:0 });
   /* Foerste gang: fra den foerste i maaneden. Datoen staar fast etterpaa,
      saa en post som er godkjent eller stroeket, aldri kommer tilbake. */
   let fra = await env.FAMILIE_KV.get(FRA_NOKKEL);
@@ -444,14 +471,44 @@ async function innboks(env, okt, fersk){
       if(t.status && t.status !== 'BOOK') continue;
       if(poster[t.id]) continue;
       const f = foreslaa(t, laert);
-      poster[t.id] = { id:t.id, konto:k.uid, kontoNavn:k.navn, dato:t.dato, belop:t.belop, tekst:t.tekst, motpart:t.motpart,
+      const ny = { id:t.id, konto:k.uid, kontoNavn:k.navn, dato:t.dato, belop:t.belop, tekst:t.tekst, motpart:t.motpart,
         status:'ny', kategori:f.kategori, kilde:f.kilde };
+      poster[t.id] = ny;
+      /* Kom kvitteringen foer banktrekket, kobles de naa. */
+      for(const id of Object.keys(poster)){
+        const kv = poster[id];
+        if(kv.fra === 'trumf' && kv.status === 'ny' && !kv.bankId && !kv.mulDobbel && !ny.dekketAv && ny.belop < 0 && erLik(ny, kv)){
+          ny.dekketAv = kv.id; kv.bankId = ny.id; kv.bankKonto = ny.kontoNavn;
+        }
+      }
       nye++;
+    }
+  }
+  if(trumfKoblet){
+    const t = await trumfListe(env, fersk);
+    if(!t.ok) advarsel = t.feil;
+    else{
+      if(t.advarsel) advarsel = t.advarsel;
+      hentet = Math.min(hentet, t.hentet);
+      for(const k of t.data){
+        const dato = k.tid.slice(0, 10);
+        if(!dato || dato < fra) continue;
+        const id = 'trumf:' + k.id;
+        if(poster[id]) continue;
+        const kv = { id:id, fra:'trumf', trumfId:k.id, konto:'trumf', kontoNavn:'Trumf-kvittering', dato:dato,
+          belop:-Math.abs(k.belop), tekst:'', motpart:k.butikk, harKvittering:k.harKvittering, status:'ny' };
+        const f = foreslaa(kv, laert);
+        kv.kategori = f.kategori; kv.kilde = f.kilde;
+        kobleKvittering(poster, kv);
+        poster[id] = kv;
+        nye++;
+      }
     }
   }
   if(nye) await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
   const alle = Object.keys(poster).map(id => poster[id]);
-  const venter = alle.filter(p => p.status === 'ny').sort((a, b) => b.dato.localeCompare(a.dato));
+  /* Et banktrekk som er slaatt sammen med en kvittering, vises ikke for seg. */
+  const venter = alle.filter(p => p.status === 'ny' && !p.dekketAv).sort((a, b) => b.dato.localeCompare(a.dato));
   /* En post som kom inn uten forslag, kan ha faatt et siden - Neam kan ha
      laert motparten paa en annen post. Bare i svaret; lagres ved godkjenning. */
   for(const p of venter){
@@ -459,8 +516,30 @@ async function innboks(env, okt, fersk){
     const f = foreslaa(p, laert);
     if(f.kategori){ p.kategori = f.kategori; p.kilde = f.kilde; }
   }
-  return svar({ ok:true, hentet:hentet, advarsel:advarsel || undefined, fra:fra, kontoer:felles.length, kategorier:KATEGORIER,
-    poster:venter, godkjent:alle.filter(p => p.status === 'godkjent').length });
+  return svar({ ok:true, hentet:hentet, advarsel:advarsel || undefined, fra:fra, kontoer:felles.length, trumf:trumfKoblet,
+    kategorier:KATEGORIER, poster:venter, godkjent:alle.filter(p => p.status === 'godkjent').length });
+}
+
+/* Varelinjer med egen kategori: { <linjenummer>: kategori }. Resten av
+   beloepet - varer som foelger kjoepet, pant, avrunding - gaar til
+   kjoepets kategori. Gir [{ kategori, belop }] med negativt beloep som posten. */
+async function fordelKvittering(env, p, linjeKat, hovedKat){
+  const kv = await lesJson(env, 'auth:bank:buffer:trumf:kv:' + p.trumfId, null);
+  if(!kv || !kv.linjer) return null;
+  const sum = {};
+  let flyttet = 0;
+  for(const i of Object.keys(linjeKat || {})){
+    const l = kv.linjer[Number(i)], kat = linjeKat[i];
+    if(!l || !kat || kat === hovedKat) continue;
+    if(KATEGORIER.indexOf(kat) === -1) return null;
+    const b = (Number(l.belop) || 0) + (Number(l.rabatt) || 0);
+    sum[kat] = (sum[kat] || 0) + b;
+    flyttet += b;
+  }
+  if(!flyttet) return null;
+  const deler = [{ kategori:hovedKat, belop:-(Math.abs(p.belop) - flyttet) }];
+  for(const kat of Object.keys(sum)) deler.push({ kategori:kat, belop:-sum[kat] });
+  return deler.map(d => ({ kategori:d.kategori, belop:Math.round(d.belop * 100) / 100 }));
 }
 
 /* Godkjenner og stryker i én runde. Kategorien som velges, huskes for
@@ -475,6 +554,16 @@ async function godkjenn(env, kropp, epost){
     if(!p) return svar({ ok:false, feil:'Ukjent post' });
     if(KATEGORIER.indexOf(g.kategori) === -1) return svar({ ok:false, feil:'Ukjent kategori: ' + g.kategori });
     Object.assign(p, { status:'godkjent', kategori:g.kategori, behandlet:naa, av:epost });
+    delete p.deler;
+    if(g.linjer && Object.keys(g.linjer).some(i => g.linjer[i] && KATEGORIER.indexOf(g.linjer[i]) === -1)){
+      return svar({ ok:false, feil:'Ukjent kategori på en vare' });
+    }
+    if(p.fra === 'trumf' && g.linjer){
+      const deler = await fordelKvittering(env, p, g.linjer, g.kategori);
+      if(deler) p.deler = deler;
+    }
+    /* Banktrekket kvitteringen dekker, foelger med - det skal ikke telles. */
+    if(p.bankId && poster[p.bankId]) Object.assign(poster[p.bankId], { status:'sammenslatt', behandlet:naa, av:epost });
     const n = motpartNokkel(p);
     if(n) laert[n] = g.kategori;
     ok.push(p.id);
@@ -483,6 +572,9 @@ async function godkjenn(env, kropp, epost){
     const p = poster[id];
     if(!p) return svar({ ok:false, feil:'Ukjent post' });
     Object.assign(p, { status:'stroket', behandlet:naa, av:epost });
+    /* Stryker man kvitteringen, er banktrekket ikke lenger dekket - det
+       kommer tilbake i innboksen som vanlig post. */
+    if(p.bankId && poster[p.bankId]){ delete poster[p.bankId].dekketAv; delete p.bankId; }
     strok.push(id);
   }
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
@@ -495,7 +587,16 @@ async function angre(env, kropp){
   const poster = await lesJson(env, POST_NOKKEL, {});
   let n = 0;
   for(const id of [].concat(kropp.ider || [])){
-    if(poster[id] && poster[id].status !== 'ny'){ poster[id].status = 'ny'; delete poster[id].behandlet; delete poster[id].av; n++; }
+    const p = poster[id];
+    if(!p || p.status === 'ny') continue;
+    p.status = 'ny'; delete p.behandlet; delete p.av; delete p.deler; n++;
+    /* Banktrekket som ble slaatt sammen, gaar tilbake til «dekket». Ble
+       kvitteringen stroeket, mistet den koblingen; da kobles den paa nytt,
+       ellers staar kjoepet dobbelt i innboksen. */
+    if(p.bankId && poster[p.bankId] && poster[p.bankId].status === 'sammenslatt'){
+      poster[p.bankId].status = 'ny'; delete poster[p.bankId].behandlet; delete poster[p.bankId].av;
+    }
+    if(p.fra === 'trumf' && !p.bankId){ delete p.mulDobbel; kobleKvittering(poster, p); }
   }
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
   return svar({ ok:true, tilbake:n });

@@ -122,12 +122,28 @@ body::before{ display:none; }
 .ok-post.ute .ok-ut{ color:var(--aksent); }
 .ok-kilde{ font-size:var(--t-etikett); font-weight:700; letter-spacing:.04em; color:var(--aksent); }
 .ok-kilde.mangler{ color:var(--handling-endre); }
+.ok-post-mer{ display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
+.ok-post-mer .ok-linjer{ align-self:stretch; }
+.ok-vare{ display:grid; grid-template-columns:minmax(0,1fr) auto 200px; gap:4px 12px; align-items:center; padding:4px 0; }
+.ok-vare + .ok-vare{ border-top:1px solid var(--boks-kant); }
+.ok-vare b{ white-space:nowrap; text-align:right; }
+.ok-vare select{
+  width:100%; font-family:inherit; font-size:16px; padding:4px 8px;
+  border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink);
+}
+@media (max-width:560px){ .ok-vare{ grid-template-columns:minmax(0,1fr) auto; } .ok-vare select{ grid-column:1 / -1; } }
 .ok-bunn{
   position:sticky; bottom:max(12px, env(safe-area-inset-bottom, 0px)); z-index:5;
   background:var(--paper); border-radius:var(--radius); box-shadow:var(--shadow), 0 0 0 1px var(--line);
   padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:12px;
 }
 .ok-bunn .btn{ flex:none; }
+/* Paa telefon faar knappen egen linje, ellers presser den siden bredere enn skjermen. */
+@media (max-width:520px){
+  .ok-bunn{ flex-wrap:wrap; }
+  .ok-bunn .btn{ flex:1 1 100%; }
+  .ok-sum{ font-size:var(--t-brod); }
+}
 .ok-sum{ font-size:var(--t-stor); font-weight:700; }
 .ok-stripe{ background:var(--aksent-lys); border-radius:12px; padding:8px 8px 8px 14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 /* ---------- Trumf ---------- */
@@ -320,13 +336,15 @@ body::before{ display:none; }
       var boks = document.getElementById('ok-innboks');
       if(!r.ok){ boks.innerHTML = '<p class="ok-melding feil">' + okVask(r.feil) + '</p>'; document.getElementById('ok-bunn').hidden = true; return; }
       okKategorier = r.kategorier || [];
-      if(!r.kontoer){
-        boks.innerHTML = '<p class="ok-melding">Gi minst én konto rollen «Felles» nedenfor, så henter Neam transaksjonene derfra.</p>';
+      if(!r.kontoer && !r.trumf){
+        boks.innerHTML = '<p class="ok-melding">Gi minst én konto rollen «Felles» nedenfor, eller koble Trumf, så henter Neam transaksjonene derfra.</p>';
         document.getElementById('ok-innboks-meta').textContent = '';
         document.getElementById('ok-bunn').hidden = true;
         return;
       }
-      okPoster = (r.poster || []).map(function(p){ p.ute = false; return p; });
+      /* En kvittering som kan vaere telt i banken allerede, staar stroeket
+         til noen tar den med - heller én for lite enn én dobbelt. */
+      okPoster = (r.poster || []).map(function(p){ p.ute = !!p.mulDobbel; p.linjeKat = {}; p.apen = false; return p; });
       document.getElementById('ok-innboks-meta').textContent = 'Fra ' + okKort.format(new Date(r.fra)) + ' · hentet kl. '
         + okKlokke.format(new Date(r.hentet)) + (r.advarsel ? ' · banken svarte ikke, viser forrige henting' : '');
       okTegnInnboks();
@@ -345,27 +363,35 @@ body::before{ display:none; }
     okTegnBunn();
   }
 
-  function okPostRad(p){
-    var rad = okEl('div', 'ok-post' + (p.ute ? ' ute' : '') + (!p.kategori && !p.ute ? ' mangler' : ''));
-    var hva = p.motpart || p.tekst || 'Uten tekst';
-    rad.appendChild(okEl('div', 'ok-post-hva',
-      '<div class="ok-navn">' + okVask(hva) + '</div>'
-      + '<p class="ok-meta">' + okVask(okKort.format(new Date(p.dato))) + ' · ' + okVask(p.kontoNavn || '')
-      + (p.motpart && p.tekst && p.tekst !== p.motpart ? ' · ' + okVask(p.tekst) : '') + '</p>'));
-
-    var kat = okEl('div', 'ok-post-kat');
+  /* Nedtrekk med kategoriene, gruppert etter det som staar foran «·», som budsjettet. */
+  function okKatVelg(id, verdi, tomTekst, etikett){
     var s = document.createElement('select');
-    s.id = 'ok-kat-' + p.id;
-    s.setAttribute('aria-label', 'Kategori for ' + hva);
-    if(!p.kategori) s.appendChild(new Option('Velg kategori', ''));
-    /* Gruppert etter det som staar foran «·», som budsjettet. */
+    s.id = id;
+    s.setAttribute('aria-label', etikett);
+    if(tomTekst != null) s.appendChild(new Option(tomTekst, ''));
     var grupper = {};
     okKategorier.forEach(function(k){
       var g = k.split(' · ')[0];
       if(!grupper[g]){ grupper[g] = document.createElement('optgroup'); grupper[g].label = g; s.appendChild(grupper[g]); }
       grupper[g].appendChild(new Option(k.split(' · ')[1] || k, k));
     });
-    s.value = p.kategori || '';
+    s.value = verdi || '';
+    return s;
+  }
+
+  function okPostRad(p){
+    var rad = okEl('div', 'ok-post' + (p.ute ? ' ute' : '') + (!p.kategori && !p.ute ? ' mangler' : ''));
+    var hva = p.motpart || p.tekst || 'Uten tekst';
+    var kontoTekst = p.fra === 'trumf'
+      ? 'Trumf-kvittering' + (p.bankId ? ' · betalt fra ' + (p.bankKonto || 'banken') + ', slått sammen med banktrekket' : '')
+      : (p.kontoNavn || '');
+    rad.appendChild(okEl('div', 'ok-post-hva',
+      '<div class="ok-navn">' + okVask(hva) + '</div>'
+      + '<p class="ok-meta">' + okVask(okKort.format(new Date(p.dato))) + ' · ' + okVask(kontoTekst)
+      + (p.motpart && p.tekst && p.tekst !== p.motpart ? ' · ' + okVask(p.tekst) : '') + '</p>'));
+
+    var kat = okEl('div', 'ok-post-kat');
+    var s = okKatVelg('ok-kat-' + p.id, p.kategori, p.kategori ? null : 'Velg kategori', 'Kategori for ' + hva);
     s.disabled = p.ute;
     s.addEventListener('change', function(){
       p.kategori = s.value; p.kilde = 'valgt';
@@ -388,12 +414,49 @@ body::before{ display:none; }
     ut.addEventListener('click', function(){ p.ute = !p.ute; okTegnInnboks(); });
     rad.appendChild(ut);
 
-    var kilde = p.ute ? 'Føres ikke'
+    var mer = okEl('div', 'ok-post-mer');
+    var kilde = p.mulDobbel ? 'Mulig dobbel: et banktrekk med samme beløp fra ' + (p.bankKonto || 'banken') + ' er alt godkjent. Strøket til du tar den med.'
+      : p.ute ? 'Føres ikke'
       : !p.kategori ? 'Trenger kategori – blir liggende til den har en'
       : p.kilde === 'laert' ? 'Forslag: samme som sist'
       : p.kilde === 'ord' ? 'Forslag fra Neam' : '';
-    if(kilde) rad.appendChild(okEl('div', 'ok-post-mer', '<span class="ok-kilde' + (!p.kategori && !p.ute ? ' mangler' : '') + '">' + okVask(kilde) + '</span>'));
+    if(kilde) mer.appendChild(okEl('span', 'ok-kilde' + ((!p.kategori && !p.ute) || p.mulDobbel ? ' mangler' : ''), okVask(kilde)));
+    if(p.fra === 'trumf' && p.harKvittering !== false && !p.ute) mer.appendChild(okVarer(p));
+    if(mer.children.length) rad.appendChild(mer);
     return rad;
+  }
+
+  /* Varelinjene paa en Trumf-kvittering. Hver vare foelger kjoepet, eller
+     faar sin egen kategori; resten av beloepet gaar til kjoepets kategori. */
+  function okVarer(p){
+    var boks = okEl('div', '');
+    var flyttet = Object.keys(p.linjeKat).filter(function(i){ return p.linjeKat[i] && p.linjeKat[i] !== p.kategori; }).length;
+    var vis = okEl('button', 'ok-lenke', p.apen ? 'Skjul varene'
+      : 'Se varene ›' + (flyttet ? ' (' + flyttet + (flyttet === 1 ? ' vare' : ' varer') + ' med egen kategori)' : ''));
+    vis.type = 'button'; vis.id = 'ok-varer-' + p.id;
+    vis.addEventListener('click', function(){ p.apen = !p.apen; okTegnInnboks(); var f = document.getElementById(vis.id); if(f) f.focus(); });
+    boks.appendChild(vis);
+    if(!p.apen) return boks;
+    var liste = okEl('div', 'ok-linjer', '<span class="ok-meta">Henter kvitteringen …</span>');
+    boks.appendChild(liste);
+    var tegn = function(kv){
+      if(!kv.ok){ liste.innerHTML = '<span class="ok-meta">' + okVask(kv.feil) + '</span>'; return; }
+      p.linjer = kv.linjer;
+      liste.innerHTML = '';
+      if(!kv.linjer.length){ liste.appendChild(okEl('span', 'ok-meta', 'Kvitteringen har ingen varelinjer.')); return; }
+      kv.linjer.forEach(function(l, i){
+        var r = okEl('div', 'ok-vare');
+        r.appendChild(okEl('span', '', okVask(l.navn) + (l.antall !== 1 ? ' <span class="ok-meta">× ' + okVask(Number(l.antall).toLocaleString('nb-NO')) + '</span>' : '')));
+        r.appendChild(okEl('b', '', okKr0.format(l.belop + (l.rabatt || 0))));
+        var v = okKatVelg('ok-linje-' + p.id + '-' + i, p.linjeKat[i] || '', 'Som kjøpet', 'Kategori for ' + l.navn);
+        v.addEventListener('change', function(){ p.linjeKat[i] = v.value; okTegnBunn(); });
+        r.appendChild(v);
+        liste.appendChild(r);
+      });
+    };
+    if(p.linjer) tegn({ ok:true, linjer:p.linjer });
+    else okHent('/api/bank?hva=trumf-kvittering&id=' + encodeURIComponent(p.trumfId)).then(tegn);
+    return boks;
   }
 
   function okTegnBunn(){
@@ -419,7 +482,11 @@ body::before{ display:none; }
     knapp.disabled = true;
     okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({
       hva:'godkjenn',
-      godkjenn:klare.map(function(p){ return { id:p.id, kategori:p.kategori }; }),
+      godkjenn:klare.map(function(p){
+        var g = { id:p.id, kategori:p.kategori };
+        if(p.fra === 'trumf' && Object.keys(p.linjeKat).length) g.linjer = p.linjeKat;
+        return g;
+      }),
       strok:strokne.map(function(p){ return p.id; })
     }) }).then(function(r){
       var tekst = document.getElementById('ok-stripe-tekst');
