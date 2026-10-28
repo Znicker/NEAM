@@ -236,11 +236,27 @@ async function nySesjon(env, epost, oekt, access){
   if(adr.feil) return { feil: adr.feil };
 
   /* Delegeringsbeviset: et JWT med publikum «homey». Svaret er en
-     JSON-STRENG, ikke et objekt. */
-  const rd = await fetch(ATHOM + '/delegation/token?audience=homey', {
+     JSON-STRENG, ikke et objekt.
+
+     BUNDET TIL ÉN HOMEY (Athom, e-post oktober 2026): `homeyId` gjoer at
+     beviset bare virker paa denne Homeyen. Ubundne bevis godtas
+     fortsatt en stund, men skal avvises senere.
+
+     RESERVEN: avviser Athom den bundne formen, proeves den gamle én
+     gang - Athoms dokumentasjon har tatt feil foer (se kartleggingen
+     del 31). Den skal FJERNES naar Athom slutter aa godta ubundne bevis;
+     da hjelper den ingen, og den skjuler bare at noe er galt. */
+  let rd = await fetch(ATHOM + '/delegation/token?audience=homey&homeyId='
+                       + encodeURIComponent(adr.id), {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + access }
   });
+  if(rd.status === 400){
+    rd = await fetch(ATHOM + '/delegation/token?audience=homey', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + access }
+    });
+  }
   if(!rd.ok) return { feil: 'Fikk ikke delegeringsbevis (' + rd.status + ')' };
   const delegering = (await rd.json());
 
