@@ -10,6 +10,10 @@
      GET /api/bank?hva=innboks         - nye transaksjoner fra felleskontoene, med forslag
      POST /api/bank {hva:'godkjenn'}   - godkjenner og stryker poster
      POST /api/bank {hva:'angre'}      - legger poster tilbake i innboksen
+     GET /api/bank?hva=trumf           - er Trumf koblet, og virker innloggingen
+     GET /api/bank?hva=trumf-kjop      - kjoepene fra trumf.no (siste 12 mnd)
+     GET /api/bank?hva=trumf-kvittering&id=<batchId> - varelinjene
+     POST /api/bank {hva:'trumf-innlogging', cookie} / {hva:'trumf-koble-fra'}
      GET /api/bank?hvem=1              - diagnose: hvilke identitetskilder finnes
      POST /api/bank {hva:'roller'}     - setter rollen paa kontoer
      GET /api/bank/start               - sender deg til DNB for samtykke (BankID)
@@ -48,6 +52,7 @@
      auth:bank:poster          - innboksens poster: ny / godkjent / stroket, med kategori
      auth:bank:laert           - { motpart: kategori } - det Neam foreslaar neste gang
      auth:bank:innboks-fra     - datoen innboksen henter fra (satt foerste gang)
+     auth:bank:trumf           - innloggingscookien fra trumf.no (se Trumf-delen)
    `/api/data` slipper familien til alt under `fh:`. Kontoer og
    transaksjoner skal ikke kunne leses ut derfra.
 
@@ -512,6 +517,164 @@ async function banker(env){
   return svar({ ok:true, land:BANK.country, antall:ut.length, banker:ut });
 }
 
+/* ---------- Trumf ----------
+   Trumf-kortet (NorgesGruppen Finans) finnes ikke hos Enable Banking.
+   Kvitteringene fra KIWI, MENY, SPAR og Joker hentes derfor fra trumf.no,
+   slik github.com/fredrsat/trumf-connector gjoer det: med innloggings-
+   cookien fra nettleseren, og ved aa lese dataene som ligger i sida.
+
+   UOFFISIELT OG SKJOERT. Trumfs gamle REST-API ble lagt ned i september
+   2026; dette leser innloggede nettsider. Endrer Trumf sida, slutter det
+   aa virke. Derfor skilles to feil fra hverandre (planen, «Varsel 1/2»):
+     kode 'innlogging' - cookien er utloept eller feil: lim inn ny
+     kode 'format'     - innlogget, men dataene ligger ikke der de pleide:
+                         koden maa rettes
+   Cookien varer rundt et aar ifoelge connectoren. Trumf har bare de
+   siste 12 maanedene.
+
+   Cookien er en innlogging og lagres som en: under `auth:bank:`, aldri i
+   svar, aldri i logg. */
+const TRUMF = 'https://www.trumf.no';
+const TRUMF_LISTE = '/trumf-profil/kvitteringer';
+const TRUMF_NOKKEL = 'auth:bank:trumf';
+const NETTLESER = {
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml',
+  'Accept-Language': 'nb-NO,nb;q=0.9,en;q=0.8'
+};
+
+/* Next.js legger dataene i sida som biter av typen
+   self.__next_f.push([1,"..."]). Hver bit er en JSON-streng; settes de
+   sammen, staar dataene der som vanlig JSON. Finnes ingen slike biter,
+   leses sida som den er (connectorens maate, med escapede anfoerselstegn). */
+function rscTekst(html){
+  const re = /self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)/g;
+  let ut = '', m;
+  while((m = re.exec(html))){ try{ ut += JSON.parse(m[1]); }catch(e){} }
+  return ut || null;
+}
+/* Finner verdien etter "noekkel": - et objekt eller en liste - ved aa
+   telle klammer utenfor strenger. Gir null hvis noekkelen ikke finnes. */
+function jsonEtter(tekst, nokkel, escapet){
+  const merke = escapet ? nokkel + '\\":' : '"' + nokkel + '":';
+  const i = tekst.indexOf(merke);
+  if(i === -1) return null;
+  let s = i + merke.length;
+  while(s < tekst.length && tekst[s] !== '[' && tekst[s] !== '{') s++;
+  let dybde = 0, iStreng = false;
+  for(let j = s; j < tekst.length; j++){
+    const c = tekst[j];
+    if(c === '"'){
+      let b = 0, k = j - 1;
+      while(k >= 0 && tekst[k] === '\\'){ b++; k--; }
+      /* Escapet: \" er en ekte strenggrense, \\\" er et anfoerselstegn inne
+         i en streng. Uescapet: " er grense, \" er inne i strengen. */
+      if(escapet ? (b % 4 === 1) : (b % 2 === 0)) iStreng = !iStreng;
+      continue;
+    }
+    if(iStreng) continue;
+    if(c === '[' || c === '{') dybde++;
+    else if(c === ']' || c === '}'){
+      dybde--;
+      if(dybde === 0){
+        let raa = tekst.slice(s, j + 1);
+        if(escapet) raa = raa.replace(/\\\\/g, '\u0000').replace(/\\"/g, '"').replace(/\u0000/g, '\\');
+        /* Next merker datoer som "$D2026-10-01T..." */
+        return JSON.parse(raa.replace(/"\$D/g, '"'));
+      }
+    }
+  }
+  return null;
+}
+function trumfData(html, nokkel){
+  const rsc = rscTekst(html);
+  if(rsc){ const v = jsonEtter(rsc, nokkel, false); if(v != null) return v; }
+  return jsonEtter(html, nokkel, true);
+}
+
+async function trumfSide(env, sti){
+  const lagret = await lesJson(env, TRUMF_NOKKEL, null);
+  if(!lagret || !lagret.cookie) return { ok:false, kode:'innlogging', feil:'Trumf er ikke koblet' };
+  const r = await fetch(TRUMF + sti, { headers:Object.assign({ Cookie:lagret.cookie }, NETTLESER), redirect:'follow' });
+  const html = await r.text();
+  /* En utloept innlogging sender deg til innloggingssida, ofte med 200. */
+  let endteStiPaa = '';
+  try{ endteStiPaa = new URL(r.url).pathname; }catch(e){}
+  if(r.status === 401 || r.status === 403 || /logg-?inn|login|signin|auth\/|innlogging/i.test(endteStiPaa)){
+    return { ok:false, kode:'innlogging', feil:'Trumf trenger ny innlogging' };
+  }
+  if(!r.ok) return { ok:false, kode:'format', feil:'Trumf svarte HTTP ' + r.status };
+  return { ok:true, html:html };
+}
+function trumfFeil(html, hva){
+  /* Ingen data: er det fordi vi ikke er innlogget, eller fordi sida er endret? */
+  if(/logg inn|logg på|innlogging/i.test(html) && !/kvittering/i.test(html)) return { ok:false, kode:'innlogging', feil:'Trumf trenger ny innlogging' };
+  return { ok:false, kode:'format', feil:'Fant ikke ' + hva + ' på trumf.no – sida er trolig endret, og koden må rettes' };
+}
+
+async function trumfListe(env, fersk){
+  return medBuffer(env, 'trumf:liste', fersk, async () => {
+    const s = await trumfSide(env, TRUMF_LISTE);
+    if(!s.ok) return s;
+    let liste = null;
+    try{ liste = trumfData(s.html, 'transactionsData'); }catch(e){ liste = null; }
+    if(!Array.isArray(liste)) return trumfFeil(s.html, 'kjøpslista');
+    return { ok:true, data:liste.map(t => ({
+      id: String(t.batchId || ''),
+      tid: String(t.transaksjonsTidspunkt || ''),
+      butikk: String(t.beskrivelse || ''),
+      belop: Number(t.belop) || 0,
+      bonus: Number(t.bonus) || 0,
+      harKvittering: t.harKvittering !== false
+    })).filter(t => t.id) };
+  });
+}
+async function trumfKvittering(env, id){
+  if(!/^[\w.:-]{1,80}$/.test(id)) return svar({ ok:false, feil:'Ugyldig kvitterings-id' });
+  /* En kvittering endrer seg ikke; den hentes én gang og ligger. */
+  const nokkel = 'auth:bank:buffer:trumf:kv:' + id;
+  const lagret = await lesJson(env, nokkel, null);
+  if(lagret) return svar(Object.assign({ ok:true }, lagret));
+  const s = await trumfSide(env, TRUMF_LISTE + '/' + encodeURIComponent(id));
+  if(!s.ok) return svar(s);
+  let k = null;
+  try{ k = trumfData(s.html, 'purchaseDetails'); }catch(e){ k = null; }
+  if(!k || typeof k !== 'object') return svar(trumfFeil(s.html, 'kvitteringen'));
+  const ut = {
+    id: id,
+    tid: String(k.transaksjonsTidspunkt || ''),
+    belop: Number(k.belop) || 0,
+    bonus: Number(k.bonus) || 0,
+    linjer: [].concat(k.varelinjer || []).map(l => ({
+      navn: String(l.produktBeskrivelse || ''),
+      antall: Number(l.antall) || 1,
+      enhet: String(l.enhetsType || ''),
+      belop: Number(l.belop) || 0,
+      rabatt: [].concat(l.besparelser || []).reduce((s, b) => s + (Number(b.belop) || 0), 0)
+    }))
+  };
+  await env.FAMILIE_KV.put(nokkel, JSON.stringify(ut));
+  return svar(Object.assign({ ok:true }, ut));
+}
+async function trumfStatus(env){
+  const lagret = await lesJson(env, TRUMF_NOKKEL, null);
+  if(!lagret) return svar({ ok:true, koblet:false });
+  const r = await trumfListe(env, false);
+  const ut = { ok:true, koblet:true, lagret:lagret.lagret, lagretAv:masker(lagret.av) };
+  if(!r.ok) return svar(Object.assign(ut, { virker:false, kode:r.kode, feil:r.feil }));
+  const liste = r.data || [];
+  return svar(Object.assign(ut, { virker:true, hentet:r.hentet, advarsel:r.advarsel, antall:liste.length,
+    nyeste:liste.reduce((m, t) => t.tid > m ? t.tid : m, '') }));
+}
+async function trumfInnlogging(env, kropp, epost){
+  const c = String(kropp.cookie || '').trim();
+  /* Det connectoren krever: hele Cookie-headeren, med session-tokenet i. */
+  if(!/authjs\.session-token/.test(c) || c.length > 8000) return svar({ ok:false, feil:'Dette ser ikke ut som Cookie-feltet fra trumf.no – det skal inneholde «authjs.session-token».' });
+  await env.FAMILIE_KV.put(TRUMF_NOKKEL, JSON.stringify({ cookie:c, lagret:new Date().toISOString(), av:epost }));
+  await env.FAMILIE_KV.delete('auth:bank:buffer:trumf:liste');
+  return trumfStatus(env);
+}
+
 export async function onRequestGet({ request, env }){
   const url = new URL(request.url);
   const sti = url.pathname.replace(/\/+$/, '');
@@ -552,6 +715,14 @@ export async function onRequestGet({ request, env }){
         kontoer:okt.kontoer.length, godkjentAv:masker(okt.godkjentAv), laget:okt.laget });
     }
     if(hva === 'banker') return await banker(env);
+    /* Trumf trenger ikke banken - den har sin egen innlogging. */
+    if(hva === 'trumf') return await trumfStatus(env);
+    if(hva === 'trumf-kjop'){
+      const r = await trumfListe(env, url.searchParams.get('fersk') === '1');
+      if(!r.ok) return svar(r);
+      return svar({ ok:true, hentet:r.hentet, fraBuffer:r.fraBuffer, advarsel:r.advarsel, kjop:r.data });
+    }
+    if(hva === 'trumf-kvittering') return await trumfKvittering(env, url.searchParams.get('id') || '');
     if(!okt) return svar({ ok:false, feil:'Banken er ikke koblet. Åpne /api/bank/start.' });
     const fersk = url.searchParams.get('fersk') === '1';
     if(hva === 'kontoer') return await kontoer(env, okt, fersk);
@@ -578,6 +749,12 @@ export async function onRequestPost({ request, env }){
   try{ kropp = await request.json(); }catch(e){ return svar({ ok:false, feil:'Ugyldig JSON' }); }
   if(kropp && kropp.hva === 'godkjenn') return await godkjenn(env, kropp, v.epost);
   if(kropp && kropp.hva === 'angre') return await angre(env, kropp);
+  if(kropp && kropp.hva === 'trumf-innlogging') return await trumfInnlogging(env, kropp, v.epost);
+  if(kropp && kropp.hva === 'trumf-koble-fra'){
+    await env.FAMILIE_KV.delete(TRUMF_NOKKEL);
+    await env.FAMILIE_KV.delete('auth:bank:buffer:trumf:liste');
+    return svar({ ok:true, koblet:false });
+  }
   if(!kropp || kropp.hva !== 'roller' || typeof kropp.roller !== 'object') return svar({ ok:false, feil:'Ukjent hva' });
   const okt = await lesOekt(env);
   if(!okt) return svar({ ok:false, feil:'Banken er ikke koblet' });

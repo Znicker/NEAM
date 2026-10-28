@@ -130,6 +130,24 @@ body::before{ display:none; }
 .ok-bunn .btn{ flex:none; }
 .ok-sum{ font-size:var(--t-stor); font-weight:700; }
 .ok-stripe{ background:var(--aksent-lys); border-radius:12px; padding:8px 8px 8px 14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+/* ---------- Trumf ---------- */
+.ok-steg{ margin:0; padding-left:20px; font-size:var(--t-meta); color:var(--ink-soft); display:flex; flex-direction:column; gap:4px; }
+.ok-felt{
+  width:100%; min-height:90px; font-family:ui-monospace, monospace; font-size:16px; padding:8px 10px;
+  border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); resize:vertical;
+}
+.ok-felt:focus{ outline:none; border-color:var(--aksent); }
+.ok-rad-knapper{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.ok-rad-knapper .btn{ padding:10px 16px; font-size:var(--t-meta); }
+.ok-lenke{ font:inherit; font-size:var(--t-meta); font-weight:700; color:var(--aksent); background:none; border:0; padding:4px 0; cursor:pointer; }
+.ok-lenke.fare{ color:var(--danger); }
+.ok-kjop{ display:grid; grid-template-columns:70px minmax(0,1fr) auto; gap:2px 12px; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--line); }
+.ok-kjop:last-child{ border-bottom:0; }
+.ok-kjop .ok-lenke{ grid-column:2 / -1; justify-self:start; padding:0; }
+.ok-linjer{ grid-column:1 / -1; background:var(--boks-mild); border-radius:10px; padding:8px 12px; margin-top:6px; display:flex; flex-direction:column; gap:3px; font-size:var(--t-meta); }
+.ok-linje{ display:flex; justify-content:space-between; gap:12px; }
+.ok-linje b{ white-space:nowrap; }
+
 .ok-stripe p{ flex:1 1 220px; margin:0; font-size:var(--t-meta); }
 /* .btn-ghost er full bredde i fellesfila; i stripa skal den staa ved teksten. */
 .ok-stripe .btn{ width:auto; padding:8px 14px; font-size:var(--t-meta); }
@@ -160,6 +178,11 @@ body::before{ display:none; }
       <div><div class="ok-sum" id="ok-sum"></div><p class="ok-meta" id="ok-venter"></p></div>
       <button type="button" class="btn btn-ny" id="ok-godkjenn"></button>
     </div>
+  </section>
+
+  <section class="ok-kort" id="ok-trumf-kort">
+    <div class="ok-kort-hode"><h2>Trumf</h2><span class="ok-meta" id="ok-trumf-meta"></span></div>
+    <div id="ok-trumf"><p class="ok-meta">Henter …</p></div>
   </section>
 
   <section class="ok-kort" id="ok-kontoer-kort" hidden>
@@ -422,6 +445,124 @@ body::before{ display:none; }
       });
   });
   document.getElementById('ok-stripe-lukk').addEventListener('click', function(){ okAngre = null; document.getElementById('ok-stripe').hidden = true; });
+
+  /* ---------- Trumf ----------
+     Kvitteringene fra KIWI, MENY, SPAR og Joker. Innloggingen er Cookie-
+     feltet fra trumf.no, som man limer inn selv - Neam ser aldri passordet. */
+  var okTrumfSkjema = false;
+
+  function okTrumfStatus(){
+    okHent('/api/bank?hva=trumf').then(okTegnTrumf);
+  }
+
+  function okTegnTrumf(s){
+    var boks = document.getElementById('ok-trumf'), meta = document.getElementById('ok-trumf-meta');
+    boks.innerHTML = ''; meta.textContent = '';
+    if(!s.ok){ boks.appendChild(okEl('p', 'ok-melding feil', okVask(s.feil))); return; }
+    if(s.koblet && s.virker){
+      meta.textContent = s.antall + ' kjøp siste 12 måneder' + (s.nyeste ? ' · nyeste ' + okKort.format(new Date(s.nyeste)) : '');
+      var liste = okEl('div', '', '<p class="ok-meta">Henter kjøpene …</p>');
+      boks.appendChild(liste);
+      okHent('/api/bank?hva=trumf-kjop').then(function(r){ okTegnTrumfKjop(liste, r); });
+    } else if(s.koblet){
+      /* To ulike feil, to ulike beskjeder (planen, «Varsel 1/2»). */
+      boks.appendChild(okEl('p', 'ok-melding feil', s.kode === 'innlogging'
+        ? 'Trumf trenger ny innlogging. Lim inn Cookie-feltet fra trumf.no på nytt.'
+        : okVask(s.feil)));
+      if(s.kode === 'innlogging') okTrumfSkjema = true;
+    } else {
+      boks.appendChild(okEl('p', 'ok-meta', 'Trumf er ikke koblet. Når innloggingen er lagt inn, henter Neam kvitteringene med varelinjer fra trumf.no.'));
+      okTrumfSkjema = true;
+    }
+    if(okTrumfSkjema) boks.appendChild(okTrumfInnlogging());
+    var knapper = okEl('div', 'ok-rad-knapper');
+    if(s.koblet && !okTrumfSkjema){
+      var ny = okEl('button', 'ok-lenke', 'Lim inn ny innlogging'); ny.type = 'button';
+      ny.addEventListener('click', function(){ okTrumfSkjema = true; okTegnTrumf(s); var f = document.getElementById('ok-trumf-cookie'); if(f) f.focus(); });
+      knapper.appendChild(ny);
+    }
+    if(s.koblet){
+      /* Innloggingen kan hentes paa nytt fra trumf.no, saa det spoerres ikke. */
+      var fra = okEl('button', 'ok-lenke fare', 'Koble fra Trumf'); fra.type = 'button';
+      fra.addEventListener('click', function(){
+        okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'trumf-koble-fra' }) })
+          .then(function(){ okTrumfSkjema = false; okTrumfStatus(); });
+      });
+      knapper.appendChild(fra);
+    }
+    if(knapper.children.length) boks.appendChild(knapper);
+  }
+
+  function okTrumfInnlogging(){
+    var boks = okEl('div', '', '');
+    boks.style.display = 'flex'; boks.style.flexDirection = 'column'; boks.style.gap = '10px';
+    boks.appendChild(okEl('ol', 'ok-steg',
+      '<li>Logg inn på trumf.no i nettleseren på PC-en, og åpne «Mine kvitteringer».</li>'
+      + '<li>Trykk F12 og velg fanen <b>Network</b> (Nettverk). Oppdater sida.</li>'
+      + '<li>Klikk på den første linja til <b>www.trumf.no</b>. Under <b>Request Headers</b>, kopier hele verdien av <b>Cookie</b>.</li>'
+      + '<li>Lim den inn her. Den skal inneholde «authjs.session-token».</li>'));
+    var felt = document.createElement('textarea');
+    felt.className = 'ok-felt'; felt.id = 'ok-trumf-cookie';
+    felt.setAttribute('aria-label', 'Cookie-feltet fra trumf.no');
+    felt.autocomplete = 'off'; felt.spellcheck = false;
+    boks.appendChild(felt);
+    boks.appendChild(okEl('p', 'ok-meta', 'Innloggingen lagres bare på Neams tjener, bak den samme sperra som banken, og varer rundt et år. Neam ser aldri passordet ditt.'));
+    var rad = okEl('div', 'ok-rad-knapper');
+    var lagre = okEl('button', 'btn btn-ny', 'Lagre innlogging'); lagre.type = 'button';
+    var svarTekst = okEl('span', 'ok-meta', '');
+    lagre.addEventListener('click', function(){
+      var verdi = felt.value.trim();
+      if(!verdi){ svarTekst.textContent = 'Feltet er tomt.'; return; }
+      lagre.disabled = true; svarTekst.textContent = 'Prøver innloggingen mot trumf.no …';
+      okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'trumf-innlogging', cookie:verdi }) })
+        .then(function(r){
+          lagre.disabled = false;
+          if(!r.ok){ svarTekst.textContent = r.feil; return; }
+          felt.value = '';
+          /* Er sida endret, hjelper ikke en ny innlogging - da skjules skjemaet. */
+          okTrumfSkjema = !r.virker && r.kode === 'innlogging';
+          okTegnTrumf(r);
+        });
+    });
+    rad.appendChild(lagre); rad.appendChild(svarTekst);
+    boks.appendChild(rad);
+    return boks;
+  }
+
+  function okTegnTrumfKjop(liste, r){
+    liste.innerHTML = '';
+    if(!r.ok){ liste.appendChild(okEl('p', 'ok-melding feil', okVask(r.feil))); return; }
+    var kjop = (r.kjop || []).slice().sort(function(a, b){ return b.tid.localeCompare(a.tid); }).slice(0, 15);
+    if(!kjop.length){ liste.appendChild(okEl('p', 'ok-meta', 'Ingen kjøp siste 12 måneder.')); return; }
+    kjop.forEach(function(k){
+      var rad = okEl('div', 'ok-kjop',
+        '<span class="ok-meta">' + okVask(k.tid ? okKort.format(new Date(k.tid)) : '') + '</span>'
+        + '<span class="ok-navn">' + okVask(k.butikk) + '</span>'
+        + '<b>' + okKr0.format(k.belop) + '</b>');
+      if(k.harKvittering){
+        var vis = okEl('button', 'ok-lenke', 'Se varene ›'); vis.type = 'button';
+        var linjer = null;
+        vis.addEventListener('click', function(){
+          if(linjer){ linjer.remove(); linjer = null; vis.textContent = 'Se varene ›'; return; }
+          linjer = okEl('div', 'ok-linjer', '<span class="ok-meta">Henter kvitteringen …</span>');
+          rad.appendChild(linjer); vis.textContent = 'Skjul varene';
+          okHent('/api/bank?hva=trumf-kvittering&id=' + encodeURIComponent(k.id)).then(function(kv){
+            if(!linjer) return;
+            if(!kv.ok){ linjer.innerHTML = '<span class="ok-meta">' + okVask(kv.feil) + '</span>'; return; }
+            linjer.innerHTML = kv.linjer.map(function(l){
+              return '<div class="ok-linje"><span>' + okVask(l.navn) + (l.antall !== 1 ? ' <span class="ok-meta">× ' + okVask(Number(l.antall).toLocaleString('nb-NO')) + (l.enhet && l.enhet !== 'stk' ? ' ' + okVask(l.enhet) : '') + '</span>' : '')
+                + (l.rabatt ? ' <span class="ok-meta">rabatt ' + okKr0.format(l.rabatt) + '</span>' : '') + '</span><b>' + okKr0.format(l.belop) + '</b></div>';
+            }).join('') || '<span class="ok-meta">Kvitteringen har ingen varelinjer.</span>';
+          });
+        });
+        rad.appendChild(vis);
+      }
+      liste.appendChild(rad);
+    });
+    if((r.kjop || []).length > 15) liste.appendChild(okEl('p', 'ok-meta', 'Viser de 15 nyeste av ' + r.kjop.length + '.'));
+  }
+
+  okTrumfStatus();
 
   okHent('/api/bank?hva=status').then(function(s){
     if(!okVisStatus(s)) return;
