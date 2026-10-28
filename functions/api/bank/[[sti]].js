@@ -6,6 +6,7 @@
      GET /api/bank?hva=status          - er banken koblet, og til naar
      GET /api/bank?hva=kontoer         - kontoene med saldo
      GET /api/bank?hva=transaksjoner&konto=<uid>[&fra=AAAA-MM-DD]
+     GET /api/bank?hva=banker          - bankene Enable Banking tilbyr i Norge
      GET /api/bank?hvem=1              - diagnose: hvilke identitetskilder finnes
      POST /api/bank {hva:'roller'}     - setter rollen paa kontoer
      GET /api/bank/start               - sender deg til DNB for samtykke (BankID)
@@ -332,6 +333,22 @@ async function transaksjoner(env, okt, uid, fra, fersk){
   return svar({ ok:true, hentet:r.hentet, fraBuffer:r.fraBuffer, advarsel:r.advarsel, fra:fraDato, transaksjoner:ut });
 }
 
+/* Bankene appen faar velge mellom i Norge, slik Enable Banking selv svarer.
+   Fasiten for om en utsteder kan kobles - den offentlige lista paa
+   nettsidene deres kan henge etter. Krever ingen oekt. */
+async function banker(env){
+  const r = await eb(env, 'GET', '/aspsps?country=' + BANK.country);
+  if(!r.ok) return svar(r);
+  const ut = ((r.data && r.data.aspsps) || []).map(a => ({
+    navn: a.name,
+    bic: a.bic || '',
+    typer: a.psu_types || [],
+    samtykkeDager: a.maximum_consent_validity ? Math.floor(a.maximum_consent_validity / 86400) : null,
+    beta: !!a.beta
+  })).sort((a, b) => a.navn.localeCompare(b.navn, 'nb'));
+  return svar({ ok:true, land:BANK.country, antall:ut.length, banker:ut });
+}
+
 export async function onRequestGet({ request, env }){
   const url = new URL(request.url);
   const sti = url.pathname.replace(/\/+$/, '');
@@ -371,6 +388,7 @@ export async function onRequestGet({ request, env }){
       return svar({ ok:true, koblet:true, bank:BANK.name, gyldigTil:okt.gyldigTil, dagerIgjen:igjen,
         kontoer:okt.kontoer.length, godkjentAv:masker(okt.godkjentAv), laget:okt.laget });
     }
+    if(hva === 'banker') return await banker(env);
     if(!okt) return svar({ ok:false, feil:'Banken er ikke koblet. Åpne /api/bank/start.' });
     const fersk = url.searchParams.get('fersk') === '1';
     if(hva === 'kontoer') return await kontoer(env, okt, fersk);
