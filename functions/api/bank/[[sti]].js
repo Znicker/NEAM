@@ -14,6 +14,8 @@
      GET /api/bank?hva=trumf-kjop      - kjoepene fra trumf.no (siste 12 mnd)
      GET /api/bank?hva=trumf-kvittering&id=<batchId> - varelinjene
      POST /api/bank {hva:'trumf-innlogging', cookie} / {hva:'trumf-koble-fra'}
+     POST /api/bank {hva:'kvittering-ny', kvittering}   - kvittering lest fra bilde/PDF
+     GET /api/bank?hva=kvittering&id=<postId>         - varelinjene til en kvitteringspost
      GET /api/bank?hvem=1              - diagnose: hvilke identitetskilder finnes
      POST /api/bank {hva:'roller'}     - setter rollen paa kontoer
      GET /api/bank/start               - sender deg til DNB for samtykke (BankID)
@@ -53,6 +55,7 @@
      auth:bank:laert           - { motpart: kategori } - det Neam foreslaar neste gang
      auth:bank:innboks-fra     - datoen innboksen henter fra (satt foerste gang)
      auth:bank:trumf           - innloggingscookien fra trumf.no (se Trumf-delen)
+     auth:bank:kv:<postId>     - varelinjene fra en kvittering lest fra bilde (bildet lagres ikke)
    `/api/data` slipper familien til alt under `fh:`. Kontoer og
    transaksjoner skal ikke kunne leses ut derfra.
 
@@ -442,7 +445,7 @@ function kobleKvittering(poster, kv){
   if(kv.bankId || kv.mulDobbel) return;
   for(const id of Object.keys(poster)){
     const b = poster[id];
-    if(b.fra === 'trumf' || b.dekketAv || b.belop >= 0 || !erLik(b, kv)) continue;
+    if(b.fra || b.dekketAv || b.belop >= 0 || !erLik(b, kv)) continue;
     if(b.status === 'ny'){ b.dekketAv = kv.id; kv.bankId = b.id; kv.bankKonto = b.kontoNavn; }
     else if(b.status === 'godkjent'){ kv.mulDobbel = b.id; kv.bankKonto = b.kontoNavn; }
     return;
@@ -453,7 +456,7 @@ async function innboks(env, okt, fersk){
   const roller = await lesRoller(env);
   const felles = okt.kontoer.filter(k => roller[k.uid] === 'felles');
   const trumfKoblet = !!(await lesJson(env, TRUMF_NOKKEL, null));
-  if(!felles.length && !trumfKoblet) return svar({ ok:true, poster:[], kategorier:KATEGORIER, kontoer:0 });
+  /* Uten felleskonto og Trumf kan innboksen likevel ha kvitteringer lagt inn som bilde. */
   /* Foerste gang: fra den foerste i maaneden. Datoen staar fast etterpaa,
      saa en post som er godkjent eller stroeket, aldri kommer tilbake. */
   let fra = await env.FAMILIE_KV.get(FRA_NOKKEL);
@@ -477,7 +480,7 @@ async function innboks(env, okt, fersk){
       /* Kom kvitteringen foer banktrekket, kobles de naa. */
       for(const id of Object.keys(poster)){
         const kv = poster[id];
-        if(kv.fra === 'trumf' && kv.status === 'ny' && !kv.bankId && !kv.mulDobbel && !ny.dekketAv && ny.belop < 0 && erLik(ny, kv)){
+        if(kv.fra && kv.status === 'ny' && !kv.bankId && !kv.mulDobbel && !ny.dekketAv && ny.belop < 0 && erLik(ny, kv)){
           ny.dekketAv = kv.id; kv.bankId = ny.id; kv.bankKonto = ny.kontoNavn;
         }
       }
@@ -520,11 +523,60 @@ async function innboks(env, okt, fersk){
     kategorier:KATEGORIER, poster:venter, godkjent:alle.filter(p => p.status === 'godkjent').length });
 }
 
+/* Hvor varelinjene til en kvitteringspost ligger. Trumf bufrer dem selv;
+   en kvittering lest fra bilde lagres naar den kommer inn. */
+function kvitteringNokkel(p){
+  return p.fra === 'trumf' ? 'auth:bank:buffer:trumf:kv:' + p.trumfId : 'auth:bank:kv:' + p.id;
+}
+
+/* ---------- Kvittering fra bilde eller PDF ----------
+   Sida lar Neam lese bildet (via /api/claude) og sender det som ble lest
+   hit. Selve bildet lagres ikke - bare butikk, dato, sum og varelinjene.
+   Posten havner i innboksen som alle andre og maa godkjennes; det er
+   bekreftelsen paa at Neam leste riktig (designsystemet, «Bekreftelse»). */
+async function nyKvittering(env, kropp, epost){
+  const k = kropp.kvittering || {};
+  const dato = String(k.dato || '');
+  const sum = Math.abs(Number(k.belop));
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(dato) || !(sum > 0) || sum > 1e6) return svar({ ok:false, feil:'Mangler dato eller sum – les kvitteringen på nytt eller fyll inn' });
+  const butikk = String(k.butikk || '').slice(0, 120) || 'Ukjent butikk';
+  const linjer = [].concat(k.linjer || []).slice(0, 300).map(l => ({
+    navn: String(l.navn || '').slice(0, 120),
+    antall: Number(l.antall) || 1,
+    enhet: String(l.enhet || '').slice(0, 10),
+    belop: Math.round((Number(l.belop) || 0) * 100) / 100,
+    rabatt: Math.round((Number(l.rabatt) || 0) * 100) / 100
+  })).filter(l => l.navn);
+  /* Samme kvittering lest to ganger skal ikke bli to poster. */
+  const id = 'foto:' + b64url(await crypto.subtle.digest('SHA-256', tekstTilBytes([butikk, dato, sum.toFixed(2)].join('|')))).slice(0, 18);
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  if(poster[id]) return svar({ ok:false, feil:'Denne kvitteringen er allerede lagt inn (' + butikk + ', ' + dato + ')' });
+  const laert = await lesJson(env, LAERT_NOKKEL, {});
+  const p = { id:id, fra:'foto', konto:'foto', kontoNavn:'Kvittering fra bilde', dato:dato, belop:-sum, tekst:'', motpart:butikk,
+    harKvittering: linjer.length > 0, status:'ny', lagtInnAv:epost, lagtInn:new Date().toISOString() };
+  const f = foreslaa(p, laert);
+  p.kategori = f.kategori; p.kilde = f.kilde;
+  kobleKvittering(poster, p);
+  poster[id] = p;
+  if(linjer.length) await env.FAMILIE_KV.put(kvitteringNokkel(p), JSON.stringify({ id:id, belop:sum, linjer:linjer }));
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  return svar({ ok:true, post:p });
+}
+async function lagretKvittering(env, id){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const p = poster[id];
+  if(!p || !p.fra) return svar({ ok:false, feil:'Ukjent kvittering' });
+  if(p.fra === 'trumf') return trumfKvittering(env, p.trumfId);
+  const kv = await lesJson(env, kvitteringNokkel(p), null);
+  if(!kv) return svar({ ok:false, feil:'Kvitteringen har ingen varelinjer' });
+  return svar(Object.assign({ ok:true }, kv));
+}
+
 /* Varelinjer med egen kategori: { <linjenummer>: kategori }. Resten av
    beloepet - varer som foelger kjoepet, pant, avrunding - gaar til
    kjoepets kategori. Gir [{ kategori, belop }] med negativt beloep som posten. */
 async function fordelKvittering(env, p, linjeKat, hovedKat){
-  const kv = await lesJson(env, 'auth:bank:buffer:trumf:kv:' + p.trumfId, null);
+  const kv = await lesJson(env, kvitteringNokkel(p), null);
   if(!kv || !kv.linjer) return null;
   const sum = {};
   let flyttet = 0;
@@ -558,7 +610,7 @@ async function godkjenn(env, kropp, epost){
     if(g.linjer && Object.keys(g.linjer).some(i => g.linjer[i] && KATEGORIER.indexOf(g.linjer[i]) === -1)){
       return svar({ ok:false, feil:'Ukjent kategori på en vare' });
     }
-    if(p.fra === 'trumf' && g.linjer){
+    if(p.fra && g.linjer){
       const deler = await fordelKvittering(env, p, g.linjer, g.kategori);
       if(deler) p.deler = deler;
     }
@@ -596,7 +648,7 @@ async function angre(env, kropp){
     if(p.bankId && poster[p.bankId] && poster[p.bankId].status === 'sammenslatt'){
       poster[p.bankId].status = 'ny'; delete poster[p.bankId].behandlet; delete poster[p.bankId].av;
     }
-    if(p.fra === 'trumf' && !p.bankId){ delete p.mulDobbel; kobleKvittering(poster, p); }
+    if(p.fra && !p.bankId){ delete p.mulDobbel; kobleKvittering(poster, p); }
   }
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
   return svar({ ok:true, tilbake:n });
@@ -824,6 +876,7 @@ export async function onRequestGet({ request, env }){
       return svar({ ok:true, hentet:r.hentet, fraBuffer:r.fraBuffer, advarsel:r.advarsel, kjop:r.data });
     }
     if(hva === 'trumf-kvittering') return await trumfKvittering(env, url.searchParams.get('id') || '');
+    if(hva === 'kvittering') return await lagretKvittering(env, url.searchParams.get('id') || '');
     if(!okt) return svar({ ok:false, feil:'Banken er ikke koblet. Åpne /api/bank/start.' });
     const fersk = url.searchParams.get('fersk') === '1';
     if(hva === 'kontoer') return await kontoer(env, okt, fersk);
@@ -851,6 +904,7 @@ export async function onRequestPost({ request, env }){
   if(kropp && kropp.hva === 'godkjenn') return await godkjenn(env, kropp, v.epost);
   if(kropp && kropp.hva === 'angre') return await angre(env, kropp);
   if(kropp && kropp.hva === 'trumf-innlogging') return await trumfInnlogging(env, kropp, v.epost);
+  if(kropp && kropp.hva === 'kvittering-ny') return await nyKvittering(env, kropp, v.epost);
   if(kropp && kropp.hva === 'trumf-koble-fra'){
     await env.FAMILIE_KV.delete(TRUMF_NOKKEL);
     await env.FAMILIE_KV.delete('auth:bank:buffer:trumf:liste');

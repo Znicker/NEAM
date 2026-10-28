@@ -184,6 +184,11 @@ body::before{ display:none; }
 
   <section class="ok-kort" id="ok-innboks-kort" hidden>
     <div class="ok-kort-hode"><h2>Innboks</h2><span class="ok-meta" id="ok-innboks-meta"></span></div>
+    <div class="ok-rad-knapper">
+      <button type="button" class="btn btn-ny" id="ok-kv-knapp">Legg til kvittering</button>
+      <input type="file" id="ok-kv-fil" accept="image/*,application/pdf" hidden>
+      <span class="ok-meta" id="ok-kv-status" aria-live="polite">Bilde eller PDF – Neam leser butikk, dato, sum og varer.</span>
+    </div>
     <div class="ok-stripe" id="ok-stripe" hidden>
       <p id="ok-stripe-tekst"></p>
       <button type="button" class="btn btn-ghost" id="ok-angre">Angre</button>
@@ -336,7 +341,7 @@ body::before{ display:none; }
       var boks = document.getElementById('ok-innboks');
       if(!r.ok){ boks.innerHTML = '<p class="ok-melding feil">' + okVask(r.feil) + '</p>'; document.getElementById('ok-bunn').hidden = true; return; }
       okKategorier = r.kategorier || [];
-      if(!r.kontoer && !r.trumf){
+      if(!r.kontoer && !r.trumf && !(r.poster || []).length){
         boks.innerHTML = '<p class="ok-melding">Gi minst én konto rollen «Felles» nedenfor, eller koble Trumf, så henter Neam transaksjonene derfra.</p>';
         document.getElementById('ok-innboks-meta').textContent = '';
         document.getElementById('ok-bunn').hidden = true;
@@ -382,8 +387,9 @@ body::before{ display:none; }
   function okPostRad(p){
     var rad = okEl('div', 'ok-post' + (p.ute ? ' ute' : '') + (!p.kategori && !p.ute ? ' mangler' : ''));
     var hva = p.motpart || p.tekst || 'Uten tekst';
-    var kontoTekst = p.fra === 'trumf'
-      ? 'Trumf-kvittering' + (p.bankId ? ' · betalt fra ' + (p.bankKonto || 'banken') + ', slått sammen med banktrekket' : '')
+    var kontoTekst = p.fra
+      ? (p.fra === 'trumf' ? 'Trumf-kvittering' : 'Kvittering fra bilde')
+        + (p.bankId ? ' · betalt fra ' + (p.bankKonto || 'banken') + ', slått sammen med banktrekket' : '')
       : (p.kontoNavn || '');
     rad.appendChild(okEl('div', 'ok-post-hva',
       '<div class="ok-navn">' + okVask(hva) + '</div>'
@@ -421,7 +427,7 @@ body::before{ display:none; }
       : p.kilde === 'laert' ? 'Forslag: samme som sist'
       : p.kilde === 'ord' ? 'Forslag fra Neam' : '';
     if(kilde) mer.appendChild(okEl('span', 'ok-kilde' + ((!p.kategori && !p.ute) || p.mulDobbel ? ' mangler' : ''), okVask(kilde)));
-    if(p.fra === 'trumf' && p.harKvittering !== false && !p.ute) mer.appendChild(okVarer(p));
+    if(p.fra && p.harKvittering !== false && !p.ute) mer.appendChild(okVarer(p));
     if(mer.children.length) rad.appendChild(mer);
     return rad;
   }
@@ -455,7 +461,7 @@ body::before{ display:none; }
       });
     };
     if(p.linjer) tegn({ ok:true, linjer:p.linjer });
-    else okHent('/api/bank?hva=trumf-kvittering&id=' + encodeURIComponent(p.trumfId)).then(tegn);
+    else okHent('/api/bank?hva=kvittering&id=' + encodeURIComponent(p.id)).then(tegn);
     return boks;
   }
 
@@ -484,7 +490,7 @@ body::before{ display:none; }
       hva:'godkjenn',
       godkjenn:klare.map(function(p){
         var g = { id:p.id, kategori:p.kategori };
-        if(p.fra === 'trumf' && Object.keys(p.linjeKat).length) g.linjer = p.linjeKat;
+        if(p.fra && Object.keys(p.linjeKat).length) g.linjer = p.linjeKat;
         return g;
       }),
       strok:strokne.map(function(p){ return p.id; })
@@ -512,6 +518,87 @@ body::before{ display:none; }
       });
   });
   document.getElementById('ok-stripe-lukk').addEventListener('click', function(){ okAngre = null; document.getElementById('ok-stripe').hidden = true; });
+
+  /* ---------- Kvittering fra bilde eller PDF ----------
+     Neam leser kvitteringen via /api/claude, som andre sider gjoer (samme
+     maate som diktatspillet leser arket). Det som ble lest, sendes til
+     bank-funksjonen og blir en post i innboksen. Bildet lagres ikke.
+     Ingenting er foert foer posten er godkjent - det er bekreftelsen. */
+  var OK_MODELL = 'claude-sonnet-5';
+  var OK_BILDE_MAKS = 2000, OK_BILDE_KVAL = 0.85;   /* smaa tall paa kvitteringer - litt stoerre enn ellers */
+
+  function okKrympBilde(fil){
+    return new Promise(function(ok, nei){
+      var les = new FileReader();
+      les.onerror = function(){ nei(new Error('Kunne ikke lese bildet')); };
+      les.onload = function(){
+        var bil = new Image();
+        bil.onerror = function(){ nei(new Error('Kunne ikke tolke bildet')); };
+        bil.onload = function(){
+          var skala = Math.min(1, OK_BILDE_MAKS / Math.max(bil.width, bil.height));
+          var lerret = document.createElement('canvas');
+          lerret.width = Math.round(bil.width * skala); lerret.height = Math.round(bil.height * skala);
+          var t = lerret.getContext('2d');
+          t.fillStyle = '#FFFFFF'; t.fillRect(0, 0, lerret.width, lerret.height);
+          t.drawImage(bil, 0, 0, lerret.width, lerret.height);
+          ok(lerret.toDataURL('image/jpeg', OK_BILDE_KVAL).split(',')[1] || '');
+        };
+        bil.src = String(les.result);
+      };
+      les.readAsDataURL(fil);
+    });
+  }
+  function okSomBase64(fil){
+    return new Promise(function(ok, nei){
+      var les = new FileReader();
+      les.onerror = function(){ nei(new Error('Kunne ikke lese fila')); };
+      les.onload = function(){ ok(String(les.result).split(',')[1] || ''); };
+      les.readAsDataURL(fil);
+    });
+  }
+
+  var OK_KV_INSTRUKS = 'Les denne norske kvitteringen. Svar BARE med JSON på formen\n'
+    + '{"butikk":"…","dato":"ÅÅÅÅ-MM-DD","belop":0,"linjer":[{"navn":"…","antall":1,"belop":0,"rabatt":0}]}\n\n'
+    + 'Regler:\n'
+    + '- "butikk" er navnet på butikken slik det står øverst, f.eks. "Coop Extra Mandal".\n'
+    + '- "belop" er totalsummen kunden betalte, i kroner, med punktum som desimaltegn.\n'
+    + '- Hver vare blir én linje. "belop" på linja er prisen før rabatt; "antall" er antall eller vekt.\n'
+    + '- En rabatt som står under en vare, blir "rabatt" på den varen, som negativt tall.\n'
+    + '- Rabatt på hele kjøpet og pant blir egne linjer, rabatten med negativt beløp.\n'
+    + '- Ta ikke med summer, mva, betalingslinjer eller bonus som linjer.\n'
+    + '- Klarer du ikke å lese dato eller totalsum sikkert, sett dem til null. Gjett aldri.';
+
+  async function okLesKvittering(fil){
+    var status = document.getElementById('ok-kv-status'), knapp = document.getElementById('ok-kv-knapp');
+    knapp.disabled = true;
+    status.textContent = 'Neam leser kvitteringen …';
+    try{
+      var innhold = fil.type === 'application/pdf'
+        ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data: await okSomBase64(fil) } }
+        : { type:'image', source:{ type:'base64', media_type:'image/jpeg', data: await okKrympBilde(fil) } };
+      var r = await fetch('/api/claude', { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ model:OK_MODELL, max_tokens:4000,
+          system:'Du leser butikkvitteringer og svarer bare med JSON. Du gjetter aldri tall du ikke kan lese.',
+          messages:[{ role:'user', content:[ innhold, { type:'text', text:OK_KV_INSTRUKS } ] }] }) });
+      var d = await r.json();
+      if(d.error) throw new Error(d.error.message || 'Neam kunne ikke lese kvitteringen');
+      var tekst = (d.content || []).filter(function(c){ return c.type === 'text'; }).map(function(c){ return c.text; }).join('');
+      var kv = JSON.parse(tekst.slice(tekst.indexOf('{'), tekst.lastIndexOf('}') + 1));
+      var lagret = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ hva:'kvittering-ny', kvittering:kv }) });
+      if(!lagret.ok) throw new Error(lagret.feil);
+      status.textContent = 'Lagt i innboksen: ' + lagret.post.motpart + ', ' + okKort.format(new Date(lagret.post.dato))
+        + ', ' + okKr0.format(-lagret.post.belop) + ' kr' + ((kv.linjer || []).length ? ' med ' + kv.linjer.length + ' varer' : '') + '. Sjekk og godkjenn.';
+      okLastInnboks();
+    }catch(e){
+      status.textContent = 'Kvitteringen ble ikke lagt inn: ' + (e && e.message || e);
+    }finally{
+      knapp.disabled = false;
+      document.getElementById('ok-kv-fil').value = '';
+    }
+  }
+  document.getElementById('ok-kv-knapp').addEventListener('click', function(){ document.getElementById('ok-kv-fil').click(); });
+  document.getElementById('ok-kv-fil').addEventListener('change', function(){ if(this.files && this.files[0]) okLesKvittering(this.files[0]); });
 
   /* ---------- Trumf ----------
      Kvitteringene fra KIWI, MENY, SPAR og Joker. Innloggingen er Cookie-
