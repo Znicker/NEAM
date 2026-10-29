@@ -1058,114 +1058,86 @@ async function banker(env){
 
 /* ---------- Trumf ----------
    Trumf-kortet (NorgesGruppen Finans) finnes ikke hos Enable Banking.
-   Kvitteringene fra KIWI, MENY, SPAR og Joker hentes derfor fra trumf.no,
-   slik github.com/fredrsat/trumf-connector gjoer det: med innloggings-
-   cookien fra nettleseren, og ved aa lese dataene som ligger i sida.
+   Kvitteringene fra KIWI, MENY, SPAR og Joker hentes derfor slik trumf.no
+   selv henter dem: med innloggingscookien fra nettleseren.
+
+   Lagt om 29. oktober 2026. Foer lå kjoepene i sida (Next-data, slik
+   github.com/fredrsat/trumf-connector leser dem). Etter Trumfs nye bygg
+   hentes de i nettleseren, og sida har dem ikke lenger. Veien naa, lest ut
+   av sidas egne skript:
+     1. GET trumf.no/api/auth/getToken med cookien -> et kortlivet token
+     2. GET platform-rest-prod.ngdata.no/trumf/medlemskap/transaksjoner
+        (og .../digitalkvittering?batchId=) med «Bearer <token>» og
+        kjede-id 133 i FWC-Chain-Id
+   Tokenet hentes hver gang og lagres aldri.
 
    UOFFISIELT OG SKJOERT. Trumfs gamle REST-API ble lagt ned i september
-   2026; dette leser innloggede nettsider. Endrer Trumf sida, slutter det
-   aa virke. Derfor skilles to feil fra hverandre (planen, «Varsel 1/2»):
+   2026, og dette er et API Trumf ikke har lovet noen. Derfor skilles to
+   feil fra hverandre (planen, «Varsel 1/2»):
      kode 'innlogging' - cookien er utloept eller feil: lim inn ny
-     kode 'format'     - innlogget, men dataene ligger ikke der de pleide:
-                         koden maa rettes
-   Cookien varer rundt et aar ifoelge connectoren. Trumf har bare de
-   siste 12 maanedene.
+     kode 'format'     - innlogget, men svaret er ikke der eller som det
+                         pleide: koden maa rettes
+   Trumf har bare de siste 12 maanedene.
 
    Cookien er en innlogging og lagres som en: under `auth:bank:`, aldri i
    svar, aldri i logg. */
 const TRUMF = 'https://www.trumf.no';
-const TRUMF_LISTE = '/trumf-profil/kvitteringer';
+const TRUMF_API = 'https://platform-rest-prod.ngdata.no';
+const TRUMF_KJEDE = '133';
 const TRUMF_NOKKEL = 'auth:bank:trumf';
 const NETTLESER = {
   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml',
   'Accept-Language': 'nb-NO,nb;q=0.9,en;q=0.8'
 };
+const TRUMF_UTLOGGET = { ok:false, kode:'innlogging', feil:'Trumf trenger ny innlogging' };
 
-/* Next.js legger dataene i sida som biter av typen
-   self.__next_f.push([1,"..."]). Hver bit er en JSON-streng; settes de
-   sammen, staar dataene der som vanlig JSON. Finnes ingen slike biter,
-   leses sida som den er (connectorens maate, med escapede anfoerselstegn). */
-function rscTekst(html){
-  const re = /self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)/g;
-  let ut = '', m;
-  while((m = re.exec(html))){ try{ ut += JSON.parse(m[1]); }catch(e){} }
-  return ut || null;
-}
-/* Finner verdien etter "noekkel": - et objekt eller en liste - ved aa
-   telle klammer utenfor strenger. Gir null hvis noekkelen ikke finnes. */
-function jsonEtter(tekst, nokkel, escapet){
-  const merke = escapet ? nokkel + '\\":' : '"' + nokkel + '":';
-  const i = tekst.indexOf(merke);
-  if(i === -1) return null;
-  let s = i + merke.length;
-  while(s < tekst.length && tekst[s] !== '[' && tekst[s] !== '{') s++;
-  let dybde = 0, iStreng = false;
-  for(let j = s; j < tekst.length; j++){
-    const c = tekst[j];
-    if(c === '"'){
-      let b = 0, k = j - 1;
-      while(k >= 0 && tekst[k] === '\\'){ b++; k--; }
-      /* Escapet: \" er en ekte strenggrense, \\\" er et anfoerselstegn inne
-         i en streng. Uescapet: " er grense, \" er inne i strengen. */
-      if(escapet ? (b % 4 === 1) : (b % 2 === 0)) iStreng = !iStreng;
-      continue;
-    }
-    if(iStreng) continue;
-    if(c === '[' || c === '{') dybde++;
-    else if(c === ']' || c === '}'){
-      dybde--;
-      if(dybde === 0){
-        let raa = tekst.slice(s, j + 1);
-        if(escapet) raa = raa.replace(/\\\\/g, '\u0000').replace(/\\"/g, '"').replace(/\u0000/g, '\\');
-        /* Next merker datoer som "$D2026-10-01T..." */
-        return JSON.parse(raa.replace(/"\$D/g, '"'));
-      }
-    }
-  }
-  return null;
-}
-function trumfData(html, nokkel){
-  const rsc = rscTekst(html);
-  if(rsc){ const v = jsonEtter(rsc, nokkel, false); if(v != null) return v; }
-  return jsonEtter(html, nokkel, true);
-}
-
-async function trumfSide(env, sti){
+/* Steg 1: tokenet. Er cookien utloept, svarer trumf.no tomt, null eller
+   med en omdirigering til innloggingen. */
+async function trumfToken(env){
   const lagret = await lesJson(env, TRUMF_NOKKEL, null);
   if(!lagret || !lagret.cookie) return { ok:false, kode:'innlogging', feil:'Trumf er ikke koblet' };
-  const r = await fetch(TRUMF + sti, { headers:Object.assign({ Cookie:lagret.cookie }, NETTLESER), redirect:'follow' });
-  const html = await r.text();
-  /* En utloept innlogging sender deg til innloggingssida, ofte med 200. */
-  let endteStiPaa = '';
-  try{ endteStiPaa = new URL(r.url).pathname; }catch(e){}
-  if(r.status === 401 || r.status === 403 || /logg-?inn|login|signin|auth\/|innlogging/i.test(endteStiPaa)){
-    return { ok:false, kode:'innlogging', feil:'Trumf trenger ny innlogging' };
-  }
-  if(!r.ok) return { ok:false, kode:'format', feil:'Trumf svarte HTTP ' + r.status };
-  return { ok:true, html:html };
+  const r = await fetch(TRUMF + '/api/auth/getToken', { headers:Object.assign({ Cookie:lagret.cookie, Accept:'application/json' }, NETTLESER), redirect:'manual' });
+  if(r.status === 401 || r.status === 403 || (r.status >= 300 && r.status < 400)) return TRUMF_UTLOGGET;
+  if(!r.ok) return { ok:false, kode:'format', feil:'trumf.no svarte HTTP ' + r.status + ' da Neam ba om token' };
+  const tekst = (await r.text()).trim();
+  let token = tekst;
+  try{ const j = JSON.parse(tekst); token = typeof j === 'string' ? j : (j && (j.accessToken || j.access_token || j.token)) || ''; }catch(e){}
+  token = String(token || '').replace(/^Bearer\s+/i, '');
+  if(!token || token.length < 20 || /[<\s]/.test(token)) return TRUMF_UTLOGGET;
+  return { ok:true, token:token };
 }
-function trumfFeil(html, hva, nokkel){
-  /* Ingen data: er det fordi vi ikke er innlogget, eller fordi sida er endret? */
-  if(/logg inn|logg på|innlogging/i.test(html) && !/kvittering/i.test(html)) return { ok:false, kode:'innlogging', feil:'Trumf trenger ny innlogging' };
-  /* Hva sida faktisk var, saa feilen kan leses uten aa logge inn paa
-     trumf.no selv: tittelen, stoerrelsen, Next-bitene og om noekkelen
-     finnes i det hele tatt. Ingenting fra innholdet ellers. */
-  const tittel = ((html.match(/<title[^>]*>([^<]{0,80})/i) || [])[1] || '').trim();
-  const biter = (html.match(/self\.__next_f\.push/g) || []).length;
-  const spor = 'sida «' + (tittel || 'uten tittel') + '», ' + Math.round(html.length / 1024) + ' kB, ' + biter + ' Next-biter'
-    + (nokkel ? ', «' + nokkel + '» ' + (html.indexOf(nokkel) === -1 ? 'finnes ikke' : 'finnes, men kunne ikke leses') : '');
-  return { ok:false, kode:'format', feil:'Fant ikke ' + hva + ' på trumf.no – sida er trolig endret, og koden må rettes (' + spor + ')' };
+/* Steg 2: Trumfs API, med tokenet. Svarer med { ok, data } eller en feil
+   med kode som over. */
+async function trumfApi(env, sti, qs){
+  const t = await trumfToken(env);
+  if(!t.ok) return t;
+  const r = await fetch(TRUMF_API + sti + (qs ? '?' + new URLSearchParams(qs) : ''), { headers:Object.assign({
+    Authorization:'Bearer ' + t.token, 'FWC-Chain-Id':TRUMF_KJEDE, Accept:'application/json',
+    Origin:TRUMF, Referer:TRUMF + '/' }, NETTLESER) });
+  if(r.status === 401 || r.status === 403){
+    /* API-ets egen melding med, i tilfelle tokenet var gyldig og noe annet er galt. */
+    let m = '';
+    try{ m = String((await r.json()).message || '').slice(0, 120); }catch(e){}
+    return m ? Object.assign({}, TRUMF_UTLOGGET, { feil:TRUMF_UTLOGGET.feil + ' (Trumfs API: ' + m + ')' }) : TRUMF_UTLOGGET;
+  }
+  if(!r.ok) return { ok:false, kode:'format', feil:'Trumfs API svarte HTTP ' + r.status + ' på ' + sti };
+  try{ return { ok:true, data:await r.json() }; }
+  catch(e){ return { ok:false, kode:'format', feil:'Trumfs API svarte ikke med JSON på ' + sti }; }
+}
+/* Formen paa et svar vi ikke kjente igjen - bare noeklene, aldri verdiene. */
+function trumfForm(v){
+  if(Array.isArray(v)) return 'en liste';
+  if(v && typeof v === 'object') return 'feltene ' + Object.keys(v).slice(0, 12).join(', ');
+  return typeof v;
 }
 
 async function trumfListe(env, fersk){
   return medBuffer(env, 'trumf:liste', fersk, async () => {
-    const s = await trumfSide(env, TRUMF_LISTE);
+    const s = await trumfApi(env, '/trumf/medlemskap/transaksjoner', { forceRefresh:'false' });
     if(!s.ok) return s;
-    let liste = null;
-    try{ liste = trumfData(s.html, 'transactionsData'); }catch(e){ liste = null; }
-    if(!Array.isArray(liste)) return trumfFeil(s.html, 'kjøpslista', 'transactionsData');
-    return { ok:true, data:liste.map(t => ({
+    if(!Array.isArray(s.data)) return { ok:false, kode:'format', feil:'Kjøpslista fra Trumf hadde ny form (' + trumfForm(s.data) + ') – koden må rettes' };
+    /* Ventende transaksjoner er ikke ferdige kjoep; sida til Trumf viser dem ikke heller. */
+    return { ok:true, data:s.data.filter(t => t && t.transaksjonKategori !== 'PENDING').map(t => ({
       id: String(t.batchId || ''),
       tid: String(t.transaksjonsTidspunkt || ''),
       butikk: String(t.beskrivelse || ''),
@@ -1181,11 +1153,10 @@ async function trumfKvittering(env, id){
   const nokkel = 'auth:bank:buffer:trumf:kv:' + id;
   const lagret = await lesJson(env, nokkel, null);
   if(lagret) return svar(Object.assign({ ok:true }, lagret));
-  const s = await trumfSide(env, TRUMF_LISTE + '/' + encodeURIComponent(id));
+  const s = await trumfApi(env, '/trumf/medlemskap/transaksjoner/digitalkvittering', { batchId:id });
   if(!s.ok) return svar(s);
-  let k = null;
-  try{ k = trumfData(s.html, 'purchaseDetails'); }catch(e){ k = null; }
-  if(!k || typeof k !== 'object') return svar(trumfFeil(s.html, 'kvitteringen', 'purchaseDetails'));
+  const k = s.data;
+  if(!k || typeof k !== 'object' || !Array.isArray(k.varelinjer)) return svar({ ok:false, kode:'format', feil:'Kvitteringen fra Trumf hadde ny form (' + trumfForm(k) + ') – koden må rettes' });
   const ut = {
     id: id,
     tid: String(k.transaksjonsTidspunkt || ''),
