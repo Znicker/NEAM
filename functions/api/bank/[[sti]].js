@@ -819,14 +819,17 @@ async function formue(env){
 /* Netto formue per maaned, slik at Status kan vise endringen siden forrige
    maaned. Siste tall i maaneden vinner; det skrives hver gang kontoene
    hentes og tallet har endret seg. Samme regnestykke som sida gjoer:
-   verdier + saldo paa «sparing»-kontoene - gjeld. */
+   verdier + saldo paa «sparing»-kontoene - gjeld. En verdi med konto
+   teller saldoen, og kontoen telles da ikke i tillegg som sparing. */
 const FORMUE_MND_NOKKEL = 'auth:bank:formue-mnd';
 async function formuePunkt(env, kontoliste){
   const f = await lesJson(env, FORMUE_NOKKEL, {});
   const verdier = f.verdier || [], gjeld = f.gjeld || [];
-  const sparing = kontoliste.filter(k => k.rolle === 'sparing' && typeof k.saldo === 'number');
+  const valgt = verdier.filter(v => v.konto).map(v => v.konto);
+  const saldo = uid => { const k = kontoliste.find(x => x.uid === uid); return k && typeof k.saldo === 'number' ? Math.max(0, k.saldo) : 0; };
+  const sparing = kontoliste.filter(k => k.rolle === 'sparing' && typeof k.saldo === 'number' && valgt.indexOf(k.uid) === -1);
   if(!verdier.length && !gjeld.length && !sparing.length) return;
-  const netto = Math.round(verdier.reduce((s, v) => s + v.belop, 0) + sparing.reduce((s, k) => s + k.saldo, 0) - gjeld.reduce((s, g) => s + g.belop, 0));
+  const netto = Math.round(verdier.reduce((s, v) => s + (v.konto ? saldo(v.konto) : v.belop), 0) + sparing.reduce((s, k) => s + k.saldo, 0) - gjeld.reduce((s, g) => s + g.belop, 0));
   const hist = await lesJson(env, FORMUE_MND_NOKKEL, {});
   const mnd = new Date().toISOString().slice(0, 7);
   if(hist[mnd] === netto) return;
@@ -836,6 +839,8 @@ async function formuePunkt(env, kontoliste){
 async function lagreFormue(env, kropp, epost){
   const rad = (r, medRente) => {
     const navn = String(r && r.navn || '').trim().slice(0, 60);
+    /* En verdi kan vaere en konto: beloepet er saldoen fra banken. */
+    if(!medRente && r && r.konto) return { navn:navn || 'Konto', konto:String(r.konto).slice(0, 80) };
     const belop = Math.round(Number(r && r.belop) || 0);
     if(!navn || belop < 0 || belop > 1e9) return null;
     const ut = { navn:navn, belop:belop, dato:/^\d{4}-\d{2}-\d{2}$/.test(r.dato || '') ? r.dato : new Date().toISOString().slice(0, 10) };

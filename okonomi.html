@@ -1526,8 +1526,9 @@ body::before{ display:none; }
       else rad('Trumf', 'Hentet ' + hentet(t), t.feil ? 'stopp' : farge(t.hentet), t.feil);
     }
     rad('Coop', 'Venter på Coops nye Min side', 'gammel');
-    if(okFormue.verdier.length || okFormue.gjeld.length) k.appendChild(okEl('span', 'ok-etikett', 'Satt manuelt'));
-    okFormue.verdier.concat(okFormue.gjeld).forEach(function(x){
+    var manuelt = okFormue.verdier.filter(function(x){ return !x.konto; }).concat(okFormue.gjeld);
+    if(manuelt.length) k.appendChild(okEl('span', 'ok-etikett', 'Satt manuelt'));
+    manuelt.forEach(function(x){
       rad(x.navn, 'Satt manuelt ' + (x.dato ? okKort.format(new Date(x.dato + 'T12:00:00')) : ''), !x.dato || okDagerSiden(x.dato) > 31 ? 'gammel' : '');
     });
     k.appendChild(okEl('div', 'ok-kilde-forklar', '<span class="ok-fersk">Ferskt</span><span class="ok-fersk gammel">Eldre enn ventet</span><span class="ok-fersk stopp">Feilet sist</span>'));
@@ -1621,7 +1622,7 @@ body::before{ display:none; }
     var inn = gruppeSum('Inntekter'), spar = gruppeSum('Sparing'), bolig = gruppeSum('Bolig');
     var utg = b ? (b.kategorier || []).filter(okErUtgift).reduce(function(s, k){ return s + (b.standard[k] || 0); }, 0) : 0;
     var erBolig = function(x){ return /bolig|hus|leilighet/i.test(x.navn); };
-    var boligV = sum(okFormue.verdier.filter(erBolig)), boligG = sum(okFormue.gjeld.filter(erBolig)), sumG = sum(okFormue.gjeld);
+    var boligV = sum(okVerdier().filter(erBolig)), boligG = sum(okFormue.gjeld.filter(erBolig)), sumG = sum(okFormue.gjeld);
     var medRente = okFormue.gjeld.filter(function(g){ return g.rente != null && g.belop; });
     var buffer = okSparing().reduce(function(s, k){ return s + k.saldo; }, 0);
     var pst = function(n){ return Math.round(n * 100) + ' %'; };
@@ -1657,9 +1658,19 @@ body::before{ display:none; }
     });
   }
   function okSparing(){ return okKontoer.filter(function(k){ return k.rolle === 'sparing' && typeof k.saldo === 'number'; }); }
+  /* Verdiene med kontosaldoen slaatt inn: en verdi med konto henter
+     beloepet fra banken. Kontoen telles da ikke ogsaa som «Sparing». */
+  function okVerdier(){
+    return okFormue.verdier.map(function(v){
+      if(!v.konto) return v;
+      var k = okKontoer.filter(function(x){ return x.uid === v.konto; })[0];
+      return { navn:v.navn, belop:k && typeof k.saldo === 'number' ? Math.max(0, k.saldo) : 0, konto:v.konto };
+    });
+  }
   function okTegnFormue(){
-    var sparing = okSparing();
-    var verdier = okFormue.verdier.slice();
+    var valgt = okFormue.verdier.map(function(v){ return v.konto; });
+    var sparing = okSparing().filter(function(k){ return valgt.indexOf(k.uid) === -1; });
+    var verdier = okVerdier();
     if(sparing.length) verdier.push({ navn:'Sparing', belop:sparing.reduce(function(s, k){ return s + k.saldo; }, 0) });
     var gjeld = okFormue.gjeld;
     var sumV = verdier.reduce(function(s, v){ return s + v.belop; }, 0), sumG = gjeld.reduce(function(s, g){ return s + g.belop; }, 0);
@@ -1771,9 +1782,16 @@ body::before{ display:none; }
           });
           rad.appendChild(inp);
         };
-        felt('navn', 'text', 'Navn'); felt('belop', 'text', 'Beløp');
-        if(medRente) felt('rente', 'text', 'Rente');
-        felt('dato', 'date', 'Dato');
+        if(r.konto){
+          var k = okKontoer.filter(function(x){ return x.uid === r.konto; })[0];
+          felt('navn', 'text', 'Navn');
+          rad.appendChild(okEl('span', 'ok-meta', k && typeof k.saldo === 'number' ? okKrHel(k.saldo) + ' kr · saldo' : 'Fant ikke kontoen'));
+          rad.appendChild(okEl('span', '', ''));
+        } else {
+          felt('navn', 'text', 'Navn'); felt('belop', 'text', 'Beløp');
+          if(medRente) felt('rente', 'text', 'Rente');
+          felt('dato', 'date', 'Dato');
+        }
         var ut = okEl('button', 'ok-ut', '×'); ut.type = 'button'; ut.setAttribute('aria-label', 'Fjern ' + (r.navn || 'rad'));
         ut.addEventListener('click', function(){ liste.splice(i, 1); okTegnFormueSkjema(); });
         rad.appendChild(ut);
@@ -1782,6 +1800,20 @@ body::before{ display:none; }
       var ny = okEl('button', 'ok-lenke', '+ ' + nyTekst); ny.type = 'button'; ny.style.alignSelf = 'flex-start';
       ny.addEventListener('click', function(){ liste.push({ navn:'', belop:'', dato:idag }); okTegnFormueSkjema(); var inps = boks.querySelectorAll('.ok-fo-seksjon')[medRente ? 1 : 0].querySelectorAll('input'); if(inps.length) inps[inps.length - (medRente ? 4 : 3)].focus(); });
       s.appendChild(ny);
+      /* Verdier kan ogsaa vaere en konto: saldoen foelger banken. */
+      var brukt = liste.map(function(x){ return x.konto; });
+      var ledige = medRente ? [] : okKontoer.filter(function(k){ return k.rolle !== 'ignorer' && typeof k.saldo === 'number' && brukt.indexOf(k.uid) === -1; });
+      if(ledige.length){
+        var vk = document.createElement('select'); vk.className = 'ok-mnd'; vk.style.alignSelf = 'flex-start';
+        vk.setAttribute('aria-label', 'Legg til konto som verdi');
+        vk.appendChild(new Option('+ Legg til konto …', ''));
+        ledige.forEach(function(k){ vk.appendChild(new Option(k.navn + (k.slutt ? ' •••• ' + k.slutt : ''), k.uid)); });
+        vk.addEventListener('change', function(){
+          var k = ledige.filter(function(x){ return x.uid === vk.value; })[0];
+          if(k){ liste.push({ navn:k.navn, konto:k.uid }); okTegnFormueSkjema(); }
+        });
+        s.appendChild(vk);
+      }
       boks.appendChild(s);
     };
     seksjon('Verdier', okFormue.verdier, false, 'Legg til verdi (bolig, bil, fond …)');
@@ -1814,7 +1846,7 @@ body::before{ display:none; }
         verdier:okFormue.verdier, gjeld:okFormue.gjeld, maal:(m.navn || '').trim() ? m : null }) }).then(function(r){
         lagre.disabled = false;
         if(!r.ok){ svarT.textContent = 'Ble ikke lagret: ' + r.feil; return; }
-        okFormue = { verdier:r.verdier, gjeld:r.gjeld, maal:r.maal };
+        okFormue = { verdier:r.verdier, gjeld:r.gjeld, maal:r.maal, historikk:r.historikk || {} };
         okTegnFormue(); okTegnFormueSkjema();
         document.getElementById('ok-fo-meta').textContent = 'Lagret kl. ' + okKlokke.format(new Date());
       });
