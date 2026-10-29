@@ -21,6 +21,7 @@
      GET /api/bank?hva=foringer&mnd=AAAA-MM&kategori=<k>[&eksakt=1] - foeringene bak ett tall
      POST /api/bank {hva:'kategori-ny', nye:[{forelder, navn}]} / {hva:'kategori-slett', kategori} - egne poster
      GET /api/bank?hva=varsler          - det som trenger noen (kortet paa forsiden)
+     GET /api/bank?hva=laert / POST {hva:'laert', motpart, kategori} - «Neam husker» (tom kategori glemmer)
      GET /api/bank?hva=regnskap-aar     - godkjente poster per maaned og kategori, hele perioden
      GET /api/bank?hva=formue / POST {hva:'formue', verdier, gjeld, maal} - det banken ikke gir
      POST /api/bank {hva:'forslag', forslag:[{id, kategori, sikker}]}    - Neams kategoriforslag
@@ -543,6 +544,19 @@ async function slettKategori(env, kropp){
 }
 const POST_NOKKEL = 'auth:bank:poster';
 const LAERT_NOKKEL = 'auth:bank:laert';
+/* «Neam husker» i innboksen: det Neam har laert per motpart. Tom kategori
+   glemmer motparten; med kategori settes den (ogsaa naar en glemt angres). */
+async function lagreLaert(env, kropp){
+  const motpart = String(kropp.motpart || '').slice(0, 120);
+  if(!motpart) return svar({ ok:false, feil:'Mangler motpart' });
+  const laert = await lesJson(env, LAERT_NOKKEL, {});
+  if(kropp.kategori){
+    if((await alleKategorier(env)).indexOf(kropp.kategori) === -1) return svar({ ok:false, feil:'Ukjent kategori: ' + kropp.kategori });
+    laert[motpart] = kropp.kategori;
+  } else delete laert[motpart];
+  await env.FAMILIE_KV.put(LAERT_NOKKEL, JSON.stringify(laert));
+  return svar({ ok:true, laert:laert });
+}
 const FRA_NOKKEL = 'auth:bank:innboks-fra';
 
 /* Motparten uten tall og stoey - «KIWI 123 LYNGDAL» og «KIWI 456 LYNGDAL»
@@ -927,7 +941,7 @@ async function foringer(env, mnd, kat, eksakt){
       ut.push({ id:p.id, dato:p.dato, tekst:p.motpart || p.tekst || '', mer:p.motpart && p.tekst && p.tekst !== p.motpart ? p.tekst : '',
         kilde: p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : 'Kvittering fra bilde') : (kn[p.konto] || p.kontoNavn || ''),
         betaltFra: bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
-        kategori:d.kategori, del:deler.length > 1,
+        kategori:d.kategori, del:deler.length > 1, harKvittering:!!p.fra && p.harKvittering !== false,
         belop: Math.round((d.kategori.indexOf('Inntekter') === 0 ? d.belop : -d.belop) * 100) / 100 });
     }
   }
@@ -1359,6 +1373,7 @@ export async function onRequestGet({ request, env }){
     }
     if(hva === 'banker') return await banker(env);
     if(hva === 'varsler') return await varsler(env, okt);
+    if(hva === 'laert') return svar({ ok:true, laert:await lesJson(env, LAERT_NOKKEL, {}) });
     if(hva === 'kilder') return await kilder(env, okt);
     /* Trumf trenger ikke banken - den har sin egen innlogging. */
     if(hva === 'trumf') return await trumfStatus(env, fersk);
@@ -1399,6 +1414,7 @@ export async function onRequestPost({ request, env }){
   try{ kropp = await request.json(); }catch(e){ return svar({ ok:false, feil:'Ugyldig JSON' }); }
   if(kropp && kropp.hva === 'godkjenn') return await godkjenn(env, kropp, v.epost);
   if(kropp && kropp.hva === 'angre') return await angre(env, kropp);
+  if(kropp && kropp.hva === 'laert') return await lagreLaert(env, kropp);
   if(kropp && kropp.hva === 'trumf-innlogging') return await trumfInnlogging(env, kropp, v.epost);
   if(kropp && kropp.hva === 'kvittering-ny') return await nyKvittering(env, kropp, v.epost);
   if(kropp && kropp.hva === 'budsjett') return await lagreBudsjett(env, kropp, v.epost);
