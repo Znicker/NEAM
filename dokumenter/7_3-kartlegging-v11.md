@@ -1,6 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 29. oktober 2026, kveld: Matlaging skriver på tvers –
+*Ført à jour 29. oktober 2026, natt: del 57 lagt til – Neam Økonomi,
+den skjulte økonomisida med DNB, Trumf, innboks, budsjett og Status (se
+toppblokka). Ført à jour 29. oktober 2026, kveld: Matlaging skriver på tvers –
 oppskrifter opprettes, endres og slettes, og middager settes i ukemenyen,
 fra hvilken som helst side. Første runde av «app for app»-flyttingen; se
 «Neam på tvers» under. Ført à jour 29. oktober 2026: kameraet virker utenfor hjemmenettet –
@@ -53,7 +55,7 @@ ny tråd alltid lander på samme sted.*
 
 ---
 
-## Nåstatus – 27. oktober 2026
+## Nåstatus – 29. oktober 2026
 
 **Hvor prosjektet er nå.** Ni sider og fire spill, og Andreas tre spill
 nås fra én egen spillside. To økter 12.–13. september
@@ -78,10 +80,11 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 ?v=6`, `felles-hus.js ?v=12`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
-`andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html` og spillsida
-`andrea-spill.html`; `functions/_middleware.js`, `functions/api/` med
-`hent.js`, `sandnes.js`, `sjo.js`, `claude.js`, `data.js`, `ms.js`,
-`homey.js`, `roborock.js`, `turn.js`.
+`andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
+`andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
+`functions/api/` med `hent.js`, `sandnes.js`, `sjo.js`, `claude.js`,
+`data.js`, `ms.js`, `homey.js`, `roborock.js`, `turn.js` og
+`bank/[[sti]].js`.
 Bildeversjoner: **`IKON_V=1`** (i `felles-neam.js`) for de nye ikonene i
 `bilder/ikoner/` og `bilder/ikoner/sikkerhet/` – sidene som lenker dem
 direkte, skriver `?v=1` selv. `FAG_MERKE_V=3` (fagmerkene, fortsatt i
@@ -127,7 +130,8 @@ eier layouten. De må bli noe annet enn en flytting, eller bli stående.
 **Hemmeligheter i Cloudflare:** `ANTHROPIC_API_KEY`, `MS_CLIENT_SECRET`,
 `HOMEY_CLIENT_SECRET`, `TURN_KEY_ID`, `TURN_KEY_API_TOKEN` (de to siste
 fra Realtime → TURN Server; Realtime-abonnementet er lagt til kontoen,
-1 000 GB gratis per måned). **En hemmelighet tas først i bruk ved neste
+1 000 GB gratis per måned), `ENABLE_BANKING_KEY` (bank-funksjonen; pluss
+den vanlige variabelen `ACCESS_TEAM`). **En hemmelighet tas først i bruk ved neste
 utrulling** – lagre den, og push eller trykk «Retry deployment».
 
 **Økta 15. september ga ingen kode.** Den gikk med til å tenke høyt, og
@@ -342,6 +346,19 @@ spillroboten, stjerna og batteriet, og hjemskjermikonet
 det trenger en egen versjon med fylt bakgrunn). Avatarene i
 `bilder/avatarer/` er ikke tatt i bruk; ingen side viser bildeavatarer.
 
+**28.–29. oktober: Neam Økonomi.** Den skjulte `okonomi.html` – bare sys@ –
+er bygget fra første banktilgang til en side med fem faner: Status,
+Innboks, Måned, År og Oppsett. DNB kobles gjennom Enable Banking, Trumf med
+innloggingscookien fra trumf.no, og kvitteringer leses fra bilde eller PDF.
+Innboksen fører det Neam kjenner av seg selv og spør bare når han er
+usikker. Budsjettet har gruppe · post · linje, egne poster og
+Excel-import, og ligger i KV fordi repoet er offentlig. Status har
+formuen, nøkkeltallene, familiemålet og kildene med farge og tid.
+Kjøkkendashen vekker hentingen hver sjette time, og forsiden viser et
+varselkort når noe trenger noen. Tjue commits, `0e0050a`–`0a8a373`.
+**Ingen `?v=`-numre er brukt eller brent** – ingen fellesfiler ble rørt.
+Se del 57.
+
 ### Åpne tråder
 
 **Besluttet, ikke bygget – fem systemer med begrunnelse i del 47–50 og 52:**
@@ -392,6 +409,12 @@ det trenger en egen versjon med fylt bakgrunn). Avatarene i
   type, rød linje på utløst varsler, fargeprikken og fargehjulet, og
   fanene som brytes til ny linje. Rommenes bokser er designsystemets
   grupperingsflate og står ikke på lista.
+- **Utseendevalg på Økonomi-sida** er tatt under byggingen og er ikke
+  godkjent: fargebruken fra skissen (rødt «over», oker «trenger valg»),
+  prikkene for hvor fersk en kilde er (grønn `--handling-ny`, gul
+  `--handling-endre`, rød `--danger`), formuestablene i trinn av
+  `--aksent` og `--ink-soft`, og rammen på 1120 px. Ingen av dem står i
+  designsystemet. Se del 57.
 - **Polonium: metall eller halvmetall?** Masterdataene sier metall,
   grunnstoffspillet sier halvmetall. Det er en faglig uenighet, ikke en
   datafeil, og står urørt begge steder.
@@ -400,22 +423,11 @@ det trenger en egen versjon med fylt bakgrunn). Avatarene i
   fargene på de seks raritetsnivåene. Ingen av dem står i designsystemet.
 
 **Avtalt som neste sak:**
-- **Økonomisida – kvitteringene fra Trumf og Coop** (påbegynt 28.–29.
-  oktober). `okonomi.html` er skjult (ingen lenke, ikke i fireren) og bare
-  for sys@. Den viser kontoene fra DNB med én rolle per konto, og en
-  innboks der transaksjonene fra felleskontoene får forslag til kategori
-  (lært per motpart, ellers kjente navn) og godkjennes med angre-stripe.
-  Banken kobles via Enable Banking (`functions/api/bank/`, «restricted
-  production», 21 DNB-kontoer – Bulder venter med vilje). Hemmeligheter i
-  Pages: `ENABLE_BANKING_KEY`, `ACCESS_TEAM`. Alt i KV under `auth:bank:`,
-  og Access-beviset sjekkes med signatur – strengere enn `ms.js` og
-  `homey.js`. Henting på forespørsel med seks timers buffer (bankens grense
-  er fire hentinger i døgnet). Trumf- og Coop-kortet finnes ikke hos Enable
-  Banking; nedbetalingen av kortgjeld kommer derfor som én sum og må få
-  varelinjene fra kvitteringene i appene. Plan og klikkbar skisse ligger
-  som artifacts («Neam Økonomi – plan», «Neam Økonomi»). **Ikke godkjent:**
-  uttrykket uten steampunk-bakgrunn og fargebruken i skissen (rødt «over»,
-  oker «trenger valg»).
+- **Økonomisida – det som står igjen** (bygget 28.–29. oktober, del 57).
+  Åpne sida for magne@ og nina@ (`TILGANG` i bank-funksjonen) når den tas
+  i bruk. Coop når Coops nye «Min side» er ute. Kontofilteret i innboksen
+  vises bare ved minst to kilder – å alltid vise alle felleskontoene og
+  Trumf er foreslått, ikke gjort.
 - **Interaktiv plantegning av huset.** Magne lager en plantegning, og den
   skal bli den egentlige flaten for enhetene – Rommene-kortet er
   mellomstasjonen. Styringen i `felles-hus.js` kan brukes som den er;
@@ -435,6 +447,10 @@ det trenger en egen versjon med fylt bakgrunn). Avatarene i
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **Økonomi på neam.no** (29. oktober). Kildeoversikten etter en feilet
+  henting (rød prikk med teksten), Trumf-feilen med Trumfs egen tekst,
+  kontoer under Verdier, og at vekkeren på kjøkkendashen faktisk holder
+  «Hentet» fersk og varselkortet på forsiden dukker opp.
 - **Ikonene og den lyse klapptavla på iPad og telefon** (27. oktober).
   Hard oppdatering. Se særlig fiskebeinet på telefon – navnene under
   gjør knappene tettere – og at Figtree faktisk lastes.
@@ -559,7 +575,8 @@ det trenger en egen versjon med fylt bakgrunn). Avatarene i
 **Dokumenter:** designsystemet er ført à jour til v13 samtidig med denne.
 **Det er ikke oppdatert for 24.–27. oktober:** bakgrunnen, klapptavla i
 tre, merkelappene som bærer navnet og knappemerkene står fortsatt
-beskrevet slik de var.
+beskrevet slik de var. **Heller ikke for Økonomi-sida** (28.–29.
+oktober) – se utseendevalgene under «Åpne spørsmål».
 
 ---
 
@@ -3527,3 +3544,163 @@ samme verdi som før for å teste en skriving; `CREATE_MOWING_PLAN` uten id;
 nei, kode 5); å prøve igjen hvert 10. sekund etter kode 5;
 `MAP_FILE_REQUEST` med et filnavn for det realistiske kartet (navnet
 overses, vektorkartet kommer); `RGB_MAP`/`RGB_MAP_INFO` som meldingstype.
+
+---
+
+## 57. Neam Økonomi – 28.–29. oktober 2026
+
+**Hva den er.** `okonomi.html` er husholdningsregnskapet: kontoene fra DNB,
+kjøpene fra Trumf og kvitteringer man tar bilde av, ført mot et budsjett.
+Sida er **skjult** – ingen lenke, ikke i fireren – og bank-funksjonen
+svarer **bare sys@** (`TILGANG` i `functions/api/bank/[[sti]].js`). magne@
+og nina@ legges til når sida tas i bruk. Planen og den klikkbare skissen
+ligger som artifacts («Neam Økonomi – plan», «Neam Økonomi»); Status-fanen
+er bygget etter skissen. Fem faner: **Status, Innboks, Måned, År,
+Oppsett**. Bygget i tjue commits fra `0e0050a` til `0a8a373`.
+
+### Banken – Enable Banking
+
+- **Lesetilgang til DNB gjennom Enable Banking**, «restricted production»:
+  appen ser bare kontoene som er koblet i kontrollpanelet deres (21 DNB-
+  kontoer; Bulder venter med vilje). Samtykket gis med BankID via
+  `/api/bank/start` og varer det banken tillater – 180 dager.
+- **Nøkkelen er aldri i nettleseren.** Hver forespørsel signeres med RS256
+  på serveren. Hemmeligheter i Pages: `ENABLE_BANKING_KEY` (hele .pem-fila)
+  og `ACCESS_TEAM` (vanlig variabel).
+- **Strengere tilgang enn de andre funksjonene:** Access-beviset sjekkes med
+  signatur mot teamets sertifikater. `ms.js` og `homey.js` leser det uten.
+- **Seks timers buffer** (`auth:bank:buffer:<navn>`). Banken tillater fire
+  hentinger i døgnet uten at brukeren er til stede. `fersk=1` tvinger en ny
+  henting. Svarer banken nei, får sida forrige svar tilbake med
+  `advarsel` – og **fra 29. oktober vises den faktiske grunnen**, ikke
+  «banken svarte ikke». Det samme feltet bar også Trumf-feil.
+- **Feilen huskes i bufferen** (`feil`, `feilTid`) til neste vellykte
+  henting, så kildeoversikten kan vise den. Feil fra før `0f21087` ble ikke
+  lagret.
+- **DNB sender ikke navnene fra nettbanken** – bare produktnavn. Egne navn
+  settes i Oppsett (`auth:bank:kontonavn`).
+- **Én rolle per konto:** `felles` (husholdningsbudsjettet), `magne`,
+  `nina`, `sparing` (formuen), `emma`, `andrea`, `ignorer`. Rollen overlever
+  et nytt samtykke så lenge banken gir kontoen samme uid.
+
+### Innboksen
+
+- Transaksjonene fra kontoene med rollen **felles** blir poster som venter.
+  Datoen det hentes fra settes første gang (`auth:bank:innboks-fra`) og står
+  fast, så en godkjent eller strøket post aldri kommer tilbake. **Bare
+  bokførte** – en reservasjon kan endre beløp eller forsvinne.
+- **Forslag i tre lag:** lært per motpart (`auth:bank:laert`), kjente navn
+  (ordlista i koden, f.eks. bompenger), og til sist **Neam via
+  `/api/claude`** én gang per post. Sikker → føres. Usikker → blir stående
+  med forslaget. Et menneskes eller en regels valg vinner alltid over Neams.
+- **«Spør bare når den er usikker»** (Magne, 29. oktober). En post Neam
+  kjenner, føres med en gang og vises under «Ført automatisk» i 14 dager,
+  der den kan angres. En angret post (`manuell`) føres aldri automatisk
+  igjen, og en mulig dobbel føres aldri av seg selv.
+- **Godkjenn og stryk med angre-stripe.**
+- **Kontofilter** i innboksen (`1c2012a`): chips per kilde etter
+  oppskriftssidas mønster, lagret per nettleser i localStorage
+  `ok-skjul-kontoer`. **Vises bare når postene som venter kommer fra minst
+  to kilder.**
+
+### Trumf, Coop og kvitteringer
+
+- **Trumf:** Trumf-kortet finnes ikke hos Enable Banking. Innloggingen er
+  Cookie-headeren fra trumf.no (med `authjs.session-token`), limt inn i
+  Oppsett og lagret i `auth:bank:trumf`. Kjøpene og varelinjene leses ut av
+  sida (`transactionsData`, `purchaseDetails`). En kvittering endrer seg
+  ikke og hentes én gang.
+- **Sammenslåing med banktrekket:** et Trumf-kjøp betalt fra felleskontoen
+  finnes to ganger. Kvitteringen blir posten (den har varene), og
+  banktrekket merkes `dekketAv`. **Lik** er samme beløp til øret og høyst
+  tre dager mellom datoene. Er banktrekket alt godkjent, merkes
+  kvitteringen `mulDobbel` og står strøket til noen tar den med – heller én
+  for lite enn én dobbelt.
+- **Varelinjene kan fordeles** på flere kategorier i én post.
+- **Kvittering fra bilde eller PDF:** Neam leser den via `/api/claude`, og
+  bare varelinjene lagres (`auth:bank:kv:<postId>`) – ikke bildet.
+- **Trumf-feilen** lagres i `auth:bank:trumf-feil` for varselkortet. Fra
+  `7cb2795` viser varselet og kilderaden Trumfs egen tekst («Trumf svarte
+  HTTP 403»), ikke «sida er trolig endret».
+- **Coop venter** på Coops nye «Min side».
+
+### Budsjett, regnskap og poster
+
+- **Standardbudsjettet ligger i KV** (`auth:bank:budsjett`), **aldri i
+  koden** – repoet er offentlig og budsjettet inneholder lønn.
+- **Tre nivåer: gruppe · post · linje** («Bolig · Strøm · Nettleie»).
+  Summen av en post er posten selv pluss linjene; postens eget beløp vises
+  som «Uten linje».
+- **Egne poster og linjer** ligger i `auth:bank:kategorier`, ikke i koden,
+  fordi linjenavnene sier mer om huset enn et offentlig repo skal. De flettes
+  inn i den faste lista (`flett()`): en linje etter posten sin, en ny post
+  foran «Annet». Bare egne poster kan fjernes, og bare når ingen føring
+  bruker dem.
+- **Excel-importen** kjører i nettleseren (SheetJS). Radområdene er lest ut
+  av SUM-formlene i regnearket, og etiketten raden over hvert område
+  sjekkes før noe importeres.
+- **Regnskapet** er de godkjente postene summert per kategori og måned.
+  «Utenfor budsjett» telles ikke. Fortegn: utgifter og inntekter begge som
+  positive beløp.
+- **Føringene bak en sum** (`1c2012a`): trykk på et beløp i regnskapet, og
+  en dialog viser postene det består av (`?hva=foringer`).
+
+### Status-fanen
+
+Netto formue med endring siden forrige måned, måneden så langt mot
+budsjettet, nøkkeltall (belåningsgrad mot 90 %, gjeldsgrad, rente,
+sparerate, buffer, faste kostnader), familiemålet, «Til godkjenning» og
+**Kilder**.
+
+- **Formuen:** verdier og gjeld fylles inn for hånd i Oppsett
+  (`auth:bank:formue`), pluss saldoen på kontoene med rollen `sparing`.
+  **Fra `0a8a373` kan en verdi være en konto** – saldoen følger banken, og
+  kontoen telles da ikke i tillegg som sparing. Netto per måned lagres i
+  `auth:bank:formue-mnd` hver gang kontoene hentes.
+- **Kilder – én rad per institusjon** (DNB, Trumf, Coop), med prikk og tid
+  for siste henting: **grønn** innenfor én runde (sju timer), **gul** eldre
+  eller samtykket går ut innen 14 dager, **rød** når siste forsøk feilet
+  eller samtykket er ute – med feilteksten under. Verdiene som er satt for
+  hånd står under «Satt manuelt». `?hva=kilder` leser bare KV og spør
+  aldri banken.
+
+### Vekkeren og varselkortet
+
+- **Kjøkkendashen vekker hentingen** hver sjette time
+  (`vekkOkonomi()` i `dashboard.html`, `?hva=hent`). Skjermen står på hele
+  dagen. Svaret sier **ingenting** om innholdet, så kitchen@ kan få bruke
+  den (`HENT_TILGANG`) uten å se økonomien. Bare `dashboard.html` – ikke
+  Emma og Andrea dash.
+- **Forsiden** viser et kort over appene når noe trenger noen: poster som
+  venter, Trumf som trenger ny innlogging, DNB-samtykke som snart går ut
+  (`?hva=varsler`). Alle andre enn sys@ får `{ok:false}` og ser ingenting.
+
+### Nøklene i KV – alt under `auth:bank:`
+
+Utenfor `fh:` med vilje: `/api/data` slipper familien til alt under `fh:`,
+og kontoer og transaksjoner skal ikke kunne leses ut derfra. Nøklene:
+`hus` (økta), `roller`, `kontonavn`, `tilstand:<rnd>`, `buffer:<navn>`,
+`poster`, `laert`, `innboks-fra`, `trumf`, `trumf-feil`, `kv:<postId>`,
+`sist-hentet`, `budsjett`, `kategorier`, `formue`, `formue-mnd`.
+
+### Lærdommer
+
+- **Et samlefelt skal ikke ha én fast forklaring.** «Banken svarte ikke»
+  sto på alt som kom tilbake med `advarsel`, også Trumf-feil. Vis teksten
+  som kom.
+- **Klassenavn i én stor side kolliderer også.** Popupens `ok-fo-rad`
+  traff formueskjemaets `.ok-fo-rad` og dets mobilregel – omdøpt til
+  `ok-fr-`. Og en ny `var okKr` ville overskrevet den eksisterende
+  formatereren; den nye heter `okKrHel`.
+- **Et objekt som bygges på nytt, må få med alle feltene.** Lagre i
+  formueskjemaet satte `okFormue` uten `historikk`, og Status krasjet til
+  neste lasting. Rettet i `0a8a373`.
+
+### Kjente rester
+
+- **Toppkommentaren i bank-funksjonen** lister ikke `auth:bank:kategorier`
+  og `auth:bank:formue-mnd`.
+- **`auth:bank:trumf-feil` slettes bare av innboksen**, ikke av
+  `?hva=trumf` – varselet kan stå en runde etter at Trumf virker igjen.
+- **Kontofilteret skjules ved én kilde.** Magne savnet knappen 29. oktober;
+  å alltid vise alle felleskontoene og Trumf er foreslått, ikke gjort.
