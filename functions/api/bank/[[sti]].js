@@ -18,6 +18,8 @@
      GET /api/bank?hva=kvittering&id=<postId>         - varelinjene til en kvitteringspost
      GET /api/bank?hva=budsjett / POST {hva:'budsjett', standard} - standardbudsjettet
      GET /api/bank?hva=regnskap&mnd=AAAA-MM            - godkjente poster summert per kategori
+     GET /api/bank?hva=foringer&mnd=AAAA-MM&kategori=<k>[&eksakt=1] - foeringene bak ett tall
+     POST /api/bank {hva:'kategori-ny', nye:[{forelder, navn}]} / {hva:'kategori-slett', kategori} - egne poster
      GET /api/bank?hva=varsler          - det som trenger noen (kortet paa forsiden)
      GET /api/bank?hva=regnskap-aar     - godkjente poster per maaned og kategori, hele perioden
      GET /api/bank?hva=formue / POST {hva:'formue', verdier, gjeld, maal} - det banken ikke gir
@@ -838,6 +840,32 @@ async function regnskap(env, mnd){
   const fra = await env.FAMILIE_KV.get(FRA_NOKKEL);
   return svar({ ok:true, mnd:mnd, fra:fra || '', poster:antall, regnskap:sum });
 }
+/* Foeringene bak ett tall i budsjett mot regnskap: en gruppe («Bolig»),
+   en post med linjene under, eller - med eksakt - bare posten selv.
+   Fortegnet er det samme som i regnskapet, saa summen stemmer med tabellen. */
+async function foringer(env, mnd, kat, eksakt){
+  if(!/^\d{4}-\d{2}$/.test(mnd || '') || !kat) return svar({ ok:false, feil:'Mangler måned eller kategori' });
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const kn = await lesJson(env, KONTONAVN_NOKKEL, {});
+  const treff = k => k === kat || (!eksakt && String(k).indexOf(kat + ' · ') === 0);
+  const ut = [];
+  for(const id of Object.keys(poster)){
+    const p = poster[id];
+    if(p.status !== 'godkjent' || String(p.dato).slice(0, 7) !== mnd) continue;
+    const deler = p.deler && p.deler.length ? p.deler : [{ kategori:p.kategori, belop:p.belop }];
+    for(const d of deler){
+      if(!treff(d.kategori)) continue;
+      const bank = p.bankId && poster[p.bankId];
+      ut.push({ id:p.id, dato:p.dato, tekst:p.motpart || p.tekst || '', mer:p.motpart && p.tekst && p.tekst !== p.motpart ? p.tekst : '',
+        kilde: p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : 'Kvittering fra bilde') : (kn[p.konto] || p.kontoNavn || ''),
+        betaltFra: bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
+        kategori:d.kategori, del:deler.length > 1,
+        belop: Math.round((d.kategori.indexOf('Inntekter') === 0 ? d.belop : -d.belop) * 100) / 100 });
+    }
+  }
+  ut.sort((a, b) => String(a.dato).localeCompare(String(b.dato)));
+  return svar({ ok:true, mnd:mnd, kategori:kat, foringer:ut });
+}
 
 /* Hvor varelinjene til en kvitteringspost ligger. Trumf bufrer dem selv;
    en kvittering lest fra bilde lagres naar den kommer inn. */
@@ -1218,6 +1246,7 @@ export async function onRequestGet({ request, env }){
     if(hva === 'kvittering') return await lagretKvittering(env, url.searchParams.get('id') || '');
     if(hva === 'budsjett') return await budsjett(env);
     if(hva === 'regnskap') return await regnskap(env, url.searchParams.get('mnd') || '');
+    if(hva === 'foringer') return await foringer(env, url.searchParams.get('mnd') || '', url.searchParams.get('kategori') || '', url.searchParams.get('eksakt') === '1');
     if(hva === 'regnskap-aar') return await regnskapAar(env);
     if(hva === 'formue') return await formue(env);
     if(!okt) return svar({ ok:false, feil:'Banken er ikke koblet. Åpne /api/bank/start.' });

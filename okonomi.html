@@ -11,6 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/felles-rot.css?v=6">
 <link rel="stylesheet" href="/felles-knapper.css?v=1">
+<link rel="stylesheet" href="/felles-dialog.css?v=1">
 <style>
 /* ============================================================
    NEAM - oekonomi
@@ -279,6 +280,30 @@ body::before{ display:none; }
 .ok-maal .ok-stort small{ color:rgba(255,255,255,.85); }
 .ok-maal .ok-fram span{ background:#fff; }
 
+/* ---------- Kontofilteret i innboksen ----------
+   Samme filter som kategoriene i oppskrifter: valgt er fylt, «Velg alle»
+   og «Velg ingen» smaa og dempet under. */
+.ok-filter{ display:flex; flex-direction:column; gap:4px; }
+.ok-filter-rad{ display:flex; flex-wrap:wrap; gap:4px; }
+.ok-filter-valg{ font:inherit; font-size:var(--t-meta); font-weight:700; color:var(--ink-soft); background:none; border:1px solid var(--line); border-radius:999px; padding:5px 12px; cursor:pointer; }
+.ok-filter-valg[aria-pressed="true"]{ background:var(--aksent); border-color:var(--aksent); color:#fff; }
+.ok-filter-alle{ display:flex; gap:6px; }
+.ok-filter-alle button{ background:none; border:0; padding:4px 6px 4px 0; font:inherit; font-size:var(--t-meta); font-weight:700; color:var(--aksent); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+
+/* ---------- Foeringene bak et tall ----------
+   Beloepet i Regnskap-kolonnen er en lenke: den viser noe, den gjoer ingenting. */
+.ok-tall-lenke{ font:inherit; color:var(--aksent); background:none; border:0; padding:0; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+.ok-fr-kort{ max-width:560px; display:flex; flex-direction:column; gap:14px; max-height:calc(100vh - 40px); }
+.ok-fr-liste{ overflow-y:auto; min-height:0; display:flex; flex-direction:column; }
+.ok-fr-rad{ display:grid; grid-template-columns:62px minmax(0,1fr) auto; gap:2px 12px; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--line); }
+.ok-fr-rad b{ text-align:right; white-space:nowrap; }
+.ok-fr-sum{ display:flex; justify-content:space-between; gap:12px; padding-top:10px; font-weight:700; }
+/* Paa telefon fyller dialogen skjermen (designsystemet, Mobil). */
+@media (max-width:700px){
+  #ok-fr-bak{ padding:0; }
+  .ok-fr-kort{ max-width:none; height:100%; max-height:none; border-radius:0; padding:max(20px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px)); }
+}
+
 /* ---------- År ---------- */
 .ok-diagram{ overflow-x:auto; }
 .ok-diagram svg{ display:block; width:100%; min-width:480px; height:auto; }
@@ -367,6 +392,7 @@ body::before{ display:none; }
         <button type="button" class="btn btn-ghost" id="ok-angre">Angre</button>
         <button type="button" class="ok-ut" id="ok-stripe-lukk" aria-label="Lukk stripa">×</button>
       </div>
+      <div class="ok-filter" id="ok-filter" hidden></div>
       <div id="ok-innboks"></div>
       <div class="ok-bunn" id="ok-bunn" hidden>
         <div><div class="ok-sum" id="ok-sum"></div><p class="ok-meta" id="ok-venter"></p></div>
@@ -440,6 +466,13 @@ body::before{ display:none; }
   </div>
 </div>
 
+<div class="dlg-bak" id="ok-fr-bak" hidden>
+  <div class="dlg-kort ok-fr-kort" role="dialog" aria-modal="true" aria-labelledby="ok-fr-tittel">
+    <div class="ok-kort-hode"><h2 id="ok-fr-tittel"></h2><span class="ok-meta" id="ok-fr-mnd"></span></div>
+    <div class="ok-fr-liste" id="ok-fr-liste"></div>
+    <div class="dlg-rad"><button type="button" class="dlg-knapp nei" id="ok-fr-lukk">Lukk</button></div>
+  </div>
+</div>
 <script>
 (function(){
   'use strict';
@@ -630,16 +663,67 @@ body::before{ display:none; }
     });
   }
 
+  /* ---------- Kontofilteret ----------
+     Hvilke kontoer innboksen viser. Huskes i denne nettleseren; en konto
+     som er ny, vises til noen tar den bort. Godkjenn gjelder bare det som
+     vises - det skjulte blir liggende. */
+  var okSkjult = (function(){ try{ return JSON.parse(localStorage.getItem('ok-skjul-kontoer') || '[]') || []; }catch(e){ return []; } })();
+  function okKilde(p){ return p.fra ? 'fra:' + p.fra : 'konto:' + p.konto; }
+  function okKildeNavn(p){ return p.fra ? (p.fra === 'trumf' ? 'Trumf' : 'Kvittering fra bilde') : (p.kontoNavn || 'Ukjent konto'); }
+  function okSynlig(p){ return okSkjult.indexOf(okKilde(p)) === -1; }
+  function okSettSkjult(liste){
+    okSkjult = liste;
+    try{ localStorage.setItem('ok-skjul-kontoer', JSON.stringify(liste)); }catch(e){}
+    okTegnInnboks();
+  }
+  function okTegnFilter(){
+    var boks = document.getElementById('ok-filter'), kilder = [];
+    okPoster.forEach(function(p){
+      var k = okKilde(p), x = kilder.filter(function(y){ return y.k === k; })[0];
+      if(!x){ x = { k:k, navn:okKildeNavn(p), n:0 }; kilder.push(x); }
+      x.n++;
+    });
+    boks.innerHTML = '';
+    boks.hidden = kilder.length < 2;
+    if(boks.hidden) return;
+    var rad = okEl('div', 'ok-filter-rad', '');
+    kilder.forEach(function(x){
+      var vis = okSkjult.indexOf(x.k) === -1;
+      var b = okEl('button', 'ok-filter-valg', okVask(x.navn) + ' · ' + x.n); b.type = 'button';
+      b.setAttribute('aria-pressed', String(vis));
+      b.addEventListener('click', function(){
+        okSettSkjult(vis ? okSkjult.concat([x.k]) : okSkjult.filter(function(k){ return k !== x.k; }));
+      });
+      rad.appendChild(b);
+    });
+    boks.appendChild(rad);
+    var alle = okEl('div', 'ok-filter-alle', '');
+    var a = okEl('button', '', 'Velg alle'); a.type = 'button';
+    a.addEventListener('click', function(){ okSettSkjult(okSkjult.filter(function(k){ return !kilder.some(function(x){ return x.k === k; }); })); });
+    var n = okEl('button', '', 'Velg ingen'); n.type = 'button';
+    n.addEventListener('click', function(){ okSettSkjult(okSkjult.concat(kilder.map(function(x){ return x.k; }).filter(function(k){ return okSkjult.indexOf(k) === -1; }))); });
+    alle.appendChild(a); alle.appendChild(n);
+    boks.appendChild(alle);
+  }
+
   function okTegnInnboks(){
     okFaneTall(okPoster.length);
     var boks = document.getElementById('ok-innboks');
     boks.innerHTML = '';
+    okTegnFilter();
     if(!okPoster.length){
       boks.innerHTML = '<p class="ok-meta">Innboksen er tom. Nye transaksjoner fra felleskontoene dukker opp her.</p>';
       document.getElementById('ok-bunn').hidden = true;
       return;
     }
-    okPoster.forEach(function(p){ boks.appendChild(okPostRad(p)); });
+    var synlige = okPoster.filter(okSynlig);
+    if(!synlige.length){
+      /* Tom med vilje: da ser man at det er filteret som skjuler alt. */
+      boks.innerHTML = '<p class="ok-meta">Filteret skjuler alle ' + okPoster.length + ' postene. Velg en konto over for å se dem.</p>';
+      document.getElementById('ok-bunn').hidden = true;
+      return;
+    }
+    synlige.forEach(function(p){ boks.appendChild(okPostRad(p)); });
     okTegnBunn();
   }
 
@@ -742,8 +826,9 @@ body::before{ display:none; }
   }
 
   function okTegnBunn(){
-    var klare = okPoster.filter(okPostKlar), strokne = okPoster.filter(function(p){ return p.ute; });
-    var venter = okPoster.length - klare.length - strokne.length;
+    var synlige = okPoster.filter(okSynlig);
+    var klare = synlige.filter(okPostKlar), strokne = synlige.filter(function(p){ return p.ute; });
+    var venter = synlige.length - klare.length - strokne.length;
     var sum = klare.reduce(function(s, p){ return s + p.belop; }, 0);
     document.getElementById('ok-bunn').hidden = false;
     /* Netto: inn og ut samlet, ogsaa det som er utenfor budsjettet. */
@@ -759,7 +844,8 @@ body::before{ display:none; }
 
   document.getElementById('ok-godkjenn').addEventListener('click', function(){
     var knapp = this;
-    var klare = okPoster.filter(okPostKlar), strokne = okPoster.filter(function(p){ return p.ute; });
+    var synlige = okPoster.filter(okSynlig);
+    var klare = synlige.filter(okPostKlar), strokne = synlige.filter(function(p){ return p.ute; });
     if(!klare.length && !strokne.length) return;
     knapp.disabled = true;
     okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({
@@ -852,10 +938,14 @@ body::before{ display:none; }
     var kr = function(n){ return okKr.format(Math.round(n)).replace(/,00$/, ''); };
     var sumB = function(p){ return okBuLinjer(p).reduce(function(s, l){ return s + okBuVerdi(l); }, okBuVerdi(p)); };
     var sumR = function(p){ return okBuLinjer(p).reduce(function(s, l){ return s + (okBu.regnskap[l] || 0); }, okBu.regnskap[p] || 0); };
-    var celler = function(navn, b, r, utgift, klasse, input){
+    /* Regnskapstallet er en lenke til foeringene bak det, naar det finnes noen.
+       «=» foran kategorien betyr bare posten selv, uten linjene. */
+    var celler = function(navn, b, r, utgift, klasse, input, kat){
       var avvik = r - b, god = utgift ? avvik <= 0 : avvik >= 0;
       var brukt = b ? Math.round(r / b * 100) + ' %' : (r ? 'ikke budsjettert' : '–');
-      return '<tr class="' + klasse + '"><td>' + navn + '</td><td>' + (input || kr(b)) + '</td><td>' + kr(r) + '</td>'
+      var rTekst = kat && Math.round(r) !== 0 && !okBu.redigerer
+        ? '<button type="button" class="ok-tall-lenke" data-fo="' + okVask(kat) + '">' + kr(r) + '</button>' : kr(r);
+      return '<tr class="' + klasse + '"><td>' + navn + '</td><td>' + (input || kr(b)) + '</td><td>' + rTekst + '</td>'
         + '<td class="' + (Math.round(avvik) === 0 ? '' : god ? 'ok-god' : 'ok-darlig') + '">' + (Math.round(avvik) === 0 ? '0' : (avvik > 0 ? '+' : '−') + kr(Math.abs(avvik))) + '</td>'
         + '<td>' + (klasse === 'resultat' ? '' : brukt) + '</td></tr>';
     };
@@ -880,18 +970,18 @@ body::before{ display:none; }
           forrige = g;
           var kb = 0, krr = 0;
           s[1].filter(function(x){ return gruppe(x) === g; }).forEach(function(x){ kb += sumB(x); krr += sumR(x); });
-          h += celler(okVask(g), kb, krr, true, 'kat');
+          h += celler(okVask(g), kb, krr, true, 'kat', '', g);
         }
         var linjer = okBuLinjer(k), b = sumB(k), r = sumR(k);
         sb += b; sr += r;
         var navn = okVask(k.split(' · ')[1]);
-        if(!linjer.length){ h += celler(navn + fjern(k), b, r, s[2], 'under', felt(k)); return; }
+        if(!linjer.length){ h += celler(navn + fjern(k), b, r, s[2], 'under', felt(k), k); return; }
         var apen = okBu.redigerer || !!okBu.apne[k];
         h += celler('<button type="button" class="ok-bu-pil" data-p="' + okVask(k) + '" aria-expanded="' + apen + '" aria-label="Vis linjene under ' + navn + '">›</button>' + navn
-          + ' <span class="ok-meta">· ' + linjer.length + (linjer.length === 1 ? ' linje' : ' linjer') + '</span>', b, r, s[2], 'under', '');
+          + ' <span class="ok-meta">· ' + linjer.length + (linjer.length === 1 ? ' linje' : ' linjer') + '</span>', b, r, s[2], 'under', '', k);
         if(!apen) return;
-        linjer.forEach(function(l){ h += celler(okVask(l.split(' · ')[2]) + fjern(l), okBuVerdi(l), okBu.regnskap[l] || 0, s[2], 'linje', felt(l)); });
-        if(okBu.redigerer || okBuVerdi(k) || okBu.regnskap[k]) h += celler('Uten linje', okBuVerdi(k), okBu.regnskap[k] || 0, s[2], 'linje', felt(k));
+        linjer.forEach(function(l){ h += celler(okVask(l.split(' · ')[2]) + fjern(l), okBuVerdi(l), okBu.regnskap[l] || 0, s[2], 'linje', felt(l), l); });
+        if(okBu.redigerer || okBuVerdi(k) || okBu.regnskap[k]) h += celler('Uten linje', okBuVerdi(k), okBu.regnskap[k] || 0, s[2], 'linje', felt(k), '=' + k);
       });
       h += celler('Sum ' + s[0].toLowerCase(), sb, sr, s[2], 'sum');
       tot[s[0]] = [sb, sr];
@@ -911,9 +1001,52 @@ body::before{ display:none; }
       b.addEventListener('click', function(){ if(okBu.redigerer) return; okBu.apne[b.dataset.p] = !okBu.apne[b.dataset.p]; okBuTegn(); });
     });
     tab.querySelectorAll('.ok-bu-fjern').forEach(function(b){ b.addEventListener('click', function(){ okBuFjern(b.dataset.fjern); }); });
+    tab.querySelectorAll('.ok-tall-lenke').forEach(function(b){ b.addEventListener('click', function(){ okVisForinger(b.dataset.fo, b); }); });
     okBuNyTegn();
     okBuKnapper();
   }
+
+  /* ---------- Foeringene bak et tall ----------
+     Popupen viser postene som utgjoer regnskapstallet i maaneden som er
+     valgt. Lukkes med knappen, Esc eller et trykk utenfor. */
+  var okFoFra = null;
+  function okVisForinger(kat, fra){
+    var eksakt = kat.charAt(0) === '=';
+    if(eksakt) kat = kat.slice(1);
+    var mnd = document.getElementById('ok-bu-mnd').value;
+    var bak = document.getElementById('ok-fr-bak'), liste = document.getElementById('ok-fr-liste');
+    okFoFra = fra || null;
+    document.getElementById('ok-fr-tittel').textContent = kat.split(' · ').join(' › ') + (eksakt ? ' (uten linje)' : '');
+    document.getElementById('ok-fr-mnd').textContent = mnd ? okMndNavn.format(new Date(mnd + '-01T12:00:00')) : '';
+    liste.innerHTML = '<p class="ok-meta">Henter …</p>';
+    bak.hidden = false;
+    document.getElementById('ok-fr-lukk').focus();
+    okHent('/api/bank?hva=foringer&mnd=' + encodeURIComponent(mnd) + '&kategori=' + encodeURIComponent(kat) + (eksakt ? '&eksakt=1' : '')).then(function(r){
+      liste.innerHTML = '';
+      if(!r.ok){ liste.appendChild(okEl('p', 'ok-melding feil', okVask(r.feil))); return; }
+      if(!r.foringer.length){ liste.appendChild(okEl('p', 'ok-meta', 'Ingen godkjente føringer.')); return; }
+      var sum = 0;
+      r.foringer.forEach(function(f){
+        sum += f.belop;
+        /* Linjen eller posten under det man trykket paa, naar den er en annen. */
+        var under = f.kategori !== kat ? f.kategori.slice(kat.length + 3) : '';
+        var meta = [f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''), under, f.del ? 'del av kvitteringen' : '', f.mer].filter(Boolean).join(' · ');
+        liste.appendChild(okEl('div', 'ok-fr-rad',
+          '<span class="ok-meta">' + okVask(okKort.format(new Date(f.dato))) + '</span>'
+          + '<span><span class="ok-navn">' + okVask(f.tekst || 'Uten tekst') + '</span><br><span class="ok-meta">' + okVask(meta) + '</span></span>'
+          + '<b>' + okKr0.format(f.belop) + '</b>'));
+      });
+      liste.appendChild(okEl('div', 'ok-fr-sum', '<span>' + r.foringer.length + (r.foringer.length === 1 ? ' føring' : ' føringer') + '</span><span>' + okKr0.format(Math.round(sum * 100) / 100) + ' kr</span>'));
+    });
+  }
+  function okLukkForinger(){
+    document.getElementById('ok-fr-bak').hidden = true;
+    if(okFoFra && document.body.contains(okFoFra)) okFoFra.focus();
+    okFoFra = null;
+  }
+  document.getElementById('ok-fr-lukk').addEventListener('click', okLukkForinger);
+  document.getElementById('ok-fr-bak').addEventListener('click', function(e){ if(e.target === this) okLukkForinger(); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !document.getElementById('ok-fr-bak').hidden) okLukkForinger(); });
 
   /* Nye poster og linjer lagres med en gang - de er oppsett, ikke tall.
      Tallene foelger budsjettets Lagre som foer. */
