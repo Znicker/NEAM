@@ -1505,15 +1505,20 @@ body::before{ display:none; }
     if(!ks) rad('DNB', 'Henter …', 'gammel');
     else if(!ks.dnb.koblet) rad('DNB', 'Ikke koblet', 'stopp');
     else{
+      /* Én rad for banken: siste henting av noen konto, roed om en konto
+         feilet sist eller samtykket er ute, gul naar det snart gaar ut. */
       var g = ks.dnb.gyldigTil ? Date.parse(ks.dnb.gyldigTil) : 0, dager = g ? Math.floor((g - Date.now()) / 864e5) : null;
-      rad('DNB-tilgang', g ? 'Gyldig til ' + okKort.format(new Date(g)) : 'Ukjent utløp', dager == null || dager <= 14 ? (dager != null && dager < 0 ? 'stopp' : 'gammel') : '');
-      rad('Kjøkkenskjermen', ks.vekker ? 'Hentet ' + okNaar(ks.vekker) + ' · hver ' + Math.round(ks.intervall / 36e5) + '. time' : 'Har ikke hentet ennå', farge(ks.vekker));
+      var sist = 0, feil = '';
       ks.kontoer.forEach(function(x){
-        var deler = [x.saldo, x.trans].filter(Boolean), feil = deler.filter(function(b){ return b.feil; })[0];
-        var tekst = 'Saldo ' + hentet(x.saldo) + (x.trans ? ' · transaksjoner ' + hentet(x.trans) : '');
-        var eldst = deler.length ? Math.min.apply(null, deler.map(function(b){ return b.hentet || 0; })) : 0;
-        rad(x.navn, tekst, feil ? 'stopp' : farge(eldst), feil && feil.feil);
+        [x.saldo, x.trans].forEach(function(b){
+          if(!b) return;
+          sist = Math.max(sist, b.hentet || 0);
+          if(b.feil && !feil) feil = x.navn + ': ' + b.feil;
+        });
       });
+      var tekst = (sist ? 'Hentet ' + okNaar(sist) : 'Ikke hentet ennå') + (g ? ' · tilgang til ' + okKort.format(new Date(g)) : '');
+      var klasse = feil || (dager != null && dager < 0) ? 'stopp' : dager != null && dager <= 14 ? 'gammel' : farge(sist);
+      rad('DNB', tekst, klasse, feil || (dager != null && dager < 0 ? 'Samtykket har gått ut' : ''));
     }
     if(ks){
       var t = ks.trumf;
