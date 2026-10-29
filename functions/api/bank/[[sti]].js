@@ -412,7 +412,7 @@ const KATEGORIER = [
   'Barna · Felles', 'Barna · Emma', 'Barna · Andrea', 'Barna · Annet',
   'Felles fritid · TV/streaming', 'Felles fritid · Forsikring', 'Felles fritid · Annet',
   'Andre utgifter · Magne', 'Andre utgifter · Nina', 'Andre utgifter · Felles',
-  'Inntekter · Magne', 'Inntekter · Nina', 'Inntekter · Barnetrygd', 'Inntekter · Annet',
+  'Inntekter · Magne', 'Inntekter · Nina', 'Inntekter · Barnetrygd', 'Inntekter · Strømstøtte', 'Inntekter · Annet',
   'Sparing · Buffer', 'Sparing · Reise', 'Sparing · Fond', 'Sparing · Annet',
   'Utenfor budsjett · Overføring mellom egne kontoer', 'Utenfor budsjett · Nedbetaling av kortgjeld'
 ];
@@ -430,6 +430,82 @@ const NOKKELORD = [
   [/EASYPARK|APCOA|ONEPARK|PARKERING/, 'Bil · Parkering'],
   [/STATENS PENSJONSKASSE|\bSPK\b|BULDER/, 'Bolig · Boliglån']
 ];
+/* Egne poster: det Magne legger til selv, og linjene under postene som
+   Excel-importen lager («Bolig · Strøm · Nettleie»). De ligger i KV og ikke
+   her, fordi linjenavnene sier mer om huset enn et offentlig repo skal.
+   Et tredje ledd er en linje under posten; summen av posten er posten
+   selv pluss linjene. */
+const EGNE_NOKKEL = 'auth:bank:kategorier';
+async function lesEgne(env){ return [].concat(await lesJson(env, EGNE_NOKKEL, [])); }
+function flett(egne){
+  const ut = KATEGORIER.slice();
+  for(const k of egne){
+    if(ut.indexOf(k) !== -1) continue;
+    const d = k.split(' · ');
+    if(d.length === 3){
+      /* Etter posten og linjene den alt har. */
+      const forelder = d[0] + ' · ' + d[1];
+      let i = ut.lastIndexOf(forelder);
+      if(i === -1) continue;
+      while(i + 1 < ut.length && ut[i + 1].indexOf(forelder + ' · ') === 0) i++;
+      ut.splice(i + 1, 0, k);
+    } else {
+      /* Foran «Annet» i gruppen, ellers sist i gruppen. */
+      let i = ut.indexOf(d[0] + ' · Annet');
+      if(i === -1) ut.forEach((x, j) => { if(x.split(' · ')[0] === d[0]) i = j + 1; });
+      if(i === -1) continue;
+      ut.splice(i, 0, k);
+    }
+  }
+  return ut;
+}
+async function alleKategorier(env){ return flett(await lesEgne(env)); }
+async function budsjettKategorier(env){ return (await alleKategorier(env)).filter(k => k.indexOf('Utenfor budsjett') !== 0); }
+
+/* Nye poster: { forelder, navn }. Forelderen er en gruppe (gir en ny post)
+   eller en post (gir en linje). Utenfor budsjett tar ikke imot nye. */
+async function nyeKategorier(env, kropp){
+  const egne = await lesEgne(env);
+  const grupper = KATEGORIER.map(k => k.split(' · ')[0]).filter(g => g !== 'Utenfor budsjett');
+  const nye = [];
+  for(const n of [].concat(kropp.nye || []).slice(0, 200)){
+    const navn = String(n && n.navn || '').replace(/·/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
+    const forelder = String(n && n.forelder || '');
+    if(!navn) return svar({ ok:false, feil:'Posten mangler navn' });
+    const alle = flett(egne);
+    if(forelder.indexOf(' · ') === -1){
+      if(grupper.indexOf(forelder) === -1) return svar({ ok:false, feil:'Ukjent gruppe: ' + forelder });
+    } else if(alle.indexOf(forelder) === -1 || forelder.split(' · ').length !== 2 || forelder.indexOf('Utenfor budsjett') === 0){
+      return svar({ ok:false, feil:'Ukjent post: ' + forelder });
+    }
+    const ny = forelder + ' · ' + navn;
+    if(alle.some(k => k.toLowerCase() === ny.toLowerCase())) continue;
+    if(egne.length >= 400) return svar({ ok:false, feil:'For mange egne poster' });
+    egne.push(ny); nye.push(ny);
+  }
+  await env.FAMILIE_KV.put(EGNE_NOKKEL, JSON.stringify(egne));
+  return svar({ ok:true, nye:nye, kategorier:flett(egne).filter(k => k.indexOf('Utenfor budsjett') !== 0), egne:egne });
+}
+/* Bare egne poster kan fjernes, og bare naar ingen foering bruker dem.
+   Budsjettet og det Neam har laert for posten, fjernes sammen med den. */
+async function slettKategori(env, kropp){
+  const k = String(kropp.kategori || '');
+  const egne = await lesEgne(env);
+  if(egne.indexOf(k) === -1) return svar({ ok:false, feil:'Bare egne poster kan fjernes' });
+  if(egne.some(x => x.indexOf(k + ' · ') === 0)) return svar({ ok:false, feil:'Fjern linjene under posten først' });
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const brukt = Object.keys(poster).filter(id => poster[id].kategori === k || (poster[id].deler || []).some(d => d.kategori === k)).length;
+  if(brukt) return svar({ ok:false, feil:'Posten er brukt i ' + brukt + (brukt === 1 ? ' føring' : ' føringer') + ' og kan ikke fjernes' });
+  egne.splice(egne.indexOf(k), 1);
+  await env.FAMILIE_KV.put(EGNE_NOKKEL, JSON.stringify(egne));
+  const b = await lesJson(env, BUDSJETT_NOKKEL, null);
+  if(b && b.standard && b.standard[k] != null){ delete b.standard[k]; await env.FAMILIE_KV.put(BUDSJETT_NOKKEL, JSON.stringify(b)); }
+  const laert = await lesJson(env, LAERT_NOKKEL, {});
+  let endret = false;
+  for(const m of Object.keys(laert)) if(laert[m] === k){ delete laert[m]; endret = true; }
+  if(endret) await env.FAMILIE_KV.put(LAERT_NOKKEL, JSON.stringify(laert));
+  return svar({ ok:true, kategorier:flett(egne).filter(x => x.indexOf('Utenfor budsjett') !== 0), egne:egne });
+}
 const POST_NOKKEL = 'auth:bank:poster';
 const LAERT_NOKKEL = 'auth:bank:laert';
 const FRA_NOKKEL = 'auth:bank:innboks-fra';
@@ -573,7 +649,7 @@ async function innboks(env, okt, fersk){
     return ut;
   };
   return svar({ ok:true, hentet:hentet, advarsel:advarsel || undefined, fra:fra, kontoer:felles.length, trumf:trumfKoblet,
-    kategorier:KATEGORIER, poster:venter.map(medNavn), auto:auto.map(medNavn), godkjent:alle.filter(p => p.status === 'godkjent').length });
+    kategorier:await alleKategorier(env), poster:venter.map(medNavn), auto:auto.map(medNavn), godkjent:alle.filter(p => p.status === 'godkjent').length });
 }
 async function lagreKontonavn(env, kropp){
   const okt = await lesOekt(env);
@@ -599,11 +675,12 @@ async function lagreForslag(env, kropp){
   const laert = await lesJson(env, LAERT_NOKKEL, {});
   const naa = new Date().toISOString();
   let foert = 0;
+  const kategorier = await alleKategorier(env);
   for(const f of [].concat(kropp.forslag || []).slice(0, 100)){
     const p = poster[f && f.id];
     if(!p || p.status !== 'ny') continue;
     p.aiSpurt = true;
-    if(!f.kategori || KATEGORIER.indexOf(f.kategori) === -1) continue;
+    if(!f.kategori || kategorier.indexOf(f.kategori) === -1) continue;
     if(p.kategori && p.kilde !== 'ai-usikker') continue;   /* et menneskes eller en regels valg vinner */
     p.kategori = f.kategori;
     if(f.sikker && !p.mulDobbel && !p.manuell){
@@ -655,17 +732,17 @@ async function varsler(env, okt){
    Fortegn: utgifter og sparing som positive beloep (det som gikk ut),
    inntekter som positive beloep (det som kom inn). */
 const BUDSJETT_NOKKEL = 'auth:bank:budsjett';
-const BUDSJETT_KATEGORIER = KATEGORIER.filter(k => k.indexOf('Utenfor budsjett') !== 0);
 
 async function budsjett(env){
   const b = await lesJson(env, BUDSJETT_NOKKEL, null);
-  return svar({ ok:true, kategorier:BUDSJETT_KATEGORIER, standard:(b && b.standard) || {}, endret:b && b.endret, av:b && masker(b.av) });
+  return svar({ ok:true, kategorier:await budsjettKategorier(env), egne:await lesEgne(env), standard:(b && b.standard) || {}, endret:b && b.endret, av:b && masker(b.av) });
 }
 async function lagreBudsjett(env, kropp, epost){
   const inn = kropp.standard || {};
   const ut = {};
+  const kategorier = await budsjettKategorier(env);
   for(const k of Object.keys(inn)){
-    if(BUDSJETT_KATEGORIER.indexOf(k) === -1) return svar({ ok:false, feil:'Ukjent kategori: ' + k });
+    if(kategorier.indexOf(k) === -1) return svar({ ok:false, feil:'Ukjent kategori: ' + k });
     const v = Math.round(Number(inn[k]) || 0);
     if(v < 0 || v > 1e7) return svar({ ok:false, feil:'Ugyldig beløp for ' + k });
     if(v) ut[k] = v;
@@ -676,6 +753,7 @@ async function lagreBudsjett(env, kropp, epost){
 /* Hele perioden, maaned for maaned: { 'AAAA-MM': { kategori: beloep } }. For År-fanen. */
 async function regnskapAar(env){
   const poster = await lesJson(env, POST_NOKKEL, {});
+  const kategorier = await budsjettKategorier(env);
   const ut = {};
   for(const id of Object.keys(poster)){
     const p = poster[id];
@@ -683,7 +761,7 @@ async function regnskapAar(env){
     const m = String(p.dato).slice(0, 7);
     const deler = p.deler && p.deler.length ? p.deler : [{ kategori:p.kategori, belop:p.belop }];
     for(const d of deler){
-      if(BUDSJETT_KATEGORIER.indexOf(d.kategori) === -1) continue;
+      if(kategorier.indexOf(d.kategori) === -1) continue;
       if(!ut[m]) ut[m] = {};
       const v = d.kategori.indexOf('Inntekter') === 0 ? d.belop : -d.belop;
       ut[m][d.kategori] = Math.round(((ut[m][d.kategori] || 0) + v) * 100) / 100;
@@ -743,6 +821,7 @@ async function lagreFormue(env, kropp, epost){
 async function regnskap(env, mnd){
   if(!/^\d{4}-\d{2}$/.test(mnd || '')) mnd = new Date().toISOString().slice(0, 7);
   const poster = await lesJson(env, POST_NOKKEL, {});
+  const kategorier = await budsjettKategorier(env);
   const sum = {};
   let antall = 0;
   for(const id of Object.keys(poster)){
@@ -751,7 +830,7 @@ async function regnskap(env, mnd){
     antall++;
     const deler = p.deler && p.deler.length ? p.deler : [{ kategori:p.kategori, belop:p.belop }];
     for(const d of deler){
-      if(BUDSJETT_KATEGORIER.indexOf(d.kategori) === -1) continue;
+      if(kategorier.indexOf(d.kategori) === -1) continue;
       const v = d.kategori.indexOf('Inntekter') === 0 ? d.belop : -d.belop;
       sum[d.kategori] = Math.round(((sum[d.kategori] || 0) + v) * 100) / 100;
     }
@@ -816,11 +895,12 @@ async function fordelKvittering(env, p, linjeKat, hovedKat){
   const kv = await lesJson(env, kvitteringNokkel(p), null);
   if(!kv || !kv.linjer) return null;
   const sum = {};
+  const kategorier = await alleKategorier(env);
   let flyttet = 0;
   for(const i of Object.keys(linjeKat || {})){
     const l = kv.linjer[Number(i)], kat = linjeKat[i];
     if(!l || !kat || kat === hovedKat) continue;
-    if(KATEGORIER.indexOf(kat) === -1) return null;
+    if(kategorier.indexOf(kat) === -1) return null;
     const b = (Number(l.belop) || 0) + (Number(l.rabatt) || 0);
     sum[kat] = (sum[kat] || 0) + b;
     flyttet += b;
@@ -837,14 +917,15 @@ async function godkjenn(env, kropp, epost){
   const poster = await lesJson(env, POST_NOKKEL, {});
   const laert = await lesJson(env, LAERT_NOKKEL, {});
   const naa = new Date().toISOString();
+  const kategorier = await alleKategorier(env);
   const ok = [], strok = [];
   for(const g of [].concat(kropp.godkjenn || [])){
     const p = poster[g && g.id];
     if(!p) return svar({ ok:false, feil:'Ukjent post' });
-    if(KATEGORIER.indexOf(g.kategori) === -1) return svar({ ok:false, feil:'Ukjent kategori: ' + g.kategori });
+    if(kategorier.indexOf(g.kategori) === -1) return svar({ ok:false, feil:'Ukjent kategori: ' + g.kategori });
     Object.assign(p, { status:'godkjent', kategori:g.kategori, behandlet:naa, av:epost });
     delete p.deler;
-    if(g.linjer && Object.keys(g.linjer).some(i => g.linjer[i] && KATEGORIER.indexOf(g.linjer[i]) === -1)){
+    if(g.linjer && Object.keys(g.linjer).some(i => g.linjer[i] && kategorier.indexOf(g.linjer[i]) === -1)){
       return svar({ ok:false, feil:'Ukjent kategori på en vare' });
     }
     if(p.fra && g.linjer){
@@ -1171,6 +1252,8 @@ export async function onRequestPost({ request, env }){
   if(kropp && kropp.hva === 'formue') return await lagreFormue(env, kropp, v.epost);
   if(kropp && kropp.hva === 'forslag') return await lagreForslag(env, kropp);
   if(kropp && kropp.hva === 'kontonavn') return await lagreKontonavn(env, kropp);
+  if(kropp && kropp.hva === 'kategori-ny') return await nyeKategorier(env, kropp);
+  if(kropp && kropp.hva === 'kategori-slett') return await slettKategori(env, kropp);
   if(kropp && kropp.hva === 'trumf-koble-fra'){
     await env.FAMILIE_KV.delete(TRUMF_NOKKEL);
     await env.FAMILIE_KV.delete('auth:bank:buffer:trumf:liste');

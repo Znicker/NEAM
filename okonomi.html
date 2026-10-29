@@ -161,6 +161,15 @@ body::before{ display:none; }
 .ok-tabell .seksjon td{ padding-top:18px; border-bottom:2px solid var(--ink); font-size:var(--t-etikett); font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
 .ok-tabell .kat td{ font-weight:700; }
 .ok-tabell .under td:first-child{ padding-left:16px; color:var(--ink-soft); }
+/* Linjer under en post (tredje ledd). Posten med linjer kan foldes ut. */
+.ok-tabell .linje td{ font-size:var(--t-meta); color:var(--ink-soft); }
+.ok-tabell .linje td:first-child{ padding-left:40px; }
+.ok-bu-pil{ font:inherit; border:0; background:none; color:var(--ink-soft); cursor:pointer; padding:0 6px 0 0; display:inline-block; transition:transform .15s; }
+.ok-bu-pil[aria-expanded="true"]{ transform:rotate(90deg); }
+.ok-bu-fjern{ font:inherit; font-size:18px; line-height:1; border:0; background:none; color:var(--ink-soft); cursor:pointer; padding:0 0 0 8px; }
+.ok-bu-ny{ display:flex; flex-direction:column; gap:8px; }
+.ok-bu-ny-rad{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto; gap:8px; align-items:center; }
+@media (max-width:560px){ .ok-bu-ny-rad{ grid-template-columns:minmax(0,1fr); } }
 .ok-tabell .sum td{ font-weight:700; background:var(--boks-mild); }
 .ok-tabell .resultat td{ font-weight:700; border-top:2px solid var(--ink); border-bottom:0; padding-top:10px; }
 .ok-tabell input{ width:100px; text-align:right; font-family:inherit; font-size:16px; padding:4px 8px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
@@ -381,6 +390,15 @@ body::before{ display:none; }
       <p class="ok-meta" id="ok-bu-meta"></p>
       <div class="ok-melding" id="ok-bu-avbryt" hidden></div>
       <div class="ok-tabell-ramme"><table class="ok-tabell" id="ok-bu-tabell"></table></div>
+      <div class="ok-bu-ny" id="ok-bu-ny" hidden>
+        <span class="ok-etikett">Ny post eller linje</span>
+        <div class="ok-bu-ny-rad">
+          <select class="ok-mnd" id="ok-bu-ny-under" aria-label="Hvor den nye posten skal ligge"></select>
+          <input type="text" class="ok-navnfelt" id="ok-bu-ny-navn" maxlength="40" placeholder="Navn, f.eks. Barnehage" aria-label="Navn på den nye posten">
+          <button type="button" class="btn btn-ny ok-smal" id="ok-bu-ny-legg">Legg til</button>
+        </div>
+        <p class="ok-meta" id="ok-bu-ny-melding"></p>
+      </div>
       <div class="ok-rad-knapper" id="ok-bu-knapper"></div>
       <input type="file" id="ok-bu-excel" accept=".xlsm,.xlsx,.xls" hidden>
     </section>
@@ -635,7 +653,7 @@ body::before{ display:none; }
     okKategorier.forEach(function(k){
       var g = k.split(' · ')[0];
       if(!grupper[g]){ grupper[g] = document.createElement('optgroup'); grupper[g].label = g; s.appendChild(grupper[g]); }
-      grupper[g].appendChild(new Option(k.split(' · ')[1] || k, k));
+      grupper[g].appendChild(new Option(k.split(' · ').slice(1).join(' · ') || k, k));
     });
     s.value = verdi || '';
     return s;
@@ -784,13 +802,13 @@ body::before{ display:none; }
   /* ---------- Budsjett mot regnskap ----------
      Standardbudsjettet ligger i KV bak bank-sperra, aldri i koden -
      repoet er offentlig. Regnskapet er de godkjente postene i maaneden. */
-  var okBu = { kategorier:[], standard:{}, regnskap:{}, redigerer:false, utkast:null };
+  var okBu = { kategorier:[], egne:[], standard:{}, regnskap:{}, redigerer:false, utkast:null, apne:{} };
   var okMndNavn = new Intl.DateTimeFormat('nb-NO', { month:'long', year:'numeric' });
 
   function okBuLast(){
     okHent('/api/bank?hva=budsjett').then(function(b){
       if(!b.ok) return;
-      okBu.kategorier = b.kategorier; okBu.standard = b.standard || {};
+      okBu.kategorier = b.kategorier; okBu.egne = b.egne || []; okBu.standard = b.standard || {};
       document.getElementById('ok-bu-kort').hidden = false;
       okBuRegnskap();
     });
@@ -820,14 +838,20 @@ body::before{ display:none; }
 
   function okBuVerdi(k){ return okBu.utkast && okBu.utkast[k] != null ? okBu.utkast[k] : (okBu.standard[k] || 0); }
 
+  /* Tre ledd: gruppe · post · linje. Posten summerer seg selv og linjene;
+     har den linjer, staar postens eget tall som «Uten linje». */
+  function okBuLinjer(p){ return okBu.kategorier.filter(function(x){ return x.indexOf(p + ' · ') === 0; }); }
   function okBuTegn(){
     var gruppe = function(k){ return k.split(' · ')[0]; };
+    var post = function(k){ return k.split(' · ').length === 2; };
     var seksjoner = [
-      ['Utgifter', okBu.kategorier.filter(function(k){ return gruppe(k) !== 'Inntekter' && gruppe(k) !== 'Sparing'; }), true],
-      ['Inntekter', okBu.kategorier.filter(function(k){ return gruppe(k) === 'Inntekter'; }), false],
-      ['Sparing', okBu.kategorier.filter(function(k){ return gruppe(k) === 'Sparing'; }), false]
+      ['Utgifter', okBu.kategorier.filter(function(k){ return post(k) && gruppe(k) !== 'Inntekter' && gruppe(k) !== 'Sparing'; }), true],
+      ['Inntekter', okBu.kategorier.filter(function(k){ return post(k) && gruppe(k) === 'Inntekter'; }), false],
+      ['Sparing', okBu.kategorier.filter(function(k){ return post(k) && gruppe(k) === 'Sparing'; }), false]
     ];
     var kr = function(n){ return okKr.format(Math.round(n)).replace(/,00$/, ''); };
+    var sumB = function(p){ return okBuLinjer(p).reduce(function(s, l){ return s + okBuVerdi(l); }, okBuVerdi(p)); };
+    var sumR = function(p){ return okBuLinjer(p).reduce(function(s, l){ return s + (okBu.regnskap[l] || 0); }, okBu.regnskap[p] || 0); };
     var celler = function(navn, b, r, utgift, klasse, input){
       var avvik = r - b, god = utgift ? avvik <= 0 : avvik >= 0;
       var brukt = b ? Math.round(r / b * 100) + ' %' : (r ? 'ikke budsjettert' : '–');
@@ -835,25 +859,39 @@ body::before{ display:none; }
         + '<td class="' + (Math.round(avvik) === 0 ? '' : god ? 'ok-god' : 'ok-darlig') + '">' + (Math.round(avvik) === 0 ? '0' : (avvik > 0 ? '+' : '−') + kr(Math.abs(avvik))) + '</td>'
         + '<td>' + (klasse === 'resultat' ? '' : brukt) + '</td></tr>';
     };
+    var nr = 0;
+    var felt = function(k){
+      if(!okBu.redigerer) return '';
+      var b = okBuVerdi(k);
+      return '<input inputmode="numeric" data-k="' + okVask(k) + '" id="ok-bu-' + (nr++) + '" aria-label="Budsjett for ' + okVask(k) + '" value="' + (b || '') + '"'
+        + (okBu.utkast && okBu.utkast[k] != null && okBu.utkast[k] !== (okBu.standard[k] || 0) ? ' class="endret"' : '') + '>';
+    };
+    var fjern = function(k){ return okBu.redigerer && okBu.egne.indexOf(k) !== -1 && !okBuLinjer(k).length
+      ? '<button type="button" class="ok-bu-fjern" data-fjern="' + okVask(k) + '" aria-label="Fjern ' + okVask(k) + '">×</button>' : ''; };
     var h = '<thead><tr><th>Post</th><th>Budsjett</th><th>Regnskap</th><th>Avvik</th><th>Brukt</th></tr></thead><tbody>';
     var tot = {};
     seksjoner.forEach(function(s){
       var sb = 0, sr = 0;
       h += '<tr class="seksjon"><td colspan="5">' + s[0] + '</td></tr>';
       var forrige = null;
-      s[1].forEach(function(k, i){
+      s[1].forEach(function(k){
         var g = gruppe(k);
         if(s[2] && g !== forrige){
           forrige = g;
           var kb = 0, krr = 0;
-          s[1].filter(function(x){ return gruppe(x) === g; }).forEach(function(x){ kb += okBuVerdi(x); krr += okBu.regnskap[x] || 0; });
+          s[1].filter(function(x){ return gruppe(x) === g; }).forEach(function(x){ kb += sumB(x); krr += sumR(x); });
           h += celler(okVask(g), kb, krr, true, 'kat');
         }
-        var b = okBuVerdi(k), r = okBu.regnskap[k] || 0;
+        var linjer = okBuLinjer(k), b = sumB(k), r = sumR(k);
         sb += b; sr += r;
-        var inp = okBu.redigerer ? '<input inputmode="numeric" data-k="' + okVask(k) + '" id="ok-bu-' + i + '-' + s[0] + '" aria-label="Budsjett for ' + okVask(k) + '" value="' + (b || '') + '"'
-          + (okBu.utkast && okBu.utkast[k] != null && okBu.utkast[k] !== (okBu.standard[k] || 0) ? ' class="endret"' : '') + '>' : '';
-        h += celler(okVask(k.split(' · ')[1] || k), b, r, s[2], 'under', inp);
+        var navn = okVask(k.split(' · ')[1]);
+        if(!linjer.length){ h += celler(navn + fjern(k), b, r, s[2], 'under', felt(k)); return; }
+        var apen = okBu.redigerer || !!okBu.apne[k];
+        h += celler('<button type="button" class="ok-bu-pil" data-p="' + okVask(k) + '" aria-expanded="' + apen + '" aria-label="Vis linjene under ' + navn + '">›</button>' + navn
+          + ' <span class="ok-meta">· ' + linjer.length + (linjer.length === 1 ? ' linje' : ' linjer') + '</span>', b, r, s[2], 'under', '');
+        if(!apen) return;
+        linjer.forEach(function(l){ h += celler(okVask(l.split(' · ')[2]) + fjern(l), okBuVerdi(l), okBu.regnskap[l] || 0, s[2], 'linje', felt(l)); });
+        if(okBu.redigerer || okBuVerdi(k) || okBu.regnskap[k]) h += celler('Uten linje', okBuVerdi(k), okBu.regnskap[k] || 0, s[2], 'linje', felt(k));
       });
       h += celler('Sum ' + s[0].toLowerCase(), sb, sr, s[2], 'sum');
       tot[s[0]] = [sb, sr];
@@ -869,7 +907,61 @@ body::before{ display:none; }
       });
       inp.addEventListener('change', function(){ var id = inp.id; okBuTegn(); var f = document.getElementById(id); if(f) f.focus(); });
     });
+    tab.querySelectorAll('.ok-bu-pil').forEach(function(b){
+      b.addEventListener('click', function(){ if(okBu.redigerer) return; okBu.apne[b.dataset.p] = !okBu.apne[b.dataset.p]; okBuTegn(); });
+    });
+    tab.querySelectorAll('.ok-bu-fjern').forEach(function(b){ b.addEventListener('click', function(){ okBuFjern(b.dataset.fjern); }); });
+    okBuNyTegn();
     okBuKnapper();
+  }
+
+  /* Nye poster og linjer lagres med en gang - de er oppsett, ikke tall.
+     Tallene foelger budsjettets Lagre som foer. */
+  function okBuKategorierFra(r){
+    okBu.kategorier = r.kategorier; okBu.egne = r.egne || [];
+    okBuTegn();
+  }
+  function okBuNyTegn(){
+    var boks = document.getElementById('ok-bu-ny');
+    boks.hidden = !okBu.redigerer;
+    if(!okBu.redigerer) return;
+    var velg = document.getElementById('ok-bu-ny-under'), var0 = velg.value;
+    velg.innerHTML = '';
+    var grupper = [];
+    okBu.kategorier.forEach(function(k){ var g = k.split(' · ')[0]; if(grupper.indexOf(g) === -1) grupper.push(g); });
+    grupper.forEach(function(g){
+      var og = document.createElement('optgroup'); og.label = g;
+      og.appendChild(new Option('Ny post i ' + g, g));
+      okBu.kategorier.filter(function(k){ return k.split(' · ').length === 2 && k.split(' · ')[0] === g; })
+        .forEach(function(k){ og.appendChild(new Option('Ny linje under ' + k.split(' · ')[1], k)); });
+      velg.appendChild(og);
+    });
+    if(var0) velg.value = var0;
+  }
+  document.getElementById('ok-bu-ny-legg').addEventListener('click', function(){
+    var navn = document.getElementById('ok-bu-ny-navn'), melding = document.getElementById('ok-bu-ny-melding');
+    var under = document.getElementById('ok-bu-ny-under').value;
+    if(!navn.value.trim()){ melding.textContent = 'Skriv et navn først.'; navn.focus(); return; }
+    melding.textContent = 'Legger til …';
+    okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'kategori-ny', nye:[{ forelder:under, navn:navn.value }] }) })
+      .then(function(r){
+        if(!r.ok){ melding.textContent = 'Ble ikke lagt til: ' + r.feil; return; }
+        melding.textContent = r.nye.length ? '«' + r.nye[0].split(' · ').slice(1).join(' · ') + '» er lagt til. Fyll inn beløpet i tabellen.' : 'Den finnes fra før.';
+        navn.value = '';
+        okBuKategorierFra(r);
+      });
+  });
+  document.getElementById('ok-bu-ny-navn').addEventListener('keydown', function(e){ if(e.key === 'Enter') document.getElementById('ok-bu-ny-legg').click(); });
+  function okBuFjern(k){
+    var melding = document.getElementById('ok-bu-ny-melding');
+    okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'kategori-slett', kategori:k }) })
+      .then(function(r){
+        if(!r.ok){ melding.textContent = r.feil; return; }
+        if(okBu.utkast) delete okBu.utkast[k];
+        delete okBu.standard[k];
+        melding.textContent = '«' + k.split(' · ').slice(1).join(' · ') + '» er fjernet.';
+        okBuKategorierFra(r);
+      });
   }
 
   function okBuEndret(){
@@ -922,6 +1014,36 @@ body::before{ display:none; }
     ['Felles fritid · TV/streaming','K19','J19','TV'], ['Felles fritid · Forsikring','K20','J20','FORSIKRING'], ['Felles fritid · Annet','K21','J21','ANNET'],
     ['Andre utgifter · Magne','K26','J26','MAGNE'], ['Andre utgifter · Nina','K27','J27','NINA'], ['Andre utgifter · Felles','K28','J28','FELLES']
   ];
+  /* Linjene under postene: radene som postens SUM-formel i kolonne E
+     dekker. Raden foran er posten selv og kontrolleres som over. Navnene
+     hentes fra arket - de staar ikke her (repoet er offentlig). Har en post
+     bare én linje, blir beloepet staaende paa posten. */
+  var OK_EXCEL_LINJER = [
+    ['Bolig · Boliglån', 36, 39, 'BOLIGL'], ['Bolig · Boligforsikringer', 41, 42, 'FORSIKRING'], ['Bolig · Strøm', 44, 46, 'STR'],
+    ['Bolig · Kommunale avgifter', 48, 50, 'KOMUNALE'], ['Bolig · Annet', 52, 59, 'ANNET'],
+    ['Bil · Utgifter PHEV', 72, 76, 'UTGIFTER PHEV'], ['Bil · Utgifter Suzuki', 78, 82, 'UTGIFTER SUZUKI'], ['Bil · Annet', 84, 90, 'ANNET'],
+    ['Barna · Felles', 108, 112, 'FELLES'], ['Barna · Emma', 114, 118, 'EMMA'], ['Barna · Andrea', 120, 124, 'ANDREA'], ['Barna · Annet', 126, 129, 'ANNET'],
+    ['Felles fritid · TV/streaming', 139, 146, 'TV'], ['Felles fritid · Forsikring', 148, 148, 'FORSIKRING'], ['Felles fritid · Annet', 150, 155, 'ANNET'],
+    ['Andre utgifter · Magne', 161, 167, 'MAGNE'], ['Andre utgifter · Nina', 169, 179, 'NINA'], ['Andre utgifter · Felles', 181, 185, 'FELLES'],
+    ['Mat · Dagligvare', 192, 197, 'DAGLIGVARE'], ['Mat · Takeaway', 199, 202, 'TAKEAWAY'], ['Mat · Annet', 204, 207, 'ANNET'],
+    ['Sparing · Annet', 225, 236, 'ANNET'], ['Inntekter · Magne', 253, 257, 'MAGNE'], ['Inntekter · Nina', 259, 263, 'NINA']
+  ];
+  /* «UKEPENGER EMMA» under Emma blir «Ukepenger». Korte ord som SPK og
+     HBO, og ord med tall, beholder store bokstaver. Parentesen med
+     betalingsmaanedene («(1,4,7,10)») tas bort. */
+  function okExcelNavn(tekst, post){
+    var eier = post.split(' · ')[1].toUpperCase();
+    var ord = String(tekst).replace(/\([^)]*\)/g, ' ').trim().replace(/\s+/g, ' ').split(' ');
+    if(ord.length > 1 && ord[ord.length - 1].toUpperCase() === eier) ord.pop();
+    var smaa = ['AV', 'OG', 'I', 'PÅ', 'TIL', 'FOR', 'MED'];
+    var ut = ord.map(function(w){
+      return w.split('/').map(function(d){
+        if(/\d/.test(d) || (d.length <= 3 && /^[A-ZÆØÅ]+$/.test(d) && smaa.indexOf(d) === -1) || d === 'PHEV') return d;
+        return d.toLowerCase();
+      }).join('/');
+    }).join(' ').replace(/\s*-\s*/g, ' – ');
+    return ut.charAt(0).toUpperCase() + ut.slice(1);
+  }
   function okLastXlsx(){
     if(window.XLSX) return Promise.resolve();
     return new Promise(function(ok, nei){
@@ -942,9 +1064,29 @@ body::before{ display:none; }
       var feil = OK_EXCEL.filter(function(m){ return String((ark[m[2]] || {}).v || '').toUpperCase().indexOf(m[3]) !== 0; });
       if(feil.length) throw new Error('Arket ser annerledes ut enn ventet (' + feil.map(function(m){ return m[2]; }).join(', ') + '). Ingenting er fylt inn.');
       OK_EXCEL.forEach(function(m){ okBu.utkast[m[0]] = Math.round(Number((ark[m[1]] || {}).v) || 0); });
-      meta.textContent = 'Fylt inn fra Excel-arket. Sjekk tallene og trykk Lagre.';
-      okBuTegn();
-    }).catch(function(e){ meta.textContent = String(e && e.message || e); })
+      if(String((ark.B265 || {}).v || '').toUpperCase().indexOf('STR') === 0) okBu.utkast['Inntekter · Strømstøtte'] = Math.round(Number((ark.E265 || {}).v) || 0);
+      /* Linjene: kontrollen foerst, saa opprettes de som mangler, saa fylles tallene inn. */
+      var lfeil = OK_EXCEL_LINJER.filter(function(m){ return String((ark['B' + (m[1] - 1)] || {}).v || '').toUpperCase().indexOf(m[3]) !== 0; });
+      if(lfeil.length) throw new Error('Linjene i arket ser annerledes ut enn ventet (rad ' + lfeil.map(function(m){ return m[1] - 1; }).join(', ') + '). Postene er fylt inn, linjene ikke.');
+      var nye = [], tall = {};
+      OK_EXCEL_LINJER.forEach(function(m){
+        var rader = [];
+        for(var r = m[1]; r <= m[2]; r++){
+          var navn = String((ark['B' + r] || {}).v || '').trim();
+          if(navn) rader.push({ navn:okExcelNavn(navn, m[0]), belop:Math.round(Number((ark['E' + r] || {}).v) || 0) });
+        }
+        if(rader.length < 2) return;
+        okBu.utkast[m[0]] = 0;
+        rader.forEach(function(x){ nye.push({ forelder:m[0], navn:x.navn }); tall[m[0] + ' · ' + x.navn] = x.belop; });
+      });
+      return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'kategori-ny', nye:nye }) }).then(function(r){
+        if(!r.ok) throw new Error('Linjene ble ikke lagt til: ' + r.feil + '. Postene er fylt inn.');
+        okBu.kategorier = r.kategorier; okBu.egne = r.egne || [];
+        Object.keys(tall).forEach(function(k){ if(okBu.kategorier.indexOf(k) !== -1) okBu.utkast[k] = tall[k]; });
+        meta.textContent = 'Fylt inn fra Excel-arket, med ' + nye.length + ' linjer under postene. Sjekk tallene og trykk Lagre.';
+        okBuTegn();
+      });
+    }).catch(function(e){ meta.textContent = String(e && e.message || e); if(okBu.redigerer) okBuTegn(); })
       .then(function(){ inp.value = ''; });
   });
 
