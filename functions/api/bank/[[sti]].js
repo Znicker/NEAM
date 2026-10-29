@@ -720,7 +720,7 @@ async function varsler(env, okt){
     dobbel: venter.filter(p => p.mulDobbel).length,
     eldste: venter.reduce((m, p) => !m || String(p.dato) < m ? String(p.dato) : m, '')
   };
-  if(tf) ut.push({ type:'trumf', tekst: tf.kode === 'innlogging' ? 'Trumf trenger ny innlogging' : 'Trumf-hentingen virker ikke – sida er trolig endret' });
+  if(tf) ut.push({ type:'trumf', tekst: tf.kode === 'innlogging' ? 'Trumf trenger ny innlogging' : 'Trumf-hentingen virker ikke: ' + tf.feil });
   if(!okt) ut.push({ type:'bank', tekst:'Banken er ikke koblet' });
   else{
     const dager = okt.gyldigTil ? Math.floor((Date.parse(okt.gyldigTil) - Date.now()) / 86400000) : null;
@@ -748,10 +748,15 @@ async function kilder(env, okt){
   }
   const sist = await lesJson(env, SIST_HENTET_NOKKEL, null);
   const trumf = await lesJson(env, TRUMF_NOKKEL, null);
+  /* Trumf-feilen fra foer bufferen husket feil, saa lenge ingen
+     vellykket henting har kommet etter den. */
+  const tb = trumf ? await buffer('trumf:liste') : null;
+  const tf = await lesJson(env, TRUMF_FEIL_NOKKEL, null);
+  const trumfFeil = (tb && tb.feil) || (tf && (!tb || !tb.hentet || tf.tid > tb.hentet) ? tf.feil : undefined);
   return svar({ ok:true, intervall:BUFFER_TID,
     dnb: okt ? { koblet:true, gyldigTil:okt.gyldigTil || '' } : { koblet:false },
     vekker: (sist && sist.tid) || null, kontoer:kontoer,
-    trumf: trumf ? Object.assign({ koblet:true }, await buffer('trumf:liste')) : { koblet:false } });
+    trumf: trumf ? Object.assign({ koblet:true }, tb, { feil:trumfFeil }) : { koblet:false } });
 }
 
 /* ---------- Budsjett og regnskap ----------
