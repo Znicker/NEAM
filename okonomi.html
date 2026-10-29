@@ -89,6 +89,8 @@ body::before{ display:none; }
 }
 .ok-konto select:focus{ outline:none; border-color:var(--aksent); }
 .ok-konto.lagrer select{ opacity:.6; }
+.ok-navnfelt{ width:100%; font-family:inherit; font-size:16px; padding:6px 10px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
+.ok-navnfelt:focus{ outline:none; border-color:var(--aksent); }
 
 /* ---------- Innboksen ----------
    Samme oppbygning som innboksen i skissen: poster med forslag teller med
@@ -437,13 +439,56 @@ body::before{ display:none; }
     });
   }
 
+  /* Eget navn paa kontoen. DNB sender ikke navnene fra nettbanken gjennom
+     open banking, saa de gis her; banknavnet staar under som stoette. */
+  var okNavnApen = null;
+  function okKontoNavn(k){
+    var boks = okEl('div', '', '');
+    var meta = (k.slutt ? '•••• ' + okVask(k.slutt) : '')
+      + (k.bankNavn && k.bankNavn !== k.navn ? ' · i banken: ' + okVask(k.bankNavn) : (k.produkt && k.produkt !== k.navn ? ' · ' + okVask(k.produkt) : ''))
+      + (k.feil ? ' · saldo mangler' : '');
+    if(okNavnApen !== k.uid){
+      boks.innerHTML = '<div class="ok-navn">' + okVask(k.navn || 'Uten navn') + '</div><p class="ok-meta">' + meta + '</p>';
+      var endre = okEl('button', 'ok-lenke', 'Endre navn'); endre.type = 'button'; endre.style.padding = '0';
+      endre.addEventListener('click', function(){ okNavnApen = k.uid; okTegnKontoer(); var f = document.getElementById('ok-navn-' + k.uid); if(f){ f.focus(); f.select(); } });
+      boks.appendChild(endre);
+      return boks;
+    }
+    var felt = document.createElement('input');
+    felt.className = 'ok-navnfelt'; felt.id = 'ok-navn-' + k.uid; felt.value = k.navn || '';
+    felt.placeholder = k.bankNavn || 'Navn på kontoen'; felt.setAttribute('aria-label', 'Navn på kontoen');
+    var rad = okEl('div', 'ok-rad-knapper', ''); rad.style.marginTop = '6px';
+    var lagre = okEl('button', 'btn btn-ny', 'Lagre'); lagre.type = 'button';
+    var avbryt = okEl('button', 'btn btn-ghost ok-smal', 'Avbryt'); avbryt.type = 'button';
+    var lukk = function(){ okNavnApen = null; okTegnKontoer(); };
+    var lagreNavn = function(){
+      lagre.disabled = true;
+      okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'kontonavn', uid:k.uid, navn:felt.value }) })
+        .then(function(r){
+          lagre.disabled = false;
+          if(!r.ok){ document.getElementById('ok-lagret').textContent = 'Navnet ble ikke lagret: ' + r.feil; return; }
+          k.navn = r.navn || k.bankNavn;
+          document.getElementById('ok-lagret').textContent = r.navn ? 'Kontoen heter nå «' + r.navn + '».' : 'Kontoen bruker navnet fra banken igjen.';
+          lukk();
+          /* Navnet brukes ogsaa i innboksen og i familiemaalet. */
+          okTegnFormue(); okTegnFormueSkjema(); okLastInnboks();
+        });
+    };
+    lagre.addEventListener('click', lagreNavn);
+    /* Avbryt spoer ikke: et navn er raskt skrevet paa nytt (Avbryt-regelen). */
+    avbryt.addEventListener('click', lukk);
+    felt.addEventListener('keydown', function(e){ if(e.key === 'Enter') lagreNavn(); else if(e.key === 'Escape') lukk(); });
+    boks.appendChild(felt);
+    boks.appendChild(okEl('p', 'ok-meta', meta + ' · tomt felt gir navnet fra banken'));
+    rad.appendChild(lagre); rad.appendChild(avbryt);
+    boks.appendChild(rad);
+    return boks;
+  }
+
   function okKontoRad(k){
     var rad = okEl('div', 'ok-konto');
     var id = 'ok-rolle-' + k.uid;
-    rad.appendChild(okEl('div', '',
-      '<div class="ok-navn">' + okVask(k.navn || 'Uten navn') + '</div>'
-      + '<p class="ok-meta">' + (k.slutt ? '•••• ' + okVask(k.slutt) : '') + (k.produkt && k.produkt !== k.navn ? ' · ' + okVask(k.produkt) : '')
-      + (k.feil ? ' · saldo mangler' : '') + '</p>'));
+    rad.appendChild(okKontoNavn(k));
     rad.appendChild(okEl('div', 'ok-saldo', typeof k.saldo === 'number' ? okKr.format(k.saldo) + ' kr' : '–'));
     var s = document.createElement('select');
     s.id = id;

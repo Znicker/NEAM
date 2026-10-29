@@ -22,6 +22,7 @@
      GET /api/bank?hva=regnskap-aar     - godkjente poster per maaned og kategori, hele perioden
      GET /api/bank?hva=formue / POST {hva:'formue', verdier, gjeld, maal} - det banken ikke gir
      POST /api/bank {hva:'forslag', forslag:[{id, kategori, sikker}]}    - Neams kategoriforslag
+     POST /api/bank {hva:'kontonavn', uid, navn}                         - eget navn paa en konto (tomt fjerner)
      GET /api/bank?hva=hent             - vekker hentingen; ogsaa kitchen@, svarer ingenting om innholdet
      GET /api/bank?hvem=1              - diagnose: hvilke identitetskilder finnes
      POST /api/bank {hva:'roller'}     - setter rollen paa kontoer
@@ -66,6 +67,7 @@
      auth:bank:sist-hentet     - naar vekkeren sist hentet
      auth:bank:trumf-feil      - siste Trumf-feil (slettes naar hentingen virker igjen)
      auth:bank:formue          - verdier, gjeld og familiemaal, fylt inn for haand
+     auth:bank:kontonavn       - { <konto-uid>: eget navn } - DNB sender ikke nettbanknavnene
      auth:bank:budsjett        - standardbudsjettet { kategori: kr per maaned } - ALDRI i koden,
                                  repoet er offentlig
    `/api/data` slipper familien til alt under `fh:`. Kontoer og
@@ -96,6 +98,9 @@ const TRUMF_FEIL_NOKKEL = 'auth:bank:trumf-feil';
    emma/andrea -> barnas sider, sparing -> formuen, ignorer -> ingen steder. */
 const ROLLER = ['felles', 'magne', 'nina', 'sparing', 'emma', 'andrea', 'ignorer'];
 const ROLLE_NOKKEL = 'auth:bank:roller';
+/* Egne navn paa kontoene. DNB sender ikke navnene man har satt i nettbanken
+   gjennom open banking - bare produktnavn - saa de gis i Neam (Oppsett). */
+const KONTONAVN_NOKKEL = 'auth:bank:kontonavn';
 
 const NOKKEL = 'auth:bank:hus';
 const BUFFER_TID = 6 * 3600 * 1000;
@@ -311,11 +316,12 @@ async function lesRoller(env){
 
 async function kontoer(env, okt, fersk){
   const roller = await lesRoller(env);
+  const navn = await lesJson(env, KONTONAVN_NOKKEL, {});
   const ut = [];
   let eldst = Date.now(), advarsel = '';
   for(const k of okt.kontoer){
     const r = await medBuffer(env, 'saldo:' + k.uid, fersk, () => eb(env, 'GET', '/accounts/' + encodeURIComponent(k.uid) + '/balances'));
-    if(!r.ok){ ut.push(Object.assign({}, k, { rolle:roller[k.uid] || '', feil:r.feil })); continue; }
+    if(!r.ok){ ut.push(Object.assign({}, k, { navn:navn[k.uid] || k.navn, bankNavn:k.navn, rolle:roller[k.uid] || '', feil:r.feil })); continue; }
     if(r.advarsel) advarsel = r.advarsel;
     eldst = Math.min(eldst, r.hentet);
     const saldoer = (r.data && r.data.balances) || [];
@@ -324,6 +330,8 @@ async function kontoer(env, okt, fersk){
     saldoer.sort((a, b) => velg.indexOf(a.balance_type) - velg.indexOf(b.balance_type));
     const s = saldoer[0];
     ut.push(Object.assign({}, k, {
+      navn: navn[k.uid] || k.navn,
+      bankNavn: k.navn,
       rolle: roller[k.uid] || '',
       saldo: s ? Number(s.balance_amount.amount) : null,
       saldoType: s ? s.balance_type : '',
@@ -555,8 +563,25 @@ async function innboks(env, okt, fersk){
   const grense = new Date(Date.now() - 14 * 86400000).toISOString();
   const auto = alle.filter(p => p.status === 'godkjent' && p.auto && (p.behandlet || '') >= grense)
     .sort((a, b) => b.dato.localeCompare(a.dato)).slice(0, 60);
+  /* Egne kontonavn i svaret - postene har navnet fra da de kom inn. */
+  const kn = await lesJson(env, KONTONAVN_NOKKEL, {});
+  const medNavn = p => {
+    const ut = Object.assign({}, p);
+    if(kn[p.konto]) ut.kontoNavn = kn[p.konto];
+    if(p.bankId && poster[p.bankId] && kn[poster[p.bankId].konto]) ut.bankKonto = kn[poster[p.bankId].konto];
+    return ut;
+  };
   return svar({ ok:true, hentet:hentet, advarsel:advarsel || undefined, fra:fra, kontoer:felles.length, trumf:trumfKoblet,
-    kategorier:KATEGORIER, poster:venter, auto:auto, godkjent:alle.filter(p => p.status === 'godkjent').length });
+    kategorier:KATEGORIER, poster:venter.map(medNavn), auto:auto.map(medNavn), godkjent:alle.filter(p => p.status === 'godkjent').length });
+}
+async function lagreKontonavn(env, kropp){
+  const okt = await lesOekt(env);
+  if(!okt || !okt.kontoer.some(k => k.uid === kropp.uid)) return svar({ ok:false, feil:'Ukjent konto' });
+  const navn = await lesJson(env, KONTONAVN_NOKKEL, {});
+  const nytt = String(kropp.navn || '').trim().slice(0, 50);
+  if(nytt) navn[kropp.uid] = nytt; else delete navn[kropp.uid];
+  await env.FAMILIE_KV.put(KONTONAVN_NOKKEL, JSON.stringify(navn));
+  return svar({ ok:true, navn:nytt || null });
 }
 function autoFoer(poster, p, naa){
   Object.assign(p, { status:'godkjent', auto:true, behandlet:naa, av:'neam' });
@@ -1118,6 +1143,7 @@ export async function onRequestPost({ request, env }){
   if(kropp && kropp.hva === 'budsjett') return await lagreBudsjett(env, kropp, v.epost);
   if(kropp && kropp.hva === 'formue') return await lagreFormue(env, kropp, v.epost);
   if(kropp && kropp.hva === 'forslag') return await lagreForslag(env, kropp);
+  if(kropp && kropp.hva === 'kontonavn') return await lagreKontonavn(env, kropp);
   if(kropp && kropp.hva === 'trumf-koble-fra'){
     await env.FAMILIE_KV.delete(TRUMF_NOKKEL);
     await env.FAMILIE_KV.delete('auth:bank:buffer:trumf:liste');
