@@ -338,6 +338,7 @@ async function kontoer(env, okt, fersk){
       hentet: r.hentet
     }));
   }
+  await formuePunkt(env, ut);
   return svar({ ok:true, hentet:eldst, advarsel:advarsel || undefined, kontoer:ut });
 }
 
@@ -629,13 +630,21 @@ async function varsler(env, okt){
   const ut = [];
   if(venter.length) ut.push({ type:'innboks', tekst:venter.length + (venter.length === 1 ? ' post venter' : ' poster venter') + ' på godkjenning'
     + (uten ? ', ' + uten + ' uten kategori' : '') });
+  /* Til Status-kortet «Til godkjenning»: hvor sikker Neam er paa det som venter. */
+  const innboks = {
+    forslag: venter.filter(p => p.kategori && p.kilde !== 'ai-usikker' && !p.mulDobbel).length,
+    usikker: venter.filter(p => p.kategori && p.kilde === 'ai-usikker' && !p.mulDobbel).length,
+    uten: venter.filter(p => !p.kategori && !p.mulDobbel).length,
+    dobbel: venter.filter(p => p.mulDobbel).length,
+    eldste: venter.reduce((m, p) => !m || String(p.dato) < m ? String(p.dato) : m, '')
+  };
   if(tf) ut.push({ type:'trumf', tekst: tf.kode === 'innlogging' ? 'Trumf trenger ny innlogging' : 'Trumf-hentingen virker ikke – sida er trolig endret' });
   if(!okt) ut.push({ type:'bank', tekst:'Banken er ikke koblet' });
   else{
     const dager = okt.gyldigTil ? Math.floor((Date.parse(okt.gyldigTil) - Date.now()) / 86400000) : null;
     if(dager != null && dager <= 14) ut.push({ type:'samtykke', tekst: dager < 0 ? 'DNB-samtykket har gått ut' : 'DNB-samtykket går ut om ' + dager + (dager === 1 ? ' dag' : ' dager') });
   }
-  return svar({ ok:true, varsler:ut, sistHentet:sist && sist.tid });
+  return svar({ ok:true, varsler:ut, innboks:innboks, sistHentet:sist && sist.tid });
 }
 
 /* ---------- Budsjett og regnskap ----------
@@ -691,7 +700,25 @@ async function regnskapAar(env){
 const FORMUE_NOKKEL = 'auth:bank:formue';
 async function formue(env){
   const f = await lesJson(env, FORMUE_NOKKEL, {});
-  return svar({ ok:true, verdier:f.verdier || [], gjeld:f.gjeld || [], maal:f.maal || null });
+  return svar({ ok:true, verdier:f.verdier || [], gjeld:f.gjeld || [], maal:f.maal || null,
+    historikk:await lesJson(env, FORMUE_MND_NOKKEL, {}) });
+}
+/* Netto formue per maaned, slik at Status kan vise endringen siden forrige
+   maaned. Siste tall i maaneden vinner; det skrives hver gang kontoene
+   hentes og tallet har endret seg. Samme regnestykke som sida gjoer:
+   verdier + saldo paa «sparing»-kontoene - gjeld. */
+const FORMUE_MND_NOKKEL = 'auth:bank:formue-mnd';
+async function formuePunkt(env, kontoliste){
+  const f = await lesJson(env, FORMUE_NOKKEL, {});
+  const verdier = f.verdier || [], gjeld = f.gjeld || [];
+  const sparing = kontoliste.filter(k => k.rolle === 'sparing' && typeof k.saldo === 'number');
+  if(!verdier.length && !gjeld.length && !sparing.length) return;
+  const netto = Math.round(verdier.reduce((s, v) => s + v.belop, 0) + sparing.reduce((s, k) => s + k.saldo, 0) - gjeld.reduce((s, g) => s + g.belop, 0));
+  const hist = await lesJson(env, FORMUE_MND_NOKKEL, {});
+  const mnd = new Date().toISOString().slice(0, 7);
+  if(hist[mnd] === netto) return;
+  hist[mnd] = netto;
+  await env.FAMILIE_KV.put(FORMUE_MND_NOKKEL, JSON.stringify(hist));
 }
 async function lagreFormue(env, kropp, epost){
   const rad = (r, medRente) => {
