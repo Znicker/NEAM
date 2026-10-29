@@ -262,6 +262,9 @@ body::before{ display:none; }
 .ok-lenke-stor{ font-size:var(--t-brod); align-self:flex-start; }
 .ok-kilder{ display:flex; flex-direction:column; gap:8px; }
 .ok-kilde-rad{ display:flex; justify-content:space-between; gap:4px 12px; flex-wrap:wrap; align-items:center; }
+.ok-kilde-rad .ok-kilde-feil{ flex-basis:100%; margin:0; }
+.ok-kilder .ok-etikett{ margin-top:6px; }
+.ok-kilde-forklar{ display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:4px; }
 .ok-stort{ font-size:34px; font-weight:700; line-height:1.05; }
 .ok-stort small{ font-size:var(--t-brod); color:var(--ink-soft); font-weight:600; }
 .ok-fram{ position:relative; height:12px; background:var(--boks-mild); border-radius:999px; }
@@ -658,7 +661,7 @@ body::before{ display:none; }
       okTegnAuto(r.auto || []);
       /* Innboksen kan ha foert poster automatisk - varslene og Status
          hentes paa nytt, ellers viser de tall fra foer foeringen. */
-      okVarslerLast(); okStatusLast();
+      okVarslerLast(); okStatusLast(); okKilderLast();
       okNeamKategoriser();
     });
   }
@@ -1447,7 +1450,7 @@ body::before{ display:none; }
   /* ---------- Status ----------
      Kortene hentes hver for seg og tegnes naar tallene de trenger er
      kommet. okSt samler det flere kort deler. */
-  var okSt = { varsler:null, trumf:null, dnb:undefined, bud:null, mnd:null, aar:null };
+  var okSt = { varsler:null, trumf:null, dnb:undefined, bud:null, mnd:null, aar:null, kilder:null };
   var okKrHel = function(n){ return okKr0.format(Math.round(n)).replace(/,00$/, ''); };
   /* «i dag 06:12», «i går 06:10», ellers datoen. */
   function okNaar(t){
@@ -1488,21 +1491,44 @@ body::before{ display:none; }
       b.addEventListener('click', function(){ okVis('oppsett'); window.scrollTo(0, 0); });
       rad.appendChild(b); v.appendChild(rad);
     });
-    var rad = function(navn, tekst, klasse){ k.appendChild(okEl('div', 'ok-kilde-rad', '<b>' + okVask(navn) + '</b><span class="ok-fersk ' + klasse + '">' + okVask(tekst) + '</span>')); };
-    /* DNB: siste henting, enten herfra eller fra kjoekkenskjermens vekker. */
-    var dnb = Math.max(okSt.dnb || 0, (okSt.varsler && okSt.varsler.sistHentet) || 0);
-    if(okSt.dnb === false) rad('DNB', 'Ikke koblet', 'stopp');
-    else if(dnb) rad('DNB', 'Hentet ' + okNaar(dnb), okDagerSiden(dnb) > 1 ? 'gammel' : '');
-    else rad('DNB', 'Henter …', 'gammel');
-    var t = okSt.trumf;
-    if(t && !t.ok) rad('Trumf', 'Fikk ikke sjekket', 'stopp');
-    else if(t && !t.koblet) rad('Trumf', 'Ikke koblet', 'gammel');
-    else if(t && !t.virker) rad('Trumf', 'Virker ikke', 'stopp');
-    else if(t) rad('Trumf', 'Hentet ' + okNaar(t.hentet), okDagerSiden(t.hentet) > 1 ? 'gammel' : '');
+    var rad = function(navn, tekst, klasse, feil){
+      var r = okEl('div', 'ok-kilde-rad', '<b>' + okVask(navn) + '</b><span class="ok-fersk ' + klasse + '">' + okVask(tekst) + '</span>');
+      if(feil) r.appendChild(okEl('p', 'ok-meta ok-kilde-feil', okVask(feil)));
+      k.appendChild(r);
+    };
+    /* Fargen: groenn innenfor én runde (seks timer og litt), gul eldre
+       eller aldri hentet, roed naar siste forsoek feilet. */
+    var ks = okSt.kilder, runde = ((ks && ks.intervall) || 216e5) + 36e5;
+    var farge = function(tid){ return !tid || Date.now() - tid > runde ? 'gammel' : ''; };
+    var hentet = function(b){ return b && b.hentet ? okNaar(b.hentet) : 'aldri'; };
+    k.appendChild(okEl('span', 'ok-etikett', 'Automatisk'));
+    if(!ks) rad('DNB', 'Henter …', 'gammel');
+    else if(!ks.dnb.koblet) rad('DNB', 'Ikke koblet', 'stopp');
+    else{
+      var g = ks.dnb.gyldigTil ? Date.parse(ks.dnb.gyldigTil) : 0, dager = g ? Math.floor((g - Date.now()) / 864e5) : null;
+      rad('DNB-tilgang', g ? 'Gyldig til ' + okKort.format(new Date(g)) : 'Ukjent utløp', dager == null || dager <= 14 ? (dager != null && dager < 0 ? 'stopp' : 'gammel') : '');
+      rad('Kjøkkenskjermen', ks.vekker ? 'Hentet ' + okNaar(ks.vekker) + ' · hver ' + Math.round(ks.intervall / 36e5) + '. time' : 'Har ikke hentet ennå', farge(ks.vekker));
+      ks.kontoer.forEach(function(x){
+        var deler = [x.saldo, x.trans].filter(Boolean), feil = deler.filter(function(b){ return b.feil; })[0];
+        var tekst = 'Saldo ' + hentet(x.saldo) + (x.trans ? ' · transaksjoner ' + hentet(x.trans) : '');
+        var eldst = deler.length ? Math.min.apply(null, deler.map(function(b){ return b.hentet || 0; })) : 0;
+        rad(x.navn, tekst, feil ? 'stopp' : farge(eldst), feil && feil.feil);
+      });
+    }
+    if(ks){
+      var t = ks.trumf;
+      if(!t.koblet) rad('Trumf', 'Ikke koblet', 'gammel');
+      else rad('Trumf', 'Hentet ' + hentet(t), t.feil ? 'stopp' : farge(t.hentet), t.feil);
+    }
     rad('Coop', 'Venter på Coops nye Min side', 'gammel');
+    if(okFormue.verdier.length || okFormue.gjeld.length) k.appendChild(okEl('span', 'ok-etikett', 'Satt manuelt'));
     okFormue.verdier.concat(okFormue.gjeld).forEach(function(x){
       rad(x.navn, 'Satt manuelt ' + (x.dato ? okKort.format(new Date(x.dato + 'T12:00:00')) : ''), !x.dato || okDagerSiden(x.dato) > 31 ? 'gammel' : '');
     });
+    k.appendChild(okEl('div', 'ok-kilde-forklar', '<span class="ok-fersk">Ferskt</span><span class="ok-fersk gammel">Eldre enn ventet</span><span class="ok-fersk stopp">Feilet sist</span>'));
+  }
+  function okKilderLast(){
+    okHent('/api/bank?hva=kilder').then(function(r){ if(r.ok){ okSt.kilder = r; okTegnKilder(); } });
   }
 
   /* ---------- Status: denne maaneden ----------
@@ -1906,7 +1932,7 @@ body::before{ display:none; }
   okVarslerLast();
 
   okHent('/api/bank?hva=status').then(function(s){
-    if(!okVisStatus(s)){ if(s.ok && !s.koblet){ okSt.dnb = false; okTegnKilder(); } return; }
+    if(!okVisStatus(s)){ if(s.ok && !s.koblet){ okSt.dnb = false; okKilderLast(); } return; }
     okLastInnboks();
     okBuLast();
     okStatusLast();
@@ -1915,7 +1941,7 @@ body::before{ display:none; }
     okHent('/api/bank?hva=kontoer').then(function(r){
       if(!r.ok){ document.getElementById('ok-kontoer').innerHTML = '<p class="ok-melding feil">' + okVask(r.feil) + '</p>'; return; }
       okKontoer = r.kontoer || [];
-      okSt.dnb = r.hentet; okTegnKilder();
+      okSt.dnb = r.hentet; okKilderLast();
       /* Hvert tall viser hvor ferskt det er (planen). */
       document.getElementById('ok-hentet').textContent = 'Hentet kl. ' + okKlokke.format(new Date(r.hentet)) + (r.advarsel ? ' · ' + r.advarsel + ' – viser forrige henting' : '');
       okTegnKontoer();

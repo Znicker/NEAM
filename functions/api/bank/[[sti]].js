@@ -242,7 +242,10 @@ async function medBuffer(env, navn, fersk, hent){
   if(gammel && !fersk && Date.now() - gammel.hentet < BUFFER_TID) return Object.assign({ ok:true, fraBuffer:true }, gammel);
   const ny = await hent();
   if(!ny.ok){
-    if(gammel) return Object.assign({ ok:true, fraBuffer:true, advarsel:ny.feil }, gammel);
+    /* Feilen huskes i bufferen til neste vellykte henting, saa
+       kildeoversikten paa Status kan vise den. */
+    await env.FAMILIE_KV.put(nokkel, JSON.stringify(Object.assign({}, gammel, { feil:ny.feil, feilTid:Date.now() })));
+    if(gammel && gammel.hentet) return { ok:true, fraBuffer:true, advarsel:ny.feil, hentet:gammel.hentet, data:gammel.data };
     return ny;
   }
   const lagre = { hentet:Date.now(), data:ny.data };
@@ -724,6 +727,31 @@ async function varsler(env, okt){
     if(dager != null && dager <= 14) ut.push({ type:'samtykke', tekst: dager < 0 ? 'DNB-samtykket har gått ut' : 'DNB-samtykket går ut om ' + dager + (dager === 1 ? ' dag' : ' dager') });
   }
   return svar({ ok:true, varsler:ut, innboks:innboks, sistHentet:sist && sist.tid });
+}
+
+/* ---------- Kildene ----------
+   Oversikten paa Status: naar hver automatiske kilde sist ble hentet, og
+   siste feil. Leser bare KV - spoer aldri banken eller Trumf. */
+async function kilder(env, okt){
+  const roller = await lesRoller(env);
+  const navn = await lesJson(env, KONTONAVN_NOKKEL, {});
+  const fra = await env.FAMILIE_KV.get(FRA_NOKKEL);
+  const buffer = async n => {
+    const b = await lesJson(env, 'auth:bank:buffer:' + n, null);
+    return b ? { hentet:b.hentet || null, feil:b.feil, feilTid:b.feilTid } : null;
+  };
+  const kontoer = [];
+  for(const k of okt ? okt.kontoer : []){
+    const felles = roller[k.uid] === 'felles';
+    kontoer.push({ navn:navn[k.uid] || k.navn, rolle:roller[k.uid] || '', saldo:await buffer('saldo:' + k.uid),
+      trans: felles && fra ? await buffer('trans:' + k.uid + ':' + fra) : undefined });
+  }
+  const sist = await lesJson(env, SIST_HENTET_NOKKEL, null);
+  const trumf = await lesJson(env, TRUMF_NOKKEL, null);
+  return svar({ ok:true, intervall:BUFFER_TID,
+    dnb: okt ? { koblet:true, gyldigTil:okt.gyldigTil || '' } : { koblet:false },
+    vekker: (sist && sist.tid) || null, kontoer:kontoer,
+    trumf: trumf ? Object.assign({ koblet:true }, await buffer('trumf:liste')) : { koblet:false } });
 }
 
 /* ---------- Budsjett og regnskap ----------
@@ -1235,6 +1263,7 @@ export async function onRequestGet({ request, env }){
     }
     if(hva === 'banker') return await banker(env);
     if(hva === 'varsler') return await varsler(env, okt);
+    if(hva === 'kilder') return await kilder(env, okt);
     /* Trumf trenger ikke banken - den har sin egen innlogging. */
     if(hva === 'trumf') return await trumfStatus(env);
     if(hva === 'trumf-kjop'){
