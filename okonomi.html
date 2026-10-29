@@ -510,6 +510,9 @@ body::before{ display:none; }
         + okKlokke.format(new Date(r.hentet)) + (r.advarsel ? ' · banken svarte ikke, viser forrige henting' : '');
       okTegnInnboks();
       okTegnAuto(r.auto || []);
+      /* Innboksen kan ha foert poster automatisk - varslene og Status
+         hentes paa nytt, ellers viser de tall fra foer foeringen. */
+      okVarslerLast(); okStatusLast();
       okNeamKategoriser();
     });
   }
@@ -1115,7 +1118,14 @@ body::before{ display:none; }
       document.getElementById('ok-mnd-meta').textContent = r.poster + ' godkjente poster';
       boks.innerHTML = '';
       if(!bud){
-        boks.appendChild(okEl('p', 'ok-meta', 'Standardbudsjettet er tomt. Fyll det inn under Måned – «Rediger standardbudsjettet», så kan Neam vise hvordan måneden ligger an.'));
+        boks.appendChild(okEl('p', 'ok-meta', 'Standardbudsjettet er tomt. Når det er fylt inn, viser Neam hvordan måneden ligger an.'));
+        var fyll = okEl('button', 'btn btn-endre', 'Fyll inn budsjettet'); fyll.type = 'button'; fyll.style.alignSelf = 'flex-start';
+        fyll.addEventListener('click', function(){
+          okVis('maaned'); window.scrollTo(0, 0);
+          if(!okBu.redigerer){ okBu.redigerer = true; okBu.utkast = {}; okBuTegn(); }
+        });
+        boks.style.display = 'flex'; boks.style.flexDirection = 'column'; boks.style.gap = '10px';
+        boks.appendChild(fyll);
         return;
       }
       var topp = okEl('div', '', '<div class="ok-stort">' + okKr0.format(Math.round(brukt)).replace(/,00$/, '') + ' <small>kr brukt av ' + okKr0.format(bud).replace(/,00$/, '') + '</small></div>'
