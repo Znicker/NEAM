@@ -653,7 +653,7 @@ body::before{ display:none; }
          til noen tar den med - heller én for lite enn én dobbelt. */
       okPoster = (r.poster || []).map(function(p){ p.ute = !!p.mulDobbel; p.linjeKat = {}; p.apen = false; return p; });
       document.getElementById('ok-innboks-meta').textContent = 'Fra ' + okKort.format(new Date(r.fra)) + ' · hentet kl. '
-        + okKlokke.format(new Date(r.hentet)) + (r.advarsel ? ' · banken svarte ikke, viser forrige henting' : '');
+        + okKlokke.format(new Date(r.hentet)) + (r.advarsel ? ' · ' + r.advarsel + ' – viser forrige henting' : '');
       okTegnInnboks();
       okTegnAuto(r.auto || []);
       /* Innboksen kan ha foert poster automatisk - varslene og Status
@@ -1917,7 +1917,7 @@ body::before{ display:none; }
       okKontoer = r.kontoer || [];
       okSt.dnb = r.hentet; okTegnKilder();
       /* Hvert tall viser hvor ferskt det er (planen). */
-      document.getElementById('ok-hentet').textContent = 'Hentet kl. ' + okKlokke.format(new Date(r.hentet)) + (r.advarsel ? ' · banken svarte ikke, viser forrige henting' : '');
+      document.getElementById('ok-hentet').textContent = 'Hentet kl. ' + okKlokke.format(new Date(r.hentet)) + (r.advarsel ? ' · ' + r.advarsel + ' – viser forrige henting' : '');
       okTegnKontoer();
       okFormueLast();
     });
