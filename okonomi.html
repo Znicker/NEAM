@@ -54,6 +54,7 @@ body::before{ display:none; }
 }
 .ok-topp{ display:flex; align-items:baseline; justify-content:space-between; gap:8px 16px; flex-wrap:wrap; }
 .ok-topp h1{ margin:0; font-size:var(--t-stor); font-weight:700; }
+.ok-topp-hoyre{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; max-width:100%; }
 .ok-etikett{ font-size:var(--t-etikett); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); }
 .ok-meta{ font-size:var(--t-meta); color:var(--ink-soft); margin:0; }
 
@@ -338,6 +339,7 @@ body::before{ display:none; }
 <div class="ok-ramme">
   <header class="ok-topp">
     <h1>Økonomi</h1>
+    <div class="ok-topp-hoyre">
     <nav class="ok-faner" role="tablist" aria-label="Visning">
       <button type="button" class="ok-fane" role="tab" id="ok-fane-status" data-vis="status">Status</button>
       <button type="button" class="ok-fane" role="tab" id="ok-fane-innboks" data-vis="innboks">Innboks<span class="ok-fane-tall" id="ok-fane-tall"></span></button>
@@ -345,6 +347,8 @@ body::before{ display:none; }
       <button type="button" class="ok-fane" role="tab" id="ok-fane-aar" data-vis="aar">År</button>
       <button type="button" class="ok-fane" role="tab" id="ok-fane-oppsett" data-vis="oppsett">Oppsett</button>
     </nav>
+    <button type="button" class="btn btn-blaa" id="ok-oppdater">Oppdater</button>
+    </div>
   </header>
 
   <!-- ===== STATUS ===== -->
@@ -638,11 +642,12 @@ body::before{ display:none; }
     return raa.replace(/[0-9*#.,:\/\\-]+/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
-  function okLastInnboks(){
+  /* fersk: hent fra banken og Trumf naa, ikke fra bufferen (aapning og Oppdater). */
+  function okLastInnboks(fersk){
     var kort = document.getElementById('ok-innboks-kort');
     kort.hidden = false;
     document.getElementById('ok-innboks').innerHTML = '<p class="ok-meta">Henter transaksjonene …</p>';
-    okHent('/api/bank?hva=innboks').then(function(r){
+    return okHent('/api/bank?hva=innboks' + (fersk ? '&fersk=1' : '')).then(function(r){
       var boks = document.getElementById('ok-innboks');
       if(!r.ok){ boks.innerHTML = '<p class="ok-melding feil">' + okVask(r.feil) + '</p>'; document.getElementById('ok-bunn').hidden = true; return; }
       okKategorier = r.kategorier || [];
@@ -1312,8 +1317,8 @@ body::before{ display:none; }
      feltet fra trumf.no, som man limer inn selv - Neam ser aldri passordet. */
   var okTrumfSkjema = false;
 
-  function okTrumfStatus(){
-    okHent('/api/bank?hva=trumf').then(okTegnTrumf);
+  function okTrumfStatus(fersk){
+    return okHent('/api/bank?hva=trumf' + (fersk ? '&fersk=1' : '')).then(okTegnTrumf);
   }
 
   function okTegnTrumf(s){
@@ -1965,17 +1970,10 @@ body::before{ display:none; }
     meta.textContent = forTekst;
   }
 
-  okTrumfStatus();
-  okVarslerLast();
-
-  okHent('/api/bank?hva=status').then(function(s){
-    if(!okVisStatus(s)){ if(s.ok && !s.koblet){ okSt.dnb = false; okKilderLast(); } return; }
-    okLastInnboks();
-    okBuLast();
-    okStatusLast();
+  function okKontoerLast(fersk){
     document.getElementById('ok-kontoer-kort').hidden = false;
     document.getElementById('ok-kontoer').innerHTML = '<p class="ok-meta">Henter kontoene fra DNB …</p>';
-    okHent('/api/bank?hva=kontoer').then(function(r){
+    return okHent('/api/bank?hva=kontoer' + (fersk ? '&fersk=1' : '')).then(function(r){
       if(!r.ok){ document.getElementById('ok-kontoer').innerHTML = '<p class="ok-melding feil">' + okVask(r.feil) + '</p>'; return; }
       okKontoer = r.kontoer || [];
       okSt.dnb = r.hentet; okKilderLast();
@@ -1984,6 +1982,41 @@ body::before{ display:none; }
       okTegnKontoer();
       okFormueLast();
     });
+  }
+
+  /* Alt som er gratis aa spoerre, hentes ferskt naar sida aapnes og naar
+     noen trykker Oppdater: DNB (med noen til stede gjelder ikke bankens
+     grense - se psuAv i bank-funksjonen) og Trumf. Kjoekkenskjermens
+     vekker holder seg til bufferen paa seks timer. */
+  var okDnbKoblet = false;
+  var okOppdaterKnapp = document.getElementById('ok-oppdater');
+  function okOppdater(){
+    okOppdaterKnapp.disabled = true;
+    okOppdaterKnapp.textContent = 'Oppdaterer …';
+    /* Innboksen henter Trumf ferskt selv; statusen etterpaa tar det fra bufferen. */
+    var arbeid = okDnbKoblet
+      ? [okLastInnboks(true).then(function(){ return okTrumfStatus(false); }), okKontoerLast(true)]
+      : [okTrumfStatus(true)];
+    return Promise.all(arbeid).then(function(){
+      okOppdaterKnapp.disabled = false;
+      okOppdaterKnapp.textContent = 'Oppdater';
+      okVarslerLast(); okKilderLast();
+    });
+  }
+  okOppdaterKnapp.addEventListener('click', okOppdater);
+
+  okVarslerLast();
+
+  okHent('/api/bank?hva=status').then(function(s){
+    if(!okVisStatus(s)){
+      if(s.ok && !s.koblet){ okSt.dnb = false; okKilderLast(); }
+      okOppdater();
+      return;
+    }
+    okDnbKoblet = true;
+    okBuLast();
+    okStatusLast();
+    okOppdater();
   });
 })();
 </script>

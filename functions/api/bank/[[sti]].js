@@ -79,8 +79,9 @@
    Mange banker tillater fire hentinger i doegnet uten at brukeren er
    til stede. Svar fra banken lagres derfor i seks timer, og en ny
    henting skjer foerst naar noen ber om det etter det. `fersk=1`
-   tvinger en ny henting; svarer banken nei, faar man bufferen tilbake
-   med beskjed om det.
+   tvinger en ny henting naar noen sitter med sida (PSU-headerne, se
+   psuAv) - for Trumf alltid, den koster ingenting. Svarer banken nei,
+   faar man bufferen tilbake med beskjed om det.
    ============================================================ */
 
 const API = 'https://api.enablebanking.com';
@@ -211,11 +212,11 @@ async function appJwt(env){
   return hode + '.' + innhold + '.' + b64url(sig);
 }
 /* Svarer { ok, data } eller { ok:false, feil, status }. Tokenet logges aldri. */
-async function eb(env, metode, sti, kropp){
+async function eb(env, metode, sti, kropp, psu){
   const r = await fetch(API + sti, {
     method: metode,
     headers: Object.assign({ 'Authorization':'Bearer ' + await appJwt(env) },
-      kropp ? { 'Content-Type':'application/json' } : {}),
+      kropp ? { 'Content-Type':'application/json' } : {}, psu || {}),
     body: kropp ? JSON.stringify(kropp) : undefined
   });
   let data = null;
@@ -225,6 +226,31 @@ async function eb(env, metode, sti, kropp){
     return { ok:false, status:r.status, feil:'Enable Banking: ' + (typeof melding === 'string' ? melding : JSON.stringify(melding)) };
   }
   return { ok:true, data:data };
+}
+
+/* Naar noen sitter med sida. Bankens grense paa fire hentinger i doegnet
+   gjelder bare naar brukeren IKKE er til stede (PSD2); med PSU-headerne
+   vet banken at hun er det, og sida kan hente ferskt hver gang den
+   aapnes. Vekkeren sender dem ikke - den holder seg til bufferen. Bare
+   IPv4: noen banker taaler ikke IPv6, og da blir det bufferen som foer. */
+function psuAv(request){
+  const ip = request.headers.get('CF-Connecting-IP') || '';
+  if(!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) return null;
+  const h = { 'Psu-Ip-Address':ip, 'Psu-User-Agent':(request.headers.get('User-Agent') || '').slice(0, 300) };
+  for(const [fra, til] of [['Accept', 'Psu-Accept'], ['Accept-Language', 'Psu-Accept-language'], ['Accept-Encoding', 'Psu-Accept-Encoding'], ['Referer', 'Psu-Referer']]){
+    const v = request.headers.get(fra);
+    if(v) h[til] = v.slice(0, 300);
+  }
+  return h;
+}
+/* Gjoer fn for hvert element, n om gangen, og gir svarene i samme rekkefoelge. */
+async function iBolker(liste, n, fn){
+  const ut = new Array(liste.length);
+  let neste = 0;
+  await Promise.all(Array.from({ length:Math.min(n, liste.length) }, async () => {
+    while(neste < liste.length){ const i = neste++; ut[i] = await fn(liste[i], i); }
+  }));
+  return ut;
 }
 
 async function lesOekt(env){
@@ -319,13 +345,17 @@ async function lesRoller(env){
   try{ return JSON.parse(await env.FAMILIE_KV.get(ROLLE_NOKKEL) || '{}') || {}; }catch(e){ return {}; }
 }
 
-async function kontoer(env, okt, fersk){
+async function kontoer(env, okt, fersk, psu){
   const roller = await lesRoller(env);
   const navn = await lesJson(env, KONTONAVN_NOKKEL, {});
   const ut = [];
   let eldst = Date.now(), advarsel = '';
-  for(const k of okt.kontoer){
-    const r = await medBuffer(env, 'saldo:' + k.uid, fersk, () => eb(env, 'GET', '/accounts/' + encodeURIComponent(k.uid) + '/balances'));
+  /* Fersk bare med noen til stede (psuAv). Fire kontoer om gangen, saa
+     sida ikke venter paa 21 hentinger etter tur hver gang den aapnes. */
+  const svarene = await iBolker(okt.kontoer, 4, k => medBuffer(env, 'saldo:' + k.uid, fersk && !!psu,
+    () => eb(env, 'GET', '/accounts/' + encodeURIComponent(k.uid) + '/balances', null, psu)));
+  for(const [i, k] of okt.kontoer.entries()){
+    const r = svarene[i];
     if(!r.ok){ ut.push(Object.assign({}, k, { navn:navn[k.uid] || k.navn, bankNavn:k.navn, rolle:roller[k.uid] || '', feil:r.feil })); continue; }
     if(r.advarsel) advarsel = r.advarsel;
     eldst = Math.min(eldst, r.hentet);
@@ -349,14 +379,14 @@ async function kontoer(env, okt, fersk){
 
 /* Henter og pakker om transaksjonene for én konto. Brukes av baade
    ?hva=transaksjoner og innboksen, saa de ser det samme. */
-async function hentTransaksjoner(env, uid, fraDato, fersk){
-  const r = await medBuffer(env, 'trans:' + uid + ':' + fraDato, fersk, async () => {
+async function hentTransaksjoner(env, uid, fraDato, fersk, psu){
+  const r = await medBuffer(env, 'trans:' + uid + ':' + fraDato, fersk && !!psu, async () => {
     /* Banken deler lange lister i sider; continuation_key peker paa neste. */
     let alle = [], neste = '', runder = 0;
     do{
       const sti = '/accounts/' + encodeURIComponent(uid) + '/transactions?date_from=' + fraDato
         + (neste ? '&continuation_key=' + encodeURIComponent(neste) : '');
-      const s = await eb(env, 'GET', sti);
+      const s = await eb(env, 'GET', sti, null, psu);
       if(!s.ok) return s;
       alle = alle.concat((s.data && s.data.transactions) || []);
       neste = (s.data && s.data.continuation_key) || '';
@@ -388,11 +418,11 @@ async function hentTransaksjoner(env, uid, fraDato, fersk){
   return { ok:true, hentet:r.hentet, fraBuffer:r.fraBuffer, advarsel:r.advarsel, liste:liste };
 }
 
-async function transaksjoner(env, okt, uid, fra, fersk){
+async function transaksjoner(env, okt, uid, fra, fersk, psu){
   if(!okt.kontoer.some(k => k.uid === uid)) return svar({ ok:false, feil:'Ukjent konto' });
   const fraDato = /^\d{4}-\d{2}-\d{2}$/.test(fra || '') ? fra
     : new Date(Date.now() - 31 * 24 * 3600 * 1000).toISOString().slice(0, 10);
-  const r = await hentTransaksjoner(env, uid, fraDato, fersk);
+  const r = await hentTransaksjoner(env, uid, fraDato, fersk, psu);
   if(!r.ok) return svar(r);
   return svar({ ok:true, hentet:r.hentet, fraBuffer:r.fraBuffer, advarsel:r.advarsel, fra:fraDato, transaksjoner:r.liste });
 }
@@ -558,7 +588,7 @@ function kobleKvittering(poster, kv){
   }
 }
 
-async function innboks(env, okt, fersk){
+async function innboks(env, okt, fersk, psu){
   const roller = await lesRoller(env);
   const felles = okt.kontoer.filter(k => roller[k.uid] === 'felles');
   const trumfKoblet = !!(await lesJson(env, TRUMF_NOKKEL, null));
@@ -571,7 +601,7 @@ async function innboks(env, okt, fersk){
   const laert = await lesJson(env, LAERT_NOKKEL, {});
   let hentet = Date.now(), advarsel = '', nye = 0;
   for(const k of felles){
-    const r = await hentTransaksjoner(env, k.uid, fra, fersk);
+    const r = await hentTransaksjoner(env, k.uid, fra, fersk, psu);
     if(!r.ok){ advarsel = r.feil; continue; }
     hentet = Math.min(hentet, r.hentet);
     if(r.advarsel) advarsel = r.advarsel;
@@ -1249,10 +1279,10 @@ async function trumfKvittering(env, id){
   await env.FAMILIE_KV.put(nokkel, JSON.stringify(ut));
   return svar(Object.assign({ ok:true }, ut));
 }
-async function trumfStatus(env){
+async function trumfStatus(env, fersk){
   const lagret = await lesJson(env, TRUMF_NOKKEL, null);
   if(!lagret) return svar({ ok:true, koblet:false });
-  const r = await trumfListe(env, false);
+  const r = await trumfListe(env, !!fersk);
   const ut = { ok:true, koblet:true, lagret:lagret.lagret, lagretAv:masker(lagret.av) };
   if(!r.ok) return svar(Object.assign(ut, { virker:false, kode:r.kode, feil:r.feil }));
   const liste = r.data || [];
@@ -1319,6 +1349,8 @@ export async function onRequestGet({ request, env }){
 
     const hva = url.searchParams.get('hva') || 'status';
     const okt = await lesOekt(env);
+    const fersk = url.searchParams.get('fersk') === '1';
+    const psu = psuAv(request);
     if(hva === 'status'){
       if(!okt) return svar({ ok:true, koblet:false });
       const igjen = okt.gyldigTil ? Math.floor((Date.parse(okt.gyldigTil) - Date.now()) / 86400000) : null;
@@ -1329,9 +1361,9 @@ export async function onRequestGet({ request, env }){
     if(hva === 'varsler') return await varsler(env, okt);
     if(hva === 'kilder') return await kilder(env, okt);
     /* Trumf trenger ikke banken - den har sin egen innlogging. */
-    if(hva === 'trumf') return await trumfStatus(env);
+    if(hva === 'trumf') return await trumfStatus(env, fersk);
     if(hva === 'trumf-kjop'){
-      const r = await trumfListe(env, url.searchParams.get('fersk') === '1');
+      const r = await trumfListe(env, fersk);
       if(!r.ok) return svar(r);
       return svar({ ok:true, hentet:r.hentet, fraBuffer:r.fraBuffer, advarsel:r.advarsel, kjop:r.data });
     }
@@ -1343,10 +1375,9 @@ export async function onRequestGet({ request, env }){
     if(hva === 'regnskap-aar') return await regnskapAar(env);
     if(hva === 'formue') return await formue(env);
     if(!okt) return svar({ ok:false, feil:'Banken er ikke koblet. Åpne /api/bank/start.' });
-    const fersk = url.searchParams.get('fersk') === '1';
-    if(hva === 'kontoer') return await kontoer(env, okt, fersk);
-    if(hva === 'transaksjoner') return await transaksjoner(env, okt, url.searchParams.get('konto') || '', url.searchParams.get('fra'), fersk);
-    if(hva === 'innboks') return await innboks(env, okt, fersk);
+    if(hva === 'kontoer') return await kontoer(env, okt, fersk, psu);
+    if(hva === 'transaksjoner') return await transaksjoner(env, okt, url.searchParams.get('konto') || '', url.searchParams.get('fra'), fersk, psu);
+    if(hva === 'innboks') return await innboks(env, okt, fersk, psu);
     return svar({ ok:false, feil:'Ukjent hva: ' + hva });
   }catch(e){
     /* Meldingen, aldri stakken - den kan baere biter av noekkelen. */
