@@ -1145,10 +1145,17 @@ async function trumfSide(env, sti){
   if(!r.ok) return { ok:false, kode:'format', feil:'Trumf svarte HTTP ' + r.status };
   return { ok:true, html:html };
 }
-function trumfFeil(html, hva){
+function trumfFeil(html, hva, nokkel){
   /* Ingen data: er det fordi vi ikke er innlogget, eller fordi sida er endret? */
   if(/logg inn|logg på|innlogging/i.test(html) && !/kvittering/i.test(html)) return { ok:false, kode:'innlogging', feil:'Trumf trenger ny innlogging' };
-  return { ok:false, kode:'format', feil:'Fant ikke ' + hva + ' på trumf.no – sida er trolig endret, og koden må rettes' };
+  /* Hva sida faktisk var, saa feilen kan leses uten aa logge inn paa
+     trumf.no selv: tittelen, stoerrelsen, Next-bitene og om noekkelen
+     finnes i det hele tatt. Ingenting fra innholdet ellers. */
+  const tittel = ((html.match(/<title[^>]*>([^<]{0,80})/i) || [])[1] || '').trim();
+  const biter = (html.match(/self\.__next_f\.push/g) || []).length;
+  const spor = 'sida «' + (tittel || 'uten tittel') + '», ' + Math.round(html.length / 1024) + ' kB, ' + biter + ' Next-biter'
+    + (nokkel ? ', «' + nokkel + '» ' + (html.indexOf(nokkel) === -1 ? 'finnes ikke' : 'finnes, men kunne ikke leses') : '');
+  return { ok:false, kode:'format', feil:'Fant ikke ' + hva + ' på trumf.no – sida er trolig endret, og koden må rettes (' + spor + ')' };
 }
 
 async function trumfListe(env, fersk){
@@ -1157,7 +1164,7 @@ async function trumfListe(env, fersk){
     if(!s.ok) return s;
     let liste = null;
     try{ liste = trumfData(s.html, 'transactionsData'); }catch(e){ liste = null; }
-    if(!Array.isArray(liste)) return trumfFeil(s.html, 'kjøpslista');
+    if(!Array.isArray(liste)) return trumfFeil(s.html, 'kjøpslista', 'transactionsData');
     return { ok:true, data:liste.map(t => ({
       id: String(t.batchId || ''),
       tid: String(t.transaksjonsTidspunkt || ''),
@@ -1178,7 +1185,7 @@ async function trumfKvittering(env, id){
   if(!s.ok) return svar(s);
   let k = null;
   try{ k = trumfData(s.html, 'purchaseDetails'); }catch(e){ k = null; }
-  if(!k || typeof k !== 'object') return svar(trumfFeil(s.html, 'kvitteringen'));
+  if(!k || typeof k !== 'object') return svar(trumfFeil(s.html, 'kvitteringen', 'purchaseDetails'));
   const ut = {
     id: id,
     tid: String(k.transaksjonsTidspunkt || ''),
