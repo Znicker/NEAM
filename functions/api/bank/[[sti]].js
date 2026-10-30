@@ -17,6 +17,7 @@
      POST /api/bank {hva:'kvittering-ny', kvittering}   - kvittering lest fra bilde/PDF
      GET /api/bank?hva=kvittering&id=<postId>         - varelinjene til en kvitteringspost
      GET /api/bank?hva=budsjett / POST {hva:'budsjett', standard} - standardbudsjettet
+     POST /api/bank {hva:'budsjett', mnd, maaned} / {hva:'budsjett', mnd, tilbake:true} - én maaneds budsjett
      GET /api/bank?hva=regnskap&mnd=AAAA-MM            - godkjente poster summert per kategori
      GET /api/bank?hva=foringer&mnd=AAAA-MM&kategori=<k>[&eksakt=1] - foeringene bak ett tall
      POST /api/bank {hva:'kategori-ny', nye:[{forelder, navn}]} / {hva:'kategori-slett', kategori} - egne poster
@@ -71,7 +72,7 @@
      auth:bank:trumf-feil      - siste Trumf-feil (slettes naar hentingen virker igjen)
      auth:bank:formue          - verdier, gjeld og familiemaal, fylt inn for haand
      auth:bank:kontonavn       - { <konto-uid>: eget navn } - DNB sender ikke nettbanknavnene
-     auth:bank:budsjett        - standardbudsjettet { kategori: kr per maaned } - ALDRI i koden,
+     auth:bank:budsjett        - { standard:{ kategori: kr }, maaneder:{ 'AAAA-MM':{ kategori: kr } } } - ALDRI i koden,
                                  repoet er offentlig
    `/api/data` slipper familien til alt under `fh:`. Kontoer og
    transaksjoner skal ikke kunne leses ut derfra.
@@ -535,7 +536,12 @@ async function slettKategori(env, kropp){
   egne.splice(egne.indexOf(k), 1);
   await env.FAMILIE_KV.put(EGNE_NOKKEL, JSON.stringify(egne));
   const b = await lesJson(env, BUDSJETT_NOKKEL, null);
-  if(b && b.standard && b.standard[k] != null){ delete b.standard[k]; await env.FAMILIE_KV.put(BUDSJETT_NOKKEL, JSON.stringify(b)); }
+  if(b){
+    let bEndret = false;
+    if(b.standard && b.standard[k] != null){ delete b.standard[k]; bEndret = true; }
+    for(const m of Object.keys(b.maaneder || {})) if(b.maaneder[m][k] != null){ delete b.maaneder[m][k]; bEndret = true; }
+    if(bEndret) await env.FAMILIE_KV.put(BUDSJETT_NOKKEL, JSON.stringify(b));
+  }
   const laert = await lesJson(env, LAERT_NOKKEL, {});
   let endret = false;
   for(const m of Object.keys(laert)) if(laert[m] === k){ delete laert[m]; endret = true; }
@@ -805,8 +811,13 @@ async function kilder(env, okt){
 
 /* ---------- Budsjett og regnskap ----------
    Standardbudsjettet ligger i KV, ikke i koden: repoet er offentlig, og
-   budsjettet inneholder loenn. Det fylles inn fra okonomi.html (for haand
-   eller fra Excel-arket i nettleseren). Regnskapet er summen av de
+   budsjettet inneholder loenn. Det fylles inn fra okonomi.html.
+
+   Hver maaned har sitt eget budsjett, som tar utgangspunkt i standarden
+   (Magne, 29. oktober). En maaned uten egen kopi foelger standarden. Naar
+   standarden lagres, faar maanedene som alt har startet en kopi av den
+   gamle - en endring i standarden gjelder fra neste maaned, og historikken
+   staar. Regnskapet er summen av de
    godkjente postene per kategori og maaned; «Utenfor budsjett» telles ikke.
    Fortegn: utgifter og sparing som positive beloep (det som gikk ut),
    inntekter som positive beloep (det som kom inn). */
@@ -814,19 +825,47 @@ const BUDSJETT_NOKKEL = 'auth:bank:budsjett';
 
 async function budsjett(env){
   const b = await lesJson(env, BUDSJETT_NOKKEL, null);
-  return svar({ ok:true, kategorier:await budsjettKategorier(env), egne:await lesEgne(env), standard:(b && b.standard) || {}, endret:b && b.endret, av:b && masker(b.av) });
+  return svar({ ok:true, kategorier:await budsjettKategorier(env), egne:await lesEgne(env), standard:(b && b.standard) || {},
+    maaneder:(b && b.maaneder) || {}, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', endret:b && b.endret, av:b && masker(b.av) });
 }
 async function lagreBudsjett(env, kropp, epost){
-  const inn = kropp.standard || {};
-  const ut = {};
   const kategorier = await budsjettKategorier(env);
-  for(const k of Object.keys(inn)){
-    if(kategorier.indexOf(k) === -1) return svar({ ok:false, feil:'Ukjent kategori: ' + k });
-    const v = Math.round(Number(inn[k]) || 0);
-    if(v < 0 || v > 1e7) return svar({ ok:false, feil:'Ugyldig beløp for ' + k });
-    if(v) ut[k] = v;
+  const rens = inn => {
+    const ut = {};
+    for(const k of Object.keys(inn || {})){
+      if(kategorier.indexOf(k) === -1) return { feil:'Ukjent kategori: ' + k };
+      const v = Math.round(Number(inn[k]) || 0);
+      if(v < 0 || v > 1e7) return { feil:'Ugyldig beløp for ' + k };
+      if(v) ut[k] = v;
+    }
+    return { ut:ut };
+  };
+  const b = await lesJson(env, BUDSJETT_NOKKEL, null) || {};
+  const standard = b.standard || {}, maaneder = b.maaneder || {};
+  if(kropp.mnd){
+    if(!/^\d{4}-\d{2}$/.test(kropp.mnd)) return svar({ ok:false, feil:'Ugyldig måned' });
+    if(kropp.tilbake) delete maaneder[kropp.mnd];
+    else{
+      const r = rens(kropp.maaned);
+      if(r.feil) return svar({ ok:false, feil:r.feil });
+      maaneder[kropp.mnd] = r.ut;
+    }
+  } else {
+    const r = rens(kropp.standard);
+    if(r.feil) return svar({ ok:false, feil:r.feil });
+    /* Maanedene som alt har startet, beholder budsjettet de hadde. */
+    if(Object.keys(standard).length){
+      const naa = new Date().toISOString().slice(0, 7);
+      const d = new Date((((await env.FAMILIE_KV.get(FRA_NOKKEL)) || naa).slice(0, 7)) + '-01T12:00:00Z');
+      while(d.toISOString().slice(0, 7) <= naa){
+        const m = d.toISOString().slice(0, 7);
+        if(!maaneder[m]) maaneder[m] = Object.assign({}, standard);
+        d.setUTCMonth(d.getUTCMonth() + 1);
+      }
+    }
+    b.standard = r.ut;
   }
-  await env.FAMILIE_KV.put(BUDSJETT_NOKKEL, JSON.stringify({ standard:ut, endret:new Date().toISOString(), av:epost }));
+  await env.FAMILIE_KV.put(BUDSJETT_NOKKEL, JSON.stringify({ standard:b.standard || {}, maaneder:maaneder, endret:new Date().toISOString(), av:epost }));
   return budsjett(env);
 }
 /* Hele perioden, maaned for maaned: { 'AAAA-MM': { kategori: beloep } }. For År-fanen. */

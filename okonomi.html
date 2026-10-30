@@ -169,9 +169,6 @@ body::before{ display:none; }
 .ok-bu-pil{ font:inherit; border:0; background:none; color:var(--ink-soft); cursor:pointer; padding:0 6px 0 0; display:inline-block; transition:transform .15s; }
 .ok-bu-pil[aria-expanded="true"]{ transform:rotate(90deg); }
 .ok-bu-fjern{ font:inherit; font-size:18px; line-height:1; border:0; background:none; color:var(--ink-soft); cursor:pointer; padding:0 0 0 8px; }
-.ok-bu-ny{ display:flex; flex-direction:column; gap:8px; }
-.ok-bu-ny-rad{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto; gap:8px; align-items:center; }
-@media (max-width:560px){ .ok-bu-ny-rad{ grid-template-columns:minmax(0,1fr); } }
 .ok-tabell .sum td{ font-weight:700; background:var(--boks-mild); }
 .ok-tabell .resultat td{ font-weight:700; border-top:2px solid var(--ink); border-bottom:0; padding-top:10px; }
 .ok-tabell input{ width:100px; text-align:right; font-family:inherit; font-size:16px; padding:4px 8px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
@@ -213,6 +210,14 @@ body::before{ display:none; }
 .ok-std-pil{ display:inline-block; width:10px; color:var(--aksent); font-weight:700; transition:transform .15s; }
 .ok-std-utvid[aria-expanded="true"] .ok-std-pil{ transform:rotate(90deg); }
 .ok-std-navn{ padding-left:16px; }
+/* Plusstegnet i redigering: ved en gruppe gir det en ny post, ved en post en ny linje. */
+.ok-pluss{ font:inherit; font-size:18px; font-weight:700; line-height:1; width:26px; height:26px; flex:none; border-radius:50%; border:1.5px solid var(--aksent); background:none; color:var(--aksent); cursor:pointer; padding:0; margin-left:8px; vertical-align:middle; }
+.ok-pluss:focus-visible{ outline:2px solid var(--aksent); outline-offset:2px; }
+.ok-std-ny{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:6px 0 6px 14px; }
+.ok-std-ny input{ flex:1 1 160px; min-width:0; font-family:inherit; font-size:16px; padding:6px 10px; border:1.5px solid var(--aksent); border-radius:8px; background:#fff; color:var(--ink); }
+.ok-std-ny .btn{ width:auto; padding:8px 14px; font-size:var(--t-meta); }
+.ok-std-ny .ok-meta{ flex-basis:100%; }
+.ok-std-std{ font-size:var(--t-meta); color:var(--ink-soft); margin-right:8px; }
 @media (max-width:520px){ .ok-andel-rad{ grid-template-columns:96px minmax(0,1fr) 112px; } }
 
 /* ---------- Måned ----------
@@ -565,21 +570,22 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       <div class="ok-andel" id="ok-bs-andel"></div>
     </section>
     <section class="ok-kort" id="ok-std-kort">
-      <div class="ok-kort-hode"><h2>Standardbudsjett</h2><div class="ok-rad-knapper" id="ok-bu-knapper"></div></div>
+      <div class="ok-kort-hode"><h2>Standardbudsjett</h2><div class="ok-rad-knapper" id="ok-std-knapper"></div></div>
       <p class="ok-meta" id="ok-std-meta"></p>
-      <div class="ok-melding" id="ok-bu-avbryt" hidden></div>
+      <div class="ok-melding" id="ok-std-avbryt" hidden></div>
       <div class="ok-std" id="ok-std"></div>
-      <div class="ok-bu-ny" id="ok-bu-ny" hidden>
-        <span class="ok-etikett">Ny post eller linje</span>
-        <div class="ok-bu-ny-rad">
-          <select class="ok-mnd" id="ok-bu-ny-under" aria-label="Hvor den nye posten skal ligge"></select>
-          <input type="text" class="ok-navnfelt" id="ok-bu-ny-navn" maxlength="40" placeholder="Navn, f.eks. Barnehage" aria-label="Navn på den nye posten">
-          <button type="button" class="btn btn-ny ok-smal" id="ok-bu-ny-legg">Legg til</button>
-        </div>
-        <p class="ok-meta" id="ok-bu-ny-melding"></p>
+      <p class="ok-meta">Hver måned starter fra standardbudsjettet. En endring her gjelder fra neste måned; måneden som pågår, endres i månedsbudsjettet.</p>
+    </section>
+    <section class="ok-kort" id="ok-mb-kort">
+      <div class="ok-kort-hode"><h2>Månedsbudsjett</h2><div class="ok-rad-knapper" id="ok-mb-knapper"></div></div>
+      <div class="ok-mnd-nav">
+        <button type="button" class="ok-pil" id="ok-mb-forrige" aria-label="Forrige måned">‹</button>
+        <span class="ok-mnd-navn" id="ok-mb-navn"></span>
+        <button type="button" class="ok-pil" id="ok-mb-neste" aria-label="Neste måned">›</button>
       </div>
-      <input type="file" id="ok-bu-excel" accept=".xlsm,.xlsx,.xls" hidden>
-      <p class="ok-meta">Hver ny måned starter fra standardbudsjettet.</p>
+      <p class="ok-meta" id="ok-mb-meta"></p>
+      <div class="ok-melding" id="ok-mb-avbryt" hidden></div>
+      <div class="ok-std" id="ok-mb"></div>
     </section>
     <section class="ok-kort" id="ok-bu-kort" hidden>
       <div class="ok-kort-hode">
@@ -1135,47 +1141,66 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   /* ---------- Budsjett mot regnskap ----------
      Standardbudsjettet ligger i KV bak bank-sperra, aldri i koden -
      repoet er offentlig. Regnskapet er de godkjente postene i maaneden. */
-  var okBu = { kategorier:[], egne:[], standard:{}, regnskap:{}, redigerer:false, utkast:null, apne:{}, stdApne:{}, ganger:1 };
+  /* redigerer: false, 'standard' eller 'AAAA-MM' - det ene budsjettet som redigeres. */
+  var okBu = { kategorier:[], egne:[], standard:{}, maaneder:{}, fra:'', regnskap:{}, regBud:{}, redigerer:false, utkast:null, apne:{}, stdApne:{}, ny:null, mnder:[], mbValgt:'' };
+  /* Budsjettet for en maaned: maanedens egen kopi, ellers standarden. */
+  function okBudFor(b, m){ return (b && b.maaneder && b.maaneder[m]) || (b && b.standard) || {}; }
   /* Maaned-fanen (se «Måned» lenger ned). Her oppe fordi fanevelgeren leser den ved oppstart. */
   var okMnd = { lastet:false, valgt:'', liste:[], aar:{}, apneKjop:{}, kjop:{} };
   var okMndNavn = new Intl.DateTimeFormat('nb-NO', { month:'long', year:'numeric' });
 
+  function okBuSett(b){
+    okBu.kategorier = b.kategorier; okBu.egne = b.egne || []; okBu.standard = b.standard || {}; okBu.maaneder = b.maaneder || {};
+    if(b.fra != null) okBu.fra = b.fra;
+    /* Maanedene man kan bla i: fra innboksen startet til et aar fram. */
+    var naa = new Date().toISOString().slice(0, 7), d = new Date(((okBu.fra || naa).slice(0, 7)) + '-01T12:00:00');
+    var slutt = new Date(naa + '-01T12:00:00'); slutt.setMonth(slutt.getMonth() + 12);
+    var siste = slutt.toISOString().slice(0, 7);
+    okBu.mnder = [];
+    while(d.toISOString().slice(0, 7) <= siste && okBu.mnder.length < 240){ okBu.mnder.push(d.toISOString().slice(0, 7)); d.setMonth(d.getMonth() + 1); }
+    if(!okBu.mbValgt || okBu.mnder.indexOf(okBu.mbValgt) === -1) okBu.mbValgt = naa;
+  }
   function okBuLast(){
     okHent('/api/bank?hva=budsjett').then(function(b){
       if(!b.ok) return;
-      okBu.kategorier = b.kategorier; okBu.egne = b.egne || []; okBu.standard = b.standard || {};
+      okBuSett(b);
       document.getElementById('ok-bu-kort').hidden = false;
-      okBsTegn(); okStdTegn();
+      okBsTegn(); okBudKortTegn('standard'); okBudKortTegn(okBu.mbValgt);
       okBuRegnskap();
     });
   }
-  function okBuAlleTegn(){ okBsTegn(); okStdTegn(); okBuTegn(); }
-  /* Periode: én maaned, eller hittil i aar - da er budsjettet ganget med
-     antall maaneder, og regnskapet er summen av dem. */
+  function okBuAlleTegn(){ okBsTegn(); okBudKortTegn('standard'); okBudKortTegn(okBu.mbValgt); okBuRegnskap(); }
+
+  /* Periode: én maaned, eller hittil i aar - da er budsjettet summen av
+     maanedsbudsjettene, og regnskapet summen av maanedene. */
   function okBuRegnskap(){
     var velg = document.getElementById('ok-bu-mnd');
+    var settBud = function(mnder){
+      okBu.regBud = {};
+      mnder.forEach(function(m){ var x = okBudFor(okBu, m); Object.keys(x).forEach(function(k){ okBu.regBud[k] = (okBu.regBud[k] || 0) + x[k]; }); });
+    };
     if(velg.value === 'aar'){
       okHent('/api/bank?hva=regnskap-aar').then(function(r){
         if(!r.ok) return;
         var naa = new Date().toISOString().slice(0, 7), start = naa.slice(0, 4) + '-01';
         if(r.fra && r.fra.slice(0, 7) > start) start = r.fra.slice(0, 7);
-        var sum = {}, n = 0, d = new Date(start + '-01T12:00:00');
+        var sum = {}, mnder = [], d = new Date(start + '-01T12:00:00');
         while(d.toISOString().slice(0, 7) <= naa){
           var m = d.toISOString().slice(0, 7);
           Object.keys((r.maaneder || {})[m] || {}).forEach(function(k){ sum[k] = Math.round(((sum[k] || 0) + r.maaneder[m][k]) * 100) / 100; });
-          n++; d.setMonth(d.getMonth() + 1);
+          mnder.push(m); d.setMonth(d.getMonth() + 1);
         }
-        okBu.regnskap = sum; okBu.ganger = Math.max(n, 1);
+        okBu.regnskap = sum; settBud(mnder);
         var fraTekst = okMndNavn.format(new Date(start + '-01T12:00:00'));
-        document.getElementById('ok-bu-meta').textContent = fraTekst.charAt(0).toUpperCase() + fraTekst.slice(1) + ' til og med i dag, ' + okBu.ganger
-          + (okBu.ganger === 1 ? ' måned' : ' måneder') + '. Budsjettet er ganget opp; måneden som pågår, er med så langt den har kommet.';
+        document.getElementById('ok-bu-meta').textContent = fraTekst.charAt(0).toUpperCase() + fraTekst.slice(1) + ' til og med i dag, ' + mnder.length
+          + (mnder.length === 1 ? ' måned' : ' måneder') + '. Budsjettet er summen av månedsbudsjettene; måneden som pågår, er med så langt den har kommet.';
         okBuTegn();
       });
       return;
     }
     okHent('/api/bank?hva=regnskap' + (velg.value ? '&mnd=' + velg.value : '')).then(function(r){
       if(!r.ok) return;
-      okBu.regnskap = r.regnskap || {}; okBu.ganger = 1;
+      okBu.regnskap = r.regnskap || {}; settBud([r.mnd]);
       /* Maanedene fra innboksen startet til i dag, nyeste foerst, og hittil i aar oeverst. */
       if(!velg.options.length){
         velg.appendChild(new Option('Hittil i år', 'aar'));
@@ -1189,21 +1214,28 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         velg.value = r.mnd;
       }
       document.getElementById('ok-bu-meta').textContent = 'Regnskapet er de ' + r.poster + ' godkjente postene i ' + okMndNavn.format(new Date(r.mnd + '-01T12:00:00'))
-        + '. «Utenfor budsjett» er ikke med. Trykk på et beløp for å se føringene bak.';
+        + ', mot månedens budsjett. «Utenfor budsjett» er ikke med. Trykk på et beløp for å se føringene bak.';
       okBuTegn();
     });
   }
   document.getElementById('ok-bu-mnd').addEventListener('change', okBuRegnskap);
 
-  function okBuVerdi(k){ return okBu.utkast && okBu.utkast[k] != null ? okBu.utkast[k] : (okBu.standard[k] || 0); }
+  /* Tallet for en kategori i et budsjett (mal: 'standard' eller 'AAAA-MM'),
+     med det som er skrevet inn men ikke lagret. */
+  function okBuKilde(mal){ return mal === 'standard' ? okBu.standard : okBudFor(okBu, mal); }
+  function okBuVerdi(k, mal){
+    mal = mal || 'standard';
+    if(okBu.redigerer === mal && okBu.utkast && okBu.utkast[k] != null) return okBu.utkast[k];
+    return okBuKilde(mal)[k] || 0;
+  }
 
   /* Tre ledd: gruppe · post · linje. Posten summerer seg selv og linjene;
      har den linjer, staar postens eget tall som «Uten linje». */
   function okBuLinjer(p){ return okBu.kategorier.filter(function(x){ return x.indexOf(p + ' · ') === 0; }); }
-  function okBuPostSum(p){ return okBuLinjer(p).reduce(function(s, l){ return s + okBuVerdi(l); }, okBuVerdi(p)); }
+  function okBuPostSum(p, mal){ return okBuLinjer(p).reduce(function(s, l){ return s + okBuVerdi(l, mal); }, okBuVerdi(p, mal)); }
   function okBuKr(n){ return okKr.format(Math.round(n)).replace(/,00$/, ''); }
 
-  /* Budsjett mot regnskap - bare visning; tallene endres i Standardbudsjett. */
+  /* Budsjett mot regnskap - bare visning; tallene endres i budsjettkortene over. */
   function okBuTegn(){
     var gruppe = function(k){ return k.split(' · ')[0]; };
     var post = function(k){ return k.split(' · ').length === 2; };
@@ -1212,8 +1244,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       ['Inntekter', okBu.kategorier.filter(function(k){ return post(k) && gruppe(k) === 'Inntekter'; }), false],
       ['Sparing', okBu.kategorier.filter(function(k){ return post(k) && gruppe(k) === 'Sparing'; }), false]
     ];
-    var kr = okBuKr, n = okBu.ganger || 1, lenker = document.getElementById('ok-bu-mnd').value !== 'aar';
-    var sumB = function(p){ return (okBu.standard[p] || 0) * n + okBuLinjer(p).reduce(function(s, l){ return s + (okBu.standard[l] || 0) * n; }, 0); };
+    var kr = okBuKr, lenker = document.getElementById('ok-bu-mnd').value !== 'aar', bud = okBu.regBud;
+    var sumB = function(p){ return okBuLinjer(p).reduce(function(s, l){ return s + (bud[l] || 0); }, bud[p] || 0); };
     var sumR = function(p){ return okBuLinjer(p).reduce(function(s, l){ return s + (okBu.regnskap[l] || 0); }, okBu.regnskap[p] || 0); };
     /* Regnskapstallet er en lenke til foeringene bak det, naar det finnes noen.
        «=» foran kategorien betyr bare posten selv, uten linjene. */
@@ -1248,8 +1280,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         h += celler('<button type="button" class="ok-bu-pil" data-p="' + okVask(k) + '" aria-expanded="' + apen + '" aria-label="Vis linjene under ' + navn + '">›</button>' + navn
           + ' <span class="ok-meta">· ' + linjer.length + (linjer.length === 1 ? ' linje' : ' linjer') + '</span>', b, r, s[2], 'under', k);
         if(!apen) return;
-        linjer.forEach(function(l){ h += celler(okVask(l.split(' · ')[2]), (okBu.standard[l] || 0) * n, okBu.regnskap[l] || 0, s[2], 'linje', l); });
-        if(okBu.standard[k] || okBu.regnskap[k]) h += celler('Uten linje', (okBu.standard[k] || 0) * n, okBu.regnskap[k] || 0, s[2], 'linje', '=' + k);
+        linjer.forEach(function(l){ h += celler(okVask(l.split(' · ')[2]), bud[l] || 0, okBu.regnskap[l] || 0, s[2], 'linje', l); });
+        if(bud[k] || okBu.regnskap[k]) h += celler('Uten linje', bud[k] || 0, okBu.regnskap[k] || 0, s[2], 'linje', '=' + k);
       });
       h += celler('Sum ' + s[0].toLowerCase(), sb, sr, s[2], 'sum');
       tot[s[0]] = [sb, sr];
@@ -1264,12 +1296,12 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   }
 
   /* Summene og «hvor inntekten gaar» - fra standardbudsjettet, ogsaa mens det redigeres. */
-  function okBsTotaler(){
+  function okBsTotaler(mal){
     var t = { inn:0, ut:0, spar:0, grupper:{}, rekke:[] };
     okBu.kategorier.forEach(function(k){
       var d = k.split(' · ');
       if(d.length !== 2) return;
-      var v = okBuPostSum(k);
+      var v = okBuPostSum(k, mal);
       if(d[0] === 'Inntekter') t.inn += v;
       else if(d[0] === 'Sparing') t.spar += v;
       else{ t.ut += v; if(t.grupper[d[0]] == null){ t.grupper[d[0]] = 0; t.rekke.push(d[0]); } t.grupper[d[0]] += v; }
@@ -1287,7 +1319,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     });
   }
   function okBsTegn(){
-    var t = okBsTotaler(), kr = function(n){ return okBuKr(n) + ' kr'; };
+    var t = okBsTotaler('standard'), kr = function(n){ return okBuKr(n) + ' kr'; };
     okSumBokser(document.getElementById('ok-bs-sum'), [['Inntekter', kr(t.inn)], ['Utgifter', kr(t.ut)], ['Sparing', kr(t.spar)],
       ['Ufordelt', (t.rest > 0 ? '+' : t.rest < 0 ? '−' : '') + kr(Math.abs(t.rest)), t.rest > 0 ? 'pluss' : t.rest < 0 ? 'minus' : '']]);
     var a = document.getElementById('ok-bs-andel'); a.innerHTML = '';
@@ -1301,73 +1333,138 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     });
   }
 
-  /* Standardbudsjettet som skissen: inntekter og sparing side om side,
-     utgiftene under med to grupper per rad. Her redigeres tallene. */
-  function okStdTegn(){
-    var boks = document.getElementById('ok-std'), t = okBsTotaler(), nr = 0;
-    var kr = function(n){ return okBuKr(n) + ' kr'; };
+  /* Et budsjettkort: standarden ('standard') eller én maaned ('AAAA-MM').
+     Inntekter og sparing side om side, utgiftene under med to grupper per
+     rad. I redigering faar grupper og poster et plusstegn for ny post/linje. */
+  function okBudKortTegn(mal){
+    var std = mal === 'standard', pre = std ? 'ok-std' : 'ok-mb';
+    var boks = document.getElementById(pre), red = okBu.redigerer === mal, nr = 0;
+    if(!boks) return;
+    var t = okBsTotaler(mal), kr = function(n){ return okBuKr(n) + ' kr'; };
     boks.innerHTML = '';
-    document.getElementById('ok-std-meta').textContent = Object.keys(okBu.standard).length ? ''
-      : 'Standardbudsjettet er tomt – fyll det inn fra Excel-arket eller for hånd.';
+    if(std){
+      document.getElementById('ok-std-meta').textContent = Object.keys(okBu.standard).length ? '' : 'Standardbudsjettet er tomt – trykk Rediger og fyll det inn.';
+    } else {
+      var navn = okMndNavn.format(new Date(mal + '-01T12:00:00')), naa = new Date().toISOString().slice(0, 7), i = okBu.mnder.indexOf(mal);
+      document.getElementById('ok-mb-navn').textContent = navn.charAt(0).toUpperCase() + navn.slice(1);
+      document.getElementById('ok-mb-forrige').disabled = i <= 0 || !!okBu.redigerer;
+      document.getElementById('ok-mb-neste').disabled = i >= okBu.mnder.length - 1 || !!okBu.redigerer;
+      document.getElementById('ok-mb-meta').textContent = (mal < naa ? 'Avsluttet' : mal === naa ? 'Pågår' : 'Kommer') + ' · '
+        + (okBu.maaneder[mal] ? 'eget budsjett for måneden' : 'følger standardbudsjettet') + '. Tall som avviker fra standarden, viser standarden ved siden av.';
+    }
     var felt = function(k, etikett){
       var inp = document.createElement('input');
-      inp.inputMode = 'numeric'; inp.autocomplete = 'off'; inp.id = 'ok-std-' + (nr++); inp.dataset.k = k;
+      inp.inputMode = 'numeric'; inp.autocomplete = 'off'; inp.id = pre + '-f-' + (nr++); inp.dataset.k = k;
       inp.setAttribute('aria-label', 'Budsjett for ' + etikett);
-      var v = okBuVerdi(k); inp.value = v || '';
-      if(okBu.utkast && okBu.utkast[k] != null && okBu.utkast[k] !== (okBu.standard[k] || 0)) inp.classList.add('endret');
+      var v = okBuVerdi(k, mal); inp.value = v || '';
+      var opprinnelig = function(){ return okBuKilde(mal)[k] || 0; };
+      if(okBu.utkast && okBu.utkast[k] != null && okBu.utkast[k] !== opprinnelig()) inp.classList.add('endret');
       inp.addEventListener('input', function(){
         var x = parseInt(inp.value.replace(/\D/g, ''), 10);
         okBu.utkast[k] = isNaN(x) ? 0 : x;
-        inp.classList.toggle('endret', okBu.utkast[k] !== (okBu.standard[k] || 0));
-        okBsTegn();
+        inp.classList.toggle('endret', okBu.utkast[k] !== opprinnelig());
+        if(std) okBsTegn();
       });
-      inp.addEventListener('change', function(){ var id = inp.id; okStdTegn(); var f = document.getElementById(id); if(f) f.focus(); });
+      inp.addEventListener('change', function(){ var id = inp.id; okBudKortTegn(mal); var f = document.getElementById(id); if(f) f.focus(); });
       return inp;
     };
+    /* Tallet, og i et maanedsbudsjett standarden ved siden av naar de er ulike. */
+    var verdi = function(k, sum){
+      var v = sum ? okBuPostSum(k, mal) : okBuVerdi(k, mal);
+      var s = std ? null : (sum ? okBuPostSum(k, 'standard') : okBuVerdi(k, 'standard'));
+      return okEl('span', '', (s != null && Math.round(s) !== Math.round(v) ? '<span class="ok-std-std">standard ' + okBuKr(s) + '</span>' : '') + okBuKr(v));
+    };
     var fjern = function(k){
-      if(!okBu.redigerer || okBu.egne.indexOf(k) === -1 || okBuLinjer(k).length) return null;
+      if(!red || okBu.egne.indexOf(k) === -1 || okBuLinjer(k).length) return null;
       var b = okEl('button', 'ok-bu-fjern', '×'); b.type = 'button';
       b.setAttribute('aria-label', 'Fjern ' + k.split(' · ').slice(1).join(' · '));
-      b.addEventListener('click', function(){ okBuFjern(k); });
+      b.addEventListener('click', function(){ okBuFjern(k, mal); });
       return b;
     };
-    var rad = function(navnNode, verdi, klasse){
-      var r = okEl('div', 'ok-std-rad' + (klasse ? ' ' + klasse : ''));
-      r.appendChild(navnNode);
-      r.appendChild(verdi);
+    var pluss = function(forelder, hva){
+      if(!red) return null;
+      var b = okEl('button', 'ok-pluss', '+'); b.type = 'button'; b.id = pre + '-pl-' + (nr++);
+      b.setAttribute('aria-label', hva);
+      b.addEventListener('click', function(){ okBu.ny = { forelder:forelder, mal:mal, feil:'' }; okBudKortTegn(mal); var f = document.getElementById(pre + '-ny'); if(f) f.focus(); });
+      return b;
+    };
+    var nyRad = function(forelder, mal2){
+      if(!red || !okBu.ny || okBu.ny.forelder !== forelder || okBu.ny.mal !== mal2) return null;
+      var r = okEl('div', 'ok-std-ny');
+      var inp = document.createElement('input'); inp.type = 'text'; inp.maxLength = 40; inp.id = pre + '-ny';
+      inp.placeholder = forelder.indexOf(' · ') === -1 ? 'Ny post i ' + forelder : 'Ny linje under ' + forelder.split(' · ')[1];
+      inp.setAttribute('aria-label', inp.placeholder);
+      var legg = okEl('button', 'btn btn-ny', 'Legg til'); legg.type = 'button';
+      var avbryt = okEl('button', 'btn btn-ghost', 'Avbryt'); avbryt.type = 'button';
+      var lagre = function(){
+        if(!inp.value.trim()){ inp.focus(); return; }
+        legg.disabled = true;
+        okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'kategori-ny', nye:[{ forelder:forelder, navn:inp.value }] }) })
+          .then(function(svar){
+            legg.disabled = false;
+            if(!svar.ok){ okBu.ny.feil = 'Ble ikke lagt til: ' + svar.feil; okBudKortTegn(mal); return; }
+            var ny = svar.nye[0];
+            okBu.ny = null;
+            okBu.kategorier = svar.kategorier; okBu.egne = svar.egne || [];
+            if(ny && forelder.indexOf(' · ') !== -1) okBu.stdApne[forelder] = true;
+            okBsTegn(); okBudKortTegn('standard'); okBudKortTegn(okBu.mbValgt);
+            var f = ny && document.querySelector('#' + pre + ' input[data-k="' + ny.replace(/"/g, '\\"') + '"]'); if(f) f.focus();
+          });
+      };
+      legg.addEventListener('click', lagre);
+      avbryt.addEventListener('click', function(){ okBu.ny = null; okBudKortTegn(mal); });
+      inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') lagre(); if(e.key === 'Escape'){ okBu.ny = null; okBudKortTegn(mal); } });
+      r.appendChild(inp); r.appendChild(legg); r.appendChild(avbryt);
+      if(okBu.ny.feil) r.appendChild(okEl('p', 'ok-meta', okVask(okBu.ny.feil)));
       return r;
     };
-    var navnSpan = function(tekst, k){
+    var rad = function(navnNode, verdiNode, klasse){
+      var r = okEl('div', 'ok-std-rad' + (klasse ? ' ' + klasse : ''));
+      r.appendChild(navnNode); r.appendChild(verdiNode);
+      return r;
+    };
+    var navnSpan = function(tekst, k, plussNode){
       var s = okEl('span', '', okVask(tekst));
       var f = k && fjern(k); if(f) s.appendChild(f);
+      if(plussNode) s.appendChild(plussNode);
       return s;
     };
-    var postRader = function(k, mal){
+    var postRader = function(k, mal3){
       var navn = k.split(' · ')[1], linjer = okBuLinjer(k);
+      var pl = pluss(k, 'Ny linje under ' + navn);
       if(!linjer.length){
-        if(okBu.redigerer) mal.appendChild(rad(navnSpan(navn, k), felt(k, navn)));
-        else mal.appendChild(rad(okEl('span', 'ok-std-navn', okVask(navn)), okEl('span', '', okBuKr(okBuVerdi(k)))));
+        if(red) mal3.appendChild(rad(navnSpan(navn, k, pl), felt(k, navn)));
+        else mal3.appendChild(rad(okEl('span', 'ok-std-navn', okVask(navn)), verdi(k)));
+        var n0 = nyRad(k, mal); if(n0) mal3.appendChild(n0);
         return;
       }
-      var apen = okBu.redigerer || !!okBu.stdApne[k];
+      var apen = red || !!okBu.stdApne[k];
       var knapp = okEl('button', 'ok-std-utvid', '<span class="ok-std-pil" aria-hidden="true">›</span>' + okVask(navn)); knapp.type = 'button';
-      knapp.setAttribute('aria-expanded', String(apen)); knapp.id = 'ok-std-utvid-' + (nr++);
-      knapp.addEventListener('click', function(){ if(okBu.redigerer) return; okBu.stdApne[k] = !okBu.stdApne[k]; var id = knapp.id; okStdTegn(); var f = document.getElementById(id); if(f) f.focus(); });
-      mal.appendChild(rad(knapp, okEl('span', '', okBuKr(okBuPostSum(k)))));
+      knapp.setAttribute('aria-expanded', String(apen)); knapp.id = pre + '-u-' + (nr++);
+      knapp.addEventListener('click', function(){ if(red) return; okBu.stdApne[k] = !okBu.stdApne[k]; var id = knapp.id; okBudKortTegn('standard'); okBudKortTegn(okBu.mbValgt); var f = document.getElementById(id); if(f) f.focus(); });
+      var hode = okEl('span', ''); hode.appendChild(knapp); if(pl) hode.appendChild(pl);
+      mal3.appendChild(rad(hode, verdi(k, true)));
       if(!apen) return;
       linjer.forEach(function(l){
         var ln = l.split(' · ')[2];
-        mal.appendChild(rad(navnSpan(ln, l), okBu.redigerer ? felt(l, navn + ', ' + ln) : okEl('span', '', okBuKr(okBuVerdi(l))), 'linje'));
+        mal3.appendChild(rad(navnSpan(ln, l), red ? felt(l, navn + ', ' + ln) : verdi(l), 'linje'));
       });
-      if(okBu.redigerer || okBuVerdi(k)) mal.appendChild(rad(okEl('span', '', 'Uten linje'), okBu.redigerer ? felt(k, navn + ' uten linje') : okEl('span', '', okBuKr(okBuVerdi(k))), 'linje'));
+      if(red || okBuVerdi(k, mal) || (!std && okBuVerdi(k, 'standard'))) mal3.appendChild(rad(okEl('span', '', 'Uten linje'), red ? felt(k, navn + ' uten linje') : verdi(k), 'linje'));
+      var n1 = nyRad(k, mal); if(n1) mal3.appendChild(n1);
     };
-    var hode = function(tittel, sum){ return okEl('div', 'ok-std-hode', '<span class="ok-etikett">' + tittel + '</span><b>' + kr(sum) + '</b>'); };
+    var hode = function(tittel, sum, g){
+      var h = okEl('div', 'ok-std-hode', '<span class="ok-etikett">' + tittel + '</span>');
+      var pl = g && pluss(g, 'Ny post i ' + g); if(pl) h.firstChild.appendChild(pl);
+      h.appendChild(okEl('b', '', kr(sum)));
+      return h;
+    };
     var poster = function(g){ return okBu.kategorier.filter(function(k){ var d = k.split(' · '); return d.length === 2 && d[0] === g; }); };
 
     var topp = okEl('div', 'ok-std-to');
     [['Inntekter', t.inn], ['Sparing', t.spar]].forEach(function(x){
       var b = okEl('div', '');
-      b.appendChild(hode(x[0], x[1]));
+      b.appendChild(hode(x[0], x[1], x[0]));
+      var n2 = nyRad(x[0], mal); if(n2) b.appendChild(n2);
       poster(x[0]).forEach(function(k){ postRader(k, b); });
       topp.appendChild(b);
     });
@@ -1377,15 +1474,20 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var grupper = okEl('div', 'ok-std-to');
     t.rekke.forEach(function(g){
       var b = okEl('div', '');
-      b.appendChild(okEl('div', 'ok-std-gruppe', '<span>' + okVask(g) + '</span><span>' + okBuKr(t.grupper[g]) + '</span>'));
+      var gh = okEl('div', 'ok-std-gruppe', '<span>' + okVask(g) + '</span>');
+      var pl = pluss(g, 'Ny post i ' + g); if(pl) gh.firstChild.appendChild(pl);
+      gh.appendChild(okEl('span', '', okBuKr(t.grupper[g])));
+      b.appendChild(gh);
+      var n3 = nyRad(g, mal); if(n3) b.appendChild(n3);
       poster(g).forEach(function(k){ postRader(k, b); });
       grupper.appendChild(b);
     });
     ut.appendChild(grupper);
     boks.appendChild(ut);
-    okBuNyTegn();
-    okBuKnapper();
+    okBuKnapper(mal);
   }
+  document.getElementById('ok-mb-forrige').addEventListener('click', function(){ var i = okBu.mnder.indexOf(okBu.mbValgt); if(i > 0 && !okBu.redigerer){ okBu.mbValgt = okBu.mnder[i - 1]; okBudKortTegn(okBu.mbValgt); } });
+  document.getElementById('ok-mb-neste').addEventListener('click', function(){ var i = okBu.mnder.indexOf(okBu.mbValgt); if(i < okBu.mnder.length - 1 && !okBu.redigerer){ okBu.mbValgt = okBu.mnder[i + 1]; okBudKortTegn(okBu.mbValgt); } });
 
   /* ---------- Foeringene bak et tall ----------
      Popupen viser postene som utgjoer regnskapstallet i maaneden som er
@@ -1434,75 +1536,56 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     okBu.kategorier = r.kategorier; okBu.egne = r.egne || [];
     okBuAlleTegn();
   }
-  function okBuNyTegn(){
-    var boks = document.getElementById('ok-bu-ny');
-    boks.hidden = !okBu.redigerer;
-    if(!okBu.redigerer) return;
-    var velg = document.getElementById('ok-bu-ny-under'), var0 = velg.value;
-    velg.innerHTML = '';
-    var grupper = [];
-    okBu.kategorier.forEach(function(k){ var g = k.split(' · ')[0]; if(grupper.indexOf(g) === -1) grupper.push(g); });
-    grupper.forEach(function(g){
-      var og = document.createElement('optgroup'); og.label = g;
-      og.appendChild(new Option('Ny post i ' + g, g));
-      okBu.kategorier.filter(function(k){ return k.split(' · ').length === 2 && k.split(' · ')[0] === g; })
-        .forEach(function(k){ og.appendChild(new Option('Ny linje under ' + k.split(' · ')[1], k)); });
-      velg.appendChild(og);
-    });
-    if(var0) velg.value = var0;
-  }
-  document.getElementById('ok-bu-ny-legg').addEventListener('click', function(){
-    var navn = document.getElementById('ok-bu-ny-navn'), melding = document.getElementById('ok-bu-ny-melding');
-    var under = document.getElementById('ok-bu-ny-under').value;
-    if(!navn.value.trim()){ melding.textContent = 'Skriv et navn først.'; navn.focus(); return; }
-    melding.textContent = 'Legger til …';
-    okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'kategori-ny', nye:[{ forelder:under, navn:navn.value }] }) })
-      .then(function(r){
-        if(!r.ok){ melding.textContent = 'Ble ikke lagt til: ' + r.feil; return; }
-        melding.textContent = r.nye.length ? '«' + r.nye[0].split(' · ').slice(1).join(' · ') + '» er lagt til. Fyll inn beløpet i tabellen.' : 'Den finnes fra før.';
-        navn.value = '';
-        okBuKategorierFra(r);
-      });
-  });
-  document.getElementById('ok-bu-ny-navn').addEventListener('keydown', function(e){ if(e.key === 'Enter') document.getElementById('ok-bu-ny-legg').click(); });
-  function okBuFjern(k){
-    var melding = document.getElementById('ok-bu-ny-melding');
+  function okBuFjern(k, mal){
+    var meta = document.getElementById(mal === 'standard' ? 'ok-std-meta' : 'ok-mb-meta');
     okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'kategori-slett', kategori:k }) })
       .then(function(r){
-        if(!r.ok){ melding.textContent = r.feil; return; }
+        if(!r.ok){ meta.textContent = r.feil; return; }
         if(okBu.utkast) delete okBu.utkast[k];
         delete okBu.standard[k];
-        melding.textContent = '«' + k.split(' · ').slice(1).join(' · ') + '» er fjernet.';
+        Object.keys(okBu.maaneder).forEach(function(m){ delete okBu.maaneder[m][k]; });
         okBuKategorierFra(r);
+        meta.textContent = '«' + k.split(' · ').slice(1).join(' · ') + '» er fjernet.';
       });
   }
 
-  function okBuEndret(){
+  function okBuEndret(mal){
     if(!okBu.utkast) return 0;
-    return Object.keys(okBu.utkast).filter(function(k){ return okBu.utkast[k] !== (okBu.standard[k] || 0); }).length;
+    return Object.keys(okBu.utkast).filter(function(k){ return okBu.utkast[k] !== (okBuKilde(mal)[k] || 0); }).length;
   }
-  function okBuKnapper(){
-    var rad = document.getElementById('ok-bu-knapper'); rad.innerHTML = '';
+  /* Knappene i et budsjettkort. Bare ett budsjett redigeres om gangen. */
+  function okBuKnapper(mal){
+    var std = mal === 'standard', pre = std ? 'ok-std' : 'ok-mb';
+    var rad = document.getElementById(pre + '-knapper'); rad.innerHTML = '';
     var knapp = function(kl, tekst, ved){ var b = okEl('button', kl, tekst); b.type = 'button'; b.addEventListener('click', ved); rad.appendChild(b); return b; };
-    if(!okBu.redigerer){
-      knapp('btn btn-endre', 'Rediger', function(){ okBu.redigerer = true; okBu.utkast = {}; okStdTegn(); var f = document.querySelector('#ok-std input'); if(f) f.focus(); });
+    var tegn = function(){ okBsTegn(); okBudKortTegn('standard'); okBudKortTegn(okBu.mbValgt); };
+    if(okBu.redigerer !== mal){
+      var r = knapp('btn btn-endre', 'Rediger', function(){ okBu.redigerer = mal; okBu.utkast = {}; okBu.ny = null; tegn(); var f = document.querySelector('#' + pre + ' input'); if(f) f.focus(); });
+      r.disabled = !!okBu.redigerer;
+      if(!std && okBu.maaneder[mal] && !okBu.redigerer){
+        knapp('ok-lenke', 'Bruk standardbudsjettet', function(){
+          okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'budsjett', mnd:mal, tilbake:true }) })
+            .then(function(s){ if(!s.ok){ document.getElementById('ok-mb-meta').textContent = 'Ble ikke lagret: ' + s.feil; return; } okBuSett(s); okBuAlleTegn(); okStatusLast(); if(okMnd.lastet) okMndLast(); });
+        });
+      }
       return;
     }
     knapp('btn btn-ny', 'Lagre', function(){
       var alt = {};
-      okBu.kategorier.forEach(function(k){ alt[k] = okBuVerdi(k); });
-      okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'budsjett', standard:alt }) })
-        .then(function(r){
-          if(!r.ok){ document.getElementById('ok-std-meta').textContent = 'Ble ikke lagret: ' + r.feil; return; }
-          okBu.standard = r.standard; okBu.redigerer = false; okBu.utkast = null;
-          document.getElementById('ok-bu-avbryt').hidden = true;
-          okBsTegn(); okStdTegn(); okBuTegn(); okStatusLast();
+      okBu.kategorier.forEach(function(k){ alt[k] = okBuVerdi(k, mal); });
+      var kropp = std ? { hva:'budsjett', standard:alt } : { hva:'budsjett', mnd:mal, maaned:alt };
+      okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(kropp) })
+        .then(function(s){
+          if(!s.ok){ document.getElementById(std ? 'ok-std-meta' : 'ok-mb-meta').textContent = 'Ble ikke lagret: ' + s.feil; return; }
+          okBu.redigerer = false; okBu.utkast = null; okBu.ny = null;
+          document.getElementById(pre + '-avbryt').hidden = true;
+          okBuSett(s); okBuAlleTegn(); okStatusLast(); if(okMnd.lastet) okMndLast();
         });
     });
     /* Avbryt spoer bare naar noe faktisk er endret (designsystemet, Avbryt-regelen). */
     knapp('btn btn-ghost ok-smal', 'Avbryt', function(){
-      var n = okBuEndret(), boks = document.getElementById('ok-bu-avbryt');
-      var ut = function(){ okBu.redigerer = false; okBu.utkast = null; boks.hidden = true; okBsTegn(); okStdTegn(); };
+      var n = okBuEndret(mal), boks = document.getElementById(pre + '-avbryt');
+      var ut = function(){ okBu.redigerer = false; okBu.utkast = null; okBu.ny = null; boks.hidden = true; tegn(); };
       if(!n){ ut(); return; }
       boks.innerHTML = '<p style="margin:0 0 8px">Du har endret ' + n + (n === 1 ? ' post' : ' poster') + '. Forkaste endringene?</p>';
       var r = okEl('div', 'ok-rad-knapper');
@@ -1511,97 +1594,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       r.appendChild(ja); r.appendChild(nei); boks.appendChild(r);
       boks.hidden = false; ja.focus();
     });
-    knapp('ok-lenke', 'Fyll inn fra Excel-arket', function(){ document.getElementById('ok-bu-excel').click(); });
   }
-
-  /* Excel-arket leses i nettleseren; fila sendes ingen steder. Cellene er
-     BUDSJETT-arket i «Ovsikt økonomi 2026», med etiketten ved siden av som
-     kontroll - staar det noe annet der, er arket endret og ingenting fylles inn. */
-  var OK_EXCEL = [
-    ['Inntekter · Magne','E23','B23','MAGNE'], ['Inntekter · Nina','E24','B24','NINA'], ['Inntekter · Barnetrygd','E25','B25','BARNETRYGD'], ['Inntekter · Annet','E27','B27','ANNET'],
-    ['Sparing · Buffer','E15','B15','BUFFER'], ['Sparing · Reise','E16','B16','REISE'], ['Sparing · Fond','E17','B17','FOND'], ['Sparing · Annet','E18','B18','ANNET'],
-    ['Bolig · Boliglån','H14','G14','BOLIGL'], ['Bolig · Boligforsikringer','H15','G15','BOLIGFORSIKRING'], ['Bolig · Strøm','H16','G16','STR'], ['Bolig · Kommunale avgifter','H17','G17','KOMMUNALE'], ['Bolig · Annet','H18','G18','ANNET'],
-    ['Bil · Bompenger','H23','G23','BOMPENGER'], ['Bil · Parkering','H24','G24','PARKERING'], ['Bil · Utgifter PHEV','H25','G25','UTGIFTER PHEV'], ['Bil · Utgifter Suzuki','H26','G26','UTGIFTER SUZUKI'], ['Bil · Annet','H27','G27','ANNET'],
-    ['Barna · Felles','K4','J4','FELLES'], ['Barna · Emma','K5','J5','EMMA'], ['Barna · Andrea','K6','J6','ANDREA'], ['Barna · Annet','K7','J7','ANNET'],
-    ['Mat · Dagligvare','K12','J12','DAGLIGVARE'], ['Mat · Takeaway','K13','J13','TAKEAWAY'], ['Mat · Annet','K14','J14','ANNET'],
-    ['Felles fritid · TV/streaming','K19','J19','TV'], ['Felles fritid · Forsikring','K20','J20','FORSIKRING'], ['Felles fritid · Annet','K21','J21','ANNET'],
-    ['Andre utgifter · Magne','K26','J26','MAGNE'], ['Andre utgifter · Nina','K27','J27','NINA'], ['Andre utgifter · Felles','K28','J28','FELLES']
-  ];
-  /* Linjene under postene: radene som postens SUM-formel i kolonne E
-     dekker. Raden foran er posten selv og kontrolleres som over. Navnene
-     hentes fra arket - de staar ikke her (repoet er offentlig). Har en post
-     bare én linje, blir beloepet staaende paa posten. */
-  var OK_EXCEL_LINJER = [
-    ['Bolig · Boliglån', 36, 39, 'BOLIGL'], ['Bolig · Boligforsikringer', 41, 42, 'FORSIKRING'], ['Bolig · Strøm', 44, 46, 'STR'],
-    ['Bolig · Kommunale avgifter', 48, 50, 'KOMUNALE'], ['Bolig · Annet', 52, 59, 'ANNET'],
-    ['Bil · Utgifter PHEV', 72, 76, 'UTGIFTER PHEV'], ['Bil · Utgifter Suzuki', 78, 82, 'UTGIFTER SUZUKI'], ['Bil · Annet', 84, 90, 'ANNET'],
-    ['Barna · Felles', 108, 112, 'FELLES'], ['Barna · Emma', 114, 118, 'EMMA'], ['Barna · Andrea', 120, 124, 'ANDREA'], ['Barna · Annet', 126, 129, 'ANNET'],
-    ['Felles fritid · TV/streaming', 139, 146, 'TV'], ['Felles fritid · Forsikring', 148, 148, 'FORSIKRING'], ['Felles fritid · Annet', 150, 155, 'ANNET'],
-    ['Andre utgifter · Magne', 161, 167, 'MAGNE'], ['Andre utgifter · Nina', 169, 179, 'NINA'], ['Andre utgifter · Felles', 181, 185, 'FELLES'],
-    ['Mat · Dagligvare', 192, 197, 'DAGLIGVARE'], ['Mat · Takeaway', 199, 202, 'TAKEAWAY'], ['Mat · Annet', 204, 207, 'ANNET'],
-    ['Sparing · Annet', 225, 236, 'ANNET'], ['Inntekter · Magne', 253, 257, 'MAGNE'], ['Inntekter · Nina', 259, 263, 'NINA']
-  ];
-  /* «UKEPENGER EMMA» under Emma blir «Ukepenger». Korte ord som SPK og
-     HBO, og ord med tall, beholder store bokstaver. Parentesen med
-     betalingsmaanedene («(1,4,7,10)») tas bort. */
-  function okExcelNavn(tekst, post){
-    var eier = post.split(' · ')[1].toUpperCase();
-    var ord = String(tekst).replace(/\([^)]*\)/g, ' ').trim().replace(/\s+/g, ' ').split(' ');
-    if(ord.length > 1 && ord[ord.length - 1].toUpperCase() === eier) ord.pop();
-    var smaa = ['AV', 'OG', 'I', 'PÅ', 'TIL', 'FOR', 'MED'];
-    var ut = ord.map(function(w){
-      return w.split('/').map(function(d){
-        if(/\d/.test(d) || (d.length <= 3 && /^[A-ZÆØÅ]+$/.test(d) && smaa.indexOf(d) === -1) || d === 'PHEV') return d;
-        return d.toLowerCase();
-      }).join('/');
-    }).join(' ').replace(/\s*-\s*/g, ' – ');
-    return ut.charAt(0).toUpperCase() + ut.slice(1);
-  }
-  function okLastXlsx(){
-    if(window.XLSX) return Promise.resolve();
-    return new Promise(function(ok, nei){
-      var s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-      s.onload = ok; s.onerror = function(){ nei(new Error('Kunne ikke laste Excel-leseren')); };
-      document.head.appendChild(s);
-    });
-  }
-  document.getElementById('ok-bu-excel').addEventListener('change', function(){
-    var fil = this.files && this.files[0], meta = document.getElementById('ok-std-meta'), inp = this;
-    if(!fil) return;
-    meta.textContent = 'Leser Excel-arket …';
-    okLastXlsx().then(function(){ return fil.arrayBuffer(); }).then(function(buf){
-      var bok = window.XLSX.read(buf, { type:'array' });
-      var ark = bok.Sheets['BUDSJETT'];
-      if(!ark) throw new Error('Fant ikke arket «BUDSJETT»');
-      var feil = OK_EXCEL.filter(function(m){ return String((ark[m[2]] || {}).v || '').toUpperCase().indexOf(m[3]) !== 0; });
-      if(feil.length) throw new Error('Arket ser annerledes ut enn ventet (' + feil.map(function(m){ return m[2]; }).join(', ') + '). Ingenting er fylt inn.');
-      OK_EXCEL.forEach(function(m){ okBu.utkast[m[0]] = Math.round(Number((ark[m[1]] || {}).v) || 0); });
-      if(String((ark.B265 || {}).v || '').toUpperCase().indexOf('STR') === 0) okBu.utkast['Inntekter · Strømstøtte'] = Math.round(Number((ark.E265 || {}).v) || 0);
-      /* Linjene: kontrollen foerst, saa opprettes de som mangler, saa fylles tallene inn. */
-      var lfeil = OK_EXCEL_LINJER.filter(function(m){ return String((ark['B' + (m[1] - 1)] || {}).v || '').toUpperCase().indexOf(m[3]) !== 0; });
-      if(lfeil.length) throw new Error('Linjene i arket ser annerledes ut enn ventet (rad ' + lfeil.map(function(m){ return m[1] - 1; }).join(', ') + '). Postene er fylt inn, linjene ikke.');
-      var nye = [], tall = {};
-      OK_EXCEL_LINJER.forEach(function(m){
-        var rader = [];
-        for(var r = m[1]; r <= m[2]; r++){
-          var navn = String((ark['B' + r] || {}).v || '').trim();
-          if(navn) rader.push({ navn:okExcelNavn(navn, m[0]), belop:Math.round(Number((ark['E' + r] || {}).v) || 0) });
-        }
-        if(rader.length < 2) return;
-        okBu.utkast[m[0]] = 0;
-        rader.forEach(function(x){ nye.push({ forelder:m[0], navn:x.navn }); tall[m[0] + ' · ' + x.navn] = x.belop; });
-      });
-      return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'kategori-ny', nye:nye }) }).then(function(r){
-        if(!r.ok) throw new Error('Linjene ble ikke lagt til: ' + r.feil + '. Postene er fylt inn.');
-        okBu.kategorier = r.kategorier; okBu.egne = r.egne || [];
-        Object.keys(tall).forEach(function(k){ if(okBu.kategorier.indexOf(k) !== -1) okBu.utkast[k] = tall[k]; });
-        okBuAlleTegn();
-        meta.textContent = 'Fylt inn fra Excel-arket, med ' + nye.length + ' linjer under postene. Sjekk tallene og trykk Lagre.';
-      });
-    }).catch(function(e){ meta.textContent = String(e && e.message || e); if(okBu.redigerer){ okBsTegn(); okStdTegn(); } })
-      .then(function(){ inp.value = ''; });
-  });
 
   /* ---------- Kvittering fra bilde eller PDF ----------
      Neam leser kvitteringen via /api/claude, som andre sider gjoer (samme
@@ -1934,8 +1927,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       kats.forEach(function(k){
         var g = okGruppe(k);
         if(!grupper[g]){ grupper[g] = { b:0, r:0 }; rekke.push(g); }
-        grupper[g].b += b.standard[k] || 0; grupper[g].r += r.regnskap[k] || 0;
-        bud += b.standard[k] || 0; brukt += r.regnskap[k] || 0;
+        var mb = okBudFor(b, r.mnd);
+        grupper[g].b += mb[k] || 0; grupper[g].r += r.regnskap[k] || 0;
+        bud += mb[k] || 0; brukt += r.regnskap[k] || 0;
       });
       var naa = new Date(), dager = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
       var iMnd = r.mnd === naa.toISOString().slice(0, 7);
@@ -1952,7 +1946,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         var fyll = okEl('button', 'btn btn-endre', 'Fyll inn budsjettet'); fyll.type = 'button'; fyll.style.alignSelf = 'flex-start';
         fyll.addEventListener('click', function(){
           okVis('budsjett'); window.scrollTo(0, 0);
-          if(!okBu.redigerer){ okBu.redigerer = true; okBu.utkast = {}; okBsTegn(); okStdTegn(); }
+          if(!okBu.redigerer){ okBu.redigerer = 'standard'; okBu.utkast = {}; okBsTegn(); okBudKortTegn('standard'); okBudKortTegn(okBu.mbValgt); }
         });
         boks.style.display = 'flex'; boks.style.flexDirection = 'column'; boks.style.gap = '10px';
         boks.appendChild(fyll);
@@ -2121,16 +2115,17 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     /* Maaneder innenfor budsjett: de hele maanedene Neam har tall for. */
     var b = okSt.bud, aar = okSt.aar;
     if(!b || !aar) return;
-    var utg = (b.kategorier || []).filter(okErUtgift).reduce(function(s, k){ return s + (b.standard[k] || 0); }, 0);
+    var utgFor = function(m){ var mb = okBudFor(b, m); return (b.kategorier || []).filter(okErUtgift).reduce(function(s, k){ return s + (mb[k] || 0); }, 0); };
+    var utg = utgFor(new Date().toISOString().slice(0, 7));
     var denne = new Date().toISOString().slice(0, 7);
     var mnder = Object.keys(aar.maaneder || {}).filter(function(x){ return x < denne && (!aar.fra || x >= aar.fra.slice(0, 7)); }).sort().slice(-12);
     if(!utg || !mnder.length) return;
     var rekke = okEl('div', 'ok-rekke', '');
     mnder.forEach(function(x){
-      var tall = aar.maaneder[x], brukt = Object.keys(tall).filter(okErUtgift).reduce(function(s, k){ return s + tall[k]; }, 0);
+      var tall = aar.maaneder[x], brukt = Object.keys(tall).filter(okErUtgift).reduce(function(s, k){ return s + tall[k]; }, 0), ub = utgFor(x);
       var navn = okMndNavn.format(new Date(x + '-01T12:00:00'));
-      var i = okEl('i', brukt <= utg ? 'ja' : '', navn.charAt(0).toUpperCase());
-      i.title = navn + (brukt <= utg ? ': innenfor' : ': over');
+      var i = okEl('i', brukt <= ub ? 'ja' : '', navn.charAt(0).toUpperCase());
+      i.title = navn + (brukt <= ub ? ': innenfor' : ': over');
       rekke.appendChild(i);
     });
     var del = okEl('div', '', '<span class="ok-etikett">Måneder innenfor budsjett</span>');
@@ -2239,7 +2234,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
      snittet er maanedene foer, fra innboksen startet. */
   function okMndLast(){
     var vent = [okHent('/api/bank?hva=regnskap-aar')];
-    if(!okBu.kategorier.length) vent.push(okHent('/api/bank?hva=budsjett').then(function(b){ if(b.ok){ okBu.kategorier = b.kategorier; okBu.egne = b.egne || []; okBu.standard = b.standard || {}; } }));
+    vent.push(okHent('/api/bank?hva=budsjett').then(function(b){ if(b.ok && !okBu.redigerer) okBuSett(b); }));
     return Promise.all(vent).then(function(s){
       var r = s[0], boks = document.getElementById('ok-mnd-tabell');
       if(!r.ok){ boks.innerHTML = '<p class="ok-melding feil">' + okVask(r.feil) + '</p>'; return; }
@@ -2266,10 +2261,11 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     document.getElementById('ok-mnd-navn').textContent = navn.charAt(0).toUpperCase() + navn.slice(1);
     document.getElementById('ok-mnd-forrige').disabled = i <= 0;
     document.getElementById('ok-mnd-neste').disabled = paagaar;
-    document.getElementById('ok-mnd-meta').textContent = (paagaar ? 'Pågår' : 'Avsluttet') + ' · budsjett fra standardbudsjettet';
+    document.getElementById('ok-mnd-meta').textContent = (paagaar ? 'Pågår' : 'Avsluttet') + ' · ' + (okBu.maaneder[m] ? 'månedens eget budsjett' : 'budsjett fra standardbudsjettet');
     var reg = okMnd.aar[m] || {};
     var faktisk = function(k){ return okBuLinjer(k).reduce(function(s, l){ return s + (reg[l] || 0); }, reg[k] || 0); };
-    var budsjett = function(k){ return okBuLinjer(k).reduce(function(s, l){ return s + (okBu.standard[l] || 0); }, okBu.standard[k] || 0); };
+    var mb = okBudFor(okBu, m);
+    var budsjett = function(k){ return okBuLinjer(k).reduce(function(s, l){ return s + (mb[l] || 0); }, mb[k] || 0); };
     var poster = okBu.kategorier.filter(function(k){ return k.split(' · ').length === 2; });
     var gruppe = function(k){ return k.split(' · ')[0]; };
     var inn = 0, ut = 0, spar = 0;
@@ -2399,7 +2395,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       var gruppe = function(k){ return k.split(' · ')[0]; };
       var utgift = function(k){ return gruppe(k) !== 'Inntekter' && gruppe(k) !== 'Sparing'; };
       var kats = b.kategorier.filter(utgift);
-      var bud = kats.reduce(function(s, k){ return s + (b.standard[k] || 0); }, 0);
+      var budFor = function(m, filter){ var mb = okBudFor(b, m); return kats.filter(filter || function(){ return true; }).reduce(function(s, k){ return s + (mb[k] || 0); }, 0); };
+      var bud = budFor(new Date().toISOString().slice(0, 7));
       /* Maanedene fra innboksen startet til i dag. */
       var mnder = [], d = new Date(((r.fra || new Date().toISOString()).slice(0, 7)) + '-01T12:00:00'), slutt = new Date().toISOString().slice(0, 7);
       while(d.toISOString().slice(0, 7) <= slutt){ mnder.push(d.toISOString().slice(0, 7)); d.setMonth(d.getMonth() + 1); }
@@ -2415,7 +2412,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Utgifter per måned mot budsjett">';
       for(var t = 0; t <= maks; t += tikk) svg += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y(t) + '" y2="' + y(t) + '" stroke="var(--line)"/><text x="' + (pl - 6) + '" y="' + (y(t) + 4) + '" text-anchor="end" font-size="11" fill="var(--ink-soft)">' + Math.round(t / 1000) + ' k</text>';
       mnder.forEach(function(m, i){
-        var v = verdier[i], x = pl + i * bw + bw * 0.18, w = bw * 0.64, over = bud && v > bud * 1.02;
+        var v = verdier[i], x = pl + i * bw + bw * 0.18, w = bw * 0.64, bm = budFor(m), over = bm && v > bm * 1.02;
         svg += '<rect x="' + x + '" y="' + y(v) + '" width="' + w + '" height="' + (y(0) - y(v)) + '" rx="4" fill="' + (over ? 'var(--danger)' : 'var(--aksent)') + '"><title>' + okMndNavn.format(new Date(m + '-01T12:00:00')) + ': ' + okKr0.format(v) + ' kr</title></rect>';
         svg += '<text x="' + (x + w / 2) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="11" fill="var(--ink-soft)">' + new Intl.DateTimeFormat('nb-NO', { month:'short' }).format(new Date(m + '-01T12:00:00')) + '</text>';
       });
@@ -2425,9 +2422,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       var grupper = []; kats.forEach(function(k){ if(grupper.indexOf(gruppe(k)) === -1) grupper.push(gruppe(k)); });
       var h = '<thead><tr><th>Kategori</th>' + mnder.map(function(m){ return '<th>' + new Intl.DateTimeFormat('nb-NO', { month:'short' }).format(new Date(m + '-01T12:00:00')) + '</th>'; }).join('') + '</tr></thead><tbody>';
       grupper.forEach(function(g){
-        var gb = kats.filter(function(k){ return gruppe(k) === g; }).reduce(function(s, k){ return s + (b.standard[k] || 0); }, 0);
         h += '<tr><td>' + okVask(g) + '</td>';
         mnder.forEach(function(m){
+          var gb = budFor(m, function(k){ return gruppe(k) === g; });
           var v = sum(m, function(k){ return gruppe(k) === g; });
           var p = gb ? Math.round(v / gb * 100) : null;
           var stil = p == null ? 'background:var(--boks-mild);color:var(--ink-soft)' : p > 115 ? 'background:var(--danger);color:#fff' : p > 103 ? 'background:var(--boks-mild);color:var(--danger);box-shadow:inset 0 0 0 1px var(--danger)' : 'background:var(--boks-mild)';
