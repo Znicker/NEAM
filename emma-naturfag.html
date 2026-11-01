@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Naturfag">
+<meta name="theme-color" content="#F5F5F5">
+<meta name="robots" content="noindex, nofollow">
+<title>Naturfag – Neam</title>
+<link rel="apple-touch-icon" href="/bilder/neam-hjemskjerm.png?v=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/felles-rot.css?v=6">
+<style>
+/* ============================================================
+   NEAM - Naturfagspill for Emma
+   Laget 1. november 2026, til proeven 2. november. Innholdet er
+   puggearket «Stoffer og byggesteiner / Metoder og reaksjoner /
+   Vitenskap og modeller» - 14 punkter, og ingenting utover det.
+
+   TRE MAATER AA OEVE PAA DET SAMME:
+     Quiz        - flervalg, med regnestykker i massetetthet og
+                   periodesystemet generert fra en liten tabell
+     Puggekort   - arkets egen metode: les maalet, forklar hoeyt,
+                   se svaret, si selv om hun kunne det
+     Sorter      - ett stoff eller eksempel av gangen inn i riktig boks
+
+   FRAMDRIFT ER GEOGRAFI, IKKE PROSENT. De 14 punktene staar som ruter
+   oeverst, gruppert som paa arket. Hver rute har tre prikker; et riktig
+   svar eller et «Kunne det» tenner en. Tre prikker gjoer ruta gul.
+   Et galt svar slukker ingenting - det skal ikke koste aa proeve.
+
+   Samme ramme som grunnstoffspillet: gult (--lys) betyr «det der gikk
+   bra», et galt svar er dust og overstroeket og aldri roedt, ingen
+   Neam-firer (samtalen er en rask vei til fasiten), og veien ut er
+   merket oppe til venstre og sveip tilbake.
+
+   Framdriften ligger bare i localStorage paa enheten. Det er en
+   oevingsside til en proeve, ikke data huset trenger.
+
+   KLASSENAVN ER PREFIKSET `nf-`.
+   ============================================================ */
+
+:root{
+  --messing:#B8873A;
+  --messing-lys:#D9AE68;
+  --lys:#F2C14E;
+  --lys-glod:rgba(242,193,78,.75);
+}
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ margin:0; padding:0; width:100%; overflow-x:clip; color:var(--ink); }
+body{
+  font-family:'Archivo', system-ui, -apple-system, sans-serif;
+  background:var(--side-bakgrunn);
+  min-height:100vh;
+}
+.nf-side{ max-width:980px; margin:0 auto; padding:10px 12px calc(28px + env(safe-area-inset-bottom)); }
+@media(min-width:700px){ .nf-side{ padding:18px 20px 36px; } }
+
+/* ---------- Topplinja ---------- */
+.nf-topp{ display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+.nf-merke{ flex-shrink:0; display:block; width:56px; height:56px; }
+.nf-merke img{ width:100%; height:100%; object-fit:contain; display:block; }
+.nf-merke img[hidden]{ display:none; }
+@media(min-width:700px){ .nf-merke{ width:84px; height:84px; } }
+.nf-tittel{ margin:0; font-size:var(--t-stor); font-weight:700; line-height:1.15; }
+.nf-tittel span{
+  display:block; font-size:var(--t-etikett); font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft);
+}
+.nf-faner{ display:flex; gap:4px; margin-left:auto; flex-wrap:wrap; justify-content:flex-end; }
+@media(max-width:640px){
+  .nf-faner{ margin-left:0; width:100%; justify-content:flex-start; gap:0; }
+  .nf-fane{ padding:8px 12px 8px 0; }
+}
+.nf-fane{
+  border:none; background:transparent; font-family:inherit; cursor:pointer;
+  font-size:var(--t-meta); font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--ink-soft);
+  padding:8px 10px; border-bottom:3px solid transparent;
+}
+.nf-fane.nf-valgt{ color:var(--ink); border-bottom-color:var(--messing); }
+
+/* ---------- Panelet ---------- */
+.nf-panel{
+  background:var(--paper); border:2px solid var(--messing);
+  border-radius:18px; box-shadow:var(--shadow);
+  padding:14px; margin-bottom:14px;
+}
+@media(min-width:700px){ .nf-panel{ padding:18px; } }
+.nf-panel-tittel{
+  font-size:var(--t-meta); font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink); margin:0 0 10px;
+}
+.nf-ledetekst{ font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); margin:0 0 12px; line-height:1.45; }
+
+/* ---------- Kartet: de 14 punktene ---------- */
+.nf-kart{ display:grid; grid-template-columns:1fr; gap:10px; }
+@media(min-width:760px){ .nf-kart{ grid-template-columns:5fr 5fr 4fr; } }
+.nf-del-navn{
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-soft); margin:0 0 6px;
+}
+.nf-ruter{ display:flex; gap:6px; flex-wrap:wrap; }
+.nf-rute{
+  width:48px; height:52px; border-radius:10px; cursor:pointer; padding:0;
+  border:2px solid var(--line); background:var(--boks-mild); color:var(--ink);
+  font-family:inherit; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:5px;
+}
+.nf-rute:active{ transform:scale(.94); }
+.nf-rute b{ font-size:var(--t-brod); font-weight:700; line-height:1; }
+.nf-prikker3{ display:flex; gap:3px; }
+.nf-prikker3 i{
+  width:7px; height:7px; border-radius:50%; display:block;
+  border:1.5px solid var(--boks-kant); background:transparent;
+}
+.nf-prikker3 i.nf-tent{ background:var(--lys); border-color:var(--messing-lys); }
+.nf-rute.nf-mestret{
+  border-color:var(--lys); background:rgba(242,193,78,.28);
+  box-shadow:0 0 0 2px var(--lys-glod);
+}
+.nf-kart-sum{ margin:10px 0 0; font-size:var(--t-meta); font-weight:700; color:var(--ink-soft); }
+/* Telefon: kartet tar en tredjedel av skjermen. Midt i en runde skal
+   spoersmaalet staa oeverst uten rulling, saa kartet viker til runden
+   er ferdig - det er paa oppsettet og resultatet det betyr noe. */
+@media(max-width:640px){
+  body.nf-i-runde .nf-kart-panel{ display:none; }
+  .nf-ruter{ gap:5px; }
+  .nf-rute{ width:44px; height:48px; }
+  .nf-sporsmaal{ margin:10px 0 12px; }
+  .nf-svar-knapp{ padding:13px 14px; }
+  .nf-ting{ margin:10px auto 12px; padding:16px 12px; }
+  .nf-boks{ min-height:72px; padding:9px 10px; }
+  .nf-knapper .nf-knapp{ flex:1 1 auto; }
+}
+
+/* ---------- Knapper og valg ---------- */
+.nf-knapp{
+  font-family:inherit; font-size:var(--t-brod); font-weight:700;
+  padding:11px 18px; border-radius:12px; cursor:pointer;
+  border:2px solid var(--messing); background:var(--paper); color:var(--ink);
+}
+.nf-knapp:active{ transform:scale(.98); }
+.nf-knapp.nf-tung{ background:var(--aksent); border-color:var(--aksent); color:#FFFFFF; }
+.nf-knapp.nf-tung:active{ background:var(--aksent-moerk); }
+.nf-knapp[disabled]{ opacity:.45; cursor:default; }
+.nf-knapper{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+
+.nf-valg{ display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 16px; }
+.nf-velger{
+  font-family:inherit; font-size:var(--t-brod); font-weight:700;
+  padding:9px 16px; border-radius:999px; cursor:pointer;
+  border:2px solid var(--line); background:var(--paper); color:var(--ink-soft);
+}
+.nf-velger.nf-pa{ border-color:var(--messing); color:var(--ink); background:var(--boks-mild); }
+.nf-velger .nf-hake{ margin-right:6px; opacity:0; }
+.nf-velger.nf-pa .nf-hake{ opacity:1; }
+.nf-undertittel{
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-soft); margin:4px 0 0;
+}
+
+/* ---------- Spoersmaal ---------- */
+.nf-hode{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.nf-teller{
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-soft);
+}
+.nf-lapp{
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.06em;
+  border:1px solid var(--boks-kant); background:var(--boks-mild);
+  border-radius:999px; padding:3px 10px; color:var(--ink-soft);
+}
+/* «På rad» er gult fordi det er gult som betyr at noe gikk bra. */
+.nf-rad{
+  margin-left:auto; font-size:var(--t-meta); font-weight:700;
+  background:rgba(242,193,78,.25); border:1px solid var(--lys);
+  border-radius:999px; padding:3px 12px;
+}
+.nf-rad[hidden]{ display:none; }
+.nf-rad.nf-pop{ animation:nfPop .5s ease; }
+@keyframes nfPop{ 0%{ transform:scale(1); } 40%{ transform:scale(1.18); } 100%{ transform:scale(1); } }
+
+.nf-sporsmaal{ font-size:var(--t-stor); font-weight:700; margin:12px 0 14px; line-height:1.3; }
+.nf-svar{ display:grid; grid-template-columns:1fr; gap:10px; }
+@media(min-width:620px){ .nf-svar{ grid-template-columns:1fr 1fr; } }
+.nf-svar-knapp{
+  font-family:inherit; font-size:var(--t-brod); font-weight:700; text-align:left;
+  padding:14px 16px; border-radius:12px; cursor:pointer; line-height:1.35;
+  border:2px solid var(--line); background:var(--paper); color:var(--ink);
+}
+.nf-svar-knapp:active{ transform:scale(.99); }
+.nf-svar-knapp.nf-riktig{
+  border-color:var(--lys); background:rgba(242,193,78,.22);
+  box-shadow:0 0 0 3px var(--lys-glod);
+}
+.nf-svar-knapp.nf-galt{ opacity:.5; text-decoration:line-through; }
+.nf-svar-knapp[disabled]{ cursor:default; }
+
+.nf-fasit{
+  margin-top:14px; font-size:var(--t-brod); font-weight:600; line-height:1.5;
+  background:var(--boks-mild); border:1px solid var(--boks-kant);
+  border-radius:12px; padding:12px 14px;
+}
+.nf-fasit[hidden]{ display:none; }
+.nf-fasit b{ display:block; margin-bottom:2px; }
+
+.nf-prikker{ display:flex; gap:5px; margin:12px 0 0; flex-wrap:wrap; }
+.nf-prikker i{
+  width:10px; height:10px; border-radius:50%; display:block;
+  border:2px solid var(--line); background:transparent;
+}
+.nf-prikker i.nf-p-riktig{ background:var(--lys); border-color:var(--lys); }
+.nf-prikker i.nf-p-bom{ background:var(--ink-soft); border-color:var(--ink-soft); opacity:.45; }
+.nf-prikker i.nf-p-na{ border-color:var(--messing); }
+
+/* ---------- Resultatet ---------- */
+.nf-resultat{ text-align:center; }
+.nf-stjerner{ display:flex; justify-content:center; gap:8px; margin:6px 0 12px; }
+.nf-stjerne{ width:52px; height:52px; display:block; }
+.nf-stjerne.nf-tom-stjerne{ filter:grayscale(1) opacity(.32); }
+.nf-stjerne.nf-glod{ filter:drop-shadow(0 0 8px var(--lys-glod)); }
+.nf-stort-tall{ font-size:var(--t-display); font-weight:700; line-height:1; margin:4px 0; }
+.nf-skryt{ font-size:var(--t-stor); font-weight:700; margin:6px 0 4px; }
+.nf-gitt{
+  display:inline-block; margin:6px 0 4px;
+  font-size:var(--t-meta); font-weight:700; letter-spacing:.06em;
+  background:rgba(242,193,78,.25); border:1px solid var(--lys);
+  border-radius:999px; padding:5px 14px;
+}
+.nf-resultat .nf-knapper{ justify-content:center; }
+.nf-fasitliste{ text-align:left; margin-top:18px; }
+.nf-fasitrad{ padding:9px 0; border-top:1px solid var(--line); font-size:var(--t-meta); line-height:1.45; }
+.nf-fasitrad b{ display:block; font-size:var(--t-brod); }
+.nf-fasitrad s{ color:var(--ink-soft); }
+
+/* ---------- Puggekort ---------- */
+.nf-kort{
+  border:2px solid var(--boks-kant); border-radius:16px;
+  background:var(--bg-solid); padding:18px 16px; min-height:180px;
+}
+.nf-kort-maal{ font-size:var(--t-stor); font-weight:700; line-height:1.3; margin:8px 0 0; }
+.nf-kort-tips{ font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); margin:12px 0 0; }
+.nf-kort-svar{
+  margin-top:16px; padding-top:14px; border-top:2px dashed var(--boks-kant);
+  font-size:var(--t-brod); font-weight:600; line-height:1.55;
+}
+.nf-kort-svar[hidden]{ display:none; }
+.nf-kort-svar p{ margin:0 0 8px; }
+.nf-kort-svar ul{ margin:0 0 8px; padding-left:20px; }
+.nf-kort-svar dl{ margin:0; }
+.nf-kort-svar dt{ font-weight:700; margin-top:8px; }
+.nf-kort-svar dd{ margin:0; }
+
+/* ---------- Sorter ---------- */
+.nf-sett{ display:grid; grid-template-columns:1fr; gap:10px; }
+@media(min-width:620px){ .nf-sett{ grid-template-columns:1fr 1fr; } }
+.nf-sett-knapp{
+  border:2px solid var(--line); border-radius:14px; padding:14px;
+  background:var(--boks-mild); cursor:pointer; font-family:inherit;
+  text-align:left; color:var(--ink);
+}
+.nf-sett-knapp:active{ transform:scale(.99); }
+.nf-sett-knapp h3{
+  margin:0 0 4px; font-size:var(--t-meta); font-weight:700;
+  letter-spacing:.1em; text-transform:uppercase;
+}
+.nf-sett-knapp p{ margin:0; font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); line-height:1.4; }
+.nf-sett-knapp .nf-rekord{ display:block; margin-top:6px; font-size:var(--t-etikett); font-weight:700; color:var(--ink-soft); }
+
+.nf-ting{
+  margin:14px auto 16px; max-width:460px; text-align:center;
+  border:2px solid var(--messing); border-radius:16px; background:var(--bg-solid);
+  padding:20px 16px; font-size:var(--t-stor); font-weight:700; line-height:1.3;
+  box-shadow:var(--shadow);
+}
+.nf-ting.nf-inn{ animation:nfInn .28s ease; }
+@keyframes nfInn{ from{ opacity:0; transform:translateY(-10px) scale(.97); } to{ opacity:1; transform:none; } }
+.nf-bokser{ display:grid; gap:10px; grid-template-columns:repeat(var(--nf-kol, 2), 1fr); }
+@media(max-width:560px){ .nf-bokser{ grid-template-columns:1fr 1fr; } }
+.nf-boks{
+  font-family:inherit; cursor:pointer; text-align:left; color:var(--ink);
+  border:2px solid var(--line); border-radius:14px; background:var(--paper);
+  padding:10px 12px; min-height:92px; display:flex; flex-direction:column; gap:6px;
+}
+.nf-boks:active{ transform:scale(.98); }
+.nf-boks[disabled]{ cursor:default; }
+.nf-boks-navn{ font-size:var(--t-brod); font-weight:700; }
+.nf-boks ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:3px; }
+.nf-boks li{ font-size:var(--t-etikett); font-weight:600; color:var(--ink-soft); line-height:1.3; }
+.nf-boks li.nf-li-bom{ text-decoration:underline dotted; }
+.nf-boks.nf-riktig{ border-color:var(--lys); background:rgba(242,193,78,.22); box-shadow:0 0 0 3px var(--lys-glod); }
+.nf-boks.nf-galt{ opacity:.5; }
+</style>
+</head>
+<body>
+
+<div class="nf-side">
+
+  <div class="nf-topp">
+    <a class="nf-merke" href="/emma.html" aria-label="Til Emma dash">
+      <img src="/bilder/ikoner/emma.png?v=1" alt="Emma dash" width="225" height="199"
+           onerror="this.hidden = true">
+    </a>
+    <h1 class="nf-tittel">Naturfag<span>Emmas puggeark</span></h1>
+    <div class="nf-faner">
+      <button class="nf-fane nf-valgt" id="faneQuiz" onclick="visFane('quiz')">Quiz</button>
+      <button class="nf-fane" id="faneKort" onclick="visFane('kort')">Puggekort</button>
+      <button class="nf-fane" id="faneSorter" onclick="visFane('sorter')">Sorter</button>
+    </div>
+  </div>
+
+  <div class="nf-panel nf-kart-panel">
+    <div class="nf-kart" id="kart"></div>
+    <p class="nf-kart-sum" id="kartSum"></p>
+  </div>
+
+  <div class="nf-panel" id="flate"></div>
+
+</div>
+
+<script>
+/* ================================================================
+   INNHOLDET - rett fra puggearket
+   ================================================================ */
+const DELER = [
+  { navn:'Stoffer og byggesteiner', punkter:[1,2,3,4,5] },
+  { navn:'Metoder og reaksjoner',   punkter:[6,7,8,9,10] },
+  { navn:'Vitenskap og modeller',   punkter:[11,12,13,14] }
+];
+
+/* Puggekortene. `svar` er HTML og skrevet her, aldri fra brukeren. */
+const PUNKTER = {
+  1:{ kort:'Grunnstoff og kjemisk forbindelse',
+      maal:'Beskrive forskjellen på grunnstoff og kjemiske forbindelser.',
+      svar:'<p>Et <b>grunnstoff</b> består av bare én type atomer, for eksempel oksygen (O).</p><p>En <b>kjemisk forbindelse</b> består av minst to ulike typer atomer som er bundet sammen.</p>',
+      kort_fasit:'Grunnstoff: bare én type atomer. Kjemisk forbindelse: minst to ulike typer atomer bundet sammen.' },
+  2:{ kort:'Rent stoff og stoffblanding',
+      maal:'Beskrive forskjellen på rene stoffer og stoffblandinger.',
+      svar:'<p>Et <b>rent stoff</b> består av bare ett stoff, for eksempel rent vann.</p><p>En <b>stoffblanding</b> består av to eller flere stoffer blandet sammen, for eksempel saltvann.</p>',
+      kort_fasit:'Rent stoff: bare ett stoff (rent vann). Stoffblanding: to eller flere stoffer blandet sammen (saltvann).' },
+  3:{ kort:'Atom og molekyl',
+      maal:'Beskrive forskjellen på atomer og molekyler.',
+      svar:'<p>Et <b>atom</b> er en bitte liten byggestein som stoffer er laget av.</p><p>Et <b>molekyl</b> består av to eller flere atomer som er bundet sammen. Eksempel: H₂O.</p>',
+      kort_fasit:'Atom: en bitte liten byggestein. Molekyl: to eller flere atomer bundet sammen, som H₂O.' },
+  4:{ kort:'Periodesystemet',
+      maal:'Bruke periodesystemet til å lese av informasjon om grunnstoffer.',
+      svar:'<dl><dt>Atomnummer</dt><dd>Forteller hvor mange protoner et grunnstoff har.</dd><dt>Kjemisk symbol</dt><dd>Forkortelsen for grunnstoffet.</dd><dt>Atommasse</dt><dd>Forteller hvor mye masse et atom har.</dd></dl>',
+      kort_fasit:'Atomnummer = antall protoner. Kjemisk symbol = forkortelsen. Atommasse = hvor mye masse et atom har.' },
+  5:{ kort:'Egenskaper ved stoffer',
+      maal:'Beskrive ulike egenskaper ved stoffer og bruke denne kunnskapen til å skille stoffer fra hverandre.',
+      svar:'<p>Stoffer kan ha ulik <b>farge, lukt, massetetthet, løselighet og kokepunkt</b>. Noen er også <b>magnetiske</b>.</p><p>Vi kan bruke forskjellene til å skille stoffene. For eksempel kan vi bruke en magnet til å trekke jern ut av en blanding med sand.</p>',
+      kort_fasit:'Farge, lukt, massetetthet, løselighet, kokepunkt – og noen er magnetiske. Magnet trekker jern ut av sand.' },
+  6:{ kort:'Metoder for å skille stoffer',
+      maal:'Bruke ulike metoder for å skille stoffer fra hverandre.',
+      svar:'<dl><dt>Filtrering</dt><dd>Et filter skiller et fast stoff fra væske, for eksempel sand fra vann.</dd><dt>Fordamping</dt><dd>Væsker fordamper, og det faste stoffet blir igjen. For eksempel salt fra saltvann.</dd><dt>Destillasjon</dt><dd>En væske fordampes og kjøles ned igjen. Kan skille rent vann fra saltvann.</dd><dt>Magnet</dt><dd>Magnetiske stoffer som jern trekkes ut av blandingen.</dd></dl>',
+      kort_fasit:'Filtrering: sand fra vann. Fordamping: salt blir igjen. Destillasjon: rent vann fra saltvann. Magnet: jern ut.' },
+  7:{ kort:'Massetetthet',
+      maal:'Beregne massetetthet og forklare hva som menes med begrepet.',
+      svar:'<p><b>Massetetthet = masse : volum</b></p><p>Massetetthet forteller hvor mye masse et stoff har i forhold til volumet.</p>',
+      kort_fasit:'Massetetthet = masse : volum. Den forteller hvor mye masse stoffet har i forhold til volumet.' },
+  8:{ kort:'Kjemisk reaksjon',
+      maal:'Forklare hva som skjer i en kjemisk reaksjon og beskrive kjennetegn på at en kjemisk reaksjon har skjedd.',
+      svar:'<p>En kjemisk reaksjon skjer når stoffer reagerer med hverandre og <b>danner nye stoffer</b>.</p><p>Kjennetegn kan være:</p><ul><li>Fargeforandring</li><li>Gassbobler</li><li>Temperaturforandring</li><li>Lys eller dannelse av fast stoff (utfelling)</li></ul>',
+      kort_fasit:'Nye stoffer dannes. Kjennetegn: fargeforandring, gassbobler, temperaturforandring, lys eller utfelling.' },
+  9:{ kort:'Kjemisk eller fysisk',
+      maal:'Forklare hva som er forskjellen på en kjemisk reaksjon og en fysisk forandring, og komme med eksempler på begge.',
+      svar:'<p><b>Kjemisk reaksjon:</b> Det dannes nye stoffer.</p><p><b>Fysisk forandring:</b> Stoffet bytter form, men er det samme stoffet:</p><ul><li>Fast form</li><li>Væske</li><li>Gass</li></ul>',
+      kort_fasit:'Kjemisk: nye stoffer dannes. Fysisk: samme stoff som bytter form – fast, væske, gass.' },
+  10:{ kort:'Når starter en reaksjon?',
+      maal:'Forklare hva som skal til for at en kjemisk reaksjon skal starte.',
+      svar:'<p>Partiklene må <b>komme i kontakt</b> med hverandre og reagere.</p><p>Mange reaksjoner trenger <b>energi</b> for å starte.</p><p>Noen reaksjoner starter <b>av seg selv</b> når stoffene blandes.</p>',
+      kort_fasit:'Partiklene må i kontakt. Mange trenger energi for å starte, noen starter av seg selv når stoffene blandes.' },
+  11:{ kort:'Hypotese, observasjon, dokumentasjon',
+      maal:'Forklare hvordan man jobber vitenskapelig ved å bruke begrepene hypotese, observasjon og dokumentasjon.',
+      svar:'<dl><dt>Hypotese</dt><dd>Hva du tror kommer til å skje før du starter eksperimentet ditt.</dd><dt>Observasjon</dt><dd>Hva du ser, hører, lukter og måler.</dd><dt>Dokumentasjon</dt><dd>Hva du filmer og noterer.</dd></dl>',
+      kort_fasit:'Hypotese: det du tror før du starter. Observasjon: det du ser, hører, lukter og måler. Dokumentasjon: det du filmer og noterer.' },
+  12:{ kort:'Fagområdene',
+      maal:'Beskrive og komme med eksempler på hva som er typisk for fagområdene fysikk, biologi, kjemi, geologi og teknologi.',
+      svar:'<dl><dt>Fysikk</dt><dd>Krefter, energi, bevegelse og lys.</dd><dt>Kjemi</dt><dd>Stoffer og reaksjoner.</dd><dt>Biologi</dt><dd>Levende organismer.</dd><dt>Geologi</dt><dd>Jorda, bergarter og jordskjelv.</dd><dt>Teknologi</dt><dd>Utvikling og bruk av praktiske løsninger.</dd></dl>',
+      kort_fasit:'Fysikk: krefter, energi, bevegelse, lys. Kjemi: stoffer og reaksjoner. Biologi: det levende. Geologi: jorda og bergarter. Teknologi: praktiske løsninger.' },
+  13:{ kort:'Hva er en modell?',
+      maal:'Forklare hva en modell er.',
+      svar:'<p>En modell er en <b>forenklet versjon</b> av noe vi ønsker å forklare eller undersøke.</p>',
+      kort_fasit:'En modell er en forenklet versjon av noe vi ønsker å forklare eller undersøke.' },
+  14:{ kort:'Modeller: styrker og svakheter',
+      maal:'Gi eksempler på ulike typer modeller og gi eksempler på deres styrker og svakheter.',
+      svar:'<dl><dt>En globus</dt><dd>Viser jordas form og hvor det er vann og land. Men den viser ikke detaljer.</dd><dt>Atommodell</dt><dd>Man ser hvordan atomet er bygd opp. Men den viser ikke hvordan atomer egentlig ser ut.</dd></dl>',
+      kort_fasit:'Globus: viser jordas form, vann og land – men ikke detaljer. Atommodell: viser oppbygningen – men ikke hvordan atomer egentlig ser ut.' }
+};
+
+/* Quizen: [punkt, spoersmaal, riktig, [gale]]. Ett riktig svar som
+   staar paa arket, og gale svar som ikke kan leses som riktige. */
+const SPORSMAAL = [
+  [1,'Hva er et grunnstoff?','Et stoff med bare én type atomer',['Et stoff med minst to ulike typer atomer','To eller flere stoffer blandet sammen','Et stoff som alltid er en gass']],
+  [1,'Hva er en kjemisk forbindelse?','Minst to ulike typer atomer som er bundet sammen',['Bare én type atomer','To stoffer som er blandet, men ikke bundet sammen','Et stoff som bare finnes i lufta']],
+  [1,'Oksygen (O) er …','et grunnstoff',['en kjemisk forbindelse']],
+  [1,'Vann (H₂O) er …','en kjemisk forbindelse',['et grunnstoff']],
+  [1,'Hvorfor er karbondioksid (CO₂) en kjemisk forbindelse?','Den har to ulike typer atomer: karbon og oksygen',['Fordi den er en gass','Fordi den har to oksygenatomer','Fordi den finnes i lufta']],
+  [1,'Oksygengass (O₂) har to atomer. Er den et grunnstoff eller en forbindelse?','Et grunnstoff – begge atomene er oksygen',['En kjemisk forbindelse – den har to atomer']],
+
+  [2,'Hva er en stoffblanding?','To eller flere stoffer blandet sammen',['Bare ett stoff','Bare én type atomer','Et stoff som har reagert og blitt et nytt stoff']],
+  [2,'Hva er et rent stoff?','Et stoff som består av bare ett stoff',['To stoffer blandet sammen','Et stoff som er helt rent for skitt','Et stoff uten atomer']],
+  [2,'Saltvann er …','en stoffblanding',['et rent stoff']],
+  [2,'Rent vann er …','et rent stoff',['en stoffblanding']],
+  [2,'Hvilket av disse er et rent stoff?','Rent vann',['Saltvann','Saft','Luft']],
+
+  [3,'Hva er et atom?','En bitte liten byggestein som stoffer er laget av',['To atomer som er bundet sammen','Et stoff blandet med vann','En blanding av flere stoffer']],
+  [3,'Hva er et molekyl?','To eller flere atomer som er bundet sammen',['Én enkelt byggestein','To stoffer blandet sammen','Kjernen i et atom']],
+  [3,'H₂O er et eksempel på …','et molekyl',['ett enkelt atom','en stoffblanding']],
+  [3,'Hvor mange atomer er det i ett H₂O-molekyl?','3 (to H og én O)',['2','1','4']],
+
+  [4,'Hva forteller atomnummeret?','Hvor mange protoner grunnstoffet har',['Hvor mye atomet veier','Hvor mange atomer det er i stoffet','Hvilken farge stoffet har']],
+  [4,'Hva er et kjemisk symbol?','Forkortelsen for grunnstoffet',['Antall protoner','En tegning av atomet','Massen til atomet']],
+  [4,'Hva forteller atommassen?','Hvor mye masse et atom har',['Hvor mange protoner det har','Hvor stort volum stoffet har','Hvilken gruppe stoffet er i']],
+
+  [5,'Hvilken av disse er en egenskap ved et stoff?','Kokepunkt',['Hvem som fant stoffet','Hva stoffet koster','Hvilket land stoffet kommer fra']],
+  [5,'Hvilke egenskaper kan skille stoffer fra hverandre?','Farge, lukt, massetetthet, løselighet og kokepunkt',['Bare navnet på stoffet','Bare hvor mye beholderen veier','Bare hvem som eier stoffet']],
+  [5,'Hvordan får du jern ut av en blanding med sand?','Med en magnet',['Ved å riste blandingen','Ved å blåse på den','Ved å legge den i kjøleskapet']],
+  [5,'Hvilket av disse stoffene er magnetisk?','Jern',['Sand','Salt','Vann']],
+
+  [6,'Hvilken metode bruker et filter til å skille et fast stoff fra en væske?','Filtrering',['Fordamping','Destillasjon','Magnet']],
+  [6,'Du vil få saltet ut av saltvann. Vannet forsvinner og saltet blir igjen. Hva heter metoden?','Fordamping',['Filtrering','Magnet']],
+  [6,'Hvilken metode kan gi deg rent vann fra saltvann?','Destillasjon',['Filtrering','Magnet','Fordamping']],
+  [6,'Hva skjer i en destillasjon?','Væsken fordampes og kjøles ned igjen',['Et filter holder igjen sanden','En magnet trekker ut jernet','Stoffene reagerer og blir et nytt stoff']],
+  [6,'Hvilken metode skiller sand fra vann?','Filtrering',['Magnet','Destillasjon']],
+
+  [7,'Hvordan regner du ut massetetthet?','masse : volum',['volum : masse','masse · volum','masse + volum']],
+  [7,'Hva forteller massetettheten?','Hvor mye masse et stoff har i forhold til volumet',['Hvor varmt stoffet er','Hvor mange atomer stoffet har','Hvilken farge stoffet har']],
+
+  [8,'Hva skjer i en kjemisk reaksjon?','Stoffer reagerer og danner nye stoffer',['Stoffet bytter bare form, fra fast til væske','Stoffene blandes, men er de samme etterpå','Stoffet blir delt i to like biter']],
+  [8,'Hvilket er et kjennetegn på en kjemisk reaksjon?','Gassbobler',['Stoffet blir kuttet i biter','Stoffet blir flyttet','Stoffet blir helt i et glass']],
+  [8,'Hvilket er et kjennetegn på en kjemisk reaksjon?','Fargeforandring',['Stoffet blir rørt rundt','Stoffet blir lagt i en eske','Stoffet blir målt med linjal']],
+  [8,'Hvilket er et kjennetegn på en kjemisk reaksjon?','Temperaturforandring',['Stoffet blir delt i to','Stoffet blir pakket inn','Stoffet blir veid']],
+  [8,'Hvilken av disse er IKKE et kjennetegn på en kjemisk reaksjon?','Stoffet blir delt i mindre biter',['Fargeforandring','Gassbobler','Lys']],
+  [8,'Hva betyr utfelling?','Det dannes et fast stoff',['Væsken fordamper','Stoffet blir kaldt','Stoffet blir usynlig']],
+
+  [9,'Hva er forskjellen på en kjemisk reaksjon og en fysisk forandring?','I en kjemisk reaksjon dannes nye stoffer – i en fysisk forandring gjør det ikke',['De er det samme','I en fysisk forandring dannes nye stoffer','En kjemisk reaksjon skjer bare i et laboratorium']],
+  [9,'Is smelter til vann. Hva er det?','En fysisk forandring',['En kjemisk reaksjon']],
+  [9,'Ved brenner i peisen. Hva er det?','En kjemisk reaksjon',['En fysisk forandring']],
+  [9,'Hvilke tre former kan et stoff ha?','Fast form, væske og gass',['Fast, myk og hard','Varm, lunken og kald','Atom, molekyl og blanding']],
+  [9,'Vann koker og blir til damp. Hva er dampen?','Fortsatt vann – bare i gassform',['Et helt nytt stoff','En stoffblanding']],
+
+  [10,'Hva må til for at en kjemisk reaksjon skal starte?','Partiklene må komme i kontakt med hverandre',['Stoffene må ha samme farge','Det må være mørkt','Stoffene må være faste']],
+  [10,'Du stryker en fyrstikk for å tenne den. Hvorfor?','Mange reaksjoner trenger energi for å starte',['For å gjøre den kald','For å få den til å smelte','For å gjøre den til et grunnstoff']],
+  [10,'Trenger alle reaksjoner energi for å starte?','Nei – noen starter av seg selv når stoffene blandes',['Ja, alle trenger energi']],
+
+  [11,'Hva er en hypotese?','Det du tror kommer til å skje før du starter eksperimentet',['Det du ser, hører, lukter og måler','Det du filmer og noterer','Svaret du finner til slutt']],
+  [11,'Hva er en observasjon?','Det du ser, hører, lukter og måler',['Det du tror før du starter','Det du filmer og noterer','En forenklet versjon av noe']],
+  [11,'Hva er dokumentasjon?','Det du filmer og noterer',['Det du tror før du starter','Det du ser og lukter','En regel i naturfag']],
+  [11,'«Jeg tror isbiten smelter fortere i varmt vann.» Hva er dette?','En hypotese',['En observasjon','Dokumentasjon']],
+  [11,'«Termometeret viser 40 grader.» Hva er dette?','En observasjon',['En hypotese','Dokumentasjon']],
+  [11,'Du skriver resultatene inn i en tabell og filmer forsøket. Hva er dette?','Dokumentasjon',['En hypotese','En observasjon']],
+
+  [12,'Krefter, energi, bevegelse og lys hører til …','fysikk',['kjemi','biologi','geologi']],
+  [12,'Stoffer og reaksjoner hører til …','kjemi',['fysikk','geologi','teknologi']],
+  [12,'Levende organismer hører til …','biologi',['kjemi','fysikk','teknologi']],
+  [12,'Jorda, bergarter og jordskjelv hører til …','geologi',['biologi','kjemi','fysikk']],
+  [12,'Utvikling og bruk av praktiske løsninger hører til …','teknologi',['geologi','biologi','kjemi']],
+  [12,'Hvordan en plante vokser – hvilket fagområde er det?','biologi',['geologi','fysikk','teknologi']],
+
+  [13,'Hva er en modell?','En forenklet versjon av noe vi ønsker å forklare eller undersøke',['En nøyaktig kopi av alt','Det du tror skjer før et forsøk','Det du filmer og noterer']],
+  [13,'Hvilken av disse er en modell?','En globus',['Et ekte fjell','En ekte frosk','Havet']],
+
+  [14,'Hva er en styrke ved en globus?','Den viser jordas form og hvor det er vann og land',['Den viser alle husene på jorda','Den viser hvordan været blir i morgen','Den viser hvordan atomer ser ut']],
+  [14,'Hva er en svakhet ved en globus?','Den viser ikke detaljer',['Den viser ikke jordas form','Den viser ikke hvor havet er']],
+  [14,'Hva er en styrke ved en atommodell?','Man ser hvordan atomet er bygd opp',['Den viser nøyaktig hvordan atomer ser ut','Den viser jordas form']],
+  [14,'Hva er en svakhet ved en atommodell?','Den viser ikke hvordan atomer egentlig ser ut',['Den viser ikke at atomet har en kjerne','Den er for liten til å se']]
+];
+
+/* Stoffene periodesystem-spoersmaalene lages fra. Bare navnet, symbolet
+   og atomnummeret - det er de tre hun skal kunne lese av. */
+const STOFFER = [
+  ['hydrogen','H',1],['helium','He',2],['karbon','C',6],['nitrogen','N',7],
+  ['oksygen','O',8],['natrium','Na',11],['magnesium','Mg',12],['aluminium','Al',13],
+  ['svovel','S',16],['klor','Cl',17],['kalium','K',19],['kalsium','Ca',20],
+  ['jern','Fe',26],['kobber','Cu',29],['sølv','Ag',47],['gull','Au',79]
+];
+
+/* Sorteringen: hvert sett har bokser og ting. `f` er en kort forklaring
+   som vises hvis hun velger feil boks. */
+const SORTERINGER = [
+  { id:'grunnstoff', navn:'Grunnstoff eller forbindelse', punkt:1,
+    tekst:'Bare én type atomer – eller flere typer bundet sammen?',
+    bokser:['Grunnstoff','Kjemisk forbindelse'],
+    ting:[
+      ['Oksygen (O)',0],['Jern (Fe)',0],['Gull (Au)',0],['Karbon (C)',0],['Oksygengass (O₂)',0,'Begge atomene er oksygen – bare én type atomer.'],
+      ['Vann (H₂O)',1,'Hydrogen og oksygen – to ulike typer atomer.'],['Karbondioksid (CO₂)',1,'Karbon og oksygen – to ulike typer atomer.'],['Koksalt (NaCl)',1,'Natrium og klor – to ulike typer atomer.']
+    ]},
+  { id:'rent', navn:'Rent stoff eller blanding', punkt:2,
+    tekst:'Bare ett stoff – eller flere stoffer blandet sammen?',
+    bokser:['Rent stoff','Stoffblanding'],
+    ting:[
+      ['Rent vann',0],['Gull',0],['Oksygen',0],['Rent salt',0],
+      ['Saltvann',1,'Salt og vann blandet sammen.'],['Luft',1,'Lufta er mange gasser blandet sammen.'],['Saft',1,'Saft er vann blandet med andre stoffer.'],['Sand og jern',1]
+    ]},
+  { id:'reaksjon', navn:'Kjemisk eller fysisk', punkt:9,
+    tekst:'Blir det et nytt stoff – eller bare en ny form?',
+    bokser:['Kjemisk reaksjon','Fysisk forandring'],
+    ting:[
+      ['Ved brenner i peisen',0],['Jern ruster',0,'Rust er et nytt stoff.'],['Bakepulver og eddik bobler',0,'Gassbobler er et kjennetegn på en kjemisk reaksjon.'],['En kake stekes',0],['En fyrstikk tennes',0,'Lys og varme – et nytt stoff dannes.'],
+      ['Is smelter',1,'Fortsatt vann – fra fast form til væske.'],['Vann koker til damp',1,'Fortsatt vann – fra væske til gass.'],['Vann fryser til is',1],['Smør smelter i panna',1]
+    ]},
+  { id:'metode', navn:'Hvilken metode?', punkt:6,
+    tekst:'Hvordan skiller du stoffene?',
+    bokser:['Filtrering','Fordamping','Destillasjon','Magnet'],
+    ting:[
+      ['Sand fra vann',0,'Filteret holder igjen sanden.'],['Kaffegrut fra kaffe',0,'Filteret holder igjen grut – det faste stoffet.'],
+      ['Salt fra saltvann – du vil beholde saltet',1,'Vannet fordamper, saltet blir igjen.'],
+      ['Rent vann fra saltvann',2,'Vannet fordampes og kjøles ned igjen – og blir rent.'],
+      ['Jern fra sand',3,'Jern er magnetisk.'],['Jernspiker fra sagflis',3,'Jern er magnetisk.']
+    ]},
+  { id:'fag', navn:'Hvilket fagområde?', punkt:12,
+    tekst:'Fysikk, kjemi, biologi, geologi eller teknologi?',
+    bokser:['Fysikk','Kjemi','Biologi','Geologi','Teknologi'],
+    ting:[
+      ['Et eple faller mot bakken',0,'Krefter og bevegelse.'],['Lys som lager en regnbue',0,'Lys hører til fysikk.'],
+      ['Jern som ruster',1,'Stoffer og reaksjoner.'],['Bakepulver som reagerer',1,'Stoffer og reaksjoner.'],
+      ['Hvordan en frosk vokser',2,'Levende organismer.'],['Bakterier i melk',2,'Levende organismer.'],
+      ['Et jordskjelv',3,'Jorda, bergarter og jordskjelv.'],['Bergarter i fjellet',3],
+      ['En robotstøvsuger',4,'En praktisk løsning.'],['Å bygge en bro',4,'Utvikling og bruk av praktiske løsninger.']
+    ]},
+  { id:'forsok', navn:'Hypotese, observasjon, dokumentasjon', punkt:11,
+    tekst:'Tror du, ser du – eller noterer du?',
+    bokser:['Hypotese','Observasjon','Dokumentasjon'],
+    ting:[
+      ['«Jeg tror vannet fryser fortere uten salt.»',0,'Det du tror før du starter.'],['«Jeg tror planten vokser best i sola.»',0],
+      ['«Vannet skiftet farge til blått.»',1,'Det du ser.'],['«Det lukter svovel.»',1,'Det du lukter.'],['«Termometeret viser 40 grader.»',1,'Det du måler.'],
+      ['Du filmer forsøket',2,'Det du filmer.'],['Du skriver tidene inn i en tabell',2,'Det du noterer.']
+    ]}
+];
+
+/* ================================================================
+   LAGRING - bare paa enheten
+   ================================================================ */
+const LOKAL_NOKKEL = 'neam-emma-naturfag:v1';
+let lager = { punkt:{}, rekordRad:0, sortRekord:{} };
+try{
+  const t = localStorage.getItem(LOKAL_NOKKEL);
+  if(t) lager = Object.assign(lager, JSON.parse(t));
+}catch(e){}
+function lagre(){
+  try{ localStorage.setItem(LOKAL_NOKKEL, JSON.stringify(lager)); }catch(e){}
+}
+function poeng(p){ return Math.min(3, lager.punkt[p] || 0); }
+function gi(p){
+  lager.punkt[p] = Math.min(3, (lager.punkt[p] || 0) + 1);
+  lagre(); tegnKart();
+}
+
+/* ================================================================
+   HJELPERE
+   ================================================================ */
+const $ = id => document.getElementById(id);
+function bland(a){
+  const b = a.slice();
+  for(let i = b.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [b[i], b[j]] = [b[j], b[i]];
+  }
+  return b;
+}
+function el(tag, kl, tekst){
+  const e = document.createElement(tag);
+  if(kl) e.className = kl;
+  if(tekst != null) e.textContent = tekst;
+  return e;
+}
+function stjerneBilde(tent, glod){
+  const i = document.createElement('img');
+  i.src = '/bilder/spill/stjerne.webp?v=1';
+  i.alt = ''; i.width = 52; i.height = 52;
+  i.className = 'nf-stjerne' + (tent ? '' : ' nf-tom-stjerne') + (glod ? ' nf-glod' : '');
+  return i;
+}
+/* Runde paa/av styrer bare om kartet vises paa telefon. */
+function iRunde(pa){
+  document.body.classList.toggle('nf-i-runde', !!pa);
+  if(pa) window.scrollTo(0, 0);
+}
+/* Etter et svar kan fasiten og Neste ligge under skjermkanten paa
+   telefon. Rull bare saa langt at knappen kommer fram. */
+function visKnapp(k){
+  k.hidden = false;
+  requestAnimationFrame(() => k.scrollIntoView({ behavior:'smooth', block:'nearest' }));
+}
+function stjerner(andel){ return andel >= 1 ? 3 : andel >= .8 ? 2 : andel >= .5 ? 1 : 0; }
+function skryt(andel){
+  if(andel >= 1) return 'Alt riktig! Du er klar, Emma!';
+  if(andel >= .8) return 'Kjempebra!';
+  if(andel >= .5) return 'Godt jobba – du er på vei!';
+  return 'Fint at du øver. Ta de du bommet på én gang til!';
+}
+
+/* ================================================================
+   KARTET
+   ================================================================ */
+function tegnKart(){
+  const kart = $('kart');
+  kart.innerHTML = '';
+  let mestret = 0;
+  DELER.forEach(d => {
+    const del = el('div');
+    del.appendChild(el('p', 'nf-del-navn', d.navn));
+    const ruter = el('div', 'nf-ruter');
+    d.punkter.forEach(p => {
+      const n = poeng(p);
+      if(n >= 3) mestret++;
+      const r = el('button', 'nf-rute' + (n >= 3 ? ' nf-mestret' : ''));
+      r.setAttribute('aria-label', 'Punkt ' + p + ': ' + PUNKTER[p].kort + ' – ' + n + ' av 3');
+      r.title = PUNKTER[p].kort;
+      r.appendChild(el('b', null, String(p)));
+      const pr = el('span', 'nf-prikker3');
+      for(let i = 0; i < 3; i++) pr.appendChild(el('i', i < n ? 'nf-tent' : ''));
+      r.appendChild(pr);
+      r.onclick = () => startKort([p]);
+      ruter.appendChild(r);
+    });
+    del.appendChild(ruter);
+    kart.appendChild(del);
+  });
+  $('kartSum').textContent = mestret === 14
+    ? 'Alle 14 punktene er gule. Du kan hele arket!'
+    : mestret + ' av 14 punkter er gule. Hvert riktig svar tenner en prikk – trykk på et punkt for å øve på det.';
+}
+
+/* ================================================================
+   FANER
+   ================================================================ */
+let fane = 'quiz';
+function visFane(f){
+  fane = f;
+  ['quiz','kort','sorter'].forEach(n => {
+    $('fane' + n[0].toUpperCase() + n.slice(1)).classList.toggle('nf-valgt', n === f);
+  });
+  if(f === 'quiz') visQuizOppsett();
+  if(f === 'kort') visKortOppsett();
+  if(f === 'sorter') visSorterValg();
+}
+
+/* Delvelgeren brukes av baade quizen og puggekortene. */
+const valgteDeler = new Set([0,1,2]);
+function delVelger(){
+  const v = el('div', 'nf-valg');
+  DELER.forEach((d, i) => {
+    const b = el('button', 'nf-velger' + (valgteDeler.has(i) ? ' nf-pa' : ''));
+    b.appendChild(el('span', 'nf-hake', '✓'));
+    b.appendChild(document.createTextNode(d.navn));
+    b.onclick = () => {
+      if(valgteDeler.has(i)){ if(valgteDeler.size > 1) valgteDeler.delete(i); }
+      else valgteDeler.add(i);
+      b.classList.toggle('nf-pa', valgteDeler.has(i));
+    };
+    v.appendChild(b);
+  });
+  return v;
+}
+function valgtePunkter(){
+  const ps = [];
+  DELER.forEach((d, i) => { if(valgteDeler.has(i)) ps.push(...d.punkter); });
+  return ps;
+}
+
+/* ================================================================
+   QUIZ
+   ================================================================ */
+let antallValgt = 15;
+let quiz = null;
+
+function visQuizOppsett(){
+  iRunde(false);
+  const f = $('flate');
+  f.innerHTML = '';
+  f.appendChild(el('h2', 'nf-panel-tittel', 'Quiz'));
+  f.appendChild(el('p', 'nf-ledetekst', 'Velg hva du vil øve på og hvor mange spørsmål. Massetetthet og periodesystemet får nye regnestykker hver gang.'));
+  f.appendChild(el('p', 'nf-undertittel', 'Hva'));
+  f.appendChild(delVelger());
+  f.appendChild(el('p', 'nf-undertittel', 'Hvor mange'));
+  const v = el('div', 'nf-valg');
+  [[10,'10'],[15,'15'],[25,'25'],[0,'Alle']].forEach(([n, t]) => {
+    const b = el('button', 'nf-velger' + (antallValgt === n ? ' nf-pa' : ''));
+    b.appendChild(el('span', 'nf-hake', '✓'));
+    b.appendChild(document.createTextNode(t));
+    b.onclick = () => {
+      antallValgt = n;
+      v.querySelectorAll('.nf-velger').forEach(x => x.classList.remove('nf-pa'));
+      b.classList.add('nf-pa');
+    };
+    v.appendChild(b);
+  });
+  f.appendChild(v);
+  if(lager.rekordRad) f.appendChild(el('p', 'nf-ledetekst', 'Rekord: ' + lager.rekordRad + ' riktige på rad.'));
+  const k = el('div', 'nf-knapper');
+  const start = el('button', 'nf-knapp nf-tung', 'Start quizen');
+  start.onclick = () => startQuiz(lagSporsmaal(valgtePunkter(), antallValgt));
+  k.appendChild(start);
+  f.appendChild(k);
+}
+
+/* Massetetthet: tallene velges saa svaret blir et helt tall. De gale
+   svarene er de vanlige feilene - gange i stedet for dele, legge sammen,
+   eller dele feil vei. */
+function lagMassetetthet(){
+  const rho = bland([2,3,4,5,6,8,10])[0];
+  const V = bland([2,3,4,5,10,20])[0];
+  const m = rho * V;
+  const ting = bland(['En stein','En metallkloss','En klump leire','En bit tre','En kule'])[0];
+  const fmt = x => (Math.round(x * 100) / 100).toString().replace('.', ',') + ' g/cm³';
+  const gale = [...new Set([fmt(m * V), fmt(m + V), fmt(V / m)])].filter(x => x !== fmt(rho));
+  return { p:7,
+    q: ting + ' har masse ' + m + ' g og volum ' + V + ' cm³. Hva er massetettheten?',
+    riktig: fmt(rho), gale: gale.slice(0, 3),
+    fasit: 'Massetetthet = masse : volum = ' + m + ' : ' + V + ' = ' + fmt(rho) + '.' };
+}
+function lagPeriode(){
+  const [navn, sym, nr] = bland(STOFFER)[0];
+  const andre = bland(STOFFER.filter(s => s[1] !== sym)).slice(0, 3);
+  const stor = navn[0].toUpperCase() + navn.slice(1);
+  const typ = Math.floor(Math.random() * 4);
+  if(typ === 0) return { p:4, q:'Hva er det kjemiske symbolet for ' + navn + '?',
+    riktig:sym, gale:andre.map(s => s[1]),
+    fasit:'Det kjemiske symbolet er forkortelsen: ' + navn + ' = ' + sym + '.' };
+  if(typ === 1) return { p:4, q:'Hvilket grunnstoff har symbolet ' + sym + '?',
+    riktig:stor, gale:andre.map(s => s[0][0].toUpperCase() + s[0].slice(1)),
+    fasit:sym + ' er ' + navn + '.' };
+  if(typ === 2) return { p:4, q:stor + ' har atomnummer ' + nr + '. Hvor mange protoner har et ' + navn + 'atom?',
+    riktig:String(nr), gale:[...new Set([String(nr * 2), String(nr + 1), String(Math.max(1, nr - 1))])].filter(x => x !== String(nr)),
+    fasit:'Atomnummeret forteller hvor mange protoner grunnstoffet har: ' + nr + '.' };
+  return { p:4, q:'Et grunnstoff har ' + nr + ' protoner. Hvilket er det?',
+    riktig:stor, gale:andre.map(s => s[0][0].toUpperCase() + s[0].slice(1)),
+    fasit:'Antall protoner er atomnummeret. Atomnummer ' + nr + ' er ' + navn + ' (' + sym + ').' };
+}
+
+function lagSporsmaal(punkter, antall){
+  let pool = SPORSMAAL.filter(s => punkter.includes(s[0]))
+    .map(s => ({ p:s[0], q:s[1], riktig:s[2], gale:s[3] }));
+  if(punkter.includes(4)) for(let i = 0; i < 5; i++) pool.push(lagPeriode());
+  if(punkter.includes(7)) for(let i = 0; i < 4; i++) pool.push(lagMassetetthet());
+  /* Punktene hun kan minst av, kommer foerst i koen foer den kuttes -
+     men innenfor samme nivaa er rekkefoelgen tilfeldig. */
+  pool = bland(pool).sort((a, b) => poeng(a.p) - poeng(b.p));
+  if(antall) pool = pool.slice(0, antall);
+  return bland(pool);
+}
+
+function startQuiz(liste){
+  quiz = { liste, i:0, riktige:0, rad:0, bom:[], svar:[] };
+  iRunde(true);
+  visSporsmaal();
+}
+
+function visSporsmaal(){
+  const s = quiz.liste[quiz.i];
+  if(document.body.classList.contains('nf-i-runde')) window.scrollTo(0, 0);
+  const f = $('flate');
+  f.innerHTML = '';
+  const hode = el('div', 'nf-hode');
+  hode.appendChild(el('span', 'nf-teller', 'Spørsmål ' + (quiz.i + 1) + ' av ' + quiz.liste.length));
+  hode.appendChild(el('span', 'nf-lapp', 'Punkt ' + s.p + ' · ' + PUNKTER[s.p].kort));
+  const rad = el('span', 'nf-rad', quiz.rad + ' på rad');
+  rad.hidden = quiz.rad < 2;
+  hode.appendChild(rad);
+  f.appendChild(hode);
+  f.appendChild(el('p', 'nf-sporsmaal', s.q));
+
+  const svar = el('div', 'nf-svar');
+  const alle = bland([s.riktig, ...s.gale]);
+  const fasit = el('div', 'nf-fasit');
+  fasit.hidden = true;
+  const neste = el('button', 'nf-knapp nf-tung', quiz.i + 1 < quiz.liste.length ? 'Neste' : 'Se resultatet');
+  neste.hidden = true;
+  neste.onclick = () => { quiz.i++; quiz.i < quiz.liste.length ? visSporsmaal() : visResultat(); };
+
+  alle.forEach(a => {
+    const b = el('button', 'nf-svar-knapp', a);
+    b.onclick = () => {
+      svar.querySelectorAll('button').forEach(x => {
+        x.disabled = true;
+        if(x.textContent === s.riktig) x.classList.add('nf-riktig');
+      });
+      const ok = a === s.riktig;
+      quiz.svar.push(ok);
+      if(ok){
+        quiz.riktige++; quiz.rad++;
+        gi(s.p);
+        if(quiz.rad > (lager.rekordRad || 0)){ lager.rekordRad = quiz.rad; lagre(); }
+        rad.textContent = quiz.rad + ' på rad';
+        rad.hidden = quiz.rad < 2;
+        if(!rad.hidden){ rad.classList.remove('nf-pop'); void rad.offsetWidth; rad.classList.add('nf-pop'); }
+      }else{
+        quiz.rad = 0; rad.hidden = true;
+        b.classList.add('nf-galt');
+        quiz.bom.push(Object.assign({ valgt:a }, s));
+        fasit.innerHTML = '';
+        fasit.appendChild(el('b', null, 'Riktig svar: ' + s.riktig));
+        fasit.appendChild(document.createTextNode(s.fasit || PUNKTER[s.p].kort_fasit));
+        fasit.hidden = false;
+      }
+      tegnPrikker();
+      visKnapp(neste);
+    };
+    svar.appendChild(b);
+  });
+  f.appendChild(svar);
+  f.appendChild(fasit);
+  const k = el('div', 'nf-knapper');
+  k.appendChild(neste);
+  f.appendChild(k);
+  const prikker = el('div', 'nf-prikker');
+  f.appendChild(prikker);
+  function tegnPrikker(){
+    prikker.innerHTML = '';
+    quiz.liste.forEach((_, i) => {
+      const kl = i < quiz.svar.length ? (quiz.svar[i] ? 'nf-p-riktig' : 'nf-p-bom') : (i === quiz.i ? 'nf-p-na' : '');
+      prikker.appendChild(el('i', kl));
+    });
+  }
+  tegnPrikker();
+}
+
+function visResultat(){
+  iRunde(false);
+  window.scrollTo(0, 0);
+  const f = $('flate');
+  f.innerHTML = '';
+  const andel = quiz.riktige / quiz.liste.length;
+  const n = stjerner(andel);
+  const r = el('div', 'nf-resultat');
+  const st = el('div', 'nf-stjerner');
+  for(let i = 0; i < 3; i++) st.appendChild(stjerneBilde(i < n, n === 3));
+  r.appendChild(st);
+  r.appendChild(el('p', 'nf-stort-tall', quiz.riktige + ' av ' + quiz.liste.length));
+  r.appendChild(el('p', 'nf-skryt', skryt(andel)));
+  if(lager.rekordRad >= 3) r.appendChild(el('span', 'nf-gitt', 'Rekord: ' + lager.rekordRad + ' på rad'));
+  const k = el('div', 'nf-knapper');
+  if(quiz.bom.length){
+    const igjen = el('button', 'nf-knapp nf-tung', 'Ta de ' + quiz.bom.length + ' du bommet på');
+    /* Massetetthet og periodesystemet faar nye tall - ellers puggers
+       svaret og ikke regnemaaten. */
+    igjen.onclick = () => startQuiz(bland(quiz.bom.map(b => b.p === 7 && b.fasit ? lagMassetetthet()
+      : b.p === 4 && b.fasit ? lagPeriode() : { p:b.p, q:b.q, riktig:b.riktig, gale:b.gale })));
+    k.appendChild(igjen);
+  }
+  const ny = el('button', 'nf-knapp' + (quiz.bom.length ? '' : ' nf-tung'), 'Ny runde');
+  ny.onclick = visQuizOppsett;
+  k.appendChild(ny);
+  r.appendChild(k);
+  if(quiz.bom.length){
+    const l = el('div', 'nf-fasitliste');
+    l.appendChild(el('p', 'nf-undertittel', 'Disse skal du se på igjen'));
+    quiz.bom.forEach(b => {
+      const rad = el('div', 'nf-fasitrad');
+      rad.appendChild(el('b', null, b.q));
+      rad.appendChild(document.createTextNode('Riktig: ' + b.riktig + ' · Du svarte: '));
+      rad.appendChild(el('s', null, b.valgt));
+      l.appendChild(rad);
+    });
+    r.appendChild(l);
+  }
+  f.appendChild(r);
+}
+
+/* ================================================================
+   PUGGEKORT - arkets egen metode
+   ================================================================ */
+let kort = null;
+
+function visKortOppsett(){
+  iRunde(false);
+  const f = $('flate');
+  f.innerHTML = '';
+  f.appendChild(el('h2', 'nf-panel-tittel', 'Puggekort'));
+  f.appendChild(el('p', 'nf-ledetekst', 'Les målet. Forklar høyt med egne ord. Snu kortet og se om du hadde det med. Kortene du ikke kunne, kommer tilbake til du kan dem.'));
+  f.appendChild(el('p', 'nf-undertittel', 'Hva'));
+  f.appendChild(delVelger());
+  const k = el('div', 'nf-knapper');
+  const start = el('button', 'nf-knapp nf-tung', 'Start');
+  start.onclick = () => startKort(valgtePunkter());
+  k.appendChild(start);
+  f.appendChild(k);
+}
+
+function startKort(punkter){
+  if(fane !== 'kort'){
+    fane = 'kort';
+    ['Quiz','Kort','Sorter'].forEach(n => $('fane' + n).classList.toggle('nf-valgt', n === 'Kort'));
+  }
+  kort = { ko:punkter.slice(), totalt:punkter.length, kunne:0, runder:0 };
+  iRunde(true);
+  visKort();
+  if(window.innerWidth > 640) $('flate').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function visKort(){
+  const f = $('flate');
+  f.innerHTML = '';
+  if(!kort.ko.length){
+    iRunde(false);
+    window.scrollTo(0, 0);
+    const r = el('div', 'nf-resultat');
+    const st = el('div', 'nf-stjerner');
+    st.appendChild(stjerneBilde(true, true));
+    r.appendChild(st);
+    r.appendChild(el('p', 'nf-skryt', kort.totalt === 1 ? 'Det kortet sitter!' : 'Du kunne alle ' + kort.totalt + '!'));
+    r.appendChild(el('p', 'nf-ledetekst', kort.runder > kort.totalt
+      ? 'Noen tok et par runder – sånn er det å pugge. Nå sitter de.'
+      : 'Alle på første forsøk. Sterkt!'));
+    const k = el('div', 'nf-knapper');
+    const q = el('button', 'nf-knapp nf-tung', 'Ta en quiz');
+    q.onclick = () => visFane('quiz');
+    const igjen = el('button', 'nf-knapp', 'Nye kort');
+    igjen.onclick = visKortOppsett;
+    k.appendChild(q); k.appendChild(igjen);
+    r.appendChild(k);
+    f.appendChild(r);
+    return;
+  }
+  const p = kort.ko[0];
+  const P = PUNKTER[p];
+  const hode = el('div', 'nf-hode');
+  hode.appendChild(el('span', 'nf-teller', (kort.totalt - kort.ko.length + 1 > kort.totalt ? kort.totalt : kort.totalt - kort.ko.length + 1) + ' av ' + kort.totalt + ' kort'));
+  hode.appendChild(el('span', 'nf-lapp', 'Punkt ' + p));
+  f.appendChild(hode);
+
+  const k = el('div', 'nf-kort');
+  k.style.marginTop = '12px';
+  k.appendChild(el('p', 'nf-undertittel', P.kort));
+  k.appendChild(el('p', 'nf-kort-maal', P.maal));
+  k.appendChild(el('p', 'nf-kort-tips', 'Forklar høyt med egne ord før du snur kortet.'));
+  const svar = el('div', 'nf-kort-svar');
+  svar.innerHTML = P.svar;
+  svar.hidden = true;
+  k.appendChild(svar);
+  f.appendChild(k);
+
+  const kn = el('div', 'nf-knapper');
+  const snu = el('button', 'nf-knapp nf-tung', 'Snu kortet');
+  const kunne = el('button', 'nf-knapp nf-tung', 'Jeg kunne det');
+  const mer = el('button', 'nf-knapp', 'Øv mer på dette');
+  kunne.hidden = true; mer.hidden = true;
+  snu.onclick = () => {
+    svar.hidden = false; snu.hidden = true; mer.hidden = false;
+    visKnapp(kunne);
+  };
+  kunne.onclick = () => { kort.runder++; kort.kunne++; gi(p); kort.ko.shift(); visKort(); };
+  /* Kortet legges litt bak i bunken, ikke rett bakerst - da kommer det
+     igjen mens det ennaa er ferskt. */
+  mer.onclick = () => {
+    kort.runder++;
+    const c = kort.ko.shift();
+    kort.ko.splice(Math.min(2, kort.ko.length), 0, c);
+    visKort();
+  };
+  kn.appendChild(snu); kn.appendChild(kunne); kn.appendChild(mer);
+  f.appendChild(kn);
+}
+
+/* ================================================================
+   SORTER
+   ================================================================ */
+let sort = null;
+
+function visSorterValg(){
+  iRunde(false);
+  const f = $('flate');
+  f.innerHTML = '';
+  f.appendChild(el('h2', 'nf-panel-tittel', 'Sorter'));
+  f.appendChild(el('p', 'nf-ledetekst', 'Ett stoff eller eksempel kommer om gangen. Trykk på boksen det hører hjemme i.'));
+  const g = el('div', 'nf-sett');
+  SORTERINGER.forEach(s => {
+    const b = el('button', 'nf-sett-knapp');
+    b.appendChild(el('h3', null, s.navn));
+    b.appendChild(el('p', null, s.tekst));
+    const rek = lager.sortRekord[s.id];
+    if(rek != null) b.appendChild(el('span', 'nf-rekord', 'Best: ' + rek + ' av ' + s.ting.length));
+    b.onclick = () => startSorter(s);
+    g.appendChild(b);
+  });
+  f.appendChild(g);
+}
+
+function startSorter(s){
+  sort = { s, ko:bland(s.ting), i:0, riktige:0, i_boks:s.bokser.map(() => []) };
+  iRunde(true);
+  visSorter();
+}
+
+function visSorter(){
+  const s = sort.s;
+  window.scrollTo(0, 0);
+  const f = $('flate');
+  f.innerHTML = '';
+  const hode = el('div', 'nf-hode');
+  hode.appendChild(el('span', 'nf-teller', s.navn + ' · ' + Math.min(sort.i + 1, sort.ko.length) + ' av ' + sort.ko.length));
+  hode.appendChild(el('span', 'nf-lapp', 'Punkt ' + s.punkt));
+  f.appendChild(hode);
+
+  if(sort.i >= sort.ko.length) return visSorterResultat();
+
+  const [navn, riktig, forkl] = sort.ko[sort.i];
+  const ting = el('div', 'nf-ting nf-inn', navn);
+  f.appendChild(ting);
+
+  const bokser = el('div', 'nf-bokser');
+  bokser.style.setProperty('--nf-kol', Math.min(s.bokser.length, 3));
+  const fasit = el('div', 'nf-fasit');
+  fasit.hidden = true;
+  const neste = el('button', 'nf-knapp nf-tung', 'Neste');
+  neste.hidden = true;
+  neste.onclick = () => { sort.i++; visSorter(); };
+
+  s.bokser.forEach((bn, bi) => {
+    const b = el('button', 'nf-boks');
+    b.appendChild(el('span', 'nf-boks-navn', bn));
+    const ul = el('ul');
+    sort.i_boks[bi].forEach(([t, bom]) => ul.appendChild(el('li', bom ? 'nf-li-bom' : '', t)));
+    b.appendChild(ul);
+    b.onclick = () => {
+      bokser.querySelectorAll('.nf-boks').forEach(x => x.disabled = true);
+      const ok = bi === riktig;
+      const rb = bokser.children[riktig];
+      rb.classList.add('nf-riktig');
+      rb.querySelector('ul').appendChild(el('li', ok ? '' : 'nf-li-bom', navn));
+      sort.i_boks[riktig].push([navn, !ok]);
+      if(ok){
+        sort.riktige++;
+        /* Et riktig svar tenner ikke prikken her - da ville ett sett
+           paa ti ting gjort et helt punkt gult. Prikken kommer naar
+           settet er ferdig og nesten feilfritt. */
+        setTimeout(() => { sort.i++; visSorter(); }, 650);
+      }else{
+        b.classList.add('nf-galt');
+        fasit.innerHTML = '';
+        fasit.appendChild(el('b', null, navn + ' hører til ' + s.bokser[riktig].toLowerCase() + '.'));
+        if(forkl) fasit.appendChild(document.createTextNode(forkl));
+        fasit.hidden = false;
+        visKnapp(neste);
+      }
+    };
+    bokser.appendChild(b);
+  });
+  f.appendChild(bokser);
+  f.appendChild(fasit);
+  const k = el('div', 'nf-knapper');
+  k.appendChild(neste);
+  f.appendChild(k);
+}
+
+function visSorterResultat(){
+  iRunde(false);
+  window.scrollTo(0, 0);
+  const s = sort.s;
+  const f = $('flate');
+  const tot = sort.ko.length;
+  const andel = sort.riktige / tot;
+  if(andel >= .8) gi(s.punkt);
+  if(lager.sortRekord[s.id] == null || sort.riktige > lager.sortRekord[s.id]){
+    lager.sortRekord[s.id] = sort.riktige; lagre();
+  }
+  const r = el('div', 'nf-resultat');
+  const n = stjerner(andel);
+  const st = el('div', 'nf-stjerner');
+  for(let i = 0; i < 3; i++) st.appendChild(stjerneBilde(i < n, n === 3));
+  r.appendChild(st);
+  r.appendChild(el('p', 'nf-stort-tall', sort.riktige + ' av ' + tot));
+  r.appendChild(el('p', 'nf-skryt', skryt(andel)));
+  const k = el('div', 'nf-knapper');
+  const igjen = el('button', 'nf-knapp nf-tung', 'En gang til');
+  igjen.onclick = () => startSorter(s);
+  const andre = el('button', 'nf-knapp', 'Velg en annen');
+  andre.onclick = visSorterValg;
+  k.appendChild(igjen); k.appendChild(andre);
+  r.appendChild(k);
+  f.appendChild(r);
+}
+
+tegnKart();
+visQuizOppsett();
+</script>
+</body>
+</html>

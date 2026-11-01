@@ -1839,6 +1839,21 @@ select.hu-felt{
         <span><span class="spill-navn">Grunnstoffer</span><span class="spill-sub">Periodesystemet</span></span>
       </a>
 
+      <!-- Snarvei til naturfagspillet (puggearket). Kolben er tegnet inn
+           her av samme grunn som atomet over. -->
+      <a class="kort spill-kort" id="kortNaturfag" href="/emma-naturfag.html"
+         aria-label="Naturfagspill: quiz til prøven">
+        <svg class="spill-ikon" viewBox="0 0 48 48" fill="none" stroke="currentColor"
+             stroke-width="2.2" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 5h12M20 5v13L8.5 38.5A3 3 0 0 0 11.2 43h25.6a3 3 0 0 0 2.7-4.5L28 18V5"/>
+          <path d="M13.5 30h21L39 38.5A3 3 0 0 1 36.8 43H11.2A3 3 0 0 1 9 38.5z" fill="currentColor" stroke="none" opacity=".35"/>
+          <circle cx="21" cy="35" r="2" fill="currentColor" stroke="none"/>
+          <circle cx="27.5" cy="37.5" r="1.5" fill="currentColor" stroke="none"/>
+          <circle cx="25" cy="32" r="1.2" fill="currentColor" stroke="none"/>
+        </svg>
+        <span><span class="spill-navn">Naturfag</span><span class="spill-sub">Quiz til prøven</span></span>
+      </a>
+
     </div>
   </div>
 
@@ -2366,8 +2381,8 @@ function rullTilNaa(boks){
    boble oppaa. Da kan notatet vaere langt uten aa dekke planen man leser
    det ut fra. */
 /* kortSpill (snarveien til grunnstoffspillet) viker sammen med de to
-   andre - lagt til 16. september 2026. */
-const HOYRE_KORT = ['kortMerknader', 'kortUken', 'kortSpill'];
+   andre - lagt til 16. september 2026. kortNaturfag kom 1. november. */
+const HOYRE_KORT = ['kortMerknader', 'kortUken', 'kortSpill', 'kortNaturfag'];
 
 let detaljIndeks = null;
 
