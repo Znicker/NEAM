@@ -1559,6 +1559,11 @@
    for aa flytte rommet. */
 .hsk-redigerer .hsk-romnavn{ cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; }
 .hsk-grep{ margin-left:auto; display:inline-flex; opacity:.8; }
+/* Avhukingen for hele rommet, foerst i baandet. Et rom uten hake
+   dempes under «Rediger» og staar ikke utenfor. */
+.hsk-rom-merk{ display:inline-flex; cursor:pointer; margin:-4px 0; padding:4px 0; }
+.hsk-rom-merk input{ width:20px; height:20px; margin:0; accent-color:var(--aksent); cursor:pointer; }
+.hsk-rom.hsk-rom-av{ opacity:.45; }
 .hsk-grep svg{ width:18px; height:18px; display:block; }
 /* Rommet som dras, foelger fingeren over alt annet. */
 .hsk-rom.hsk-drar{
@@ -1593,6 +1598,13 @@
 .hsk-temp{ display:inline-flex; align-items:center; gap:10px; }
 .hsk-temp .dlg-knapp{ padding:8px 14px; min-width:44px; }
 .hsk-tall{ min-width:64px; text-align:center; font-weight:700; color:var(--ink); }
+/* Viftestyrken: «Vifte 3» paa egen linje, − Auto + under - paa én
+   linje ble + skjøvet ut paa telefon. Auto er markert med samme ring
+   som Fargevalg naar hjulet er oppe. */
+.hsk-vifte{ flex-wrap:wrap; row-gap:6px; }
+.hsk-vifte .hsk-tall{ flex-basis:100%; text-align:left; }
+.hsk-vifte .dlg-knapp.valgt{ box-shadow:0 0 0 2px var(--bg-solid), 0 0 0 4px var(--aksent); }
+.hsk-vifte .dlg-knapp:disabled{ opacity:.4; cursor:default; }
 .hsk-valg{
   padding:8px 12px; border:1.5px solid var(--line); border-radius:12px;
   background:var(--bg-solid); color:var(--ink);

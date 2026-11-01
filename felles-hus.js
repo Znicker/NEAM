@@ -890,7 +890,7 @@ function nmwVisKode(feil){
    noen savner det. Valglister (modus, vifte) tas med av seg selv,
    unntatt den som bare bytter maaten lyset styres paa: den settes av
    fargehjulet. */
-const HSK_SETT = ['onoff', 'dim', 'target_temperature'];
+const HSK_SETT = ['onoff', 'dim', 'target_temperature', 'fan_speed'];
 const HSK_IKKE_VALG = ['light_mode'];
 const HSK_IKKE_KLASSE = ['lock', 'sensor'];
 const HSK_OPPDATER = 10000;
@@ -1004,7 +1004,7 @@ function hskKap(id, d){
   const ut = HSK_SETT.filter(function(k){ return o[k] && o[k].setable; });
   Object.keys(o).forEach(function(k){
     if(o[k].setable && o[k].type === 'enum' && HSK_IKKE_VALG.indexOf(k) === -1
-       && (o[k].values || []).length) ut.push(k);
+       && (o[k].values || []).length && ut.indexOf(k) === -1) ut.push(k);
   });
   return ut;
 }
@@ -1207,14 +1207,16 @@ function hskRomNivaa(r){
    kolonner: { antall: [[romnoekkel, ...], ...] } - ett oppsett per
              antall kolonner, saa iPaden paa tvers og paa hoeykant kan
              ha hvert sitt. sist er det som ble lagret sist, og gir
-             rekkefoelgen naar et antall ikke har noe eget ennaa. */
+             rekkefoelgen naar et antall ikke har noe eget ennaa.
+   skjul:    { romnoekkel: true } - rom som ikke vises utenfor «Rediger»
+             (Magne, 2. november 2026). */
 const HSK_LAGER = 'neam-rommene:v1';
 function hskLesOppsett(){
   try{
     const d = JSON.parse(localStorage.getItem(HSK_LAGER) || '{}') || {};
     return { vis: d.vis || {}, kolonner: d.kolonner || {}, sist: d.sist || 0, hvit: d.hvit || {},
-             rekke: d.rekke || {} };
-  }catch(e){ return { vis:{}, kolonner:{}, sist:0, hvit:{}, rekke:{} }; }
+             rekke: d.rekke || {}, skjul: d.skjul || {} };
+  }catch(e){ return { vis:{}, kolonner:{}, sist:0, hvit:{}, rekke:{}, skjul:{} }; }
 }
 function hskLagreOppsett(){
   try{ localStorage.setItem(HSK_LAGER, JSON.stringify(hskOppsett)); }catch(e){}
@@ -1245,6 +1247,14 @@ function hskVises(e){
   if(hskErVarsler(e) && hskVarselNivaa(e) !== 'ok') return true;
   const v = hskOppsett.vis[e.id];
   return v === undefined ? !hskErVarsler(e) : !!v;
+}
+
+/* Et skjult rom (skjul: { romnoekkel: true }) vises likevel naar en
+   varsler i det ikke er i orden - samme regel som for enhetene. */
+function hskRomVises(r){
+  const n = hskRomNivaa(r);
+  if(n === 'gul' || n === 'rod') return true;
+  return !hskOppsett.skjul[r.nokkel];
 }
 
 /* Det som staar som rader. Under «Rediger» staar alt. */
@@ -1304,6 +1314,7 @@ function hskForNeam(e){
   const kan = [];
   e.kap.forEach(function(k){
     const c = o[k];
+    if(k === 'fan_speed') return;
     if(k === 'onoff') kan.push('slå på/av');
     else if(k === 'dim') kan.push('lysstyrke');
     else if(k === 'target_temperature'){
@@ -1488,12 +1499,17 @@ function hskBygg(){
     const c = d && d.capabilitiesObj && d.capabilitiesObj[b.dataset.kap];
     if(!c) return;
     if(b.dataset.kap === 'onoff'){ hskSett(b.dataset.hsk, [['onoff', !c.value]]); return; }
-    /* Temperaturen: ett steg av gangen, innenfor det enheten taaler. */
-    const steg = (c.step || 0.5) * Number(b.dataset.steg);
+    const vifte = b.dataset.kap === 'fan_speed';
+    if(vifte && b.dataset.steg === 'auto'){ hskSett(b.dataset.hsk, [['fan_speed', 0]]); return; }
+    /* Temperaturen og viftestyrken: ett steg av gangen, innenfor det
+       enheten taaler. Viften gaar ikke under 1 med − - Auto er knappen
+       i midten. */
+    const steg = (c.step || (vifte ? 1 : 0.5)) * Number(b.dataset.steg);
     let v = Math.round(((Number(c.value) || 0) + steg) * 10) / 10;
-    if(typeof c.min === 'number' && v < c.min) v = c.min;
+    const min = vifte ? Math.max(1, typeof c.min === 'number' ? c.min : 0) : c.min;
+    if(typeof min === 'number' && v < min) v = min;
     if(typeof c.max === 'number' && v > c.max) v = c.max;
-    hskSett(b.dataset.hsk, [['target_temperature', v]]);
+    hskSett(b.dataset.hsk, [[b.dataset.kap, v]]);
   });
   hskBak.addEventListener('change', function(ev){
     const el = ev.target;
@@ -1504,6 +1520,14 @@ function hskBygg(){
       hskLagreOppsett();
       const rad = el.closest('.hsk-enhet');
       if(rad) rad.classList.toggle('hsk-av', !el.checked);
+      return;
+    }
+    if(el.dataset && el.dataset.visRom){
+      if(el.checked) delete hskOppsett.skjul[el.dataset.visRom];
+      else hskOppsett.skjul[el.dataset.visRom] = true;
+      hskLagreOppsett();
+      const rom = el.closest('.hsk-rom');
+      if(rom) rom.classList.toggle('hsk-rom-av', !el.checked);
       return;
     }
     if(!el.dataset || !el.dataset.kap) return;
@@ -1519,7 +1543,7 @@ function hskBygg(){
   hskBak.addEventListener('pointerdown', function(ev){
     if(hskRediger){
       const baand = ev.target.closest && ev.target.closest('.hsk-romnavn');
-      if(baand){ hskDraStart(baand, ev, 'rom'); return; }
+      if(baand && !ev.target.closest('.hsk-rom-merk')){ hskDraStart(baand, ev, 'rom'); return; }
       const grep = ev.target.closest && ev.target.closest('.hsk-grep-enhet');
       if(grep){ hskDraStart(grep, ev, 'enhet'); return; }
     }
@@ -1709,6 +1733,21 @@ function hskStyring(e){
          +   '<button type="button" class="dlg-knapp ja hsk-knapp"' + data + ' data-kap="target_temperature" data-steg="1" aria-label="Høyere">+</button>'
          + '</span>';
     }
+    /* Viftestyrken paa varmepumpen i stua: et tall 0-5, der 0 er
+       automatisk (Magne, 2. november 2026). Auto er en egen knapp i
+       midten og markert naar den staar paa; − og + gaar mellom 1 og 5. */
+    else if(k === 'fan_speed' && c.type === 'number'){
+      const v = Math.round(Number(c.value) || 0);
+      h += '<span class="hsk-temp hsk-vifte">'
+         +   '<span class="hsk-tall">' + (v ? 'Vifte ' + v : 'Vifte auto') + '</span>'
+         +   '<button type="button" class="dlg-knapp ja hsk-knapp"' + data + ' data-kap="fan_speed" data-steg="-1"'
+         +     (v ? '' : ' disabled') + ' aria-label="Lavere viftestyrke">−</button>'
+         +   '<button type="button" class="dlg-knapp ja hsk-knapp' + (v ? '' : ' valgt') + '"' + data
+         +     ' data-kap="fan_speed" data-steg="auto" aria-pressed="' + !v + '">Auto</button>'
+         +   '<button type="button" class="dlg-knapp ja hsk-knapp"' + data + ' data-kap="fan_speed" data-steg="1"'
+         +     ' aria-label="Høyere viftestyrke">+</button>'
+         + '</span>';
+    }
     else{
       h += '<select class="hsk-valg"' + data + ' data-kap="' + hskVask(k) + '" aria-label="'
          + hskVask(hskTittel(c.title, k)) + '">'
@@ -1863,9 +1902,14 @@ function hskRomHtml(r){
   /* Under «Rediger» faar baandet et grep til hoeyre, saa man ser at
      det kan tas tak i. */
   const grep = hskRediger ? '<span class="hsk-grep" aria-hidden="true">' + HSK_GREP + '</span>' : '';
-  const tittel = '<h3 class="hsk-romnavn"><span>' + hskVask(r.navn) + '</span>' + merke + grep + '</h3>';
+  const romPaa = !hskOppsett.skjul[r.nokkel];
+  const merk = !hskRediger ? ''
+    : '<label class="hsk-rom-merk"><input type="checkbox" data-vis-rom="' + hskVask(r.nokkel) + '"'
+      + (romPaa ? ' checked' : '') + ' aria-label="Vis ' + hskVask(r.navn) + '"></label>';
+  const tittel = '<h3 class="hsk-romnavn">' + merk + '<span>' + hskVask(r.navn) + '</span>' + merke + grep + '</h3>';
   const rader = hskSynlige(r);
   return '<section class="hsk-rom' + (nivaa && nivaa !== 'ok' ? ' hsk-' + nivaa : '')
+       + (hskRediger && !romPaa ? ' hsk-rom-av' : '')
        + (rader.length ? '' : ' hsk-bare-baand') + '" data-rom="' + hskVask(r.nokkel) + '">'
        + tittel + rader.map(hskEnhetHtml).join('') + '</section>';
 }
@@ -1884,9 +1928,16 @@ function hskTegn(){
      erstatter dem. */
   const bredde = hskBygg().querySelector('.hsk-innhold').clientWidth || 300;
   const antall = Math.max(1, Math.min(3, Math.floor((bredde + 16) / (300 + 16))));
-  const kolonner = hskFordel(rom, antall);
-  hskInnhold((hskRediger ? '<p class="hsk-hjelp">Huk av det som skal vises. Ta tak i et bånd for å flytte rommet, eller i grepet til høyre på en rad for å flytte enheten.</p>' : '')
+  /* Fordelingen regner med alle rommene, ogsaa de skjulte, saa
+     kolonnene staar likt under «Rediger» og utenfor. De skjulte tegnes
+     bare ikke. */
+  const kolonner = hskFordel(rom, antall).map(function(l){
+    return hskRediger ? l : l.filter(hskRomVises);
+  });
+  const ingen = !hskRediger && kolonner.every(function(l){ return !l.length; });
+  hskInnhold((hskRediger ? '<p class="hsk-hjelp">Huk av det som skal vises, både rom og enheter. Ta tak i et bånd for å flytte rommet, eller i grepet til høyre på en rad for å flytte enheten.</p>' : '')
     + (hskFeil ? '<p class="hsk-feil">' + hskVask(hskFeil) + '</p>' : '')
+    + (ingen ? '<p class="hsk-tom">Alle rommene er skjult. Trykk Rediger for å vise dem igjen.</p>' : '')
     + '<div class="hsk-romliste">'
     + kolonner.map(function(l){ return '<div class="hsk-kolonne">' + l.map(hskRomHtml).join('') + '</div>'; }).join('')
     + '</div>');
@@ -1900,6 +1951,7 @@ function hskTegn(){
    ellers ble rommene fordelt paa nytt bare av aa trykke Rediger, fordi
    alle enhetene da staar fram. */
 function hskAnslag(r){
+  if(!hskRomVises(r)) return 0;
   return 60 + r.enheter.filter(hskVises).reduce(function(sum, e){
     return sum + 48 + (e.kap.length || e.farge ? 40 : 0) + (e.farge ? 40 : 0);
   }, 0);
