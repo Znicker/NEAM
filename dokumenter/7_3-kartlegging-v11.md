@@ -1,6 +1,11 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 1. november 2026, kveld: Rommene viser tid igjen på
+*Ført à jour 2. november 2026, senere samme dag: ti verktøy flyttet inn i
+fellesfilene – Neam har nå 56 verktøy som virker fra alle sidene, og det
+som står igjen står igjen med en grunn (se «Neam på tvers» i toppblokka).
+Ført à jour 2. november 2026: Rommene kan skjule hele rom, og
+varmepumpen i stua har fått viftestyrke (se toppblokka). Ført à jour
+1. november 2026, kveld: Rommene viser tid igjen på
 oppvaskmaskin, vaskemaskin og tørketrommel, med fremdriftslinje der
 maskinen melder fremdrift (se toppblokka). Ført à jour
 1. november 2026: Rommene lagt om igjen (rommene på én
@@ -63,7 +68,7 @@ ny tråd alltid lander på samme sted.*
 
 ---
 
-## Nåstatus – 1. november 2026
+## Nåstatus – 2. november 2026
 
 **Hvor prosjektet er nå.** Ni sider og fire spill, og Andreas tre spill
 nås fra én egen spillside. To økter 12.–13. september
@@ -84,8 +89,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-tale.js` (tale ut og inn).
 
 **Siste leverte versjoner:** `felles-neam.js ?v=74`, `felles-neam.css
-?v=72`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=6`, `felles-lesalt.js
-?v=6`, `felles-hus.js ?v=20`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
+?v=74`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=7`, `felles-lesalt.js
+?v=7`, `felles-hus.js ?v=22`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
@@ -103,9 +108,13 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–73; neam.css til og
-med 71; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–5, skriv 1–5,
-hus `?v=1–19`, ms `?v=1`, tale 1–4, graph 1–2**. (1. november: hus 13–16
-og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.) Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
+med 73; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–6, skriv 1–6,
+hus `?v=1–21`, ms `?v=1`, tale 1–4, graph 1–2**. (1. november: hus 13–16
+og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
+2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
+committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
+før fellesfilene var pushet, så sida ba om dem med gammelt innhold.)
+Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
 tale 1–4 ble brent 13. september ved å endre en fil som alt var pushet uten
 å heve nummeret – se del 46. Resten er tidligere leverte numre, som alltid
 er brent i det de forlates.
@@ -116,25 +125,55 @@ skrivingen inn i fellesfilene – «den dagen Neam trenger sin andre ekte
 skriving på tvers» – er for lengst passert, og flyttingen gjøres nå
 **én app av gangen**, med reglene lest ut av sida og verifisert mot den.
 
-*Virker overalt (26 verktøy i `felles-skriv.js`):* handlelista (legge på,
-fjerne, endre, ny/start/avslutt handletur), kalenderen (avtaler og
-påminnelser), skolearbeidet (lekser, prøver, læringsmål), navigasjon, og
-**fra 29. oktober Matlaging**: `legg_inn_oppskrifter`, `endre_oppskrift`,
-`slett_oppskrift`, `sett_middag`, `fjern_middag`.
+**2. november ble resten flyttet.** Ti verktøy inn i fellesfilene, og da er
+flyttingen ferdig så langt den kan gå: **56 verktøy virker fra alle sidene**
+(34 i `felles-skriv.js`, 5 i `felles-lesalt.js`, 4 i `felles-data.js`,
+13 i `felles-hus.js`).
 
-*Virker fortsatt bare på sin egen side:* `sok_varekatalog`,
-`list_handleturer`, `sett_varetype`, `slaa_sammen`, `finn_opprydding`,
-`les_ny_pakke` og de to skjermverktøyene `foresla_import` og
-`foresla_opprydding` (handleliste); `endre_fag`, `legg_til_fag`,
-`foreslaa_lekser` (Andrea og Emma); `les_diktat` og `sett_diktatord`
-(Andrea); `list_skoleplaner` og `hent_skoleplan` (Emma).
+*Virker overalt:* handlelista (legge på, fjerne, endre, ny/start/avslutt
+handletur, **og fra 2. november** `list_handleturer`, `sok_varekatalog`,
+`les_ny_pakke`, `sett_varetype`), kalenderen (avtaler og påminnelser),
+skolearbeidet (lekser, prøver, læringsmål, **og fra 2. november**
+`les_fagene`, `legg_til_fag`, `endre_fag`, `sett_diktatord`,
+`list_skoleplaner`, `hent_skoleplan`), Matlaging (fra 29. oktober),
+navigasjon, huset og Neamow.
+
+*Kan ikke flyttes som de er – fem verktøy:*
+- `finn_opprydding` og `slaa_sammen` hviler på **sidas mengdemotor** –
+  `kjerne()`, `finnKlynger()`, `parseMengde()`, `normEnhet()` og
+  `ENHET_ALIAS` – som «Rydd i varene» på sida også bruker. En kopi i
+  fellesfila ville vært to motorer som skal holdes like, og det er dyrere
+  enn at de to står igjen. De flyttes den dagen motoren selv flyttes.
+- `foresla_import`, `foresla_opprydding` og `foreslaa_lekser` tegner en
+  skjerm gjennom `neamSkjerm`, og sida eier layouten. De må bli noe annet
+  enn en flytting, eller bli stående.
+
+*Står igjen på sida med vilje – rikere utgaver av noe som finnes overalt:*
+`les_handlelista` (ser haken som ble satt for to sekunder siden, mens
+leselagets går til KV), `legg_til_varer`, `fjern_varer`, `endre_vare` (ser
+hvilken handletur brukeren har oppe, og tegner lista om), `les_avtaler` og
+`les_kalendere` (gir id-er som kan endres), `les_fagene`, `les_lekser`,
+`les_prover`, `les_paaminnelser`, `legg_til_paaminnelse` (leser det som står
+på skjermen nå) og `les_diktat` (resultatene per uke). Sidas egen vinner
+fordi sidene sender sine egne navn inn i `skrivVerktoy()` og
+`lesAltVerktoy()`.
+
+**DE EGNE NAVNENE MÅ SENDES INN.** To verktøy med samme navn i ett kall
+avvises av API-et, og da svarer ikke Neam i det hele tatt på den sida.
+Handlelista sendte en håndskrevet utelat-liste i stedet for `egne`, og de
+fire nye navnene ville gått med to ganger – samme klasse feil som dashene
+hadde i september. Legger du et verktøy i en fellesfil med et navn en side
+alt har, er dette det første du sjekker.
+
+**Skolehandlingene er skjult på veggskjermen.** `legg_til_fag`, `endre_fag`
+og `sett_diktatord` er lagt i `SKRIV_SKOLE` sammen med lekser og prøver:
+en skjerm som kan endre begge barnas skolearbeid uten at noen vet hvem som
+trykket, hører ikke hjemme på veggen. Sperren er `skrivSkoleTillatt()`.
 
 *Finnes ikke som verktøy noe sted:* husregisteret (bare skjemaet på
 forsiden – teksten går i systemteksten), spillene, vedlegg og bilder.
-
-**De to skjermverktøyene kan ikke flyttes som de er.** `foresla_import` og
-`foresla_opprydding` tegner en hel skjerm gjennom `neamSkjerm`, og sida
-eier layouten. De må bli noe annet enn en flytting, eller bli stående.
+**Og `okonomi.html`, `kort.html` og spillsidene laster ikke Neam i det hele
+tatt** – der har han ingen stemme, ikke bare et smalere utvalg.
 
 **Hemmeligheter i Cloudflare:** `ANTHROPIC_API_KEY`, `MS_CLIENT_SECRET`,
 `HOMEY_CLIENT_SECRET`, `TURN_KEY_ID`, `TURN_KEY_API_TOKEN` (de to siste
@@ -413,6 +452,24 @@ Se del 57.
 - **Designsystemet ført à jour** for det nye visuelle uttrykket
   (`27f05e8`) og for Rommene.
 
+**2. november: Rommene** (`d90cbf6`, hus `?v=22`, neam.css `?v=74`).
+- **Hele rom kan skjules** under «Rediger»: avhuking først i båndet.
+  Lagres per skjerm (`skjul` i `neam-rommene:v1`). Et skjult rom kommer
+  fram likevel når en varsler i det ikke er i orden. Kolonnene fordeles
+  med de skjulte rommene med, så de står likt under «Rediger» og utenfor.
+- **Viftestyrke på varmepumpen i stua.** `fan_speed` er et tall 0–5 (lest
+  fra Homey 2. november); 0 er automatisk etter Magnes svar. «Vifte 3»
+  står over **− Auto +**: Auto setter 0 og er markert når den står på,
+  − og + går mellom 1 og 5. `fan_speed.state` (faktisk hastighet, 0–6)
+  vises ikke. Neam kan ikke stille viftestyrken – den er bare i Rommene.
+- **Åpent:** å slå av vaskemaskin, tørketrommel og oppvaskmaskin. Homey
+  kan ikke selv; Magne lager flyter med «Da»-kort, og Neam trenger da en
+  måte å starte en flyt på i `functions/api/homey.js` (spør først).
+  **Fremdrift på oppvaskmaskinen:** kan kanskje leses av historikken til
+  `measure_timeToEnd` i Homey Innsikt – programmets lengde er det siste
+  hoppet fra 0. Magne ser etter grafen etter en hel oppvask; finnes den,
+  trengs et leseendepunkt i `homey.js` (spør først).
+
 ### Åpne tråder
 
 **Besluttet, ikke bygget – fem systemer med begrunnelse i del 47–50 og 52:**
@@ -515,6 +572,9 @@ Se del 57.
 - **Rommene på iPad og telefon** (1. november): kolonnene, Rediger og å
   dra rommene med fingeren, og fargeprikken på Andreas taklys etter
   «Naturlig hvitt».
+- **Viftestyrken på varmepumpen** (2. november): at Auto faktisk er
+  trinn 0 på denne varmepumpen, og at − og + virker mot Homey. Bare prøvd
+  i en forhåndsvisning med falske verdier.
 - **Tid igjen på vaskemaskinen over én time** (1. november): hvordan
   Bosch skriver et langt program – «85:00» eller «1:25:00» – er ikke sett.
   Begge leses, men ingen av dem er prøvd mot en ekte maskin.
