@@ -108,8 +108,77 @@ const LESALT_VERKTOY = [
       properties:{ antall: { type:'integer', description:'Hvor mange uker bakover. Standard 3.' } },
       required:[]
     }
+  },
+  {
+    name: 'list_skoleplaner',
+    description: 'Filene som ligger under «Ukeplaner og filer» på Rolighedens side - '
+               + 'Emmas skole - med navn, ukenummer og adresse. Virker fra hvilken '
+               + 'som helst side. Bruk dette for å finne HVILKEN ukeplan som er den '
+               + 'nyeste før du henter den.\n\n'
+               + 'ANDREAS SKOLE ER EN ANNEN. Sandnes legger ut PDF, og den hentes med '
+               + '«Hent fra nett» under Ukeplan-knappen på Andrea dash - den kan ikke '
+               + 'hentes herfra.',
+    input_schema: { type:'object', properties:{}, required:[] }
+  },
+  {
+    name: 'hent_skoleplan',
+    description: 'Henter en .docx fra Rolighedens side og gir innholdet som tekst. '
+               + 'Virker fra hvilken som helst side. Uten argument hentes den NYESTE '
+               + 'ukeplanen for 8. trinn.\n\n'
+               + 'Skal du ha en TIMEPLAN eller noe annet enn en ukeplan, send navn '
+               + 'eller url fra list_skoleplaner - timeplanene har ikke ukenummer og '
+               + 'finnes ikke av søket etter nyeste ukeplan.\n\n'
+               + 'Etter dette: sorter leksene på fag og legg dem fram med '
+               + 'foreslaa_lekser, som bare finnes på Emma dash. Står du et annet '
+               + 'sted, les planen opp og si at innleggingen gjøres der - eller legg '
+               + 'inn én lekse av gangen med legg_til_lekse når hun har sagt hva som '
+               + 'skal inn.',
+    input_schema: {
+      type:'object',
+      properties:{
+        uke:  { type:'integer', description:'Ukenummer. Utelat for den nyeste.' },
+        navn: { type:'string', description:'Navnet på fila slik det står i '
+                                         + 'list_skoleplaner, for eksempel '
+                                         + '«Timeplan, 8C».' },
+        url:  { type:'string', description:'Full adresse fra list_skoleplaner. '
+                                         + 'Alternativ til navn.' }
+      },
+      required:[]
+    }
   }
 ];
+
+/* ------------------------------------------------------------
+   Skolens side - Roligheden
+   ------------------------------------------------------------
+   /api/hent gjoer jobben: kommunen sender ingen CORS-hoder, og
+   .docx pakkes ut til tekst paa tjeneren. Her er det bare to kall.
+
+   Lista huskes resten av oekten, som paa Emma dash: hent_skoleplan
+   slaar opp i den to ganger i samme runde.
+   ------------------------------------------------------------ */
+let lesAltPlanerHusk = null;
+
+async function lesAltSkolePlaner(){
+  if(lesAltPlanerHusk) return lesAltPlanerHusk;
+  const r = await fetch('/api/hent?hva=liste', {cache:'no-store'});
+  const d = await r.json().catch(function(){ return null; });
+  if(!r.ok || !d || d.feil){
+    throw new Error((d && d.feil) || ('Fikk ikke tak i skolens side (' + r.status + ').'));
+  }
+  lesAltPlanerHusk = d.lenker || [];
+  return lesAltPlanerHusk;
+}
+
+async function lesAltSkoleFil(url){
+  const r = await fetch('/api/hent?hva=fil&url=' + encodeURIComponent(url),
+                        {cache:'no-store'});
+  const d = await r.json().catch(function(){ return null; });
+  if(!r.ok || !d || d.feil){
+    throw new Error((d && d.feil) || ('Fikk ikke hentet fila (' + r.status + ').'));
+  }
+  return d;
+}
 
 /* ------------------------------------------------------------
    Utførelsen
@@ -194,6 +263,81 @@ async function lesAltUtfor(navn, arg){
         };
       })
     };
+  }
+
+  /* ---------------- Skolens side ---------------- */
+  if(navn === 'list_skoleplaner'){
+    const d = await lesAltSkolePlaner();
+    return { antall: d.length, planer: d.map(function(l){
+      return { navn:l.navn, uke:l.uke, url:l.url };
+    })};
+  }
+
+  if(navn === 'hent_skoleplan'){
+    let url = String(arg.url || '').trim();
+    let hvilken = null;
+
+    /* En TIMEPLAN ligger i lista UTEN ukenummer - da er soeket etter
+       «nyeste ukeplan» feil sted aa lete. Neam ba om timeplanen og fikk
+       «fant ingen ukeplan» i retur, som er sant, men ikke svar. */
+    if(!url && arg.navn){
+      const planer = await lesAltSkolePlaner();
+      const sok = String(arg.navn).trim().toLowerCase();
+      const t = planer.filter(function(l){
+                  return String(l.navn || '').toLowerCase() === sok; })[0]
+             || planer.filter(function(l){
+                  return String(l.navn || '').toLowerCase().indexOf(sok) !== -1; })[0];
+      if(!t) throw new Error('Fant ingen fil som heter «' + arg.navn + '». '
+                           + 'Bruk list_skoleplaner for å se hva som ligger der.');
+      url = t.url;
+      hvilken = t;
+    }
+
+    if(!url){
+      const planer = await lesAltSkolePlaner();
+      /* «8. trinn» og et ukenummer. Timeplanene ligger i samme liste og
+         har ikke uke, saa de faller ut av seg selv. */
+      const ukeplaner = planer.filter(function(l){
+        return l.uke && /8\.?\s*trinn/i.test(l.navn);
+      });
+      if(!ukeplaner.length){
+        throw new Error('Fant ingen ukeplan for 8. trinn på skolens side. '
+                      + 'Bruk list_skoleplaner for å se hva som ligger der.');
+      }
+      hvilken = arg.uke
+        ? ukeplaner.filter(function(l){ return l.uke === Number(arg.uke); })[0]
+        : ukeplaner.slice().sort(function(a, b){ return b.uke - a.uke; })[0];
+      if(!hvilken){
+        throw new Error('Fant ingen ukeplan for uke ' + arg.uke + '. Tilgjengelig: '
+                      + ukeplaner.map(function(l){ return l.uke; }).join(', ') + '.');
+      }
+      url = hvilken.url;
+    }
+
+    const d = await lesAltSkoleFil(url);
+
+    /* Ukenummeret staar to steder: i LENKENAVNET og inne i DOKUMENTET.
+       Spriker de, er det som regel en gammel fil lastet opp under et nytt
+       navn. Vi sier fra om begge tallene i stedet for aa velge ett.
+
+       Bare de foerste 400 tegnene: uketallet staar i overskriften, og
+       lenger ned dukker «uke» opp i andre sammenhenger. */
+    const topp = String(d.tekst || '').slice(0, 400);
+    const iTekst = [];
+    const re = /uke\s*(\d{1,2})/gi;
+    let m;
+    while((m = re.exec(topp)) !== null){
+      const u = parseInt(m[1], 10);
+      if(u >= 1 && u <= 53 && iTekst.indexOf(u) === -1) iTekst.push(u);
+    }
+    const fraNavn = hvilken ? hvilken.uke : null;
+
+    return { navn: d.navn,
+             ukeFraNavn: fraNavn,
+             ukeIDokumentet: iTekst.length ? iTekst : null,
+             uketallene_stemmer: (fraNavn && iTekst.length)
+               ? (iTekst.indexOf(fraNavn) !== -1) : null,
+             tekst: d.tekst };
   }
 
   /* ---------------- Kalenderen ---------------- */

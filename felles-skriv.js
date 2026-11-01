@@ -330,7 +330,8 @@ const SKRIV_FAG_NOKLER = { emma:'emma-fag:v1', andrea:'andrea-fag:v1' };
 
 /* Verktoeyene som bare tilbys en innlogget person. */
 const SKRIV_SKOLE = ['legg_til_lekse', 'endre_lekse', 'slett_lekse',
-                     'legg_til_prove', 'endre_prove', 'sett_laeringsmaal'];
+                     'legg_til_prove', 'endre_prove', 'sett_laeringsmaal',
+                     'legg_til_fag', 'endre_fag', 'sett_diktatord'];
 
 /* Kontoene som ikke er en person: veggskjermen og systemkontoen. */
 const SKRIV_UPERSONLIG = ['kitchen@neam.no', 'sys@neam.no'];
@@ -439,8 +440,8 @@ function skrivFagFinn(d, navn){
   if(treff.length === 1) return treff[0];
   const navnene = alle.map(function(f){ return f.navn; }).join(', ');
   if(!treff.length) throw new Error('Fant ingen fag som heter «' + navn + '». '
-                                  + 'Fagene er: ' + navnene + '. Nye fag legges inn '
-                                  + 'på barnets egen dash.');
+                                  + 'Fagene er: ' + navnene + '. Mangler faget, '
+                                  + 'lag det med legg_til_fag.');
   throw new Error('«' + navn + '» passer på flere fag: '
                 + treff.map(function(f){ return f.navn; }).join(', ')
                 + '. Spør brukeren hvilket det gjelder.');
@@ -828,6 +829,130 @@ function skrivMatIndeksRad(rad, r){
   });
 }
 
+/* ============================================================
+   Fagene, varekatalogen, innboksen og diktaten
+   ------------------------------------------------------------
+   Lagt til 2. november 2026, som siste runde av «flytt det som kan
+   flyttes». Reglene er lest ut av sidene, ikke gjettet:
+
+     fagene      emma.html / andrea.html - dagNr(), dagerInn(),
+                 fagKrev() og les_fagene
+     katalogen   handleliste.html - katalogLagre() og sok_varekatalog
+     innboksen   handleliste.html - innboksNavn() og neamLesNyPakke()
+     diktaten    andrea.html - diktatNormal() og sett_diktatord
+
+   HVA SOM IKKE BLE FLYTTET, og hvorfor det ikke er en forglemmelse:
+   `finn_opprydding` og `slaa_sammen` hviler paa sidas egen
+   mengdemotor - kjerne(), finnKlynger(), parseMengde(), normEnhet() og
+   ENHET_ALIAS - som ogsaa «Rydd i varene» bruker. En kopi her ville
+   vaert to motorer som skal holdes like, og det er dyrere enn at de to
+   verktoeyene staar paa sin egen side. De flyttes den dagen motoren
+   selv flyttes. `foresla_import`, `foresla_opprydding` og
+   `foreslaa_lekser` tegner en skjerm sida eier, og kan ikke flyttes i
+   det hele tatt - se designsystemet, «Neams verktoey».
+   ============================================================ */
+
+const SKRIV_INNBOKS      = 'innboks';
+const SKRIV_DIKTAT       = 'andrea-diktat:v1';
+const SKRIV_DIKTAT_MAKS  = 100;          /* som DIKTAT_MAKS_LISTER i sida */
+
+/* Mandag er 0 - fagenes `dager` er indekser i denne lista, og det er
+   sidenes egen rekkefoelge. Blandes den med Date.getDay(), der soendag
+   er 0, flytter alle timer seg én dag. */
+const SKRIV_UKEDAGER = ['mandag','tirsdag','onsdag','torsdag','fredag','lørdag','søndag'];
+
+/* Tar «tor», «torsdag», «Torsdag.», «3» - samme som dagNr() i sida. */
+function skrivDagNr(v){
+  if(typeof v === 'number' && v >= 0 && v <= 6) return v;
+  const n = String(v || '').trim().toLowerCase().replace(/[.]/g, '')
+              .replace(/^soendag$/, 'søndag').replace(/^loerdag$/, 'lørdag');
+  if(!n) return -1;
+  if(/^[0-6]$/.test(n)) return +n;
+  for(let i = 0; i < 7; i++){
+    const d = SKRIV_UKEDAGER[i];
+    if(d.indexOf(n) === 0 || n.indexOf(d) === 0) return i;
+  }
+  return -1;
+}
+
+/* Liste, streng eller tall inn - dagnumre ut. null naar ingenting ble
+   sendt, saa et utelatt felt kan skilles fra «fjern alle dagene». */
+function skrivDagerInn(v){
+  if(v === undefined || v === null) return null;
+  let biter;
+  if(Array.isArray(v)) biter = v;
+  else if(typeof v === 'string') biter = v.split(/\s*(?:,|;|\/|\bog\b|\+)\s*|\s+/i);
+  else biter = [v];
+  const ut = [];
+  biter.forEach(function(d){
+    const i = skrivDagNr(d);
+    if(i !== -1 && ut.indexOf(i) === -1) ut.push(i);
+  });
+  ut.sort(function(a, b){ return a - b; });
+  return ut;
+}
+
+function skrivDagNavn(dager){
+  return (Array.isArray(dager) ? dager : [])
+    .map(function(n){ return SKRIV_UKEDAGER[n]; }).filter(Boolean);
+}
+
+/* Én fagrad slik les_fagene svarer. `ukeN` er uka laeringsmaalet
+   hentes for - skjermen bruker uka man ser paa, herfra er det denne. */
+function skrivFagLinje(d, f, ukeN){
+  const idag = skrivDatoNokkel(new Date());
+  const lekser = (d.lekser || []).filter(function(x){
+    return x.fagId === f.id && !x.ferdig;
+  });
+  const prover = (d.prover || []).filter(function(x){
+    return x.fagId === f.id && x.dato && String(x.dato) >= idag;
+  });
+  return { id: f.id, navn: f.navn,
+           faglaerer: f.laerer || null,
+           ukedager: skrivDagNavn(f.dager),
+           laeringsmaal: (f.maal && f.maal[ukeN]) || null,
+           apneLekser: lekser.length,
+           kommendeProver: prover.length };
+}
+
+/* ---- Varekatalogen ----
+   `{ katalog:{ <navn i smaa bokstaver>:{vare, basis, type} }, avvist:[] }`
+   `avvist` roeres ikke herfra - den hoerer til oppryddingen paa sida. */
+async function skrivKatalogLes(){
+  let d = null;
+  try{ d = await dataLes(SKRIV_KATALOG); }catch(e){ d = null; }
+  const o = (d && typeof d === 'object') ? d : {};
+  return { katalog: (o.katalog && typeof o.katalog === 'object') ? o.katalog : {},
+           avvist: Array.isArray(o.avvist) ? o.avvist : [] };
+}
+
+/* Samme regler som katalogLagre() i sida: navnet beholdes slik det ble
+   skrevet foerste gang, og en utelatt `basis` endrer ikke det som star. */
+function skrivKatalogLagre(k, navn, type, basis){
+  const n = String(navn || '').trim();
+  if(!n) return;
+  const foer = k.katalog[n.toLowerCase()];
+  k.katalog[n.toLowerCase()] = {
+    vare:  foer ? foer.vare : n,
+    basis: basis === undefined ? (foer ? !!foer.basis : false) : !!basis,
+    type:  type || (foer ? foer.type : '') || 'Annet'
+  };
+}
+
+/* ---- Diktaten ---- Samme normalisering som diktatNormal() i sida: den
+   gamle enkeltlista loeftes inn i `lister`, og halve lister kastes. */
+function skrivDiktatNormal(d){
+  const lister = (d && Array.isArray(d.lister)) ? d.lister
+               : (d && d.liste) ? [d.liste] : [];
+  return {
+    versjon: 2,
+    lister: lister.filter(function(l){
+      return l && typeof l.id === 'string' && Array.isArray(l.ord) && l.ord.length;
+    }),
+    runder: (d && Array.isArray(d.runder)) ? d.runder : []
+  };
+}
+
 const SKRIV_VERKTOY = [
   {
     name: 'legg_paa_handlelista',
@@ -1123,6 +1248,168 @@ const SKRIV_VERKTOY = [
     neamBeskriv: function(arg){
       return 'SLETTE ' + skrivHuskeNavn(arg.id) + '. Den kan ikke hentes tilbake.';
     }
+  },
+  {
+    name: 'les_fagene',
+    description: 'Fagene et av barna har, med faglærer, hvilke ukedager faget er, '
+               + 'ukas læringsmål og hvor mange åpne lekser og kommende prøver '
+               + 'hvert fag har. Virker fra hvilken som helst side. Kjør denne før '
+               + 'du sender et fagnavn til et annet verktøy - navnet må være slik '
+               + 'det står her.',
+    input_schema: {
+      type:'object',
+      properties:{ barn: { type:'string', enum:['Emma','Andrea'] } },
+      required:['barn']
+    }
+  },
+  {
+    name: 'legg_til_fag',
+    description: 'Oppretter et nytt fag hos Emma eller Andrea, fra hvilken som helst '
+               + 'side. Finnes faget fra før, blir det ikke laget på nytt.\n\n'
+               + 'Si ALLTID hvem det gjelder. Vet du det ikke, spør - ikke gjett ut '
+               + 'fra hvem som snakker.',
+    input_schema: {
+      type:'object',
+      properties:{
+        barn:   { type:'string', enum:['Emma','Andrea'] },
+        navn:   { type:'string', description:'Fagets navn.' },
+        laerer: { type:'string', description:'Faglærerens navn.' },
+        dager:  { type:'array', items:{ type:'string' },
+                  description:'Ukedagene faget har time, på norsk: '
+                            + '["mandag","torsdag"].' }
+      },
+      required:['barn','navn']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      const d = skrivDagerInn(arg.dager);
+      return 'Opprette faget ' + arg.navn + ' hos ' + skrivBarnNavn(arg.barn)
+           + (arg.laerer ? '\n\n· faglærer: ' + arg.laerer : '')
+           + (d && d.length ? '\n· dager: ' + skrivDagNavn(d).join(', ') : '');
+    }
+  },
+  {
+    name: 'endre_fag',
+    description: 'Setter faglærer og hvilke ukedager et fag er, eller gir det nytt '
+               + 'navn - fra hvilken som helst side. Bare feltene du sender blir '
+               + 'rørt.\n\n'
+               + 'DAGENE ERSTATTER de gamle, så send hele lista hver gang, ikke bare '
+               + 'den som skal legges til. Et fag som er både mandag og torsdag skal '
+               + 'ha begge. Tom liste fjerner alle dagene.',
+    input_schema: {
+      type:'object',
+      properties:{
+        barn:   { type:'string', enum:['Emma','Andrea'] },
+        fag:    { type:'string', description:'Navnet faget har nå, fra les_fagene.' },
+        navn:   { type:'string', description:'Nytt navn på faget.' },
+        laerer: { type:'string', description:'Tom streng fjerner faglæreren.' },
+        dager:  { type:'array', items:{ type:'string' },
+                  description:'ALLE ukedagene faget har time, på norsk.' }
+      },
+      required:['barn','fag']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      const rader = [];
+      if(arg.navn   !== undefined) rader.push('· nytt navn: ' + arg.navn);
+      if(arg.laerer !== undefined) rader.push('· faglærer: ' + (arg.laerer || '(fjernes)'));
+      if(arg.dager  !== undefined){
+        const d = skrivDagerInn(arg.dager);
+        rader.push('· dager: ' + (d && d.length ? skrivDagNavn(d).join(', ')
+                                                : '(alle fjernes)'));
+      }
+      return 'Endre faget ' + arg.fag + ' hos ' + skrivBarnNavn(arg.barn)
+           + (rader.length ? ':\n\n' + rader.join('\n') : '.');
+    }
+  },
+  {
+    name: 'sett_diktatord',
+    description: 'Legger inn diktatordene Andrea skal øve på en uke, fra hvilken som '
+               + 'helst side. Ordene ERSTATTER dem som står for den uka - send hele '
+               + 'lista. Et ord som står der fra før beholder eksempelsetningene '
+               + 'sine; nye ord får sine laget neste gang diktatsiden åpnes.\n\n'
+               + 'Høyst 15 ord om gangen. Uten uke og år havner de i uka det er nå.',
+    input_schema: {
+      type:'object',
+      properties:{
+        ord: { type:'array', items:{ type:'string' },
+               description:'Ordene, slik de skal staves.' },
+        uke: { type:'integer', description:'Ukenummer. Utelat for uka det er nå.' },
+        aar: { type:'integer', description:'Årstall. Utelat for i år.' }
+      },
+      required:['ord']
+    },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      const ord = (arg.ord || []).map(function(o){ return String(o).trim(); }).filter(Boolean);
+      const u = arg.uke ? ('uke ' + arg.uke) : 'denne uka';
+      return 'Sette ' + ord.length + ' diktatord for ' + u + ':\n\n'
+           + ord.join(', ') + '\n\nOrdene som står der nå for den uka blir erstattet.';
+    }
+  },
+  {
+    name: 'list_handleturer',
+    description: 'Handleturene huset har, med navn, område, hvor mange varer hver har '
+               + 'og hvor mange som gjenstår. Virker fra hvilken som helst side. '
+               + 'Bruk denne når brukeren nevner en handletur du ikke vet navnet på.\n\n'
+               + 'HVILKEN TUR SOM ER OPPE på brukerens egen skjerm kan ikke leses '
+               + 'herfra - det vet bare Handle selv. Avsluttede turer er historie, og '
+               + 'er merket slik.',
+    input_schema: { type:'object', properties:{}, required:[] }
+  },
+  {
+    name: 'sok_varekatalog',
+    description: 'Søker i varekatalogen - varene huset har handlet før, med varetypen '
+               + 'de pleier å få og om de er basisvarer. Virker fra hvilken som helst '
+               + 'side.\n\n'
+               + 'KATALOGEN ER IKKE HANDLELISTA: den sier hva en vare ER, ikke at den '
+               + 'skal kjøpes. Uten søkeord gis de første 40.',
+    input_schema: {
+      type:'object',
+      properties:{
+        sok:       { type:'string', description:'Ord fra varenavnet. Delstreng holder.' },
+        bareBasis: { type:'boolean', description:'true gir bare basisvarene.' }
+      },
+      required:[]
+    }
+  },
+  {
+    name: 'les_ny_pakke',
+    description: 'Leser pakkene Matlaging har sendt til Handle og som ikke er lagt inn '
+               + 'ennå - hver ingrediens med mengder, enheter og hvilken rett den kom '
+               + 'fra. Virker fra hvilken som helst side, og svarer på «har det kommet '
+               + 'noe fra Matlaging?».\n\n'
+               + 'SELVE IMPORTEN GJØRES PÅ HANDLE. Der legger foresla_import fram en '
+               + 'tabell brukeren godkjenner. Herfra kan du lese pakka og legge '
+               + 'enkeltvarer på lista med legg_paa_handlelista - men si da at pakka '
+               + 'blir liggende i innboksen til noen går gjennom den på Handle.',
+    input_schema: { type:'object', properties:{}, required:[] }
+  },
+  {
+    name: 'sett_varetype',
+    description: 'Setter varetype på én eller flere varer på en handletur, fra hvilken '
+               + 'som helst side. Dette er den ene endringen du gjør uten å spørre: '
+               + 'varetypen styrer bare rekkefølgen varene står i mens man handler, og '
+               + 'den er like lett å rette igjen. Ser du en vare uten type, gi den en.\n\n'
+               + 'Typen lagres også i varekatalogen for dagligvarer, så varen får den '
+               + 'av seg selv neste gang.',
+    input_schema: {
+      type:'object',
+      properties:{
+        varer: { type:'array',
+                 items:{ type:'object',
+                         properties:{ vare:{ type:'string' },
+                                      type:{ type:'string', enum:SKRIV_VARETYPER } },
+                         required:['vare','type'] },
+                 description:'Varene og typen hver av dem skal ha.' },
+        omrade:    { type:'string', enum:['mat','annet'] },
+        handletur: { type:'string', description:'Utelat for den nyeste åpne.' }
+      },
+      required:['varer']
+    }
+    /* Ingen neamSkriver, som paa sida: grensen for hva som maa bekreftes
+       gaar ved om en feil er lett aa se og lett aa rette - en gal varetype
+       er begge deler. */
   },
   {
     name: 'legg_til_avtale',
@@ -1939,6 +2226,221 @@ async function skrivUtfor(navn, arg){
     return navn === 'huk_av_paaminnelse'
       ? { ferdig: endring.ferdig, tekst: m.overskrift || '' }
       : { endret:true, tekst: endring.overskrift || m.overskrift || '' };
+  }
+
+  /* ---------------- Fagene ---------------- */
+  if(navn === 'les_fagene'){
+    const d = skrivFagTom(await dataLes(skrivFagNokkel(arg.barn)));
+    const ukeN = skrivUkeNokkel(null);
+    return { barn: skrivBarnNavn(arg.barn), uke: ukeN,
+             fag: (d.fag || []).map(function(f){ return skrivFagLinje(d, f, ukeN); }) };
+  }
+
+  if(navn === 'legg_til_fag'){
+    const nytt = String(arg.navn || '').trim();
+    if(!nytt) throw new Error('Faget må ha et navn.');
+    const dager = skrivDagerInn(arg.dager) || [];
+    let fantes = null;
+    await skrivFagEndre(arg.barn, function(d){
+      /* Oppslaget skjer INNE i endringen, mot det ferskeste: to kall rett
+         etter hverandre skal ikke lage faget to ganger. */
+      fantes = (d.fag || []).filter(function(f){
+        return String(f.navn || '').trim().toLowerCase() === nytt.toLowerCase();
+      })[0] || null;
+      if(!fantes){
+        d.fag.push({ id: skrivFagId(), navn: nytt,
+                     laerer: String(arg.laerer || '').trim(), dager: dager });
+      }
+      return d;
+    });
+    if(fantes) return { fantes:true, navn: fantes.navn,
+                        beskjed:'Faget finnes fra før og ble ikke laget på nytt.' };
+    return { lagt:{ barn: skrivBarnNavn(arg.barn), navn: nytt,
+                    dager: skrivDagNavn(dager) } };
+  }
+
+  if(navn === 'endre_fag'){
+    const endring = {};
+    if(arg.navn   !== undefined && String(arg.navn).trim()) endring.navn = String(arg.navn).trim();
+    if(arg.laerer !== undefined) endring.laerer = String(arg.laerer).trim();
+    const dager = skrivDagerInn(arg.dager);
+    if(dager) endring.dager = dager;
+    if(!Object.keys(endring).length) throw new Error('Ingenting å endre - send minst '
+                                                   + 'ett felt utenom barn og fag.');
+    let ut = null;
+    await skrivFagEndre(arg.barn, function(d){
+      const f = skrivFagFinn(d, arg.fag);
+      d.fag = d.fag.map(function(x){
+        return x.id === f.id ? Object.assign({}, x, endring) : x;
+      });
+      ut = d.fag.filter(function(x){ return x.id === f.id; })[0];
+      return d;
+    });
+    return { endret:{ barn: skrivBarnNavn(arg.barn), navn: ut.navn,
+                      faglaerer: ut.laerer || null,
+                      ukedager: skrivDagNavn(ut.dager) } };
+  }
+
+  /* ---------------- Diktatordene ---------------- */
+  if(navn === 'sett_diktatord'){
+    const ord = (arg.ord || []).map(function(o){ return String(o).trim(); }).filter(Boolean);
+    if(!ord.length) throw new Error('Ingen ord å legge inn.');
+    if(ord.length > 15) throw new Error('Høyst 15 ord om gangen.');
+
+    const na = skrivIsoUke(new Date());
+    const uke = arg.uke || na.uke;
+    const aar = arg.aar || na.aar;
+    const tid = new Date().toISOString();
+
+    /* Les - flett - skriv, og lesingen skjer HER: diktatsida kan ha
+       skrevet en runde i mellomtiden. */
+    const d = skrivDiktatNormal(await dataLes(SKRIV_DIKTAT));
+    const finnes = d.lister.filter(function(l){
+      return l.uke === uke && l.aar === aar;
+    })[0];
+
+    /* Setningene foelger ORDET, ikke plassen - et ord som sto der fra foer
+       skal beholde sine. */
+    const foer = {};
+    if(finnes){
+      finnes.ord.forEach(function(o){
+        foer[String(o.ord).trim().toLowerCase()] = o.setninger || [];
+      });
+    }
+    const nyeOrd = ord.map(function(o){
+      return { ord:o, setninger: foer[o.toLowerCase()] || [] };
+    });
+
+    if(finnes){
+      finnes.ord = nyeOrd;
+      finnes.endret = tid;
+    }else{
+      d.lister.push({ id: skrivId('d'), tid: tid, endret: tid,
+                      uke: uke, aar: aar, ord: nyeOrd });
+      d.lister.sort(function(x, y){ return x.tid < y.tid ? -1 : x.tid > y.tid ? 1 : 0; });
+      if(d.lister.length > SKRIV_DIKTAT_MAKS){
+        d.lister = d.lister.slice(-SKRIV_DIKTAT_MAKS);
+      }
+    }
+
+    await dataSkriv(SKRIV_DIKTAT, d);
+    const nye = ord.filter(function(o){ return !foer[o.toLowerCase()]; }).length;
+    return { lagret:true, uke:uke, aar:aar, antall:ord.length, nye_ord:nye,
+             merknad: nye
+               ? 'Eksempelsetningene lages av seg selv neste gang diktatsiden åpnes.'
+               : 'Ingen nye ord - alle hadde setninger fra før.' };
+  }
+
+  /* ---------------- Handleturene, katalogen og innboksen ---------------- */
+  if(navn === 'list_handleturer'){
+    const d = await dataLes(SKRIV_HANDLELISTE) || {};
+    const okter = Array.isArray(d.okter) ? d.okter : [];
+    const items = Array.isArray(d.items) ? d.items : [];
+    return { handleturer: okter
+      .slice()
+      .sort(function(a, b){ return (a.opprettet || 0) - (b.opprettet || 0); })
+      .map(function(o){
+        const mine = items.filter(function(v){ return v && v.oktId === o.id; });
+        return { navn: o.navn || 'Uten navn',
+                 omrade: (o.omrade || 'mat') === 'annet' ? 'Andre varer' : 'Dagligvarer',
+                 antall: mine.length,
+                 gjenstaar: mine.filter(function(v){ return !v.done; }).length,
+                 /* En avsluttet tur er en kvittering. Den er med i lista -
+                    man kan spoerre hva som ble kjoept - men den skal ikke
+                    leses som noe som gjenstaar. */
+                 avsluttet: !!skrivErAvsluttet(o),
+                 igang: !!o.startet };
+      }) };
+  }
+
+  if(navn === 'sok_varekatalog'){
+    const k = await skrivKatalogLes();
+    const sok = String(arg.sok || '').trim().toLowerCase();
+    const alle = Object.keys(k.katalog).map(function(n){ return k.katalog[n]; })
+      .filter(function(x){ return !sok || String(x.vare || '').toLowerCase().indexOf(sok) !== -1; })
+      .filter(function(x){ return !arg.bareBasis || !!x.basis; });
+    /* Samme tak som sidas eget: en full katalog spiste hele svarbudsjettet. */
+    return { sok: arg.sok || null, antall: alle.length,
+             treff: alle.slice(0, 40).map(function(x){
+               return { vare:x.vare, type:x.type || '', basisvare: !!x.basis };
+             }),
+             avkortet: alle.length > 40 };
+  }
+
+  if(navn === 'les_ny_pakke'){
+    let inn = null;
+    try{ inn = await dataLes(SKRIV_INNBOKS); }catch(e){ inn = null; }
+    const pakker = Array.isArray(inn) ? inn : [];
+    if(!pakker.length) return { beskjed:'Ingen ny pakke venter i innboksen.' };
+
+    const varer = [], basis = [];
+    pakker.forEach(function(p){
+      (p.varer || []).forEach(function(v){
+        const n = String((v && v.vare) || '').trim();
+        if(!n) return;
+        varer.push({
+          vare: n,
+          type: v.type || '',
+          mengder: (v.mengder || []).map(function(m){
+            return { mengde: (m && m.mengde != null) ? String(m.mengde) : '',
+                     enhet: (m && m.enhet) || '' };
+          }),
+          fritekst: v.fritekst || [],
+          fraRetter: v.fraRetter || [],
+          basisvare: !!v.basis
+        });
+      });
+      (p.basisvarer || []).forEach(function(n){ if(n) basis.push(String(n).trim()); });
+    });
+
+    /* Navnet paa pakka, samme regel som innboksNavn() i sida. */
+    const fra = pakker.map(function(p){
+      return p.fraOppskrift ? String(p.fraOppskrift)
+           : p.uke ? ('Uke ' + p.uke) : 'Handleliste';
+    });
+    return { fra: fra, antall: varer.length, varer: varer.slice(0, 120),
+             avkortet: varer.length > 120, basisvarer: basis,
+             merknad: 'Importen gjøres på Handle, med foresla_import.' };
+  }
+
+  if(navn === 'sett_varetype'){
+    const inn = (Array.isArray(arg.varer) ? arg.varer : []).filter(function(o){
+      return o && String(o.vare || '').trim()
+             && SKRIV_VARETYPER.indexOf(String(o.type || '').trim()) !== -1;
+    });
+    if(!inn.length) throw new Error('Send varer med en varetype fra lista: '
+                                  + SKRIV_VARETYPER.join(', ') + '.');
+
+    const d = await dataLes(SKRIV_HANDLELISTE) || {};
+    if(!Array.isArray(d.okter)) d.okter = [];
+    if(!Array.isArray(d.items)) d.items = [];
+    const okt = skrivFinnOkt(d, arg, false);
+    const erMat = (okt.omrade || 'mat') === 'mat';
+
+    const satt = [], fant_ikke = [];
+    const k = erMat ? await skrivKatalogLes() : null;
+    inn.forEach(function(o){
+      const sok = String(o.vare).trim().toLowerCase();
+      const rader = d.items.filter(function(v){
+        return v && v.oktId === okt.id
+               && String(v.name || '').trim().toLowerCase() === sok;
+      });
+      if(!rader.length){ fant_ikke.push(o.vare); return; }
+      rader.forEach(function(v){
+        v.cat = String(o.type).trim();
+        /* Katalogen laerer bare av dagligvarer - Andre varer har ingen
+           faste varetyper, og en type derfra ville blitt staaende som
+           laerdom om en vare som ikke har noen. */
+        if(erMat) skrivKatalogLagre(k, v.name, v.cat, !!v.basis);
+      });
+      satt.push({ vare: rader[0].name, type: String(o.type).trim() });
+    });
+
+    if(satt.length){
+      await dataSkriv(SKRIV_HANDLELISTE, d);
+      if(erMat) await dataSkriv(SKRIV_KATALOG, k);
+    }
+    return { handletur: okt.navn, satt: satt, fant_ikke: fant_ikke };
   }
 
   /* ---------------- Kalenderen ---------------- */

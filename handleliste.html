@@ -1091,8 +1091,8 @@ input,select,textarea{font-size:16px}
 <script src="/felles-hus.js?v=22"></script>
 <script src="/felles-data.js?v=5"></script>
 <script src="/felles-ms.js?v=2"></script>
-<script src="/felles-lesalt.js?v=6"></script>
-<script src="/felles-skriv.js?v=6"></script>
+<script src="/felles-lesalt.js?v=7"></script>
+<script src="/felles-skriv.js?v=7"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
@@ -7099,8 +7099,17 @@ window.neamVerktoy = async function(){
      minnet: en tur laget bak ryggen paa sida var borte i det noen la en
      vare i lista og save() skrev over den. */
   return egne.concat(HJEM_VERKTOY,
-                     skrivVerktoy([{name:'legg_paa_handlelista'},{name:'fjern_fra_handlelista'},
-                                   {name:'endre_vare_paa_handlelista'}])  /* sidas eget legg_til_varer
+                     /* SIDAS EGNE NAVN MAA MED HER. Fellesfila fikk 2. november
+                        list_handleturer, sok_varekatalog, les_ny_pakke og
+                        sett_varetype, og de finnes alt i `egne`. To verktoey med
+                        samme navn i ett kall avvises av API-et - da svarer ikke
+                        Neam i det hele tatt paa denne sida. De tre navnene bak
+                        er noe annet: de er fellesfilas egne, og staar her fordi
+                        sidas legg_til_varer, fjern_varer og endre_vare gjoer
+                        samme jobb bedre herfra. */
+                     skrivVerktoy(egne.concat([{name:'legg_paa_handlelista'},
+                                   {name:'fjern_fra_handlelista'},
+                                   {name:'endre_vare_paa_handlelista'}]))  /* sidas eget legg_til_varer
                        vinner her: bare det ser hvilken handletur brukeren har
                        oppe, og bare det tegner lista om etterpaa */, lesAltVerktoy(egne));
 };
