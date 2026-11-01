@@ -1411,24 +1411,24 @@
 @media(min-width:700px){
   .hsk-kort{ max-width:min(1120px, 100%); }
 }
+/* Tittelen og «Rediger» paa samme linje. Etasjefanene som sto under,
+   er borte (1. november 2026) - rekkefoelgen velges under «Rediger». */
+.hsk-topp{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 14px; }
 .hsk-tittel{
-  margin:0 0 14px; color:#000000;
+  margin:0; color:#000000;
   font-size:var(--t-meta); font-weight:700;
   text-transform:uppercase; letter-spacing:.1em;
 }
-/* Fanene bryter til en ny linje paa smal skjerm i stedet for aa rulle:
-   en etasje man maa rulle for aa se, finnes ikke for den som leter. */
-.hsk-faner{
-  display:flex; flex-wrap:wrap; gap:2px; background:var(--bg-solid); border-radius:22px;
-  padding:4px; margin:0 0 16px; border:1px solid var(--boks-kant);
+/* Rediger er oker - den endrer noe; Ferdig er blaa, som Ferdig ellers
+   (designsystemet, «Fem betydninger»). */
+.hsk-rediger{
+  border:none; border-radius:999px; padding:8px 18px; cursor:pointer;
+  background:var(--handling-endre); color:#FFFFFF;
+  font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
 }
-.hsk-fane{
-  flex:1 1 auto; border:none; background:none; padding:10px 12px; border-radius:999px;
-  font-weight:700; color:var(--ink-soft); text-transform:uppercase;
-  letter-spacing:.02em; font-family:'Archivo',sans-serif; font-size:var(--t-meta);
-  cursor:pointer; white-space:nowrap;
-}
-.hsk-fane.aktiv{ background:var(--aksent); color:#FFFFFF; }
+.hsk-rediger.ferdig{ background:var(--aksent); }
+.hsk-rediger:active{ transform:scale(.97); }
+.hsk-hjelp{ color:var(--ink-soft); font-size:var(--t-meta); margin:0 0 14px; }
 /* Kolonnene: hskTegn() i felles-hus.js regner ut hvor mange (minst
    300px hver, hoeyst tre) og fordeler rommene paa dem. */
 .hsk-romliste{ display:flex; gap:16px; align-items:flex-start; }
@@ -1446,9 +1446,67 @@
 /* Romnavnet er en korttittel (versaler, spatiert - designsystemet,
    «Moenstre»), men hvit paa det moerke baandet. */
 .hsk-romnavn{
+  display:flex; align-items:center; gap:8px;
   margin:0 -16px; padding:11px 16px; color:#FFFFFF; background:var(--ink);
   font-size:var(--t-meta); font-weight:700;
   text-transform:uppercase; letter-spacing:.1em;
+}
+/* Varslerne i rommet - se «Varslerne i rommet» i felles-hus.js. Skjold
+   naar alt er i orden, varseltegn ellers, og baandet tar fargen:
+   gult er okeren (--handling-endre, «gul» i fristene paa dashene),
+   roedt er --danger (fare, som paa sikkerhetssida). Kanten foelger. */
+.hsk-varselmerke{ display:inline-flex; flex:none; }
+.hsk-varselmerke svg{ width:17px; height:17px; display:block; }
+.hsk-rom.hsk-gul{ border-color:var(--handling-endre); }
+.hsk-rom.hsk-gul .hsk-romnavn{ background:var(--handling-endre); }
+.hsk-rom.hsk-rod{ border-color:var(--danger); }
+.hsk-rom.hsk-rod .hsk-romnavn{ background:var(--danger); }
+/* ---- Skyvebryteren ----
+   Paa og av som paa iPhone, til hoeyre paa navnelinja (Magne,
+   1. november 2026). Blaa naar den staar paa - --aksent betyr «valgt»;
+   groent er «skaper noe» i huset og passer ikke. Graa naar den er av.
+   Stoerrelsen er iPhones, 51 x 31, rundet ned til hele piksler. */
+.hsk-enhet.hsk-med-bryter{ grid-template-columns:28px 1fr auto; }
+.hsk-bryter{
+  position:relative; flex:none; width:50px; height:30px; margin-top:-2px;
+  border:none; border-radius:15px; padding:0; cursor:pointer;
+  background:rgba(90,108,125,.32); transition:background .2s;
+}
+.hsk-bryter span{
+  position:absolute; top:2px; left:2px; width:26px; height:26px; border-radius:50%;
+  background:#FFFFFF; box-shadow:0 2px 5px rgba(0,0,0,.25); transition:transform .2s;
+}
+.hsk-bryter[aria-checked="true"]{ background:var(--aksent); }
+.hsk-bryter[aria-checked="true"] span{ transform:translateX(20px); }
+.hsk-bryter:focus-visible{ outline:2px solid var(--aksent); outline-offset:2px; }
+
+/* Et rom med bare varslere i orden er bare baandet. */
+.hsk-rom.hsk-bare-baand{ padding-bottom:0; }
+
+/* ---- «Rediger» ----
+   Raden er en label: et trykk hvor som helst paa den huker av. Det som
+   ikke skal vises, dempes, saa man ser resultatet foer man trykker
+   Ferdig. */
+.hsk-enhet.hsk-velg{
+  grid-template-columns:22px 28px 1fr; align-items:center; cursor:pointer;
+}
+.hsk-velg input{ width:20px; height:20px; margin:0; accent-color:var(--aksent); }
+.hsk-velg.hsk-av .hsk-ikon, .hsk-velg.hsk-av .hsk-navn{ opacity:.4; }
+/* Baandet er grepet. touch-action:none, ellers ruller iPaden i stedet
+   for aa flytte rommet. */
+.hsk-redigerer .hsk-romnavn{ cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; }
+.hsk-grep{ margin-left:auto; display:inline-flex; opacity:.8; }
+.hsk-grep svg{ width:18px; height:18px; display:block; }
+/* Rommet som dras, foelger fingeren over alt annet. */
+.hsk-rom.hsk-drar{
+  position:fixed; z-index:200; margin:0; pointer-events:none;
+  box-shadow:0 14px 34px rgba(44,62,80,.32); transform:rotate(-1deg); opacity:.96;
+}
+.hsk-redigerer .hsk-rom.hsk-drar .hsk-romnavn{ cursor:grabbing; }
+/* Plassen rommet havner paa naar man slipper. */
+.hsk-plass{
+  margin:0 0 16px; border:2px dashed var(--ink-soft); border-radius:14px;
+  background:rgba(255,255,255,.5); box-sizing:border-box;
 }
 .hsk-enhet{
   display:grid; grid-template-columns:28px 1fr; gap:0 12px; align-items:start;

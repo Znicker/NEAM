@@ -1095,6 +1095,70 @@ seg ved siden av hverandre av seg selv.
 
 **En videostrøm er tilstand — se «Praktiske feller».**
 
+## Rommene
+
+Enhetene fra Homey, åpnet fra **Rommene** under Enheter. Bygget
+11. oktober–1. november 2026, alt i `felles-hus.js` (`hsk`-prefiks) og
+`felles-neam.css`. **Midlertidig form** til plantegningen kommer.
+
+**Alle rommene på én flate, som kort.** Rommene tas fra Homeys soner
+(Hjem > etasje > rom). Etasjefanene ble fjernet 1. november 2026:
+rekkefølgen man velger selv erstatter dem. Uten eget oppsett står
+hovedetasjen først.
+
+**Kolonner etter plassen:** minst 300 px hver og høyst tre – én på
+telefon, to på iPad på høykant, tre på tvers. Uten eget oppsett legges
+rommene i den kolonnen som er kortest så langt, regnet med det som vises
+vanligvis – ikke det som vises under «Rediger», ellers stokkes rommene
+bare av å trykke på knappen. CSS-kolonner ble prøvd og forlatt: ett høyt
+rom fikk resten til å passe i kolonne to, og den tredje sto tom.
+
+**«Rediger» velger og flytter.** Knappen står i toppen av kortet (oker –
+den endrer; «Ferdig» er blå). Da vises alle enhetene med avhuking, uten
+knapper, og et trykk hvor som helst på raden huker av. Man tar tak i et
+bånd (grep til høyre) og drar rommet; en stiplet plass viser hvor det
+havner, de andre flytter seg, og det smekker på plass når man slipper.
+Nær kanten av kortet rulles det. **Oppsettet lagres per skjerm**
+(`neam-rommene:v1` i nettleseren, Magnes valg) og per antall kolonner, så
+iPaden på tvers og på høykant kan ha hvert sitt.
+
+**Rommet er et hvitt kort med mørk kant og mørkt tittelbånd** (`--ink`),
+på en mild flate (`--boks-mild` på hele kortet). Romnavnet er en
+korttittel – versaler, spatiert – men hvit på båndet. Valgt av Magne
+1. november 2026 av tre varianter: kraftig kant, mørkt bånd, kant med
+lyst bånd. Båndet står alltid, også når enhetene ligger rett i etasjen
+og navnet gjentar fanen – uten bånd så rommet uferdig ut.
+
+**Varslere i orden står ikke som rader** – med mindre man huker dem på
+under «Rediger». Røyk-, varme- og vannvarslerne er et skjold i båndet så
+lenge alt er vel. Er noe galt, blir båndet og kanten gule eller røde,
+skjoldet blir et varseltegn, og varsleren det gjelder står som rad –
+**også om den er huket av**: en skjult alarm er verre enn en rad for
+mye. **Nivåene er sikkerhetssidas:**
+rødt (`--danger`) er utløst, eller røykvarsler som melder feil; gult
+(`--handling-endre`, okeren som er «gul» i fristene på dashene) er uten
+kontakt eller lavt batteri – `alarm_battery`, eller 20 % og under. Verst
+først for hele rommet. De to stedene skal aldri si forskjellige ting –
+endres grensene, endres `tilstand()` i `sikkerhet.html` og
+`hskVarselNivaa()` sammen.
+
+**Ett symbol per type** (`HSK_ART`), strektegninger som ikonene i
+fireren. I rommet står det man styrer først, det man bare ser til sist.
+
+**På og av er en skyvebryter** til høyre på navnelinja, som på iPhone
+(Magnes valg 1. november 2026), 50 × 30 px. Blå (`--aksent`, «valgt»)
+når den står på, grå når den er av – grønt er «skaper noe» i huset og
+passer ikke. Bryteren sier alt om på og av, så «På»/«Av» står ikke i
+tilstandslinja under. **De andre knappene er blå** – de verken skaper,
+endrer eller sletter, samme som Neamow. Fargelampene har en **fargeprikk** som viser lysets egen farge og
+åpner et fargehjul (fargetone rundt, hvitt i midten), og **«Naturlig
+hvitt»** (`HSK_HVITT`, `light_temperature` 0,8). Begge tenner lampa om
+den var av.
+
+**Ytterdøra, kameraet og varslerne styres ikke herfra.** De vises med
+tilstand; låsen styres fra sikkerhetssida og av Neam, der opplåsing
+alltid spør.
+
 ## Neamow
 
 Gressklipperen (Roborock RockMow Z115). Bygget 10.–11. oktober 2026; veien

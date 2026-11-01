@@ -857,11 +857,13 @@ function nmwVisKode(feil){
 }
 
 /* ============================================================
-   Rommene - alle enhetene i huset, etasje for etasje
+   Rommene - alle enhetene i huset, rom for rom
    ------------------------------------------------------------
-   Laget 11. oktober 2026, lagt om 12. oktober 2026. MIDLERTIDIG
-   FORM til plantegningen kommer: ett kort under Enheter, med en fane
-   per etasje og rommene under. Magnes valg: «egne midlertidige kort».
+   Laget 11. oktober 2026, lagt om 12. oktober og 1. november 2026.
+   MIDLERTIDIG FORM til plantegningen kommer: ett kort under Enheter
+   med alle rommene som kort i kolonner. Under «Rediger» velger man
+   hvilke enheter som vises og flytter rommene - lagret per skjerm.
+   Magnes valg: «egne midlertidige kort».
 
    LISTA ER HOMEYS, IKKE VAAR. Sikkerhetsenhetene over er en fast
    liste fordi merkene er tegnet for dem. Her finnes ingen merker, og
@@ -927,7 +929,7 @@ let hskBak = null;
 let hskTimer = null;
 let hskRor = false;      /* en glider eller fargehjulet holdes - da tegnes kortet ikke paa nytt */
 let hskFeil = '';
-let hskEtasje = '';      /* valgt fane, husket mens sida er aapen */
+let hskRediger = false;  /* «Rediger»: alle enhetene med avhuking, og rommene kan flyttes */
 let hskApenFarge = '';   /* enheten som har fargehjulet oppe */
 
 function hskVask(s){
@@ -1082,19 +1084,112 @@ function hskAlarm(e){
   return ['alarm_smoke', 'alarm_heat', 'alarm_water'].some(function(k){ return o[k] && o[k].value === true; });
 }
 
+/* ---------- Varslerne i rommet ----------
+   Roeyk-, varme- og vannvarslerne staar ikke som egne rader: et rom med
+   tre varslere i orden er tre linjer som ikke sier noe (Magne,
+   1. november 2026). I stedet viser baandet et skjold naar alt er i
+   orden, og blir gult eller roedt naar noe ikke er det - og da staar
+   varsleren det gjelder som rad, saa man ser hvilken.
+
+   Nivaaene er de samme som merkene paa sikkerhetssida (tilstand() i
+   sikkerhet.html), saa de to stedene aldri sier forskjellige ting:
+   roedt = utloest, eller roeykvarsler som melder feil; gult = uten
+   kontakt eller lavt batteri (alarm_battery, eller 20 % og under). */
+const HSK_VARSLER = ['royk', 'varme', 'vann'];
+const HSK_NIVAA = { ok:0, gul:1, rod:2 };
+
+function hskErVarsler(e){ return HSK_VARSLER.indexOf(e.art) !== -1; }
+
+function hskVarselNivaa(e){
+  const o = e.d.capabilitiesObj || {};
+  const v = function(k){ return o[k] ? o[k].value : undefined; };
+  if(e.d.available === false) return 'gul';
+  if(hskAlarm(e)) return 'rod';
+  const st = v('measure_smoke_status');
+  if(st !== undefined && st !== null && String(st).toUpperCase() !== 'OK') return 'rod';
+  if(v('alarm_battery') === true) return 'gul';
+  const b = v('measure_battery');
+  if(typeof b === 'number' && b <= 20) return 'gul';
+  return 'ok';
+}
+
+/* Verst foerst for hele rommet - '' naar rommet ikke har varslere. */
+function hskRomNivaa(r){
+  let n = '';
+  r.enheter.forEach(function(e){
+    if(!hskErVarsler(e)) return;
+    const x = hskVarselNivaa(e);
+    if(!n || HSK_NIVAA[x] > HSK_NIVAA[n]) n = x;
+  });
+  return n;
+}
+
+/* ---------- Oppsettet - per skjerm ----------
+   Hvilke enheter som vises, og hvor rommene staar, velges under
+   «Rediger» og lagres i nettleseren: hver skjerm har sitt eget (Magnes
+   valg 1. november 2026 - iPaden paa veggen og en telefon trenger ikke
+   vise det samme). Ingen fh_-noekkel: dette er nytt, og faar navnet
+   huset skal over paa.
+
+   vis:      { enhets-id: true/false } - bare det som er endret. Uten
+             valg vises alt unntatt varslerne.
+   kolonner: { antall: [[romnoekkel, ...], ...] } - ett oppsett per
+             antall kolonner, saa iPaden paa tvers og paa hoeykant kan
+             ha hvert sitt. sist er det som ble lagret sist, og gir
+             rekkefoelgen naar et antall ikke har noe eget ennaa. */
+const HSK_LAGER = 'neam-rommene:v1';
+function hskLesOppsett(){
+  try{
+    const d = JSON.parse(localStorage.getItem(HSK_LAGER) || '{}') || {};
+    return { vis: d.vis || {}, kolonner: d.kolonner || {}, sist: d.sist || 0 };
+  }catch(e){ return { vis:{}, kolonner:{}, sist:0 }; }
+}
+function hskLagreOppsett(){
+  try{ localStorage.setItem(HSK_LAGER, JSON.stringify(hskOppsett)); }catch(e){}
+}
+let hskOppsett = hskLesOppsett();
+
+/* En varsler som ikke er i orden vises alltid, ogsaa om den er huket
+   av - en skjult alarm er verre enn en rad for mye. */
+function hskVises(e){
+  if(hskErVarsler(e) && hskVarselNivaa(e) !== 'ok') return true;
+  const v = hskOppsett.vis[e.id];
+  return v === undefined ? !hskErVarsler(e) : !!v;
+}
+
+/* Det som staar som rader. Under «Rediger» staar alt. */
+function hskSynlige(r){
+  return hskRediger ? r.enheter : r.enheter.filter(hskVises);
+}
+
+const HSK_SKJOLD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+  + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+  + '<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>';
+const HSK_VARSELTEGN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+  + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+  + '<path d="M12 3L2 20h20z"/><path d="M12 10v4M12 17h.01"/></svg>';
+
 /* Linja under navnet. Verst foerst. */
 function hskTilstand(e){
   const o = e.d.capabilitiesObj || {};
   const deler = [];
   if(e.d.available === false) deler.push('Uten kontakt');
+  /* «I orden» bare naar varsleren er det - ikke paa en som staar gul
+     for lavt batteri. Grensene er de samme som i hskVarselNivaa(). */
+  const iOrden = !hskErVarsler(e) || hskVarselNivaa(e) === 'ok';
   [['alarm_smoke', 'RØYK'], ['alarm_heat', 'FOR VARMT'], ['alarm_water', 'LEKKASJE']].forEach(function(a){
-    if(o[a[0]]) deler.push(o[a[0]].value ? a[1] : 'I orden');
+    if(o[a[0]] && (o[a[0]].value || iOrden)) deler.push(o[a[0]].value ? a[1] : 'I orden');
   });
-  if(o.alarm_battery && o.alarm_battery.value) deler.push('Lavt batteri');
+  const st = o.measure_smoke_status && o.measure_smoke_status.value;
+  if(st && String(st).toUpperCase() !== 'OK') deler.push('Feil: ' + st);
+  const lavt = (o.alarm_battery && o.alarm_battery.value)
+            || (hskErVarsler(e) && o.measure_battery && typeof o.measure_battery.value === 'number'
+                && o.measure_battery.value <= 20);
+  if(lavt) deler.push('Lavt batteri');
   if(o.locked && e.art === 'laas') deler.push(o.locked.value ? 'Låst' : 'Ulåst');
   if(o.alarm_contact && e.art === 'laas') deler.push(o.alarm_contact.value ? 'Åpen' : 'Lukket');
   if(o.alarm_motion && o.alarm_motion.value) deler.push('Bevegelse');
-  if(o.onoff) deler.push(o.onoff.value ? 'På' : 'Av');
+  if(o.onoff && e.kap.indexOf('onoff') === -1) deler.push(o.onoff.value ? 'På' : 'Av');
   if(o.dim && typeof o.dim.value === 'number') deler.push(Math.round(o.dim.value * 100) + ' %');
   /* Lamper og brytere maaler sin egen innvendige temperatur - den sier
      ingenting om rommet. */
@@ -1272,25 +1367,20 @@ function hskBygg(){
   hskBak.hidden = true;
   hskBak.innerHTML =
       '<div class="dlg-kort hsk-kort" role="dialog" aria-modal="true" aria-label="Rommene">'
-    +   '<h2 class="hsk-tittel">Rommene</h2>'
+    +   '<div class="hsk-topp">'
+    +     '<h2 class="hsk-tittel">Rommene</h2>'
+    +     '<button type="button" class="hsk-rediger" aria-pressed="false">Rediger</button>'
+    +   '</div>'
     +   '<div class="hsk-innhold"></div>'
     +   '<div class="dlg-rad"><button type="button" class="dlg-knapp nei hsk-lukk">Lukk</button></div>'
     + '</div>';
   document.body.appendChild(hskBak);
   hskBak.querySelector('.hsk-lukk').onclick = hskLukk;
+  hskBak.querySelector('.hsk-rediger').onclick = function(){ hskSettRediger(!hskRediger); };
   hskBak.addEventListener('click', function(ev){
     if(ev.target === hskBak){ hskLukk(); return; }
     const t = ev.target.closest ? ev.target : null;
     if(!t) return;
-
-    const fane = t.closest('button[data-etasje]');
-    if(fane){
-      hskEtasje = fane.dataset.etasje;
-      hskApenFarge = '';
-      hskTegn();
-      hskBak.querySelector('.hsk-kort').scrollTop = 0;
-      return;
-    }
 
     const hvitt = t.closest('button[data-hvitt]');
     if(hvitt){ hskSettHvitt(hvitt.dataset.hvitt); return; }
@@ -1317,6 +1407,15 @@ function hskBygg(){
   });
   hskBak.addEventListener('change', function(ev){
     const el = ev.target;
+    /* Avhukingen under «Rediger»: lagres med det samme, og raden
+       dempes - kortet tegnes ikke paa nytt mens man redigerer. */
+    if(el.dataset && el.dataset.vis){
+      hskOppsett.vis[el.dataset.vis] = el.checked;
+      hskLagreOppsett();
+      const rad = el.closest('.hsk-enhet');
+      if(rad) rad.classList.toggle('hsk-av', !el.checked);
+      return;
+    }
     if(!el.dataset || !el.dataset.kap) return;
     hskRor = false;
     const v = el.dataset.kap === 'dim' ? Number(el.value) / 100 : el.value;
@@ -1328,6 +1427,10 @@ function hskBygg(){
      glideren eller merket i hjulet hoppe tilbake under fingeren. */
   let hjul = null;
   hskBak.addEventListener('pointerdown', function(ev){
+    if(hskRediger){
+      const baand = ev.target.closest && ev.target.closest('.hsk-romnavn');
+      if(baand){ hskDraStart(baand, ev); return; }
+    }
     if(ev.target.classList && ev.target.classList.contains('hsk-glider')){ hskRor = true; return; }
     const h = ev.target.closest && ev.target.closest('.hsk-hjul');
     if(!h) return;
@@ -1338,9 +1441,11 @@ function hskBygg(){
     hskHjulVis(h, hskHjulLes(h, ev));
   });
   hskBak.addEventListener('pointermove', function(ev){
+    if(hskDrag){ hskDraFlytt(ev); return; }
     if(hjul) hskHjulVis(hjul, hskHjulLes(hjul, ev));
   });
   const slipp = function(ev, send){
+    if(hskDrag){ hskDraSlipp(); return; }
     hskRor = false;
     if(!hjul) return;
     const h = hjul;
@@ -1350,6 +1455,112 @@ function hskBygg(){
   hskBak.addEventListener('pointerup', function(ev){ slipp(ev, true); });
   hskBak.addEventListener('pointercancel', function(ev){ slipp(ev, false); });
   return hskBak;
+}
+
+/* «Rediger» og «Ferdig». Rediger er oker - den endrer noe - og Ferdig
+   blaa, som Ferdig ellers i huset (designsystemet, «Fem betydninger»). */
+function hskSettRediger(paa){
+  hskRediger = !!paa;
+  hskApenFarge = '';
+  const k = hskBygg().querySelector('.hsk-rediger');
+  k.textContent = hskRediger ? 'Ferdig' : 'Rediger';
+  k.setAttribute('aria-pressed', String(hskRediger));
+  k.classList.toggle('ferdig', hskRediger);
+  hskBak.querySelector('.hsk-kort').classList.toggle('hsk-redigerer', hskRediger);
+  hskTegn();
+  if(!hskRediger) hskPlanlegg(300);
+}
+
+/* ---------- Flytting av rom ----------
+   Man tar tak i baandet. Rommet foelger fingeren, en tom plass viser
+   hvor det havner, og de andre rommene flytter seg etter plassen. Naar
+   man slipper, smekker rommet inn paa plassen, og oppsettet for dette
+   antallet kolonner lagres. Naer kanten av kortet rulles det, saa et
+   rom kan flyttes fra toppen til bunnen. */
+let hskDrag = null;
+
+function hskDraStart(baand, ev){
+  const rom = baand.closest('.hsk-rom');
+  if(!rom) return;
+  ev.preventDefault();
+  const r = rom.getBoundingClientRect();
+  /* dlg-bak har backdrop-filter, og da er det den - ikke vinduet - som
+     posisjonerer et fixed-element. Den dekker hele vinduet, men vi
+     regner fra den likevel. */
+  const b = hskBak.getBoundingClientRect();
+  const plass = document.createElement('div');
+  plass.className = 'hsk-plass';
+  plass.style.height = r.height + 'px';
+  rom.parentNode.insertBefore(plass, rom);
+  rom.classList.add('hsk-drar');
+  rom.style.width = r.width + 'px';
+  hskDrag = { rom: rom, plass: plass, dx: ev.clientX - r.left, dy: ev.clientY - r.top,
+              bx: b.left, by: b.top, x: ev.clientX, y: ev.clientY, rull: null };
+  hskRor = true;
+  try{ baand.setPointerCapture(ev.pointerId); }catch(e){}
+  hskDraPlasser();
+  hskDrag.rull = setInterval(hskDraRull, 16);
+}
+
+function hskDraFlytt(ev){
+  hskDrag.x = ev.clientX;
+  hskDrag.y = ev.clientY;
+  hskDraPlasser();
+}
+
+/* Rommet under fingeren, og plassen der det vil havne. */
+function hskDraPlasser(){
+  const D = hskDrag;
+  D.rom.style.left = (D.x - D.dx - D.bx) + 'px';
+  D.rom.style.top  = (D.y - D.dy - D.by) + 'px';
+  const kol = Array.prototype.slice.call(hskBak.querySelectorAll('.hsk-kolonne'));
+  if(!kol.length) return;
+  let mal = kol[0], best = Infinity;
+  kol.forEach(function(k){
+    const r = k.getBoundingClientRect();
+    const avst = D.x < r.left ? r.left - D.x : D.x > r.right ? D.x - r.right : 0;
+    if(avst < best){ best = avst; mal = k; }
+  });
+  const andre = Array.prototype.filter.call(mal.children, function(c){
+    return c !== D.rom && c !== D.plass;
+  });
+  const foran = andre.filter(function(c){
+    const r = c.getBoundingClientRect();
+    return r.top + r.height / 2 > D.y;
+  })[0] || null;
+  if(D.plass.parentNode !== mal || D.plass.nextSibling !== foran){
+    mal.insertBefore(D.plass, foran);
+  }
+}
+
+function hskDraRull(){
+  if(!hskDrag) return;
+  const k = hskBak.querySelector('.hsk-kort');
+  const r = k.getBoundingClientRect();
+  let steg = 0;
+  if(hskDrag.y < r.top + 70) steg = -12;
+  else if(hskDrag.y > r.bottom - 70) steg = 12;
+  if(!steg) return;
+  const foer = k.scrollTop;
+  k.scrollTop += steg;
+  if(k.scrollTop !== foer) hskDraPlasser();
+}
+
+function hskDraSlipp(){
+  const D = hskDrag;
+  hskDrag = null;
+  clearInterval(D.rull);
+  D.plass.parentNode.insertBefore(D.rom, D.plass);
+  D.plass.remove();
+  D.rom.classList.remove('hsk-drar');
+  D.rom.style.width = D.rom.style.left = D.rom.style.top = '';
+  hskRor = false;
+  const kol = Array.prototype.slice.call(hskBak.querySelectorAll('.hsk-kolonne'));
+  hskOppsett.kolonner[kol.length] = kol.map(function(k){
+    return Array.prototype.map.call(k.querySelectorAll('.hsk-rom'), function(x){ return x.dataset.rom; });
+  });
+  hskOppsett.sist = kol.length;
+  hskLagreOppsett();
 }
 
 function hskInnhold(html){ hskBygg().querySelector('.hsk-innhold').innerHTML = html; }
@@ -1367,11 +1578,8 @@ function hskStyring(e){
   let h = '';
   e.kap.forEach(function(k){
     const c = o[k];
-    if(k === 'onoff'){
-      h += '<button type="button" class="dlg-knapp ja hsk-knapp"' + data + ' data-kap="onoff">'
-         + (c.value ? 'Slå av' : 'Slå på') + '</button>';
-    }
-    else if(k === 'dim'){
+    if(k === 'onoff') return;
+    if(k === 'dim'){
       h += '<input type="range" class="hsk-glider" min="1" max="100" step="1"'
          + ' value="' + Math.round((Number(c.value) || 0) * 100) + '"' + data + ' data-kap="dim"'
          + ' aria-label="Lysstyrke for ' + hskVask(e.kort) + '">';
@@ -1420,63 +1628,138 @@ function hskStyring(e){
 }
 
 function hskEnhetHtml(e){
+  const art = HSK_ART[e.art] || HSK_ART.annet;
+  /* Under «Rediger»: bare avhuking, symbol og navn. Knappene er borte,
+     saa et trykk paa raden ikke slaar av lyset i stedet for aa huke av. */
+  if(hskRediger){
+    const paa = hskVises(e);
+    return '<label class="hsk-enhet hsk-velg' + (paa ? '' : ' hsk-av') + '">'
+         +   '<input type="checkbox" data-vis="' + hskVask(e.id) + '"' + (paa ? ' checked' : '') + '>'
+         +   '<span class="hsk-ikon" title="' + art.navn + '">' + hskSymbol(e.art) + '</span>'
+         +   '<span class="hsk-navn">' + hskVask(e.kort) + '</span>'
+         + '</label>';
+  }
   const t = hskTilstand(e);
   const alarm = hskAlarm(e);
-  const art = HSK_ART[e.art] || HSK_ART.annet;
-  return '<div class="hsk-enhet' + (e.d.available === false ? ' hsk-borte' : '') + (alarm ? ' hsk-alarm' : '') + '">'
+  /* Paa og av er en skyvebryter til hoeyre paa navnelinja, som paa
+     iPhone (Magne, 1. november 2026). Den er en knapp med data-kap, saa
+     trykket gaar gjennom samme vei som foer. */
+  const o = e.d.capabilitiesObj || {};
+  const bryter = e.kap.indexOf('onoff') === -1 ? ''
+    : '<button type="button" role="switch" class="hsk-bryter" data-hsk="' + hskVask(e.id) + '" data-kap="onoff"'
+      + ' aria-checked="' + !!o.onoff.value + '" aria-label="' + hskVask(e.kort) + '"><span></span></button>';
+  return '<div class="hsk-enhet' + (e.d.available === false ? ' hsk-borte' : '') + (alarm ? ' hsk-alarm' : '')
+       + (bryter ? ' hsk-med-bryter' : '') + '">'
        +   '<span class="hsk-ikon" title="' + art.navn + '">' + hskSymbol(e.art) + '</span>'
        +   '<div class="hsk-kropp">'
        +     '<div class="hsk-navn">' + hskVask(e.kort) + '</div>'
        +     (t ? '<div class="hsk-tilstand">' + hskVask(t) + '</div>' : '')
        +     hskStyring(e)
        +   '</div>'
+       +   bryter
        + '</div>';
 }
 
-function hskTegn(){
-  const etasjer = hskEtasjer();
-  if(!etasjer.length){ hskInnhold('<p class="hsk-tom">Homey har ingen enheter.</p>'); return; }
-  let E = etasjer.filter(function(x){ return x.navn === hskEtasje; })[0];
-  if(!E){ E = etasjer[0]; hskEtasje = E.navn; }
-  const faner = '<div class="hsk-faner" role="tablist">'
-    + etasjer.map(function(x){
-        const valgt = x === E;
-        return '<button type="button" role="tab" class="hsk-fane' + (valgt ? ' aktiv' : '') + '"'
-             + ' aria-selected="' + valgt + '" data-etasje="' + hskVask(x.navn) + '">'
-             + hskVask(x.navn) + '</button>';
-      }).join('')
-    + '</div>';
-  /* Kolonnene: minst 300px hver og hoeyst tre - én paa telefon, to paa
-     iPad paa hoeykant, tre paa tvers. Hvert rom legges i den kolonnen
-     som er kortest saa langt, saa de blir omtrent like lange. CSS-
-     kolonner proevde vi foerst: ett hoeyt rom (Andreas, tretten
-     enheter) fikk resten til aa passe i kolonne to, og den tredje sto
-     tom. */
-  const bredde = hskBygg().querySelector('.hsk-innhold').clientWidth || 300;
-  const antall = Math.max(1, Math.min(3, Math.floor((bredde + 16) / (300 + 16))));
-  const kolonner = [], hoyde = [];
-  for(let i = 0; i < antall; i++){ kolonner.push(''); hoyde.push(0); }
-  E.rom.forEach(function(r){
-    /* Ogsaa naar enhetene ligger rett i etasjen (Garasje) og navnet
-       gjentar fanen: et rom uten det moerke baandet saa uferdig ut ved
-       siden av de andre. */
-    const tittel = '<h3 class="hsk-romnavn">' + hskVask(r.navn) + '</h3>';
+/* Alle rommene, i husets rekkefoelge: etasjene etter HSK_ETASJE_REKKE
+   (hovedetasjen foerst), rommene alfabetisk innenfor. Noekkelen er
+   etasje/rom og brukes i oppsettet - den overlever at Homey gir
+   enhetene nye id-er, men ikke at et rom doepes om. */
+function hskAlleRom(){
+  const ut = [];
+  hskEtasjer().forEach(function(E){
+    E.rom.forEach(function(r){
+      r.nokkel = hskNorm(E.navn) + '/' + hskNorm(r.navn);
+      ut.push(r);
+    });
+  });
+  return ut;
+}
+
+/* Rommene fordelt paa kolonnene. Det lagrede oppsettet for akkurat
+   dette antallet brukes som det er. Rom det ikke nevner - nye rom,
+   eller alt naar antallet er nytt - legges i den korteste kolonnen, i
+   rekkefoelgen fra det sist lagrede oppsettet (lest linje for linje)
+   eller husets egen. */
+function hskFordel(rom, antall){
+  const etter = {};
+  rom.forEach(function(r){ etter[r.nokkel] = r; });
+  const kol = [], brukt = {};
+  for(let i = 0; i < antall; i++) kol.push([]);
+  const lagret = hskOppsett.kolonner[antall];
+  if(lagret && lagret.length === antall){
+    lagret.forEach(function(liste, i){
+      (liste || []).forEach(function(n){
+        if(etter[n] && !brukt[n]){ kol[i].push(etter[n]); brukt[n] = 1; }
+      });
+    });
+  }
+  let rekke = [];
+  const sist = hskOppsett.kolonner[hskOppsett.sist];
+  if(sist && hskOppsett.sist !== antall){
+    const lengst = Math.max.apply(null, sist.map(function(l){ return (l || []).length; }).concat(0));
+    for(let rad = 0; rad < lengst; rad++){
+      sist.forEach(function(l){ if(l && l[rad] && etter[l[rad]]) rekke.push(etter[l[rad]]); });
+    }
+  }
+  rekke = rekke.concat(rom);
+  const hoyde = kol.map(function(l){ return l.reduce(function(s, r){ return s + hskAnslag(r); }, 0); });
+  rekke.forEach(function(r){
+    if(brukt[r.nokkel]) return;
+    brukt[r.nokkel] = 1;
     const k = hoyde.indexOf(Math.min.apply(null, hoyde));
-    kolonner[k] += '<section class="hsk-rom">' + tittel + r.enheter.map(hskEnhetHtml).join('') + '</section>';
+    kol[k].push(r);
     hoyde[k] += hskAnslag(r);
   });
-  hskInnhold(faner
+  return kol;
+}
+
+function hskRomHtml(r){
+  const nivaa = hskRomNivaa(r);
+  const merke = !nivaa ? ''
+    : '<span class="hsk-varselmerke" role="img" aria-label="'
+      + (nivaa === 'ok' ? 'Varslerne i orden' : nivaa === 'rod' ? 'Alarm' : 'Advarsel') + '">'
+      + (nivaa === 'ok' ? HSK_SKJOLD : HSK_VARSELTEGN) + '</span>';
+  /* Under «Rediger» faar baandet et grep til hoeyre, saa man ser at
+     det kan tas tak i. */
+  const grep = hskRediger ? '<span class="hsk-grep" aria-hidden="true">' + HSK_GREP + '</span>' : '';
+  const tittel = '<h3 class="hsk-romnavn"><span>' + hskVask(r.navn) + '</span>' + merke + grep + '</h3>';
+  const rader = hskSynlige(r);
+  return '<section class="hsk-rom' + (nivaa && nivaa !== 'ok' ? ' hsk-' + nivaa : '')
+       + (rader.length ? '' : ' hsk-bare-baand') + '" data-rom="' + hskVask(r.nokkel) + '">'
+       + tittel + rader.map(hskEnhetHtml).join('') + '</section>';
+}
+
+const HSK_GREP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+  + '<circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/>'
+  + '<circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/>'
+  + '<circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+
+function hskTegn(){
+  const rom = hskAlleRom();
+  if(!rom.length){ hskInnhold('<p class="hsk-tom">Homey har ingen enheter.</p>'); return; }
+  /* Kolonnene: minst 300px hver og hoeyst tre - én paa telefon, to paa
+     iPad paa hoeykant, tre paa tvers. Etasjefanene er borte
+     (1. november 2026): rekkefoelgen man velger selv under «Rediger»
+     erstatter dem. */
+  const bredde = hskBygg().querySelector('.hsk-innhold').clientWidth || 300;
+  const antall = Math.max(1, Math.min(3, Math.floor((bredde + 16) / (300 + 16))));
+  const kolonner = hskFordel(rom, antall);
+  hskInnhold((hskRediger ? '<p class="hsk-hjelp">Huk av det som skal vises. Ta tak i et bånd for å flytte rommet.</p>' : '')
     + (hskFeil ? '<p class="hsk-feil">' + hskVask(hskFeil) + '</p>' : '')
     + '<div class="hsk-romliste">'
-    + kolonner.map(function(h){ return '<div class="hsk-kolonne">' + h + '</div>'; }).join('')
+    + kolonner.map(function(l){ return '<div class="hsk-kolonne">' + l.map(hskRomHtml).join('') + '</div>'; }).join('')
     + '</div>');
 }
 
 /* Omtrent hvor hoeyt et rom blir, i piksler - nok til aa fordele
    rommene paa kolonnene, ikke mer. En enhet med knapper tar en rad
-   til, og fargelampene en tredje. */
+   til, og fargelampene en tredje.
+
+   Regner alltid med det som vises VANLIGVIS, ogsaa under «Rediger»:
+   ellers ble rommene fordelt paa nytt bare av aa trykke Rediger, fordi
+   alle enhetene da staar fram. */
 function hskAnslag(r){
-  return 60 + r.enheter.reduce(function(sum, e){
+  return 60 + r.enheter.filter(hskVises).reduce(function(sum, e){
     return sum + 48 + (e.kap.length || e.farge ? 40 : 0) + (e.farge ? 40 : 0);
   }, 0);
 }
@@ -1545,7 +1828,7 @@ async function hskOppdater(){
   if(hskTimer){ clearTimeout(hskTimer); hskTimer = null; }
   if(!hskBak || hskBak.hidden) return;
   /* Skjult fane eller noen midt i et drag: sjekk igjen om litt. */
-  if(document.hidden || hskOpptatt()){ hskPlanlegg(3000); return; }
+  if(document.hidden || hskOpptatt() || hskRediger){ hskPlanlegg(3000); return; }
   try{
     await hskHent();
     if(!hskBak.hidden && !hskOpptatt()) hskTegn();
@@ -1559,6 +1842,7 @@ function hskLukk(){
   if(hskTimer){ clearTimeout(hskTimer); hskTimer = null; }
   hskRor = false;
   hskApenFarge = '';
+  if(hskRediger) hskSettRediger(false);
   if(hskBak) hskBak.hidden = true;
 }
 
