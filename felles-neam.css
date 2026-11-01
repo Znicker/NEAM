@@ -1399,7 +1399,18 @@
    knappene er blaa (de verken skaper, endrer eller sletter - samme som
    Neamow), og roedt betyr en varsler som er utloest, som paa
    sikkerhetssida. Fargeprikken og hjulet viser lysets egen farge. */
-.hsk-kort{ max-width:460px; max-height:calc(100dvh - 40px); overflow:auto; }
+/* Kortet er selve den milde flaten, og rommene er hvite kort oppaa
+   den - hvitt tilhoerer kortene, --boks-mild er flaten de grupperes paa
+   (designsystemet, «Flater og tekst»). Med en mild boks paa et hvitt
+   kort var skillet for svakt (Magne, 1. november 2026). */
+.hsk-kort{
+  max-width:460px; max-height:calc(100dvh - 40px); overflow:auto;
+  background:var(--boks-mild);
+}
+/* iPad og PC: bredt kort, rommene i opptil tre kolonner. */
+@media(min-width:700px){
+  .hsk-kort{ max-width:min(1120px, 100%); }
+}
 .hsk-tittel{
   margin:0 0 14px; color:#000000;
   font-size:var(--t-meta); font-weight:700;
@@ -1408,8 +1419,8 @@
 /* Fanene bryter til en ny linje paa smal skjerm i stedet for aa rulle:
    en etasje man maa rulle for aa se, finnes ikke for den som leter. */
 .hsk-faner{
-  display:flex; flex-wrap:wrap; gap:2px; background:var(--paper-soft); border-radius:22px;
-  padding:4px; margin:0 0 16px;
+  display:flex; flex-wrap:wrap; gap:2px; background:var(--bg-solid); border-radius:22px;
+  padding:4px; margin:0 0 16px; border:1px solid var(--boks-kant);
 }
 .hsk-fane{
   flex:1 1 auto; border:none; background:none; padding:10px 12px; border-radius:999px;
@@ -1418,21 +1429,33 @@
   cursor:pointer; white-space:nowrap;
 }
 .hsk-fane.aktiv{ background:var(--aksent); color:#FFFFFF; }
-/* Hvert rom er en grupperingsboks (--boks-mild, designsystemets flate
-   for nettopp det), saa skillet mellom rom er tydeligere enn skillet
-   mellom enhetene inne i dem. */
+/* Kolonnene: hskTegn() i felles-hus.js regner ut hvor mange (minst
+   300px hver, hoeyst tre) og fordeler rommene paa dem. */
+.hsk-romliste{ display:flex; gap:16px; align-items:flex-start; }
+.hsk-kolonne{ flex:1 1 0; min-width:0; }
+/* Hvert rom er et hvitt kort med moerk kant og et moerkt tittelbaand
+   oeverst - Magnes valg 1. november 2026 av tre varianter (kraftig
+   kant, moerkt baand, kant med lyst baand). Moerket er --ink, husets
+   tekstfarge, saa ingen ny farge er tatt inn. overflow:hidden holder
+   baandet innenfor de runde hjoernene. */
 .hsk-rom{
-  margin:0 0 14px; padding:2px 14px;
-  background:var(--boks-mild); border:1px solid var(--boks-kant); border-radius:12px;
+  margin:0 0 16px; padding:0 16px 4px; overflow:hidden;
+  background:var(--bg-solid); border:1.5px solid var(--ink); border-radius:14px;
+  box-shadow:var(--shadow);
 }
+/* Romnavnet er en korttittel (versaler, spatiert - designsystemet,
+   «Moenstre»), men hvit paa det moerke baandet. */
 .hsk-romnavn{
-  margin:0; padding:12px 0 8px; color:var(--ink);
-  font-size:var(--t-brod); font-weight:700;
+  margin:0 -16px; padding:11px 16px; color:#FFFFFF; background:var(--ink);
+  font-size:var(--t-meta); font-weight:700;
+  text-transform:uppercase; letter-spacing:.1em;
 }
 .hsk-enhet{
   display:grid; grid-template-columns:28px 1fr; gap:0 12px; align-items:start;
-  padding:10px 0; border-top:1px solid var(--boks-kant);
+  padding:10px 0; border-top:1px solid var(--line);
 }
+/* Rett under romnavnet staar streken alt der. */
+.hsk-romnavn + .hsk-enhet{ border-top:none; }
 /* Uten romnavn (enhetene ligger rett i etasjen) er det ingen linje over den foerste. */
 .hsk-rom > .hsk-enhet:first-child{ border-top:none; }
 .hsk-enhet.hsk-borte{ opacity:.55; }

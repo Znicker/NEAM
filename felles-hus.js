@@ -1446,15 +1446,48 @@ function hskTegn(){
              + hskVask(x.navn) + '</button>';
       }).join('')
     + '</div>';
+  /* Kolonnene: minst 300px hver og hoeyst tre - én paa telefon, to paa
+     iPad paa hoeykant, tre paa tvers. Hvert rom legges i den kolonnen
+     som er kortest saa langt, saa de blir omtrent like lange. CSS-
+     kolonner proevde vi foerst: ett hoeyt rom (Andreas, tretten
+     enheter) fikk resten til aa passe i kolonne to, og den tredje sto
+     tom. */
+  const bredde = hskBygg().querySelector('.hsk-innhold').clientWidth || 300;
+  const antall = Math.max(1, Math.min(3, Math.floor((bredde + 16) / (300 + 16))));
+  const kolonner = [], hoyde = [];
+  for(let i = 0; i < antall; i++){ kolonner.push(''); hoyde.push(0); }
+  E.rom.forEach(function(r){
+    /* Ogsaa naar enhetene ligger rett i etasjen (Garasje) og navnet
+       gjentar fanen: et rom uten det moerke baandet saa uferdig ut ved
+       siden av de andre. */
+    const tittel = '<h3 class="hsk-romnavn">' + hskVask(r.navn) + '</h3>';
+    const k = hoyde.indexOf(Math.min.apply(null, hoyde));
+    kolonner[k] += '<section class="hsk-rom">' + tittel + r.enheter.map(hskEnhetHtml).join('') + '</section>';
+    hoyde[k] += hskAnslag(r);
+  });
   hskInnhold(faner
     + (hskFeil ? '<p class="hsk-feil">' + hskVask(hskFeil) + '</p>' : '')
-    + E.rom.map(function(r){
-        /* Ligger enhetene rett i etasjen, staar navnet alt paa fanen. */
-        const tittel = hskNorm(r.navn) === hskNorm(E.navn) ? ''
-                     : '<h3 class="hsk-romnavn">' + hskVask(r.navn) + '</h3>';
-        return '<section class="hsk-rom">' + tittel + r.enheter.map(hskEnhetHtml).join('') + '</section>';
-      }).join(''));
+    + '<div class="hsk-romliste">'
+    + kolonner.map(function(h){ return '<div class="hsk-kolonne">' + h + '</div>'; }).join('')
+    + '</div>');
 }
+
+/* Omtrent hvor hoeyt et rom blir, i piksler - nok til aa fordele
+   rommene paa kolonnene, ikke mer. En enhet med knapper tar en rad
+   til, og fargelampene en tredje. */
+function hskAnslag(r){
+  return 60 + r.enheter.reduce(function(sum, e){
+    return sum + 48 + (e.kap.length || e.farge ? 40 : 0) + (e.farge ? 40 : 0);
+  }, 0);
+}
+
+/* Snus iPaden, endres antallet kolonner. */
+let hskSnuTimer = null;
+window.addEventListener('resize', function(){
+  if(!hskBak || hskBak.hidden) return;
+  clearTimeout(hskSnuTimer);
+  hskSnuTimer = setTimeout(function(){ if(!hskOpptatt()) hskTegn(); }, 200);
+});
 
 /* Et trykk vises med det samme - Homey bruker et oeyeblikk paa aa
    melde tilbake, og et kort som staar stille ser ut som at ingenting
