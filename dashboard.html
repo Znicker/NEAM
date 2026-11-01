@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=6">
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=72">
+<link rel="stylesheet" href="/felles-neam.css?v=73">
 <style>
   /* Sidespesifikke variabler. Palett og typeskala ligger i
      felles-rot.css. */
@@ -197,6 +197,11 @@ body{
 /* Middagen er en rad med lite bilde - bare saa hoey som innholdet, slik at
    resthoeyden gaar til Merknader og Denne uken. */
 .hoyre > .kort:last-child{flex:0 0 auto}        /* middagen: en fjerdedel */
+/* Uke tar hele bredden, som paa Emma dash (2. november 2026). Detaljkortet
+   bor i hoeyrekolonnen, saa aapner man en avtale fra uka, kommer kolonnen
+   tilbake - settBredde() styrer begge deler fra ett sted. */
+.rutenett.bred{grid-template-columns:1fr}
+.rutenett.bred .hoyre{display:none}
 
 .kort{
   background:var(--paper);
@@ -219,6 +224,108 @@ body{
   font-size:var(--t-pil);line-height:1;padding:0 7px;border-radius:8px;font-family:inherit;
 }
 .dag-pil:active{background:rgba(44,62,80,.08)}
+
+/* ---------- Visningsbytter (Dag | Uke) ----------
+   Kopiert fra Emma dash 2. november 2026. Bytteren staar i korttittelen
+   og ikke over kortet, som der. */
+.vis-bytt{
+  display:inline-flex;gap:2px;background:var(--paper-soft);
+  border-radius:999px;padding:3px;flex-shrink:0;
+}
+.vis-knapp{
+  border:none;background:transparent;color:var(--ink-soft);font-family:inherit;
+  font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  padding:5px 13px;border-radius:999px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.vis-knapp.aktiv{background:var(--aksent);color:#FFFFFF}
+
+/* ---------- Ukesvisning ----------
+   Sju doegnsoeyler, kopiert fra Emma dash (som igjen har kalenderens
+   klassenavn: .uke-head, .pu-kol, .pu-ev). Ingen valgt dag, ingen
+   helligdagsfarge, ingen parallelle spor. */
+#uke{ overflow:hidden; display:flex; flex-direction:column; padding-right:0; }
+
+.uke-head{
+  display:grid; grid-template-columns:repeat(7, minmax(0,1fr));
+  background:var(--bg-2); border-bottom:1px solid var(--line);
+  border-radius:10px 10px 0 0; flex-shrink:0;
+}
+.uke-dcol{
+  padding:6px 4px 7px; text-align:center;
+  border-left:1px solid var(--line);
+}
+.uke-dcol:first-child{ border-left:none; }
+.uke-dow{
+  font-size:var(--t-etikett); font-weight:700; text-transform:uppercase;
+  letter-spacing:.1em; color:var(--ink-soft);
+}
+.uke-dnum{
+  font-size:var(--t-stor); font-weight:700; line-height:1.25;
+  font-variant-numeric:tabular-nums;
+}
+/* Ringen rundt dagens dato er kalenderens, kopiert uendret. */
+.uke-dcol.idag .uke-dnum{
+  position:relative; display:inline-flex; align-items:center;
+  justify-content:center; min-width:26px; height:26px; color:var(--ink);
+}
+.uke-dcol.idag .uke-dnum::before{
+  content:''; position:absolute; left:-6px; right:-6px; top:-5px; bottom:-5px;
+  pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M73 17 C74 18 78 21 80 23 C83 25 85 27 87 30 C89 32 90 35 92 38 C93 41 94 44 94 47 C95 50 95 53 94 56 C94 59 93 63 92 66 C91 69 89 72 88 74 C86 77 83 79 81 81 C78 83 75 85 73 87 C70 88 66 89 63 90 C60 91 57 92 53 92 C50 92 47 92 43 91 C40 91 37 90 34 89 C31 88 28 86 25 84 C22 83 20 81 17 78 C15 76 13 73 12 71 C10 68 8 65 8 62 C7 59 6 56 6 53 C6 50 6 47 6 44 C7 41 8 38 9 35 C11 32 13 29 15 27 C17 24 19 22 22 20 C24 18 27 17 30 15 C33 14 36 13 39 12 C42 11 46 11 49 11 C52 11 56 11 59 12 C62 12 65 13 68 15 C71 17 73 19 75 21 C77 23 79 26 80 28 C81 31 81 35 82 37' fill='none' stroke='%23A64D3C' stroke-width='5.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:center; background-size:100% 100%;
+}
+
+.uke-scroll{ flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.pu-rad{
+  display:grid; grid-template-columns:repeat(7, minmax(0,1fr));
+  align-items:stretch; min-height:100%;
+}
+.pu-kol{
+  padding:7px 5px 12px; min-width:0;
+  display:flex; flex-direction:column; gap:5px;
+}
+.pu-kol.rolig{ opacity:.55; }        /* rolige dager skal se rolige ut */
+.pu-kol.forbi{ opacity:.42; }
+
+/* Fyll og rammefarge settes i JS fra kalenderfargen. */
+.pu-ev{
+  border:2px solid transparent; border-radius:9px;
+  padding:6px 7px; overflow:hidden; cursor:pointer; text-align:left;
+  font-family:'Archivo',sans-serif; color:var(--ink); width:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+.pu-ev.valgt{ box-shadow:inset 0 0 0 2px rgba(44,62,80,.5); }
+.pu-ev:active{ filter:brightness(.96); }
+.pu-topp{ display:flex; align-items:center; gap:5px; margin-bottom:2px; }
+.pu-ini{
+  width:20px; height:20px; border-radius:50%; color:#fff; flex-shrink:0;
+  font-size:var(--t-etikett); font-weight:700;
+  display:flex; align-items:center; justify-content:center; line-height:1;
+}
+.pu-tid{
+  font-family:'IBM Plex Mono',monospace; font-size:var(--t-etikett);
+  color:var(--ink); font-variant-numeric:tabular-nums; white-space:nowrap; opacity:.75;
+}
+/* Liten prikk = det finnes sted eller notat aa se i detaljkortet. */
+.pu-mer{ width:5px; height:5px; border-radius:50%; flex-shrink:0; margin-left:auto; }
+.pu-tittel{
+  font-weight:700; font-size:var(--t-meta); line-height:1.25; overflow-wrap:anywhere;
+}
+.uke-ingen{
+  font-size:var(--t-meta); color:var(--ink-soft); font-style:italic;
+  text-align:center; padding:14px 0;
+}
+/* Sju soeyler paa en telefon blir for smale til aa lese. De beholdes og
+   ruller sidelengs, med overskriftsraden i samme rullefelt - som paa
+   Emma dash. */
+@media(max-width:700px){
+  #uke{ overflow-x:auto; overflow-y:visible; -webkit-overflow-scrolling:touch; }
+  .uke-head, .pu-rad{ min-width:700px; }
+  .uke-scroll{ overflow:visible; min-height:0; }
+  .uke-dcol{ padding:5px 3px 6px; }
+  .uke-dnum{ font-size:var(--t-brod); }
+}
 /* iPad: skjermen betjenes med finger, og sveip gjoer samme jobb.
    Mobil beholder dem som reserve, PC trenger dem (mus, ingen sveip). */
 @media(min-width:700px) and (max-width:1300px){
@@ -418,6 +525,7 @@ a.middag:active{opacity:.72}
 /* ---------- iPad portrett ---------- */
 @media (max-width:900px){
   .rutenett{grid-template-columns:1fr;grid-template-rows:1.3fr 1fr}
+  .rutenett.bred{grid-template-rows:1fr}
   .hoyre{flex-direction:row}
   .hoyre .kort{flex:1}
 }
@@ -888,20 +996,27 @@ select.hu-felt{
     <div id="huBobleInn"></div>
   </div>
 
-  <div class="rutenett">
+  <div class="rutenett" id="rutenett">
 
     <div class="kort">
       <div class="kort-tittel">
         <span class="dag-navn" id="dagLabel">I dag</span>
+        <span class="vis-bytt" id="visBytt" role="group" aria-label="Visning">
+          <button class="vis-knapp aktiv" data-vis="dag" onclick="settVisning('dag')">Dag</button>
+          <button class="vis-knapp" data-vis="uke" onclick="settVisning('uke')">Uke</button>
+        </span>
         <button class="til-idag" id="tilIdag" onclick="tilbakeTilStandard()" hidden>
           Tilbake til i dag
         </button>
         <span class="dag-piler">
-          <button class="dag-pil" onclick="byttDag(-1)" aria-label="Forrige dag">&#8249;</button>
-          <button class="dag-pil" onclick="byttDag(1)" aria-label="Neste dag">&#8250;</button>
+          <button class="dag-pil" onclick="byttDag(-1)" aria-label="Forrige">&#8249;</button>
+          <button class="dag-pil" onclick="byttDag(1)" aria-label="Neste">&#8250;</button>
         </span>
       </div>
       <div class="kort-kropp" id="plan">
+        <div class="tom">Henter …</div>
+      </div>
+      <div class="kort-kropp" id="uke" hidden>
         <div class="tom">Henter …</div>
       </div>
       <!-- «Legg til avtale i kalenderen» sto her til 11. oktober. Den
@@ -946,7 +1061,7 @@ select.hu-felt{
 </div>
 
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
-<script src="/felles-hus.js?v=20"></script>
+<script src="/felles-hus.js?v=21"></script>
 <script src="/felles-ms.js?v=2"></script>
 <script src="/felles-data.js?v=5"></script>
 <script src="/felles-lesalt.js?v=6"></script>
@@ -1169,7 +1284,7 @@ function tegnKlokke(){
   const skiftet = sisteBasis && b !== sisteBasis;
   sisteBasis = b;
   if(skiftet && dagOffset === 0 && !skjemaAapent() && $('detalj').hidden){
-    tegnPlanPaaNytt();
+    tegnVisning();
   }
 }
 
@@ -1191,6 +1306,10 @@ function kl(d){
 
 /* Hvilken dag planen viser, talt fra dagen skjermen staar paa. */
 let dagOffset = 0;
+
+/* Dag eller Uke (2. november 2026, som paa Emma dash). Deklarert her
+   oppe, foer noe kan rekke aa lese den. */
+let visning = 'dag';
 
 /* Kvelden hoerer til morgendagen: etter klokka 20 er det i morgen man
    trenger aa se, ikke resten av i dag. Skjermen skifter derfor dag av
@@ -1226,10 +1345,9 @@ function dagNavn(){
   return tekst.charAt(0).toUpperCase() + tekst.slice(1);
 }
 
-async function hentPlan(){
-  const start = dagenViser();
-  const slutt = new Date(start.getTime() + 86400000);
-
+/* Henter avtaler i et tidsrom. Dagsvisningen ber om ett doegn,
+   ukesvisningen om sju - ellers er de like. */
+async function hentAvtaler(start, slutt){
   const kal = await graph('/me/calendars?$top=50');
   const aktive = (kal.value || []).map(function(c){
     return { id:c.id, navn:c.name, farge:kalenderFarge(c.name),
@@ -1240,7 +1358,7 @@ async function hentPlan(){
 
   const q = '?startDateTime=' + start.toISOString()
           + '&endDateTime=' + slutt.toISOString()
-          + '&$orderby=start/dateTime&$top=100'
+          + '&$orderby=start/dateTime&$top=250'
           + '&$select=id,subject,isAllDay,start,end,location,body,type,hasAttachments';
 
   /* Maks tre samtidige kall, og en kalender som feiler skal ikke
@@ -1287,6 +1405,23 @@ async function hentPlan(){
     return a.start - b.start;
   });
   return { avtaler: alle, feilet: feilet };
+}
+
+async function hentPlan(){
+  const start = dagenViser();
+  return hentAvtaler(start, new Date(start.getTime() + 86400000));
+}
+
+/* Mandag i uka dagen ligger i. */
+function ukeStart(d){
+  const s = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  s.setDate(s.getDate() - ukedagNr(s));
+  return s;
+}
+
+async function hentUke(){
+  const start = ukeStart(dagenViser());
+  return hentAvtaler(start, new Date(start.getTime() + 7 * 86400000));
 }
 
 let dagensAvtaler = [];
@@ -1398,10 +1533,14 @@ function visDetalj(i){
   if(e.harVedlegg) visDetaljVedlegg(i, e);
   $('detalj').hidden = false;
   HOYRE_KORT.forEach(function(id){ if($(id)) $(id).hidden = true; });
+  settBredde();                    /* kolonnen maa fram for aa vise kortet */
 
   /* Marker raden som er valgt, saa det er tydelig hva kolonnen viser. */
   Array.from(document.querySelectorAll('.plan-rad')).forEach(function(r, n){
     r.classList.toggle('valgt', n === i);
+  });
+  Array.from(document.querySelectorAll('.pu-ev[data-avtale]')).forEach(function(r){
+    r.classList.toggle('valgt', parseInt(r.dataset.avtale, 10) === i);
   });
   visTilIdag();
 }
@@ -1414,7 +1553,8 @@ function lukkDetalj(){
     $('detalj').style.boxShadow = '';
   }
   HOYRE_KORT.forEach(function(id){ if($(id)) $(id).hidden = false; });
-  Array.from(document.querySelectorAll('.plan-rad.valgt'))
+  settBredde();
+  Array.from(document.querySelectorAll('.plan-rad.valgt, .pu-ev.valgt'))
     .forEach(function(r){ r.classList.remove('valgt'); });
   if(typeof visTilIdag === 'function') visTilIdag();
 }
@@ -1821,7 +1961,7 @@ async function slettAvtale(){
   try{
     await graph(avtaleSti(e.kalId, e.id), {method:'DELETE'});
     lukkAvtale();
-    await tegnPlanPaaNytt();
+    await tegnVisning();
   }catch(err){
     knapp.disabled = false;
     knapp.textContent = 'Slett';
@@ -1922,7 +2062,7 @@ async function lagreAvtale(){
     const b = dato.split('-');
     const mal = new Date(+b[0], +b[1] - 1, +b[2]);
     dagOffset = Math.round((mal - basis0()) / 86400000);
-    await tegnPlanPaaNytt();
+    await tegnVisning();
   }catch(err){
     lagre.disabled = false;
     lagre.textContent = merkelapp;
@@ -3120,12 +3260,195 @@ async function tegnPlanPaaNytt(){
   ]);
 }
 
+/* ============================================================
+   Visningene: DAG og UKE
+   ------------------------------------------------------------
+   Kopiert fra Emma dash 2. november 2026, uten Fag. Begge deler
+   dagOffset: blar man to uker fram i Uke, staar man paa en dag
+   to uker fram naar man gaar tilbake til Dag. Pilene og sveipen
+   flytter én dag i Dag og én uke i Uke - se byttDag().
+   ============================================================ */
+const VIS_BOKS = { dag:'plan', uke:'uke' };
+
+function settVisning(ny){
+  if(!VIS_BOKS[ny] || visning === ny) return;
+  visning = ny;
+  lukkDetalj();
+  lukkHuskeBoble();
+
+  Array.from(document.querySelectorAll('.vis-knapp')).forEach(function(k){
+    k.classList.toggle('aktiv', k.dataset.vis === ny);
+  });
+  Object.keys(VIS_BOKS).forEach(function(v){
+    const el = $(VIS_BOKS[v]);
+    if(el) el.hidden = (v !== ny);
+  });
+
+  settBredde();
+  settDagsTitler();
+  tegnVisning();
+}
+
+/* Full bredde i Uke - men ikke mens et detaljkort staar oppe, for det bor
+   i kolonnen som da er borte. Regnes ut fra tilstanden hver gang. */
+function settBredde(){
+  const r = $('rutenett');
+  const d = $('detalj');
+  if(!r) return;
+  r.classList.toggle('bred', visning !== 'dag' && (!d || d.hidden));
+}
+
+/* Tegner den visningen som staar. Kalles av dagbytte, doegnskifte,
+   lagring og visningsbytte - ingen av dem trenger aa vite hvilken. */
+function tegnVisning(){
+  if(visning === 'uke') return tegnUkePaaNytt();
+  return tegnPlanPaaNytt();
+}
+
+/* En avtale over flere doegn staar bare paa dagen den begynner - samme
+   forenkling som paa Emma dash. */
+async function tegnUkePaaNytt(){
+  const mitt = ++tegneNr;
+  lukkDetalj();
+  settDagsTitler();
+  tegnHuske();
+  tegnVaerStripe();
+  $('uke').innerHTML = '<div class="tom">Henter …</div>';
+  try{
+    const r = await hentUke();
+    if(mitt !== tegneNr) return;          /* overhalt av en nyere sveip */
+    tegnUke(r);
+  }catch(e){
+    if(mitt !== tegneNr) return;
+    $('uke').innerHTML = planFeil(e);
+  }
+}
+
+function tegnUke(res){
+  const boks = $('uke');
+  const avtaler = res.avtaler || [];
+  /* Detaljkortet leser dagensAvtaler. Ukesvisningen fyller den med sju
+     dager i stedet for én - data-avtale peker inn i den samme lista. */
+  dagensAvtaler = avtaler;
+
+  const start  = ukeStart(dagenViser());
+  const idagNo = datoNokkel(idag0());
+
+  const bunker = {};
+  avtaler.forEach(function(e, nr){
+    const n = datoNokkel(e.start);
+    (bunker[n] = bunker[n] || []).push(nr);
+  });
+
+  boks.innerHTML = '';
+
+  const dager = [];
+  for(let i = 0; i < 7; i++){
+    dager.push(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i));
+  }
+
+  const head = document.createElement('div');
+  head.className = 'uke-head';
+  dager.forEach(function(d, i){
+    const c = document.createElement('div');
+    c.className = 'uke-dcol' + (datoNokkel(d) === idagNo ? ' idag' : '');
+    c.innerHTML = '<div class="uke-dow">' + esc(UKEDAG_KORT[i]) + '</div>'
+                + '<div class="uke-dnum">' + d.getDate() + '</div>';
+    head.appendChild(c);
+  });
+  boks.appendChild(head);
+
+  const scroll = document.createElement('div');
+  scroll.className = 'uke-scroll';
+  const rad = document.createElement('div');
+  rad.className = 'pu-rad';
+
+  dager.forEach(function(d){
+    const kol = document.createElement('div');
+    const paa = bunker[datoNokkel(d)] || [];
+    kol.className = 'pu-kol'
+      + (paa.length ? '' : ' rolig')
+      + (d < idag0() ? ' forbi' : '');
+    paa.forEach(function(nr){
+      kol.appendChild(ukeBrikke(avtaler[nr], nr));
+    });
+    rad.appendChild(kol);
+  });
+
+  scroll.appendChild(rad);
+  boks.appendChild(scroll);
+
+  if(!avtaler.length){
+    const tom = document.createElement('div');
+    tom.className = 'uke-ingen';
+    tom.textContent = 'Ingenting i kalenderen denne uken.';
+    boks.appendChild(tom);
+  }
+  if(res.feilet){
+    const f = document.createElement('div');
+    f.className = 'uke-ingen feil';
+    f.textContent = res.feilet + ' kalender(e) svarte ikke — prøv Oppdater.';
+    boks.appendChild(f);
+  }
+}
+
+/* Én avtale som brikke, bygget som DOM - fargene settes fra
+   kalenderfargen. */
+function ukeBrikke(e, nr){
+  const el = document.createElement('button');
+  el.type = 'button';
+  el.className = 'pu-ev';
+  el.dataset.avtale = nr;
+  el.style.background  = dus(e.farge, .18);
+  el.style.borderColor = dus(e.farge, .62);
+  el.title = e.tittel;
+  el.onclick = function(ev){ ev.stopPropagation(); visDetalj(nr); };
+
+  const topp = document.createElement('div');
+  topp.className = 'pu-topp';
+
+  const ini = document.createElement('span');
+  ini.className = 'pu-ini';
+  ini.style.background = e.farge;
+  ini.textContent = String(e.kalender || '?').trim().charAt(0).toUpperCase();
+  ini.title = e.kalender || '';
+  topp.appendChild(ini);
+
+  const tid = document.createElement('span');
+  tid.className = 'pu-tid';
+  tid.textContent = e.heleDagen ? 'Hele dagen' : kl(e.start) + '–' + kl(e.slutt);
+  topp.appendChild(tid);
+
+  /* Sted og notat vises i detaljkortet ved trykk. Prikken sier bare at
+     det finnes mer aa se. */
+  if((e.notat || '').trim() || e.sted || e.harVedlegg){
+    const mer = document.createElement('span');
+    mer.className = 'pu-mer';
+    mer.style.background = dus(e.farge, .75);
+    topp.appendChild(mer);
+  }
+  el.appendChild(topp);
+
+  const t = document.createElement('div');
+  t.className = 'pu-tittel';
+  t.textContent = e.tittel;
+  el.appendChild(t);
+
+  return el;
+}
+
 /* Dagen er felles for hele skjermen. Sveiper man i planen, middagen eller
    I dag-boksen, flytter alle seg sammen - tre uavhengige dager side om
    side ville vaert umulig aa holde styr paa. */
 function settDagsTitler(){
   visTilIdag();
-  $('dagLabel').textContent = dagNavn();
+  $('dagLabel').textContent = visning === 'uke' ? ukeNavn() : dagNavn();
+}
+
+/* Uketallet, og ikke bare «Denne uken»: blar man tre uker fram er tallet
+   det eneste som sier hvor man er. */
+function ukeNavn(){
+  return 'Uke ' + isoUke(dagenViser()).uke;
 }
 
 /* Skjermen staar framme hele dagen. Har noen bladd seg fram i tid og gaatt
@@ -3134,7 +3457,7 @@ const HVILE_MS = 3 * 60 * 1000;
 let hvileTimer = null;
 
 function erStandard(){
-  return dagOffset === 0 && $('detalj').hidden;
+  return dagOffset === 0 && visning === 'dag' && $('detalj').hidden;
 }
 /* Knappen dukker opp saa snart noe er flyttet fra standard, og forsvinner
    naar alt er tilbake - da har den ingen jobb aa gjoere. */
@@ -3148,10 +3471,15 @@ function tilbakeTilStandard(){
   lukkVaerBoble();
   lukkHuskeSkjema();
   const flyttet = (dagOffset !== 0);
+  const byttet  = (visning !== 'dag');
   dagOffset = 0;
+  /* Skjermen skal finne tilbake til dagen, ikke bare til i dag - staar
+     Uke framme naar ingen har roert den paa tre minutter, er det ikke
+     det den neste som kommer forbi vil se. settVisning() tegner selv. */
+  if(byttet) settVisning('dag');
   tegnVaerStripe();
   visTilIdag();
-  if(flyttet) tegnPlanPaaNytt();
+  if(flyttet && !byttet) tegnPlanPaaNytt();
 }
 /* ============================================================
    Neam paa veggskjermen
@@ -3209,7 +3537,7 @@ window.neamSideHandlinger = function(){
 window.neamKontekst = async function(){
   return {
     sted: 'Kjøkken dash',
-    visning: viserIdag() ? 'I dag' : 'I morgen'
+    visning: visning === 'uke' ? ukeNavn() : (viserIdag() ? 'I dag' : 'I morgen')
   };
 };
 
@@ -3282,12 +3610,14 @@ function kobleHvile(){
 }
 
 function byttDag(steg){
-  dagOffset += steg;
+  /* Uke blar en uke om gangen, Dag én dag. Samme pil, samme sveip - det
+     som flyttes er det man ser. */
+  dagOffset += steg * (visning === 'dag' ? 1 : 7);
   timeOffset = 0;              /* ny dag - vis dagens eget vindu */
   lukkVaerBoble();             /* boblen gjaldt dagen man forlot */
   if(dagOffset < -180) dagOffset = -180;   /* en grense, saa man ikke blar seg bort */
   if(dagOffset >  180) dagOffset =  180;
-  tegnPlanPaaNytt();
+  tegnVisning();
 }
 
 /* Sveip paa plankortet. Utslaget maa vaere tydelig vannrett, ellers ville
@@ -3368,10 +3698,15 @@ async function oppdaterAlt(manuelt){
   /* Hver del feiler for seg — vaeret skal ikke ryke fordi kalenderen gjoer det. */
   /* Hvis noe her ryker, maa S.laster likevel nullstilles - ellers blir
      hver senere oppdatering staaende og returnere med én gang. */
+  /* Kalenderen hentes for den visningen som staar framme - en
+     ukeshenting i bakgrunnen av dagsvisningen er sju ganger arbeidet
+     for noe ingen ser. */
+  const kalenderJobb = visning === 'uke'
+    ? hentUke().then(tegnUke).catch(function(e){ $('uke').innerHTML = planFeil(e); })
+    : hentPlan().then(tegnPlan).catch(function(e){ $('plan').innerHTML = planFeil(e); });
+
   const jobber = [
-    hentPlan().then(tegnPlan).catch(function(e){
-      $('plan').innerHTML = planFeil(e);
-    }),
+    kalenderJobb,
     hentVaer().then(tegnVaer).catch(function(e){
       /* Vaeret bor i toppstripa naa. Feiler det, skjuler vi stripa i
          stedet for aa la den staa med gamle tall. */
