@@ -37,7 +37,7 @@ label{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin:10p
 select,textarea,input[type=search]{width:100%;font:16px/1.4 'Figtree',system-ui,sans-serif;color:var(--ink);
   background:#fff;border:1.5px solid var(--linje);border-radius:10px;padding:9px 11px}
 textarea{min-height:120px;resize:vertical}
-#prompt{min-height:290px;font:13px/1.45 ui-monospace,Consolas,monospace;background:#FBFAF7}
+#prompt,#oppdragUt{min-height:290px;font:13px/1.45 ui-monospace,Consolas,monospace;background:#FBFAF7}
 .stil-om{font-size:13px;color:var(--ink-2);margin-top:6px}
 .knapper{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 button{font:600 15px 'Figtree',system-ui,sans-serif;cursor:pointer;border:0;border-radius:999px;padding:9px 18px}
@@ -89,6 +89,26 @@ details.seksjon[open] > summary::before{transform:rotate(90deg)}
 .merk{font-size:12.5px;color:var(--ink);margin-top:2px}
 .kort .bestill-knapp{margin-top:8px;align-self:flex-start;font-size:13px;padding:5px 12px}
 .tomt{color:var(--ink-2);font-size:14px;margin-left:18px}
+
+/* ---- Utvalg og oppdrag ---- */
+.velg{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink-2);margin-top:6px;cursor:pointer}
+.velg input{width:18px;height:18px;accent-color:var(--bla)}
+.kort.valgt{box-shadow:0 0 0 2.5px var(--bla)}
+.velg-alle{margin:0 0 12px 18px;font-size:13px;padding:5px 12px}
+.oppdrag-typer{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.oppdrag-typer label{margin:0;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--ink);
+  background:#fff;box-shadow:inset 0 0 0 1.5px var(--linje);border-radius:999px;padding:7px 14px;cursor:pointer}
+.oppdrag-typer input{accent-color:var(--bla)}
+.oppdrag-typer label:has(input:checked){box-shadow:inset 0 0 0 2px var(--bla)}
+.utvalg-stripe{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;min-height:44px;align-items:center}
+.utvalg-stripe img{width:44px;height:44px;object-fit:contain;background:var(--flis);border-radius:8px}
+.utvalg-stripe .tomt{margin:0}
+.flyt{font-size:13px;color:var(--ink-2);margin-top:10px;max-width:85ch}
+.valgbar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:10px;
+  background:var(--ink);color:#fff;border-radius:999px;padding:8px 8px 8px 18px;box-shadow:0 8px 24px rgba(20,32,54,.25)}
+.valgbar[hidden]{display:none}
+.valgbar b{font-size:15px}
+.valgbar .btn-ghost{box-shadow:none}
 @media (max-width:760px){ .bestill-rad{grid-template-columns:minmax(0,1fr)} h1{font-size:25px} }
 </style>
 </head>
@@ -106,8 +126,42 @@ details.seksjon[open] > summary::before{transform:rotate(90deg)}
     <span><b>{{UBRUKT}}</b> ikke i bruk</span>
   </div>
 
+  <section class="bestill" id="oppdrag" aria-labelledby="oppdragTittel">
+    <h2 id="oppdragTittel">Oppdrag med utvalg</h2>
+    <p>Kryss av ikonene du vil ha med – eller «Velg hele gruppa» i en seksjon. Last ned referansearket
+      og legg det ved hos AI-en sammen med teksten, så ser den nøyaktig hva den skal jobbe med.</p>
+    <div class="bestill-rad">
+      <div>
+        <label>Utvalget</label>
+        <div class="utvalg-stripe" id="utvalgStripe"></div>
+        <label>Oppdrag</label>
+        <div class="oppdrag-typer" role="radiogroup" aria-label="Oppdrag">
+          <label><input type="radio" name="oppdrag" value="prove" checked> Prøverunde – 3 retninger</label>
+          <label><input type="radio" name="oppdrag" value="juster"> Juster gruppa</label>
+          <label><input type="radio" name="oppdrag" value="nye"> Nye i samme stil</label>
+        </div>
+        <label for="oppdragTekst" id="oppdragEtikett">Ønske til retningene (valgfritt)</label>
+        <textarea id="oppdragTekst"></textarea>
+        <div class="knapper">
+          <button type="button" class="btn-bla" id="lastArk">Last ned referanseark</button>
+          <button type="button" class="btn-ghost" id="lagOppdrag">Lag tekst</button>
+        </div>
+        <p class="flyt">Når svaret kommer: send meg bildene sammen med teksten under. Nummereringen sier
+          hvilket filnavn hvert bilde skal ha, så jeg klipper og legger dem på plass.</p>
+      </div>
+      <div>
+        <label for="oppdragUt">Teksten til AI-en</label>
+        <textarea id="oppdragUt" readonly></textarea>
+        <div class="knapper">
+          <button type="button" class="btn-bla" id="kopierOppdrag">Kopier</button>
+          <span class="kvitt" id="kvittOppdrag" aria-live="polite"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="bestill" id="bestill" aria-labelledby="bestillTittel">
-    <h2 id="bestillTittel">Bestill fra AI</h2>
+    <h2 id="bestillTittel">Nye bilder uten utvalg</h2>
     <p>Velg stil, skriv ett motiv per linje som <code>filnavn – motiv</code>, og kopier teksten til
       bildemodellen. Stilblokken limes inn uendret hver gang, så alt i samme stil blir likt.</p>
     <div class="bestill-rad">
@@ -156,6 +210,12 @@ details.seksjon[open] > summary::before{transform:rotate(90deg)}
   <div id="seksjoner"></div>
 </main>
 
+<div class="valgbar" id="valgbar" hidden>
+  <b id="valgAntall">0 valgt</b>
+  <button type="button" class="btn-bla" id="tilOppdrag">Til oppdraget</button>
+  <button type="button" class="btn-ghost" id="tomValg">Tøm</button>
+</div>
+
 <script>
 const KATALOG = /*DATA*/null;
 const STATUS_KL = { 'i bruk':'st-ib', 'trenger nytt':'st-tn', 'mangler':'st-ma', 'ikke i bruk':'st-ub' };
@@ -171,7 +231,10 @@ function kort(p, i, s){
   else if(!p.b) bilde = '<span class="tom">Finnes ikke</span>';
   else bilde = '<img src="' + esc(p.sti) + '" alt="" loading="lazy" width="' + p.b + '" height="' + p.h + '">';
   const kanBestilles = KATALOG.stiler[p.nystil || p.stil] || p.stil === 'gammel';
-  return '<article class="kort">'
+  /* Bare ekte bildefiler kan velges - de skal tegnes paa referansearket. */
+  const kanVelges = p.b && !p.svg;
+  const er = valgt.has(p.sti);
+  return '<article class="kort' + (er ? ' valgt' : '') + '">'
     + '<div class="bilde">' + bilde + '</div>'
     + '<div class="info">'
     +   '<b>' + esc(p.navn) + '</b>'
@@ -183,6 +246,8 @@ function kort(p, i, s){
     +   (p.merknad ? '<span class="merk">' + esc(p.merknad) + '</span>' : '')
     +   (KATALOG.ikkeAi[p.stil] && !p.nystil && p.stil !== 'gammel' ? '<span class="meta">' + esc(KATALOG.ikkeAi[p.stil]) + '</span>' : '')
     +   (kanBestilles ? '<button type="button" class="btn-ghost bestill-knapp" data-s="' + s + '" data-i="' + i + '">Bestill nytt</button>' : '')
+    +   (kanVelges ? '<label class="velg"><input type="checkbox" class="velg-boks" data-s="' + s + '" data-i="' + i + '"'
+                     + (er ? ' checked' : '') + '> Ta med i oppdrag</label>' : '')
     + '</div></article>';
 }
 
@@ -203,7 +268,10 @@ function byggSider(){
   $('seksjoner').innerHTML = KATALOG.seksjoner.map((s, n) =>
     '<details class="seksjon" id="sek-' + s.id + '"' + (s.apen ? ' open' : '') + '>'
     + '<summary><h2>' + esc(s.tittel) + '</h2><span class="antall">' + s.poster.length + '</span></summary>'
-    + '<p class="seksjon-lapp">' + esc(s.lapp) + '</p><div class="rutenett"></div></details>').join('');
+    + '<p class="seksjon-lapp">' + esc(s.lapp) + '</p>'
+    + (s.poster.some(p => p.b && !p.svg)
+        ? '<button type="button" class="btn-ghost velg-alle" data-s="' + n + '">Velg hele gruppa</button>' : '')
+    + '<div class="rutenett"></div></details>').join('');
   KATALOG.seksjoner.forEach((s, n) => {
     const el = $('sek-' + s.id);
     if(s.apen) tegnSeksjon(n);
@@ -302,8 +370,211 @@ document.addEventListener('click', e => {
   $('bestill').scrollIntoView({ behavior:'smooth', block:'start' });
 });
 
+/* ============================================================
+   Utvalget
+   ------------------------------------------------------------
+   Noeklet paa stien, ikke paa plassen i lista: da overlever det at
+   katalogen lages paa nytt. Huskes i nettleseren som en bekvemmelighet -
+   forsvinner det, er det bare aa krysse av igjen.
+   ============================================================ */
+const MAKS_UTVALG = 40;
+const valgt = new Map();              /* sti -> post */
+const alleposter = new Map();
+KATALOG.seksjoner.forEach(s => s.poster.forEach(p => { if(p.sti) alleposter.set(p.sti, p); }));
+try{
+  JSON.parse(localStorage.getItem('bildekatalog-valgt') || '[]')
+    .forEach(sti => { if(alleposter.has(sti)) valgt.set(sti, alleposter.get(sti)); });
+}catch(_){}
+function lagreValg(){
+  try{ localStorage.setItem('bildekatalog-valgt', JSON.stringify([...valgt.keys()])); }catch(_){}
+}
+function oppdaterValg(){
+  $('valgbar').hidden = !valgt.size;
+  $('valgAntall').textContent = valgt.size + ' valgt';
+  $('utvalgStripe').innerHTML = valgt.size
+    ? [...valgt.values()].map(p => '<img src="' + esc(p.sti) + '" alt="" title="' + esc(p.fil)
+        + '" width="' + p.b + '" height="' + p.h + '">').join('')
+    : '<p class="tomt">Ingenting valgt ennå – kryss av ikoner lenger ned.</p>';
+  document.querySelectorAll('.velg-boks').forEach(b => {
+    const p = KATALOG.seksjoner[+b.dataset.s].poster[+b.dataset.i];
+    b.checked = valgt.has(p.sti);
+    b.closest('.kort').classList.toggle('valgt', b.checked);
+  });
+  lagreValg();
+}
+function velg(p, paa){
+  if(paa && !valgt.has(p.sti) && valgt.size >= MAKS_UTVALG){
+    alert('Maks ' + MAKS_UTVALG + ' ikoner per oppdrag – et større ark blir for smått for AI-en å lese. Del det i flere.');
+    return false;
+  }
+  if(paa) valgt.set(p.sti, p); else valgt.delete(p.sti);
+  return true;
+}
+document.addEventListener('change', e => {
+  const b = e.target.closest('.velg-boks');
+  if(!b) return;
+  const p = KATALOG.seksjoner[+b.dataset.s].poster[+b.dataset.i];
+  if(!velg(p, b.checked)) b.checked = false;
+  oppdaterValg();
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('.velg-alle');
+  if(!b) return;
+  const kan = KATALOG.seksjoner[+b.dataset.s].poster.filter(p => p.b && !p.svg);
+  const alleValgt = kan.every(p => valgt.has(p.sti));
+  if(!alleValgt && valgt.size + kan.filter(p => !valgt.has(p.sti)).length > MAKS_UTVALG){
+    alert('Gruppa har ' + kan.length + ' bilder – maks ' + MAKS_UTVALG + ' per oppdrag. Kryss av de du vil ha med i stedet.');
+    return;
+  }
+  kan.forEach(p => velg(p, !alleValgt));
+  oppdaterValg();
+});
+$('tomValg').addEventListener('click', () => { valgt.clear(); oppdaterValg(); });
+$('tilOppdrag').addEventListener('click', () => {
+  lagOppdrag();
+  $('oppdrag').scrollIntoView({ behavior:'smooth', block:'start' });
+});
+
+/* ============================================================
+   Oppdraget
+   ============================================================ */
+const ETIKETT = {
+  prove: 'Ønske til retningene (valgfritt)',
+  juster: 'Hva skal endres? For eksempel «tykkere strek» eller «som retning B»',
+  nye: 'Nye motiver – ett per linje: filnavn – motiv',
+};
+function oppdragType(){ return document.querySelector('input[name=oppdrag]:checked').value; }
+document.querySelectorAll('input[name=oppdrag]').forEach(r => r.addEventListener('change', () => {
+  $('oppdragEtikett').textContent = ETIKETT[oppdragType()];
+  lagOppdrag();
+}));
+
+/* Kolonnene paa arket: saa kvadratisk som mulig, aldri over seks. */
+function kolonner(n){ return Math.max(1, Math.min(6, Math.ceil(Math.sqrt(n)))); }
+
+/* Tre som spenner over utvalget: foerste, midterste og siste. */
+function treTypiske(liste){
+  const n = liste.length;
+  return [...new Set([0, Math.floor((n - 1) / 2), n - 1])].map(i => liste[i]);
+}
+
+/* Den stilen flest av de valgte har - den sier noe om hva de er. */
+function hovedstil(liste){
+  const tell = {};
+  liste.forEach(p => { const k = p.nystil || p.stil; tell[k] = (tell[k] || 0) + 1; });
+  const k = Object.keys(tell).sort((a, b) => tell[b] - tell[a])[0];
+  return KATALOG.stiler[k] ? k : null;
+}
+
+function lagOppdrag(){
+  const liste = [...valgt.values()];
+  const n = liste.length;
+  if(!n){ $('oppdragUt').value = ''; return; }
+  const tekst = $('oppdragTekst').value.trim();
+  const nummer = liste.map((p, i) => (i + 1) + '. ' + p.fil + (p.motiv ? ' – ' + p.motiv : ''));
+  const ark = 'Vedlagt: referanseark med ' + n + (n === 1 ? ' ikon' : ' ikoner') + ' slik de ser ut i dag, nummerert 1–' + n
+    + ' i ' + kolonner(n) + ' kolonner. Tallene og filnavnene under rutene er bare merkelapper for oss – de skal ikke tegnes.';
+  const regler = 'Ingen tekst, ingen bokstaver og ingen tall i ikonene. NO text, NO letters, NO numbers inside the icons. '
+    + 'God luft mellom rutene, og gjennomsiktig bakgrunn utenfor flisene.';
+  const type = oppdragType();
+  let ut;
+  if(type === 'prove'){
+    const tre = treTypiske(liste);
+    ut = 'Oppdrag til NEAM – prøverunde, tre retninger\n\n' + ark + '\n\n'
+      + 'Ta ' + (tre.length === 1 ? 'dette' : 'disse') + ': ' + tre.map(p => 'nr. ' + (liste.indexOf(p) + 1) + ' (' + p.fil + ')').join(', ') + '.\n'
+      + 'Lag tre tydelig forskjellige stilretninger, A, B og C. Vis hver retning som én rad med '
+      + (tre.length === 1 ? 'ikonet' : 'de samme ' + tre.length + ' ikonene') + ', i samme rekkefølge. Alle retningene skal passe i en lys, '
+      + 'moden familieapp og være tydelige i 64–128 px.\n'
+      + (tekst ? 'Ønske fra meg: ' + tekst + '\n' : '')
+      + 'Skriv én setning i svaret om hva som kjennetegner hver retning.\n\n'
+      + 'Behold motivet i hvert ikon. ' + regler;
+  }else if(type === 'juster'){
+    ut = 'Oppdrag til NEAM – juster ' + n + (n === 1 ? ' ikon' : ' ikoner') + '\n\n' + ark + '\n\n'
+      + 'Endring: ' + (tekst || '[skriv endringen her]') + '\n\n'
+      + 'Lag alle ' + n + ' på nytt med endringen. Behold motivet, rekkefølgen og nummereringen. '
+      + 'Lever som ett ark med samme rutenett (' + kolonner(n) + ' kolonner) og like store ruter, '
+      + 'eller som egne filer med filnavnene under.\n'
+      + regler + '\n\nIkonene:\n' + nummer.join('\n');
+  }else{
+    const stil = hovedstil(liste);
+    const linjer = tekst.split('\n').map(l => l.trim()).filter(Boolean);
+    const nye = linjer.map((l, i) => {
+      const m = l.match(/^(\S+)\s*[–-]\s*(.+)$/);
+      let fil = m ? m[1] : '';
+      if(fil && !/\.(png|webp)$/i.test(fil)) fil += '.png';
+      return (i + 1) + '. ' + (m ? m[2] : l) + (fil ? ' – fil: ' + fil : '');
+    });
+    ut = 'Oppdrag til NEAM – nye ikoner i samme stil\n\n'
+      + 'Vedlagt: referanseark med ' + n + ' eksisterende ikoner. De er stilforbildet: samme strek, farger, lys, '
+      + 'flis og størrelse på motivet. Tallene og filnavnene under rutene er bare merkelapper – de skal ikke tegnes.\n\n'
+      + (stil ? 'STIL – samme som forbildene:\n' + KATALOG.stiler[stil].stil + '\n\n' : '')
+      + 'Lag disse nye:\n' + (nye.length ? nye.join('\n') : '[skriv ett motiv per linje: filnavn – motiv]') + '\n\n'
+      + 'Ett ikon per rute, eller egne filer med filnavnene. ' + regler;
+  }
+  $('oppdragUt').value = ut;
+  $('kvittOppdrag').textContent = '';
+}
+$('lagOppdrag').addEventListener('click', lagOppdrag);
+$('oppdragTekst').addEventListener('input', () => { clearTimeout(venter); venter = setTimeout(lagOppdrag, 250); });
+$('kopierOppdrag').addEventListener('click', async () => {
+  const t = $('oppdragUt').value;
+  if(!t){ $('kvittOppdrag').textContent = 'Velg ikoner først.'; return; }
+  try{ await navigator.clipboard.writeText(t); }
+  catch(_){ $('oppdragUt').select(); document.execCommand('copy'); }
+  $('kvittOppdrag').textContent = 'Kopiert.';
+});
+
+/* ---------- Referansearket ----------
+   Tegnes i nettleseren: hvert valgt bilde i sin rute, med nummer og
+   filnavn under. Bildene ligger paa samme adresse som sida, saa lerretet
+   kan lagres som PNG. */
+function lastBilde(sti){
+  return new Promise((ok, feil) => {
+    const im = new Image();
+    im.onload = () => ok(im);
+    im.onerror = () => feil(new Error(sti));
+    im.src = sti;
+  });
+}
+$('lastArk').addEventListener('click', async () => {
+  const liste = [...valgt.values()];
+  if(!liste.length){ $('kvittOppdrag').textContent = 'Velg ikoner først.'; return; }
+  const kol = kolonner(liste.length), rad = Math.ceil(liste.length / kol);
+  const R = 260, BILDE = 210, LUFT = 24, TEKST = 34;
+  const c = document.createElement('canvas');
+  c.width = kol * R + (kol + 1) * LUFT;
+  c.height = rad * (R + TEKST) + (rad + 1) * LUFT;
+  const g = c.getContext('2d');
+  g.fillStyle = '#F3F1EC'; g.fillRect(0, 0, c.width, c.height);
+  let bilder;
+  try{ bilder = await Promise.all(liste.map(p => lastBilde(p.sti))); }
+  catch(e){ $('kvittOppdrag').textContent = 'Fikk ikke lastet ' + e.message; return; }
+  bilder.forEach((im, i) => {
+    const x = LUFT + (i % kol) * (R + LUFT), y = LUFT + Math.floor(i / kol) * (R + TEKST + LUFT);
+    g.fillStyle = '#FFFFFF';
+    g.beginPath(); g.roundRect(x, y, R, R, 18); g.fill();
+    const s = Math.min(BILDE / im.naturalWidth, BILDE / im.naturalHeight);
+    const b = im.naturalWidth * s, h = im.naturalHeight * s;
+    g.drawImage(im, x + (R - b) / 2, y + (R - h) / 2, b, h);
+    g.fillStyle = '#142036'; g.font = '600 17px Figtree, system-ui, sans-serif'; g.textAlign = 'center';
+    g.fillText((i + 1) + '  ' + liste[i].fil, x + R / 2, y + R + 24, R);
+  });
+  const dato = new Date().toISOString().slice(0, 10);
+  c.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'neam-referanseark-' + dato + '-' + liste.length + '.png';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    $('kvittOppdrag').textContent = 'Referansearket er lastet ned.';
+  }, 'image/png');
+  lagOppdrag();
+});
+
 byggStilvalg();
 byggSider();
+oppdaterValg();
+lagOppdrag();
 </script>
 </body>
 </html>
