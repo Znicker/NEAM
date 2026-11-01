@@ -23,7 +23,9 @@ Mye ligger nå i **fellesfiler** (`felles-rot.css`, `felles-skall.css`,
 `felles-skriv.js`, `felles-hus.js`, `felles-ms.js`, `felles-tale.js`). Det som ennå er kopiert per fil, holdes likt av dette
 dokumentet – det er fortsatt fasiten for hva som skal være likt på tvers.
 
-*Sist oppdatert 1. november 2026: nytt visuelt uttrykk (24. oktober–
+*Sist oppdatert 2. november 2026: Kjøkken dash fikk Dag | Uke i
+avtalekortet, som Emma dash. Forrige oppdatering 1. november 2026: nytt
+visuelt uttrykk (24. oktober–
 1. november, alternativ C). Steampunk-bakgrunnen og treklokka er borte,
 merkelappene er erstattet av ikoner med **navnet som tekst under**,
 messingrørene er tynne koblinger, NEAM-logoen står på forsiden og i
@@ -597,6 +599,17 @@ Ukemerknadene har ingen dato, bare en ukedag («innen ons»), og hukes av med
 en boks som ligger **utenfor** den fargede raden, til høyre. Avhukede synker
 til bunnen og blir stående ut uken. Under panseret lagres fortsatt en dato,
 beregnet fra ukedagen – da er uke- og sorteringslogikken urørt.
+
+**Dag | Uke i avtalekortet** (2. november 2026), kopiert fra Emma dash
+uten Fag. Bytteren står i korttittelen. **Uke** er sju døgnsøyler med
+**alle** kalenderne – Emma dash viser bare hennes egne – og tar hele
+bredden; påminnelsene og middagen står der igjen når man går tilbake til
+Dag. Åpnes en avtale fra uka, kommer høyrekolonnen fram for detaljkortet
+(`settBredde()`). Pilene og sveipen blar én dag i Dag og én uke i Uke, og
+tittelen viser uketallet. **Hvilen og «Tilbake til i dag» legger skjermen
+i Dag på i dag** – standard er dagsvisningen, ikke bare dagens dato.
+Oppdateringen, døgnskiftet og lagring tegner den visningen som står
+framme (`tegnVisning()`).
 
 ## Redigeringsmodus
 
