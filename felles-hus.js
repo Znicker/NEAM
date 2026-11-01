@@ -1354,8 +1354,8 @@ function hskHjulVis(hjul, f){
   const m = hjul.querySelector('.hsk-hjul-merke');
   const p = hskHjulPunkt(f.h, f.s);
   if(m){ m.style.left = p.x + '%'; m.style.top = p.y + '%'; m.style.background = hskFargeCss(f.h, f.s); }
-  const prikk = hskBak && hskBak.querySelector('button[data-farge="' + hjul.dataset.hjul + '"]');
-  if(prikk) prikk.style.background = hskFargeCss(f.h, f.s);
+  const vis = hskBak && hskBak.querySelector('[data-fargevis="' + hjul.dataset.hjul + '"]');
+  if(vis) vis.style.background = hskFargeCss(f.h, f.s);
 }
 
 /* ---------- Kortet ---------- */
@@ -1601,21 +1601,19 @@ function hskStyring(e){
          + '</select>';
     }
   });
-  if(e.farge){
-    const f = hskFargeNaa(e);
-    /* Staar lampa paa hvitt, viser prikken hvitt - ikke fargen den
-       hadde sist, som den ikke lyser med naa. */
-    const hvit = o.light_mode && o.light_mode.value === 'temperature';
-    h += '<button type="button" class="hsk-farge' + (hskApenFarge === e.id ? ' aapen' : '') + '"'
-       + ' data-farge="' + hskVask(e.id) + '" style="background:' + (hvit ? HSK_HVITT_CSS : hskFargeCss(f.h, f.s)) + '"'
-       + ' aria-label="Velg farge for ' + hskVask(e.kort) + '" aria-expanded="' + (hskApenFarge === e.id) + '"></button>';
-    /* Etter prikken, saa det er knappen og ikke prikken som brytes til
-       ny linje paa smal skjerm. */
-    if(o.light_temperature && o.light_temperature.setable){
-      h += '<button type="button" class="dlg-knapp ja hsk-knapp" data-hvitt="' + hskVask(e.id) + '">Naturlig hvitt</button>';
-    }
-  }
   let ut = h ? '<div class="hsk-styr">' + h + '</div>' : '';
+  /* Fargelampene: «Naturlig hvitt» og «Fargevalg» side om side paa egen
+     linje under glideren. Fargen lampa har naa, staar under bryteren
+     (hskEnhetHtml) - den viser, Fargevalg aapner hjulet. */
+  if(e.farge){
+    const aapen = hskApenFarge === e.id;
+    ut += '<div class="hsk-styr hsk-fargerad">'
+        + (o.light_temperature && o.light_temperature.setable
+           ? '<button type="button" class="dlg-knapp ja hsk-knapp" data-hvitt="' + hskVask(e.id) + '">Naturlig hvitt</button>' : '')
+        + '<button type="button" class="dlg-knapp ja hsk-knapp' + (aapen ? ' aapen' : '') + '" data-farge="' + hskVask(e.id) + '"'
+        + ' aria-expanded="' + aapen + '">Fargevalg</button>'
+        + '</div>';
+  }
   if(e.farge && hskApenFarge === e.id){
     const f = hskFargeNaa(e);
     const p = hskHjulPunkt(f.h, f.s);
@@ -1648,15 +1646,28 @@ function hskEnhetHtml(e){
   const bryter = e.kap.indexOf('onoff') === -1 ? ''
     : '<button type="button" role="switch" class="hsk-bryter" data-hsk="' + hskVask(e.id) + '" data-kap="onoff"'
       + ' aria-checked="' + !!o.onoff.value + '" aria-label="' + hskVask(e.kort) + '"><span></span></button>';
+  /* Fargen lampa lyser med naa, under bryteren. Staar den paa hvitt,
+     vises hvitt - ikke fargen den hadde sist. */
+  let fargevis = '';
+  if(e.farge){
+    const f = hskFargeNaa(e);
+    const hvit = o.light_mode && o.light_mode.value === 'temperature';
+    fargevis = '<span class="hsk-fargevis" data-fargevis="' + hskVask(e.id) + '" role="img"'
+             + ' aria-label="Fargen nå" style="background:' + (hvit ? HSK_HVITT_CSS : hskFargeCss(f.h, f.s)) + '"></span>';
+  }
+  const hoyre = bryter || fargevis ? '<div class="hsk-hoyre">' + bryter + fargevis + '</div>' : '';
   return '<div class="hsk-enhet' + (e.d.available === false ? ' hsk-borte' : '') + (alarm ? ' hsk-alarm' : '')
-       + (bryter ? ' hsk-med-bryter' : '') + '">'
+       + (hoyre ? ' hsk-med-bryter' : '') + '">'
        +   '<span class="hsk-ikon" title="' + art.navn + '">' + hskSymbol(e.art) + '</span>'
        +   '<div class="hsk-kropp">'
        +     '<div class="hsk-navn">' + hskVask(e.kort) + '</div>'
        +     (t ? '<div class="hsk-tilstand">' + hskVask(t) + '</div>' : '')
-       +     hskStyring(e)
        +   '</div>'
-       +   bryter
+       +   hoyre
+       /* Glider, knapper og hjul under hele raden, ogsaa under bryteren -
+          i navnefeltet alene ble det for trangt til to knapper ved
+          siden av hverandre. */
+       +   '<div class="hsk-under">' + hskStyring(e) + '</div>'
        + '</div>';
 }
 

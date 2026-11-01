@@ -1479,6 +1479,17 @@
 .hsk-bryter[aria-checked="true"]{ background:var(--aksent); }
 .hsk-bryter[aria-checked="true"] span{ transform:translateX(20px); }
 .hsk-bryter:focus-visible{ outline:2px solid var(--aksent); outline-offset:2px; }
+/* Styringen under navnet gaar helt ut til hoeyre kant, under bryteren. */
+.hsk-under{ grid-column:2 / -1; min-width:0; }
+.hsk-under:empty{ display:none; }
+/* Hoeyre kolonne: bryteren, og fargen lampa har naa under den. */
+.hsk-hoyre{ display:flex; flex-direction:column; align-items:center; gap:10px; }
+.hsk-fargevis{
+  width:26px; height:26px; border-radius:50%;
+  border:2px solid var(--bg-solid); box-shadow:0 0 0 1.5px var(--line);
+}
+/* Fargevalg er markert mens hjulet er oppe. */
+.hsk-fargerad .dlg-knapp.aapen{ box-shadow:0 0 0 2px var(--bg-solid), 0 0 0 4px var(--aksent); }
 
 /* Et rom med bare varslere i orden er bare baandet. */
 .hsk-rom.hsk-bare-baand{ padding-bottom:0; }
@@ -1535,12 +1546,6 @@
   background:var(--bg-solid); color:var(--ink);
   font-family:'Archivo',sans-serif; font-size:16px;
 }
-/* Fargeprikken: lysets farge, og knappen som aapner hjulet. */
-.hsk-farge{
-  flex:none; width:36px; height:36px; border-radius:50%; cursor:pointer; padding:0;
-  border:2px solid var(--paper); box-shadow:0 0 0 1.5px var(--line);
-}
-.hsk-farge.aapen{ box-shadow:0 0 0 2px var(--aksent); }
 /* Fargetonen rundt, hvitt i midten. Roedt oeverst og med klokka -
    felles-hus.js regner vinkelen paa samme maate (hskHjulLes). */
 .hsk-hjul{

@@ -1150,10 +1150,13 @@ fireren. I rommet står det man styrer først, det man bare ser til sist.
 når den står på, grå når den er av – grønt er «skaper noe» i huset og
 passer ikke. Bryteren sier alt om på og av, så «På»/«Av» står ikke i
 tilstandslinja under. **De andre knappene er blå** – de verken skaper,
-endrer eller sletter, samme som Neamow. Fargelampene har en **fargeprikk** som viser lysets egen farge og
-åpner et fargehjul (fargetone rundt, hvitt i midten), og **«Naturlig
-hvitt»** (`HSK_HVITT`, `light_temperature` 0,8). Begge tenner lampa om
-den var av.
+endrer eller sletter, samme som Neamow. På fargelampene står **fargen lampa har nå** som en
+prikk under bryteren – den viser, den er ingen knapp. Under glideren står
+**«Naturlig hvitt»** (`HSK_HVITT`, `light_temperature` 0,8) og
+**«Fargevalg»**, som åpner fargehjulet (fargetone rundt, hvitt i midten),
+side om side. Begge tenner lampa om den var av. **Glider, knapper og hjul
+går under hele raden, også under bryteren** – i navnefeltet alene ble det
+for trangt til to knapper ved siden av hverandre (1. november 2026).
 
 **Ytterdøra, kameraet og varslerne styres ikke herfra.** De vises med
 tilstand; låsen styres fra sikkerhetssida og av Neam, der opplåsing
