@@ -21,12 +21,16 @@
      ?hva=fil&url=...       - henter én PDF og gir den som base64
 
    Adressene til PDF-ene kan ikke regnes ut. De ser slik ut:
-     /sandnesskole/for-elever/4-trinn/~/_f/p78/<tilfeldig id>/ukeplan-uke-38.pdf
-   Derfor maa trinnsida leses foerst.
+     /_f/p78/<tilfeldig id>/ukeplan-uke-45.pdf
+   Derfor maa trinnsida leses foerst. Foer laa de under trinnsida
+   (/sandnesskole/for-elever/4-trinn/~/_f/p78/...); innen 1. november
+   2026 begynte kommunen aa lenke rett til /_f/p78/, og sperra under
+   kastet alle lenkene - «Fant ingen ukeplan».
 
    VERTEN ER LAAST til kommunens side, og STIEN til Sandnes sin
-   del av den. Uten den sperren ville endepunktet vaert en aapen
-   videresender for hele arendal.kommune.no.
+   del av den, pluss Sandnes sitt filomraade (FIL_STI). Uten den
+   sperren ville endepunktet vaert en aapen videresender for hele
+   arendal.kommune.no.
 
    FEIL SVARES MED 200 og {feil}, aldri 502. En Pages Function som
    svarer 502 faar kroppen sin byttet ut med Cloudflares egen
@@ -37,6 +41,10 @@
 const VERT = 'www.arendal.kommune.no';
 const ROT  = 'https://' + VERT;
 const STI  = '/sandnesskole/';
+/* Filene til Sandnes sin del av siden. «p78» er det samme nummeret som
+   sto i de gamle adressene under trinnsida - ikke aapne hele /_f/, der
+   ligger filene til resten av kommunen. */
+const FIL_STI = '/_f/p78/';
 
 /* En ukeplan er et par hundre kilobyte. Er svaret mange megabyte, er det
    noe annet enn det vi ba om. */
@@ -76,13 +84,14 @@ function riktigVert(v){
   return String(v || '').toLowerCase().replace(/^www\./, '') === VERT.replace(/^www\./, '');
 }
 
-/* Innenfor sperra: riktig vert, http(s), og under Sandnes sin sti.
-   Ikke endsWith paa verten - «arendal.kommune.no.angriper.no» ville
-   sluppet gjennom en slurvete sjekk. */
+/* Innenfor sperra: riktig vert, http(s), og under Sandnes sin sti eller
+   filomraade. Ikke endsWith paa verten - «arendal.kommune.no.angriper.no»
+   ville sluppet gjennom en slurvete sjekk. */
 function innenfor(u){
+  const sti = u.pathname.toLowerCase();
   return riktigVert(u.hostname)
       && /^https?:$/.test(u.protocol)
-      && u.pathname.toLowerCase().indexOf(STI) === 0;
+      && (sti.indexOf(STI) === 0 || sti.indexOf(FIL_STI) === 0);
 }
 
 function absolutt(href, base){
@@ -202,7 +211,7 @@ export async function onRequest(context){
       try{ mal = new URL(inn.searchParams.get('url') || ''); }
       catch(e){ return svar({ feil:'Ugyldig adresse.' }); }
       if(!innenfor(mal)){
-        return svar({ feil:'Bare filer under ' + VERT + STI + ' kan hentes.' });
+        return svar({ feil:'Bare filer under ' + VERT + STI + ' eller ' + FIL_STI + ' kan hentes.' });
       }
 
       const r = await hent(mal.toString());
