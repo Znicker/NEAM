@@ -1,8 +1,13 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 29. oktober 2026, natt: del 57 lagt til – Neam Økonomi,
+*Ført à jour 1. november 2026: Rommene lagt om igjen (rommene på én
+flate, Rediger, skyvebrytere, fargeknappene), Andreas ukeplan hentes
+igjen, bildekatalogen, logoen og hjemskjermikonet ført inn, og
+månedsbudsjettet i Økonomi (se toppblokka). Ført à jour 29. oktober 2026, natt: del 57 lagt til – Neam Økonomi,
 den skjulte økonomisida med DNB, Trumf, innboks, budsjett og Status (se
-toppblokka). Ført à jour 29. oktober 2026, kveld: Matlaging skriver på tvers –
+toppblokka). Senere samme natt: Innboks, Måned og en ny Budsjett-fane
+etter skissen, fersk henting med Oppdater-knapp, og Trumf-cookien som
+holdes i live. Ført à jour 29. oktober 2026, kveld: Matlaging skriver på tvers –
 oppskrifter opprettes, endres og slettes, og middager settes i ukemenyen,
 fra hvilken som helst side. Første runde av «app for app»-flyttingen; se
 «Neam på tvers» under. Ført à jour 29. oktober 2026: kameraet virker utenfor hjemmenettet –
@@ -55,7 +60,7 @@ ny tråd alltid lander på samme sted.*
 
 ---
 
-## Nåstatus – 29. oktober 2026
+## Nåstatus – 1. november 2026
 
 **Hvor prosjektet er nå.** Ni sider og fire spill, og Andreas tre spill
 nås fra én egen spillside. To økter 12.–13. september
@@ -76,8 +81,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-tale.js` (tale ut og inn).
 
 **Siste leverte versjoner:** `felles-neam.js ?v=74`, `felles-neam.css
-?v=66`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=6`, `felles-lesalt.js
-?v=6`, `felles-hus.js ?v=17`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
+?v=71`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=6`, `felles-lesalt.js
+?v=6`, `felles-hus.js ?v=18`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
@@ -95,10 +100,9 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–73; neam.css til og
-med 65; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–5, skriv 1–5,
-hus `?v=1–16`, ms `?v=1`, tale 1–4, graph 1–2**. (Hus 13–16 ble tatt i
-bruk i andre økter uten å bli ført inn her; sidene sto på 16 da Neamow
-gikk til 17 den 1. november.) Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
+med 70; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–5, skriv 1–5,
+hus `?v=1–17`, ms `?v=1`, tale 1–4, graph 1–2**. (1. november: hus 13–16
+og 18 og neam.css 67–71 er Rommene, hus 17 er Neamows hagebilde.) Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
 tale 1–4 ble brent 13. september ved å endre en fil som alt var pushet uten
 å heve nummeret – se del 46. Resten er tidligere leverte numre, som alltid
 er brent i det de forlates.
@@ -233,7 +237,8 @@ plantegningen.
 soner** (Hjem > etasje > rom), ikke fra navnet – sonetreet var alt satt
 opp slik. Én fane per etasje (Første etasje, Kjeller, Garasje, Hage;
 rekkefølgen står i `HSK_ETASJE_REKKE`), og fanene brytes til ny linje på
-smal skjerm i stedet for å rulle. **Hvert rom er en grupperingsboks**
+smal skjerm i stedet for å rulle (**fanene ble tatt bort 1. november** –
+se under). **Hvert rom er en grupperingsboks**
 (`--boks-mild`). Navnet kortes der det gjentar rommet («Hage - Plen -
 Uplight Venstre» blir «Uplight Venstre» under Plen). **Alle enhetene
 vises nå, med symbol per type** (`HSK_ART`) – varslere, ytterdøra og
@@ -343,23 +348,55 @@ peker på `35a1512` – layouten slik den var før noe ble endret.
   (`clamp(96px, 13vw, 150px)`) fordi robotflisa ikke har bånd.
 
 **Står igjen med gammelt bilde, med vilje:** fagmerkene (ingen nye ennå),
-spillroboten, stjerna og batteriet, og hjemskjermikonet
-(`apple-touch-icon` – iOS fyller gjennomsiktige hjørner med svart, så
-det trenger en egen versjon med fylt bakgrunn). Avatarene i
+og spillroboten, stjerna og batteriet. **Logoen og hjemskjermikonet kom
+samme dag** (`a0a88f8`): den runde NEAM-logoen står øverst på forsiden og
+i venstre tommelknapp, og alle 16 sidene lenker
+`bilder/neam-hjemskjerm.png` som `apple-touch-icon` – med fylt bakgrunn,
+fordi iOS fyller gjennomsiktige hjørner med svart. Avatarene i
 `bilder/avatarer/` er ikke tatt i bruk; ingen side viser bildeavatarer.
 
 **28.–29. oktober: Neam Økonomi.** Den skjulte `okonomi.html` – bare sys@ –
-er bygget fra første banktilgang til en side med fem faner: Status,
-Innboks, Måned, År og Oppsett. DNB kobles gjennom Enable Banking, Trumf med
+er bygget fra første banktilgang til en side med seks faner: Status,
+Innboks, Måned, År, Budsjett og Oppsett – de fire første og Budsjett etter
+skissen, som Magne godkjente 29. oktober. DNB kobles gjennom Enable Banking, Trumf med
 innloggingscookien fra trumf.no, og kvitteringer leses fra bilde eller PDF.
 Innboksen fører det Neam kjenner av seg selv og spør bare når han er
-usikker. Budsjettet har gruppe · post · linje, egne poster og
-Excel-import, og ligger i KV fordi repoet er offentlig. Status har
+usikker. Budsjettet har gruppe · post · linje og egne poster, og
+ligger i KV fordi repoet er offentlig. Fra 30. oktober har hver måned sitt
+eget budsjett ved siden av standarden (`7a823b7`), og Excel-importen er
+tatt bort. Status har
 formuen, nøkkeltallene, familiemålet og kildene med farge og tid.
 Kjøkkendashen vekker hentingen hver sjette time, og forsiden viser et
-varselkort når noe trenger noen. Tjue commits, `0e0050a`–`0a8a373`.
+varselkort når noe trenger noen. Sida henter DNB og Trumf ferskt når den
+åpnes og med Oppdater, og Trumf-cookien fornyes underveis. 25 commits,
+`0e0050a`–`6e4c350`.
 **Ingen `?v=`-numre er brukt eller brent** – ingen fellesfiler ble rørt.
 Se del 57.
+
+**1. november: Rommene, ukeplanen og bildekatalogen.**
+- **Rommene lagt om igjen** (`5208ee2`–`26d1362`). Etasjefanene er borte:
+  alle rommene står på én flate, i kolonner etter plassen (én på telefon,
+  to på iPad på høykant, tre på tvers). Hvert rom er et hvitt kort med
+  mørkt tittelbånd. **«Rediger»** huker av hva som vises og drar rommene
+  på plass, lagret per skjerm og antall kolonner (`neam-rommene:v1`).
+  Varslere i orden er et skjold i båndet. På og av er en skyvebryter,
+  fargeprikken ved glideren viser fargen lampa har, og «Naturlig hvitt»
+  (varmhvit) og «Fargevalg» (regnbue) står side om side. **Lamper som ikke
+  melder `light_mode`** (taklysene hos Andrea): skjermen husker om noen
+  sist valgte hvitt eller farge – et minne, ikke lest fra lampa. Reglene
+  står i designsystemet, «Rommene».
+- **Andreas ukeplan hentes igjen** (`ce17162`). Kommunen lenker nå rett
+  til `/_f/p78/…`, og sperra i `functions/api/sandnes.js` slapp bare
+  `/sandnesskole/` gjennom – «Fant ingen ukeplan». `FIL_STI` slipper
+  Sandnes sitt filområde, ikke hele `/_f/`.
+- **Bildekatalogen** (`9b0ce18`, `cabf1d4`): `dokumenter/bildekatalog.html`
+  viser alle bildene i Neam med status, og lager bestillinger og oppdrag
+  til AI. Den lages av `dokumenter/lag-bildekatalog.py`, som må kjøres
+  etter hver bildeendring. Den fant ett bilde som mangler (se «Bygging som
+  gjenstår»).
+- **Neamows hagebilde tatt bort** (`c95ad59`) – se del 56.
+- **Designsystemet ført à jour** for det nye visuelle uttrykket
+  (`27f05e8`) og for Rommene.
 
 ### Åpne tråder
 
@@ -405,14 +442,16 @@ Se del 57.
   godkjent: den digitale klokka som mild flate (`--boks-mild`) og ikke et
   mørkt display; viserknottene i gjennomsiktig blått (`--aksent`); og der
   hun stilte feil som blek grå viser. Se del 55.
-- **Utseendevalg på Rommene-kortet** er tatt under byggingen og er ikke
-  godkjent: navnet «Rommene», lyspæra som ikon (strektegning, ikke
-  merke), blå knapper (som Neamow), glideren i `--aksent`, symbolene per
-  type, rød linje på utløst varsler, fargeprikken og fargehjulet, og
-  fanene som brytes til ny linje. Rommenes bokser er designsystemets
-  grupperingsflate og står ikke på lista.
+- **Utseendevalg på Rommene-kortet.** Magne valgte 1. november det mørke
+  tittelbåndet, skyvebryteren, oppsettet per skjerm og fargene på de to
+  fargeknappene. Resten er tatt under byggingen og står i designsystemet,
+  men er ikke uttrykkelig godkjent: navnet «Rommene», lyspæra som ikon
+  (strektegning, ikke merke), blå knapper (som Neamow), glideren i
+  `--aksent`, symbolene per type, varselfargene i båndet, fargeprikken og
+  fargehjulet.
 - **Utseendevalg på Økonomi-sida** er tatt under byggingen og er ikke
-  godkjent: fargebruken fra skissen (rødt «over», oker «trenger valg»),
+  godkjent. Oppsettet i skissen godkjente Magne 29. oktober («dette
+  oppsettet var bra»); dette står fortsatt åpent: fargebruken fra skissen (rødt «over», oker «trenger valg»),
   prikkene for hvor fersk en kilde er (grønn `--handling-ny`, gul
   `--handling-endre`, rød `--danger`), formuestablene i trinn av
   `--aksent` og `--ink-soft`, og rammen på 1120 px. Ingen av dem står i
@@ -449,10 +488,18 @@ Se del 57.
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
-- **Økonomi på neam.no** (29. oktober). Kildeoversikten etter en feilet
-  henting (rød prikk med teksten), Trumf-feilen med Trumfs egen tekst,
-  kontoer under Verdier, og at vekkeren på kjøkkendashen faktisk holder
-  «Hentet» fersk og varselkortet på forsiden dukker opp.
+- **Økonomi på neam.no** (29. oktober). De nye fanene Innboks, Måned og
+  Budsjett med ekte tall; at **DNB godtar PSU-headerne** (fersk henting
+  ved åpning – ellers står feilen i Kilder); at **Trumf-cookien lever over
+  et døgn** med fornyelsen; kildeoversikten etter en feilet henting,
+  kontoer under Verdier, og at vekkeren på kjøkkendashen holder «Hentet»
+  fersk og varselkortet på forsiden dukker opp. Månedsbudsjettet
+  (30. oktober): ‹ måned › og plusstegnene i redigering.
+- **Andreas ukeplan på neam.no** (1. november): «Hent ukeplan» skal finne
+  uke 45.
+- **Rommene på iPad og telefon** (1. november): kolonnene, Rediger og å
+  dra rommene med fingeren, og fargeprikken på Andreas taklys etter
+  «Naturlig hvitt».
 - **Ikonene og den lyse klapptavla på iPad og telefon** (27. oktober).
   Hard oppdatering. Se særlig fiskebeinet på telefon – navnene under
   gjør knappene tettere – og at Figtree faktisk lastes.
@@ -489,9 +536,13 @@ Se del 57.
   klapptavla og ikonene er gjort. Gjenstår: **personlige fargetemaer**
   (samme ti verdier per person – utkastet ligger i forhåndsvisningene,
   ikke i repoet), **fagmerkene**, **spillroboten, stjerna og batteriet**,
-  og **hjemskjermikonet**. Strekikonene fra det første arket er bare
+  (hjemskjermikonet og logoen kom 27. oktober). Strekikonene fra det første arket er bare
   ~100 px og blir uskarpe på iPad – de bør lages i dobbel størrelse.
   Robotflisene er ~180 kB PNG hver og kan gjøres om til WebP.
+- **`annen-vare.svg` finnes ikke.** `VARE_BILDE_DEFAULT` i
+  `handleliste.html` peker på `/vareikoner/icons/annen-vare.svg`; Pages
+  svarer med forsiden, og reservebildet blir brutt. Funnet av
+  bildekatalogen 1. november, ikke rettet.
 - **Høyre hjørne dekker «Skriv inn» i Middag-kortet** på Kjøkken dash.
   Fantes før 27. oktober, ikke rettet.
 - **De 118 motivene til kortene er bestilt, ikke laget.** Bestillingen med
@@ -578,11 +629,11 @@ Se del 57.
 - **Venstrespaltens knapper på oppskriftssida er skjult, ikke fjernet.**
   Se del 36.
 
-**Dokumenter:** designsystemet er ført à jour til v13 samtidig med denne.
-**Det er ikke oppdatert for 24.–27. oktober:** bakgrunnen, klapptavla i
-tre, merkelappene som bærer navnet og knappemerkene står fortsatt
-beskrevet slik de var. **Heller ikke for Økonomi-sida** (28.–29.
-oktober) – se utseendevalgene under «Åpne spørsmål».
+**Dokumenter:** designsystemet (v13) er ført à jour 1. november for det
+nye visuelle uttrykket – ikonene med navnet under, logoen,
+hjemskjermikonet, bakgrunnen, klapptavla og bildekatalogen – og for
+Rommene. **Det er ikke oppdatert for Økonomi-sida** (28.–30. oktober) –
+se utseendevalgene under «Åpne spørsmål».
 
 ---
 
@@ -3581,9 +3632,12 @@ kjøpene fra Trumf og kvitteringer man tar bilde av, ført mot et budsjett.
 Sida er **skjult** – ingen lenke, ikke i fireren – og bank-funksjonen
 svarer **bare sys@** (`TILGANG` i `functions/api/bank/[[sti]].js`). magne@
 og nina@ legges til når sida tas i bruk. Planen og den klikkbare skissen
-ligger som artifacts («Neam Økonomi – plan», «Neam Økonomi»); Status-fanen
-er bygget etter skissen. Fem faner: **Status, Innboks, Måned, År,
-Oppsett**. Bygget i tjue commits fra `0e0050a` til `0a8a373`.
+ligger som artifacts («Neam Økonomi – plan», «Neam Økonomi»). Magne
+godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
+Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
+**Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
+sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
+verdier. Bygget i 25 commits fra `0e0050a` til `6e4c350`.
 
 ### Banken – Enable Banking
 
@@ -3598,12 +3652,20 @@ Oppsett**. Bygget i tjue commits fra `0e0050a` til `0a8a373`.
   signatur mot teamets sertifikater. `ms.js` og `homey.js` leser det uten.
 - **Seks timers buffer** (`auth:bank:buffer:<navn>`). Banken tillater fire
   hentinger i døgnet uten at brukeren er til stede. `fersk=1` tvinger en ny
-  henting. Svarer banken nei, får sida forrige svar tilbake med
+  henting – mot banken bare med PSU-headerne (under). Svarer banken nei, får sida forrige svar tilbake med
   `advarsel` – og **fra 29. oktober vises den faktiske grunnen**, ikke
   «banken svarte ikke». Det samme feltet bar også Trumf-feil.
 - **Feilen huskes i bufferen** (`feil`, `feilTid`) til neste vellykte
   henting, så kildeoversikten kan vise den. Feil fra før `0f21087` ble ikke
   lagret.
+- **Fersk ved åpning og Oppdater** (`fc18f69`). Sida henter DNB og Trumf
+  ferskt når den åpnes, og knappen **Oppdater** øverst ved fanene gjør det
+  samme. Mot DNB sendes PSU-headerne (`Psu-Ip-Address`, `Psu-User-Agent`
+  med flere, `psuAv()`): da er brukeren til stede, og grensen på fire i
+  døgnet gjelder ikke (PSD2). Bare IPv4 – på IPv6 brukes bufferen.
+  Vekkeren sender dem ikke og holder seg til bufferen. Saldoene hentes fire
+  kontoer om gangen. **Ikke bekreftet at DNB godtar headerne** – gjør den
+  ikke det, står feilen i Kilder.
 - **DNB sender ikke navnene fra nettbanken** – bare produktnavn. Egne navn
   settes i Oppsett (`auth:bank:kontonavn`).
 - **Én rolle per konto:** `felles` (husholdningsbudsjettet), `magne`,
@@ -3624,7 +3686,18 @@ Oppsett**. Bygget i tjue commits fra `0e0050a` til `0a8a373`.
   kjenner, føres med en gang og vises under «Ført automatisk» i 14 dager,
   der den kan angres. En angret post (`manuell`) føres aldri automatisk
   igjen, og en mulig dobbel føres aldri av seg selv.
-- **Godkjenn og stryk med angre-stripe.**
+- **Som skissen** (`6e4c350`): tallet på poster som venter øverst, så
+  kortene **«Trenger et valg»** (uten kategori, Neam usikker eller mulig
+  dobbel) og **«Kvitteringer og kjøp»**. Gruppen settes når innboksen
+  hentes, så en post ikke hopper mellom kortene når noen velger.
+  **Godkjenn-linja** følger med nederst, og angre-stripa står til noen gjør
+  noe med den.
+- **Kvitteringen åpnes i dialogen** (`felles-dialog.css`, ikke skissens
+  sidepanel – designsystemet): varelinjene med kategori per vare, «Som
+  kjøpet» som standard, og fordelingen oppsummert.
+- **«Neam husker»:** det Neam har lært per motpart (`?hva=laert`), med
+  **Glem** og **Angre** i kortet. POST `{hva:'laert', motpart, kategori}`;
+  tom kategori glemmer.
 - **Kontofilter** i innboksen (`1c2012a`): chips per kilde etter
   oppskriftssidas mønster, lagret per nettleser i localStorage
   `ok-skjul-kontoer`. **Vises bare når postene som venter kommer fra minst
@@ -3635,8 +3708,17 @@ Oppsett**. Bygget i tjue commits fra `0e0050a` til `0a8a373`.
 - **Trumf:** Trumf-kortet finnes ikke hos Enable Banking. Innloggingen er
   Cookie-headeren fra trumf.no (med `authjs.session-token`), limt inn i
   Oppsett og lagret i `auth:bank:trumf`. Kjøpene og varelinjene leses ut av
-  sida (`transactionsData`, `purchaseDetails`). En kvittering endrer seg
-  ikke og hentes én gang.
+  sida (`transactionsData`, `purchaseDetails`) når cookien er innlogget. En
+  kvittering endrer seg ikke og hentes én gang.
+- **Innloggingen fornyes underveis** (`56b8a35`). Session-tokenet kommer i
+  biter (`.0`, `.1`), og trumf.no sender nye i Set-Cookie; de gamle slutter
+  da å virke. `trumfFornyCookie()` skriver dem tilbake – før det døde
+  cookien etter en time (29. oktober).
+- **Utlogget eller endret side?** Utlogget får man den samme sida uten
+  kjøpene, og ordet «kvittering» står i den likevel.
+  `trumf.no/api/auth/getToken` avgjør: `null` er utlogget. Mangler
+  kjøpslista selv om cookien er innlogget, beskriver feilen sida (tittel,
+  størrelse, Next-biter, om nøkkelen finnes).
 - **Sammenslåing med banktrekket:** et Trumf-kjøp betalt fra felleskontoen
   finnes to ganger. Kvitteringen blir posten (den har varene), og
   banktrekket merkes `dekketAv`. **Lik** er samme beløp til øret og høyst
@@ -3663,14 +3745,36 @@ Oppsett**. Bygget i tjue commits fra `0e0050a` til `0a8a373`.
   inn i den faste lista (`flett()`): en linje etter posten sin, en ny post
   foran «Annet». Bare egne poster kan fjernes, og bare når ingen føring
   bruker dem.
-- **Excel-importen** kjører i nettleseren (SheetJS). Radområdene er lest ut
-  av SUM-formlene i regnearket, og etiketten raden over hvert område
-  sjekkes før noe importeres.
+- **Månedsbudsjettet** (`7a823b7`, 30. oktober). `auth:bank:budsjett` er
+  `{ standard, maaneder: { 'AAAA-MM': {…} } }`. En måned følger standarden
+  til noen lagrer et eget budsjett for den; «Bruk standardbudsjettet» tar
+  det bort. **Lagres standarden, får månedene som alt har startet en kopi
+  av den gamle** – endringen gjelder fra neste måned, og historikken blir
+  stående. Måned, Status, År og regnskapet bruker månedens budsjett;
+  nøkkeltallene (sparerate, faste kostnader) regnes av standarden.
+- **Nye poster og linjer legges til med «+»** i redigering. Det gamle
+  skjemaet og **Excel-importen** (SheetJS) ble tatt bort 30. oktober.
 - **Regnskapet** er de godkjente postene summert per kategori og måned.
   «Utenfor budsjett» telles ikke. Fortegn: utgifter og inntekter begge som
   positive beløp.
 - **Føringene bak en sum** (`1c2012a`): trykk på et beløp i regnskapet, og
   en dialog viser postene det består av (`?hva=foringer`).
+- **Budsjett-fanen** (`6e4c350`): sumbokser (inntekter, utgifter, sparing,
+  ufordelt), «Hvor inntekten går», **Standardbudsjett** (inntekter og
+  sparing side om side, utgiftene i grupper, linjene foldet sammen – her
+  redigeres det), **Månedsbudsjett** med ‹ måned › (fra 30. oktober) og
+  **Budsjett mot regnskap**, nå bare visning, for én måned eller **hittil i
+  år** (summen av månedsbudsjettene, uten lenker til føringene).
+
+### Måned-fanen
+
+Som skissen (`6e4c350`): ‹ måned ›, sumbokser med overskudd, og **budsjett
+mot faktisk** per gruppe som kan foldes ut til postene. Søylen er faktisk
+(rød over budsjett), den lyse streken budsjettet, den mørke snittet av
+månedene før som har føringer. Under hver post står **«Vis kjøpene ›»**
+(`?hva=foringer`), og kjøp med kvittering (`harKvittering`) åpner
+varelinjene i dialogen. Hver måned måles mot sitt eget budsjett (fra
+30. oktober), og øverst står det hvilket budsjett som gjelder.
 
 ### Status-fanen
 
@@ -3722,11 +3826,28 @@ og kontoer og transaksjoner skal ikke kunne leses ut derfra. Nøklene:
 - **Et objekt som bygges på nytt, må få med alle feltene.** Lagre i
   formueskjemaet satte `okFormue` uten `historikk`, og Status krasjet til
   neste lasting. Rettet i `0a8a373`.
+- **En variabel som fanevelgeren leser, må stå over den.** `okVis()` kjører
+  ved oppstart; `okMnd` sto lenger ned og ville stoppet hele skriptet når
+  sida åpnet rett på Måned. Flyttet opp før det ble pushet.
+- **Sjekk innloggingen før teorien.** «Fant ikke kjøpslista» så ut som et
+  nytt bygg hos Trumf, og hentingen ble lagt om til et API (`8abd51e`).
+  Sida Magne limte inn viste at dataene lå der som før – cookien var
+  utløpt, fordi fornyede biter ble kastet.
+
+### Avkreftet – ikke prøv igjen
+
+- Kjøpene fra `platform-rest-prod.ngdata.no/trumf/medlemskap/transaksjoner`
+  med token fra `getToken` og `FWC-Chain-Id: 133`, slik sidas skript ser ut
+  til å gjøre: svarte **404 med gyldig token** (29. oktober).
 
 ### Kjente rester
 
 - **Toppkommentaren i bank-funksjonen** lister ikke `auth:bank:kategorier`
   og `auth:bank:formue-mnd`.
+- **Fra skissen, ikke laget – dataene finnes ikke:** «Faste trekk» som egen
+  gruppe (kjente poster føres automatisk og står under «Ført
+  automatisk»), varegrupper på kvitteringene (Trumf gir ingen) og regler
+  per vare (Neam husker per motpart).
 - **`auth:bank:trumf-feil` slettes bare av innboksen**, ikke av
   `?hva=trumf` – varselet kan stå en runde etter at Trumf virker igjen.
 - **Kontofilteret skjules ved én kilde.** Magne savnet knappen 29. oktober;

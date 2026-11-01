@@ -1221,6 +1221,13 @@ legge seg under hverandre. Begge tenner lampa om den var av. **Glider,
 knapper og hjul går under hele raden, også under bryteren** – i
 navnefeltet alene ble det for trangt (1. november 2026).
 
+**Lamper som ikke melder hvitmodus** (`light_mode`, f.eks. taklysene hos
+Andrea): skjermen husker om noen sist trykket «Naturlig hvitt» eller valgte
+en farge, lagret med resten av oppsettet for Rommene, og prikken viser det.
+Lamper som melder modus selv, følger Homeys svar. Det er et minne, ikke
+noe lest fra lampa – endres fargen fra en annen skjerm eller app, vet ikke
+denne skjermen det før noen trykker her.
+
 **Unntak fra «Fem betydninger»:** de to fargeknappene er ikke blå. De
 viser hva de gjør – «Naturlig hvitt» i den varmhvite fargen lyset får
 (samme som `HSK_HVITT_CSS`, endres sammen), «Fargevalg» som en lys
