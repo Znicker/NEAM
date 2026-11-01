@@ -1145,11 +1145,29 @@ const HSK_LAGER = 'neam-rommene:v1';
 function hskLesOppsett(){
   try{
     const d = JSON.parse(localStorage.getItem(HSK_LAGER) || '{}') || {};
-    return { vis: d.vis || {}, kolonner: d.kolonner || {}, sist: d.sist || 0 };
-  }catch(e){ return { vis:{}, kolonner:{}, sist:0 }; }
+    return { vis: d.vis || {}, kolonner: d.kolonner || {}, sist: d.sist || 0, hvit: d.hvit || {} };
+  }catch(e){ return { vis:{}, kolonner:{}, sist:0, hvit:{} }; }
 }
 function hskLagreOppsett(){
   try{ localStorage.setItem(HSK_LAGER, JSON.stringify(hskOppsett)); }catch(e){}
+}
+
+/* Staar lampa paa hvitt? Homey sier det med light_mode - men ikke alle
+   lamper har den: de to fargede taklysene hos Andrea har bare fargetone,
+   metning og temperatur (lest 12. oktober 2026). For dem huskes det her
+   hva som sist ble trykket, i oppsettet per skjerm (hvit: { id: true }).
+   Det er et minne, ikke en maaling: endres lampa fra en annen skjerm
+   eller fra appen, vet ikke denne skjermen det. */
+function hskErHvit(e){
+  const o = e.d.capabilitiesObj || {};
+  if(o.light_mode) return o.light_mode.value === 'temperature';
+  return !!hskOppsett.hvit[e.id];
+}
+function hskHuskHvit(id, hvit){
+  const d = enheter[id];
+  if(d && d.capabilitiesObj && d.capabilitiesObj.light_mode) return;
+  if(hvit) hskOppsett.hvit[id] = true; else delete hskOppsett.hvit[id];
+  hskLagreOppsett();
 }
 let hskOppsett = hskLesOppsett();
 
@@ -1610,7 +1628,7 @@ function hskStyring(e){
      vises hvitt, ikke fargen den hadde sist. */
   if(e.farge){
     const f = hskFargeNaa(e);
-    const hvit = o.light_mode && o.light_mode.value === 'temperature';
+    const hvit = hskErHvit(e);
     h += '<span class="hsk-fargevis" data-fargevis="' + hskVask(e.id) + '" role="img"'
        + ' aria-label="Fargen nå" style="background:' + (hvit ? HSK_HVITT_CSS : hskFargeCss(f.h, f.s)) + '"></span>';
   }
@@ -1817,6 +1835,7 @@ function hskSettFarge(id, f){
   if(o.light_mode && o.light_mode.setable && o.light_mode.value !== 'color') endr.push(['light_mode', 'color']);
   endr.push(['light_hue', f.h], ['light_saturation', f.s]);
   if(o.onoff && o.onoff.setable && !o.onoff.value) endr.push(['onoff', true]);
+  hskHuskHvit(id, false);
   hskSett(id, endr);
 }
 
@@ -1831,6 +1850,7 @@ function hskSettHvitt(id){
   endr.push(['light_temperature', HSK_HVITT]);
   if(o.onoff && o.onoff.setable && !o.onoff.value) endr.push(['onoff', true]);
   hskApenFarge = '';
+  hskHuskHvit(id, true);
   hskSett(id, endr);
 }
 
