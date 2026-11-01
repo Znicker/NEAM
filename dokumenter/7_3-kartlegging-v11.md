@@ -77,7 +77,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 
 **Siste leverte versjoner:** `felles-neam.js ?v=74`, `felles-neam.css
 ?v=66`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=6`, `felles-lesalt.js
-?v=6`, `felles-hus.js ?v=12`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
+?v=6`, `felles-hus.js ?v=17`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
@@ -89,14 +89,16 @@ Bildeversjoner: **`IKON_V=1`** (i `felles-neam.js`) for de nye ikonene i
 `bilder/ikoner/` og `bilder/ikoner/sikkerhet/` – sidene som lenker dem
 direkte, skriver `?v=1` selv. `FAG_MERKE_V=3` (fagmerkene, fortsatt i
 bruk), `NMW_SYMBOL_V=1` (klippersymbolet i kartet, i `felles-hus.js`),
-hagebildet `NMW_HAGE.v=1` (`bilder/neamow-hage.webp`, i `felles-hus.js`),
+hagebildet `NMW_HAGE` er `null` fra 1. november (se del 56; brukte `v=1`),
 spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–73; neam.css til og
 med 65; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–5, skriv 1–5,
-hus `?v=1–11`, ms `?v=1`, tale 1–4, graph 1–2**. Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
+hus `?v=1–16`, ms `?v=1`, tale 1–4, graph 1–2**. (Hus 13–16 ble tatt i
+bruk i andre økter uten å bli ført inn her; sidene sto på 16 da Neamow
+gikk til 17 den 1. november.) Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
 tale 1–4 ble brent 13. september ved å endre en fil som alt var pushet uten
 å heve nummeret – se del 46. Resten er tidligere leverte numre, som alltid
 er brent i det de forlates.
@@ -524,6 +526,10 @@ Se del 57.
   - **Det realistiske kartet** (fargebildet appen viser) – se del 56,
     «Det realistiske kartet». Parkert til python-roborock eller Matze89x
     får det til; sjekkes med jevne mellomrom.
+  - **Nytt hagebilde** (del 56): bildet ble tatt bort 1. november, da
+    plenen ble utvidet. Når appens realistiske kart dekker hele den nye
+    plenen – det fylles ut etter hvert som klipperen kjører der – sender
+    Magne et nytt skjermbilde.
   - **Flyfoto under sonene** (idé, parkert): Kartverkets «Norge i bilder»
     lagt under kartet, plassert med to punktpar GPS ↔ klipperens meter.
     Venter til hagen – opparbeidet høsten 2026 – er med på et nytt flyfoto.
@@ -3283,11 +3289,11 @@ et spill kommer til spillsida.
 ## 56. Neamow – gressklipperen – 10.–11. oktober 2026
 
 Roborock RockMow Z115, modell `roborock.mower.a235`, kalt **Neamow**.
-Sju commits: `ebdfacf` (kort og innlogging), `126fad6` (styring),
+Åtte commits: `ebdfacf` (kort og innlogging), `126fad6` (styring),
 `cc5104e` (egen side, symbol, raskere henting), `954aa98`
 (effektivitetsnavn), `8a3d97e` (innstillinger og tidsplaner), `8a0cec9`
 (vakt ved kode 5, ny innlogging, mellomlager, 3 sekunder), `75ba0ba`
-(hagebildet under kartet).
+(hagebildet under kartet), `c95ad59` (bildet tatt bort da plenen ble utvidet).
 
 ### Veien inn – og hvorfor ikke Homey eller Home Assistant
 
@@ -3501,6 +3507,27 @@ tatt bort igjen: Magne ville heller sende bildet gjennom Claude.
 
 Med bilde under får sonene **hvit kant og hvite navn** med mørk kant, og
 bare et svakt slør – som i appen.
+
+### Plenen utvidet – bildet tatt bort (1. november 2026, `c95ad59`)
+
+Magne endret områdene i appen: **ett område, A1, 325 m²** (149
+grensepunkter, kartfila endret 31. oktober) i stedet for A1–A3 på til
+sammen 338 m². **Ingen kode måtte endres for sonene** – kortet og sida
+henter kartet fra Neamow når kartfila er endret.
+
+**Klipperens koordinater er de samme:** den øverste delen av det nye
+omrisset ligger fortsatt over grasskanten i det gamle bildet. Men det nye
+området strekker seg langt ut over bildet, og der sto bare den hvite
+kanten mot lys bakgrunn. **`NMW_HAGE` er satt til `null`** – det grønne
+kartet er tilbake – og den gamle plasseringen står i en kommentar.
+`bilder/neamow-hage.webp` ligger fortsatt i repoet.
+
+Appens realistiske kart dekker også bare en liten del av det nye
+området: klipperen lager det med kameraet mens den kjører, og fylles ut
+der den har klippet. Nytt skjermbilde når det dekker hele plenen. **Med
+ett område blir tilpasningen svakere:** det finnes ingen delelinjer, og
+appens ytre linje ligger 30–40 cm innenfor grensen – den må regnes med,
+eller bildet tilpasses mot det gamle bildet i stedet.
 
 ### Lærdommer
 
