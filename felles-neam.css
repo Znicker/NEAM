@@ -1496,6 +1496,20 @@
   flex:1 1 0; min-width:0; padding:8px 10px; white-space:nowrap;
   font-size:var(--t-meta);
 }
+/* UNNTAK FRA «FEM BETYDNINGER», valgt av Magne 1. november 2026: de to
+   knappene viser hva de gjoer, ikke en betydning. «Naturlig hvitt» er
+   den varmhvite fargen lyset faar - samme som HSK_HVITT_CSS i
+   felles-hus.js, endres sammen - og «Fargevalg» er en regnbue. Lyse
+   toner og moerk tekst begge steder: hvit tekst forsvinner paa gult,
+   moerk paa sterk blaa. */
+.hsk-fargerad .dlg-knapp[data-hvitt]{
+  background:hsl(40,100%,85%); color:var(--ink);
+  box-shadow:inset 0 0 0 1px rgba(44,62,80,.18);
+}
+.hsk-fargerad .dlg-knapp[data-farge]{
+  background:linear-gradient(90deg, #F7A8A8, #F9D58C, #B9E3A2, #9FD8E8, #B3B4F2, #E2AEE8);
+  color:var(--ink);
+}
 /* Fargevalg er markert mens hjulet er oppe. */
 .hsk-fargerad .dlg-knapp.aapen{ box-shadow:0 0 0 2px var(--bg-solid), 0 0 0 4px var(--aksent); }
 

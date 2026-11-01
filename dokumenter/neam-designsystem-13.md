@@ -1160,6 +1160,13 @@ legge seg under hverandre. Begge tenner lampa om den var av. **Glider,
 knapper og hjul går under hele raden, også under bryteren** – i
 navnefeltet alene ble det for trangt (1. november 2026).
 
+**Unntak fra «Fem betydninger»:** de to fargeknappene er ikke blå. De
+viser hva de gjør – «Naturlig hvitt» i den varmhvite fargen lyset får
+(samme som `HSK_HVITT_CSS`, endres sammen), «Fargevalg» som en lys
+regnbue – begge med mørk tekst, fordi hvit forsvinner på gult og mørk på
+sterk blå. Valgt av Magne 1. november 2026, vel vitende om at det avviker
+fra malen.
+
 **Ytterdøra, kameraet og varslerne styres ikke herfra.** De vises med
 tilstand; låsen styres fra sikkerhetssida og av Neam, der opplåsing
 alltid spør.
