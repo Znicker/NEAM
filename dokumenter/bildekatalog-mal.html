@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Bildekatalog – Neam</title>
+<link rel="apple-touch-icon" href="/bilder/neam-hjemskjerm.png?v=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..700&display=swap" rel="stylesheet">
+<!-- ============================================================
+     MAL. Ikke rediger bildekatalog.html - den skrives av
+     dokumenter/lag-bildekatalog.py, som fyller /*DATA*/ og tallene
+     under. Endringer i utseende og oppfoersel gjoeres HER.
+     ============================================================ -->
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#142036; --ink-2:#56616F; --gulv:#F3F1EC; --kort:#FFFFFF; --linje:#E2DED6;
+  --flis:#F7F5F0; --gronn:#3F7A4E; --oker:#9A6B1E; --rod:#A64D3C; --graa:#6F7680; --bla:#3E6A93;
+}
+body{font:15px/1.5 'Figtree',system-ui,sans-serif;color:var(--ink);background:var(--gulv)}
+main{max-width:1280px;margin:0 auto;padding:30px 20px 80px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.01em}
+.ingress{max-width:78ch;color:var(--ink-2);margin-top:6px}
+.tall{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:12px;font-size:14px;color:var(--ink-2)}
+.tall b{color:var(--ink);font-weight:700}
+code{font:13px/1.4 ui-monospace,Consolas,monospace;background:#ECE8E0;padding:1px 5px;border-radius:5px}
+
+/* ---- Bestilling ---- */
+.bestill{margin-top:24px;background:var(--kort);border-radius:18px;box-shadow:0 0 0 1px var(--linje);padding:20px 22px}
+.bestill h2{font-size:20px}
+.bestill > p{color:var(--ink-2);font-size:14px;max-width:80ch;margin-top:2px}
+.bestill-rad{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:18px;margin-top:14px}
+label{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin:10px 0 4px}
+select,textarea,input[type=search]{width:100%;font:16px/1.4 'Figtree',system-ui,sans-serif;color:var(--ink);
+  background:#fff;border:1.5px solid var(--linje);border-radius:10px;padding:9px 11px}
+textarea{min-height:120px;resize:vertical}
+#prompt{min-height:290px;font:13px/1.45 ui-monospace,Consolas,monospace;background:#FBFAF7}
+.stil-om{font-size:13px;color:var(--ink-2);margin-top:6px}
+.knapper{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+button{font:600 15px 'Figtree',system-ui,sans-serif;cursor:pointer;border:0;border-radius:999px;padding:9px 18px}
+.btn-bla{background:var(--bla);color:#fff}
+.btn-ghost{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--linje)}
+.kvitt{font-size:13px;color:var(--gronn);align-self:center}
+details.regler{margin-top:14px;font-size:14px}
+details.regler summary{cursor:pointer;font-weight:600}
+details.regler ul{margin:8px 0 0 20px;color:var(--ink-2);max-width:85ch}
+details.regler li{margin:3px 0}
+
+/* ---- Filter ---- */
+.filter{position:sticky;top:0;z-index:5;background:var(--gulv);padding:14px 0 10px;margin-top:20px;
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filter input{flex:1 1 260px;max-width:420px}
+.chip{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--linje);padding:7px 14px;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--ink);color:#fff;box-shadow:none}
+.hopp{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;margin:4px 0 0}
+.hopp a{color:var(--bla);text-decoration:none}
+.hopp a:hover{text-decoration:underline}
+
+/* ---- Seksjoner og kort ---- */
+details.seksjon{margin-top:22px}
+details.seksjon > summary{cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+details.seksjon > summary::-webkit-details-marker{display:none}
+details.seksjon > summary h2{font-size:21px}
+details.seksjon > summary .antall{font-size:14px;color:var(--ink-2)}
+details.seksjon > summary::before{content:'▸';color:var(--ink-2);transition:transform .15s}
+details.seksjon[open] > summary::before{transform:rotate(90deg)}
+.seksjon-lapp{font-size:14px;color:var(--ink-2);max-width:85ch;margin:2px 0 12px 18px}
+.rutenett{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.kort{background:var(--kort);border-radius:16px;box-shadow:0 0 0 1px var(--linje);display:flex;flex-direction:column;overflow:hidden}
+.bilde{height:150px;display:grid;place-items:center;background:var(--flis);padding:10px;border-bottom:1px solid var(--linje);
+  background-image:linear-gradient(45deg,#EFECE6 25%,transparent 25%,transparent 75%,#EFECE6 75%),
+                   linear-gradient(45deg,#EFECE6 25%,transparent 25%,transparent 75%,#EFECE6 75%);
+  background-size:16px 16px;background-position:0 0,8px 8px}
+.bilde img{max-width:100%;max-height:128px;width:auto;height:auto;object-fit:contain}
+.bilde svg{width:56px;height:56px;color:var(--ink)}
+.bilde .tom{font-size:13px;color:var(--rod);font-weight:600;text-align:center}
+.info{padding:10px 12px 12px;display:flex;flex-direction:column;gap:3px;flex:1}
+.info b{font-size:15px;line-height:1.25}
+.fil{font:12px ui-monospace,Consolas,monospace;color:var(--ink-2);word-break:break-all}
+.meta{font-size:12px;color:var(--ink-2)}
+.status{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;margin-right:6px}
+.st-ib{background:#E3F0E6;color:var(--gronn)}
+.st-tn{background:#F6EBD6;color:var(--oker)}
+.st-ma{background:#F5E0DB;color:var(--rod)}
+.st-ub{background:#ECEDEF;color:var(--graa)}
+.merk{font-size:12.5px;color:var(--ink);margin-top:2px}
+.kort .bestill-knapp{margin-top:8px;align-self:flex-start;font-size:13px;padding:5px 12px}
+.tomt{color:var(--ink-2);font-size:14px;margin-left:18px}
+@media (max-width:760px){ .bestill-rad{grid-template-columns:minmax(0,1fr)} h1{font-size:25px} }
+</style>
+</head>
+<body>
+<main>
+  <h1>Bildekatalog</h1>
+  <p class="ingress">Alle bilder, ikoner, avatarer og strektegninger i Neam – hvor de brukes, og hva som
+    mangler. Skjemaet under lager en ferdig bestilling til AI. Katalogen lages på nytt med
+    <code>python dokumenter/lag-bildekatalog.py</code> etter hver endring i bildene.</p>
+  <div class="tall">
+    <span><b>{{TOTALT}}</b> bilder</span>
+    <span><b>{{I_BRUK}}</b> i bruk</span>
+    <span><b>{{TRENGER}}</b> trenger nytt</span>
+    <span><b>{{MANGLER}}</b> mangler</span>
+    <span><b>{{UBRUKT}}</b> ikke i bruk</span>
+  </div>
+
+  <section class="bestill" id="bestill" aria-labelledby="bestillTittel">
+    <h2 id="bestillTittel">Bestill fra AI</h2>
+    <p>Velg stil, skriv ett motiv per linje som <code>filnavn – motiv</code>, og kopier teksten til
+      bildemodellen. Stilblokken limes inn uendret hver gang, så alt i samme stil blir likt.</p>
+    <div class="bestill-rad">
+      <div>
+        <label for="stil">Stil</label>
+        <select id="stil"></select>
+        <p class="stil-om" id="stilOm"></p>
+        <label for="motiver">Motiver – ett per linje</label>
+        <textarea id="motiver" placeholder="fagmerke-norsk – Åpen bok med bokstavene ABC på en tavle&#10;fagmerke-musikk – Noter og en gitar"></textarea>
+        <div class="knapper">
+          <button type="button" class="btn-bla" id="lag">Lag bestilling</button>
+          <button type="button" class="btn-ghost" id="tom">Tøm</button>
+        </div>
+      </div>
+      <div>
+        <label for="prompt">Bestillingen</label>
+        <textarea id="prompt" readonly></textarea>
+        <div class="knapper">
+          <button type="button" class="btn-bla" id="kopier">Kopier</button>
+          <span class="kvitt" id="kvitt" aria-live="polite"></span>
+        </div>
+      </div>
+    </div>
+    <details class="regler">
+      <summary>Felles regler for alt som bestilles</summary>
+      <ul>
+        <li><b>Ingen tekst i bildet.</b> Navnet står alltid som tekst i grensesnittet. Unntaket er logoen og N-ene på roboten.</li>
+        <li><b>Gjennomsiktig bakgrunn</b> utenfor flisa eller motivet. PNG for ikoner og fliser, WEBP for varer og foto.</li>
+        <li><b>Stort nok:</b> minst dobbelt så stort som det vises. iPad har to skjermpiksler per CSS-piksel.</li>
+        <li><b>Ett motiv per bilde.</b> Kommer det et ark, må det være god luft mellom bildene og ingen tekst under – da kan de klippes rent.</li>
+        <li><b>Filnavn:</b> små bokstaver og bindestrek, æ/ø/å skrives ae/oe/aa. Et bilde som byttes under samme navn trenger ny <code>?v=</code>.</li>
+        <li><b>Etter levering:</b> bildene klippes, legges i mappa stilen sier, og kobles inn i koden. Så kjøres generatoren, og katalogen er à jour.</li>
+      </ul>
+    </details>
+  </section>
+
+  <div class="filter" role="search">
+    <input type="search" id="sok" placeholder="Søk i navn, fil, motiv eller side" aria-label="Søk i bildene">
+    <button type="button" class="chip" data-status="" aria-pressed="true">Alle</button>
+    <button type="button" class="chip" data-status="trenger nytt" aria-pressed="false">Trenger nytt</button>
+    <button type="button" class="chip" data-status="mangler" aria-pressed="false">Mangler</button>
+    <button type="button" class="chip" data-status="ikke i bruk" aria-pressed="false">Ikke i bruk</button>
+    <button type="button" class="chip" data-status="i bruk" aria-pressed="false">I bruk</button>
+  </div>
+  <nav class="hopp" id="hopp" aria-label="Seksjoner"></nav>
+  <div id="seksjoner"></div>
+</main>
+
+<script>
+const KATALOG = /*DATA*/null;
+const STATUS_KL = { 'i bruk':'st-ib', 'trenger nytt':'st-tn', 'mangler':'st-ma', 'ikke i bruk':'st-ub' };
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const stilNavn = k => (KATALOG.stiler[k] && KATALOG.stiler[k].navn) || ({
+  logo:'Logo', butikk:'Butikklogo', gammel:'Gammel stil', svg:'Strektegning', tekstur:'Bilde' })[k] || k;
+
+/* ---------- Kortene ---------- */
+function kort(p, i, s){
+  let bilde;
+  if(p.svg) bilde = p.svg;
+  else if(!p.b) bilde = '<span class="tom">Finnes ikke</span>';
+  else bilde = '<img src="' + esc(p.sti) + '" alt="" loading="lazy" width="' + p.b + '" height="' + p.h + '">';
+  const kanBestilles = KATALOG.stiler[p.nystil || p.stil] || p.stil === 'gammel';
+  return '<article class="kort">'
+    + '<div class="bilde">' + bilde + '</div>'
+    + '<div class="info">'
+    +   '<b>' + esc(p.navn) + '</b>'
+    +   '<span class="fil">' + esc(p.sti || p.fil) + '</span>'
+    +   '<span class="meta"><span class="status ' + STATUS_KL[p.status] + '">' + esc(p.status) + '</span>'
+    +     esc(stilNavn(p.stil)) + (p.b ? ' · ' + p.b + ' × ' + p.h + ' px · ' + p.kb + ' kB' : '') + '</span>'
+    +   (p.bruk.length ? '<span class="meta">Brukt i ' + esc(p.bruk.join(', ')) + '</span>' : '')
+    +   (p.motiv ? '<span class="meta">Motiv: ' + esc(p.motiv) + '</span>' : '')
+    +   (p.merknad ? '<span class="merk">' + esc(p.merknad) + '</span>' : '')
+    +   (KATALOG.ikkeAi[p.stil] && !p.nystil && p.stil !== 'gammel' ? '<span class="meta">' + esc(KATALOG.ikkeAi[p.stil]) + '</span>' : '')
+    +   (kanBestilles ? '<button type="button" class="btn-ghost bestill-knapp" data-s="' + s + '" data-i="' + i + '">Bestill nytt</button>' : '')
+    + '</div></article>';
+}
+
+/* Seksjonene tegnes foerst naar de aapnes - varene alene er over tusen. */
+function tegnSeksjon(s, poster){
+  const el = $('sek-' + KATALOG.seksjoner[s].id);
+  const boks = el.querySelector('.rutenett, .tomt');
+  const liste = poster || KATALOG.seksjoner[s].poster.map((p, i) => [p, i]);
+  boks.outerHTML = liste.length
+    ? '<div class="rutenett">' + liste.map(([p, i]) => kort(p, i, s)).join('') + '</div>'
+    : '<p class="tomt">Ingenting her.</p>';
+  el.dataset.tegnet = '1';
+}
+
+function byggSider(){
+  $('hopp').innerHTML = KATALOG.seksjoner.map(s =>
+    '<a href="#sek-' + s.id + '">' + esc(s.tittel) + ' (' + s.poster.length + ')</a>').join('');
+  $('seksjoner').innerHTML = KATALOG.seksjoner.map((s, n) =>
+    '<details class="seksjon" id="sek-' + s.id + '"' + (s.apen ? ' open' : '') + '>'
+    + '<summary><h2>' + esc(s.tittel) + '</h2><span class="antall">' + s.poster.length + '</span></summary>'
+    + '<p class="seksjon-lapp">' + esc(s.lapp) + '</p><div class="rutenett"></div></details>').join('');
+  KATALOG.seksjoner.forEach((s, n) => {
+    const el = $('sek-' + s.id);
+    if(s.apen) tegnSeksjon(n);
+    el.addEventListener('toggle', () => { if(el.open && !el.dataset.tegnet && !filterAktivt()) tegnSeksjon(n); });
+  });
+  document.querySelectorAll('.hopp a').forEach(a => a.addEventListener('click', () => {
+    const el = document.querySelector(a.getAttribute('href'));
+    if(el && !el.open) el.open = true;
+  }));
+}
+
+/* ---------- Filter ---------- */
+let statusValg = '';
+function filterAktivt(){ return !!($('sok').value.trim() || statusValg); }
+function filtrer(){
+  const q = $('sok').value.trim().toLowerCase();
+  KATALOG.seksjoner.forEach((s, n) => {
+    const el = $('sek-' + s.id);
+    if(!filterAktivt()){
+      el.hidden = false;
+      el.open = s.apen;
+      el.dataset.tegnet = '';
+      if(s.apen) tegnSeksjon(n);
+      return;
+    }
+    const treff = s.poster.map((p, i) => [p, i]).filter(([p]) =>
+      (!statusValg || p.status === statusValg)
+      && (!q || [p.navn, p.fil, p.sti, p.motiv, p.merknad, p.bruk.join(' ')].join(' ').toLowerCase().includes(q)));
+    el.hidden = !treff.length;
+    if(treff.length){ el.open = true; tegnSeksjon(n, treff); el.dataset.tegnet = ''; }
+  });
+}
+let venter;
+$('sok').addEventListener('input', () => { clearTimeout(venter); venter = setTimeout(filtrer, 180); });
+document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+  statusValg = c.dataset.status;
+  document.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x === c ? 'true' : 'false'));
+  filtrer();
+}));
+
+/* ---------- Bestilling ---------- */
+function byggStilvalg(){
+  $('stil').innerHTML = Object.keys(KATALOG.stiler).map(k =>
+    '<option value="' + k + '">' + esc(KATALOG.stiler[k].navn) + '</option>').join('');
+  visStil();
+}
+function visStil(){
+  const s = KATALOG.stiler[$('stil').value];
+  $('stilOm').textContent = s.bruk + ' Format: ' + s.format + '. Mappe: ' + s.mappe;
+}
+function lagBestilling(){
+  const k = $('stil').value, s = KATALOG.stiler[k];
+  const linjer = $('motiver').value.split('\n').map(l => l.trim()).filter(Boolean);
+  if(!linjer.length){ $('prompt').value = ''; return; }
+  const motiver = linjer.map((l, n) => {
+    const m = l.match(/^(\S+)\s*[–-]\s*(.+)$/);
+    let fil = m ? m[1] : '', tekst = m ? m[2] : l;
+    if(fil && !/\.(png|webp)$/i.test(fil)) fil += (k === 'vare' || k === 'foto') ? '.webp' : '.png';
+    if(k === 'robot') tekst = 'Neam ' + tekst.replace(/^neam\s+/i, '');
+    if(k === 'tilstand'){
+      const rot = fil.replace(/\.png$/i, '') || 'motiv-' + (n + 1);
+      return (n + 1) + '. ' + tekst + '\n   filer: ' + rot + '-normal.png, ' + rot + '-varsel.png, ' + rot + '-alarm.png';
+    }
+    return (n + 1) + '. ' + tekst + (fil ? '\n   fil: ' + fil : '');
+  });
+  $('prompt').value =
+      'Bestilling til NEAM – ' + s.navn + ' (' + linjer.length + (linjer.length === 1 ? ' motiv' : ' motiver') + ')\n\n'
+    + 'STIL – lim inn uendret:\n' + s.stil + '\n\n'
+    + 'FORMAT: ' + s.format + '. Ett bilde per motiv, som egne filer. Kommer de på et ark, '
+    + 'skal det være god luft mellom dem og ingen tekst under.\n\n'
+    + 'MOTIVER:\n' + motiver.join('\n');
+  $('kvitt').textContent = '';
+}
+$('stil').addEventListener('change', () => { visStil(); lagBestilling(); });
+$('lag').addEventListener('click', lagBestilling);
+$('tom').addEventListener('click', () => { $('motiver').value = ''; $('prompt').value = ''; $('kvitt').textContent = ''; });
+$('kopier').addEventListener('click', async () => {
+  const t = $('prompt').value;
+  if(!t){ $('kvitt').textContent = 'Lag bestillingen først.'; return; }
+  try{ await navigator.clipboard.writeText(t); }
+  catch(_){ $('prompt').select(); document.execCommand('copy'); }
+  $('kvitt').textContent = 'Kopiert.';
+});
+/* «Bestill nytt» paa et kort: fyll skjemaet med det kortet vet. */
+document.addEventListener('click', e => {
+  const b = e.target.closest('.bestill-knapp');
+  if(!b) return;
+  const p = KATALOG.seksjoner[+b.dataset.s].poster[+b.dataset.i];
+  let stil = p.nystil || p.stil;
+  if(!KATALOG.stiler[stil]) stil = 'flis';
+  $('stil').value = stil; visStil();
+  let fil = (p.fil || '').replace(/\.(png|webp|svg)$/i, '');
+  if(stil === 'tilstand') fil = fil.replace(/-(normal|varsel|alarm|blaa|gronn|gul|rod)$/, '');
+  $('motiver').value = fil + ' – ' + (p.motiv || p.navn);
+  lagBestilling();
+  $('bestill').scrollIntoView({ behavior:'smooth', block:'start' });
+});
+
+byggStilvalg();
+byggSider();
+</script>
+</body>
+</html>
