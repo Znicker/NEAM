@@ -1151,12 +1151,14 @@ når den står på, grå når den er av – grønt er «skaper noe» i huset og
 passer ikke. Bryteren sier alt om på og av, så «På»/«Av» står ikke i
 tilstandslinja under. **De andre knappene er blå** – de verken skaper,
 endrer eller sletter, samme som Neamow. På fargelampene står **fargen lampa har nå** som en
-prikk under bryteren – den viser, den er ingen knapp. Under glideren står
+prikk til høyre for glideren – den viser, den er ingen knapp. Under
+bryteren tok den en hel linje på telefonen. Under glideren står
 **«Naturlig hvitt»** (`HSK_HVITT`, `light_temperature` 0,8) og
 **«Fargevalg»**, som åpner fargehjulet (fargetone rundt, hvitt i midten),
-side om side. Begge tenner lampa om den var av. **Glider, knapper og hjul
-går under hele raden, også under bryteren** – i navnefeltet alene ble det
-for trangt til to knapper ved siden av hverandre (1. november 2026).
+side om side: de deler linja likt og krymper (`--t-meta`) heller enn å
+legge seg under hverandre. Begge tenner lampa om den var av. **Glider,
+knapper og hjul går under hele raden, også under bryteren** – i
+navnefeltet alene ble det for trangt (1. november 2026).
 
 **Ytterdøra, kameraet og varslerne styres ikke herfra.** De vises med
 tilstand; låsen styres fra sikkerhetssida og av Neam, der opplåsing

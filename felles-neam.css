@@ -1482,11 +1482,19 @@
 /* Styringen under navnet gaar helt ut til hoeyre kant, under bryteren. */
 .hsk-under{ grid-column:2 / -1; min-width:0; }
 .hsk-under:empty{ display:none; }
-/* Hoeyre kolonne: bryteren, og fargen lampa har naa under den. */
-.hsk-hoyre{ display:flex; flex-direction:column; align-items:center; gap:10px; }
+/* Hoeyre kolonne: bryteren. */
+.hsk-hoyre{ display:flex; flex-direction:column; align-items:center; }
+/* Fargen lampa har naa, til hoeyre for glideren. Glideren gir plass. */
 .hsk-fargevis{
-  width:26px; height:26px; border-radius:50%;
+  flex:none; width:26px; height:26px; border-radius:50%;
   border:2px solid var(--bg-solid); box-shadow:0 0 0 1.5px var(--line);
+}
+/* «Naturlig hvitt» og «Fargevalg» deler linja likt og krymper heller
+   enn aa legge seg under hverandre paa smal skjerm. */
+.hsk-fargerad{ flex-wrap:nowrap; }
+.hsk-fargerad .dlg-knapp{
+  flex:1 1 0; min-width:0; padding:8px 10px; white-space:nowrap;
+  font-size:var(--t-meta);
 }
 /* Fargevalg er markert mens hjulet er oppe. */
 .hsk-fargerad .dlg-knapp.aapen{ box-shadow:0 0 0 2px var(--bg-solid), 0 0 0 4px var(--aksent); }

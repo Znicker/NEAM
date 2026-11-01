@@ -1601,6 +1601,15 @@ function hskStyring(e){
          + '</select>';
     }
   });
+  /* Fargen lampa lyser med naa, til hoeyre for glideren - under
+     bryteren tok den en hel linje paa telefonen. Staar lampa paa hvitt,
+     vises hvitt, ikke fargen den hadde sist. */
+  if(e.farge){
+    const f = hskFargeNaa(e);
+    const hvit = o.light_mode && o.light_mode.value === 'temperature';
+    h += '<span class="hsk-fargevis" data-fargevis="' + hskVask(e.id) + '" role="img"'
+       + ' aria-label="Fargen nå" style="background:' + (hvit ? HSK_HVITT_CSS : hskFargeCss(f.h, f.s)) + '"></span>';
+  }
   let ut = h ? '<div class="hsk-styr">' + h + '</div>' : '';
   /* Fargelampene: «Naturlig hvitt» og «Fargevalg» side om side paa egen
      linje under glideren. Fargen lampa har naa, staar under bryteren
@@ -1646,16 +1655,7 @@ function hskEnhetHtml(e){
   const bryter = e.kap.indexOf('onoff') === -1 ? ''
     : '<button type="button" role="switch" class="hsk-bryter" data-hsk="' + hskVask(e.id) + '" data-kap="onoff"'
       + ' aria-checked="' + !!o.onoff.value + '" aria-label="' + hskVask(e.kort) + '"><span></span></button>';
-  /* Fargen lampa lyser med naa, under bryteren. Staar den paa hvitt,
-     vises hvitt - ikke fargen den hadde sist. */
-  let fargevis = '';
-  if(e.farge){
-    const f = hskFargeNaa(e);
-    const hvit = o.light_mode && o.light_mode.value === 'temperature';
-    fargevis = '<span class="hsk-fargevis" data-fargevis="' + hskVask(e.id) + '" role="img"'
-             + ' aria-label="Fargen nå" style="background:' + (hvit ? HSK_HVITT_CSS : hskFargeCss(f.h, f.s)) + '"></span>';
-  }
-  const hoyre = bryter || fargevis ? '<div class="hsk-hoyre">' + bryter + fargevis + '</div>' : '';
+  const hoyre = bryter ? '<div class="hsk-hoyre">' + bryter + '</div>' : '';
   return '<div class="hsk-enhet' + (e.d.available === false ? ' hsk-borte' : '') + (alarm ? ' hsk-alarm' : '')
        + (hoyre ? ' hsk-med-bryter' : '') + '">'
        +   '<span class="hsk-ikon" title="' + art.navn + '">' + hskSymbol(e.art) + '</span>'
