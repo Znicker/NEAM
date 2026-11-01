@@ -23,7 +23,15 @@ Mye ligger nå i **fellesfiler** (`felles-rot.css`, `felles-skall.css`,
 `felles-skriv.js`, `felles-hus.js`, `felles-ms.js`, `felles-tale.js`). Det som ennå er kopiert per fil, holdes likt av dette
 dokumentet – det er fortsatt fasiten for hva som skal være likt på tvers.
 
-*Sist oppdatert 12. oktober 2026: kalendersida fikk egen seksjon –
+*Sist oppdatert 1. november 2026: nytt visuelt uttrykk (24. oktober–
+1. november, alternativ C). Steampunk-bakgrunnen og treklokka er borte,
+merkelappene er erstattet av ikoner med **navnet som tekst under**,
+messingrørene er tynne koblinger, NEAM-logoen står på forsiden og i
+venstre tommelknapp, og alle sidene har samme hjemskjermikon.
+**Bildekatalogen** er nytt verktøy for alle bilder og for bestilling fra
+AI. Se «Ikonene og navnet under» og «Bilder – ikoner og bestilling».
+Begrunnelsene ligger i toppblokka i kartleggingen.
+Forrige oppdatering 12. oktober 2026: kalendersida fikk egen seksjon –
 høyre firer i stedet for de runde knappene, i dag på andre trykk,
 tommelknappene nær kanten med fri bunn, merket foran månedsnavnet, og
 visningsvalg og initialer nederst mellom tommelknappene – også på
@@ -154,7 +162,8 @@ verken «skaper noe» eller «i orden». Valgt av Magne 11. oktober 2026.
 Fargen er dempet nok til at den ikke leses som en knapp, og den bor bare
 i kartet (`.nmw-kart`). Et **valgt** område bruker «valgt»-fargen
 (`--aksent-lys` med `--aksent`-kant), ikke en ny farge. Klipperen og
-laderen er messing, samme lyse og mørke metall som flip-klokka.
+laderen er messing – det gamle metallet. Klapptavla var samme messing
+til 27. oktober 2026; den er lys nå (se «Bakgrunn og klapptavle»).
 
 De fire første gjør noe **her**. Lilla flytter noe **dit** – den er en annen
 kategori, ikke en femte handlingstype. Det er begrunnelsen for at den fikk
@@ -553,12 +562,12 @@ PC er utviklingsflate, ikke bruksflate.
 Fila het `dashboard.html` og gjør det fortsatt – bare det synlige navnet er
 endret, så snarveier og bokmerker holder.
 
-**Merket øverst:** logo, sidenavnet stort, `NEAM` som liten linje under.
-Navnet på den innloggede står ikke der – sidenavnet forteller hvem dashet
-tilhører når hver får sitt. Logoen er den samme som flisen på forsiden.
-Målet er at hver side bærer sitt eget merke, og at merket er identisk med
-flisen man trykker på for å komme dit. Ikke gjennomført på de andre fire
-ennå.
+**Ikonet og navnet øverst:** sidas ikon på 84 px og sidenavnet ved
+siden av (`.merke-navn`, i ikonstilen). Fram til 27. oktober 2026 sto bare
+merkelappen der, med navnet malt inn. Navnet på den innloggede står ikke
+der – sidenavnet forteller hvem dashet tilhører når hver får sitt. Ikonet
+er det samme som flisen på forsiden, så man kjenner igjen sida man
+trykket seg inn på. Samme topp på Emma dash og Andrea dash.
 
 **Døgnet skifter klokka 20.** Etter det viser skjermen morgendagen, og
 etiketten sier «I morgen» – ikke «I dag», som ville vært en løgn. Alt som
@@ -744,7 +753,9 @@ betjening.
 et hjørnemønster: `opp` (rett over), `skraa` (diagonalt) og `ved` (til
 siden). Venstre hjørne er Neam og huset: Enheter, Apper, Dash, og andre
 trykk på merket åpner samtalen. Høyre hjørne er sidas egne handlinger
-(`neamSideHandlinger`). Rør i messing binder knappene til merket.
+(`neamSideHandlinger`). Tynne koblinger binder knappene til hjørnet –
+se «Koblingene» under. Venstre hjørne viser den runde NEAM-logoen
+(`neam-logo`), høyre hjørne sidas eget ikon.
 
 **Knappene er like i alle visningene på en side.** Settet skiftet en stund
 med visningen på Emma dash («Avtale» i Dag, «Rediger» i Fag); da måtte man
@@ -759,27 +770,35 @@ ville vært femten knapper i et hjørne. Tilbake er andre trykk på merket.
 **Over tre valg legges stabelen i to rader** – også på telefon. Fire over
 hverandre nådde toppen av skjermen.
 
-**Knappemerker.** En knapp kan bære et ferdig bilde med navnet i seg
-(`merke:true`, `knappMerke('navn')`, filer i `bilder/knapper/`). Da faller
-papirskiva og teksten bort. Teksten følger likevel med, skjult, og **kommer
-tilbake sammen med skiva når bildet ikke laster** – en merkeknapp uten
-bilde er ellers usynlig, og rørene står igjen og peker mot ingenting.
-Alle 24 knappene i huset har merker per 5. september. Regel: **et merke
-skal si nøyaktig det knappen gjør** – «Skann ark» på en knapp som limer
-inn tekst er verre enn ingen merke.
+**Bildeknapper.** En knapp kan bære et ikon (`merke:true`,
+`knappMerke('navn')`, filene i `bilder/ikoner/`). Da faller papirskiva bort,
+og **navnet står under bildet** i ikonstilen – se «Ikonene og navnet
+under». Fram til 27. oktober 2026 var bildene knappemerker med navnet malt
+inn (`bilder/knapper/`), og teksten var skjult. Laster ikke bildet, tas
+`merke` av knappen og papirskiva kommer tilbake – en bildeknapp uten bilde
+er ellers bare et navn som henger i lufta. Regel: **et ikon skal si
+nøyaktig det knappen gjør** – «Skann ark» på en knapp som limer inn tekst
+er verre enn ingen ikon. To knappenavn har fått ikon under et annet
+filnavn (`NEAM_IKON_FRA`): `avtale` → `ny-avtale`, `rediger` → `endre`.
 
-**Rørene ligger på utsiden.** For kolonner tegner JS (`neamRorKolonne`) en
-ledning 14 px utenfor knappene mot skjermkanten, T-stykke ved hver knapp,
-bend øverst og inn i merket nederst. For rader og for fiskebeinet gjelder
-egne figurer. Ingen rør går bak en knapp. Fire deler er laget ved å vende
-de eksisterende (`bend-ov`, `bend-oh`, `t-venstre`, `t-hoyre`) – lyset
-ligger på yttersvingen og tåler speiling om vannrett akse og en kvart
-dreining, ikke fri rotasjon. **Måltall i CSS er fra toppen; `bottom`
-regner fra bunnen.**
+**Koblingene ligger på utsiden.** For kolonner tegner JS (`neamRorKolonne`)
+en ledning 14 px utenfor knappene mot skjermkanten, T-stykke ved hver
+knapp, bend øverst og inn i hjørnet nederst. For rader og for fiskebeinet
+gjelder egne figurer. Ingen kobling går bak en knapp. **Måltall i CSS er
+fra toppen; `bottom` regner fra bunnen.**
+
+**Koblingene (fra 27. oktober 2026).** Tynne linjer, 6 px, i dempet
+pastellblå (`--kobling` `#A9BCD3`), med myke svinger og endepunkter i en
+mørkere blå (`--kobling-ende` `#6F89AB`) der messingkragene satt. Bare
+CSS: delene heter fortsatt `.rdel` med de gamle bildenes mål, og skjøtene
+tegnes på de samme armsentrene, så geometrien i `neamRorKolonne()` og
+`neamRorRad()` er urørt. Fargene er variabler, så et personlig tema kan
+sette sine egne. **Navnene under ikonene har papirflate bak seg**, så
+linjene går bak teksten og ikke tvers over den.
 
 **Applista er et fiskebein:** loddrett stamme i midtkolonnen, rett over
 Apper-knappen, par på tverrbjelker, en enslig på toppen (2-2-1 med fem,
-2-2-2 med seks, 2-2-2-1 med sju). `kryss.png` der stammen fortsetter opp
+2-2-2 med seks, 2-2-2-1 med sju). Kryss der stammen fortsetter opp
 gjennom en bjelke, T der den slutter. De første appene nederst, nærmest
 tommelen.
 
@@ -799,15 +818,14 @@ settes lavere.
 **Venstre firer: `ved` er Sikkerhet, ikke Dash** (fra 11. september 2026).
 Kjøkkendashen nås fra applista som alle andre sider; sikkerhet er det ene
 man vil nå uten å lete. Knappen har **ikke** merke — et «Dash»-merke ville
-løyet, og et merke skal si nøyaktig det knappen gjør. Den står med
-papirskive og tekst til et sikkerhetsmerke er tegnet.
+løyet, og et ikon skal si nøyaktig det knappen gjør. Den har fått
+Sikkerhet-ikonet 27. oktober 2026, det samme som i applista.
 
 **Enheter er en kolonne over knappen, fylt av `window.neamEnheter`** –
 en liste av `{navn, ikon, gjor, merke}`. Den sto tom til 10. oktober 2026;
 nå setter `felles-hus.js` den, så alle sidene med Neam får de samme
-enhetene. **`merke:true`** gjør ikonet til et merkebilde med navnet i seg,
-som knappene i fireren: skiva faller bort, og navnet følger med skjult og
-kommer fram om bildet ikke laster. Første enhet er Neamow.
+enhetene. **`merke:true`** gjør ikonet til et bilde med navnet under, som
+knappene i fireren. Første enhet er Neamow.
 
 **Fireren bor i Neam-laget, ikke i `felles-skall.css`.** Den flytter til
 skallet den dagen `hub.html` eier navigasjonen.
@@ -822,14 +840,56 @@ like bevegelser med ulik betydning, centimeter fra hverandre, lærer hånden
 aldri. Stemmen er dessuten det ene skjulte grepet systemet har råd til; flere
 blir en hemmelighet folk ikke finner.
 
-## Merkelapper
+## Ikonene og navnet under
 
-Hver ferdige app har sin egen **NEAM-merkelapp**: en rund klistremerke-figur
-med et bånd nederst der appens navn står. `merke-neam`, `merke-kjokken-dash`,
-`merke-matlaging`, `merke-handleliste`, `merke-kalender`. Roboten går igjen i
-alle og binder dem sammen.
+*Fra 27. oktober 2026. Erstatter merkelappene – reglene for dem står
+under som historikk.*
 
-**Navnet står i bildet, altså ikke ved siden av det.** Der en merkelapp
+**Alle ikoner ligger i `bilder/ikoner/`** og settes inn gjennom
+`neamIkonImg(navn)` eller `knappMerke(navn)` i `felles-neam.js`. `navn` er
+filnavnet uten `.png`, ikke en sti. Versjonen er `IKON_V`. Sider uten
+`felles-neam.js` skriver stien selv, med `?v=1`.
+
+**To slags bilder, én familie:**
+- **Flis** (`.ikon-flis`) – motivet på en pastellfarget, avrundet flis
+  som er tegnet inn i bildet. Områder, apper og de fleste knappene.
+  **Robotflisene** er flisene der Neam selv gjør noe: Neam,
+  Arbeidsoppgaver, Bil, Bilder, Kvitteringer, Økonomi, Mattespill og Diktat.
+- **Strekikon** (`.ikon-strek`) – ikon uten bakgrunn, med mørk kontur. Får
+  en lys papirflis rundt seg i CSS, så det står side om side med flisene.
+  Lista er `NEAM_IKON_STREK` i `felles-neam.js`.
+
+**Navnet står som tekst under bildet, aldri i det.** Det snur regelen
+fra merkelappene. Stilen er `.ikon-navn`: Figtree, halvfet (650), mørk
+marineblå `#142036`, rundt 9 % av flisbredden. Figtree lastes med
+`@import` øverst i `felles-neam.css` – sider uten den fila faller tilbake
+til Archivo. Teksten kan rettes, oversettes og leses av skjermleser, og et
+nytt ikon trenger ikke et nytt bilde for hvert sted det står.
+
+**Roboten er bare i sine egne fliser**, ikke i områdenes ikoner.
+
+**Logoen og hjemskjermikonet.** Den runde NEAM-logoen (`neam-logo`, N
+brun-grå, E lilla, A rosa, M rød på kremhvitt) står øverst på forsiden og
+i venstre tommelknapp. Hjemskjermikonet er `bilder/neam-hjemskjerm.png`:
+et helt kvadrat med fylt bakgrunn, fordi iOS runder hjørnene selv og
+fyller gjennomsiktige hjørner med svart. **Alle sidene skal lenke det**
+(`<link rel="apple-touch-icon" href="/bilder/neam-hjemskjerm.png?v=1">`) –
+uten lenke spør iOS etter `/apple-touch-icon.png` i rota, som ikke finnes.
+
+**Sikkerhetsenhetene har én flis per type og tilstand** i
+`bilder/ikoner/sikkerhet/` (`SIK_IKON` i `sikkerhet.html`), ikke ett merke
+per enhet. Stedet står som navn under, fra Homey.
+
+**Minste størrelse er rundt 40 px.** Under det blir flisene grøt; bruk et
+strekikon. Strekikonene fra det første arket er bare rundt 100 px og blir
+uskarpe over 50 px på iPad – de bør lages i dobbel størrelse.
+
+### Merkelappene (historikk, til 27. oktober 2026)
+
+Hver ferdige app hadde sin egen **NEAM-merkelapp**: en rund klistremerke-figur
+med et bånd nederst der appens navn sto. Filene ligger igjen i `bilder/`.
+
+**Navnet sto i bildet, altså ikke ved siden av det.** Der en merkelapp
 brukes, er tekstetiketten fjernet – på flisene i index, i topplinja på index,
 og i hero-en på både handleliste og oppskrifter. Der sto «Handleliste / NEAM»
 og «Neam / Matlaging» under merket; begge er borte, og merket er
@@ -860,11 +920,12 @@ færre kolonner uten at skjermen blir smalere, så flisene vokser til 270px.
 Et merke på 270px i topplinja ville tatt hele iPad-skjermen. `17vw` bremser
 der med vilje.
 
-**De seks planlagte flisene har fortsatt de gamle strekikonene.** Får de
+*(Til 5. september:)* **De seks planlagte flisene hadde de gamle strekikonene.** Fikk de
 merkelapper senere, er endringen å legge til klassen `merke` og fjerne
 `app-name` – da oppfører de seg som de fire andre.
 
-**Innloggingsportene har fortsatt Neam-roboten**, ikke sidens eget
+*(Til 27. oktober; nå står Familie-flisa der:)* **Innloggingsportene hadde
+Neam-roboten**, ikke sidens eget
 merke. Gjelder `#port .ikon` i index og dashboard og `.gate-icon` i kalender.
 Bevisst inntil videre, ikke etterslep.
 
@@ -872,9 +933,9 @@ Bevisst inntil videre, ikke etterslep.
 
 De seks appene som ikke er bygd ligger skjult bak bryteren **«Vis planlagte»**
 i panelhodet. Skjult er standardtilstanden, så de ferdige får hele bredden.
-**Alle seks har merkeform** per 5. september (`app merke soon planlagt`) –
-merket bærer navnet, så `app-name` er borte; «Kommer» blir stående, det er
-den ene opplysningen merket ikke har. `flis-*.png` brukes ikke lenger.
+**De planlagte har robotfliser** fra 27. oktober (`app merke soon planlagt`)
+med navnet som tekst under, som de ferdige appene; «Kommer» står under
+navnet. `flis-*.png` og de gamle merkelappene brukes ikke lenger.
 
 **Bryteren setter klassen `skjul-planlagte` på rutenettet**, ikke
 `hidden`-attributtet på hver flis. `.app` har `display:flex`, og det
@@ -1364,11 +1425,24 @@ postkasse; et brukerbytte i samme nettleser ga én bruker en annens ID-er
 og 404 på alt. Cachen leses før identiteten er kjent (for rask skjerm) og
 kontrolleres når den er det.
 
-## Bilder – merker og knapper
+## Bilder – ikoner og bestilling
 
-**Alle bildeadresser har versjon.** `MERKE_V` (appmerker), `KNAPP_V`
-(knappemerker), `FAG_MERKE_V` (fagmerker), `NMW_SYMBOL_V` (klippersymbolet
-i Neamow-kartet, i `felles-hus.js`). Byttes en fil under samme navn:
+**Bildekatalogen er stedet å begynne.** `dokumenter/bildekatalog.html`
+viser alle bildene – fil, mål, stil, status og hvilke sider som bruker
+dem – og lager bestillinger til AI: enten enkeltbilder med fast
+stilblokk, eller et **oppdrag med utvalg**, der de valgte bildene tegnes på
+et nummerert referanseark og teksten ber om en prøverunde med tre
+retninger, en justering av gruppa eller nye ikoner i samme stil.
+**Etter hver endring i bildene kjøres `python
+dokumenter/lag-bildekatalog.py`**, ellers lyver katalogen. Stilblokkene
+og motivbeskrivelsene står øverst i den fila; utseendet i
+`dokumenter/bildekatalog-mal.html`. Bildene som kommer tilbake, klippes og
+legges på filnavnet nummereringen sier.
+
+**Alle bildeadresser har versjon.** `IKON_V` (ikonene i `bilder/ikoner/`),
+`FAG_MERKE_V` (fagmerker), `NMW_SYMBOL_V` (klippersymbolet i
+Neamow-kartet, i `felles-hus.js`). `MERKE_V` og `KNAPP_V` gjaldt de gamle
+merkene og står igjen i koden som historikk. Byttes en fil under samme navn:
 øk tallet. **Gjenbruk aldri et tall som kan ha vært forespurt mens fila
 manglet** – Cloudflare cacher forsidens 200-svar mot adressen for alltid.
 Knapper `?v=1` er brent slik.
@@ -1389,12 +1463,26 @@ med luft imellom** – det finnes ingen klipp som skiller to ringer som
 skjærer hverandre. Ark 2 (elleve knapper) klippes rent; ark 1 (tretten)
 gjør det ikke.
 
-**Merker bærer navnet sitt.** Der et merke brukes, tas teksten under bort.
-Gjelder appfliser, knapper i fireren og toppmerket på dashene.
+**Ikonene bærer ikke navnet sitt** – navnet står som tekst under (se
+«Ikonene og navnet under»). Merkene gjorde det motsatte til 27. oktober
+2026; fagmerkene og spillbildene er fortsatt i den gamle stilen.
 
 **Fallback når et bilde ikke laster:** skjul ramma (fagmerker) eller vis
-skive og tekst (knappemerker). Aldri et brutt bildeikon – det ser ut som
+skive og tekst (bildeknapper i fireren). Aldri et brutt bildeikon – det ser ut som
 en feil i innholdet, ikke i en fil.
+
+## Bakgrunn og klapptavle
+
+*Fra 27. oktober 2026.*
+
+**Ingen bakgrunnsbilde.** Steampunk-bildet er fjernet; sidene står på den
+rolige gradienten på `html` i `felles-rot.css`. Filene ligger igjen i
+`bilder/`, og sikkerhetskopien av den gamle layouten er grenen
+`backup/layout-steampunk-2026-10-27`.
+
+**Klapptavla er lys.** Hvite kort, nedre halvdel et hakk mørkere, sifre i
+mørk marineblå `#142036` – samme farge som navnene under ikonene. Den
+vipper som før (`neamFlipKlokke()`), og bruker ingen bildefiler lenger.
 
 ## Praktiske feller
 
@@ -2119,6 +2207,11 @@ selv bærer informasjonen gjør det ikke.
 **Steampunk-uttrykket dempes gjennom personlige paletter, ikke ved å
 fjernes.** Uttrykket er husets eier sin smak mer enn husets. Svaret er samme
 skjelett med ulik hud – ikke et tonéret uttrykk ingen eier.
+
+**Endret 27. oktober 2026:** Magne valgte å fjerne steampunk-uttrykket
+(alternativ C). Robotflisene bærer sjelen videre. Resten av kapitlet
+gjelder fortsatt – de personlige palettene er ikke bygget, og koblingene
+har fargevariabler som venter på dem.
 
 **Farger og noen bilder varierer per person. Layout og oppførsel gjør det
 ikke.** Den grensen trekkes før det bygges. Uten den vedlikeholdes fire
