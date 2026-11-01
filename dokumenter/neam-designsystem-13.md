@@ -1228,6 +1228,15 @@ Lamper som melder modus selv, følger Homeys svar. Det er et minne, ikke
 noe lest fra lampa – endres fargen fra en annen skjerm eller app, vet ikke
 denne skjermen det før noen trykker her.
 
+**Hvitevarene viser tid igjen** først i linja under navnet – «1 t 33 min
+igjen» – og ellers ingenting (Magne: «tid til slutt er det jeg ønsker»,
+1. november 2026). Oppvaskmaskinen melder minutter (`measure_timeToEnd`),
+og tiden vises når den er over null: tilstanden sa «Idle» mens maskinen
+gikk, så den brukes ikke. Vaskemaskinen og tørketrommelen (Bosch,
+`bshc_string.*`) melder «MM:SS» og fremdrift i prosent, og tiden vises bare
+mellom 0 og 100 % – ved 0 er programmet bare valgt, ved 100 er det ferdig
+(`hskMinIgjen()`).
+
 **Unntak fra «Fem betydninger»:** de to fargeknappene er ikke blå. De
 viser hva de gjør – «Naturlig hvitt» i den varmhvite fargen lyset får
 (samme som `HSK_HVITT_CSS`, endres sammen), «Fargevalg» som en lys

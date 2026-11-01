@@ -1081,6 +1081,46 @@ function hskRom(){
 
 function hskTemp(v){ return String(Math.round(v * 10) / 10).replace('.', ',') + ' °C'; }
 
+/* ---------- Tid igjen paa hvitevarene ----------
+   Lest 1. november 2026 - to former, og ingen av dem er en tilstand
+   man kan stole paa alene:
+
+   Oppvaskmaskinen: measure_timeToEnd, et tall i minutter («mins»).
+   measure_applianceState sa «Idle» mens den gikk (Magne bekreftet), saa
+   tilstanden brukes ikke - tiden vises naar den er over null.
+
+   Vaskemaskinen og toerketrommelen (Bosch, bshc_): remaining_time som
+   tekst «MM:SS» - toerketrommelen meldte «30:00» med et 30-minutters
+   program valgt og ikke startet - og progress som «0%».»100%». Tiden
+   vises bare naar fremdriften er mellom 0 og 100: ved 0 er programmet
+   bare valgt, ved 100 er det ferdig. Tre ledd leses som T:MM:SS i
+   tilfelle lange program skrives slik; det er ikke sett. */
+function hskMinIgjen(e){
+  const o = e.d.capabilitiesObj || {};
+  if(o.measure_timeToEnd && typeof o.measure_timeToEnd.value === 'number'){
+    const m = Math.round(o.measure_timeToEnd.value);
+    return m > 0 ? m : null;
+  }
+  const rt = o['bshc_string.remaining_time'], pr = o['bshc_string.progress'];
+  if(rt && pr){
+    const p = parseFloat(String(pr.value));
+    if(!(p > 0 && p < 100)) return null;
+    const d = String(rt.value || '').split(':').map(Number);
+    if(d.some(isNaN)) return null;
+    const sek = d.length === 3 ? d[0] * 3600 + d[1] * 60 + d[2]
+              : d.length === 2 ? d[0] * 60 + d[1] : NaN;
+    return sek > 0 ? Math.ceil(sek / 60) : null;
+  }
+  return null;
+}
+
+/* 93 -> «1 t 33 min», 60 -> «1 t», 25 -> «25 min». */
+function hskVarighet(min){
+  if(min < 60) return min + ' min';
+  const t = Math.floor(min / 60), m = min % 60;
+  return t + ' t' + (m ? ' ' + m + ' min' : '');
+}
+
 /* Er en varsler utloest? Da er linja roed - samme regel som merkene
    paa sikkerhetssida: fargen ER tilstanden, og verst foerst. */
 function hskAlarm(e){
@@ -1196,6 +1236,8 @@ function hskTilstand(e){
   const o = e.d.capabilitiesObj || {};
   const deler = [];
   if(e.d.available === false) deler.push('Uten kontakt');
+  const igjen = hskMinIgjen(e);
+  if(igjen) deler.push(hskVarighet(igjen) + ' igjen');
   /* «I orden» bare naar varsleren er det - ikke paa en som staar gul
      for lavt batteri. Grensene er de samme som i hskVarselNivaa(). */
   const iOrden = !hskErVarsler(e) || hskVarselNivaa(e) === 'ok';
