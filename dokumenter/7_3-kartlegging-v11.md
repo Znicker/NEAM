@@ -1,6 +1,9 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 1. november 2026: Rommene lagt om igjen (rommene på én
+*Ført à jour 1. november 2026, kveld: Rommene viser tid igjen på
+oppvaskmaskin, vaskemaskin og tørketrommel, med fremdriftslinje der
+maskinen melder fremdrift (se toppblokka). Ført à jour
+1. november 2026: Rommene lagt om igjen (rommene på én
 flate, Rediger, skyvebrytere, fargeknappene), Andreas ukeplan hentes
 igjen, bildekatalogen, logoen og hjemskjermikonet ført inn, og
 månedsbudsjettet i Økonomi (se toppblokka). Ført à jour 29. oktober 2026, natt: del 57 lagt til – Neam Økonomi,
@@ -81,8 +84,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-tale.js` (tale ut og inn).
 
 **Siste leverte versjoner:** `felles-neam.js ?v=74`, `felles-neam.css
-?v=71`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=6`, `felles-lesalt.js
-?v=6`, `felles-hus.js ?v=18`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
+?v=72`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=6`, `felles-lesalt.js
+?v=6`, `felles-hus.js ?v=20`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
@@ -100,9 +103,9 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–73; neam.css til og
-med 70; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–5, skriv 1–5,
-hus `?v=1–17`, ms `?v=1`, tale 1–4, graph 1–2**. (1. november: hus 13–16
-og 18 og neam.css 67–71 er Rommene, hus 17 er Neamows hagebilde.) Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
+med 71; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–5, skriv 1–5,
+hus `?v=1–19`, ms `?v=1`, tale 1–4, graph 1–2**. (1. november: hus 13–16
+og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.) Lesalt 1–2, skriv 1–2, hus 1, ms 1 og
 tale 1–4 ble brent 13. september ved å endre en fil som alt var pushet uten
 å heve nummeret – se del 46. Resten er tidligere leverte numre, som alltid
 er brent i det de forlates.
@@ -385,6 +388,18 @@ Se del 57.
   melder `light_mode`** (taklysene hos Andrea): skjermen husker om noen
   sist valgte hvitt eller farge – et minne, ikke lest fra lampa. Reglene
   står i designsystemet, «Rommene».
+- **Tid igjen på hvitevarene** (`e6d40b1` og neste, hus `?v=19–20`). Tørketrommelen
+  er lagt til i Homey av Magne. Bare tiden vises, først i linja under
+  navnet («1 t 33 min igjen»). Oppvaskmaskinen melder minutter
+  (`measure_timeToEnd`) og vises når den er over null – tilstanden sa
+  «Idle» mens den gikk. Vaskemaskinen og tørketrommelen (Bosch) melder
+  «MM:SS» og fremdrift, og vises bare mellom 0 og 100 %: tørketrommelen
+  meldte «30:00» og 0 % med et program valgt og ikke startet. Tiden står
+  på egen linje i fet brødtekst; Bosch-maskinene får prosent og
+  fremdriftslinje, oppvaskmaskinen ikke – den melder ikke fremdrift.
+- **Enhetene kan flyttes innad i rommet** under «Rediger», med grepet til
+  høyre på raden. Rekkefølgen lagres per skjerm (`rekke` i
+  `neam-rommene:v1`) og gjelder også utenfor «Rediger».
 - **Andreas ukeplan hentes igjen** (`ce17162`). Kommunen lenker nå rett
   til `/_f/p78/…`, og sperra i `functions/api/sandnes.js` slapp bare
   `/sandnesskole/` gjennom – «Fant ingen ukeplan». `FIL_STI` slipper
@@ -500,6 +515,9 @@ Se del 57.
 - **Rommene på iPad og telefon** (1. november): kolonnene, Rediger og å
   dra rommene med fingeren, og fargeprikken på Andreas taklys etter
   «Naturlig hvitt».
+- **Tid igjen på vaskemaskinen over én time** (1. november): hvordan
+  Bosch skriver et langt program – «85:00» eller «1:25:00» – er ikke sett.
+  Begge leses, men ingen av dem er prøvd mot en ekte maskin.
 - **Ikonene og den lyse klapptavla på iPad og telefon** (27. oktober).
   Hard oppdatering. Se særlig fiskebeinet på telefon – navnene under
   gjør knappene tettere – og at Figtree faktisk lastes.

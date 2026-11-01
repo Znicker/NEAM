@@ -1114,6 +1114,33 @@ function hskMinIgjen(e){
   return null;
 }
 
+/* Fremdriften i prosent, eller null. Bare Bosch-maskinene melder den
+   (bshc_string.progress), og bare mens programmet gaar - samme grense
+   som tiden. Oppvaskmaskinen melder bare tid igjen, ikke hvor langt
+   den er kommet: der blir det ingen linje heller enn en gjetning. */
+function hskFremdrift(e){
+  const pr = (e.d.capabilitiesObj || {})['bshc_string.progress'];
+  if(!pr) return null;
+  const p = parseFloat(String(pr.value));
+  return p > 0 && p < 100 ? Math.round(p) : null;
+}
+
+/* Tiden paa egen linje, tydelig, med fremdriftslinja under der den
+   finnes. Tom naar maskinen ikke gaar. */
+function hskIgjenHtml(e){
+  const min = hskMinIgjen(e);
+  if(!min) return '';
+  const p = hskFremdrift(e);
+  return '<div class="hsk-igjen">'
+       +   '<div class="hsk-igjen-tid">' + hskVarighet(min) + ' igjen'
+       +     (p !== null ? '<span class="hsk-igjen-pst">' + p + ' %</span>' : '') + '</div>'
+       +   (p !== null
+            ? '<div class="hsk-fremdrift" role="progressbar" aria-valuemin="0" aria-valuemax="100"'
+              + ' aria-valuenow="' + p + '"><span style="width:' + p + '%"></span></div>'
+            : '')
+       + '</div>';
+}
+
 /* 93 -> «1 t 33 min», 60 -> «1 t», 25 -> «25 min». */
 function hskVarighet(min){
   if(min < 60) return min + ' min';
@@ -1185,8 +1212,9 @@ const HSK_LAGER = 'neam-rommene:v1';
 function hskLesOppsett(){
   try{
     const d = JSON.parse(localStorage.getItem(HSK_LAGER) || '{}') || {};
-    return { vis: d.vis || {}, kolonner: d.kolonner || {}, sist: d.sist || 0, hvit: d.hvit || {} };
-  }catch(e){ return { vis:{}, kolonner:{}, sist:0, hvit:{} }; }
+    return { vis: d.vis || {}, kolonner: d.kolonner || {}, sist: d.sist || 0, hvit: d.hvit || {},
+             rekke: d.rekke || {} };
+  }catch(e){ return { vis:{}, kolonner:{}, sist:0, hvit:{}, rekke:{} }; }
 }
 function hskLagreOppsett(){
   try{ localStorage.setItem(HSK_LAGER, JSON.stringify(hskOppsett)); }catch(e){}
@@ -1236,8 +1264,6 @@ function hskTilstand(e){
   const o = e.d.capabilitiesObj || {};
   const deler = [];
   if(e.d.available === false) deler.push('Uten kontakt');
-  const igjen = hskMinIgjen(e);
-  if(igjen) deler.push(hskVarighet(igjen) + ' igjen');
   /* «I orden» bare naar varsleren er det - ikke paa en som staar gul
      for lavt batteri. Grensene er de samme som i hskVarselNivaa(). */
   const iOrden = !hskErVarsler(e) || hskVarselNivaa(e) === 'ok';
@@ -1493,7 +1519,9 @@ function hskBygg(){
   hskBak.addEventListener('pointerdown', function(ev){
     if(hskRediger){
       const baand = ev.target.closest && ev.target.closest('.hsk-romnavn');
-      if(baand){ hskDraStart(baand, ev); return; }
+      if(baand){ hskDraStart(baand, ev, 'rom'); return; }
+      const grep = ev.target.closest && ev.target.closest('.hsk-grep-enhet');
+      if(grep){ hskDraStart(grep, ev, 'enhet'); return; }
     }
     if(ev.target.classList && ev.target.classList.contains('hsk-glider')){ hskRor = true; return; }
     const h = ev.target.closest && ev.target.closest('.hsk-hjul');
@@ -1535,33 +1563,38 @@ function hskSettRediger(paa){
   if(!hskRediger) hskPlanlegg(300);
 }
 
-/* ---------- Flytting av rom ----------
-   Man tar tak i baandet. Rommet foelger fingeren, en tom plass viser
-   hvor det havner, og de andre rommene flytter seg etter plassen. Naar
-   man slipper, smekker rommet inn paa plassen, og oppsettet for dette
-   antallet kolonner lagres. Naer kanten av kortet rulles det, saa et
-   rom kan flyttes fra toppen til bunnen. */
+/* ---------- Flytting av rom og enheter ----------
+   Man tar tak i baandet for aa flytte et rom, eller i grepet til
+   hoeyre paa en rad for aa flytte en enhet innad i rommet. Det som
+   dras foelger fingeren, en tom plass viser hvor det havner, og de
+   andre flytter seg etter plassen. Naar man slipper, smekker det inn
+   paa plassen og oppsettet lagres. Naer kanten av kortet rulles det.
+
+   Rom kan flyttes mellom kolonner; en enhet blir i sitt eget rom
+   (Magne, 1. november 2026: «innad i rommet»). */
 let hskDrag = null;
 
-function hskDraStart(baand, ev){
-  const rom = baand.closest('.hsk-rom');
-  if(!rom) return;
+function hskDraStart(grep, ev, slag){
+  const el = slag === 'enhet' ? grep.closest('.hsk-enhet') : grep.closest('.hsk-rom');
+  if(!el) return;
   ev.preventDefault();
-  const r = rom.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
   /* dlg-bak har backdrop-filter, og da er det den - ikke vinduet - som
      posisjonerer et fixed-element. Den dekker hele vinduet, men vi
      regner fra den likevel. */
   const b = hskBak.getBoundingClientRect();
   const plass = document.createElement('div');
-  plass.className = 'hsk-plass';
+  plass.className = 'hsk-plass' + (slag === 'enhet' ? ' hsk-plass-enhet' : '');
   plass.style.height = r.height + 'px';
-  rom.parentNode.insertBefore(plass, rom);
-  rom.classList.add('hsk-drar');
-  rom.style.width = r.width + 'px';
-  hskDrag = { rom: rom, plass: plass, dx: ev.clientX - r.left, dy: ev.clientY - r.top,
+  const rom = slag === 'enhet' ? el.parentNode : null;
+  el.parentNode.insertBefore(plass, el);
+  el.classList.add('hsk-drar');
+  el.style.width = r.width + 'px';
+  hskDrag = { el: el, slag: slag, rom: rom, plass: plass,
+              dx: ev.clientX - r.left, dy: ev.clientY - r.top,
               bx: b.left, by: b.top, x: ev.clientX, y: ev.clientY, rull: null };
   hskRor = true;
-  try{ baand.setPointerCapture(ev.pointerId); }catch(e){}
+  try{ grep.setPointerCapture(ev.pointerId); }catch(e){}
   hskDraPlasser();
   hskDrag.rull = setInterval(hskDraRull, 16);
 }
@@ -1572,11 +1605,26 @@ function hskDraFlytt(ev){
   hskDraPlasser();
 }
 
-/* Rommet under fingeren, og plassen der det vil havne. */
+/* Det som dras, under fingeren, og plassen der det vil havne. */
 function hskDraPlasser(){
   const D = hskDrag;
-  D.rom.style.left = (D.x - D.dx - D.bx) + 'px';
-  D.rom.style.top  = (D.y - D.dy - D.by) + 'px';
+  D.el.style.left = (D.x - D.dx - D.bx) + 'px';
+  D.el.style.top  = (D.y - D.dy - D.by) + 'px';
+
+  /* En enhet: bare blant radene i sitt eget rom. Baandet staar foerst
+     og flyttes ikke - plassen havner alltid etter det. */
+  if(D.slag === 'enhet'){
+    const rader = Array.prototype.filter.call(D.rom.children, function(c){
+      return c !== D.el && c !== D.plass && c.classList.contains('hsk-enhet');
+    });
+    const foran = rader.filter(function(c){
+      const r = c.getBoundingClientRect();
+      return r.top + r.height / 2 > D.y;
+    })[0] || null;
+    if(D.plass.nextSibling !== foran) D.rom.insertBefore(D.plass, foran);
+    return;
+  }
+
   const kol = Array.prototype.slice.call(hskBak.querySelectorAll('.hsk-kolonne'));
   if(!kol.length) return;
   let mal = kol[0], best = Infinity;
@@ -1586,7 +1634,7 @@ function hskDraPlasser(){
     if(avst < best){ best = avst; mal = k; }
   });
   const andre = Array.prototype.filter.call(mal.children, function(c){
-    return c !== D.rom && c !== D.plass;
+    return c !== D.el && c !== D.plass;
   });
   const foran = andre.filter(function(c){
     const r = c.getBoundingClientRect();
@@ -1614,11 +1662,17 @@ function hskDraSlipp(){
   const D = hskDrag;
   hskDrag = null;
   clearInterval(D.rull);
-  D.plass.parentNode.insertBefore(D.rom, D.plass);
+  D.plass.parentNode.insertBefore(D.el, D.plass);
   D.plass.remove();
-  D.rom.classList.remove('hsk-drar');
-  D.rom.style.width = D.rom.style.left = D.rom.style.top = '';
+  D.el.classList.remove('hsk-drar');
+  D.el.style.width = D.el.style.left = D.el.style.top = '';
   hskRor = false;
+  if(D.slag === 'enhet'){
+    hskOppsett.rekke[D.rom.dataset.rom] = Array.prototype.map.call(
+      D.rom.querySelectorAll('.hsk-enhet[data-enhet]'), function(x){ return x.dataset.enhet; });
+    hskLagreOppsett();
+    return;
+  }
   const kol = Array.prototype.slice.call(hskBak.querySelectorAll('.hsk-kolonne'));
   hskOppsett.kolonner[kol.length] = kol.map(function(k){
     return Array.prototype.map.call(k.querySelectorAll('.hsk-rom'), function(x){ return x.dataset.rom; });
@@ -1704,11 +1758,14 @@ function hskEnhetHtml(e){
      saa et trykk paa raden ikke slaar av lyset i stedet for aa huke av. */
   if(hskRediger){
     const paa = hskVises(e);
-    return '<label class="hsk-enhet hsk-velg' + (paa ? '' : ' hsk-av') + '">'
-         +   '<input type="checkbox" data-vis="' + hskVask(e.id) + '"' + (paa ? ' checked' : '') + '>'
-         +   '<span class="hsk-ikon" title="' + art.navn + '">' + hskSymbol(e.art) + '</span>'
-         +   '<span class="hsk-navn">' + hskVask(e.kort) + '</span>'
-         + '</label>';
+    return '<div class="hsk-enhet hsk-velg' + (paa ? '' : ' hsk-av') + '" data-enhet="' + hskVask(e.id) + '">'
+         +   '<label class="hsk-velg-merk">'
+         +     '<input type="checkbox" data-vis="' + hskVask(e.id) + '"' + (paa ? ' checked' : '') + '>'
+         +     '<span class="hsk-ikon" title="' + art.navn + '">' + hskSymbol(e.art) + '</span>'
+         +     '<span class="hsk-navn">' + hskVask(e.kort) + '</span>'
+         +   '</label>'
+         +   '<span class="hsk-grep-enhet" aria-hidden="true">' + HSK_GREP + '</span>'
+         + '</div>';
   }
   const t = hskTilstand(e);
   const alarm = hskAlarm(e);
@@ -1731,7 +1788,7 @@ function hskEnhetHtml(e){
        /* Glider, knapper og hjul under hele raden, ogsaa under bryteren -
           i navnefeltet alene ble det for trangt til to knapper ved
           siden av hverandre. */
-       +   '<div class="hsk-under">' + hskStyring(e) + '</div>'
+       +   '<div class="hsk-under">' + hskIgjenHtml(e) + hskStyring(e) + '</div>'
        + '</div>';
 }
 
@@ -1744,6 +1801,15 @@ function hskAlleRom(){
   hskEtasjer().forEach(function(E){
     E.rom.forEach(function(r){
       r.nokkel = hskNorm(E.navn) + '/' + hskNorm(r.navn);
+      const rekke = hskOppsett.rekke[r.nokkel];
+      if(rekke && rekke.length){
+        const pos = {};
+        rekke.forEach(function(id, i){ pos[id] = i; });
+        const plass = function(e, i){ return e.id in pos ? pos[e.id] : 100000 + i; };
+        r.enheter = r.enheter.map(function(e, i){ return [plass(e, i), e]; })
+                             .sort(function(x, y){ return x[0] - y[0]; })
+                             .map(function(x){ return x[1]; });
+      }
       ut.push(r);
     });
   });
@@ -1819,7 +1885,7 @@ function hskTegn(){
   const bredde = hskBygg().querySelector('.hsk-innhold').clientWidth || 300;
   const antall = Math.max(1, Math.min(3, Math.floor((bredde + 16) / (300 + 16))));
   const kolonner = hskFordel(rom, antall);
-  hskInnhold((hskRediger ? '<p class="hsk-hjelp">Huk av det som skal vises. Ta tak i et bånd for å flytte rommet.</p>' : '')
+  hskInnhold((hskRediger ? '<p class="hsk-hjelp">Huk av det som skal vises. Ta tak i et bånd for å flytte rommet, eller i grepet til høyre på en rad for å flytte enheten.</p>' : '')
     + (hskFeil ? '<p class="hsk-feil">' + hskVask(hskFeil) + '</p>' : '')
     + '<div class="hsk-romliste">'
     + kolonner.map(function(l){ return '<div class="hsk-kolonne">' + l.map(hskRomHtml).join('') + '</div>'; }).join('')

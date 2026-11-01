@@ -1482,6 +1482,20 @@
 /* Styringen under navnet gaar helt ut til hoeyre kant, under bryteren. */
 .hsk-under{ grid-column:2 / -1; min-width:0; }
 .hsk-under:empty{ display:none; }
+/* Tid igjen paa hvitevarene: egen linje i broedtekst og fet, ikke graa
+   metatekst - det er det man aapner kortet for aa se. Fremdriftslinja
+   er blaa (--aksent) paa kantfargen, samme som glideren. */
+.hsk-igjen{ margin-top:6px; }
+.hsk-igjen-tid{
+  display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+  color:var(--ink); font-size:var(--t-brod); font-weight:700;
+}
+.hsk-igjen-pst{ color:var(--ink-soft); font-size:var(--t-meta); font-weight:600; }
+.hsk-fremdrift{
+  margin-top:6px; height:8px; border-radius:4px; overflow:hidden;
+  background:var(--boks-kant);
+}
+.hsk-fremdrift span{ display:block; height:100%; border-radius:4px; background:var(--aksent); }
 /* Hoeyre kolonne: bryteren. */
 .hsk-hoyre{ display:flex; flex-direction:column; align-items:center; }
 /* Fargen lampa har naa, til hoeyre for glideren. Glideren gir plass. */
@@ -1520,9 +1534,25 @@
    Raden er en label: et trykk hvor som helst paa den huker av. Det som
    ikke skal vises, dempes, saa man ser resultatet foer man trykker
    Ferdig. */
-.hsk-enhet.hsk-velg{
-  grid-template-columns:22px 28px 1fr; align-items:center; cursor:pointer;
+.hsk-enhet.hsk-velg{ grid-template-columns:1fr auto; align-items:center; }
+/* Avhukingen er en label for seg: et trykk paa raden huker av, et drag
+   i grepet til hoeyre flytter. */
+.hsk-velg-merk{
+  display:grid; grid-template-columns:22px 28px 1fr; gap:0 12px; align-items:center;
+  cursor:pointer; min-width:0;
 }
+.hsk-grep-enhet{
+  display:inline-flex; padding:6px 2px 6px 8px; color:var(--ink-soft);
+  cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none;
+}
+.hsk-grep-enhet svg{ width:18px; height:18px; display:block; }
+/* En enhet som dras: hvit rad med skygge over alt annet. */
+.hsk-enhet.hsk-drar{
+  position:fixed; z-index:200; margin:0; pointer-events:none;
+  background:var(--bg-solid); border-radius:10px; padding:10px 12px;
+  box-shadow:0 10px 26px rgba(44,62,80,.28); box-sizing:border-box;
+}
+.hsk-plass.hsk-plass-enhet{ margin:0; border-radius:10px; }
 .hsk-velg input{ width:20px; height:20px; margin:0; accent-color:var(--aksent); }
 .hsk-velg.hsk-av .hsk-ikon, .hsk-velg.hsk-av .hsk-navn{ opacity:.4; }
 /* Baandet er grepet. touch-action:none, ellers ruller iPaden i stedet

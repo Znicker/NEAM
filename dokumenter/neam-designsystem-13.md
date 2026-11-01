@@ -1179,7 +1179,11 @@ den endrer; «Ferdig» er blå). Da vises alle enhetene med avhuking, uten
 knapper, og et trykk hvor som helst på raden huker av. Man tar tak i et
 bånd (grep til høyre) og drar rommet; en stiplet plass viser hvor det
 havner, de andre flytter seg, og det smekker på plass når man slipper.
-Nær kanten av kortet rulles det. **Oppsettet lagres per skjerm**
+Nær kanten av kortet rulles det. **Enhetene flyttes innad i rommet**
+med grepet til høyre på raden – ikke mellom rom. Avhukingen er en egen
+label og grepet står utenfor den, ellers huket et drag av enheten idet
+man slapp. Rekkefølgen gjelder også utenfor «Rediger»; nye enheter havner
+nederst i rommet. **Oppsettet lagres per skjerm**
 (`neam-rommene:v1` i nettleseren, Magnes valg) og per antall kolonner, så
 iPaden på tvers og på høykant kan ha hvert sitt.
 
@@ -1228,9 +1232,13 @@ Lamper som melder modus selv, følger Homeys svar. Det er et minne, ikke
 noe lest fra lampa – endres fargen fra en annen skjerm eller app, vet ikke
 denne skjermen det før noen trykker her.
 
-**Hvitevarene viser tid igjen** først i linja under navnet – «1 t 33 min
-igjen» – og ellers ingenting (Magne: «tid til slutt er det jeg ønsker»,
-1. november 2026). Oppvaskmaskinen melder minutter (`measure_timeToEnd`),
+**Hvitevarene viser tid igjen** på egen linje under navnet, i brødtekst og
+fet – «1 t 33 min igjen» – og ellers ingenting (Magne: «tid til slutt er
+det jeg ønsker», 1. november 2026). Der maskinen melder fremdrift
+(Bosch), står prosenten til høyre og en **fremdriftslinje** under, blå
+(`--aksent`) på kantfargen som glideren. Oppvaskmaskinen melder ikke hvor
+langt den er kommet, så der er det ingen linje – heller ingen linje enn en
+gjetning. Oppvaskmaskinen melder minutter (`measure_timeToEnd`),
 og tiden vises når den er over null: tilstanden sa «Idle» mens maskinen
 gikk, så den brukes ikke. Vaskemaskinen og tørketrommelen (Bosch,
 `bshc_string.*`) melder «MM:SS» og fremdrift i prosent, og tiden vises bare
