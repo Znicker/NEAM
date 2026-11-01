@@ -55,6 +55,7 @@ details.regler li{margin:3px 0}
 .filter input{flex:1 1 260px;max-width:420px}
 .chip{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--linje);padding:7px 14px;font-size:14px}
 .chip[aria-pressed="true"]{background:var(--ink);color:#fff;box-shadow:none}
+.velg-alt{padding:7px 14px;font-size:14px}
 .hopp{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;margin:4px 0 0}
 .hopp a{color:var(--bla);text-decoration:none}
 .hopp a:hover{text-decoration:underline}
@@ -128,8 +129,9 @@ details.seksjon[open] > summary::before{transform:rotate(90deg)}
 
   <section class="bestill" id="oppdrag" aria-labelledby="oppdragTittel">
     <h2 id="oppdragTittel">Oppdrag med utvalg</h2>
-    <p>Kryss av ikonene du vil ha med – eller «Velg hele gruppa» i en seksjon. Last ned referansearket
-      og legg det ved hos AI-en sammen med teksten, så ser den nøyaktig hva den skal jobbe med.</p>
+    <p>Kryss av ikonene du vil ha med – eller «Velg hele gruppa» i en seksjon, eller «Velg alt» for alt
+      som vises. Last ned referansearket og legg det ved hos AI-en sammen med teksten, så ser den nøyaktig
+      hva den skal jobbe med. Over 40 ikoner deles det i flere ark med fortløpende nummer.</p>
     <div class="bestill-rad">
       <div>
         <label>Utvalget</label>
@@ -205,6 +207,7 @@ details.seksjon[open] > summary::before{transform:rotate(90deg)}
     <button type="button" class="chip" data-status="mangler" aria-pressed="false">Mangler</button>
     <button type="button" class="chip" data-status="ikke i bruk" aria-pressed="false">Ikke i bruk</button>
     <button type="button" class="chip" data-status="i bruk" aria-pressed="false">I bruk</button>
+    <button type="button" class="btn-ghost velg-alt" id="velgAlt">Velg alt</button>
   </div>
   <nav class="hopp" id="hopp" aria-label="Seksjoner"></nav>
   <div id="seksjoner"></div>
@@ -377,7 +380,9 @@ document.addEventListener('click', e => {
    katalogen lages paa nytt. Huskes i nettleseren som en bekvemmelighet -
    forsvinner det, er det bare aa krysse av igjen.
    ============================================================ */
-const MAKS_UTVALG = 40;
+/* Grensen gjelder arket, ikke utvalget: over 40 blir rutene for smaa
+   for AI-en aa lese, saa et stoerre utvalg deles i flere ark. */
+const ARK_MAKS = 40;
 const valgt = new Map();              /* sti -> post */
 const alleposter = new Map();
 KATALOG.seksjoner.forEach(s => s.poster.forEach(p => { if(p.sti) alleposter.set(p.sti, p); }));
@@ -403,10 +408,6 @@ function oppdaterValg(){
   lagreValg();
 }
 function velg(p, paa){
-  if(paa && !valgt.has(p.sti) && valgt.size >= MAKS_UTVALG){
-    alert('Maks ' + MAKS_UTVALG + ' ikoner per oppdrag – et større ark blir for smått for AI-en å lese. Del det i flere.');
-    return false;
-  }
   if(paa) valgt.set(p.sti, p); else valgt.delete(p.sti);
   return true;
 }
@@ -422,10 +423,16 @@ document.addEventListener('click', e => {
   if(!b) return;
   const kan = KATALOG.seksjoner[+b.dataset.s].poster.filter(p => p.b && !p.svg);
   const alleValgt = kan.every(p => valgt.has(p.sti));
-  if(!alleValgt && valgt.size + kan.filter(p => !valgt.has(p.sti)).length > MAKS_UTVALG){
-    alert('Gruppa har ' + kan.length + ' bilder – maks ' + MAKS_UTVALG + ' per oppdrag. Kryss av de du vil ha med i stedet.');
-    return;
-  }
+  kan.forEach(p => velg(p, !alleValgt));
+  oppdaterValg();
+});
+/* «Velg alt»: det som vises - aapne seksjoner, og treffene naar det er
+   soekt eller filtrert. Er alt det allerede valgt, fjernes det. */
+$('velgAlt').addEventListener('click', () => {
+  const kan = [...document.querySelectorAll('.seksjon[open]:not([hidden]) .velg-boks')]
+    .map(b => KATALOG.seksjoner[+b.dataset.s].poster[+b.dataset.i]);
+  if(!kan.length) return;
+  const alleValgt = kan.every(p => valgt.has(p.sti));
   kan.forEach(p => velg(p, !alleValgt));
   oppdaterValg();
 });
@@ -472,8 +479,13 @@ function lagOppdrag(){
   if(!n){ $('oppdragUt').value = ''; return; }
   const tekst = $('oppdragTekst').value.trim();
   const nummer = liste.map((p, i) => (i + 1) + '. ' + p.fil + (p.motiv ? ' – ' + p.motiv : ''));
-  const ark = 'Vedlagt: referanseark med ' + n + (n === 1 ? ' ikon' : ' ikoner') + ' slik de ser ut i dag, nummerert 1–' + n
-    + ' i ' + kolonner(n) + ' kolonner. Tallene og filnavnene under rutene er bare merkelapper for oss – de skal ikke tegnes.';
+  const antArk = Math.ceil(n / ARK_MAKS);
+  const ark = (antArk === 1
+      ? 'Vedlagt: referanseark med ' + n + (n === 1 ? ' ikon' : ' ikoner') + ' slik de ser ut i dag, nummerert 1–' + n
+        + ' i ' + kolonner(n) + ' kolonner.'
+      : 'Vedlagt: ' + antArk + ' referanseark med til sammen ' + n + ' ikoner slik de ser ut i dag, nummerert 1–' + n
+        + ' fortløpende, inntil ' + ARK_MAKS + ' per ark.')
+    + ' Tallene og filnavnene under rutene er bare merkelapper for oss – de skal ikke tegnes.';
   const regler = 'Ingen tekst, ingen bokstaver og ingen tall i ikonene. NO text, NO letters, NO numbers inside the icons. '
     + 'God luft mellom rutene, og gjennomsiktig bakgrunn utenfor flisene.';
   const type = oppdragType();
@@ -492,7 +504,10 @@ function lagOppdrag(){
     ut = 'Oppdrag til NEAM – juster ' + n + (n === 1 ? ' ikon' : ' ikoner') + '\n\n' + ark + '\n\n'
       + 'Endring: ' + (tekst || '[skriv endringen her]') + '\n\n'
       + 'Lag alle ' + n + ' på nytt med endringen. Behold motivet, rekkefølgen og nummereringen. '
-      + 'Lever som ett ark med samme rutenett (' + kolonner(n) + ' kolonner) og like store ruter, '
+      + (antArk === 1
+          ? 'Lever som ett ark med samme rutenett (' + kolonner(n) + ' kolonner) og like store ruter, '
+          : 'Ta ett ark om gangen og vent på «neste» før du går videre. Lever hvert som ett ark med samme '
+            + 'rutenett og like store ruter som vedlegget, ')
       + 'eller som egne filer med filnavnene under.\n'
       + regler + '\n\nIkonene:\n' + nummer.join('\n');
   }else{
@@ -505,7 +520,7 @@ function lagOppdrag(){
       return (i + 1) + '. ' + (m ? m[2] : l) + (fil ? ' – fil: ' + fil : '');
     });
     ut = 'Oppdrag til NEAM – nye ikoner i samme stil\n\n'
-      + 'Vedlagt: referanseark med ' + n + ' eksisterende ikoner. De er stilforbildet: samme strek, farger, lys, '
+      + 'Vedlagt: ' + (antArk === 1 ? 'referanseark' : antArk + ' referanseark') + ' med ' + n + ' eksisterende ikoner. De er stilforbildet: samme strek, farger, lys, '
       + 'flis og størrelse på motivet. Tallene og filnavnene under rutene er bare merkelapper – de skal ikke tegnes.\n\n'
       + (stil ? 'STIL – samme som forbildene:\n' + KATALOG.stiler[stil].stil + '\n\n' : '')
       + 'Lag disse nye:\n' + (nye.length ? nye.join('\n') : '[skriv ett motiv per linje: filnavn – motiv]') + '\n\n'
@@ -539,6 +554,21 @@ function lastBilde(sti){
 $('lastArk').addEventListener('click', async () => {
   const liste = [...valgt.values()];
   if(!liste.length){ $('kvittOppdrag').textContent = 'Velg ikoner først.'; return; }
+  let bilder;
+  try{ bilder = await Promise.all(liste.map(p => lastBilde(p.sti))); }
+  catch(e){ $('kvittOppdrag').textContent = 'Fikk ikke lastet ' + e.message; return; }
+  const antArk = Math.ceil(liste.length / ARK_MAKS);
+  for(let a = 0; a < antArk; a++){
+    const fra = a * ARK_MAKS;
+    await lagreArk(liste.slice(fra, fra + ARK_MAKS), bilder.slice(fra, fra + ARK_MAKS), fra,
+      antArk === 1 ? '' : '-ark' + (a + 1) + 'av' + antArk);
+  }
+  lagOppdrag();
+  $('kvittOppdrag').textContent = antArk === 1 ? 'Referansearket er lastet ned.'
+    : antArk + ' referanseark er lastet ned. Ber nettleseren om lov til flere nedlastinger, si ja.';
+});
+/* Ett ark: rutene nummereres fra fra+1, saa nummeret er det samme som i teksten. */
+function lagreArk(liste, bilder, fra, hale){
   const kol = kolonner(liste.length), rad = Math.ceil(liste.length / kol);
   const R = 260, BILDE = 210, LUFT = 24, TEKST = 34;
   const c = document.createElement('canvas');
@@ -546,9 +576,6 @@ $('lastArk').addEventListener('click', async () => {
   c.height = rad * (R + TEKST) + (rad + 1) * LUFT;
   const g = c.getContext('2d');
   g.fillStyle = '#F3F1EC'; g.fillRect(0, 0, c.width, c.height);
-  let bilder;
-  try{ bilder = await Promise.all(liste.map(p => lastBilde(p.sti))); }
-  catch(e){ $('kvittOppdrag').textContent = 'Fikk ikke lastet ' + e.message; return; }
   bilder.forEach((im, i) => {
     const x = LUFT + (i % kol) * (R + LUFT), y = LUFT + Math.floor(i / kol) * (R + TEKST + LUFT);
     g.fillStyle = '#FFFFFF';
@@ -557,19 +584,18 @@ $('lastArk').addEventListener('click', async () => {
     const b = im.naturalWidth * s, h = im.naturalHeight * s;
     g.drawImage(im, x + (R - b) / 2, y + (R - h) / 2, b, h);
     g.fillStyle = '#142036'; g.font = '600 17px Figtree, system-ui, sans-serif'; g.textAlign = 'center';
-    g.fillText((i + 1) + '  ' + liste[i].fil, x + R / 2, y + R + 24, R);
+    g.fillText((fra + i + 1) + '  ' + liste[i].fil, x + R / 2, y + R + 24, R);
   });
   const dato = new Date().toISOString().slice(0, 10);
-  c.toBlob(blob => {
+  return new Promise(ok => c.toBlob(blob => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'neam-referanseark-' + dato + '-' + liste.length + '.png';
+    a.download = 'neam-referanseark-' + dato + '-' + (fra + liste.length) + hale + '.png';
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    $('kvittOppdrag').textContent = 'Referansearket er lastet ned.';
-  }, 'image/png');
-  lagOppdrag();
-});
+    setTimeout(ok, 300);
+  }, 'image/png'));
+}
 
 byggStilvalg();
 byggSider();
