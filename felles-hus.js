@@ -594,10 +594,14 @@ function nmwForNeam(d){
    Tilpasningen (11. oktober 2026): ICP mot appens delelinjer, snittavvik
    1,9 px = ca. 4,5 cm. Appens ytre hvite linje ligger 30-40 cm innenfor
    grensen - slik appen tegner den - og er tatt ut av bildet. */
-const NMW_HAGE = {
-  fil: '/bilder/neamow-hage.webp', v: 1, bredde: 811, hoyde: 1171,
-  plass: { skala: 0.023322, rot: -0.69, x: 12.848, y: -18.904 }
-};
+/* Tatt bort 1. november 2026: Magne utvidet plenen til ett område paa
+   325 m², og bildet dekket bare den gamle delen. Klipperens koordinater
+   er de samme (det gamle omrisset ligger fortsatt over grasskanten), saa
+   plasseringen under gjelder hvis bildet settes inn igjen. Nytt bilde
+   naar appen har realistisk kart av hele plenen.
+   Siste: { fil:'/bilder/neamow-hage.webp', v:1, bredde:811, hoyde:1171,
+            plass:{ skala:0.023322, rot:-0.69, x:12.848, y:-18.904 } } */
+const NMW_HAGE = null;
 
 /* `valg` (valgfri, den egne sida): { valgte:[id], dekning:{id:prosent} }.
    `valg.hage` (begge flatene): NMW_HAGE - hagebildet under sonene.
