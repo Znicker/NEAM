@@ -131,7 +131,7 @@ details.seksjon[open] > summary::before{transform:rotate(90deg)}
     <h2 id="oppdragTittel">Oppdrag med utvalg</h2>
     <p>Kryss av ikonene du vil ha med – eller «Velg hele gruppa» i en seksjon, eller «Velg alt» for alt
       som vises. Last ned referansearket og legg det ved hos AI-en sammen med teksten, så ser den nøyaktig
-      hva den skal jobbe med. Over 40 ikoner deles det i flere ark med fortløpende nummer.</p>
+      hva den skal jobbe med. Over 40 ikoner deles det i flere ark med fortløpende nummer, hvert med sin egen nedlastingsknapp.</p>
     <div class="bestill-rad">
       <div>
         <label>Utvalget</label>
@@ -148,6 +148,7 @@ details.seksjon[open] > summary::before{transform:rotate(90deg)}
           <button type="button" class="btn-bla" id="lastArk">Last ned referanseark</button>
           <button type="button" class="btn-ghost" id="lagOppdrag">Lag tekst</button>
         </div>
+        <div class="knapper" id="arkKnapper" hidden></div>
         <p class="flyt">Når svaret kommer: send meg bildene sammen med teksten under. Nummereringen sier
           hvilket filnavn hvert bilde skal ha, så jeg klipper og legger dem på plass.</p>
       </div>
@@ -406,6 +407,7 @@ function oppdaterValg(){
     b.closest('.kort').classList.toggle('valgt', b.checked);
   });
   lagreValg();
+  tomArkKnapper();
 }
 function velg(p, paa){
   if(paa) valgt.set(p.sti, p); else valgt.delete(p.sti);
@@ -558,17 +560,45 @@ $('lastArk').addEventListener('click', async () => {
   try{ bilder = await Promise.all(liste.map(p => lastBilde(p.sti))); }
   catch(e){ $('kvittOppdrag').textContent = 'Fikk ikke lastet ' + e.message; return; }
   const antArk = Math.ceil(liste.length / ARK_MAKS);
+  tomArkKnapper();
   for(let a = 0; a < antArk; a++){
     const fra = a * ARK_MAKS;
-    await lagreArk(liste.slice(fra, fra + ARK_MAKS), bilder.slice(fra, fra + ARK_MAKS), fra,
-      antArk === 1 ? '' : '-ark' + (a + 1) + 'av' + antArk);
+    const blob = await tegnArk(liste.slice(fra, fra + ARK_MAKS), bilder.slice(fra, fra + ARK_MAKS), fra);
+    arkFiler.push({ url: URL.createObjectURL(blob),
+      navn: 'neam-referanseark-' + new Date().toISOString().slice(0, 10) + '-'
+        + (antArk === 1 ? liste.length : 'ark' + (a + 1) + 'av' + antArk) + '.png' });
   }
   lagOppdrag();
-  $('kvittOppdrag').textContent = antArk === 1 ? 'Referansearket er lastet ned.'
-    : antArk + ' referanseark er lastet ned. Ber nettleseren om lov til flere nedlastinger, si ja.';
+  if(antArk === 1){
+    lastNedArk(0);
+    $('kvittOppdrag').textContent = 'Referansearket er lastet ned.';
+    return;
+  }
+  $('arkKnapper').innerHTML = arkFiler.map((f, a) =>
+    '<button type="button" class="btn-ghost ark-knapp" data-a="' + a + '">Ark ' + (a + 1) + ' av ' + antArk + '</button>').join('');
+  $('arkKnapper').hidden = false;
+  $('kvittOppdrag').textContent = antArk + ' ark er klare – last dem ned ett for ett med knappene under «Last ned referanseark».';
+});
+/* Nettleseren slipper bare gjennom én nedlasting per trykk, saa flere
+   ark faar hver sin knapp. Lenkene gjelder utvalget de ble laget av og
+   fjernes naar utvalget endres. */
+const arkFiler = [];
+function tomArkKnapper(){
+  arkFiler.splice(0).forEach(f => URL.revokeObjectURL(f.url));
+  if($('arkKnapper')){ $('arkKnapper').hidden = true; $('arkKnapper').innerHTML = ''; }
+}
+function lastNedArk(a){
+  const el = document.createElement('a');
+  el.href = arkFiler[a].url;
+  el.download = arkFiler[a].navn;
+  el.click();
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.ark-knapp');
+  if(b && arkFiler[+b.dataset.a]) lastNedArk(+b.dataset.a);
 });
 /* Ett ark: rutene nummereres fra fra+1, saa nummeret er det samme som i teksten. */
-function lagreArk(liste, bilder, fra, hale){
+function tegnArk(liste, bilder, fra){
   const kol = kolonner(liste.length), rad = Math.ceil(liste.length / kol);
   const R = 260, BILDE = 210, LUFT = 24, TEKST = 34;
   const c = document.createElement('canvas');
@@ -586,15 +616,7 @@ function lagreArk(liste, bilder, fra, hale){
     g.fillStyle = '#142036'; g.font = '600 17px Figtree, system-ui, sans-serif'; g.textAlign = 'center';
     g.fillText((fra + i + 1) + '  ' + liste[i].fil, x + R / 2, y + R + 24, R);
   });
-  const dato = new Date().toISOString().slice(0, 10);
-  return new Promise(ok => c.toBlob(blob => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'neam-referanseark-' + dato + '-' + (fra + liste.length) + hale + '.png';
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    setTimeout(ok, 300);
-  }, 'image/png'));
+  return new Promise(ok => c.toBlob(ok, 'image/png'));
 }
 
 byggStilvalg();
