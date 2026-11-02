@@ -112,12 +112,26 @@ body{
 .sp-ruter{ display:flex; gap:5px; flex-wrap:wrap; align-items:center; }
 .sp-verbrad{ display:flex; gap:5px; align-items:center; margin-bottom:5px; }
 .sp-verbrad-navn{ width:36px; flex-shrink:0; font-size:var(--t-meta); font-weight:700; }
+/* Pronomenene staar over kolonnen sin, saa tabellen leses som i heftet:
+   person oeverst, endelsen under. To linjer der heftet har to former
+   (él / ella), saa ingen kolonne maa bli bredere enn de andre. */
+.sp-verbhode{ align-items:flex-end; margin-bottom:4px; }
+.sp-pers{
+  flex:1 1 0; min-width:0; text-align:center; line-height:1.15;
+  font-size:var(--t-etikett); font-weight:700; color:var(--ink-soft);
+}
+.sp-pers span{ display:block; }
+@media(max-width:400px){
+  .sp-verbrad-navn{ width:30px; }
+  .sp-pers{ font-size:10px; letter-spacing:-.01em; }
+}
 .sp-rute{
-  min-width:44px; height:44px; padding:0 9px; border-radius:10px; cursor:default;
+  min-width:44px; height:44px; padding:0 9px; border-radius:10px; cursor:pointer;
   border:2px solid var(--line); background:var(--boks-mild); color:var(--ink);
   font-family:inherit; display:flex; flex-direction:column;
   align-items:center; justify-content:center; gap:4px;
 }
+.sp-rute:active{ transform:scale(.94); }
 .sp-verbrad .sp-rute{ flex:1 1 0; min-width:0; padding:0 2px; }
 .sp-rute b{ font-size:var(--t-meta); font-weight:700; line-height:1; white-space:nowrap; }
 .sp-prikker2{ display:flex; gap:3px; }
@@ -463,9 +477,13 @@ function visKnapp(k){
   k.hidden = false;
   requestAnimationFrame(() => k.scrollIntoView({ behavior:'smooth', block:'nearest' }));
 }
-function lagRute(k, tekst){
+/* Hver rute er en knapp: trykk gir en kort runde paa akkurat den. */
+function lagRute(k, tekst, beskrivelse){
   const n = poeng(k);
-  const r = el('div', 'sp-rute' + (n >= 2 ? ' sp-mestret' : ''));
+  const r = el('button', 'sp-rute' + (n >= 2 ? ' sp-mestret' : ''));
+  r.setAttribute('aria-label', 'Øv på ' + beskrivelse + ' – ' + n + ' av 2');
+  r.title = 'Øv på ' + beskrivelse;
+  r.onclick = () => startFokus(k);
   r.appendChild(el('b', null, tekst));
   const pr = el('span', 'sp-prikker2');
   for(let i = 0; i < 2; i++) pr.appendChild(el('i', i < n ? 'sp-tent' : ''));
@@ -485,30 +503,38 @@ function tegnKart(){
   const pron = el('div');
   pron.appendChild(el('p', 'sp-del-navn', 'Pronomen'));
   const pr = el('div', 'sp-ruter');
-  PRONOMEN.forEach((p, i) => { tell('p:' + i); pr.appendChild(lagRute('p:' + i, p.es)); });
+  PRONOMEN.forEach((p, i) => { tell('p:' + i); pr.appendChild(lagRute('p:' + i, p.es, p.es + ' = ' + p.no)); });
   pron.appendChild(pr);
   kart.appendChild(pron);
 
   const fr = el('div');
   fr.appendChild(el('p', 'sp-del-navn', 'Presentere deg'));
   const fruter = el('div', 'sp-ruter');
-  FRASER.forEach((f, i) => { tell('f:' + i); fruter.appendChild(lagRute('f:' + i, f.kort)); });
+  FRASER.forEach((f, i) => { tell('f:' + i); fruter.appendChild(lagRute('f:' + i, f.kort, f.es)); });
   fr.appendChild(fruter);
   kart.appendChild(fr);
 
   const vb = el('div', 'sp-kart-verb');
-  vb.appendChild(el('p', 'sp-del-navn', 'Verbendelsene – yo, tú, él, nosotros, vosotros, ellos'));
+  vb.appendChild(el('p', 'sp-del-navn', 'Verbendelsene'));
+  const hode = el('div', 'sp-verbrad sp-verbhode');
+  hode.appendChild(el('span', 'sp-verbrad-navn'));
+  PERSON_FORMER.forEach(former => {
+    const k = el('span', 'sp-pers');
+    former.forEach(f => k.appendChild(el('span', null, f)));
+    hode.appendChild(k);
+  });
+  vb.appendChild(hode);
   Object.keys(GRUPPER).forEach(g => {
     const rad = el('div', 'sp-verbrad');
     rad.appendChild(el('span', 'sp-verbrad-navn', GRUPPER[g].navn));
-    GRUPPER[g].endelser.forEach((e, p) => { tell('v:' + g + ':' + p); rad.appendChild(lagRute('v:' + g + ':' + p, '-' + e)); });
+    GRUPPER[g].endelser.forEach((e, p) => { tell('v:' + g + ':' + p); rad.appendChild(lagRute('v:' + g + ':' + p, '-' + e, GRUPPER[g].navn + '-verb med ' + PERSON_NAVN[p])); });
     vb.appendChild(rad);
   });
   kart.appendChild(vb);
 
   $('kartSum').textContent = mestret === alle
     ? '¡Fantástico! Alle rutene er gule.'
-    : mestret + ' av ' + alle + ' ruter er gule. To riktige svar gjør en rute gul.';
+    : mestret + ' av ' + alle + ' ruter er gule. Trykk på en rute for å øve på akkurat den – to riktige svar gjør den gul.';
 }
 
 /* ================================================================
@@ -548,25 +574,24 @@ const quizValg = new Set(['pronomen','fraser','verb']);
 let quizAntall = 15;
 let quiz = null;
 
-function lagPronomen(){
-  const i = Math.floor(Math.random() * PRONOMEN.length);
+/* Generatorene tar valgfrie argumenter, saa en rute i kartet kan be om
+   spoersmaal om akkurat seg selv. Uten argumenter er alt tilfeldig. */
+function lagPronomen(i = Math.floor(Math.random() * PRONOMEN.length), retning = Math.floor(Math.random() * 2)){
   const p = PRONOMEN[i];
   const andre = bland(PRONOMEN.filter(x => x.no !== p.no)).slice(0, 3);
-  if(Math.random() < .5) return { k:'p:' + i, tema:'Pronomen',
+  if(retning === 0) return { k:'p:' + i, tema:'Pronomen',
     q:'Hva betyr <em>' + p.es + '</em>?', riktig:p.no, gale:andre.map(x => x.no),
     fasit:p.es + (p.andre ? ' / ' + p.andre : '') + ' = ' + p.no };
   return { k:'p:' + i, tema:'Pronomen',
     q:'Hva er <em>' + p.no + '</em> på spansk?', riktig:p.es, gale:andre.map(x => x.es),
     fasit:p.no + ' = ' + p.es + (p.andre ? ' (eller ' + p.andre + ')' : '') };
 }
-function lagFrase(){
-  const typ = Math.floor(Math.random() * 3);
+function lagFrase(i = Math.floor(Math.random() * FRASER.length), typ = Math.floor(Math.random() * 3)){
   if(typ === 2){
-    const [i, tekst, riktig, gale] = en(FRASE_HULL);
+    const [, tekst, riktig, gale] = FRASE_HULL.find(h => h[0] === i);
     return { k:'f:' + i, tema:'Presentere deg', q:'Hva mangler? <em>' + tekst + '</em>',
       riktig, gale, fasit:FRASER[i].es + ' = ' + FRASER[i].no };
   }
-  const i = Math.floor(Math.random() * FRASER.length);
   const f = FRASER[i];
   const andre = bland(FRASER.filter((_, j) => j !== i)).slice(0, 3);
   if(typ === 0) return { k:'f:' + i, tema:'Presentere deg',
@@ -576,13 +601,13 @@ function lagFrase(){
     q:'Hvordan sier du <em>' + f.no + '</em>', riktig:f.es, gale:andre.map(x => x.es),
     fasit:f.no + ' = ' + f.es };
 }
-function lagVerb(){
-  const v = en(VERB);
-  const p = Math.floor(Math.random() * 6);
+function lagVerb(o = {}){
+  const v = en(VERB.filter(x => !o.gr || x.gr === o.gr));
+  const p = o.p != null ? o.p : Math.floor(Math.random() * 6);
   const k = 'v:' + v.gr + ':' + p;
   const riktig = form(v, p);
   const galeFormer = bland([0,1,2,3,4,5].filter(x => x !== p).map(x => form(v, x)).filter(x => x !== riktig));
-  const typ = Math.floor(Math.random() * 4);
+  const typ = o.typ != null ? o.typ : Math.floor(Math.random() * 4);
   const pron = en(PERSON_FORMER[p]);
   const regel = GRUPPER[v.gr].navn + ': ' + GRUPPER[v.gr].endelser.join(', ') + '. ' + pron + ' → -' + GRUPPER[v.gr].endelser[p] + '.';
   if(typ === 0) return { k, tema:'Verb ' + GRUPPER[v.gr].navn,
@@ -669,6 +694,36 @@ function visQuizOppsett(){
   f.appendChild(k);
 }
 
+/* Kort runde paa en rute i kartet. Pronomenet oeves ogsaa sammen med
+   verbformen sin - det er der heftet sier hun skal kjenne det igjen. */
+function startFokus(k){
+  const del = k.split(':');
+  let lagere = [];
+  if(del[0] === 'p'){
+    const i = +del[1], person = PRONOMEN[i].person;
+    lagere = [() => lagPronomen(i, 0), () => lagPronomen(i, 1),
+      () => lagVerb({ p:person, typ:0 }), () => lagVerb({ p:person, typ:0 }), () => lagVerb({ p:person, typ:1 })];
+  }else if(del[0] === 'f'){
+    const i = +del[1];
+    lagere = [() => lagFrase(i, 0), () => lagFrase(i, 1), () => lagFrase(i, 2)];
+  }else{
+    const gr = del[1], person = +del[2];
+    lagere = [() => lagVerb({ gr, p:person, typ:0 }), () => lagVerb({ gr, p:person, typ:0 }),
+      () => lagVerb({ gr, p:person, typ:0 }), () => lagVerb({ gr, p:person, typ:1 }), () => lagVerb({ gr, p:person, typ:3 })];
+  }
+  /* Samme svar to ganger i en kort runde foeles som en gjentakelse,
+     ogsaa naar bare pronomenet er byttet (nosotros/nosotras). */
+  const liste = [], sett = new Set();
+  lagere.forEach(lag => {
+    for(let forsok = 0; forsok < 20; forsok++){
+      const s = lag();
+      if(!sett.has(s.riktig)){ sett.add(s.riktig); liste.push(s); break; }
+    }
+  });
+  ['quiz','boy','setning','husk'].forEach(n => $('fane-' + n).classList.toggle('sp-valgt', n === 'quiz'));
+  startQuiz(bland(liste));
+}
+
 function startQuiz(liste){
   quiz = { liste, i:0, riktige:0, rad:0, bom:[], svar:[] };
   iRunde(true);
@@ -682,6 +737,7 @@ function visSporsmaal(){
   f.innerHTML = '';
   const hode = el('div', 'sp-hode');
   hode.appendChild(el('span', 'sp-teller', 'Spørsmål ' + (quiz.i + 1) + ' av ' + quiz.liste.length));
+  /* Merkelappen viser bare kategorien - «nosotros = vi» ville vaert svaret. */
   hode.appendChild(el('span', 'sp-lapp', s.tema));
   const rad = el('span', 'sp-rad', quiz.rad + ' på rad');
   rad.hidden = quiz.rad < 2;
