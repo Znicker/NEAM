@@ -630,6 +630,17 @@ input,select,textarea{font-size:16px}
   padding:16px 18px 14px;box-shadow:0 18px 44px rgba(44,62,80,.28);
 }
 .vaer-boble[hidden]{display:none}
+/* Bil paa tunet: bildet dekker tre firedeler av skjermen, krysset lukker. */
+.bv-bak{position:fixed;inset:0;z-index:80;background:rgba(44,62,80,.45)}
+.bv-bak[hidden]{display:none}
+.bv-kort{
+  position:fixed;z-index:81;left:12.5vw;top:12.5vh;width:75vw;height:75vh;
+  background:var(--paper);border:1px solid var(--line);border-radius:16px;
+  padding:12px 14px 14px;box-shadow:0 18px 44px rgba(44,62,80,.28);
+  display:flex;flex-direction:column;gap:10px;
+}
+.bv-kort[hidden]{display:none}
+.bv-bilde{flex:1;min-height:0;width:100%;height:auto;object-fit:contain;border-radius:10px}
 .vb-tittel{font-size:var(--t-stor);font-weight:700;padding-right:26px;text-transform:capitalize}
 .vb-sammendrag{font-size:var(--t-meta);color:var(--ink-soft);font-weight:600;margin-top:2px}
 .vb-bolk{
@@ -897,6 +908,13 @@ select.hu-felt{
   <div class="vaer-boble" id="vaerBoble" hidden>
     <button class="hub-lukk" onclick="lukkVaerBoble()" aria-label="Lukk">×</button>
     <div id="vaerBobleInn"></div>
+  </div>
+
+  <div class="bv-bak" id="bvBak" hidden onclick="bvLukk()"></div>
+  <div class="bv-kort" id="bvKort" hidden role="dialog" aria-label="Bil på tunet">
+    <button class="hub-lukk" onclick="bvLukk()" aria-label="Lukk">×</button>
+    <div class="hub-tittel" id="bvTittel">Bil på tunet</div>
+    <img class="bv-bilde" id="bvBilde" alt="Stillbilde fra kameraet på tunet" width="1024" height="576">
   </div>
 
   <!-- Bakteppet stenger av resten av skjermen, men lukker ikke skjemaet:
@@ -3734,6 +3752,190 @@ async function oppdaterAlt(manuelt){
 }
 
 /* ============================================================
+   Bilvakt – bil paa tunet
+   ------------------------------------------------------------
+   Tapo-kameraet kjenner igjen biler, men det gjoer det i TP-Links
+   egen sky. Gjennom Homey kommer bare `alarm_motion` (kartleggingen
+   del 32), og det finnes ingen kjoeretoey-utloeser i flowene heller.
+   Skjermen avgjoer derfor selv:
+
+   1. Hvert tiende sekund spoerres Homey om kameraet melder bevegelse.
+      Homey kan ikke si fra til sida - sida maa spoerre.
+   2. Naar en NY bevegelse dukker opp, kobles kameraet opp over WebRTC
+      som paa sikkerhetssida, to stillbilder tas med to sekunders
+      mellomrom, og forbindelsen legges ned igjen.
+   3. Claude ser paa de to bildene og svarer JA eller NEI. To bilder,
+      fordi en bil som staar parkert paa tunet ellers ville gitt JA
+      hver gang en katt gikk forbi.
+   4. JA: bildet dekker tre firedeler av skjermen til noen lukker det.
+
+   Bare STUN: skjermen staar paa hjemmenettet, og der velger
+   nettleseren den direkte veien uansett (del 32). Tilbudet inneholder
+   husets offentlige adresse og skal ikke lagres eller logges.
+
+   Virker bare mens dashen er aapen - det finnes ingenting i Neam som
+   vaaker naar ingen ser paa (del 49).
+   ============================================================ */
+const BV_KAMERA = (VISES.find(function(v){ return v.art === 'kamera'; }) || {}).id;
+const BV_SJEKK_MS = 10 * 1000;
+const BV_PAUSE_MS = 60 * 1000;   /* minst saa lenge mellom to tester */
+const BV_STUN = [{ urls:'stun:stun.l.google.com:19302' }];
+let bvForrige = null;            /* { verdi, tid } fra forrige svar */
+let bvOpptatt = false;
+let bvSist = 0;
+let bvMeldt = false;
+
+async function bvSjekk(){
+  if(document.hidden || bvOpptatt || !BV_KAMERA) return;
+  let e;
+  try{ e = await api('?hva=enheter'); }catch(err){ return; }
+  if(!e || !e.ok){
+    /* Én gang, ikke hvert tiende sekund. Er Homey ikke godkjent for
+       denne innloggingen, er det sikkerhetssida som kobler til. */
+    if(!bvMeldt) console.warn('Bilvakt: fikk ikke kontakt med Homey:', e && e.feil);
+    bvMeldt = true;
+    return;
+  }
+  bvMeldt = false;
+  const d = (e.enheter || {})[BV_KAMERA];
+  const o = d && d.capabilitiesObj && d.capabilitiesObj.alarm_motion;
+  if(!o) return;
+  const naa = { verdi: !!o.value, tid: o.lastUpdated || null };
+
+  /* Tidsstempelet fanger ogsaa en bevegelse som kom og gikk mellom to
+     spoersmaal: er det nytt, og verdien var av sist, har den vaert paa.
+     Uten tidsstempel teller bare overgangen fra av til paa. Det foerste
+     svaret er bare utgangspunktet. */
+  const f = bvForrige;
+  bvForrige = naa;
+  if(!f) return;
+  const ny = (naa.tid && f.tid)
+    ? (naa.tid !== f.tid && (naa.verdi || !f.verdi))
+    : (naa.verdi && !f.verdi);
+  if(!ny || Date.now() - bvSist < BV_PAUSE_MS) return;
+
+  const video = d.videos && d.videos[0];
+  const videoId = video && video.videoObj && video.videoObj.id;
+  if(!videoId) return;
+
+  bvOpptatt = true;
+  bvSist = Date.now();
+  try{
+    const bilder = await bvToBilder(videoId);
+    if(await bvErBil(bilder)) bvVis(bilder[1]);
+  }catch(err){
+    console.warn('Bilvakt:', err && err.message);
+  }finally{
+    bvOpptatt = false;
+  }
+}
+
+function bvVent(ms){ return new Promise(function(ok){ setTimeout(ok, ms); }); }
+
+async function bvToBilder(videoId){
+  const pc = new RTCPeerConnection({ iceServers: BV_STUN });
+  /* Elementet maa ligge i sida: Safari tegner ikke en video som ikke
+     gjoer det. Usynlig, og bare saa lenge bildene tas. */
+  const el = document.createElement('video');
+  el.muted = true; el.playsInline = true; el.autoplay = true;
+  el.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none';
+  document.body.appendChild(el);
+  try{
+    pc.addTransceiver('video', { direction:'recvonly' });
+    pc.addTransceiver('audio', { direction:'recvonly' });
+    pc.createDataChannel('neam');
+    pc.ontrack = function(ev){
+      if(!ev.streams[0] || el.srcObject === ev.streams[0]) return;
+      el.srcObject = ev.streams[0];
+      el.play().catch(function(){});
+    };
+
+    await pc.setLocalDescription(await pc.createOffer());
+    /* Homey tar ikke trickle: alle kandidatene maa vaere med i tilbudet. */
+    await new Promise(function(ok){
+      if(pc.iceGatheringState === 'complete') return ok();
+      const tid = setTimeout(ok, 3000);
+      pc.onicegatheringstatechange = function(){
+        if(pc.iceGatheringState === 'complete'){ clearTimeout(tid); ok(); }
+      };
+    });
+
+    const svar = await post({ hva:'tilbud', video:videoId, sdp: pc.localDescription.sdp });
+    if(!svar.ok) throw new Error('fikk ikke bilde: ' + svar.feil);
+    await pc.setRemoteDescription({ type:'answer', sdp: svar.sdp });
+
+    const frist = Date.now() + 15000;
+    while(!(el.readyState >= 2 && el.videoWidth > 0)){
+      if(Date.now() > frist) throw new Error('kameraet ga ikke bilde i tide');
+      await bvVent(200);
+    }
+    /* Litt tid foer det foerste bildet: de aller foerste rutene kan
+       vaere graa til en hel ramme har kommet. */
+    await bvVent(1000);
+    const a = bvTaBilde(el);
+    await bvVent(2000);
+    return [a, bvTaBilde(el)];
+  }finally{
+    try{ pc.close(); }catch(e){}
+    el.srcObject = null;
+    el.remove();
+  }
+}
+
+function bvTaBilde(el){
+  const skala = Math.min(1, 1024 / el.videoWidth);
+  const c = document.createElement('canvas');
+  c.width = Math.round(el.videoWidth * skala);
+  c.height = Math.round(el.videoHeight * skala);
+  c.getContext('2d').drawImage(el, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.8);
+}
+
+async function bvErBil(bilder){
+  function bilde(url){
+    return { type:'image', source:{ type:'base64', media_type:'image/jpeg',
+                                    data: url.slice(url.indexOf(',') + 1) } };
+  }
+  const r = await fetch('/api/claude', {
+    method:'POST', headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({
+      model: NEAM_MODELLER[0].id,       /* Haiku: raskt og billig, ett ord svar */
+      max_tokens: 5,
+      messages: [{ role:'user', content: [
+        { type:'text', text:'Bilde 1:' }, bilde(bilder[0]),
+        { type:'text', text:'Bilde 2, tatt to sekunder senere:' }, bilde(bilder[1]),
+        { type:'text', text:'Dette er to stillbilder fra overvåkingskameraet på tunet '
+          + 'foran et hus, tatt rett etter at kameraet merket bevegelse. Kommer det en '
+          + 'bil eller et annet kjøretøy – altså et kjøretøy som kjører, står med lysene '
+          + 'på, eller som noen går inn i eller ut av? Biler som bare står parkert stille '
+          + 'teller ikke. Svar med ett ord: JA eller NEI.' }
+      ]}]
+    })
+  });
+  const d = JSON.parse(await r.text());
+  if(!r.ok || d.type === 'error') throw new Error((d.error && d.error.message) || ('HTTP ' + r.status));
+  const svar = (d.content || []).map(function(b){ return b.type === 'text' ? b.text : ''; }).join('');
+  return /^\s*JA\b/i.test(svar);
+}
+
+function bvVis(url){
+  const n = new Date();
+  $('bvTittel').textContent = 'Bil på tunet kl. '
+    + String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0');
+  $('bvBilde').src = url;
+  $('bvBak').hidden = false;
+  $('bvKort').hidden = false;
+}
+
+function bvAapen(){ return !$('bvKort').hidden; }
+
+function bvLukk(){
+  $('bvKort').hidden = true;
+  $('bvBak').hidden = true;
+  $('bvBilde').removeAttribute('src');
+}
+
+/* ============================================================
    Oppstart
    ============================================================ */
 (async function init(){
@@ -3834,10 +4036,15 @@ async function oppdaterAlt(manuelt){
   setInterval(speilHuske, 3000);
   /* Emmas fag ligger i sin egen noekkel og maa speiles for seg. */
   setInterval(speilBarnFag, 3000);
+
+  /* Bil paa tunet - se «Bilvakt» over. */
+  setInterval(bvSjekk, BV_SJEKK_MS);
+  bvSjekk();
 })();
 
 document.addEventListener('keydown', function(e){
   if(e.key !== 'Escape') return;
+  if(bvAapen()){ bvLukk(); return; }
   if($('filviser') && !$('filviser').hidden){ lukkViser(); return; }
   if(avtaleAapen){ lukkAvtale(); return; }
   if(huskeSkjema){ lukkHuskeSkjema(); return; }
