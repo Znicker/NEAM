@@ -27,9 +27,14 @@
    presentasjonsfrasene. Hver rute har to prikker; to riktige gjoer
    den gul. Et galt svar slukker ingenting.
 
-   FIRE FANER:
+   FEM FANER:
      Quiz       - flervalg, generert fra tabellene under
      Bøy        - stammen staar, hun velger endelsen
+     Skriv      - huskeregelen fra minnet: seks ruter per gruppe, og hun
+                  taster endelsene selv (lagt til 2. november). Egne
+                  stjerner: et forsoek er alle tre gruppene, og 5, 10
+                  og 15 feilfrie forsoek PAA RAD gir 1, 2 og 3 stjerner.
+                  Stjernene beholdes; rekka starter paa nytt ved en feil.
      Setninger  - norsk setning, spanske ordbrikker i riktig rekkefoelge.
                   Verbsetningene har en gal verbform med som felle.
      Huskelapp  - tabellene fra heftet, til aa se paa naar hun staar fast
@@ -73,10 +78,6 @@ body{
   letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft);
 }
 .sp-faner{ display:flex; gap:4px; margin-left:auto; flex-wrap:wrap; justify-content:flex-end; }
-@media(max-width:640px){
-  .sp-faner{ margin-left:0; width:100%; justify-content:flex-start; gap:0; }
-  .sp-fane{ padding:8px 12px 8px 0; }
-}
 .sp-fane{
   border:none; background:transparent; font-family:inherit; cursor:pointer;
   font-size:var(--t-meta); font-weight:700; letter-spacing:.06em;
@@ -84,6 +85,13 @@ body{
   padding:8px 10px; border-bottom:3px solid transparent;
 }
 .sp-fane.sp-valgt{ color:var(--ink); border-bottom-color:var(--messing); }
+/* Telefon: fanene paa hele linja under merket. Maa staa ETTER
+   grunnregelen over, ellers vinner den - og med fem faner gikk den
+   siste ned paa en egen linje. */
+@media(max-width:640px){
+  .sp-faner{ margin-left:0; width:100%; justify-content:flex-start; gap:0; }
+  .sp-fane{ padding:8px 10px 8px 0; letter-spacing:.03em; }
+}
 
 /* ---------- Panelet ---------- */
 .sp-panel{
@@ -257,6 +265,27 @@ body{
 }
 .sp-moenster span.sp-her{ border-color:var(--lys); background:rgba(242,193,78,.3); }
 
+/* ---------- Skriv endelsene ----------
+   Huskeregelen som tabell: pronomenet til venstre, en bindestrek og en
+   rute til hoeyre. 20px skrift i rutene - under 16px zoomer iPhone inn
+   naar feltet faar fokus. */
+.sp-skriv-gruppe{ text-align:center; margin:12px 0 4px; }
+.sp-skriv-gruppe b{ display:block; font-size:var(--t-display); line-height:1; }
+.sp-skriv-gruppe span{ font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); }
+.sp-skriv-tabell{ max-width:360px; margin:14px auto 0; display:flex; flex-direction:column; gap:8px; }
+.sp-skriv-rad{ display:grid; grid-template-columns:1fr auto; align-items:center; column-gap:10px; }
+.sp-skriv-pron{ font-size:var(--t-brod); font-weight:700; text-align:right; }
+.sp-skriv-felt-ramme{ display:flex; align-items:center; gap:4px; font-size:20px; font-weight:700; }
+.sp-skriv-felt{
+  width:120px; font-family:inherit; font-size:20px; font-weight:700; color:var(--ink);
+  padding:8px 10px; border-radius:10px; border:2px solid var(--line); background:var(--bg-solid);
+}
+.sp-skriv-felt:focus{ outline:none; border-color:var(--aksent); }
+.sp-skriv-felt.sp-riktig{ box-shadow:0 0 0 3px var(--lys-glod); }
+.sp-skriv-felt.sp-galt{ text-decoration:line-through; }
+.sp-skriv-fasit{ grid-column:2; font-size:var(--t-meta); font-weight:700; color:var(--ink-soft); margin-top:2px; }
+.sp-skriv-fasit[hidden]{ display:none; }
+
 /* ---------- Setninger ---------- */
 .sp-norsk{ font-size:var(--t-stor); font-weight:700; margin:12px 0 12px; line-height:1.3; }
 .sp-linje{
@@ -329,6 +358,7 @@ body{
     <div class="sp-faner">
       <button class="sp-fane sp-valgt" id="fane-quiz" onclick="visFane('quiz')">Quiz</button>
       <button class="sp-fane" id="fane-boy" onclick="visFane('boy')">Bøy</button>
+      <button class="sp-fane" id="fane-skriv" onclick="visFane('skriv')">Skriv</button>
       <button class="sp-fane" id="fane-setning" onclick="visFane('setning')">Setninger</button>
       <button class="sp-fane" id="fane-husk" onclick="visFane('husk')">Huskelapp</button>
     </div>
@@ -425,7 +455,7 @@ const SETNINGER = [
    LAGRING - bare paa enheten
    ================================================================ */
 const LOKAL_NOKKEL = 'neam-emma-spansk:v1';
-let lager = { r:{}, rekordRad:0 };
+let lager = { r:{}, rekordRad:0, skriv:{ rad:0, stjerner:0 } };
 try{
   const t = localStorage.getItem(LOKAL_NOKKEL);
   if(t) lager = Object.assign(lager, JSON.parse(t));
@@ -541,9 +571,10 @@ function tegnKart(){
    FANER
    ================================================================ */
 function visFane(f){
-  ['quiz','boy','setning','husk'].forEach(n => $('fane-' + n).classList.toggle('sp-valgt', n === f));
+  ['quiz','boy','skriv','setning','husk'].forEach(n => $('fane-' + n).classList.toggle('sp-valgt', n === f));
   if(f === 'quiz') visQuizOppsett();
   if(f === 'boy') visBoyOppsett();
+  if(f === 'skriv') visSkrivOppsett();
   if(f === 'setning') visSetningOppsett();
   if(f === 'husk') visHusk();
 }
@@ -720,7 +751,7 @@ function startFokus(k){
       if(!sett.has(s.riktig)){ sett.add(s.riktig); liste.push(s); break; }
     }
   });
-  ['quiz','boy','setning','husk'].forEach(n => $('fane-' + n).classList.toggle('sp-valgt', n === 'quiz'));
+  ['quiz','boy','skriv','setning','husk'].forEach(n => $('fane-' + n).classList.toggle('sp-valgt', n === 'quiz'));
   startQuiz(bland(liste));
 }
 
@@ -983,6 +1014,218 @@ function visBoyResultat(){
     r.appendChild(l);
   }
   f.appendChild(r);
+}
+
+/* ================================================================
+   SKRIV ENDELSENE - huskeregelen fra minnet
+   ================================================================ */
+const skrivGrupper = new Set(['ar','er','ir']);
+let skriv = null;
+const EKSEMPEL = { ar:'hablar = å snakke', er:'comer = å spise', ir:'vivir = å bo' };
+
+/* Aksenten er vanskelig paa telefontastatur. Et svar uten aksent
+   godtas, men hun faar beskjed om hvor den skal staa - det er
+   moensteret som proeves her, ikke tastaturet. */
+const utenAksent = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '');
+function vurderEndelse(svar, fasit){
+  const s = svar.trim().toLowerCase().replace(/^-+/, '');
+  if(s === fasit) return 'riktig';
+  if(s && utenAksent(s) === utenAksent(fasit)) return 'aksent';
+  return 'galt';
+}
+
+/* Stjernene i Skriv er en rekke, ikke en prosent: 5, 10 og 15 feilfrie
+   forsoek paa rad med alle tre gruppene. En stjerne som er tjent,
+   beholdes - det er bare rekka som starter paa nytt ved en feil. */
+const SKRIV_TRINN = [5, 10, 15];
+const feilfrie = n => n + (n === 1 ? ' feilfri' : ' feilfrie') + ' på rad';
+function skrivTilNeste(){
+  const st = lager.skriv;
+  if(st.stjerner >= 3) return null;
+  return SKRIV_TRINN[st.stjerner] - st.rad;
+}
+function skrivStjerneBoks(glod){
+  const boks = el('div', 'sp-resultat');
+  const st = el('div', 'sp-stjerner');
+  for(let i = 0; i < 3; i++) st.appendChild(stjerneBilde(i < lager.skriv.stjerner, glod && i === lager.skriv.stjerner - 1));
+  boks.appendChild(st);
+  const igjen = skrivTilNeste();
+  boks.appendChild(el('span', 'sp-gitt', feilfrie(lager.skriv.rad)
+    + (igjen == null ? ' · alle tre stjernene!' : ' · ' + igjen + ' til neste stjerne')));
+  return boks;
+}
+
+function visSkrivOppsett(){
+  iRunde(false);
+  const f = $('flate');
+  f.innerHTML = '';
+  f.appendChild(el('h2', 'sp-panel-tittel', 'Skriv endelsene'));
+  f.appendChild(el('p', 'sp-ledetekst', 'Huskeregelen fra minnet: skriv endelsen til hvert pronomen. Bare endelsen – «amos», ikke «hablamos». Aksenten kan du hoppe over på telefonen, men du får se hvor den skal stå.'));
+  f.appendChild(skrivStjerneBoks(false));
+  f.appendChild(el('p', 'sp-ledetekst', 'Stjerner: skriv alle tre gruppene uten feil – det er ett forsøk. 5 feilfrie forsøk på rad gir én stjerne, 10 gir to og 15 gir tre. En feil starter rekka på nytt, men stjernene du har fått, beholder du.'));
+  f.appendChild(el('p', 'sp-undertittel', 'Hvilke'));
+  const v = el('div', 'sp-valg');
+  Object.keys(GRUPPER).forEach(g => {
+    const b = el('button', 'sp-velger' + (skrivGrupper.has(g) ? ' sp-pa' : ''));
+    b.appendChild(el('span', 'sp-hake', '✓'));
+    b.appendChild(document.createTextNode(GRUPPER[g].navn));
+    b.onclick = () => {
+      if(skrivGrupper.has(g)){ if(skrivGrupper.size > 1) skrivGrupper.delete(g); } else skrivGrupper.add(g);
+      b.classList.toggle('sp-pa', skrivGrupper.has(g));
+    };
+    v.appendChild(b);
+  });
+  f.appendChild(v);
+  const k = el('div', 'sp-knapper');
+  const start = el('button', 'sp-knapp sp-tung', 'Start');
+  start.onclick = () => startSkriv(Object.keys(GRUPPER).filter(g => skrivGrupper.has(g)));
+  k.appendChild(start);
+  f.appendChild(k);
+}
+
+function startSkriv(grupper){
+  skriv = { grupper, i:0, riktige:0, totalt:0, bom:[] };
+  iRunde(true);
+  visSkriv();
+}
+
+function visSkriv(){
+  window.scrollTo(0, 0);
+  const g = skriv.grupper[skriv.i];
+  const G = GRUPPER[g];
+  const f = $('flate');
+  f.innerHTML = '';
+  const hode = el('div', 'sp-hode');
+  hode.appendChild(el('span', 'sp-teller', 'Gruppe ' + (skriv.i + 1) + ' av ' + skriv.grupper.length));
+  f.appendChild(hode);
+  const tittel = el('div', 'sp-skriv-gruppe');
+  tittel.appendChild(el('b', null, G.navn));
+  tittel.appendChild(el('span', null, EKSEMPEL[g]));
+  f.appendChild(tittel);
+
+  const tabell = el('div', 'sp-skriv-tabell');
+  const felt = [], fasiter = [];
+  const melding = el('div', 'sp-fasit');
+  melding.hidden = true;
+  const sjekk = el('button', 'sp-knapp sp-tung', 'Sjekk');
+  const neste = el('button', 'sp-knapp sp-tung', skriv.i + 1 < skriv.grupper.length ? 'Neste gruppe' : 'Se resultatet');
+  neste.hidden = true;
+
+  PERSON_NAVN.forEach((pn, p) => {
+    const rad = el('div', 'sp-skriv-rad');
+    rad.appendChild(el('span', 'sp-skriv-pron', pn));
+    const ramme = el('span', 'sp-skriv-felt-ramme');
+    ramme.appendChild(document.createTextNode('-'));
+    const inp = el('input', 'sp-skriv-felt');
+    inp.type = 'text';
+    inp.setAttribute('autocomplete', 'off');
+    inp.setAttribute('autocorrect', 'off');
+    inp.setAttribute('autocapitalize', 'off');
+    inp.setAttribute('spellcheck', 'false');
+    inp.setAttribute('enterkeyhint', p < 5 ? 'next' : 'done');
+    inp.setAttribute('aria-label', 'Endelsen for ' + pn);
+    /* Enter gaar til neste rute, og fra den siste sjekkes svarene. */
+    inp.addEventListener('keydown', e => {
+      if(e.key !== 'Enter') return;
+      e.preventDefault();
+      if(p < 5) felt[p + 1].focus(); else if(!sjekk.hidden) sjekk.click();
+    });
+    ramme.appendChild(inp);
+    rad.appendChild(ramme);
+    const fasit = el('span', 'sp-skriv-fasit');
+    fasit.hidden = true;
+    rad.appendChild(fasit);
+    felt.push(inp); fasiter.push(fasit);
+    tabell.appendChild(rad);
+  });
+  f.appendChild(tabell);
+  f.appendChild(melding);
+
+  neste.onclick = () => { skriv.i++; skriv.i < skriv.grupper.length ? visSkriv() : visSkrivResultat(); };
+  sjekk.onclick = () => {
+    let riktige = 0;
+    const aksenter = [];
+    felt.forEach((inp, p) => {
+      inp.readOnly = true;
+      const fasit = G.endelser[p];
+      const dom = vurderEndelse(inp.value, fasit);
+      if(dom === 'galt'){
+        inp.classList.add('sp-galt');
+        fasiter[p].textContent = 'Riktig: -' + fasit;
+        fasiter[p].hidden = false;
+        skriv.bom.push(PERSON_NAVN[p] + ' (' + G.navn + '): -' + fasit);
+      }else{
+        riktige++;
+        inp.classList.add('sp-riktig');
+        gi('v:' + g + ':' + p);
+        if(dom === 'aksent'){
+          aksenter.push('-' + fasit);
+          fasiter[p].textContent = 'Med aksent: -' + fasit;
+          fasiter[p].hidden = false;
+        }
+      }
+    });
+    skriv.riktige += riktige; skriv.totalt += 6;
+    melding.innerHTML = '';
+    melding.appendChild(el('b', null, riktige === 6 ? '¡Perfecto! Alle seks!' : riktige + ' av 6 riktige'));
+    melding.appendChild(document.createTextNode(G.navn + ' = ' + G.endelser.join(', ')
+      + (aksenter.length ? '. Husk aksenten: ' + aksenter.join(', ') + '.' : '.')));
+    melding.hidden = false;
+    sjekk.hidden = true;
+    if(document.activeElement) document.activeElement.blur();
+    visKnapp(neste);
+  };
+  const k = el('div', 'sp-knapper');
+  k.appendChild(sjekk); k.appendChild(neste);
+  f.appendChild(k);
+  /* Tastaturet opp med en gang paa nettbrett og PC. Paa telefon dekker
+     det halve skjermen foer hun har sett oppgaven, saa der trykker hun
+     selv i foerste rute. */
+  if(window.innerWidth > 640) felt[0].focus();
+}
+
+function visSkrivResultat(){
+  iRunde(false);
+  const f = $('flate');
+  f.innerHTML = '';
+  const r = el('div', 'sp-resultat');
+  const feilfri = skriv.riktige === skriv.totalt;
+  const teller = skriv.grupper.length === 3;
+  const st = lager.skriv;
+  const forrigeRad = st.rad, forrigeStjerner = st.stjerner;
+  if(teller){
+    st.rad = feilfri ? st.rad + 1 : 0;
+    st.stjerner = Math.max(st.stjerner, SKRIV_TRINN.filter(t => st.rad >= t).length);
+    lagre();
+  }
+  const ny = st.stjerner > forrigeStjerner;
+  r.appendChild(skrivStjerneBoks(ny));
+  r.appendChild(el('p', 'sp-stort-tall', skriv.riktige + ' av ' + skriv.totalt));
+  let tekst;
+  if(!teller) tekst = feilfri ? 'Feilfritt! Velg alle tre gruppene for å samle stjerner.' : 'Bare runder med alle tre gruppene teller mot stjernene.';
+  else if(ny) tekst = st.stjerner === 3 ? '¡Increíble! Tre stjerner – 15 på rad!' : '¡Una estrella nueva! ' + feilfrie(st.rad) + '!';
+  else if(feilfri) tekst = '¡Perfecto! ' + stor(feilfrie(st.rad)) + '.';
+  else if(forrigeRad) tekst = (skriv.totalt - skriv.riktige <= 2 ? 'Nesten! ' : '')
+    + 'Rekka på ' + forrigeRad + ' starter på nytt – stjernene beholder du.';
+  else tekst = skryt(skriv.riktige / skriv.totalt);
+  r.appendChild(el('p', 'sp-skryt', tekst));
+  const k = el('div', 'sp-knapper');
+  const igjen = el('button', 'sp-knapp sp-tung', 'Nytt forsøk');
+  igjen.onclick = () => startSkriv(skriv.grupper);
+  const husk = el('button', 'sp-knapp', 'Se huskelappen');
+  husk.onclick = () => visFane('husk');
+  k.appendChild(igjen); k.appendChild(husk);
+  r.appendChild(k);
+  if(skriv.bom.length){
+    const l = el('div', 'sp-fasitliste');
+    l.appendChild(el('p', 'sp-undertittel', 'Disse skal du se på igjen'));
+    skriv.bom.forEach(t => l.appendChild(el('div', 'sp-fasitrad', t)));
+    r.appendChild(l);
+  }
+  f.appendChild(r);
+  /* Paa telefon ligger kartet over resultatet - stjerna skal synes
+     uten at hun maa rulle etter den. */
+  if(window.innerWidth <= 640) f.scrollIntoView({ block:'start' });
 }
 
 /* ================================================================
