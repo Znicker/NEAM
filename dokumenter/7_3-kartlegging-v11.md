@@ -1,6 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 2. november 2026, senere samme dag: ti verktøy flyttet inn i
+*Ført à jour 2. november 2026, kveld: Kjøkken dash viser bildet når
+en bil kommer på tunet – bevegelse fra Homey, bilde over WebRTC, og Claude
+som avgjør (se toppblokka). Ført à jour 2. november 2026, senere samme dag: ti verktøy flyttet inn i
 fellesfilene – Neam har nå 56 verktøy som virker fra alle sidene, og det
 som står igjen står igjen med en grunn (se «Neam på tvers» i toppblokka).
 Ført à jour 2. november 2026: Rommene kan skjule hele rom, og
@@ -469,6 +471,35 @@ Se del 57.
   `measure_timeToEnd` i Homey Innsikt – programmets lengde er det siste
   hoppet fra 0. Magne ser etter grafen etter en hel oppvask; finnes den,
   trengs et leseendepunkt i `homey.js` (spør først).
+
+**2. november, kveld: bilvakt på Kjøkken dash** (`f005df2`, bare
+`dashboard.html` – ingen fellesfil, ingen `?v=`).
+- **Tapo kjenner igjen biler i sin egen sky, ikke gjennom Homey.** Homey
+  får bare `alarm_motion`, og flowene har ingen kjøretøy-utløser (sjekket
+  av Magne). Dashen avgjør derfor selv.
+- **Slik:** hvert tiende sekund spør dashen `?hva=enheter` om kameraet på
+  tunet melder bevegelse. Ved ny bevegelse kobles kameraet opp over WebRTC
+  (bare STUN – skjermen står hjemme), to stillbilder tas med to sekunders
+  mellomrom, og Haiku 4.5 svarer JA/NEI på om en bil kommer. To bilder for
+  at en parkert bil ikke skal gi JA. JA: bildet dekker 75 % av skjermen
+  med «Bil på tunet kl. …» til noen lukker med krysset (også Escape og
+  bakteppet). Står til det lukkes, også når skjermen hviler – om det
+  heller skal lukke seg selv, er ikke avgjort. Ett minutt pause mellom
+  testene.
+- **Pris, regnet ut:** ca. 1 750 tokens inn per test, rundt 2 øre med
+  Haiku 4.5 – omtrent 27 kr/mnd ved 50 bevegelser om dagen. Haiku 5.5 ville
+  vært en tidel, men tenker som standard og trenger da `thinking`
+  slått av; Magne valgte å beholde 4.5 som resten av huset.
+- **Ikke bekreftet mot ekte Homey:** at bevegelsen har `lastUpdated`
+  (brukes for å fange en bevegelse som kom og gikk mellom to spørsmål;
+  uten det teller bare av→på), at kjøkkenskjermen får tatt bilde fra
+  strømmen, og hvor godt Haiku skiller kjørende fra parkert. Feil havner
+  i konsollen som «Bilvakt: …».
+- **Åpent:** WebRTC-oppkoblingen finnes nå to steder – `sikkerhet.html` og
+  `dashboard.html` – og bør samles i `felles-hus.js`. Hver sjekk henter hele
+  enhetslista; et lett endepunkt for én enhet krever endring i `homey.js`
+  (spør først). Virker bare mens dashen er åpen (del 49). Ikke ført inn
+  i designsystemet, og ikke på Emma eller Andrea dash.
 
 ### Åpne tråder
 
