@@ -328,8 +328,9 @@ body{
 .hu-rad.hu-lekse.gul{ border-left-color:var(--handling-endre); }
 .hu-rad.hu-lekse.rod{ border-left-color:var(--danger); }
 
-/* ---------- Grunnstoffspillet ----------
-   Snarveien til emma-grunnstoff.html, nederst i hoeyrekolonnen. Samme
+/* ---------- Spillene ----------
+   Snarveien til emma-spill.html (fra 2. november 2026; foer det
+   emma-grunnstoff.html), nederst i hoeyrekolonnen. Samme
    form som mattespillet paa Andrea dash: et kort og ikke en knapp i
    hjoernet, fordi alle tre plassene i hoeyre firer er tatt og applista
    er felles for hele huset.
@@ -343,9 +344,10 @@ body{
   -webkit-tap-highlight-color:transparent;
 }
 .hoyre > .kort.spill-kort:active{ transform:scale(.98); }
-/* Atomet er tegnet her og ikke hentet som bilde - da finnes det ingen
-   fil som kan mangle, og ikonet kan ikke komme i utakt med spillet. */
-.spill-ikon{ width:56px; height:56px; flex-shrink:0; display:block; color:var(--handling-endre); }
+/* Spillikonet fra bilder/ikoner/. Faller bildet bort, skjules det og
+   kortet staar igjen med navnet sitt. */
+.spill-ikon{ width:56px; height:56px; flex-shrink:0; display:block; object-fit:contain; }
+.spill-ikon[hidden]{ display:none; }
 .spill-navn{ display:block; font-size:var(--t-brod); font-weight:700; }
 .spill-sub{ display:block; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; margin-top:1px; }
 /* iPad staaende: kolonnen er en rad, og kortet blir en smal flis ved
@@ -1822,36 +1824,15 @@ select.hu-felt{
         </div>
       </div>
 
-      <!-- Snarvei til grunnstoffspillet. Atomet er tegnet inn her og
-           ikke hentet som bilde - da finnes det ingen fil som kan mangle. -->
-      <a class="kort spill-kort" id="kortSpill" href="/emma-grunnstoff.html"
-         aria-label="Grunnstoffspill: periodesystemet">
-        <svg class="spill-ikon" viewBox="0 0 48 48" fill="none" stroke="currentColor"
-             stroke-width="2.2" aria-hidden="true">
-          <circle cx="24" cy="24" r="4.5" fill="currentColor" stroke="none"/>
-          <ellipse cx="24" cy="24" rx="19" ry="7.5"/>
-          <ellipse cx="24" cy="24" rx="19" ry="7.5" transform="rotate(60 24 24)"/>
-          <ellipse cx="24" cy="24" rx="19" ry="7.5" transform="rotate(120 24 24)"/>
-          <circle cx="43" cy="24" r="2.6" fill="currentColor" stroke="none"/>
-          <circle cx="14.5" cy="7.6" r="2.6" fill="currentColor" stroke="none"/>
-          <circle cx="14.5" cy="40.4" r="2.6" fill="currentColor" stroke="none"/>
-        </svg>
-        <span><span class="spill-navn">Grunnstoffer</span><span class="spill-sub">Periodesystemet</span></span>
-      </a>
-
-      <!-- Snarvei til naturfagspillet (puggearket). Kolben er tegnet inn
-           her av samme grunn som atomet over. -->
-      <a class="kort spill-kort" id="kortNaturfag" href="/emma-naturfag.html"
-         aria-label="Naturfagspill: quiz til prøven">
-        <svg class="spill-ikon" viewBox="0 0 48 48" fill="none" stroke="currentColor"
-             stroke-width="2.2" stroke-linejoin="round" aria-hidden="true">
-          <path d="M18 5h12M20 5v13L8.5 38.5A3 3 0 0 0 11.2 43h25.6a3 3 0 0 0 2.7-4.5L28 18V5"/>
-          <path d="M13.5 30h21L39 38.5A3 3 0 0 1 36.8 43H11.2A3 3 0 0 1 9 38.5z" fill="currentColor" stroke="none" opacity=".35"/>
-          <circle cx="21" cy="35" r="2" fill="currentColor" stroke="none"/>
-          <circle cx="27.5" cy="37.5" r="1.5" fill="currentColor" stroke="none"/>
-          <circle cx="25" cy="32" r="1.2" fill="currentColor" stroke="none"/>
-        </svg>
-        <span><span class="spill-navn">Naturfag</span><span class="spill-sub">Quiz til prøven</span></span>
+      <!-- Snarvei til spillene. Én dør, og valget av spill tas paa
+           emma-spill.html - ikke et kort per spill (designsystemet,
+           «Andrea dash»: «Ett kort, ikke ett per spill»). Byttet fra to
+           kort til ett 2. november 2026, da det tredje spillet kom. -->
+      <a class="kort spill-kort" id="kortSpill" href="/emma-spill.html"
+         aria-label="Spill: spansk, naturfag og grunnstoffer">
+        <img class="spill-ikon" src="/bilder/ikoner/spill.png?v=1" alt="" width="114" height="114"
+             onerror="this.hidden = true">
+        <span><span class="spill-navn">Spill</span><span class="spill-sub">Spansk, naturfag og grunnstoffer</span></span>
       </a>
 
     </div>
@@ -2380,9 +2361,9 @@ function rullTilNaa(boks){
 /* Avtalen tar over hele hoeyrekolonnen i stedet for aa legge seg som en
    boble oppaa. Da kan notatet vaere langt uten aa dekke planen man leser
    det ut fra. */
-/* kortSpill (snarveien til grunnstoffspillet) viker sammen med de to
-   andre - lagt til 16. september 2026. kortNaturfag kom 1. november. */
-const HOYRE_KORT = ['kortMerknader', 'kortUken', 'kortSpill', 'kortNaturfag'];
+/* kortSpill (snarveien til spillene) viker sammen med de to andre -
+   lagt til 16. september 2026. */
+const HOYRE_KORT = ['kortMerknader', 'kortUken', 'kortSpill'];
 
 let detaljIndeks = null;
 

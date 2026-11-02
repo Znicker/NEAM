@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Spill">
+<meta name="theme-color" content="#F5F5F5">
+<meta name="robots" content="noindex, nofollow">
+<title>Spill – Neam</title>
+<link rel="apple-touch-icon" href="/bilder/neam-hjemskjerm.png?v=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/felles-rot.css?v=6">
+<style>
+/* ============================================================
+   NEAM – Spillene til Emma
+   Laget 2. november 2026, da det tredje spillet kom. Lenket fra
+   Emma dash (kortSpill). Samme form som andrea-spill.html.
+
+   Én dør inn til spillene i stedet for ett kort per spill paa
+   dashen. Kommer det et nytt spill, legges det til her - dashen
+   roeres ikke.
+
+   Ingen skript og ingen Neam-firer: sida er tre lenker. Veien ut
+   er merket oppe til venstre og sveip tilbake. Spillene lenker
+   selv til Emma dash fra merket sitt; sveip tilbake fra et spill
+   kommer hit.
+
+   Spillene har ingen logoer ennaa. Ikonene er tegnet inn som SVG -
+   da finnes det ingen fil som kan mangle. Atomet og kolben er de
+   samme som stod paa dashen.
+   ============================================================ */
+
+*{ box-sizing:border-box; }
+html, body{ margin:0; }
+body{
+  font-family:'Archivo', system-ui, -apple-system, sans-serif;
+  color:var(--ink);
+  background:var(--side-bakgrunn);
+  -webkit-font-smoothing:antialiased;
+}
+a:focus-visible{ outline:3px solid var(--aksent); outline-offset:2px; }
+
+.side{
+  min-height:100vh; min-height:100dvh;
+  max-width:1100px; margin:0 auto;
+  display:flex; flex-direction:column; gap:22px;
+  padding:max(14px, env(safe-area-inset-top)) 16px
+          calc(20px + env(safe-area-inset-bottom));
+}
+@media(min-width:700px){ .side{ padding-left:28px; padding-right:28px; gap:30px; } }
+
+/* ---------- Toppen (som i spillene) ---------- */
+.topp{ display:flex; align-items:center; gap:14px; }
+.merke{ flex-shrink:0; display:block; width:64px; height:64px; }
+.merke img{ width:100%; height:100%; object-fit:contain; display:block; }
+.tittel{
+  margin:0; font-size:clamp(26px, 4.2vw, 44px); font-weight:700;
+  line-height:1.05; letter-spacing:-.01em;
+}
+.ingress{
+  margin:6px 0 0;
+  font-size:var(--t-brod); line-height:1.45; color:var(--ink-soft); font-weight:600;
+}
+@media(min-width:700px){ .merke{ width:96px; height:96px; } }
+
+/* ---------- Spillene ----------
+   Stablet paa telefon, tre i bredden ellers. Hvert kort er hele
+   lenken - det er ingen knapp inni som man maa treffe. */
+.spillene{
+  list-style:none; margin:0; padding:0;
+  display:grid; grid-template-columns:1fr; gap:14px;
+}
+@media(min-width:700px){ .spillene{ grid-template-columns:repeat(3, minmax(0,1fr)); gap:18px; } }
+
+.spill-lenke{
+  display:flex; align-items:center; gap:16px; height:100%;
+  padding:16px 20px;
+  background:var(--paper); border-radius:var(--radius); box-shadow:var(--shadow);
+  text-decoration:none; color:inherit;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .12s ease;
+}
+.spill-lenke:active{ transform:scale(.98); }
+@media(min-width:700px){
+  .spill-lenke{
+    flex-direction:column; justify-content:center; text-align:center;
+    gap:14px; padding:30px 20px 28px; min-height:300px;
+  }
+}
+
+.spill-ikon{ width:72px; height:72px; flex-shrink:0; display:block; color:var(--handling-endre); }
+@media(min-width:700px){ .spill-ikon{ width:min(150px, 100%); height:auto; aspect-ratio:1; } }
+
+.spill-navn{ display:block; font-size:var(--t-stor); font-weight:700; line-height:1.2; }
+.spill-sub{ display:block; margin-top:3px; font-size:var(--t-brod); color:var(--ink-soft); font-weight:600; line-height:1.35; }
+
+@media(prefers-reduced-motion:reduce){
+  *{ transition:none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="side">
+
+  <header class="topp">
+    <a class="merke" href="/emma.html" aria-label="Til Emma dash">
+      <img src="/bilder/ikoner/emma.png?v=1" alt="Emma dash" width="225" height="199">
+    </a>
+    <div>
+      <h1 class="tittel">Spill</h1>
+      <p class="ingress">Hva vil du øve på?</p>
+    </div>
+  </header>
+
+  <main>
+    <ul class="spillene">
+      <li>
+        <a class="spill-lenke" href="/emma-spansk.html">
+          <svg class="spill-ikon" viewBox="0 0 48 48" fill="none" stroke="currentColor"
+               stroke-width="2.2" stroke-linejoin="round" aria-hidden="true">
+            <path d="M8 8h32a3 3 0 0 1 3 3v19a3 3 0 0 1-3 3H21l-9 8v-8H8a3 3 0 0 1-3-3V11a3 3 0 0 1 3-3z"/>
+            <text x="24" y="25" text-anchor="middle" font-family="Archivo, system-ui, sans-serif"
+                  font-size="10.5" font-weight="700" fill="currentColor" stroke="none">¡Hola!</text>
+          </svg>
+          <span><span class="spill-navn">Spansk</span><span class="spill-sub">Pronomen og verb</span></span>
+        </a>
+      </li>
+      <li>
+        <a class="spill-lenke" href="/emma-naturfag.html">
+          <svg class="spill-ikon" viewBox="0 0 48 48" fill="none" stroke="currentColor"
+               stroke-width="2.2" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 5h12M20 5v13L8.5 38.5A3 3 0 0 0 11.2 43h25.6a3 3 0 0 0 2.7-4.5L28 18V5"/>
+            <path d="M13.5 30h21L39 38.5A3 3 0 0 1 36.8 43H11.2A3 3 0 0 1 9 38.5z" fill="currentColor" stroke="none" opacity=".35"/>
+            <circle cx="21" cy="35" r="2" fill="currentColor" stroke="none"/>
+            <circle cx="27.5" cy="37.5" r="1.5" fill="currentColor" stroke="none"/>
+            <circle cx="25" cy="32" r="1.2" fill="currentColor" stroke="none"/>
+          </svg>
+          <span><span class="spill-navn">Naturfag</span><span class="spill-sub">Stoffer, reaksjoner og modeller</span></span>
+        </a>
+      </li>
+      <li>
+        <a class="spill-lenke" href="/emma-grunnstoff.html">
+          <svg class="spill-ikon" viewBox="0 0 48 48" fill="none" stroke="currentColor"
+               stroke-width="2.2" aria-hidden="true">
+            <circle cx="24" cy="24" r="4.5" fill="currentColor" stroke="none"/>
+            <ellipse cx="24" cy="24" rx="19" ry="7.5"/>
+            <ellipse cx="24" cy="24" rx="19" ry="7.5" transform="rotate(60 24 24)"/>
+            <ellipse cx="24" cy="24" rx="19" ry="7.5" transform="rotate(120 24 24)"/>
+            <circle cx="43" cy="24" r="2.6" fill="currentColor" stroke="none"/>
+            <circle cx="14.5" cy="7.6" r="2.6" fill="currentColor" stroke="none"/>
+            <circle cx="14.5" cy="40.4" r="2.6" fill="currentColor" stroke="none"/>
+          </svg>
+          <span><span class="spill-navn">Grunnstoffer</span><span class="spill-sub">Periodesystemet</span></span>
+        </a>
+      </li>
+    </ul>
+  </main>
+
+</div>
+
+</body>
+</html>

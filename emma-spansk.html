@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Spansk">
+<meta name="theme-color" content="#F5F5F5">
+<meta name="robots" content="noindex, nofollow">
+<title>Spansk – Neam</title>
+<link rel="apple-touch-icon" href="/bilder/neam-hjemskjerm.png?v=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/felles-rot.css?v=6">
+<style>
+/* ============================================================
+   NEAM - Spanskspill for Emma
+   Laget 2. november 2026, til proeven onsdag 4. november. Innholdet
+   er heftet «Spansk til onsdag»: personlige pronomen, aa presentere
+   seg selv, og presens av -AR, -ER og -IR. Ingenting utover det.
+
+   Heftets maal er aa kjenne igjen MOENSTRENE, ikke pugge hvert verb.
+   Derfor er kartet oeverst selve endelsestabellen: tre rader (-AR,
+   -ER, -IR) med seks endelser hver, pluss pronomenene og de fem
+   presentasjonsfrasene. Hver rute har to prikker; to riktige gjoer
+   den gul. Et galt svar slukker ingenting.
+
+   FIRE FANER:
+     Quiz       - flervalg, generert fra tabellene under
+     Bøy        - stammen staar, hun velger endelsen
+     Setninger  - norsk setning, spanske ordbrikker i riktig rekkefoelge.
+                  Verbsetningene har en gal verbform med som felle.
+     Huskelapp  - tabellene fra heftet, til aa se paa naar hun staar fast
+
+   Samme ramme som naturfag- og grunnstoffspillet: gult (--lys) betyr
+   «det der gikk bra», et galt svar er dust og aldri roedt, ingen
+   Neam-firer, og merket oppe til venstre gaar til Emma dash. Paa
+   telefon viker kartet mens en runde paagaar.
+
+   Framdriften ligger bare i localStorage paa enheten.
+
+   KLASSENAVN ER PREFIKSET `sp-`.
+   ============================================================ */
+
+:root{
+  --messing:#B8873A;
+  --messing-lys:#D9AE68;
+  --lys:#F2C14E;
+  --lys-glod:rgba(242,193,78,.75);
+}
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ margin:0; padding:0; width:100%; overflow-x:clip; color:var(--ink); }
+body{
+  font-family:'Archivo', system-ui, -apple-system, sans-serif;
+  background:var(--side-bakgrunn);
+  min-height:100vh;
+}
+.sp-side{ max-width:980px; margin:0 auto; padding:10px 12px calc(28px + env(safe-area-inset-bottom)); }
+@media(min-width:700px){ .sp-side{ padding:18px 20px 36px; } }
+
+/* ---------- Topplinja ---------- */
+.sp-topp{ display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+.sp-merke{ flex-shrink:0; display:block; width:56px; height:56px; }
+.sp-merke img{ width:100%; height:100%; object-fit:contain; display:block; }
+.sp-merke img[hidden]{ display:none; }
+@media(min-width:700px){ .sp-merke{ width:84px; height:84px; } }
+.sp-tittel{ margin:0; font-size:var(--t-stor); font-weight:700; line-height:1.15; }
+.sp-tittel span{
+  display:block; font-size:var(--t-etikett); font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft);
+}
+.sp-faner{ display:flex; gap:4px; margin-left:auto; flex-wrap:wrap; justify-content:flex-end; }
+@media(max-width:640px){
+  .sp-faner{ margin-left:0; width:100%; justify-content:flex-start; gap:0; }
+  .sp-fane{ padding:8px 12px 8px 0; }
+}
+.sp-fane{
+  border:none; background:transparent; font-family:inherit; cursor:pointer;
+  font-size:var(--t-meta); font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--ink-soft);
+  padding:8px 10px; border-bottom:3px solid transparent;
+}
+.sp-fane.sp-valgt{ color:var(--ink); border-bottom-color:var(--messing); }
+
+/* ---------- Panelet ---------- */
+.sp-panel{
+  background:var(--paper); border:2px solid var(--messing);
+  border-radius:18px; box-shadow:var(--shadow);
+  padding:14px; margin-bottom:14px;
+}
+@media(min-width:700px){ .sp-panel{ padding:18px; } }
+.sp-panel-tittel{
+  font-size:var(--t-meta); font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink); margin:0 0 10px;
+}
+.sp-ledetekst{ font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); margin:0 0 12px; line-height:1.45; }
+.sp-undertittel{
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-soft); margin:4px 0 0;
+}
+
+/* ---------- Kartet: endelsestabellen ---------- */
+.sp-kart{ display:grid; grid-template-columns:1fr; gap:12px; }
+@media(min-width:760px){ .sp-kart{ grid-template-columns:1fr 1fr; } .sp-kart-verb{ grid-column:1 / -1; } }
+.sp-del-navn{
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-soft); margin:0 0 6px;
+}
+.sp-ruter{ display:flex; gap:5px; flex-wrap:wrap; align-items:center; }
+.sp-verbrad{ display:flex; gap:5px; align-items:center; margin-bottom:5px; }
+.sp-verbrad-navn{ width:36px; flex-shrink:0; font-size:var(--t-meta); font-weight:700; }
+.sp-rute{
+  min-width:44px; height:44px; padding:0 9px; border-radius:10px; cursor:default;
+  border:2px solid var(--line); background:var(--boks-mild); color:var(--ink);
+  font-family:inherit; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:4px;
+}
+.sp-verbrad .sp-rute{ flex:1 1 0; min-width:0; padding:0 2px; }
+.sp-rute b{ font-size:var(--t-meta); font-weight:700; line-height:1; white-space:nowrap; }
+.sp-prikker2{ display:flex; gap:3px; }
+.sp-prikker2 i{
+  width:7px; height:7px; border-radius:50%; display:block;
+  border:1.5px solid var(--boks-kant); background:transparent;
+}
+.sp-prikker2 i.sp-tent{ background:var(--lys); border-color:var(--messing-lys); }
+.sp-rute.sp-mestret{
+  border-color:var(--lys); background:rgba(242,193,78,.28);
+  box-shadow:0 0 0 2px var(--lys-glod);
+}
+.sp-kart-sum{ margin:10px 0 0; font-size:var(--t-meta); font-weight:700; color:var(--ink-soft); }
+@media(max-width:640px){
+  body.sp-i-runde .sp-kart-panel{ display:none; }
+}
+
+/* ---------- Knapper og valg ---------- */
+.sp-knapp{
+  font-family:inherit; font-size:var(--t-brod); font-weight:700;
+  padding:11px 18px; border-radius:12px; cursor:pointer;
+  border:2px solid var(--messing); background:var(--paper); color:var(--ink);
+}
+.sp-knapp:active{ transform:scale(.98); }
+.sp-knapp.sp-tung{ background:var(--aksent); border-color:var(--aksent); color:#FFFFFF; }
+.sp-knapp.sp-tung:active{ background:var(--aksent-moerk); }
+.sp-knapp[disabled]{ opacity:.45; cursor:default; }
+.sp-knapper{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+@media(max-width:640px){ .sp-knapper .sp-knapp{ flex:1 1 auto; } }
+
+.sp-valg{ display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 16px; }
+.sp-velger{
+  font-family:inherit; font-size:var(--t-brod); font-weight:700;
+  padding:9px 16px; border-radius:999px; cursor:pointer;
+  border:2px solid var(--line); background:var(--paper); color:var(--ink-soft);
+}
+.sp-velger.sp-pa{ border-color:var(--messing); color:var(--ink); background:var(--boks-mild); }
+.sp-velger .sp-hake{ margin-right:6px; opacity:0; }
+.sp-velger.sp-pa .sp-hake{ opacity:1; }
+
+/* ---------- Spoersmaal ---------- */
+.sp-hode{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.sp-teller{
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-soft);
+}
+.sp-lapp{
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.06em;
+  border:1px solid var(--boks-kant); background:var(--boks-mild);
+  border-radius:999px; padding:3px 10px; color:var(--ink-soft);
+}
+.sp-rad{
+  margin-left:auto; font-size:var(--t-meta); font-weight:700;
+  background:rgba(242,193,78,.25); border:1px solid var(--lys);
+  border-radius:999px; padding:3px 12px;
+}
+.sp-rad[hidden]{ display:none; }
+.sp-rad.sp-pop{ animation:spPop .5s ease; }
+@keyframes spPop{ 0%{ transform:scale(1); } 40%{ transform:scale(1.18); } 100%{ transform:scale(1); } }
+
+.sp-sporsmaal{ font-size:var(--t-stor); font-weight:700; margin:12px 0 14px; line-height:1.3; }
+.sp-sporsmaal em{ font-style:normal; color:var(--aksent-moerk); }
+.sp-svar{ display:grid; grid-template-columns:1fr; gap:10px; }
+@media(min-width:620px){ .sp-svar{ grid-template-columns:1fr 1fr; } }
+.sp-svar-knapp{
+  font-family:inherit; font-size:var(--t-brod); font-weight:700; text-align:left;
+  padding:14px 16px; border-radius:12px; cursor:pointer; line-height:1.35;
+  border:2px solid var(--line); background:var(--paper); color:var(--ink);
+}
+.sp-svar-knapp:active{ transform:scale(.99); }
+.sp-riktig{
+  border-color:var(--lys) !important; background:rgba(242,193,78,.22) !important;
+  box-shadow:0 0 0 3px var(--lys-glod);
+}
+.sp-galt{ opacity:.5; text-decoration:line-through; }
+.sp-svar-knapp[disabled]{ cursor:default; }
+
+.sp-fasit{
+  margin-top:14px; font-size:var(--t-brod); font-weight:600; line-height:1.5;
+  background:var(--boks-mild); border:1px solid var(--boks-kant);
+  border-radius:12px; padding:12px 14px;
+}
+.sp-fasit[hidden]{ display:none; }
+.sp-fasit b{ display:block; margin-bottom:2px; }
+
+.sp-prikker{ display:flex; gap:5px; margin:12px 0 0; flex-wrap:wrap; }
+.sp-prikker i{
+  width:10px; height:10px; border-radius:50%; display:block;
+  border:2px solid var(--line); background:transparent;
+}
+.sp-prikker i.sp-p-riktig{ background:var(--lys); border-color:var(--lys); }
+.sp-prikker i.sp-p-bom{ background:var(--ink-soft); border-color:var(--ink-soft); opacity:.45; }
+.sp-prikker i.sp-p-na{ border-color:var(--messing); }
+
+/* ---------- Boey verbet ---------- */
+.sp-oppgave{ text-align:center; margin:14px 0 6px; }
+.sp-oppgave-pron{ font-size:var(--t-stor); font-weight:700; }
+.sp-oppgave-inf{ font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); margin-top:2px; }
+.sp-ord{
+  display:flex; justify-content:center; align-items:baseline; gap:2px;
+  font-size:calc(var(--t-display) * .8); font-weight:700; line-height:1.1; margin:12px 0 18px;
+}
+.sp-stamme{ color:var(--ink); }
+/* Ruta der endelsen skal inn. Fast bredde, saa ordet ikke hopper naar
+   den fylles - samme grunn som svarrubrikken i mattespillet. */
+.sp-hull{
+  min-width:2.6em; padding:0 .15em; text-align:left;
+  border-bottom:4px solid var(--messing); color:var(--aksent-moerk);
+}
+.sp-hull.sp-riktig{ box-shadow:none; border-radius:6px 6px 0 0; }
+.sp-endelser{ display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; max-width:420px; margin:0 auto; }
+.sp-endelse{
+  font-family:inherit; font-size:var(--t-stor); font-weight:700; cursor:pointer;
+  padding:12px 6px; border-radius:12px; border:2px solid var(--line);
+  background:var(--paper); color:var(--ink);
+}
+.sp-endelse:active{ transform:scale(.97); }
+.sp-endelse[disabled]{ cursor:default; }
+.sp-moenster{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:8px; }
+.sp-moenster span{
+  font-size:var(--t-meta); font-weight:700; padding:3px 9px; border-radius:8px;
+  border:1px solid var(--boks-kant); background:var(--paper);
+}
+.sp-moenster span.sp-her{ border-color:var(--lys); background:rgba(242,193,78,.3); }
+
+/* ---------- Setninger ---------- */
+.sp-norsk{ font-size:var(--t-stor); font-weight:700; margin:12px 0 12px; line-height:1.3; }
+.sp-linje{
+  min-height:62px; border:2px dashed var(--boks-kant); border-radius:14px;
+  background:var(--bg-solid); padding:8px; display:flex; flex-wrap:wrap; gap:8px;
+  align-items:center; margin-bottom:12px;
+}
+.sp-linje.sp-riktig{ border-style:solid; }
+.sp-linje-tom{ font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); padding:0 6px; }
+.sp-brikker{ display:flex; flex-wrap:wrap; gap:8px; }
+.sp-brikke{
+  font-family:inherit; font-size:var(--t-brod); font-weight:700; cursor:pointer;
+  padding:10px 14px; border-radius:10px; border:2px solid var(--messing);
+  background:var(--paper); color:var(--ink);
+}
+.sp-brikke:active{ transform:scale(.96); }
+.sp-brikke.sp-brukt{ visibility:hidden; }
+.sp-brikke[disabled]{ cursor:default; }
+
+/* ---------- Resultatet ---------- */
+.sp-resultat{ text-align:center; }
+.sp-stjerner{ display:flex; justify-content:center; gap:8px; margin:6px 0 12px; }
+.sp-stjerne{ width:52px; height:52px; display:block; }
+.sp-stjerne.sp-tom-stjerne{ filter:grayscale(1) opacity(.32); }
+.sp-stjerne.sp-glod{ filter:drop-shadow(0 0 8px var(--lys-glod)); }
+.sp-stort-tall{ font-size:var(--t-display); font-weight:700; line-height:1; margin:4px 0; }
+.sp-skryt{ font-size:var(--t-stor); font-weight:700; margin:6px 0 4px; }
+.sp-gitt{
+  display:inline-block; margin:6px 0 4px;
+  font-size:var(--t-meta); font-weight:700; letter-spacing:.06em;
+  background:rgba(242,193,78,.25); border:1px solid var(--lys);
+  border-radius:999px; padding:5px 14px;
+}
+.sp-resultat .sp-knapper{ justify-content:center; }
+.sp-fasitliste{ text-align:left; margin-top:18px; }
+.sp-fasitrad{ padding:9px 0; border-top:1px solid var(--line); font-size:var(--t-meta); line-height:1.45; }
+.sp-fasitrad b{ display:block; font-size:var(--t-brod); }
+.sp-fasitrad s{ color:var(--ink-soft); }
+
+/* ---------- Huskelappen ---------- */
+.sp-lapper{ display:grid; grid-template-columns:1fr; gap:14px; }
+@media(min-width:700px){ .sp-lapper{ grid-template-columns:1fr 1fr; } }
+.sp-lapper-verb{ display:grid; grid-template-columns:1fr; gap:14px; margin-top:14px; }
+@media(min-width:700px){ .sp-lapper-verb{ grid-template-columns:repeat(3, 1fr); } }
+.sp-tabell{ width:100%; border-collapse:collapse; font-size:var(--t-brod); }
+.sp-tabell caption{
+  text-align:left; font-size:var(--t-etikett); font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-soft); padding-bottom:6px;
+}
+.sp-tabell td{ padding:6px 8px; border-top:1px solid var(--line); vertical-align:top; }
+.sp-tabell td:first-child{ font-weight:700; }
+.sp-tabell td.sp-end{ font-weight:700; color:var(--aksent-moerk); }
+.sp-regel{
+  margin-top:14px; font-size:var(--t-brod); font-weight:600; line-height:1.55;
+  background:rgba(242,193,78,.18); border:1px solid var(--lys);
+  border-radius:12px; padding:12px 14px;
+}
+</style>
+</head>
+<body>
+
+<div class="sp-side">
+
+  <div class="sp-topp">
+    <a class="sp-merke" href="/emma.html" aria-label="Til Emma dash">
+      <img src="/bilder/ikoner/emma.png?v=1" alt="Emma dash" width="225" height="199"
+           onerror="this.hidden = true">
+    </a>
+    <h1 class="sp-tittel">Spansk<span>Til prøven onsdag</span></h1>
+    <div class="sp-faner">
+      <button class="sp-fane sp-valgt" id="fane-quiz" onclick="visFane('quiz')">Quiz</button>
+      <button class="sp-fane" id="fane-boy" onclick="visFane('boy')">Bøy</button>
+      <button class="sp-fane" id="fane-setning" onclick="visFane('setning')">Setninger</button>
+      <button class="sp-fane" id="fane-husk" onclick="visFane('husk')">Huskelapp</button>
+    </div>
+  </div>
+
+  <div class="sp-panel sp-kart-panel">
+    <div class="sp-kart" id="kart"></div>
+    <p class="sp-kart-sum" id="kartSum"></p>
+  </div>
+
+  <div class="sp-panel" id="flate"></div>
+
+</div>
+
+<script>
+/* ================================================================
+   INNHOLDET - rett fra heftet
+   ================================================================ */
+
+/* Pronomenene. `person` er plassen i boeyningstabellen (0 yo ... 5
+   ellos), `andre` er formene som betyr det samme. */
+const PRONOMEN = [
+  { es:'yo',       no:'jeg',  person:0 },
+  { es:'tú',       no:'du',   person:1 },
+  { es:'él',       no:'han',  person:2 },
+  { es:'ella',     no:'hun',  person:2 },
+  { es:'nosotros', no:'vi',   person:3, andre:'nosotras' },
+  { es:'vosotros', no:'dere', person:4, andre:'vosotras' },
+  { es:'ellos',    no:'de',   person:5, andre:'ellas' }
+];
+/* Slik personene staar i tabellene og i svaralternativene. */
+const PERSON_NAVN = ['yo','tú','él / ella','nosotros','vosotros','ellos / ellas'];
+/* Naar et pronomen staar i et spoersmaal, velges en av formene. */
+const PERSON_FORMER = [['yo'],['tú'],['él','ella'],['nosotros','nosotras'],['vosotros','vosotras'],['ellos','ellas']];
+
+const GRUPPER = {
+  ar:{ navn:'-AR', endelser:['o','as','a','amos','áis','an'] },
+  er:{ navn:'-ER', endelser:['o','es','e','emos','éis','en'] },
+  ir:{ navn:'-IR', endelser:['o','es','e','imos','ís','en'] }
+};
+
+/* Verbene fra heftet. `resten` er det som gjoer en setning av verbformen. */
+const VERB = [
+  { inf:'hablar',   gr:'ar', no:'å snakke',  resten:'español' },
+  { inf:'trabajar', gr:'ar', no:'å jobbe',   resten:'mucho' },
+  { inf:'estudiar', gr:'ar', no:'å studere', resten:'español' },
+  { inf:'bailar',   gr:'ar', no:'å danse',   resten:'mucho' },
+  { inf:'cantar',   gr:'ar', no:'å synge',   resten:'mucho' },
+  { inf:'escuchar', gr:'ar', no:'å høre på', resten:'música' },
+  { inf:'comer',    gr:'er', no:'å spise',   resten:'pizza' },
+  { inf:'leer',     gr:'er', no:'å lese',    resten:'un libro' },
+  { inf:'vivir',    gr:'ir', no:'å bo',      resten:'en Arendal' },
+  { inf:'escribir', gr:'ir', no:'å skrive',  resten:'una carta' }
+];
+function stamme(v){ return v.inf.slice(0, -2); }
+function form(v, p){ return stamme(v) + GRUPPER[v.gr].endelser[p]; }
+
+const FRASER = [
+  { es:'Me llamo Emma.',                     no:'Jeg heter Emma.',                    kort:'Me llamo' },
+  { es:'Tengo trece años.',                  no:'Jeg er 13 år.',                      kort:'Tengo … años' },
+  { es:'Soy de Noruega.',                    no:'Jeg er fra Norge.',                  kort:'Soy de' },
+  { es:'Vivo en Arendal.',                   no:'Jeg bor i Arendal.',                 kort:'Vivo en' },
+  { es:'Hablo noruego y un poco de español.', no:'Jeg snakker norsk og litt spansk.', kort:'Hablo' }
+];
+/* Hull-oppgaver i frasene: [frase, setning med hull, riktig, gale] */
+const FRASE_HULL = [
+  [0,'Me ____ Emma.','llamo',['llama','soy','tengo']],
+  [1,'____ trece años.','Tengo',['Soy','Vivo','Me llamo']],
+  [2,'____ de Noruega.','Soy',['Tengo','Vivo','Hablo']],
+  [3,'Vivo ____ Arendal.','en',['de','y','me']],
+  [4,'____ noruego y un poco de español.','Hablo',['Habla','Vivo','Tengo']]
+];
+
+/* Setningene. `verb` er indeksen til ordet som er en verbform - det
+   faar en gal form med seg som felle. */
+const SETNINGER = [
+  { no:'Jeg heter Emma.',                    es:'Me llamo Emma',                 fra:0 },
+  { no:'Jeg er 13 år.',                      es:'Tengo trece años',              fra:1 },
+  { no:'Jeg er fra Norge.',                  es:'Soy de Noruega',                fra:2 },
+  { no:'Jeg bor i Arendal.',                 es:'Vivo en Arendal',               fra:3, verb:0, vInf:'vivir', p:0 },
+  { no:'Jeg snakker norsk og litt spansk.',  es:'Hablo noruego y un poco de español', fra:4, verb:0, vInf:'hablar', p:0 },
+  { no:'Jeg snakker spansk.',                es:'Yo hablo español',              verb:1, vInf:'hablar', p:0 },
+  { no:'Du bor i Arendal.',                  es:'Tú vives en Arendal',           verb:1, vInf:'vivir', p:1 },
+  { no:'Hun skriver et brev.',               es:'Ella escribe una carta',        verb:1, vInf:'escribir', p:2 },
+  { no:'Vi hører på musikk.',                es:'Nosotros escuchamos música',    verb:1, vInf:'escuchar', p:3 },
+  { no:'De spiser pizza.',                   es:'Ellos comen pizza',             verb:1, vInf:'comer', p:5 },
+  { no:'Dere jobber mye.',                   es:'Vosotros trabajáis mucho',      verb:1, vInf:'trabajar', p:4 },
+  { no:'Han leser en bok.',                  es:'Él lee un libro',               verb:1, vInf:'leer', p:2 },
+  { no:'Vi bor i Norge.',                    es:'Nosotros vivimos en Noruega',   verb:1, vInf:'vivir', p:3 },
+  { no:'Jeg leser en bok.',                  es:'Yo leo un libro',               verb:1, vInf:'leer', p:0 }
+];
+
+/* ================================================================
+   LAGRING - bare paa enheten
+   ================================================================ */
+const LOKAL_NOKKEL = 'neam-emma-spansk:v1';
+let lager = { r:{}, rekordRad:0 };
+try{
+  const t = localStorage.getItem(LOKAL_NOKKEL);
+  if(t) lager = Object.assign(lager, JSON.parse(t));
+}catch(e){}
+function lagre(){ try{ localStorage.setItem(LOKAL_NOKKEL, JSON.stringify(lager)); }catch(e){} }
+/* Rutene i kartet: 'p:<pronomen>', 'f:<frase>', 'v:<gruppe>:<person>'. */
+function poeng(k){ return Math.min(2, lager.r[k] || 0); }
+function gi(k){ if(!k) return; lager.r[k] = Math.min(2, (lager.r[k] || 0) + 1); lagre(); tegnKart(); }
+
+/* ================================================================
+   HJELPERE
+   ================================================================ */
+const $ = id => document.getElementById(id);
+function bland(a){
+  const b = a.slice();
+  for(let i = b.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [b[i], b[j]] = [b[j], b[i]];
+  }
+  return b;
+}
+const en = a => a[Math.floor(Math.random() * a.length)];
+function el(tag, kl, tekst){
+  const e = document.createElement(tag);
+  if(kl) e.className = kl;
+  if(tekst != null) e.textContent = tekst;
+  return e;
+}
+const stor = s => s[0].toUpperCase() + s.slice(1);
+function stjerneBilde(tent, glod){
+  const i = document.createElement('img');
+  i.src = '/bilder/spill/stjerne.webp?v=1';
+  i.alt = ''; i.width = 52; i.height = 52;
+  i.className = 'sp-stjerne' + (tent ? '' : ' sp-tom-stjerne') + (glod ? ' sp-glod' : '');
+  return i;
+}
+function stjerner(andel){ return andel >= 1 ? 3 : andel >= .8 ? 2 : andel >= .5 ? 1 : 0; }
+function skryt(andel){
+  if(andel >= 1) return '¡Perfecto! Alt riktig, Emma!';
+  if(andel >= .8) return '¡Muy bien! Kjempebra!';
+  if(andel >= .5) return '¡Bien! Du kjenner igjen mønstrene.';
+  return 'Fint at du øver. Ta en titt på huskelappen og prøv igjen!';
+}
+function iRunde(pa){
+  document.body.classList.toggle('sp-i-runde', !!pa);
+  window.scrollTo(0, 0);
+}
+function visKnapp(k){
+  k.hidden = false;
+  requestAnimationFrame(() => k.scrollIntoView({ behavior:'smooth', block:'nearest' }));
+}
+function lagRute(k, tekst){
+  const n = poeng(k);
+  const r = el('div', 'sp-rute' + (n >= 2 ? ' sp-mestret' : ''));
+  r.appendChild(el('b', null, tekst));
+  const pr = el('span', 'sp-prikker2');
+  for(let i = 0; i < 2; i++) pr.appendChild(el('i', i < n ? 'sp-tent' : ''));
+  r.appendChild(pr);
+  return r;
+}
+
+/* ================================================================
+   KARTET
+   ================================================================ */
+function tegnKart(){
+  const kart = $('kart');
+  kart.innerHTML = '';
+  let mestret = 0, alle = 0;
+  const tell = k => { alle++; if(poeng(k) >= 2) mestret++; };
+
+  const pron = el('div');
+  pron.appendChild(el('p', 'sp-del-navn', 'Pronomen'));
+  const pr = el('div', 'sp-ruter');
+  PRONOMEN.forEach((p, i) => { tell('p:' + i); pr.appendChild(lagRute('p:' + i, p.es)); });
+  pron.appendChild(pr);
+  kart.appendChild(pron);
+
+  const fr = el('div');
+  fr.appendChild(el('p', 'sp-del-navn', 'Presentere deg'));
+  const fruter = el('div', 'sp-ruter');
+  FRASER.forEach((f, i) => { tell('f:' + i); fruter.appendChild(lagRute('f:' + i, f.kort)); });
+  fr.appendChild(fruter);
+  kart.appendChild(fr);
+
+  const vb = el('div', 'sp-kart-verb');
+  vb.appendChild(el('p', 'sp-del-navn', 'Verbendelsene – yo, tú, él, nosotros, vosotros, ellos'));
+  Object.keys(GRUPPER).forEach(g => {
+    const rad = el('div', 'sp-verbrad');
+    rad.appendChild(el('span', 'sp-verbrad-navn', GRUPPER[g].navn));
+    GRUPPER[g].endelser.forEach((e, p) => { tell('v:' + g + ':' + p); rad.appendChild(lagRute('v:' + g + ':' + p, '-' + e)); });
+    vb.appendChild(rad);
+  });
+  kart.appendChild(vb);
+
+  $('kartSum').textContent = mestret === alle
+    ? '¡Fantástico! Alle rutene er gule.'
+    : mestret + ' av ' + alle + ' ruter er gule. To riktige svar gjør en rute gul.';
+}
+
+/* ================================================================
+   FANER
+   ================================================================ */
+function visFane(f){
+  ['quiz','boy','setning','husk'].forEach(n => $('fane-' + n).classList.toggle('sp-valgt', n === f));
+  if(f === 'quiz') visQuizOppsett();
+  if(f === 'boy') visBoyOppsett();
+  if(f === 'setning') visSetningOppsett();
+  if(f === 'husk') visHusk();
+}
+
+/* Rundevelger: brukes av alle tre oevelsene. */
+function antallVelger(valg, standard, kallbak){
+  const v = el('div', 'sp-valg');
+  valg.forEach(n => {
+    const b = el('button', 'sp-velger' + (n === standard ? ' sp-pa' : ''));
+    b.appendChild(el('span', 'sp-hake', '✓'));
+    b.appendChild(document.createTextNode(String(n)));
+    b.onclick = () => {
+      v.querySelectorAll('.sp-velger').forEach(x => x.classList.remove('sp-pa'));
+      b.classList.add('sp-pa'); kallbak(n);
+    };
+    v.appendChild(b);
+  });
+  return v;
+}
+
+/* ================================================================
+   QUIZ - spoersmaalene lages fra tabellene
+   ================================================================ */
+const QUIZ_TYPER = {
+  pronomen:'Pronomen', fraser:'Presentere deg', verb:'Verbene'
+};
+const quizValg = new Set(['pronomen','fraser','verb']);
+let quizAntall = 15;
+let quiz = null;
+
+function lagPronomen(){
+  const i = Math.floor(Math.random() * PRONOMEN.length);
+  const p = PRONOMEN[i];
+  const andre = bland(PRONOMEN.filter(x => x.no !== p.no)).slice(0, 3);
+  if(Math.random() < .5) return { k:'p:' + i, tema:'Pronomen',
+    q:'Hva betyr <em>' + p.es + '</em>?', riktig:p.no, gale:andre.map(x => x.no),
+    fasit:p.es + (p.andre ? ' / ' + p.andre : '') + ' = ' + p.no };
+  return { k:'p:' + i, tema:'Pronomen',
+    q:'Hva er <em>' + p.no + '</em> på spansk?', riktig:p.es, gale:andre.map(x => x.es),
+    fasit:p.no + ' = ' + p.es + (p.andre ? ' (eller ' + p.andre + ')' : '') };
+}
+function lagFrase(){
+  const typ = Math.floor(Math.random() * 3);
+  if(typ === 2){
+    const [i, tekst, riktig, gale] = en(FRASE_HULL);
+    return { k:'f:' + i, tema:'Presentere deg', q:'Hva mangler? <em>' + tekst + '</em>',
+      riktig, gale, fasit:FRASER[i].es + ' = ' + FRASER[i].no };
+  }
+  const i = Math.floor(Math.random() * FRASER.length);
+  const f = FRASER[i];
+  const andre = bland(FRASER.filter((_, j) => j !== i)).slice(0, 3);
+  if(typ === 0) return { k:'f:' + i, tema:'Presentere deg',
+    q:'Hva betyr <em>' + f.es + '</em>', riktig:f.no, gale:andre.map(x => x.no),
+    fasit:f.es + ' = ' + f.no };
+  return { k:'f:' + i, tema:'Presentere deg',
+    q:'Hvordan sier du <em>' + f.no + '</em>', riktig:f.es, gale:andre.map(x => x.es),
+    fasit:f.no + ' = ' + f.es };
+}
+function lagVerb(){
+  const v = en(VERB);
+  const p = Math.floor(Math.random() * 6);
+  const k = 'v:' + v.gr + ':' + p;
+  const riktig = form(v, p);
+  const galeFormer = bland([0,1,2,3,4,5].filter(x => x !== p).map(x => form(v, x)).filter(x => x !== riktig));
+  const typ = Math.floor(Math.random() * 4);
+  const pron = en(PERSON_FORMER[p]);
+  const regel = GRUPPER[v.gr].navn + ': ' + GRUPPER[v.gr].endelser.join(', ') + '. ' + pron + ' → -' + GRUPPER[v.gr].endelser[p] + '.';
+  if(typ === 0) return { k, tema:'Verb ' + GRUPPER[v.gr].navn,
+    q:'<em>' + stor(pron) + ' ____ ' + v.resten + '.</em> (' + v.inf + ')',
+    riktig, gale:galeFormer.slice(0, 3),
+    fasit:stor(pron) + ' ' + riktig + ' ' + v.resten + '. ' + regel };
+  if(typ === 1) return { k, tema:'Verb ' + GRUPPER[v.gr].navn,
+    q:'Hvem gjør det? <em>' + riktig + '</em>',
+    riktig:PERSON_NAVN[p],
+    gale:bland(PERSON_NAVN.filter((x, j) => j !== p && form(v, j) !== riktig)).slice(0, 3),
+    fasit:riktig + ' hører til ' + PERSON_NAVN[p] + '. ' + regel };
+  if(typ === 2){
+    const andre = bland(VERB.filter(x => x.no !== v.no)).slice(0, 3);
+    /* Betydningen hoerer ikke til en endelse, saa den tenner ingen rute. */
+    return { k:null, tema:'Verb ' + GRUPPER[v.gr].navn,
+      q:'Hva betyr <em>' + v.inf + '</em>?', riktig:v.no, gale:andre.map(x => x.no),
+      fasit:v.inf + ' = ' + v.no + '.' };
+  }
+  /* Moensteret alene: hvilken endelse faar gruppa med denne personen? */
+  const alle = [...new Set(Object.values(GRUPPER).map(g => g.endelser[p]).concat(GRUPPER[v.gr].endelser))];
+  const gale = bland(alle.filter(e => e !== GRUPPER[v.gr].endelser[p])).slice(0, 3);
+  return { k, tema:'Mønsteret',
+    q:'Hvilken endelse får ' + GRUPPER[v.gr].navn + '-verb med <em>' + pron + '</em>?',
+    riktig:'-' + GRUPPER[v.gr].endelser[p], gale:gale.map(e => '-' + e), fasit:regel };
+}
+/* Heftets egne seks oevingsoppgaver kommer alltid med i en verbrunde. */
+const HEFTE_OPPG = [
+  ['Yo','hablar','español',0],['Tú','vivir','en Arendal',1],['Ella','escribir','una carta',2],
+  ['Nosotros','escuchar','música',3],['Ellos','comer','pizza',5],['Vosotros','trabajar','mucho',4]
+];
+function heftetsOppgaver(){
+  return HEFTE_OPPG.map(([pron, inf, resten, p]) => {
+    const v = VERB.find(x => x.inf === inf);
+    const riktig = form(v, p);
+    return { k:'v:' + v.gr + ':' + p, tema:'Fra heftet',
+      q:'<em>' + pron + ' ____ ' + resten + '.</em> (' + inf + ')', riktig,
+      gale:bland([0,1,2,3,4,5].filter(x => x !== p).map(x => form(v, x)).filter(x => x !== riktig)).slice(0, 3),
+      fasit:pron + ' ' + riktig + ' ' + resten + '. ' + GRUPPER[v.gr].navn + ': ' + GRUPPER[v.gr].endelser.join(', ') + '.' };
+  });
+}
+
+function lagQuiz(){
+  const lagere = [];
+  if(quizValg.has('pronomen')) lagere.push(lagPronomen);
+  if(quizValg.has('fraser')) lagere.push(lagFrase);
+  if(quizValg.has('verb')) lagere.push(lagVerb, lagVerb);
+  let liste = quizValg.has('verb') ? bland(heftetsOppgaver()).slice(0, Math.min(3, quizAntall)) : [];
+  const sett = new Set(liste.map(s => s.q));
+  let forsok = 0;
+  while(liste.length < quizAntall && forsok++ < 500){
+    const s = en(lagere)();
+    if(sett.has(s.q)) continue;
+    sett.add(s.q); liste.push(s);
+  }
+  return bland(liste);
+}
+
+function visQuizOppsett(){
+  iRunde(false);
+  const f = $('flate');
+  f.innerHTML = '';
+  f.appendChild(el('h2', 'sp-panel-tittel', 'Quiz'));
+  f.appendChild(el('p', 'sp-ledetekst', 'Nye spørsmål hver gang. Heftets seks øvingsoppgaver er alltid med når du velger verbene.'));
+  f.appendChild(el('p', 'sp-undertittel', 'Hva'));
+  const v = el('div', 'sp-valg');
+  Object.keys(QUIZ_TYPER).forEach(t => {
+    const b = el('button', 'sp-velger' + (quizValg.has(t) ? ' sp-pa' : ''));
+    b.appendChild(el('span', 'sp-hake', '✓'));
+    b.appendChild(document.createTextNode(QUIZ_TYPER[t]));
+    b.onclick = () => {
+      if(quizValg.has(t)){ if(quizValg.size > 1) quizValg.delete(t); } else quizValg.add(t);
+      b.classList.toggle('sp-pa', quizValg.has(t));
+    };
+    v.appendChild(b);
+  });
+  f.appendChild(v);
+  f.appendChild(el('p', 'sp-undertittel', 'Hvor mange'));
+  f.appendChild(antallVelger([10,15,25], quizAntall, n => quizAntall = n));
+  if(lager.rekordRad) f.appendChild(el('p', 'sp-ledetekst', 'Rekord: ' + lager.rekordRad + ' riktige på rad.'));
+  const k = el('div', 'sp-knapper');
+  const start = el('button', 'sp-knapp sp-tung', '¡Vamos! Start');
+  start.onclick = () => startQuiz(lagQuiz());
+  k.appendChild(start);
+  f.appendChild(k);
+}
+
+function startQuiz(liste){
+  quiz = { liste, i:0, riktige:0, rad:0, bom:[], svar:[] };
+  iRunde(true);
+  visSporsmaal();
+}
+
+function visSporsmaal(){
+  window.scrollTo(0, 0);
+  const s = quiz.liste[quiz.i];
+  const f = $('flate');
+  f.innerHTML = '';
+  const hode = el('div', 'sp-hode');
+  hode.appendChild(el('span', 'sp-teller', 'Spørsmål ' + (quiz.i + 1) + ' av ' + quiz.liste.length));
+  hode.appendChild(el('span', 'sp-lapp', s.tema));
+  const rad = el('span', 'sp-rad', quiz.rad + ' på rad');
+  rad.hidden = quiz.rad < 2;
+  hode.appendChild(rad);
+  f.appendChild(hode);
+  /* Spoersmaalet er HTML for aa kunne utheve det spanske. Teksten er
+     skrevet i tabellene over, aldri av brukeren. */
+  const q = el('p', 'sp-sporsmaal');
+  q.innerHTML = s.q;
+  f.appendChild(q);
+
+  const svar = el('div', 'sp-svar');
+  const fasit = el('div', 'sp-fasit');
+  fasit.hidden = true;
+  const neste = el('button', 'sp-knapp sp-tung', quiz.i + 1 < quiz.liste.length ? 'Neste' : 'Se resultatet');
+  neste.hidden = true;
+  neste.onclick = () => { quiz.i++; quiz.i < quiz.liste.length ? visSporsmaal() : visQuizResultat(); };
+
+  bland([s.riktig, ...s.gale]).forEach(a => {
+    const b = el('button', 'sp-svar-knapp', a);
+    b.onclick = () => {
+      svar.querySelectorAll('button').forEach(x => {
+        x.disabled = true;
+        if(x.textContent === s.riktig) x.classList.add('sp-riktig');
+      });
+      const ok = a === s.riktig;
+      quiz.svar.push(ok);
+      if(ok){
+        quiz.riktige++; quiz.rad++; gi(s.k);
+        if(quiz.rad > (lager.rekordRad || 0)){ lager.rekordRad = quiz.rad; lagre(); }
+        rad.textContent = quiz.rad + ' på rad';
+        rad.hidden = quiz.rad < 2;
+        if(!rad.hidden){ rad.classList.remove('sp-pop'); void rad.offsetWidth; rad.classList.add('sp-pop'); }
+      }else{
+        quiz.rad = 0; rad.hidden = true;
+        b.classList.add('sp-galt');
+        quiz.bom.push(Object.assign({ valgt:a }, s));
+        fasit.innerHTML = '';
+        fasit.appendChild(el('b', null, 'Riktig svar: ' + s.riktig));
+        fasit.appendChild(document.createTextNode(s.fasit));
+        fasit.hidden = false;
+      }
+      tegnPrikker();
+      visKnapp(neste);
+    };
+    svar.appendChild(b);
+  });
+  f.appendChild(svar);
+  f.appendChild(fasit);
+  const k = el('div', 'sp-knapper');
+  k.appendChild(neste);
+  f.appendChild(k);
+  const prikker = el('div', 'sp-prikker');
+  f.appendChild(prikker);
+  function tegnPrikker(){
+    prikker.innerHTML = '';
+    quiz.liste.forEach((_, i) => {
+      prikker.appendChild(el('i', i < quiz.svar.length ? (quiz.svar[i] ? 'sp-p-riktig' : 'sp-p-bom') : (i === quiz.i ? 'sp-p-na' : '')));
+    });
+  }
+  tegnPrikker();
+}
+
+function resultatTopp(r, riktige, tot){
+  const andel = riktige / tot;
+  const n = stjerner(andel);
+  const st = el('div', 'sp-stjerner');
+  for(let i = 0; i < 3; i++) st.appendChild(stjerneBilde(i < n, n === 3));
+  r.appendChild(st);
+  r.appendChild(el('p', 'sp-stort-tall', riktige + ' av ' + tot));
+  r.appendChild(el('p', 'sp-skryt', skryt(andel)));
+}
+
+function visQuizResultat(){
+  iRunde(false);
+  const f = $('flate');
+  f.innerHTML = '';
+  const r = el('div', 'sp-resultat');
+  resultatTopp(r, quiz.riktige, quiz.liste.length);
+  if(lager.rekordRad >= 3) r.appendChild(el('span', 'sp-gitt', 'Rekord: ' + lager.rekordRad + ' på rad'));
+  const k = el('div', 'sp-knapper');
+  if(quiz.bom.length){
+    const igjen = el('button', 'sp-knapp sp-tung', 'Ta de ' + quiz.bom.length + ' du bommet på');
+    igjen.onclick = () => startQuiz(bland(quiz.bom.map(b => ({ k:b.k, tema:b.tema, q:b.q, riktig:b.riktig, gale:b.gale, fasit:b.fasit }))));
+    k.appendChild(igjen);
+  }
+  const ny = el('button', 'sp-knapp' + (quiz.bom.length ? '' : ' sp-tung'), 'Ny runde');
+  ny.onclick = visQuizOppsett;
+  k.appendChild(ny);
+  r.appendChild(k);
+  if(quiz.bom.length){
+    const l = el('div', 'sp-fasitliste');
+    l.appendChild(el('p', 'sp-undertittel', 'Disse skal du se på igjen'));
+    quiz.bom.forEach(b => {
+      const rad = el('div', 'sp-fasitrad');
+      const q = el('b'); q.innerHTML = b.q;
+      rad.appendChild(q);
+      rad.appendChild(document.createTextNode('Riktig: ' + b.riktig + ' · Du svarte: '));
+      rad.appendChild(el('s', null, b.valgt));
+      l.appendChild(rad);
+    });
+    r.appendChild(l);
+  }
+  f.appendChild(r);
+}
+
+/* ================================================================
+   BOEY VERBET - stammen staar, hun velger endelsen
+   ================================================================ */
+const boyGrupper = new Set(['ar','er','ir']);
+let boyAntall = 12;
+let boy = null;
+
+function visBoyOppsett(){
+  iRunde(false);
+  const f = $('flate');
+  f.innerHTML = '';
+  f.appendChild(el('h2', 'sp-panel-tittel', 'Bøy verbet'));
+  f.appendChild(el('p', 'sp-ledetekst', 'Stammen står der allerede. Du velger bare riktig endelse – det er hele mønsteret. Pek på pronomenet og si formen høyt!'));
+  f.appendChild(el('p', 'sp-undertittel', 'Hvilke verb'));
+  const v = el('div', 'sp-valg');
+  Object.keys(GRUPPER).forEach(g => {
+    const b = el('button', 'sp-velger' + (boyGrupper.has(g) ? ' sp-pa' : ''));
+    b.appendChild(el('span', 'sp-hake', '✓'));
+    b.appendChild(document.createTextNode(GRUPPER[g].navn + '-verb'));
+    b.onclick = () => {
+      if(boyGrupper.has(g)){ if(boyGrupper.size > 1) boyGrupper.delete(g); } else boyGrupper.add(g);
+      b.classList.toggle('sp-pa', boyGrupper.has(g));
+    };
+    v.appendChild(b);
+  });
+  f.appendChild(v);
+  f.appendChild(el('p', 'sp-undertittel', 'Hvor mange'));
+  f.appendChild(antallVelger([6,12,20], boyAntall, n => boyAntall = n));
+  const k = el('div', 'sp-knapper');
+  const start = el('button', 'sp-knapp sp-tung', 'Start');
+  start.onclick = startBoy;
+  k.appendChild(start);
+  f.appendChild(k);
+}
+
+function startBoy(){
+  const verb = VERB.filter(v => boyGrupper.has(v.gr));
+  const liste = [];
+  let forrige = '';
+  while(liste.length < boyAntall){
+    const v = en(verb), p = Math.floor(Math.random() * 6);
+    const nokkel = v.inf + p;
+    if(nokkel === forrige) continue;
+    forrige = nokkel;
+    liste.push({ v, p, pron:en(PERSON_FORMER[p]) });
+  }
+  boy = { liste, i:0, riktige:0, bom:[] };
+  iRunde(true);
+  visBoy();
+}
+
+function visBoy(){
+  window.scrollTo(0, 0);
+  const o = boy.liste[boy.i];
+  const g = GRUPPER[o.v.gr];
+  const f = $('flate');
+  f.innerHTML = '';
+  const hode = el('div', 'sp-hode');
+  hode.appendChild(el('span', 'sp-teller', (boy.i + 1) + ' av ' + boy.liste.length));
+  hode.appendChild(el('span', 'sp-lapp', g.navn + '-verb'));
+  f.appendChild(hode);
+
+  const opp = el('div', 'sp-oppgave');
+  opp.appendChild(el('div', 'sp-oppgave-pron', stor(o.pron) + ' + ' + o.v.inf));
+  opp.appendChild(el('div', 'sp-oppgave-inf', o.v.inf + ' = ' + o.v.no));
+  f.appendChild(opp);
+
+  const ord = el('div', 'sp-ord');
+  ord.appendChild(el('span', 'sp-stamme', stamme(o.v)));
+  const hull = el('span', 'sp-hull', ' ');
+  ord.appendChild(hull);
+  f.appendChild(ord);
+
+  const fasit = el('div', 'sp-fasit');
+  fasit.hidden = true;
+  const neste = el('button', 'sp-knapp sp-tung', boy.i + 1 < boy.liste.length ? 'Neste' : 'Se resultatet');
+  neste.hidden = true;
+  const gaaVidere = () => { boy.i++; boy.i < boy.liste.length ? visBoy() : visBoyResultat(); };
+  neste.onclick = gaaVidere;
+
+  const knapper = el('div', 'sp-endelser');
+  g.endelser.forEach((e, p) => {
+    const b = el('button', 'sp-endelse', '-' + e);
+    b.onclick = () => {
+      knapper.querySelectorAll('button').forEach(x => x.disabled = true);
+      hull.textContent = g.endelser[o.p];
+      const ok = p === o.p;
+      knapper.children[o.p].classList.add('sp-riktig');
+      if(ok){
+        boy.riktige++; gi('v:' + o.v.gr + ':' + o.p);
+        hull.classList.add('sp-riktig');
+        setTimeout(gaaVidere, 750);
+      }else{
+        b.classList.add('sp-galt');
+        boy.bom.push(o);
+        fasit.innerHTML = '';
+        fasit.appendChild(el('b', null, stor(o.pron) + ' ' + form(o.v, o.p)));
+        fasit.appendChild(document.createTextNode(g.navn + '-mønsteret:'));
+        const m = el('div', 'sp-moenster');
+        g.endelser.forEach((x, j) => m.appendChild(el('span', j === o.p ? 'sp-her' : '', PERSON_NAVN[j] + ' -' + x)));
+        fasit.appendChild(m);
+        fasit.hidden = false;
+        visKnapp(neste);
+      }
+    };
+    knapper.appendChild(b);
+  });
+  f.appendChild(knapper);
+  f.appendChild(fasit);
+  const k = el('div', 'sp-knapper');
+  k.appendChild(neste);
+  f.appendChild(k);
+}
+
+function visBoyResultat(){
+  iRunde(false);
+  const f = $('flate');
+  f.innerHTML = '';
+  const r = el('div', 'sp-resultat');
+  resultatTopp(r, boy.riktige, boy.liste.length);
+  const k = el('div', 'sp-knapper');
+  const igjen = el('button', 'sp-knapp sp-tung', 'En runde til');
+  igjen.onclick = startBoy;
+  const til = el('button', 'sp-knapp', 'Velg verb');
+  til.onclick = visBoyOppsett;
+  k.appendChild(igjen); k.appendChild(til);
+  r.appendChild(k);
+  if(boy.bom.length){
+    const l = el('div', 'sp-fasitliste');
+    l.appendChild(el('p', 'sp-undertittel', 'Disse skal du se på igjen'));
+    boy.bom.forEach(o => {
+      const rad = el('div', 'sp-fasitrad');
+      rad.appendChild(el('b', null, stor(o.pron) + ' ' + form(o.v, o.p)));
+      rad.appendChild(document.createTextNode(o.v.inf + ' – ' + GRUPPER[o.v.gr].navn + '-verb'));
+      l.appendChild(rad);
+    });
+    r.appendChild(l);
+  }
+  f.appendChild(r);
+}
+
+/* ================================================================
+   SETNINGER - ordbrikker i riktig rekkefoelge
+   ================================================================ */
+let setning = null;
+
+function visSetningOppsett(){
+  iRunde(false);
+  const f = $('flate');
+  f.innerHTML = '';
+  f.appendChild(el('h2', 'sp-panel-tittel', 'Lag setninger'));
+  f.appendChild(el('p', 'sp-ledetekst', 'Du ser setningen på norsk. Trykk på de spanske ordene i riktig rekkefølge. Pass på – det ligger en feil verbform der som felle! Trykk på et ord i linja for å ta det tilbake.'));
+  const k = el('div', 'sp-knapper');
+  const start = el('button', 'sp-knapp sp-tung', 'Start – ' + SETNINGER.length + ' setninger');
+  start.onclick = () => startSetning(bland(SETNINGER));
+  k.appendChild(start);
+  f.appendChild(k);
+}
+
+function startSetning(liste){
+  setning = { liste, i:0, riktige:0, bom:[] };
+  iRunde(true);
+  visSetning();
+}
+
+const vask = s => s.toLowerCase().replace(/[.!?¡¿,]/g, '').trim();
+
+function visSetning(){
+  window.scrollTo(0, 0);
+  const s = setning.liste[setning.i];
+  const f = $('flate');
+  f.innerHTML = '';
+  const hode = el('div', 'sp-hode');
+  hode.appendChild(el('span', 'sp-teller', 'Setning ' + (setning.i + 1) + ' av ' + setning.liste.length));
+  f.appendChild(hode);
+  f.appendChild(el('p', 'sp-norsk', s.no));
+
+  const ord = s.es.split(' ');
+  const brikkeTekst = ord.slice();
+  /* Fella: samme verb i en annen person, med samme stor forbokstav. */
+  if(s.verb != null){
+    const v = VERB.find(x => x.inf === s.vInf);
+    const andre = [0,1,2,3,4,5].filter(p => p !== s.p).map(p => form(v, p)).filter(x => x !== ord[s.verb].toLowerCase());
+    let felle = en(andre);
+    if(ord[s.verb][0] !== ord[s.verb][0].toLowerCase()) felle = stor(felle);
+    brikkeTekst.push(felle);
+  }
+
+  const linje = el('div', 'sp-linje');
+  const tom = el('span', 'sp-linje-tom', 'Trykk på ordene under …');
+  linje.appendChild(tom);
+  f.appendChild(linje);
+  const brikker = el('div', 'sp-brikker');
+  const valgt = [];
+  function oppdaterLinje(){
+    linje.innerHTML = '';
+    if(!valgt.length) linje.appendChild(tom);
+    valgt.forEach((b, i) => {
+      const x = el('button', 'sp-brikke', b.textContent);
+      x.onclick = () => { b.classList.remove('sp-brukt'); valgt.splice(i, 1); oppdaterLinje(); };
+      linje.appendChild(x);
+    });
+    sjekk.disabled = !valgt.length;
+  }
+  bland(brikkeTekst).forEach(t => {
+    const b = el('button', 'sp-brikke', t);
+    b.onclick = () => { b.classList.add('sp-brukt'); valgt.push(b); oppdaterLinje(); };
+    brikker.appendChild(b);
+  });
+  f.appendChild(brikker);
+
+  const fasit = el('div', 'sp-fasit');
+  fasit.hidden = true;
+  f.appendChild(fasit);
+  const k = el('div', 'sp-knapper');
+  const sjekk = el('button', 'sp-knapp sp-tung', 'Sjekk');
+  sjekk.disabled = true;
+  const neste = el('button', 'sp-knapp sp-tung', setning.i + 1 < setning.liste.length ? 'Neste' : 'Se resultatet');
+  neste.hidden = true;
+  neste.onclick = () => { setning.i++; setning.i < setning.liste.length ? visSetning() : visSetningResultat(); };
+  sjekk.onclick = () => {
+    const svar = valgt.map(b => b.textContent).join(' ');
+    const ok = vask(svar) === vask(s.es);
+    sjekk.hidden = true;
+    linje.querySelectorAll('button').forEach(x => x.disabled = true);
+    brikker.querySelectorAll('button').forEach(x => x.disabled = true);
+    if(ok){
+      setning.riktige++;
+      linje.classList.add('sp-riktig');
+      if(s.fra != null) gi('f:' + s.fra);
+      if(s.verb != null){ const v = VERB.find(x => x.inf === s.vInf); gi('v:' + v.gr + ':' + s.p); }
+      fasit.innerHTML = '';
+      fasit.appendChild(el('b', null, '¡Correcto!'));
+      fasit.appendChild(document.createTextNode(s.es + '. = ' + s.no));
+    }else{
+      setning.bom.push(Object.assign({ svar }, s));
+      fasit.innerHTML = '';
+      fasit.appendChild(el('b', null, 'Riktig: ' + s.es + '.'));
+      fasit.appendChild(document.createTextNode('Du skrev: ' + (svar || '–')));
+    }
+    fasit.hidden = false;
+    visKnapp(neste);
+  };
+  k.appendChild(sjekk); k.appendChild(neste);
+  f.appendChild(k);
+}
+
+function visSetningResultat(){
+  iRunde(false);
+  const f = $('flate');
+  f.innerHTML = '';
+  const r = el('div', 'sp-resultat');
+  resultatTopp(r, setning.riktige, setning.liste.length);
+  const k = el('div', 'sp-knapper');
+  if(setning.bom.length){
+    const igjen = el('button', 'sp-knapp sp-tung', 'Ta de ' + setning.bom.length + ' du bommet på');
+    igjen.onclick = () => startSetning(bland(setning.bom.map(b => SETNINGER.find(x => x.es === b.es))));
+    k.appendChild(igjen);
+  }
+  const ny = el('button', 'sp-knapp' + (setning.bom.length ? '' : ' sp-tung'), 'Alle på nytt');
+  ny.onclick = () => startSetning(bland(SETNINGER));
+  k.appendChild(ny);
+  r.appendChild(k);
+  f.appendChild(r);
+}
+
+/* ================================================================
+   HUSKELAPPEN - tabellene fra heftet
+   ================================================================ */
+function tabell(tittel, rader, endKol){
+  const t = el('table', 'sp-tabell');
+  t.appendChild(el('caption', null, tittel));
+  const tb = el('tbody');
+  rader.forEach(r => {
+    const tr = el('tr');
+    r.forEach((c, i) => tr.appendChild(el('td', i === endKol ? 'sp-end' : '', c)));
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+  return t;
+}
+function visHusk(){
+  iRunde(false);
+  const f = $('flate');
+  f.innerHTML = '';
+  f.appendChild(el('h2', 'sp-panel-tittel', 'Huskelapp'));
+  f.appendChild(el('p', 'sp-ledetekst', 'Du trenger ikke kunne alt. Lær mønstrene – ikke hvert verb.'));
+  const l = el('div', 'sp-lapper');
+  l.appendChild(tabell('Personlige pronomen', [
+    ['yo','jeg'],['tú','du'],['él','han'],['ella','hun'],
+    ['nosotros / nosotras','vi'],['vosotros / vosotras','dere'],['ellos / ellas','de']
+  ]));
+  l.appendChild(tabell('Slik presenterer du deg selv', FRASER.map(x => [x.es, x.no])));
+  f.appendChild(l);
+  const v = el('div', 'sp-lapper-verb');
+  [['ar','hablar = å snakke'],['er','comer = å spise'],['ir','vivir = å bo']].forEach(([g, t]) => {
+    const verb = VERB.find(x => x.inf === t.split(' ')[0]);
+    v.appendChild(tabell(GRUPPER[g].navn + ': ' + t,
+      PERSON_NAVN.map((p, i) => [p, '-' + GRUPPER[g].endelser[i], form(verb, i)]), 1));
+  });
+  f.appendChild(v);
+  const regel = el('div', 'sp-regel');
+  regel.innerHTML = '<b>Superkort huskeregel</b><br>-AR = o, as, a, amos, áis, an<br>-ER = o, es, e, emos, éis, en<br>-IR = o, es, e, imos, ís, en'
+    + '<br><br>På spansk ser du ofte hvem som gjør noe på selve verbformen. Derfor kan pronomenet noen ganger droppes: <b>Hablo</b> español = Jeg snakker spansk.';
+  f.appendChild(regel);
+  const k = el('div', 'sp-knapper');
+  const q = el('button', 'sp-knapp sp-tung', 'Test meg');
+  q.onclick = () => visFane('quiz');
+  k.appendChild(q);
+  f.appendChild(k);
+}
+
+tegnKart();
+visQuizOppsett();
+</script>
+</body>
+</html>
