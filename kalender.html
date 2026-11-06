@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
-<link rel="stylesheet" href="/felles-neam.css?v=74">
+<link rel="stylesheet" href="/felles-neam.css?v=75">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -148,7 +148,7 @@ body{--f-marg-y:8px}
    haandtaket. */
 .kal-valg{
   --kv-side:calc(var(--f-marg-x) + var(--f-handtak) + 10px);
-  position:fixed;left:0;right:0;z-index:44;
+  position:fixed;left:0;right:var(--neam-plass, 0px);z-index:44;   /* + --neam-plass: Neam fast til hoeyre paa PC, se felles-neam.css */
   bottom:calc(var(--f-marg-y) + env(safe-area-inset-bottom));
   min-height:var(--f-handtak);
   padding:0 var(--kv-side);
@@ -926,11 +926,11 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 /* ---------- Kalendervelger (dropdown i topplinjen) ---------- */
 .caldrop{position:relative}
 .caldrop-panel{
-  position:fixed;right:20px;z-index:47;
+  position:fixed;right:calc(20px + var(--neam-plass, 0px));z-index:47;   /* + --neam-plass: Neam fast til hoeyre paa PC, se felles-neam.css */
   bottom:calc(var(--f-marg-y) + max(var(--f-handtak), var(--kv-hoyde, 0px)) + 12px + env(safe-area-inset-bottom));
   background:var(--paper);border:1px solid var(--line);border-radius:14px;
   box-shadow:0 16px 40px rgba(44,62,80,.22);padding:20px 24px 22px;
-  width:min(1120px, calc(100vw - 40px));
+  width:min(1120px, calc(100vw - 40px - var(--neam-plass, 0px)));
   max-height:min(80vh, 780px);overflow-y:auto;
 }
 .caldrop-panel[hidden]{display:none}
@@ -1060,8 +1060,10 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .blapil:active{transform:translateY(-50%) scale(.95)}
 /* Regnet ut fra innholdsbredden, saa de staar rett utenfor kalenderen
    i stedet for ute ved skjermkanten. Klemmes inn hvis vinduet er smalt. */
-.blapil.venstre{left:max(6px, calc(50vw - 1010px))}
-.blapil.hoyre{right:max(6px, calc(50vw - 1010px))}
+/* Med Neam fast til hoeyre (felles-neam.css) staar kalenderen midt i
+   plassen som er igjen: midten flyttes --neam-plass / 2 mot venstre. */
+.blapil.venstre{left:max(6px, calc(50vw - var(--neam-plass, 0px) / 2 - 1010px))}
+.blapil.hoyre{right:max(calc(6px + var(--neam-plass, 0px)), calc(50vw + var(--neam-plass, 0px) / 2 - 1010px))}
 /* Trengs plass til baade pil og innhold */
 @media (min-width:1280px){
   .blapil:not([hidden]){display:flex}
@@ -1074,7 +1076,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
      (54px + luft). Femmeren skal etter planen ta over disse knappene
      side for side; til da lever de over hverandre. */
 .bottom-bar{
-  position:fixed;right:20px;z-index:46;
+  position:fixed;right:calc(20px + var(--neam-plass, 0px));z-index:46;   /* + --neam-plass: Neam fast til hoeyre paa PC, se felles-neam.css */
   bottom:calc(90px + env(safe-area-inset-bottom));
   display:flex;flex-direction:column;align-items:center;gap:10px;
   pointer-events:none;
@@ -1665,7 +1667,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-filviser.js?v=2"></script>
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=74"></script>
+<script src="/felles-neam.js?v=75"></script>
 <script>
 /* ============================================================
    Konfigurasjon — Azure app-registrering

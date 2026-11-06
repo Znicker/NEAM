@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
-<link rel="stylesheet" href="/felles-neam.css?v=74">
+<link rel="stylesheet" href="/felles-neam.css?v=75">
 <!-- ?v=: bump tallet naar en fellesfil endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -231,7 +231,7 @@
     font-size:22px; line-height:1; padding:0 4px; opacity:.7;
   }
   @media(min-width:700px){
-    .angre-stripe{ left:auto; right:24px; width:380px; bottom:calc(120px + env(safe-area-inset-bottom)); }
+    .angre-stripe{ left:auto; right:calc(24px + var(--neam-plass, 0px)); width:380px; bottom:calc(120px + env(safe-area-inset-bottom)); } /* + --neam-plass: Neam fast til hoeyre paa PC, se felles-neam.css */
   }
 
   .innboks-linje{ display:flex; align-items:stretch; gap:6px; margin-bottom:8px; }
@@ -306,7 +306,7 @@
      (54px + luft). Femmeren skal etter planen ta over disse knappene
      side for side; til da lever de over hverandre. */
   .bottom-bar{
-    position:fixed; right:20px; z-index:26;
+    position:fixed; right:calc(20px + var(--neam-plass, 0px)); z-index:26;   /* + --neam-plass: Neam fast til hoeyre paa PC, se felles-neam.css */
     bottom:calc(90px + env(safe-area-inset-bottom));
     display:flex; flex-direction:column; align-items:center; gap:10px;
     pointer-events:none;
@@ -1096,7 +1096,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=74"></script>
+<script src="/felles-neam.js?v=75"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').

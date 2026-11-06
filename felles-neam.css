@@ -389,14 +389,14 @@
 }
 
 /* Hoeyre hjoerne: speilvendt. */
-.neam-stabel.side.fra-opp{ left:auto; right:var(--f-marg-x); align-items:flex-end; }
+.neam-stabel.side.fra-opp{ left:auto; right:var(--f-marg-h, var(--f-marg-x)); align-items:flex-end; }
 .neam-stabel.side.fra-skraa{
   left:auto; align-items:flex-end;
-  right:calc(var(--f-marg-x) + var(--f-aapen) + var(--f-luft));
+  right:calc(var(--f-marg-h, var(--f-marg-x)) + var(--f-aapen) + var(--f-luft));
 }
 .neam-stabel.side.fra-ved{
   left:auto; align-items:flex-end;
-  right:calc(var(--f-marg-x) + var(--f-aapen) + var(--f-luft));
+  right:calc(var(--f-marg-h, var(--f-marg-x)) + var(--f-aapen) + var(--f-luft));
 }
 
 /* ---- To rader ----
@@ -524,7 +524,7 @@
 .neam-stabel.side.rad{
   flex-direction:row-reverse;
   left:auto;
-  right:calc(var(--f-marg-x) + 2 * var(--f-aapen) + 2 * var(--f-luft));
+  right:calc(var(--f-marg-h, var(--f-marg-x)) + 2 * var(--f-aapen) + 2 * var(--f-luft));
 }
 
 /* ---- Telefon: kolonne i stedet for rad ----
@@ -566,7 +566,7 @@
   .neam-stabel.side.rad{
     flex-direction:column-reverse; align-items:flex-end;
     left:auto;
-    right:calc(var(--f-marg-x) + var(--f-aapen) + var(--f-luft));
+    right:calc(var(--f-marg-h, var(--f-marg-x)) + var(--f-aapen) + var(--f-luft));
   }
 
   /* Roeret tegnes av JS - se neamRorKolonne(). CSS-ens eget er slaatt av
@@ -919,7 +919,7 @@
      bestemt bruddpunkt. */
   width:calc(var(--app-kol, 6) * var(--f-aapen)
              + (var(--app-kol, 6) - 1) * var(--f-luft));
-  max-width:calc(100vw - 2 * var(--f-marg-x));
+  max-width:calc(100vw - 2 * var(--f-marg-x) - var(--neam-plass, 0px));
   /* env(safe-area-inset-bottom) MAA staa her ogsaa. Fireren har den, og
      uten den her maales de to fra hvert sitt nullpunkt: paa en iPhone
      skjoev safe-area fireren 34px opp mens lista sto stille, saa de
@@ -1299,14 +1299,48 @@
    Posisjonsklassene beholder betydningen sin - .opp er rett over
    haandtaket ogsaa her - men maales fra hoeyre kant, saa bildet speiles
    og hjoernet er det samme. */
-.neam-handtak.side{ left:auto; right:var(--f-marg-x); }
-.neam-firer.side{ left:auto; right:var(--f-marg-x); }
+.neam-handtak.side{ left:auto; right:var(--f-marg-h, var(--f-marg-x)); }
+.neam-firer.side{ left:auto; right:var(--f-marg-h, var(--f-marg-x)); }
 .neam-firer.side .neam-knapp{ left:auto; right:0; }
 .neam-firer.side.oppe .ved  { right:calc(var(--f-aapen) + var(--f-luft)); bottom:0; }
 .neam-firer.side.oppe .opp  { right:0; bottom:calc(var(--f-aapen) + var(--f-luft)); }
 .neam-firer.side.oppe .skraa{
   right:calc(var(--f-aapen) + var(--f-luft));
   bottom:calc(var(--f-aapen) + var(--f-luft));
+}
+
+/* ---------- Fast til hoeyre paa PC (6. november 2026) ----------
+   Paa PC - bred skjerm og mus - staar Neam oppe hele tiden til hoeyre og
+   tar omtrent en tredjedel av skjermen (Magne, 6. november 2026).
+   Beroeringsskjermer (kjoekkenet, iPadene) faar det vanlige panelet, ogsaa
+   naar de er brede. En side som trenger hele bredden, setter
+   window.neamFast = false foer den er lastet ferdig.
+
+   body.neam-fast settes av neamFastSjekk() i felles-neam.js - samme
+   mediespoerring som her. Sida faar plassen sin gjennom padding-right paa
+   body. --neam-plass er det Neam tar (udefinert ellers): det som sida har
+   festet til hoeyre kant, trekker det fra med en reserve, f.eks.
+   right:calc(20px + var(--neam-plass, 0px)). Sidefireren i hoeyre hjoerne
+   gjoer det gjennom --f-marg-h.
+
+   Panelet ligger UNDER sidenes egne dialoger og lag (z-index 30, mot
+   sidenes 40 og opp): en dialog fra sida dekker Neam slik den dekker
+   resten. Felles-dialog.js (120) ligger fortsatt oppaa. */
+@media (min-width:1280px) and (pointer:fine){
+  body.neam-fast{
+    --neam-bredde:clamp(420px, 33vw, 760px);
+    --neam-plass:calc(var(--neam-bredde) + 32px);
+    --f-marg-h:calc(var(--f-marg-x) + var(--neam-plass));
+    padding-right:var(--neam-plass) !important;
+  }
+  body.neam-fast .neam-bak{
+    inset:16px 16px 16px auto; width:var(--neam-bredde); padding:0; z-index:30;
+    background:none; -webkit-backdrop-filter:none; backdrop-filter:none;
+    align-items:stretch; pointer-events:none;
+  }
+  body.neam-fast .neam-panel{ pointer-events:auto; height:100%; max-width:none; box-shadow:var(--shadow); }
+  /* Panelet lukkes ikke - det er en del av sida. */
+  body.neam-fast .neam-lukk{ display:none; }
 }
 
 /* ---------- Smal skjerm ---------- */

@@ -2322,8 +2322,10 @@ function neamLukk(){
      ser at staar paa. */
   neamPrat = false;
   neamPratTomme = 0;
+  /* Fast til hoeyre paa PC lukkes ikke - stemmen og mikrofonen stoppes
+     likevel (Escape). */
   const bak = document.getElementById('neamBak');
-  if(bak) bak.hidden = true;
+  if(bak && !neamErFast()) bak.hidden = true;
 }
 
 async function neamNySamtale(){
@@ -2716,3 +2718,35 @@ async function neamStart(beskjed, valg){
 
 if(document.body) neamBygg();
 else document.addEventListener('DOMContentLoaded', neamBygg);
+
+/* ============================================================
+   Fast til hoeyre paa PC (6. november 2026)
+   ============================================================
+   Se felles-neam.css - samme mediespoerring her og der. Paa bred skjerm
+   med mus staar panelet oppe hele tiden; ellers er det som foer. Sida kan
+   melde seg ut med window.neamFast = false. Den leses naar sida er lastet,
+   saa sidas eget skript - som kommer etter denne fila - rekker aa sette
+   den. Panelet aapnes uten aa ta fokus: sida skal kunne brukes med
+   tastaturet uten at Neam tar det. */
+const NEAM_FAST_MQ = window.matchMedia('(min-width:1280px) and (pointer:fine)');
+function neamErFast(){ return !!document.body && document.body.classList.contains('neam-fast'); }
+async function neamFastSjekk(){
+  const skal = NEAM_FAST_MQ.matches && window.neamFast !== false;
+  const foer = neamErFast();
+  document.body.classList.toggle('neam-fast', skal);
+  if(skal === foer) return;
+  if(skal){
+    neamBygg();
+    document.getElementById('neamBak').hidden = false;
+    neamTegn();
+    neamSkrivSted(await neamSted());
+  } else {
+    /* Ble vinduet smalt, lukkes panelet, saa det ikke plutselig legger
+       seg over sida. */
+    const bak = document.getElementById('neamBak');
+    if(bak && !bak.hidden) neamLukk();
+  }
+}
+if(NEAM_FAST_MQ.addEventListener) NEAM_FAST_MQ.addEventListener('change', neamFastSjekk);
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', neamFastSjekk);
+else neamFastSjekk();

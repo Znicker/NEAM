@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
-<link rel="stylesheet" href="/felles-neam.css?v=74">
+<link rel="stylesheet" href="/felles-neam.css?v=75">
 <!-- ?v=: bump tallet naar en fellesfil endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -326,7 +326,7 @@
 
   .uke-flyt{
     position:fixed; z-index:26;
-    right:20px; bottom:calc(84px + env(safe-area-inset-bottom));
+    right:calc(20px + var(--neam-plass, 0px)); bottom:calc(84px + env(safe-area-inset-bottom));   /* + --neam-plass: Neam fast til hoeyre paa PC, se felles-neam.css */
     display:flex; flex-direction:column; align-items:flex-end; gap:8px;
   }
   /* Lukket er de sirkler paa 48px, akkurat som sorteringsknappen. Sidelufta
@@ -360,7 +360,7 @@
 
   .sorter-flyt{
     position:fixed; z-index:26;
-    right:20px; bottom:calc(24px + env(safe-area-inset-bottom));
+    right:calc(20px + var(--neam-plass, 0px)); bottom:calc(24px + env(safe-area-inset-bottom));   /* + --neam-plass: Neam fast til hoeyre paa PC, se felles-neam.css */
   }
   /* Bare paa forsiden: i en aapen oppskrift eller i skjemaet finnes det
      ingenting aa sortere. :has() ser om forsiden er den aktive visningen -
@@ -981,7 +981,7 @@
      artifact-iframe, så en rad på bottom:0 havner bak Safaris verktøylinje på iOS.
      De opprinnelige knappene lå derfor på 100-160px, og raden holder samme høyde. */
   .bottom-bar{
-    position:fixed; left:0; right:0; z-index:26;
+    position:fixed; left:0; right:var(--neam-plass, 0px); z-index:26;   /* + --neam-plass: Neam fast til hoeyre paa PC, se felles-neam.css */
     bottom:calc(88px + env(safe-area-inset-bottom));
     display:flex; justify-content:center; align-items:center;
     padding:0 12px;
@@ -1396,9 +1396,11 @@
        mellom seg og teksten blir tre ord per linje. Bare denne ene visningen
        utvides - forsiden, skjemaet og ukeplanen beholder 520px. */
     #view-detail.active{
-      width:100vw;
-      margin-left:calc(50% - 50vw);
-      margin-right:calc(50% - 50vw);
+      /* Bryter ut til hele plassen sida har - med Neam fast til hoeyre
+         (felles-neam.css) er det skjermen minus --neam-plass. */
+      width:calc(100vw - var(--neam-plass, 0px));
+      margin-left:calc(50% - 50vw + var(--neam-plass, 0px) / 2);
+      margin-right:calc(50% - 50vw + var(--neam-plass, 0px) / 2);
       padding:0 24px 12px;
       box-sizing:border-box;
       /* Fast hoeyde med egne rullekasser inni. Uten dette arver kolonnene en
@@ -2364,7 +2366,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=74"></script>
+<script src="/felles-neam.js?v=75"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB-basert erstatning for window.storage.

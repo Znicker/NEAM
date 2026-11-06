@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=6">
 <link rel="stylesheet" href="/felles-knapper.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=74">
+<link rel="stylesheet" href="/felles-neam.css?v=75">
 <style>
 /* ============================================================
    NEAM - oekonomi
@@ -532,23 +532,6 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-fo-maal input, .ok-fo-maal select{ width:100%; min-width:0; font-family:inherit; font-size:16px; padding:6px 8px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
 @media (max-width:560px){ .ok-fo-maal{ grid-template-columns:minmax(0,1fr); } }
 .ok-fo-seksjon + .ok-fo-seksjon{ margin-top:14px; }
-
-/* ---------- Neam fast til hoeyre paa PC ----------
-   Skissen: Neam staar alltid til hoeyre paa PC (Magne, 6. november 2026).
-   felles-neam.js bygger panelet som et lag over sida; her blir det en
-   spalte innenfor rammen. body.ok-neam-fast settes av okNeamFast() nederst
-   i skriptet. Smalere skjerm og telefonen har det vanlige panelet. */
-@media (min-width:1360px){
-  body.ok-neam-fast .ok-ramme{ padding-right:440px; }
-  body.ok-neam-fast #neamBak{
-    inset:16px max(16px, calc((100vw - 1440px) / 2 + 16px)) 16px auto; width:400px; padding:0;
-    background:none; -webkit-backdrop-filter:none; backdrop-filter:none;
-    align-items:stretch; pointer-events:none;
-  }
-  body.ok-neam-fast #neamBak .neam-panel{ pointer-events:auto; height:100%; max-width:none; box-shadow:var(--shadow); }
-  /* Panelet lukkes ikke her - det er en del av sida. */
-  body.ok-neam-fast #neamLukk{ display:none; }
-}
 </style>
 </head>
 <body>
@@ -777,7 +760,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 <script src="/felles-lesalt.js?v=12"></script>
 <script src="/felles-skriv.js?v=12"></script>
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=74"></script>
+<script src="/felles-neam.js?v=75"></script>
 <script>
 (function(){
   'use strict';
@@ -3529,38 +3512,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     okStatusLast(); okVarslerLast();
   };
 
-  /* Fast til hoeyre paa bred skjerm (CSS-en «Neam fast til hoeyre»). Lukker
-     felles-neam.js panelet (Escape), aapnes det igjen - det er en del av
-     sida her. Feltet faar ikke fokus av seg selv: sida skal kunne leses og
-     brukes med tastaturet uten at Neam tar det. Blir vinduet smalt, lukkes
-     panelet, saa det ikke plutselig legger seg over sida. */
-  var okNeamPc = window.matchMedia('(min-width:1360px)');
-  var okNeamVakt = null;
-  function okNeamFast(){
-    var bak = document.getElementById('neamBak');
-    var fast = okNeamPc.matches && !!bak && typeof neamAapne === 'function';
-    document.body.classList.toggle('ok-neam-fast', fast);
-    if(!bak) return;
-    if(fast){
-      if(!okNeamVakt){
-        okNeamVakt = new MutationObserver(function(){
-          if(document.body.classList.contains('ok-neam-fast') && bak.hidden) bak.hidden = false;
-        });
-        okNeamVakt.observe(bak, { attributes:true, attributeFilter:['hidden'] });
-      }
-      if(bak.hidden){
-        var forrige = document.activeElement;
-        neamAapne();
-        var felt = document.getElementById('neamFelt');
-        if(felt && document.activeElement === felt){
-          felt.blur();
-          if(forrige && forrige !== document.body && forrige.focus) forrige.focus();
-        }
-      }
-    }else if(!bak.hidden && typeof neamLukk === 'function') neamLukk();
-  }
-  if(okNeamPc.addEventListener) okNeamPc.addEventListener('change', okNeamFast);
-  okNeamFast();
+  /* Fast til hoeyre paa PC ligger i felles-neam.js og -css fra
+     6. november 2026 - den gjelder alle sidene, ikke bare denne. */
 
   /* Oppgaven Neam tok med hit (gaa_til med `oppgave` i felles-skriv.js):
      brukeren sa ja til aa komme hit for aa faa gjort noe som bare kan
