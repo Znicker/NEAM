@@ -14,13 +14,14 @@
      GET /api/bank?hva=trumf-kjop      - kjoepene fra trumf.no (siste 12 mnd)
      GET /api/bank?hva=trumf-kvittering&id=<batchId> - varelinjene
      POST /api/bank {hva:'trumf-innlogging', cookie} / {hva:'trumf-koble-fra'}
-     POST /api/bank {hva:'kvittering-ny', kvittering}   - kvittering lest fra bilde/PDF
+     POST /api/bank {hva:'kvittering-ny', kvittering, forHand} - kvittering lest fra bilde/PDF, eller en foering lagt inn for haand
      GET /api/bank?hva=kvittering&id=<postId>         - varelinjene til en kvitteringspost
      GET /api/bank?hva=budsjett / POST {hva:'budsjett', standard} - standardbudsjettet
      POST /api/bank {hva:'budsjett', mnd, maaned} / {hva:'budsjett', mnd, tilbake:true} - én maaneds budsjett
      GET /api/bank?hva=regnskap&mnd=AAAA-MM            - godkjente poster summert per kategori
      GET /api/bank?hva=foringer&mnd=AAAA-MM&kategori=<k>[&eksakt=1] - foeringene bak ett tall
      POST /api/bank {hva:'kategori-ny', nye:[{forelder, navn}]} / {hva:'kategori-slett', kategori} - egne poster
+     POST /api/bank {hva:'kategori-navn', fra, navn} - nytt navn paa en egen post eller linje
      GET /api/bank?hva=varsler          - det som trenger noen (kortet paa forsiden)
      GET /api/bank?hva=laert / POST {hva:'laert', motpart, kategori} - «Neam husker» (tom kategori glemmer)
      GET /api/bank/dropbox-start / dropbox-tilbake - kobler Dropbox (appmappa) med OAuth
@@ -556,6 +557,40 @@ async function slettKategori(env, kropp){
   if(endret) await env.FAMILIE_KV.put(LAERT_NOKKEL, JSON.stringify(laert));
   return svar({ ok:true, kategorier:flett(egne).filter(x => x.indexOf('Utenfor budsjett') !== 0), egne:egne });
 }
+/* Nytt navn paa en egen post eller linje: { fra, navn }. Linjene under,
+   foeringene, budsjettet og det Neam har laert foelger med (Magne,
+   6. november 2026 - Neam skal kunne endre postene paa Oekonomi-sida). De
+   faste postene staar i koden og faar ikke nytt navn her. */
+async function nyttKategoriNavn(env, kropp){
+  const fra = String(kropp.fra || '');
+  const navn = String(kropp.navn || '').replace(/·/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
+  if(!navn) return svar({ ok:false, feil:'Det nye navnet mangler' });
+  const egne = await lesEgne(env);
+  if(egne.indexOf(fra) === -1) return svar({ ok:false, feil:KATEGORIER.indexOf(fra) !== -1 ? 'De faste postene kan ikke få nytt navn: ' + fra : 'Ukjent egen post: ' + fra });
+  const til = fra.split(' · ').slice(0, -1).concat([navn]).join(' · ');
+  if(til !== fra && flett(egne).some(k => k !== fra && k.toLowerCase() === til.toLowerCase())) return svar({ ok:false, feil:'Det finnes alt en post som heter ' + til });
+  const bytt = k => k === fra ? til : (typeof k === 'string' && k.indexOf(fra + ' · ') === 0 ? til + k.slice(fra.length) : k);
+  const nyeEgne = egne.map(bytt);
+  await env.FAMILIE_KV.put(EGNE_NOKKEL, JSON.stringify(nyeEgne));
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  let pEndret = false;
+  for(const id of Object.keys(poster)){
+    const p = poster[id];
+    if(bytt(p.kategori) !== p.kategori){ p.kategori = bytt(p.kategori); pEndret = true; }
+    for(const d of p.deler || []) if(bytt(d.kategori) !== d.kategori){ d.kategori = bytt(d.kategori); pEndret = true; }
+  }
+  if(pEndret) await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  const b = await lesJson(env, BUDSJETT_NOKKEL, null);
+  let bEndret = false;
+  const flytt = o => { for(const k of Object.keys(o || {})) if(bytt(k) !== k){ o[bytt(k)] = o[k]; delete o[k]; bEndret = true; } };
+  if(b){ flytt(b.standard); for(const m of Object.keys(b.maaneder || {})) flytt(b.maaneder[m]); }
+  if(bEndret) await env.FAMILIE_KV.put(BUDSJETT_NOKKEL, JSON.stringify(b));
+  const laert = await lesJson(env, LAERT_NOKKEL, {});
+  let lEndret = false;
+  for(const m of Object.keys(laert)) if(bytt(laert[m]) !== laert[m]){ laert[m] = bytt(laert[m]); lEndret = true; }
+  if(lEndret) await env.FAMILIE_KV.put(LAERT_NOKKEL, JSON.stringify(laert));
+  return svar({ ok:true, fra:fra, til:til, kategorier:flett(nyeEgne).filter(x => x.indexOf('Utenfor budsjett') !== 0), egne:nyeEgne });
+}
 const POST_NOKKEL = 'auth:bank:poster';
 const LAERT_NOKKEL = 'auth:bank:laert';
 /* «Neam husker» i innboksen: det Neam har laert per motpart. Tom kategori
@@ -986,7 +1021,7 @@ async function foringer(env, mnd, kat, eksakt){
       if(!treff(d.kategori)) continue;
       const bank = p.bankId && poster[p.bankId];
       ut.push({ id:p.id, dato:p.dato, tekst:p.motpart || p.tekst || '', mer:p.motpart && p.tekst && p.tekst !== p.motpart ? p.tekst : '',
-        kilde: p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : 'Kvittering fra bilde') : (kn[p.konto] || p.kontoNavn || ''),
+        kilde: p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? 'Lagt inn for hånd' : 'Kvittering fra bilde') : (kn[p.konto] || p.kontoNavn || ''),
         betaltFra: bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
         kategori:d.kategori, del:deler.length > 1, harKvittering:!!p.fra && p.harKvittering !== false,
         belop: Math.round((d.kategori.indexOf('Inntekter') === 0 ? d.belop : -d.belop) * 100) / 100 });
@@ -1027,6 +1062,8 @@ async function nyKvittering(env, kropp, epost){
   const laert = await lesJson(env, LAERT_NOKKEL, {});
   const p = { id:id, fra:'foto', konto:'foto', kontoNavn:'Kvittering fra bilde', dato:dato, belop:-sum, tekst:'', motpart:butikk,
     harKvittering: linjer.length > 0, status:'ny', lagtInnAv:epost, lagtInn:new Date().toISOString() };
+  /* Lagt inn for haand - av Neam etter en beskjed, uten kvittering. */
+  if(kropp.forHand){ p.forHand = true; p.kontoNavn = 'Lagt inn for hånd'; }
   const f = foreslaa(p, laert);
   p.kategori = f.kategori; p.kilde = f.kilde;
   kobleKvittering(poster, p);
@@ -1598,6 +1635,7 @@ export async function onRequestPost({ request, env }){
   if(kropp && kropp.hva === 'kontonavn') return await lagreKontonavn(env, kropp);
   if(kropp && kropp.hva === 'kategori-ny') return await nyeKategorier(env, kropp);
   if(kropp && kropp.hva === 'kategori-slett') return await slettKategori(env, kropp);
+  if(kropp && kropp.hva === 'kategori-navn') return await nyttKategoriNavn(env, kropp);
   if(kropp && kropp.hva === 'trumf-koble-fra'){
     await env.FAMILIE_KV.delete(TRUMF_NOKKEL);
     await env.FAMILIE_KV.delete('auth:bank:buffer:trumf:liste');

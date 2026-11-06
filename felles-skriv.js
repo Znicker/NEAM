@@ -1540,14 +1540,20 @@ const SKRIV_VERKTOY = [
                + 'SAMTALEN TAR SLUTT når siden skifter - panelet følger ikke med. Si '
                + 'derfor alt du har å si i det samme svaret, og hold det kort. Ikke '
                + 'still et spørsmål og naviger i samme slengen.\n\n'
-               + 'Naviger aldri uten at brukeren har bedt om det eller sagt ja til det.',
+               + 'Naviger aldri uten at brukeren har bedt om det eller sagt ja til det.\n\n'
+               + 'UNNTAK - Økonomi: med `oppgave` fortsetter du samtalen der når sida er '
+               + 'åpnet, og gjør det brukeren sa ja til. Bare til Økonomi.',
     input_schema: {
       type:'object',
       properties:{
         side: { type:'string',
                 enum:['forsiden','kalender','handleliste','oppskrifter',
-                      'andrea','emma','diktat','kjokken','sikkerhet'],
-                description:'Hvilken side som skal åpnes.' }
+                      'andrea','emma','diktat','kjokken','sikkerhet','okonomi'],
+                description:'Hvilken side som skal åpnes.' },
+        oppgave: { type:'string',
+                   description:'Bare for okonomi: det du skal gjøre når sida er åpnet, '
+                             + 'skrevet til deg selv - hva brukeren ba om og sa ja til, med '
+                             + 'navn og beløp.' }
       },
       required:['side']
     },
@@ -1921,8 +1927,13 @@ const SKRIV_SIDER = {
   emma:        '/emma.html',
   diktat:      '/andrea-diktat.html',
   kjokken:     '/dashboard.html',
-  sikkerhet:   '/sikkerhet.html'
+  sikkerhet:   '/sikkerhet.html',
+  okonomi:     '/okonomi.html'
 };
+/* Oppgaven Neam tar med til Oekonomi-sida (gaa_til med `oppgave`). Sida
+   leser den naar den aapnes og lar Neam fortsette - se okNeamOppgave() i
+   okonomi.html. sessionStorage, som samtalen: den doer med fana. */
+const SKRIV_OPPGAVE = 'neam_oppgave';
 
 async function skrivUtfor(navn, arg){
   arg = arg || {};
@@ -1932,14 +1943,24 @@ async function skrivUtfor(navn, arg){
 
   /* ---------------- Navigasjon ---------------- */
   if(navn === 'gaa_til'){
-    const mal = SKRIV_SIDER[String(arg.side || '').toLowerCase()];
+    const side = String(arg.side || '').toLowerCase();
+    const mal = SKRIV_SIDER[side];
     if(!mal) throw new Error('Ukjent side: ' + arg.side);
+    if(side === 'okonomi' && !(typeof lesAltOkonomiTillatt === 'function' && lesAltOkonomiTillatt())){
+      throw new Error('Økonomi er ikke åpnet for denne innloggingen.');
+    }
+    const oppgave = side === 'okonomi' ? String(arg.oppgave || '').trim() : '';
+    if(oppgave){
+      try{ sessionStorage.setItem(SKRIV_OPPGAVE, JSON.stringify({ side:side, tekst:oppgave.slice(0, 2000), tid:Date.now() })); }catch(e){}
+    }
     /* Vi drar ikke med det samme. Svaret fra Neam skal rekke aa komme paa
        skjermen foerst - navigerer vi i samme oeyeblikk, ser brukeren bare
        at sida bytter og faar aldri vite hvorfor. */
     setTimeout(function(){ location.href = mal; }, 2500);
     return { navigerer: true, side: arg.side,
-             beskjed: 'Siden åpnes om et par sekunder. Si kort hva du gjorde, '
+             beskjed: oppgave
+               ? 'Siden åpnes om et par sekunder, og der fortsetter du med oppgaven. Si bare kort at dere går dit.'
+               : 'Siden åpnes om et par sekunder. Si kort hva du gjorde, '
                     + 'og ikke still spørsmål nå.' };
   }
 
@@ -2925,6 +2946,8 @@ function skrivVerktoy(egne){
   const okonomi = typeof lesAltOkonomiTillatt === 'function' && lesAltOkonomiTillatt();
   return SKRIV_VERKTOY.concat(okonomi ? SKRIV_OK_VERKTOY : []).filter(function(v){
     if(tatt[v.name]) return false;
+    /* Noe kan bare gjoeres naar man staar paa Oekonomi-sida. */
+    if(v.okBareSida && !skrivOkPaaSida()) return false;
     /* Skolearbeidet bare der noen er logget inn som seg selv - se
        avsnittet om skolearbeidet over. Et verktoey som ikke kan virke
        er verre enn ingen: Neam lover da noe han ikke kan holde. */
@@ -2953,6 +2976,20 @@ function skrivOkPost(id){
   if(!p) return 'en post Neam ikke har lest ennå (' + id + ')';
   return p.sted + ', ' + SKRIV_OK_DATO.format(new Date(String(p.dato).slice(0, 10) + 'T12:00:00')) + ', ' + skrivOkKr(p.belop);
 }
+/* Staar vi paa Oekonomi-sida? Sida setter flagget selv; adressen kan vaere
+   baade /okonomi og /okonomi.html. Utenfor sida kan Neam bare legge beloep
+   i felt som finnes (Magne, 6. november 2026). */
+function skrivOkPaaSida(){ return window.okonomiSida === true; }
+const SKRIV_OK_UTENFOR = 'Nye felt kan bare legges til på Økonomi-sida. Foreslå feltet for brukeren, si at det '
+  + 'må gjøres der, og spør om du skal ta dem dit og gjøre det (gaa_til med side «okonomi» og oppgave).';
+function skrivOkKat(k){ return String(k || '').split(' · ').join(' › '); }
+/* Varene som foeres for seg, med navnet fra kvitteringen Neam sist leste. */
+function skrivOkLinjer(id, linjer){
+  const nr = Object.keys(linjer || {}).filter(function(i){ return linjer[i]; });
+  if(!nr.length) return '';
+  const navn = typeof lesAltOkSist !== 'undefined' && lesAltOkSist.kvittering[id];
+  return nr.map(function(i){ return '\n    – ' + ((navn && navn[Number(i)]) || 'vare ' + i) + ' → ' + skrivOkKat(linjer[i]); }).join('');
+}
 function skrivOkMaal(maal){
   if(maal === 'standard') return 'standardbudsjettet';
   const n = new Intl.DateTimeFormat('nb-NO', { month:'long', year:'numeric' }).format(new Date(maal + '-01T12:00:00'));
@@ -2962,12 +2999,17 @@ function skrivOkMaal(maal){
 const SKRIV_OK_VERKTOY = [
   {
     name: 'godkjenn_okonomi_poster',
+    okBareSida: true,
     description: 'Godkjenner poster i økonomi-innboksen med kategori, og/eller stryker poster så de ikke '
                + 'føres. Id og gyldige kategorier kommer fra les_okonomi_innboks - kjør den først. '
-               + 'Godkjent blir regnskap, og Neam husker kategorien for motparten til neste gang.',
+               + 'Godkjent blir regnskap, og Neam husker kategorien for motparten til neste gang. '
+               + 'På en kvittering kan enkeltvarer føres på en annen kategori enn kjøpet (linjer, med '
+               + 'numrene fra les_okonomi_kvittering); resten av beløpet følger kjøpets kategori.',
     input_schema: { type:'object', properties:{
       godkjenn: { type:'array', description:'Poster som skal godkjennes.', items:{ type:'object', properties:{
-        id: { type:'string' }, kategori: { type:'string', description:'En kategori fra lista, f.eks. «Mat · Dagligvare».' }
+        id: { type:'string' }, kategori: { type:'string', description:'En kategori fra lista, f.eks. «Mat · Dagligvare».' },
+        linjer: { type:'object', description:'Bare for kvitteringer: { "<linjenummer>": "<kategori>" } for varene som skal '
+                + 'føres på noe annet enn kjøpet, f.eks. { "3": "Andre utgifter · Felles" }.', additionalProperties:{ type:'string' } }
       }, required:['id', 'kategori'] } },
       stryk: { type:'array', description:'Id-er som strykes (føres ikke).', items:{ type:'string' } }
     }, required:[] },
@@ -2975,7 +3017,7 @@ const SKRIV_OK_VERKTOY = [
     neamBeskriv: function(arg){
       const g = [].concat(arg.godkjenn || []), s = [].concat(arg.stryk || []);
       let t = '';
-      if(g.length) t += 'Godkjenne i økonomien:\n' + g.map(function(x){ return '• ' + skrivOkPost(x.id) + ' → ' + String(x.kategori || '').split(' · ').join(' › '); }).join('\n');
+      if(g.length) t += 'Godkjenne i økonomien:\n' + g.map(function(x){ return '• ' + skrivOkPost(x.id) + ' → ' + skrivOkKat(x.kategori) + skrivOkLinjer(x.id, x.linjer); }).join('\n');
       if(s.length) t += (t ? '\n\n' : '') + 'Stryke (føres ikke):\n' + s.map(function(id){ return '• ' + skrivOkPost(id); }).join('\n');
       return t;
     }
@@ -2984,7 +3026,8 @@ const SKRIV_OK_VERKTOY = [
     name: 'sett_okonomi_budsjett',
     description: 'Endrer beløp i budsjettet: standardbudsjettet (gjelder fra neste måned; måneder som har '
                + 'startet, beholder sitt) eller én måneds eget budsjett. Kategoriene er postene eller linjene '
-               + 'fra les_okonomi_maaned. Beløp i hele kroner per måned. Bare postene som nevnes, endres.',
+               + 'fra les_okonomi_maaned. Beløp i hele kroner per måned. Bare postene som nevnes, endres. '
+               + 'Bare poster som finnes - en ny post eller linje lages på Økonomi-sida.',
     input_schema: { type:'object', properties:{
       maal: { type:'string', description:'«standard», eller måneden som ÅÅÅÅ-MM.' },
       endringer: { type:'array', items:{ type:'object', properties:{
@@ -3003,6 +3046,46 @@ const SKRIV_OK_VERKTOY = [
   }
 ];
 
+/* Formuen - verdier, gjeld og familiemaalet - er tall dere skal kunne gi
+   Neam fra hvilken som helst side (Magne, 6. november 2026). Navnet er
+   noekkelen: finnes det, faar det nytt beloep, ellers legges det til.
+   En verdi som foelger en konto, har saldoen fra banken og endres ikke her. */
+const SKRIV_OK_FORMUE = {
+  name: 'sett_okonomi_formue',
+  description: 'Fyller inn eller endrer beløp i formuen i økonomien: verdier (f.eks. «Bolig»), gjeld med rente '
+             + '(f.eks. «Boliglån») og familiemålet. Finnes navnet, får det nytt beløp. Kjør les_okonomi_kontoer '
+             + 'først for å se hva som står der. Beløp i hele kroner, rente i prosent. Bare det som nevnes, endres. '
+             + 'På Økonomi-sida kan nye navn legges til. Utenfor den bare felt som finnes, pluss Bolig, Boliglån '
+             + 'og familiemålet (feltene i «Neam trenger») når de mangler.',
+  input_schema: { type:'object', properties:{
+    verdier: { type:'array', items:{ type:'object', properties:{ navn:{ type:'string' }, belop:{ type:'number' } }, required:['navn', 'belop'] } },
+    gjeld: { type:'array', items:{ type:'object', properties:{
+      navn:{ type:'string' }, belop:{ type:'number', description:'Restgjeld i kroner.' }, rente:{ type:'number', description:'Nominell rente i prosent, f.eks. 5.1.' }
+    }, required:['navn'] } },
+    familiemaal: { type:'object', properties:{ navn:{ type:'string' }, belop:{ type:'number', description:'Målbeløpet i kroner.' } }, required:['navn', 'belop'] }
+  }, required:[] },
+  neamSkriver: true,
+  neamBeskriv: function(arg){
+    const f = typeof lesAltOkSist !== 'undefined' && lesAltOkSist.formue;
+    const finn = function(liste, navn){ return f ? (f[liste] || []).filter(function(x){ return String(x.navn).toLowerCase() === String(navn || '').trim().toLowerCase(); })[0] : null; };
+    const fra = function(gammel, felt, tekst){ return gammel && gammel[felt] != null ? tekst(gammel[felt]) + ' → ' : (f ? '(ny) ' : ''); };
+    const linjer = [];
+    [].concat(arg.verdier || []).forEach(function(v){
+      linjer.push('• ' + v.navn + ': ' + fra(finn('verdier', v.navn), 'belop', skrivOkKr) + skrivOkKr(Math.round(Number(v.belop) || 0)));
+    });
+    [].concat(arg.gjeld || []).forEach(function(g){
+      const gammel = finn('gjeld', g.navn), del = [];
+      if(g.belop != null) del.push(fra(gammel, 'belop', skrivOkKr) + skrivOkKr(Math.round(Number(g.belop) || 0)));
+      if(g.rente != null) del.push('rente ' + fra(gammel, 'rente', function(r){ return String(r).replace('.', ',') + ' %'; }) + String(g.rente).replace('.', ',') + ' %');
+      linjer.push('• ' + g.navn + ' (gjeld): ' + del.join(', '));
+    });
+    if(arg.familiemaal) linjer.push('• Familiemål: ' + arg.familiemaal.navn + ', ' + skrivOkKr(Math.round(Number(arg.familiemaal.belop) || 0)));
+    return 'Endre formuen i økonomien:\n' + linjer.join('\n');
+  }
+};
+/* Lagt til her, etter at lista er laget - en const kan ikke leses foer den finnes. */
+SKRIV_OK_VERKTOY.push(SKRIV_OK_FORMUE);
+
 async function skrivOkBank(sti, kropp){
   const r = await fetch('/api/bank' + sti, kropp
     ? { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(kropp) }
@@ -3019,13 +3102,74 @@ async function skrivOkUtfor(navn, arg){
   if(!(typeof lesAltOkonomiTillatt === 'function' && lesAltOkonomiTillatt())) throw new Error('Økonomien er ikke åpnet for denne innloggingen.');
 
   if(navn === 'godkjenn_okonomi_poster'){
+    if(!skrivOkPaaSida()) throw new Error('Godkjenning gjøres på Økonomi-sida. Spør om du skal ta brukeren dit (gaa_til med side «okonomi» og oppgave).');
     const g = [].concat(arg.godkjenn || []).filter(function(x){ return x && x.id && x.kategori; })
-      .map(function(x){ return { id:String(x.id), kategori:String(x.kategori) }; });
+      .map(function(x){
+        const ut = { id:String(x.id), kategori:String(x.kategori) };
+        if(x.linjer && typeof x.linjer === 'object'){
+          const l = {};
+          Object.keys(x.linjer).forEach(function(i){ if(/^\d+$/.test(i) && x.linjer[i]) l[i] = String(x.linjer[i]); });
+          if(Object.keys(l).length) ut.linjer = l;
+        }
+        return ut;
+      });
     const s = [].concat(arg.stryk || []).map(String).filter(Boolean);
     if(!g.length && !s.length) throw new Error('Ingen poster å godkjenne eller stryke.');
     const r = await skrivOkBank('', { hva:'godkjenn', godkjenn:g, strok:s });
     skrivOkFerdig();
     return { godkjent:g.length, stroket:s.length, svar:'Ført. Det kan angres fra Økonomi-sida.', detaljer:{ godkjent:r.godkjent, stroket:r.stroket } };
+  }
+
+  if(navn === 'sett_okonomi_formue'){
+    const f = await skrivOkBank('?hva=formue');
+    const verdier = (f.verdier || []).slice(), gjeld = (f.gjeld || []).map(function(x){ return Object.assign({}, x); });
+    const finn = function(liste, n){ return liste.filter(function(x){ return String(x.navn).toLowerCase() === n.toLowerCase(); })[0]; };
+    const endret = [];
+    /* Utenfor sida: bare det som finnes, og feltene «Neam trenger» viser. */
+    const sida = skrivOkPaaSida();
+    const bolig = function(x){ return /bolig|hus|leilighet/i.test(x.navn); };
+    const nyttGreit = function(liste, n){
+      if(sida) return true;
+      if(liste === verdier) return /^bolig$/i.test(n) && !verdier.some(bolig);
+      return /^boliglån$/i.test(n) && !gjeld.some(bolig);
+    };
+    const nekt = function(n){ throw new Error('«' + n + '» finnes ikke i formuen. ' + SKRIV_OK_UTENFOR); };
+    [].concat(arg.verdier || []).forEach(function(v){
+      const n = String(v && v.navn || '').trim(), b = Math.round(Number(v && v.belop));
+      if(!n) throw new Error('En verdi mangler navn.');
+      if(!(b >= 0)) throw new Error('Ugyldig beløp for ' + n);
+      const x = finn(verdier, n);
+      if(x && x.konto) throw new Error(n + ' følger saldoen på en konto og kan ikke settes her.');
+      if(x){ endret.push({ navn:x.navn, fra:x.belop, til:b }); x.belop = b; }
+      else if(!nyttGreit(verdier, n)) nekt(n);
+      else { endret.push({ navn:n, ny:true, til:b }); verdier.push({ navn:n, belop:b }); }
+    });
+    [].concat(arg.gjeld || []).forEach(function(g){
+      const n = String(g && g.navn || '').trim();
+      if(!n) throw new Error('En gjeld mangler navn.');
+      let x = finn(gjeld, n);
+      if(!x){
+        if(!nyttGreit(gjeld, n)) nekt(n);
+        if(g.belop == null) throw new Error('Ny gjeld trenger et beløp: ' + n);
+        x = { navn:n, belop:0 }; gjeld.push(x);
+      }
+      if(g.belop != null){ const b = Math.round(Number(g.belop)); if(!(b >= 0)) throw new Error('Ugyldig beløp for ' + n); x.belop = b; }
+      if(g.rente != null){ const r = Number(g.rente); if(!(r >= 0 && r < 30)) throw new Error('Ugyldig rente for ' + n); x.rente = r; }
+      endret.push({ navn:x.navn, gjeld:x.belop, rente:x.rente });
+    });
+    let maal = f.maal && String(f.maal.navn || '').trim() ? f.maal : null;
+    if(arg.familiemaal){
+      const n = String(arg.familiemaal.navn || '').trim(), b = Math.round(Number(arg.familiemaal.belop));
+      if(!n || !(b > 0)) throw new Error('Familiemålet trenger navn og beløp.');
+      if(!sida && maal && maal.navn.toLowerCase() !== n.toLowerCase()) throw new Error('Familiemålet heter «' + maal.navn + '». ' + SKRIV_OK_UTENFOR);
+      maal = Object.assign({ spart:0, konto:'' }, maal || {}, { navn:n, belop:b });
+      endret.push({ familiemaal:n, til:b });
+    }
+    if(!endret.length) throw new Error('Ingen endringer.');
+    const r = await skrivOkBank('', { hva:'formue', verdier:verdier, gjeld:gjeld, maal:maal });
+    if(typeof lesAltOkSist !== 'undefined') lesAltOkSist.formue = { verdier:r.verdier || [], gjeld:r.gjeld || [], maal:r.maal || null };
+    skrivOkFerdig();
+    return { endret:endret, svar:'Lagret i formuen. Det kan endres i Oppsett på Økonomi.' };
   }
 
   if(navn === 'sett_okonomi_budsjett'){
@@ -3037,7 +3181,8 @@ async function skrivOkUtfor(navn, arg){
     const nytt = Object.assign({}, grunn), endret = [];
     [].concat(arg.endringer || []).forEach(function(e){
       const k = String(e && e.kategori || ''), v = Math.round(Number(e && e.belop));
-      if(kat.indexOf(k) === -1) throw new Error('Ukjent kategori: ' + k);
+      if(kat.indexOf(k) === -1) throw new Error('Posten «' + k + '» finnes ikke i budsjettet. ' + (skrivOkPaaSida()
+        ? 'Lag den med endre_okonomi_budsjettposter først.' : SKRIV_OK_UTENFOR));
       if(!(v >= 0)) throw new Error('Ugyldig beløp for ' + k);
       endret.push({ kategori:k, fra:grunn[k] || 0, til:v });
       nytt[k] = v;

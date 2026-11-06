@@ -569,7 +569,7 @@ function lesAltVerktoy(egne){
    Det som leses sist, huskes i lesAltOkSist, saa bekreftelsene i
    felles-skriv.js kan vise navn og beloep i stedet for id-er. */
 let lesAltOkTilgang = false;
-const lesAltOkSist = { innboks:{}, budsjett:null };
+const lesAltOkSist = { innboks:{}, budsjett:null, foringer:{}, kvittering:{}, formue:null };
 (function(){
   try{
     fetch('/api/bank?hvem=1', { credentials:'same-origin', cache:'no-store' })
@@ -625,7 +625,9 @@ const LESALT_OK_VERKTOY = [
   },
   {
     name: 'les_okonomi_kontoer',
-    description: 'Kontoene i DNB med eget navn, rolle (felles, sparing, magne, nina …) og saldo.',
+    description: 'Kontoene i DNB med eget navn, rolle (felles, sparing, magne, nina …) og saldo, og '
+               + 'formuen som er fylt inn for hånd: verdiene (bolig o.l.), gjelden med rente og familiemålet. '
+               + 'Kjør denne før sett_okonomi_formue.',
     input_schema: { type:'object', properties:{}, required:[] }
   },
   {
@@ -636,8 +638,9 @@ const LESALT_OK_VERKTOY = [
   },
   {
     name: 'les_okonomi_kvittering',
-    description: 'Varelinjene på én kvittering (Trumf eller lest fra bilde), med navn, antall og beløp. '
-               + 'Id-en kommer fra les_okonomi_innboks eller les_okonomi_foringer.',
+    description: 'Varelinjene på én kvittering (Trumf eller lest fra bilde), med nummer, navn, antall og beløp. '
+               + 'Id-en kommer fra les_okonomi_innboks eller les_okonomi_foringer. Nummeret er det '
+               + 'godkjenn_okonomi_poster tar når varer skal føres på en annen kategori enn kjøpet.',
     input_schema: { type:'object', properties:{
       id: { type:'string', description:'Postens id.' }
     }, required:['id'] }
@@ -688,6 +691,7 @@ async function lesAltOkUtfor(navn, arg){
     if(!kat) throw new Error('Mangler kategori.');
     const r = await lesAltBank('?hva=foringer&mnd=' + mnd + '&kategori=' + encodeURIComponent(kat));
     const liste = (r.foringer || []).map(function(f){
+      lesAltOkSist.foringer[f.id] = { sted:f.tekst, dato:f.dato, belop:f.belop, kategori:f.kategori };
       return { id:f.id, dato:f.dato, sted:f.tekst, kilde:f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''),
                kategori:f.kategori, belop:f.belop, kvittering:!!f.harKvittering, del_av_kvittering:!!f.del };
     });
@@ -702,7 +706,7 @@ async function lesAltOkUtfor(navn, arg){
       const sted = p.motpart || p.tekst || 'Uten tekst';
       lesAltOkSist.innboks[p.id] = { sted:sted, dato:p.dato, belop:p.belop };
       return { id:p.id, dato:p.dato, sted:sted, tekst:p.tekst && p.tekst !== sted ? p.tekst : undefined, belop:p.belop,
-               kilde:p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : 'kvittering fra bilde') : (p.kontoNavn || 'bank'),
+               kilde:p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? 'lagt inn for hånd' : 'kvittering fra bilde') : (p.kontoNavn || 'bank'),
                kategori:p.kategori || '', forslag:!p.kategori ? 'mangler kategori' : p.kilde === 'ai-usikker' ? 'Neam er usikker' : 'Neam er sikker',
                mulig_dobbel:!!p.mulDobbel, kvittering:!!p.fra };
     });
@@ -712,8 +716,19 @@ async function lesAltOkUtfor(navn, arg){
 
   if(navn === 'les_okonomi_kontoer'){
     const r = await lesAltBank('?hva=kontoer');
-    return { hentet:new Date(r.hentet).toISOString(), kontoer:(r.kontoer || []).filter(function(k){ return k.rolle !== 'ignorer'; })
-      .map(function(k){ return { navn:k.navn, rolle:k.rolle || 'uten rolle', saldo:typeof k.saldo === 'number' ? k.saldo : null, feil:k.feil || undefined }; }) };
+    /* Formuen ligger for seg; uten bank virker den likevel. */
+    let f = null;
+    try{ f = await lesAltBank('?hva=formue'); }catch(e){}
+    if(f) lesAltOkSist.formue = { verdier:f.verdier || [], gjeld:f.gjeld || [], maal:f.maal || null };
+    const kontoer = r.kontoer || [];
+    const kontoNavn = function(uid){ const k = kontoer.filter(function(x){ return x.uid === uid; })[0]; return k ? k.navn : 'en konto'; };
+    return { hentet:new Date(r.hentet).toISOString(), kontoer:kontoer.filter(function(k){ return k.rolle !== 'ignorer'; })
+      .map(function(k){ return { navn:k.navn, rolle:k.rolle || 'uten rolle', saldo:typeof k.saldo === 'number' ? k.saldo : null, feil:k.feil || undefined }; }),
+      formue: f ? {
+        verdier:(f.verdier || []).map(function(v){ return v.konto ? { navn:v.navn, saldo_fra:kontoNavn(v.konto) } : { navn:v.navn, belop:v.belop }; }),
+        gjeld:(f.gjeld || []).map(function(g){ return { navn:g.navn, belop:g.belop, rente:g.rente != null ? g.rente : null }; }),
+        familiemaal: f.maal ? { navn:f.maal.navn, belop:f.maal.belop } : null
+      } : null };
   }
 
   if(navn === 'les_okonomi_aar'){
@@ -733,8 +748,9 @@ async function lesAltOkUtfor(navn, arg){
     const id = String(arg.id || '');
     if(!id) throw new Error('Mangler id.');
     const r = await lesAltBank('?hva=kvittering&id=' + encodeURIComponent(id));
-    return { id:id, linjer:(r.linjer || []).map(function(l){
-      return { navn:l.navn, antall:l.antall, belop:Math.round(((l.belop || 0) + (l.rabatt || 0)) * 100) / 100 }; }) };
+    lesAltOkSist.kvittering[id] = (r.linjer || []).map(function(l){ return l.navn; });
+    return { id:id, linjer:(r.linjer || []).map(function(l, nr){
+      return { nr:nr, navn:l.navn, antall:l.antall, belop:Math.round(((l.belop || 0) + (l.rabatt || 0)) * 100) / 100 }; }) };
   }
 
   throw new Error('Ukjent økonomiverktøy: ' + navn);
