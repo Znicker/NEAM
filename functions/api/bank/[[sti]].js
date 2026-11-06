@@ -437,6 +437,25 @@ async function transaksjoner(env, okt, uid, fra, fersk, psu){
   return svar({ ok:true, hentet:r.hentet, fraBuffer:r.fraBuffer, advarsel:r.advarsel, fra:fraDato, transaksjoner:r.liste });
 }
 
+/* MIDLERTIDIG (6. november): gir DNB fra seg forfallsregisteret?
+   Spoer uttrykkelig etter én status (PDNG, SCHD ...) og 60 dager fram i
+   tid, forbi bufferen. Svarer bare med telling og datoer - ingen beloep
+   eller navn. Fjernes naar svaret er kjent. */
+async function statustest(env, okt, uid, status, psu){
+  if(!okt.kontoer.some(k => k.uid === uid)) return svar({ ok:false, feil:'Ukjent konto' });
+  if(status && !/^(BOOK|CNCL|HOLD|OTHR|PDNG|RJCT|SCHD)$/.test(status)) return svar({ ok:false, feil:'Ukjent status' });
+  const dag = d => new Date(Date.now() + d * 24 * 3600 * 1000).toISOString().slice(0, 10);
+  const sti = '/accounts/' + encodeURIComponent(uid) + '/transactions?date_from=' + dag(-31) + '&date_to=' + dag(60)
+    + (status ? '&transaction_status=' + status : '');
+  const s = await eb(env, 'GET', sti, null, psu);
+  if(!s.ok) return svar({ ok:true, psu:!!psu, svar:s });
+  const liste = (s.data && s.data.transactions) || [];
+  const telling = {};
+  for(const t of liste) telling[t.status || '(tom)'] = (telling[t.status || '(tom)'] || 0) + 1;
+  return svar({ ok:true, psu:!!psu, antall:liste.length, telling:telling, merMed:!!(s.data && s.data.continuation_key),
+    datoer:liste.filter(t => t.status !== 'BOOK').map(t => ({ status:t.status, bokfort:t.booking_date, verdi:t.value_date, transaksjon:t.transaction_date })) });
+}
+
 /* ---------- Innboksen ----------
    Transaksjonene fra kontoene med rollen «felles» blir poster som venter
    paa godkjenning, slik skissen viser. Neam foreslaar kategori; det som
@@ -1566,6 +1585,7 @@ export async function onRequestGet({ request, env }){
     if(hva === 'kontoer') return await kontoer(env, okt, fersk, psu);
     if(hva === 'transaksjoner') return await transaksjoner(env, okt, url.searchParams.get('konto') || '', url.searchParams.get('fra'), fersk, psu);
     if(hva === 'innboks') return await innboks(env, okt, fersk, psu);
+    if(hva === 'statustest') return await statustest(env, okt, url.searchParams.get('konto') || '', url.searchParams.get('status') || '', psu);
     return svar({ ok:false, feil:'Ukjent hva: ' + hva });
   }catch(e){
     /* Meldingen, aldri stakken - den kan baere biter av noekkelen. */
