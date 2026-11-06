@@ -93,8 +93,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-tale.js` (tale ut og inn).
 
 **Siste leverte versjoner:** `felles-neam.js ?v=74`, `felles-neam.css
-?v=74`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=7`, `felles-lesalt.js
-?v=7`, `felles-hus.js ?v=22`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
+?v=74`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=8`, `felles-lesalt.js
+?v=8`, `felles-hus.js ?v=22`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
@@ -112,7 +112,7 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–73; neam.css til og
-med 73; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–6, skriv 1–6,
+med 73; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–7, skriv 1–7,
 hus `?v=1–21`, ms `?v=1`, tale 1–4, graph 1–2**. (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -141,6 +141,11 @@ skolearbeidet (lekser, prøver, læringsmål, **og fra 2. november**
 `les_fagene`, `legg_til_fag`, `endre_fag`, `sett_diktatord`,
 `list_skoleplaner`, `hent_skoleplan`), Matlaging (fra 29. oktober),
 navigasjon, huset og Neamow.
+
+*Fra 6. november også økonomien* – seks leseverktøy (`les_okonomi_*`) i
+`felles-lesalt.js` og to som skriver (`godkjenn_okonomi_poster`,
+`sett_okonomi_budsjett`) i `felles-skriv.js`. De står i lista **bare for
+sys@, magne@ og nina@** – aldri kitchen@ eller barna. Se del 57.
 
 *Kan ikke flyttes som de er – fem verktøy:*
 - `finn_opprydding` og `slaa_sammen` hviler på **sidas mengdemotor** –
@@ -176,14 +181,16 @@ trykket, hører ikke hjemme på veggen. Sperren er `skrivSkoleTillatt()`.
 
 *Finnes ikke som verktøy noe sted:* husregisteret (bare skjemaet på
 forsiden – teksten går i systemteksten), spillene, vedlegg og bilder.
-**Og `okonomi.html`, `kort.html` og spillsidene laster ikke Neam i det hele
-tatt** – der har han ingen stemme, ikke bare et smalere utvalg.
+**Og `kort.html` og spillsidene laster ikke Neam i det hele tatt** – der
+har han ingen stemme, ikke bare et smalere utvalg. `okonomi.html` gjør det
+fra 6. november.
 
 **Hemmeligheter i Cloudflare:** `ANTHROPIC_API_KEY`, `MS_CLIENT_SECRET`,
 `HOMEY_CLIENT_SECRET`, `TURN_KEY_ID`, `TURN_KEY_API_TOKEN` (de to siste
 fra Realtime → TURN Server; Realtime-abonnementet er lagt til kontoen,
 1 000 GB gratis per måned), `ENABLE_BANKING_KEY` (bank-funksjonen; pluss
-den vanlige variabelen `ACCESS_TEAM`). **En hemmelighet tas først i bruk ved neste
+den vanlige variabelen `ACCESS_TEAM`), `DROPBOX_APP_KEY` og
+`DROPBOX_APP_SECRET` (Dropbox-appen for kvitteringene, fra 6. november). **En hemmelighet tas først i bruk ved neste
 utrulling** – lagre den, og push eller trykk «Retry deployment».
 
 **Økta 15. september ga ingen kode.** Den gikk med til å tenke høyt, og
@@ -401,8 +408,8 @@ i venstre tommelknapp, og alle 16 sidene lenker
 fordi iOS fyller gjennomsiktige hjørner med svart. Avatarene i
 `bilder/avatarer/` er ikke tatt i bruk; ingen side viser bildeavatarer.
 
-**28.–29. oktober: Neam Økonomi.** Den skjulte `okonomi.html` – bare sys@ –
-er bygget fra første banktilgang til en side med seks faner: Status,
+**28. oktober–6. november: Neam Økonomi.** Den skjulte `okonomi.html` –
+for sys@, magne@ og nina@ fra 6. november – er bygget fra første banktilgang til en side med seks faner: Status,
 Innboks, Måned, År, Budsjett og Oppsett – de fire første og Budsjett etter
 skissen, som Magne godkjente 29. oktober. DNB kobles gjennom Enable Banking, Trumf med
 innloggingscookien fra trumf.no, og kvitteringer leses fra bilde eller PDF.
@@ -411,13 +418,19 @@ usikker. Budsjettet har gruppe · post · linje og egne poster, og
 ligger i KV fordi repoet er offentlig. Fra 30. oktober har hver måned sitt
 eget budsjett ved siden av standarden (`7a823b7`), og Excel-importen er
 tatt bort. Status har
-formuen, nøkkeltallene, familiemålet og kildene med farge og tid.
+formuen, nøkkeltallene og familiemålet; kildene med farge og tid står fra
+6. november først i Oppsett.
 Kjøkkendashen vekker hentingen hver sjette time, og forsiden viser et
 varselkort når noe trenger noen. Sida henter DNB og Trumf ferskt når den
-åpnes og med Oppdater, og Trumf-cookien fornyes underveis. 26 commits,
-`0e0050a`–`7a823b7`.
-**Ingen `?v=`-numre er brukt eller brent** – ingen fellesfiler ble rørt.
-Se del 57.
+åpnes og med Oppdater, og Trumf-cookien fornyes underveis.
+**6. november:** kvitteringer fra en Dropbox-mappe (`5c359f7`), sida lagt
+om for PC etter en ny skisse (`aa5bbc8`), og **Neam på sida** – fast til
+høyre på bred skjerm, med økonomiverktøyene på alle Neam-sidene
+(`47b39df`). 31 commits, `0e0050a`–`47b39df`, medregnet en midlertidig
+statustest fra en annen økt (`ce3c32b`, fjernet i `9dc8799`).
+**`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
+`felles-lesalt.js` og `felles-skriv.js` til `?v=8` på alle sidene som
+laster dem. Se del 57.
 
 **1. november: Rommene, ukeplanen og bildekatalogen.**
 - **Rommene lagt om igjen** (`5208ee2`–`26d1362`). Etasjefanene er borte:
@@ -587,8 +600,11 @@ Se del 57.
   oppsettet var bra»); dette står fortsatt åpent: fargebruken fra skissen (rødt «over», oker «trenger valg»),
   prikkene for hvor fersk en kilde er (grønn `--handling-ny`, gul
   `--handling-endre`, rød `--danger`), formuestablene i trinn av
-  `--aksent` og `--ink-soft`, og rammen på 1120 px. Ingen av dem står i
-  designsystemet. Se del 57.
+  `--aksent` og `--ink-soft`, og – fra PC-skissen 6. november, som Magne
+  sa ja til – rammen på 1440 px, de fire tallboksene øverst på Status,
+  innboksen og Måned i to spalter fra 1100 px, og Neam som spalte på
+  400 px til høyre fra 1360 px. Den røde prikken på Oppsett ba Magne om
+  selv. Ingen av dem står i designsystemet. Se del 57.
 - **Polonium: metall eller halvmetall?** Masterdataene sier metall,
   grunnstoffspillet sier halvmetall. Det er en faglig uenighet, ikke en
   datafeil, og står urørt begge steder.
@@ -597,11 +613,12 @@ Se del 57.
   fargene på de seks raritetsnivåene. Ingen av dem står i designsystemet.
 
 **Avtalt som neste sak:**
-- **Økonomisida – det som står igjen** (bygget 28.–29. oktober, del 57).
-  Åpne sida for magne@ og nina@ (`TILGANG` i bank-funksjonen) når den tas
-  i bruk. Coop når Coops nye «Min side» er ute. Kontofilteret i innboksen
-  vises bare ved minst to kilder – å alltid vise alle felleskontoene og
-  Trumf er foreslått, ikke gjort.
+- **Økonomisida – det som står igjen** (del 57). Sida er åpnet for
+  magne@ og nina@ (6. november), men ikke lenket fra noe sted. Coop har
+  ingen kvitteringer på «Min side» – de kommer inn som skjermbilde eller
+  PDF i Dropbox-mappa. Kontofilteret i innboksen vises bare ved minst to
+  kilder – å alltid vise alle felleskontoene og Trumf er foreslått, ikke
+  gjort.
 - **Interaktiv plantegning av huset.** Magne lager en plantegning, og den
   skal bli den egentlige flaten for enhetene – Rommene-kortet er
   mellomstasjonen. Styringen i `felles-hus.js` kan brukes som den er;
@@ -628,6 +645,12 @@ Se del 57.
   kontoer under Verdier, og at vekkeren på kjøkkendashen holder «Hentet»
   fersk og varselkortet på forsiden dukker opp. Månedsbudsjettet
   (30. oktober): ‹ måned › og plusstegnene i redigering.
+- **Neam på Økonomi** (6. november), med ekte tall: at han leser måneden
+  og innboksen riktig, at bekreftelsen viser butikk, dag og beløp før han
+  godkjenner, og at sida tegner seg på nytt etterpå. **Innlogget som
+  magne@ og nina@** – bare sys@ er prøvd, og bare i en lokal
+  forhåndsvisning med falsk Neam. Og PC-oppsettet på en skjerm smalere
+  enn 1360 px, der Neam er det vanlige panelet.
 - **Andreas ukeplan på neam.no** (1. november): «Hent ukeplan» skal finne
   uke 45.
 - **Rommene på iPad og telefon** (1. november): kolonnene, Rediger og å
@@ -772,7 +795,7 @@ Se del 57.
 nye visuelle uttrykket – ikonene med navnet under, logoen,
 hjemskjermikonet, bakgrunnen, klapptavla og bildekatalogen – og for
 Rommene, og 6. november for fargekatalogen, de nye mulighetene i
-bildekatalogen og fargetabellen. **Det er ikke oppdatert for Økonomi-sida** (28.–30. oktober) –
+bildekatalogen og fargetabellen. **Det er ikke oppdatert for Økonomi-sida** (28. oktober–6. november) –
 se utseendevalgene under «Åpne spørsmål».
 
 ---
@@ -3765,19 +3788,20 @@ overses, vektorkartet kommer); `RGB_MAP`/`RGB_MAP_INFO` som meldingstype.
 
 ---
 
-## 57. Neam Økonomi – 28.–29. oktober 2026
+## 57. Neam Økonomi – 28. oktober–6. november 2026
 
 **Hva den er.** `okonomi.html` er husholdningsregnskapet: kontoene fra DNB,
 kjøpene fra Trumf og kvitteringer man tar bilde av, ført mot et budsjett.
 Sida er **skjult** – ingen lenke, ikke i fireren – og bank-funksjonen
-svarer **bare sys@** (`TILGANG` i `functions/api/bank/[[sti]].js`). magne@
-og nina@ legges til når sida tas i bruk. Planen og den klikkbare skissen
+svarer **sys@, magne@ og nina@** (`TILGANG` i
+`functions/api/bank/[[sti]].js`; Magne og Nina fra 6. november, så Neam
+kan bruke økonomien fra alle sidene). Aldri kitchen@ eller barna. Planen og den klikkbare skissen
 ligger som artifacts («Neam Økonomi – plan», «Neam Økonomi»). Magne
 godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 26 commits fra `0e0050a` til `7a823b7`.
+verdier. Bygget i 31 commits fra `0e0050a` til `47b39df`.
 
 ### Banken – Enable Banking
 
@@ -3871,7 +3895,28 @@ verdier. Bygget i 26 commits fra `0e0050a` til `7a823b7`.
 - **Trumf-feilen** lagres i `auth:bank:trumf-feil` for varselkortet. Fra
   `7cb2795` viser varselet og kilderaden Trumfs egen tekst («Trumf svarte
   HTTP 403»), ikke «sida er trolig endret».
-- **Coop venter** på Coops nye «Min side».
+- **Coop:** Coops nye «Min side» (6. november) har **ingen kvitteringer**.
+  De kommer inn som skjermbilde eller PDF fra appen, gjennom Dropbox-mappa.
+  Innsyn etter GDPR ble vurdert og avvist av Magne som for tungvint.
+
+### Kvitteringer fra Dropbox (6. november, `5c359f7`)
+
+Den enkleste veien fra telefonen: del kvitteringen til Dropbox. En egen
+Dropbox-app med **appmappe** – Neam ser bare sin egen mappe, ikke resten av
+Dropboxen. Koblingen gjøres med OAuth fra Oppsett (`dropbox-start` /
+`dropbox-tilbake`), og refresh-tokenet ligger i `auth:bank:dropbox`.
+Nøkkelen og hemmeligheten er `DROPBOX_APP_KEY` og `DROPBOX_APP_SECRET` i
+Cloudflare.
+
+- **Lesingen skjer i sida,** ikke i funksjonen: fila hentes gjennom
+  `?hva=dropbox-fil` og leses som en vanlig kvittering
+  (`okTolkKvittering`). Funksjonen lagrer bare tokenet og flytter filer.
+- **Etterpå flyttes fila** – til «Importert» når den er lest (også når den
+  var lest før), til «Ikke lest» når Neam ikke klarte den. Ingenting leses
+  to ganger, og ingenting forsvinner.
+- **Når:** når Økonomi åpnes og når noen trykker Oppdater, etter DNB og
+  Trumf.
+- Magne 6. november: «fungerer veldig bra».
 
 ### Budsjett, regnskap og poster
 
@@ -3918,22 +3963,72 @@ varelinjene i dialogen. Hver måned måles mot sitt eget budsjett (fra
 
 ### Status-fanen
 
-Netto formue med endring siden forrige måned, måneden så langt mot
-budsjettet, nøkkeltall (belåningsgrad mot 90 %, gjeldsgrad, rente,
-sparerate, buffer, faste kostnader), familiemålet, «Til godkjenning» og
-**Kilder**.
+Fra 6. november (`aa5bbc8`): **fire tallbokser** øverst – netto formue med
+endring siden forrige måned, brukt, igjen eller over, og til godkjenning
+(trykk åpner Innboks). Under dem **måneden så langt** som en tabell per
+gruppe mot budsjettet, så nøkkeltall (belåningsgrad mot 90 %,
+gjeldsgrad, rente, sparerate, buffer, faste kostnader) og familiemålet.
+**Kilder og formueskortet står i Oppsett** – Kilder først.
 
 - **Formuen:** verdier og gjeld fylles inn for hånd i Oppsett
   (`auth:bank:formue`), pluss saldoen på kontoene med rollen `sparing`.
   **Fra `0a8a373` kan en verdi være en konto** – saldoen følger banken, og
   kontoen telles da ikke i tillegg som sparing. Netto per måned lagres i
   `auth:bank:formue-mnd` hver gang kontoene hentes.
-- **Kilder – én rad per institusjon** (DNB, Trumf, Coop), med prikk og tid
+- **Kilder – én rad per institusjon** (DNB, Trumf, Dropbox; Coop-raden
+  er tatt bort 6. november), med prikk og tid
   for siste henting: **grønn** innenfor én runde (sju timer), **gul** eldre
   eller samtykket går ut innen 14 dager, **rød** når siste forsøk feilet
   eller samtykket er ute – med feilteksten under. Verdiene som er satt for
   hånd står under «Satt manuelt». `?hva=kilder` leser bare KV og spør
   aldri banken.
+- **Rød prikk på Oppsett-fanen** (6. november, Magne ba om den) når en
+  automatisk kilde er gul eller rød. Skjermlesere får teksten «en kilde er
+  ikke oppdatert».
+
+### PC først (6. november, `aa5bbc8`)
+
+«Vi må sitte ved en PC ved gjennomgang» (Magne). Den ekstra plassen brukes
+til å gjøre ting lettere å lese, ikke til mer innhold. Skissen er et
+artifact («Neam Økonomi – PC»), og Magne sa ja med to endringer: kildene
+til Oppsett med rød prikk på fanen, og Coop-meldingen bort.
+
+- **Rammen er 1440 px** (før 1120).
+- **Innboksen i to spalter fra 1100 px:** postene til venstre, den valgte
+  posten til høyre, med kategori, Stryk og varelinjene som kan fordeles.
+  Telefonen har kortene som før.
+- **Måned i to spalter fra 1100 px:** tabellen til venstre, kjøpene bak
+  den valgte posten til høyre.
+
+### Neam på Økonomi – og økonomien i Neam (6. november, `47b39df`)
+
+«Skal være samme» Neam – Magne, Nina og sys skal kunne bruke ham på tvers
+av systemene, ikke kjøkkenet og barna.
+
+- **Verktøyene ligger i fellesfilene,** ikke på sida: `les_okonomi_maaned`,
+  `_foringer`, `_innboks`, `_kontoer`, `_aar` og `_kvittering` i
+  `felles-lesalt.js`, `godkjenn_okonomi_poster` og `sett_okonomi_budsjett`
+  i `felles-skriv.js`. Det Neam kan gjøre på Økonomi, kan han gjøre fra
+  alle sidene.
+- **Hvem som får dem:** `felles-lesalt.js` spør `/api/bank?hvem=1` når
+  sida lastes, og verktøyene står i lista bare når svaret er ja. Grensen er
+  likevel bank-funksjonen, som sjekker det signerte Access-beviset.
+- **Bekreftelsen viser butikk, ukedag og beløp** («Rema 1000 Mandal,
+  onsdag 4. november, −312,5 kr → Mat › Dagligvare»), slått opp i det Neam
+  sist leste (`lesAltOkSist`) – id-ene sier ingen noe. Budsjettendringer
+  viser gammelt → nytt beløp når han har lest måneden. Standardbudsjettet
+  får beskjeden om at endringen gjelder fra neste måned.
+- **Etter en skriving tegner sida seg på nytt** (`window.okonomiEtterSkriv`:
+  innboks, budsjett, Måned, Status). Et budsjett under redigering røres
+  ikke.
+- **Konteksten sier hvor, ikke hva:** fanen, hvor mange poster som venter,
+  og id-en til den valgte posten eller måneden – ingen butikknavn eller
+  beløp, samme prinsipp som avtaletitlene på kalenderen.
+- **Fast til høyre fra 1360 px:** `body.ok-neam-fast`, panelet 400 px inne
+  i rammen, uten lukkeknapp. Lukker felles-neam.js det (Escape), åpnes det
+  igjen med en gang. Feltet får ikke fokus av seg selv. Smalere enn
+  1360 px er det det vanlige panelet, og blir vinduet smalt mens det står
+  åpent, lukkes det.
 
 ### Vekkeren og varselkortet
 
@@ -3944,7 +4039,9 @@ sparerate, buffer, faste kostnader), familiemålet, «Til godkjenning» og
   Emma og Andrea dash.
 - **Forsiden** viser et kort over appene når noe trenger noen: poster som
   venter, Trumf som trenger ny innlogging, DNB-samtykke som snart går ut
-  (`?hva=varsler`). Alle andre enn sys@ får `{ok:false}` og ser ingenting.
+  (`?hva=varsler`). Alle utenfor `TILGANG` får `{ok:false}` og ser
+  ingenting. **Fra 6. november ser magne@ og nina@ kortet også** – det
+  fulgte med da de fikk tilgang.
 
 ### Nøklene i KV – alt under `auth:bank:`
 
@@ -3952,7 +4049,7 @@ Utenfor `fh:` med vilje: `/api/data` slipper familien til alt under `fh:`,
 og kontoer og transaksjoner skal ikke kunne leses ut derfra. Nøklene:
 `hus` (økta), `roller`, `kontonavn`, `tilstand:<rnd>`, `buffer:<navn>`,
 `poster`, `laert`, `innboks-fra`, `trumf`, `trumf-feil`, `kv:<postId>`,
-`sist-hentet`, `budsjett`, `kategorier`, `formue`, `formue-mnd`.
+`sist-hentet`, `budsjett`, `kategorier`, `formue`, `formue-mnd`, `dropbox`.
 
 ### Lærdommer
 
@@ -3979,6 +4076,10 @@ og kontoer og transaksjoner skal ikke kunne leses ut derfra. Nøklene:
 - Kjøpene fra `platform-rest-prod.ngdata.no/trumf/medlemskap/transaksjoner`
   med token fra `getToken` og `FWC-Chain-Id: 133`, slik sidas skript ser ut
   til å gjøre: svarte **404 med gyldig token** (29. oktober).
+- Coop-kvitteringer fra Coops nye «Min side»: finnes ikke der
+  (6. november).
+- Å etterligne Coop-appen for å hente kvitteringene: avvist. Appen låser
+  seg til telefonen, og det er ikke noe vi skal omgå.
 
 ### Kjente rester
 
@@ -3992,3 +4093,7 @@ og kontoer og transaksjoner skal ikke kunne leses ut derfra. Nøklene:
   `?hva=trumf` – varselet kan stå en runde etter at Trumf virker igjen.
 - **Kontofilteret skjules ved én kilde.** Magne savnet knappen 29. oktober;
   å alltid vise alle felleskontoene og Trumf er foreslått, ikke gjort.
+- **Et verktøy med `neamSkjerm` ville ikke virket på Økonomi i fast
+  modus:** felles-neam.js skjuler panelet mens skjermen står, og sida åpner
+  det igjen med en gang. Ingen av verktøyene sida har i dag, bruker det –
+  de som gjør det, hører til handlelista.
