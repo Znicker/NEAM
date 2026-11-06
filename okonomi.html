@@ -71,6 +71,28 @@ html{ scroll-padding-top:90px; }
 .ok-kort{ background:var(--paper); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px 20px; display:flex; flex-direction:column; gap:12px; }
 .ok-kort h2{ margin:0; font-size:var(--t-brod); font-weight:700; }
 .ok-kort-hode{ display:flex; justify-content:space-between; align-items:baseline; gap:8px 12px; flex-wrap:wrap; }
+/* ---------- Den sammenleggbare linja (6. november 2026) ----------
+   Én byggekloss overalt (skissen «Neam Økonomi – ny struktur»): pil,
+   tittel, sammendrag til høyre og eventuelt en statusprikk; klikk åpner
+   lista under. Et kort med flere linjer er .ok-fold-gruppe. */
+.ok-fold-gruppe{ padding-top:4px; padding-bottom:4px; gap:0; overflow:hidden; }
+.ok-fold-gruppe > .ok-etikett{ padding-top:10px; }
+.ok-fold-gruppe:not(:has(.ok-fold:not([hidden]))){ display:none; }
+.ok-fold{ border-top:1px solid var(--line); margin-top:-1px; }
+.ok-fold-knapp{ width:100%; display:flex; align-items:center; gap:10px; padding:13px 2px; background:none; border:0; font:inherit; color:var(--ink); text-align:left; cursor:pointer; }
+.ok-fold-knapp:hover .ok-fold-tittel{ color:var(--aksent); }
+.ok-fold-knapp:focus-visible{ outline:2px solid var(--aksent); outline-offset:2px; border-radius:8px; }
+.ok-fold-pil{ flex:none; width:16px; height:16px; color:var(--ink-soft); transition:transform .15s; }
+.ok-fold-knapp[aria-expanded="true"] .ok-fold-pil{ transform:rotate(90deg); }
+.ok-fold-prikk{ flex:none; width:10px; height:10px; border-radius:50%; background:var(--handling-ny); }
+.ok-fold-prikk.gammel{ background:var(--handling-endre); }
+.ok-fold-prikk.stopp{ background:var(--danger); }
+.ok-fold-tittel{ flex:1; min-width:0; font-weight:700; }
+.ok-fold-sum{ font-size:var(--t-meta); color:var(--ink-soft); text-align:right; }
+.ok-fold-sum.varsel{ color:var(--handling-endre); font-weight:600; }
+.ok-fold-sum.stopp{ color:var(--danger); font-weight:600; }
+.ok-fold-innhold{ padding:0 0 16px 26px; display:flex; flex-direction:column; gap:12px; min-width:0; }
+@media (max-width:560px){ .ok-fold-innhold{ padding-left:0; } }
 
 .ok-melding{ background:var(--boks-mild); border:1px solid var(--boks-kant); border-radius:12px; padding:12px 14px; font-size:var(--t-meta); }
 .ok-melding.feil{ color:var(--danger); }
@@ -360,7 +382,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   flex:none; white-space:nowrap; font-family:inherit; font-size:var(--t-meta); font-weight:700; color:var(--ink-soft);
   background:none; border:0; padding:8px 14px; border-radius:999px; cursor:pointer;
 }
-.ok-fane[aria-selected="true"]{ background:var(--paper); color:var(--aksent); box-shadow:var(--shadow); }
+.ok-fane[aria-selected="true"], .ok-fane[aria-pressed="true"]{ background:var(--paper); color:var(--aksent); box-shadow:var(--shadow); }
 .ok-fane:focus-visible{ outline:2px solid var(--aksent); outline-offset:2px; }
 .ok-fane-tall{ display:inline-block; min-width:20px; padding:0 6px; margin-left:6px; border-radius:999px; background:var(--handling-endre); color:#fff; font-size:var(--t-etikett); line-height:1.6; }
 .ok-fane-tall:empty{ display:none; }
@@ -491,18 +513,6 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-filter-alle{ display:flex; gap:6px; }
 .ok-filter-alle button{ background:none; border:0; padding:4px 6px 4px 0; font:inherit; font-size:var(--t-meta); font-weight:700; color:var(--aksent); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
 
-/* ---------- Foeringene bak et tall ----------
-   Beloepet i Regnskap-kolonnen er en lenke: den viser noe, den gjoer ingenting. */
-.ok-tall-lenke{ font:inherit; color:var(--aksent); background:none; border:0; padding:0; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
-.ok-fr-kort{ max-width:560px; display:flex; flex-direction:column; gap:14px; max-height:calc(100vh - 40px); }
-.ok-fr-liste{ overflow-y:auto; min-height:0; display:flex; flex-direction:column; }
-.ok-fr-rad{ display:grid; grid-template-columns:62px minmax(0,1fr) auto; gap:2px 12px; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--line); }
-.ok-fr-rad b{ text-align:right; white-space:nowrap; }
-.ok-fr-sum{ display:flex; justify-content:space-between; gap:12px; padding-top:10px; font-weight:700; }
-/* Paa telefon fyller dialogen skjermen (designsystemet, Mobil). */
-@media (max-width:700px){
-  #ok-fr-bak{ padding:0; }
-  .ok-fr-kort{ max-width:none; height:100%; max-height:none; border-radius:0; padding:max(20px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px)); }
 }
 
 /* ---------- År ---------- */
@@ -542,8 +552,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     <nav class="ok-faner" role="tablist" aria-label="Visning">
       <button type="button" class="ok-fane" role="tab" id="ok-fane-status" data-vis="status">Status</button>
       <button type="button" class="ok-fane" role="tab" id="ok-fane-innboks" data-vis="innboks">Innboks<span class="ok-fane-tall" id="ok-fane-tall"></span></button>
-      <button type="button" class="ok-fane" role="tab" id="ok-fane-maaned" data-vis="maaned">Måned</button>
-      <button type="button" class="ok-fane" role="tab" id="ok-fane-aar" data-vis="aar">År</button>
+      <button type="button" class="ok-fane" role="tab" id="ok-fane-maaned" data-vis="maaned">Regnskap</button>
       <button type="button" class="ok-fane" role="tab" id="ok-fane-budsjett" data-vis="budsjett">Budsjett</button>
       <button type="button" class="ok-fane" role="tab" id="ok-fane-oppsett" data-vis="oppsett">Oppsett<span class="ok-fane-prikk" id="ok-fane-prikk" hidden><span class="ok-skjult"> – en kilde er ikke oppdatert</span></span></button>
     </nav>
@@ -562,6 +571,10 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       <section class="ok-kort" id="ok-nokler-kort" hidden>
         <div class="ok-kort-hode"><h2>Nøkkeltall</h2><span class="ok-meta">Målene er eksempler</span></div>
         <div class="ok-nokler" id="ok-nokler"></div>
+      </section>
+      <section class="ok-kort" id="ok-formue-kort" hidden>
+        <div class="ok-kort-hode"><span class="ok-etikett">Netto formue</span><span id="ok-formue-meta"></span></div>
+        <div id="ok-formue"></div>
       </section>
       <section class="ok-kort ok-maal" id="ok-maal-kort" hidden>
         <span class="ok-etikett">Familiemål</span>
@@ -590,33 +603,41 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     <p class="ok-meta" id="ok-kv-status" aria-live="polite">Bilde eller PDF – Neam leser butikk, dato, sum og varer.</p>
     <div class="ok-filter" id="ok-filter" hidden></div>
     <div id="ok-innboks"></div>
-    <section class="ok-kort" id="ok-trenger-kort" hidden>
-      <div class="ok-kort-hode"><h2>Neam trenger</h2><span class="ok-meta" id="ok-trenger-meta" aria-live="polite"></span></div>
-      <p class="ok-meta">Til nøkkeltallene på Status. Det som fylles inn her, lagres som i Oppsett og Budsjett, og kan endres der.</p>
-      <div id="ok-trenger"></div>
-    </section>
     <div class="ok-ib-to">
       <div class="ok-ib-liste">
-        <section class="ok-kort" id="ok-ib-tvil-kort" hidden>
-          <div class="ok-kort-hode"><h2>Trenger et valg</h2><span class="ok-meta" id="ok-ib-tvil-meta"></span></div>
+      <!-- Postene foerst, gruppert i sammenleggbare linjer; «Neam trenger»
+           nederst (skissen, 6. november 2026). -->
+      <section class="ok-kort ok-fold-gruppe">
+      <div class="ok-fold" data-fold="ib-tvil" data-apen="ja" id="ok-ib-tvil-kort" hidden>
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Trenger et valg</span><span class="ok-fold-sum" id="ok-ib-tvil-meta"></span></button>
+        <div class="ok-fold-innhold">
           <div id="ok-ib-tvil"></div>
-        </section>
-        <section class="ok-kort" id="ok-ib-sikre-kort" hidden>
-          <div class="ok-kort-hode"><h2>Kvitteringer og kjøp</h2><span class="ok-meta" id="ok-ib-sikre-meta"></span></div>
+        </div>
+      </div>
+      <div class="ok-fold" data-fold="ib-sikre" data-apen="ja" id="ok-ib-sikre-kort" hidden>
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Klare til godkjenning</span><span class="ok-fold-sum" id="ok-ib-sikre-meta"></span></button>
+        <div class="ok-fold-innhold">
           <div id="ok-ib-sikre"></div>
-        </section>
+        </div>
+      </div>
+      <div class="ok-fold" data-fold="ib-auto" id="ok-auto-kort" hidden>
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Ført automatisk</span><span class="ok-fold-sum" id="ok-auto-meta"></span></button>
+        <div class="ok-fold-innhold">
+          <p class="ok-meta">Disse kjente Neam, og de er ført uten å spørre. Er noe feil, trykk Angre – da havner posten i innboksen, og Neam fører den aldri automatisk igjen.</p>
+          <div id="ok-auto"></div>
+        </div>
+      </div>
+      <div class="ok-fold" data-fold="ib-trenger" id="ok-trenger-kort" hidden>
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Neam trenger</span><span class="ok-fold-sum" id="ok-trenger-sum"></span></button>
+        <div class="ok-fold-innhold">
+          <p class="ok-meta">Til nøkkeltallene på Status. Det som fylles inn her, lagres som i Oppsett og Budsjett, og kan endres der. <span id="ok-trenger-meta" aria-live="polite"></span></p>
+          <div id="ok-trenger"></div>
+        </div>
+      </div>
+      </section>
       </div>
       <section class="ok-kort ok-ib-detalj" id="ok-ib-detalj" aria-label="Valgt post" aria-live="polite"></section>
     </div>
-    <section class="ok-kort" id="ok-auto-kort" hidden>
-      <div class="ok-kort-hode"><h2>Ført automatisk</h2><span class="ok-meta" id="ok-auto-meta"></span></div>
-      <p class="ok-meta">Disse kjente Neam, og de er ført uten å spørre. Er noe feil, trykk Angre – da havner posten i innboksen, og Neam fører den aldri automatisk igjen.</p>
-      <div id="ok-auto"></div>
-    </section>
-    <section class="ok-kort" id="ok-husk-kort" hidden>
-      <div class="ok-kort-hode"><h2>Neam husker</h2><span class="ok-meta">Gjelder nye poster. Førte poster endres ikke.</span></div>
-      <div id="ok-husk"></div>
-    </section>
     <div class="ok-bunn" id="ok-bunn" hidden>
       <div><div class="ok-sum" id="ok-sum"></div><p class="ok-meta" id="ok-venter"></p></div>
       <button type="button" class="btn btn-ny" id="ok-godkjenn"></button>
@@ -625,15 +646,36 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 
   <!-- ===== MÅNED ===== -->
   <div class="ok-vis" id="ok-vis-maaned" role="tabpanel" aria-labelledby="ok-fane-maaned" hidden>
+    <!-- Regnskap: Måned, År og budsjett mot regnskap i én (skissen, 6. november 2026). -->
     <div class="ok-kort-hode">
       <div class="ok-mnd-nav">
         <button type="button" class="ok-pil" id="ok-mnd-forrige" aria-label="Forrige måned">‹</button>
         <span class="ok-mnd-navn" id="ok-mnd-navn"></span>
         <button type="button" class="ok-pil" id="ok-mnd-neste" aria-label="Neste måned">›</button>
       </div>
-      <span class="ok-meta" id="ok-mndf-meta"></span>
+      <div class="ok-faner" role="group" aria-label="Periode" id="ok-mnd-periode">
+        <button type="button" class="ok-fane" data-periode="mnd" aria-pressed="true">Måned</button>
+        <button type="button" class="ok-fane" data-periode="aar" aria-pressed="false">Hittil i år</button>
+        <button type="button" class="ok-fane" data-periode="tolv" aria-pressed="false">Siste 12 mnd</button>
+      </div>
     </div>
+    <p class="ok-meta" id="ok-mndf-meta" style="margin-top:-8px"></p>
     <div class="ok-sumrad" id="ok-mnd-sum"></div>
+    <section class="ok-kort ok-fold-gruppe">
+      <div class="ok-fold" data-fold="rs-trend" data-apen="ja">
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Utgifter per måned</span><span class="ok-fold-sum" id="ok-aar-meta"></span></button>
+        <div class="ok-fold-innhold">
+          <div class="ok-diagram" id="ok-aar-diagram"><p class="ok-meta">Henter …</p></div>
+        </div>
+      </div>
+      <div class="ok-fold" data-fold="rs-glir">
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Hvor det glir</span><span class="ok-fold-sum"></span></button>
+        <div class="ok-fold-innhold">
+          <p class="ok-meta">Prosent av budsjett per kategori, måned for måned.</p>
+          <div class="ok-tabell-ramme"><table class="ok-varme" id="ok-aar-varme"></table></div>
+        </div>
+      </div>
+    </section>
     <div class="ok-mnd-to">
     <section class="ok-kort ok-mnd-venstre">
       <div class="ok-kort-hode">
@@ -652,11 +694,13 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 
   <!-- ===== BUDSJETT ===== -->
   <div class="ok-vis" id="ok-vis-budsjett" role="tabpanel" aria-labelledby="ok-fane-budsjett" hidden>
+    <!-- Bare redigering (skissen, 6. november 2026): standarden eller én
+         måned om gangen. Budsjett mot regnskap står i Regnskap. -->
+    <div class="ok-faner" role="group" aria-label="Hvilket budsjett" id="ok-bu-valg" style="align-self:flex-start">
+      <button type="button" class="ok-fane" data-bu="standard" aria-pressed="true">Standardbudsjett</button>
+      <button type="button" class="ok-fane" data-bu="maaned" aria-pressed="false">Månedsbudsjett</button>
+    </div>
     <div class="ok-sumrad" id="ok-bs-sum"></div>
-    <section class="ok-kort">
-      <div class="ok-kort-hode"><h2>Hvor inntekten går</h2><span class="ok-meta">Standardbudsjett per måned</span></div>
-      <div class="ok-andel" id="ok-bs-andel"></div>
-    </section>
     <section class="ok-kort" id="ok-std-kort">
       <div class="ok-kort-hode"><h2>Standardbudsjett</h2><div class="ok-rad-knapper" id="ok-std-knapper"></div></div>
       <p class="ok-meta" id="ok-std-meta"></p>
@@ -675,61 +719,56 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       <div class="ok-melding" id="ok-mb-avbryt" hidden></div>
       <div class="ok-std" id="ok-mb"></div>
     </section>
-    <section class="ok-kort" id="ok-bu-kort" hidden>
-      <div class="ok-kort-hode">
-        <h2>Budsjett mot regnskap</h2>
-        <select class="ok-mnd" id="ok-bu-mnd" aria-label="Periode"></select>
-      </div>
-      <p class="ok-meta" id="ok-bu-meta"></p>
-      <div class="ok-tabell-ramme"><table class="ok-tabell" id="ok-bu-tabell"></table></div>
-    </section>
-  </div>
-
-  <!-- ===== ÅR ===== -->
-  <div class="ok-vis" id="ok-vis-aar" role="tabpanel" aria-labelledby="ok-fane-aar" hidden>
-    <section class="ok-kort">
-      <div class="ok-kort-hode"><h2>Utgifter per måned</h2><span class="ok-meta" id="ok-aar-meta"></span></div>
-      <div class="ok-diagram" id="ok-aar-diagram"><p class="ok-meta">Henter …</p></div>
-    </section>
-    <section class="ok-kort">
-      <div class="ok-kort-hode"><h2>Hvor det glir</h2><span class="ok-meta">Prosent av budsjett per kategori</span></div>
-      <div class="ok-tabell-ramme"><table class="ok-varme" id="ok-aar-varme"></table></div>
-    </section>
   </div>
 
   <!-- ===== OPPSETT ===== -->
   <div class="ok-vis" id="ok-vis-oppsett" role="tabpanel" aria-labelledby="ok-fane-oppsett" hidden>
-    <section class="ok-kort" id="ok-kilder-kort">
-      <div class="ok-kort-hode"><h2>Kilder</h2><span class="ok-meta">Er én av dem ikke oppdatert, får Oppsett en rød prikk</span></div>
+    <!-- Alt i Oppsett som sammenleggbare linjer (skissen, 6. november 2026).
+         Én linje per kilde med statusprikk; kortet til kilden ligger inni. -->
+    <section class="ok-kort ok-fold-gruppe" id="ok-kilder-kort">
+      <span class="ok-etikett">Kilder</span>
       <div id="ok-varsler"></div>
-      <div class="ok-kilder" id="ok-kilder"><p class="ok-meta">Henter …</p></div>
+      <div class="ok-fold" data-fold="kilde-dnb">
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">DNB</span><span class="ok-fold-sum"></span></button>
+        <div class="ok-fold-innhold">
+          <p class="ok-meta" id="ok-status-meta"></p>
+          <div id="ok-status"><p class="ok-meta">Henter …</p></div>
+        </div>
+      </div>
+      <div class="ok-fold" data-fold="kilde-trumf">
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Trumf</span><span class="ok-fold-sum"></span></button>
+        <div class="ok-fold-innhold">
+          <p class="ok-meta" id="ok-trumf-meta"></p>
+          <div id="ok-trumf"><p class="ok-meta">Henter …</p></div>
+        </div>
+      </div>
+      <div class="ok-fold" data-fold="kilde-dropbox">
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Kvitteringer fra Dropbox</span><span class="ok-fold-sum"></span></button>
+        <div class="ok-fold-innhold">
+          <p class="ok-meta" id="ok-db-meta"></p>
+          <div id="ok-db"><p class="ok-meta">Henter …</p></div>
+        </div>
+      </div>
+      <div class="ok-kilde-forklar" style="padding:10px 0 12px"><span class="ok-fersk">Ferskt</span><span class="ok-fersk gammel">Eldre enn ventet</span><span class="ok-fersk stopp">Feilet sist</span></div>
     </section>
-    <section class="ok-kort" id="ok-status-kort">
-      <div class="ok-kort-hode"><h2>Bankkobling</h2><span class="ok-meta" id="ok-status-meta"></span></div>
-      <div id="ok-status"><p class="ok-meta">Henter …</p></div>
-    </section>
-    <section class="ok-kort" id="ok-kontoer-kort" hidden>
-      <div class="ok-kort-hode"><h2>Kontoer</h2><span class="ok-meta" id="ok-hentet"></span></div>
-      <p class="ok-meta">Rollen avgjør hvor transaksjonene havner: felles i husholdningsbudsjettet, Magne og Nina på hver sin side, Emma og Andrea på barnas sider, sparing i formuen. «Ikke i bruk» tas ikke med.</p>
+    <section class="ok-kort ok-fold-gruppe" id="ok-kontoer-kort" hidden>
+      <div class="ok-kort-hode" style="padding-top:10px"><span class="ok-etikett">Kontoer – én linje per rolle</span><span class="ok-meta" id="ok-hentet"></span></div>
       <div id="ok-kontoer"></div>
       <p class="ok-lagret" id="ok-lagret" aria-live="polite"></p>
     </section>
-    <section class="ok-kort" id="ok-db-kort">
-      <div class="ok-kort-hode"><h2>Kvitteringer fra Dropbox</h2><span class="ok-meta" id="ok-db-meta"></span></div>
-      <div id="ok-db"><p class="ok-meta">Henter …</p></div>
-    </section>
-    <section class="ok-kort" id="ok-trumf-kort">
-      <div class="ok-kort-hode"><h2>Trumf</h2><span class="ok-meta" id="ok-trumf-meta"></span></div>
-      <div id="ok-trumf"><p class="ok-meta">Henter …</p></div>
-    </section>
-    <section class="ok-kort" id="ok-formue-kort" hidden>
-      <div class="ok-kort-hode"><span class="ok-etikett">Netto formue</span><span id="ok-formue-meta"></span></div>
-      <div id="ok-formue"></div>
-    </section>
-    <section class="ok-kort" id="ok-formue-oppsett">
-      <div class="ok-kort-hode"><h2>Verdier, gjeld og familiemål</h2><span class="ok-meta" id="ok-fo-meta"></span></div>
-      <p class="ok-meta">Det banken ikke gir. Saldo på kontoer med rollen «Sparing» legges til av seg selv. Datoen viser hvor ferskt tallet er.</p>
+    <section class="ok-kort ok-fold-gruppe" id="ok-formue-oppsett">
+      <div class="ok-kort-hode" style="padding-top:10px"><span class="ok-etikett">Formue – det banken ikke gir</span><span class="ok-meta" id="ok-fo-meta"></span></div>
       <div id="ok-fo"></div>
+    </section>
+    <section class="ok-kort ok-fold-gruppe">
+      <span class="ok-etikett">Neam</span>
+      <div class="ok-fold" data-fold="husk" id="ok-husk-kort" hidden>
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Neam husker</span><span class="ok-fold-sum" id="ok-husk-sum"></span></button>
+        <div class="ok-fold-innhold">
+          <p class="ok-meta">Gjelder nye poster. Førte poster endres ikke.</p>
+          <div id="ok-husk"></div>
+        </div>
+      </div>
     </section>
   </div>
 </div>
@@ -744,13 +783,6 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     <div id="ok-kv-fordelt"></div>
     <div class="ok-kv-linjer" id="ok-kv-linjer"></div>
     <div class="dlg-rad"><button type="button" class="dlg-knapp nei" id="ok-kv-lukk">Lukk</button></div>
-  </div>
-</div>
-<div class="dlg-bak" id="ok-fr-bak" hidden>
-  <div class="dlg-kort ok-fr-kort" role="dialog" aria-modal="true" aria-labelledby="ok-fr-tittel">
-    <div class="ok-kort-hode"><h2 id="ok-fr-tittel"></h2><span class="ok-meta" id="ok-fr-mnd"></span></div>
-    <div class="ok-fr-liste" id="ok-fr-liste"></div>
-    <div class="dlg-rad"><button type="button" class="dlg-knapp nei" id="ok-fr-lukk">Lukk</button></div>
   </div>
 </div>
 <script src="/felles-dialog.js?v=1"></script>
@@ -777,6 +809,49 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 
   function okVask(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
   function okEl(tag, cls, html){ var e = document.createElement(tag); if(cls) e.className = cls; if(html != null) e.innerHTML = html; return e; }
+
+  /* ---------- Den sammenleggbare linja ----------
+     Én byggekloss overalt (skissen «Neam Økonomi – ny struktur», Magne
+     6. november 2026). Sida husker hva som er åpent (localStorage
+     'ok-fold'). Linjer i HTML-en har data-fold og kobles under; linjer i
+     lister som tegnes, lages med okFold(). okFoldSett() setter sammendraget
+     og statusprikken ('' groenn, 'gammel' gul, 'stopp' roed). */
+  var okFoldApne = (function(){ try{ return JSON.parse(localStorage.getItem('ok-fold') || '{}') || {}; }catch(e){ return {}; } })();
+  var okFoldNr = 0;
+  function okFoldKoble(rot){
+    var id = rot.dataset.fold, knapp = rot.querySelector('.ok-fold-knapp'), innhold = rot.querySelector('.ok-fold-innhold');
+    if(!innhold.id) innhold.id = 'ok-fold-' + (++okFoldNr);
+    knapp.setAttribute('aria-controls', innhold.id);
+    var sett = function(a){ knapp.setAttribute('aria-expanded', String(a)); innhold.hidden = !a; };
+    sett(okFoldApne[id] != null ? !!okFoldApne[id] : rot.dataset.apen === 'ja');
+    knapp.addEventListener('click', function(){
+      var a = knapp.getAttribute('aria-expanded') !== 'true';
+      sett(a); okFoldApne[id] = a;
+      try{ localStorage.setItem('ok-fold', JSON.stringify(okFoldApne)); }catch(e){}
+    });
+  }
+  function okFoldAapne(id){
+    var rot = document.querySelector('[data-fold="' + id + '"]'), k = rot && rot.querySelector('.ok-fold-knapp');
+    if(k && k.getAttribute('aria-expanded') !== 'true') k.click();
+  }
+  function okFoldSett(rot, sammendrag, prikk, tone){
+    if(typeof rot === 'string') rot = document.querySelector('[data-fold="' + rot + '"]');
+    if(!rot) return;
+    var s = rot.querySelector('.ok-fold-sum'); s.textContent = sammendrag || '';
+    s.className = 'ok-fold-sum' + (tone ? ' ' + tone : '');
+    var pr = rot.querySelector('.ok-fold-prikk'); pr.hidden = prikk == null; pr.className = 'ok-fold-prikk' + (prikk ? ' ' + prikk : '');
+  }
+  function okFold(id, tittel, sammendrag, valg){
+    valg = valg || {};
+    var rot = okEl('div', 'ok-fold'); rot.dataset.fold = id; if(valg.apen) rot.dataset.apen = 'ja';
+    rot.innerHTML = '<button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>'
+      + '<span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel"></span><span class="ok-fold-sum"></span></button><div class="ok-fold-innhold"></div>';
+    rot.querySelector('.ok-fold-tittel').textContent = tittel;
+    okFoldSett(rot, sammendrag, valg.prikk, valg.tone);
+    okFoldKoble(rot);
+    return { rot:rot, innhold:rot.querySelector('.ok-fold-innhold') };
+  }
+  document.querySelectorAll('.ok-fold[data-fold]').forEach(okFoldKoble);
   function okRolleNavn(r){ for(var i = 0; i < OK_ROLLER.length; i++) if(OK_ROLLER[i][0] === r) return OK_ROLLER[i][1]; return 'Uten rolle'; }
 
   /* Funksjonen svarer alltid 200 med {ok}; feil har {feil}. */
@@ -819,12 +894,12 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       var liste = okKontoer.filter(function(k){ return (k.rolle || '') === rolle; });
       if(!liste.length) return;
       var sum = liste.reduce(function(s, k){ return s + (typeof k.saldo === 'number' ? k.saldo : 0); }, 0);
-      var g = okEl('div', 'ok-gruppe');
-      g.appendChild(okEl('div', 'ok-gruppe-hode',
-        '<span class="ok-etikett">' + okVask(okRolleNavn(rolle)) + ' · ' + liste.length + '</span>'
-        + (rolle === 'ignorer' ? '' : '<b>' + okKr.format(sum) + ' kr</b>')));
-      liste.forEach(function(k){ g.appendChild(okKontoRad(k)); });
-      boks.appendChild(g);
+      /* Én sammenleggbar linje per rolle; «Uten rolle» er gul og åpen - det er dem som trenger noe. */
+      var f = okFold('konto-' + (rolle || 'uten'), okRolleNavn(rolle),
+        liste.length + (liste.length === 1 ? ' konto' : ' kontoer') + (rolle === 'ignorer' || rolle === '' ? '' : ' · ' + okKr.format(sum) + ' kr') + (rolle === '' ? ' – velg rolle' : ''),
+        { apen:rolle === '', prikk:rolle === '' ? 'gammel' : null, tone:rolle === '' ? 'varsel' : '' });
+      liste.forEach(function(k){ f.innhold.appendChild(okKontoRad(k)); });
+      boks.appendChild(f.rot);
     });
   }
 
@@ -1244,6 +1319,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var kort = document.getElementById('ok-husk-kort'), boks = document.getElementById('ok-husk');
     var navn = Object.keys(okHusk.liste || {}).sort(function(a, b){ return a.localeCompare(b, 'nb'); });
     kort.hidden = !navn.length && !okHusk.sist;
+    okFoldSett(kort, navn.length + (navn.length === 1 ? ' motpart' : ' motparter'));
     boks.innerHTML = '';
     if(okHusk.feil) boks.appendChild(okEl('p', 'ok-melding feil', okVask(okHusk.feil)));
     if(okHusk.sist){
@@ -1315,7 +1391,6 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       document.getElementById('ok-stripe').hidden = false;
       okTegnInnboks();
       /* Det som nettopp ble godkjent, er regnskap - tabellen, Status og varslene oppdateres. */
-      if(!document.getElementById('ok-bu-kort').hidden) okBuRegnskap();
       if(okMnd.lastet) okMndLast();
       okStatusLast(); okVarslerLast();
     });
@@ -1328,7 +1403,6 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         okAngre = null;
         document.getElementById('ok-stripe').hidden = true;
         okLastInnboks();
-        if(!document.getElementById('ok-bu-kort').hidden) okBuRegnskap();
         if(okMnd.lastet) okMndLast();
       });
   });
@@ -1342,7 +1416,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   /* Budsjettet for en maaned: maanedens egen kopi, ellers standarden. */
   function okBudFor(b, m){ return (b && b.maaneder && b.maaneder[m]) || (b && b.standard) || {}; }
   /* Maaned-fanen (se «Måned» lenger ned). Her oppe fordi fanevelgeren leser den ved oppstart. */
-  var okMnd = { lastet:false, valgt:'', liste:[], aar:{}, apneKjop:{}, kjop:{}, valgtPost:null };
+  var okMnd = { lastet:false, valgt:'', liste:[], aar:{}, apneKjop:{}, kjop:{}, valgtPost:null, periode:'mnd' };
   var okMndNavn = new Intl.DateTimeFormat('nb-NO', { month:'long', year:'numeric' });
 
   function okBuSett(b){
@@ -1360,61 +1434,11 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     okHent('/api/bank?hva=budsjett').then(function(b){
       if(!b.ok) return;
       okBuSett(b);
-      document.getElementById('ok-bu-kort').hidden = false;
       okBsTegn(); okBudKortTegn('standard'); okBudKortTegn(okBu.mbValgt);
-      okBuRegnskap();
     });
   }
-  function okBuAlleTegn(){ okBsTegn(); okBudKortTegn('standard'); okBudKortTegn(okBu.mbValgt); okBuRegnskap(); }
+  function okBuAlleTegn(){ okBsTegn(); okBudKortTegn('standard'); okBudKortTegn(okBu.mbValgt); }
 
-  /* Periode: én maaned, eller hittil i aar - da er budsjettet summen av
-     maanedsbudsjettene, og regnskapet summen av maanedene. */
-  function okBuRegnskap(){
-    var velg = document.getElementById('ok-bu-mnd');
-    var settBud = function(mnder){
-      okBu.regBud = {};
-      mnder.forEach(function(m){ var x = okBudFor(okBu, m); Object.keys(x).forEach(function(k){ okBu.regBud[k] = (okBu.regBud[k] || 0) + x[k]; }); });
-    };
-    if(velg.value === 'aar'){
-      okHent('/api/bank?hva=regnskap-aar').then(function(r){
-        if(!r.ok) return;
-        var naa = new Date().toISOString().slice(0, 7), start = naa.slice(0, 4) + '-01';
-        if(r.fra && r.fra.slice(0, 7) > start) start = r.fra.slice(0, 7);
-        var sum = {}, mnder = [], d = new Date(start + '-01T12:00:00');
-        while(d.toISOString().slice(0, 7) <= naa){
-          var m = d.toISOString().slice(0, 7);
-          Object.keys((r.maaneder || {})[m] || {}).forEach(function(k){ sum[k] = Math.round(((sum[k] || 0) + r.maaneder[m][k]) * 100) / 100; });
-          mnder.push(m); d.setMonth(d.getMonth() + 1);
-        }
-        okBu.regnskap = sum; settBud(mnder);
-        var fraTekst = okMndNavn.format(new Date(start + '-01T12:00:00'));
-        document.getElementById('ok-bu-meta').textContent = fraTekst.charAt(0).toUpperCase() + fraTekst.slice(1) + ' til og med i dag, ' + mnder.length
-          + (mnder.length === 1 ? ' måned' : ' måneder') + '. Budsjettet er summen av månedsbudsjettene; måneden som pågår, er med så langt den har kommet.';
-        okBuTegn();
-      });
-      return;
-    }
-    okHent('/api/bank?hva=regnskap' + (velg.value ? '&mnd=' + velg.value : '')).then(function(r){
-      if(!r.ok) return;
-      okBu.regnskap = r.regnskap || {}; settBud([r.mnd]);
-      /* Maanedene fra innboksen startet til i dag, nyeste foerst, og hittil i aar oeverst. */
-      if(!velg.options.length){
-        velg.appendChild(new Option('Hittil i år', 'aar'));
-        var fra = (r.fra || r.mnd).slice(0, 7), d = new Date(r.mnd + '-01T12:00:00');
-        while(true){
-          var m = d.toISOString().slice(0, 7);
-          velg.appendChild(new Option(okMndNavn.format(d) + (m === r.mnd ? ' (pågår)' : ''), m));
-          if(m <= fra) break;
-          d.setMonth(d.getMonth() - 1);
-        }
-        velg.value = r.mnd;
-      }
-      document.getElementById('ok-bu-meta').textContent = 'Regnskapet er de ' + r.poster + ' godkjente postene i ' + okMndNavn.format(new Date(r.mnd + '-01T12:00:00'))
-        + ', mot månedens budsjett. «Utenfor budsjett» er ikke med. Trykk på et beløp for å se føringene bak.';
-      okBuTegn();
-    });
-  }
-  document.getElementById('ok-bu-mnd').addEventListener('change', okBuRegnskap);
 
   /* Tallet for en kategori i et budsjett (mal: 'standard' eller 'AAAA-MM'),
      med det som er skrevet inn men ikke lagret. */
@@ -1430,66 +1454,6 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   function okBuLinjer(p){ return okBu.kategorier.filter(function(x){ return x.indexOf(p + ' · ') === 0; }); }
   function okBuPostSum(p, mal){ return okBuLinjer(p).reduce(function(s, l){ return s + okBuVerdi(l, mal); }, okBuVerdi(p, mal)); }
   function okBuKr(n){ return okKr.format(Math.round(n)).replace(/,00$/, ''); }
-
-  /* Budsjett mot regnskap - bare visning; tallene endres i budsjettkortene over. */
-  function okBuTegn(){
-    var gruppe = function(k){ return k.split(' · ')[0]; };
-    var post = function(k){ return k.split(' · ').length === 2; };
-    var seksjoner = [
-      ['Utgifter', okBu.kategorier.filter(function(k){ return post(k) && gruppe(k) !== 'Inntekter' && gruppe(k) !== 'Sparing'; }), true],
-      ['Inntekter', okBu.kategorier.filter(function(k){ return post(k) && gruppe(k) === 'Inntekter'; }), false],
-      ['Sparing', okBu.kategorier.filter(function(k){ return post(k) && gruppe(k) === 'Sparing'; }), false]
-    ];
-    var kr = okBuKr, lenker = document.getElementById('ok-bu-mnd').value !== 'aar', bud = okBu.regBud;
-    var sumB = function(p){ return okBuLinjer(p).reduce(function(s, l){ return s + (bud[l] || 0); }, bud[p] || 0); };
-    var sumR = function(p){ return okBuLinjer(p).reduce(function(s, l){ return s + (okBu.regnskap[l] || 0); }, okBu.regnskap[p] || 0); };
-    /* Regnskapstallet er en lenke til foeringene bak det, naar det finnes noen.
-       «=» foran kategorien betyr bare posten selv, uten linjene. */
-    var celler = function(navn, b, r, utgift, klasse, kat){
-      var avvik = r - b, god = utgift ? avvik <= 0 : avvik >= 0;
-      var brukt = b ? Math.round(r / b * 100) + ' %' : (r ? 'ikke budsjettert' : '–');
-      var rTekst = kat && lenker && Math.round(r) !== 0
-        ? '<button type="button" class="ok-tall-lenke" data-fo="' + okVask(kat) + '">' + kr(r) + '</button>' : kr(r);
-      return '<tr class="' + klasse + '"><td>' + navn + '</td><td>' + kr(b) + '</td><td>' + rTekst + '</td>'
-        + '<td class="' + (Math.round(avvik) === 0 ? '' : god ? 'ok-god' : 'ok-darlig') + '">' + (Math.round(avvik) === 0 ? '0' : (avvik > 0 ? '+' : '−') + kr(Math.abs(avvik))) + '</td>'
-        + '<td>' + (klasse === 'resultat' ? '' : brukt) + '</td></tr>';
-    };
-    var h = '<thead><tr><th>Post</th><th>Budsjett</th><th>Regnskap</th><th>Avvik</th><th>Brukt</th></tr></thead><tbody>';
-    var tot = {};
-    seksjoner.forEach(function(s){
-      var sb = 0, sr = 0;
-      h += '<tr class="seksjon"><td colspan="5">' + s[0] + '</td></tr>';
-      var forrige = null;
-      s[1].forEach(function(k){
-        var g = gruppe(k);
-        if(s[2] && g !== forrige){
-          forrige = g;
-          var kb = 0, krr = 0;
-          s[1].filter(function(x){ return gruppe(x) === g; }).forEach(function(x){ kb += sumB(x); krr += sumR(x); });
-          h += celler(okVask(g), kb, krr, true, 'kat', g);
-        }
-        var linjer = okBuLinjer(k), b = sumB(k), r = sumR(k);
-        sb += b; sr += r;
-        var navn = okVask(k.split(' · ')[1]);
-        if(!linjer.length){ h += celler(navn, b, r, s[2], 'under', k); return; }
-        var apen = !!okBu.apne[k];
-        h += celler('<button type="button" class="ok-bu-pil" data-p="' + okVask(k) + '" aria-expanded="' + apen + '" aria-label="Vis linjene under ' + navn + '">›</button>' + navn
-          + ' <span class="ok-meta">· ' + linjer.length + (linjer.length === 1 ? ' linje' : ' linjer') + '</span>', b, r, s[2], 'under', k);
-        if(!apen) return;
-        linjer.forEach(function(l){ h += celler(okVask(l.split(' · ')[2]), bud[l] || 0, okBu.regnskap[l] || 0, s[2], 'linje', l); });
-        if(bud[k] || okBu.regnskap[k]) h += celler('Uten linje', bud[k] || 0, okBu.regnskap[k] || 0, s[2], 'linje', '=' + k);
-      });
-      h += celler('Sum ' + s[0].toLowerCase(), sb, sr, s[2], 'sum');
-      tot[s[0]] = [sb, sr];
-    });
-    h += celler('Resultat', tot.Inntekter[0] - tot.Utgifter[0] - tot.Sparing[0], tot.Inntekter[1] - tot.Utgifter[1] - tot.Sparing[1], false, 'resultat');
-    var tab = document.getElementById('ok-bu-tabell');
-    tab.innerHTML = h + '</tbody>';
-    tab.querySelectorAll('.ok-bu-pil').forEach(function(b){
-      b.addEventListener('click', function(){ okBu.apne[b.dataset.p] = !okBu.apne[b.dataset.p]; okBuTegn(); });
-    });
-    tab.querySelectorAll('.ok-tall-lenke').forEach(function(b){ b.addEventListener('click', function(){ okVisForinger(b.dataset.fo, b, document.getElementById('ok-bu-mnd').value); }); });
-  }
 
   /* Summene og «hvor inntekten gaar» - fra standardbudsjettet, ogsaa mens det redigeres. */
   function okBsTotaler(mal){
@@ -1517,17 +1481,19 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   function okBsTegn(){
     var t = okBsTotaler('standard'), kr = function(n){ return okBuKr(n) + ' kr'; };
     okSumBokser(document.getElementById('ok-bs-sum'), [['Inntekter', kr(t.inn)], ['Utgifter', kr(t.ut)], ['Sparing', kr(t.spar)],
-      ['Ufordelt', (t.rest > 0 ? '+' : t.rest < 0 ? '−' : '') + kr(Math.abs(t.rest)), t.rest > 0 ? 'pluss' : t.rest < 0 ? 'minus' : '']]);
-    var a = document.getElementById('ok-bs-andel'); a.innerHTML = '';
-    if(!t.inn){ a.appendChild(okEl('p', 'ok-meta', 'Fyll inn inntektene i standardbudsjettet, så vises hvor de går.')); return; }
-    var rader = t.rekke.map(function(g){ return [g, t.grupper[g]]; }).concat([['Sparing', t.spar]])
-      .sort(function(x, y){ return y[1] - x[1]; });
-    a.style.setProperty('--rader', Math.ceil(rader.length / 2));
-    rader.forEach(function(r){
-      a.appendChild(okEl('div', 'ok-andel-rad', '<span>' + okVask(r[0]) + '</span><div class="ok-spor"><span style="width:' + Math.max(0, Math.min(r[1] / t.inn, 1)) * 100 + '%"></span></div>'
-        + '<b>' + kr(r[1]) + '<small>' + Math.round(r[1] / t.inn * 100) + ' %</small></b>'));
-    });
+      ['Overskudd', (t.rest > 0 ? '+' : t.rest < 0 ? '−' : '') + kr(Math.abs(t.rest)), t.rest > 0 ? 'pluss' : t.rest < 0 ? 'minus' : '']]);
   }
+  /* Standarden eller månedsbudsjettet - ett kort om gangen. */
+  var okBuVis = 'standard';
+  function okBuVisTegn(){
+    document.getElementById('ok-std-kort').hidden = okBuVis !== 'standard';
+    document.getElementById('ok-mb-kort').hidden = okBuVis !== 'maaned';
+    document.querySelectorAll('#ok-bu-valg .ok-fane').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.bu === okBuVis)); });
+  }
+  document.querySelectorAll('#ok-bu-valg .ok-fane').forEach(function(b){
+    b.addEventListener('click', function(){ okBuVis = b.dataset.bu; okBuVisTegn(); });
+  });
+  okBuVisTegn();
 
   /* Et budsjettkort: standarden ('standard') eller én maaned ('AAAA-MM').
      Inntekter og sparing side om side, utgiftene under med to grupper per
@@ -1685,46 +1651,6 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   document.getElementById('ok-mb-forrige').addEventListener('click', function(){ var i = okBu.mnder.indexOf(okBu.mbValgt); if(i > 0 && !okBu.redigerer){ okBu.mbValgt = okBu.mnder[i - 1]; okBudKortTegn(okBu.mbValgt); } });
   document.getElementById('ok-mb-neste').addEventListener('click', function(){ var i = okBu.mnder.indexOf(okBu.mbValgt); if(i < okBu.mnder.length - 1 && !okBu.redigerer){ okBu.mbValgt = okBu.mnder[i + 1]; okBudKortTegn(okBu.mbValgt); } });
 
-  /* ---------- Foeringene bak et tall ----------
-     Popupen viser postene som utgjoer regnskapstallet i maaneden som er
-     valgt. Lukkes med knappen, Esc eller et trykk utenfor. */
-  var okFoFra = null;
-  function okVisForinger(kat, fra, mnd){
-    var eksakt = kat.charAt(0) === '=';
-    if(eksakt) kat = kat.slice(1);
-    var bak = document.getElementById('ok-fr-bak'), liste = document.getElementById('ok-fr-liste');
-    okFoFra = fra || null;
-    document.getElementById('ok-fr-tittel').textContent = kat.split(' · ').join(' › ') + (eksakt ? ' (uten linje)' : '');
-    document.getElementById('ok-fr-mnd').textContent = mnd ? okMndNavn.format(new Date(mnd + '-01T12:00:00')) : '';
-    liste.innerHTML = '<p class="ok-meta">Henter …</p>';
-    bak.hidden = false;
-    document.getElementById('ok-fr-lukk').focus();
-    okHent('/api/bank?hva=foringer&mnd=' + encodeURIComponent(mnd) + '&kategori=' + encodeURIComponent(kat) + (eksakt ? '&eksakt=1' : '')).then(function(r){
-      liste.innerHTML = '';
-      if(!r.ok){ liste.appendChild(okEl('p', 'ok-melding feil', okVask(r.feil))); return; }
-      if(!r.foringer.length){ liste.appendChild(okEl('p', 'ok-meta', 'Ingen godkjente føringer.')); return; }
-      var sum = 0;
-      r.foringer.forEach(function(f){
-        sum += f.belop;
-        /* Linjen eller posten under det man trykket paa, naar den er en annen. */
-        var under = f.kategori !== kat ? f.kategori.slice(kat.length + 3) : '';
-        var meta = [f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''), under, f.del ? 'del av kvitteringen' : '', f.mer].filter(Boolean).join(' · ');
-        liste.appendChild(okEl('div', 'ok-fr-rad',
-          '<span class="ok-meta">' + okVask(okKort.format(new Date(f.dato))) + '</span>'
-          + '<span><span class="ok-navn">' + okVask(f.tekst || 'Uten tekst') + '</span><br><span class="ok-meta">' + okVask(meta) + '</span></span>'
-          + '<b>' + okKr0.format(f.belop) + '</b>'));
-      });
-      liste.appendChild(okEl('div', 'ok-fr-sum', '<span>' + r.foringer.length + (r.foringer.length === 1 ? ' føring' : ' føringer') + '</span><span>' + okKr0.format(Math.round(sum * 100) / 100) + ' kr</span>'));
-    });
-  }
-  function okLukkForinger(){
-    document.getElementById('ok-fr-bak').hidden = true;
-    if(okFoFra && document.body.contains(okFoFra)) okFoFra.focus();
-    okFoFra = null;
-  }
-  document.getElementById('ok-fr-lukk').addEventListener('click', okLukkForinger);
-  document.getElementById('ok-fr-bak').addEventListener('click', function(e){ if(e.target === this) okLukkForinger(); });
-  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !document.getElementById('ok-fr-bak').hidden) okLukkForinger(); });
 
   /* Nye poster og linjer lagres med en gang - de er oppsett, ikke tall.
      Tallene foelger budsjettets Lagre som foer. */
@@ -2114,22 +2040,28 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   /* ---------- Faner ----------
      Status, Innboks, Måned, År og Budsjett som skissen, og Oppsett.
      All input som ikke hoerer til en bestemt fane, ligger i Oppsett. */
-  var OK_VISNINGER = ['status', 'innboks', 'maaned', 'aar', 'budsjett', 'oppsett'];
+  /* Fem faner fra 6. november 2026: Måned og År er slått sammen til
+     Regnskap (internt fortsatt 'maaned'). Gamle lenker og den huskede
+     fanen («aar», «regnskap») havner der. */
+  var OK_VISNINGER = ['status', 'innboks', 'maaned', 'budsjett', 'oppsett'];
   var okAarLastet = false;
   function okVis(navn){
+    if(navn === 'aar' || navn === 'regnskap') navn = 'maaned';
     if(OK_VISNINGER.indexOf(navn) === -1) navn = 'status';
     OK_VISNINGER.forEach(function(v){
       document.getElementById('ok-vis-' + v).hidden = v !== navn;
       document.getElementById('ok-fane-' + v).setAttribute('aria-selected', String(v === navn));
     });
     try{ localStorage.setItem('ok-fane', navn); }catch(e){}
-    if(navn === 'aar' && !okAarLastet){ okAarLastet = true; okAarLast(); }
+    if(navn === 'maaned' && !okAarLastet){ okAarLastet = true; okAarLast(); }
     if(navn === 'maaned' && !okMnd.lastet){ okMnd.lastet = true; okMndLast(); }
   }
-  document.querySelectorAll('.ok-fane').forEach(function(f){ f.addEventListener('click', function(){ okVis(f.dataset.vis); }); });
+  /* Bare fanelinja - periodevalget og budsjettvalget bruker samme utseende (.ok-fane). */
+  document.querySelectorAll('.ok-fane[data-vis]').forEach(function(f){ f.addEventListener('click', function(){ okVis(f.dataset.vis); }); });
   window.addEventListener('hashchange', function(){ okVis(location.hash.slice(1)); });
   (function(){
     var start = location.hash.slice(1);
+    if(start === 'aar' || start === 'regnskap') start = 'maaned';
     if(OK_VISNINGER.indexOf(start) === -1){ try{ start = localStorage.getItem('ok-fane') || 'status'; }catch(e){ start = 'status'; } }
     okVis(start);
   })();
@@ -2183,8 +2115,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     });
   }
   function okTegnKilder(){
-    var v = document.getElementById('ok-varsler'), k = document.getElementById('ok-kilder');
-    v.innerHTML = ''; k.innerHTML = '';
+    var v = document.getElementById('ok-varsler');
+    v.innerHTML = '';
     (okSt.varsler ? okSt.varsler.varsler : []).forEach(function(x){
       if(x.type === 'innboks') return;
       var rad = okEl('div', 'ok-varsel', '<span>' + okVask(x.tekst) + '</span>');
@@ -2193,10 +2125,10 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       rad.appendChild(b); v.appendChild(rad);
     });
     var ikkeOppdatert = false;
+    /* Hver kilde er en linje i Oppsett: statusen staar i sammendraget og prikken (6. november 2026). */
+    var FOLD = { 'DNB':'kilde-dnb', 'Trumf':'kilde-trumf', 'Dropbox':'kilde-dropbox' };
     var rad = function(navn, tekst, klasse, feil){
-      var r = okEl('div', 'ok-kilde-rad', '<b>' + okVask(navn) + '</b><span class="ok-fersk ' + klasse + '">' + okVask(tekst) + '</span>');
-      if(feil) r.appendChild(okEl('p', 'ok-meta ok-kilde-feil', okVask(feil)));
-      k.appendChild(r);
+      okFoldSett(FOLD[navn], feil || tekst, klasse || '', klasse === 'stopp' ? 'stopp' : klasse === 'gammel' ? 'varsel' : '');
     };
     /* De automatiske kildene teller for prikken paa Oppsett; det som er satt for haand, gjoer ikke. */
     var auto = function(navn, tekst, klasse, feil){ if(klasse) ikkeOppdatert = true; rad(navn, tekst, klasse, feil); };
@@ -2205,7 +2137,6 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var ks = okSt.kilder, runde = ((ks && ks.intervall) || 216e5) + 36e5;
     var farge = function(tid){ return !tid || Date.now() - tid > runde ? 'gammel' : ''; };
     var hentet = function(b){ return b && b.hentet ? okNaar(b.hentet) : 'aldri'; };
-    k.appendChild(okEl('span', 'ok-etikett', 'Automatisk'));
     if(!ks) rad('DNB', 'Henter …', 'gammel');
     else if(!ks.dnb.koblet) auto('DNB', 'Ikke koblet', 'stopp');
     else{
@@ -2230,12 +2161,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       else auto('Trumf', 'Hentet ' + hentet(t), t.feil ? 'stopp' : farge(t.hentet), t.feil);
     }
     if(okDb && okDb.koblet) auto('Dropbox', okDb.sist ? 'Sjekket ' + okNaar(new Date(okDb.sist).getTime()) : 'Ikke sjekket ennå', okDb.feil ? 'stopp' : farge(okDb.sist ? new Date(okDb.sist).getTime() : 0), okDb.feil);
-    var manuelt = okFormue.verdier.filter(function(x){ return !x.konto; }).concat(okFormue.gjeld);
-    if(manuelt.length) k.appendChild(okEl('span', 'ok-etikett', 'Satt manuelt'));
-    manuelt.forEach(function(x){
-      rad(x.navn, 'Satt manuelt ' + (x.dato ? okKort.format(new Date(x.dato + 'T12:00:00')) : ''), !x.dato || okDagerSiden(x.dato) > 31 ? 'gammel' : '');
-    });
-    k.appendChild(okEl('div', 'ok-kilde-forklar', '<span class="ok-fersk">Ferskt</span><span class="ok-fersk gammel">Eldre enn ventet</span><span class="ok-fersk stopp">Feilet sist</span>'));
+    else rad('Dropbox', okDb ? 'Ikke koblet' : '', okDb ? 'gammel' : '');
     document.getElementById('ok-fane-prikk').hidden = !ikkeOppdatert;
   }
   function okKilderLast(){
@@ -2280,27 +2206,40 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         boks.appendChild(okEl('p', 'ok-meta', 'Standardbudsjettet er tomt. Når det er fylt inn, viser Neam hvordan måneden ligger an.'));
         var fyll = okEl('button', 'btn btn-endre', 'Fyll inn budsjettet'); fyll.type = 'button'; fyll.style.alignSelf = 'flex-start';
         fyll.addEventListener('click', function(){
-          okVis('budsjett'); window.scrollTo(0, 0);
+          okVis('budsjett'); window.scrollTo(0, 0); okBuVis = 'standard'; okBuVisTegn();
           if(!okBu.redigerer){ okBu.redigerer = 'standard'; okBu.utkast = {}; okBsTegn(); okBudKortTegn('standard'); okBudKortTegn(okBu.mbValgt); }
         });
         boks.style.display = 'flex'; boks.style.flexDirection = 'column'; boks.style.gap = '10px';
         boks.appendChild(fyll);
         return;
       }
-      boks.style.display = 'block';
+      /* Kortet på Status er bare oversikt (skissen, 6. november 2026): én
+         stolpe for måneden og postene som ligger mest foran skjema. Hele
+         tabellen står i Regnskap. */
+      boks.style.display = 'flex'; boks.style.flexDirection = 'column'; boks.style.gap = '12px';
       var kr = function(n){ return (n < 0 ? '−' : '') + okKrHel(Math.abs(n)) + ' kr'; };
-      var tab = okEl('div', 'ok-mt');
-      tab.appendChild(okEl('div', 'ok-mt-rad ok-mt-hode', '<span>Gruppe</span><span>Brukt</span><span>Budsjett</span><span>Igjen</span>'));
-      rekke.forEach(function(g){
-        var x = grupper[g]; if(!x.b && !x.r) return;
-        var andel = x.b ? x.r / x.b : (x.r ? 2 : 0), tid = g === 'Bolig' ? 1 : andelTid;
-        var merke = andel > 1 ? '<span class="ok-merke over">Over</span>' : (andel > tid + 0.05 ? '<span class="ok-merke foran">Foran skjema</span>' : '');
-        var rad = okEl('div', 'ok-mt-rad', '<span><b>' + okVask(g) + '</b>' + merke + '</span><b>' + kr(x.r) + '</b><span class="ok-meta">' + kr(x.b) + '</span><span>' + kr(x.b - x.r) + '</span>');
-        rad.appendChild(okFram(andel, tid));
-        tab.appendChild(rad);
+      boks.appendChild(okEl('div', 'ok-kort-hode', '<span><b>' + kr(brukt) + '</b> brukt av ' + kr(bud) + '</span><span class="ok-meta">'
+        + (iMnd ? (dager - naa.getDate()) + ' dager igjen' : 'Avsluttet') + '</span>'));
+      boks.appendChild(okFram(brukt / bud, ventet / bud));
+      var mbS = okBudFor(b, r.mnd), foran = [];
+      kats.filter(function(k){ return k.split(' · ').length === 2; }).forEach(function(k){
+        var linjer = kats.filter(function(x){ return x.indexOf(k + ' · ') === 0; });
+        var pb = linjer.reduce(function(s, l){ return s + (mbS[l] || 0); }, mbS[k] || 0);
+        var pr = linjer.reduce(function(s, l){ return s + (r.regnskap[l] || 0); }, r.regnskap[k] || 0);
+        var f = pr - pb * (okGruppe(k) === 'Bolig' ? 1 : andelTid);
+        if(pr > 0 && f >= 1) foran.push({ k:k, pr:pr, pb:pb, f:f });
       });
-      tab.appendChild(okEl('div', 'ok-mt-rad ok-mt-sum', '<span>Sum utgifter</span><span>' + kr(brukt) + '</span><span>' + kr(bud) + '</span><span>' + kr(bud - brukt) + '</span>'));
+      foran.sort(function(x, y){ return y.f - x.f; });
+      var tab = okEl('div', 'ok-mt');
+      tab.appendChild(okEl('div', 'ok-mt-rad ok-mt-hode', '<span>Mest foran skjema</span><span>Brukt</span><span>Budsjett</span><span>Foran</span>'));
+      foran.slice(0, 3).forEach(function(x){
+        tab.appendChild(okEl('div', 'ok-mt-rad', '<span>' + okVask(x.k.split(' · ').join(' › ')) + '</span><b>' + kr(x.pr) + '</b><span class="ok-meta">' + kr(x.pb) + '</span><span class="ok-avvik over">+' + kr(x.f) + '</span>'));
+      });
+      if(!foran.length) tab.appendChild(okEl('p', 'ok-meta', 'Ingen poster ligger foran skjema.'));
       boks.appendChild(tab);
+      var hele = okEl('button', 'ok-lenke', 'Hele måneden i Regnskap ›'); hele.type = 'button'; hele.style.alignSelf = 'flex-start';
+      hele.addEventListener('click', function(){ okMnd.periode = 'mnd'; okVis('maaned'); if(okMnd.liste.length) okMndTegn(); window.scrollTo(0, 0); });
+      boks.appendChild(hele);
     });
   }
   function okFram(andel, strek, etikett){
@@ -2451,6 +2390,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   });
   function okTilTrenger(id){
     okVis('innboks');
+    okFoldAapne('ib-trenger');
     var rad = document.querySelector('#ok-trenger [data-trenger^="' + id + '"]');
     if(!rad) return;
     rad.scrollIntoView({ block:'center' });
@@ -2613,6 +2553,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     boks.querySelectorAll('input, select').forEach(function(f){ gamle[f.id] = f.type === 'checkbox' ? f.checked : f.value; });
     var rader = okTrengerRader(g);
     kort.hidden = !rader.length;
+    okFoldSett(kort, rader.length + (rader.length === 1 ? ' opplysning' : ' opplysninger'), 'gammel', 'varsel');
     boks.innerHTML = '';
     rader.forEach(function(r){ boks.appendChild(r); });
     Object.keys(gamle).forEach(function(id){ var f = document.getElementById(id); if(!f || !gamle[id]) return; if(f.type === 'checkbox') f.checked = true; else f.value = gamle[id]; });
@@ -2886,6 +2827,27 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       sp.addEventListener('input', function(){ m.spart = sp.value.replace(/\s/g, ''); }); r2.appendChild(sp); ms.appendChild(r2); }
     okFormue.maal = m;
     boks.appendChild(ms);
+    /* Hver del som en sammenleggbar linje med et sammendrag (skissen,
+       6. november 2026). Lagre under gjelder alle. */
+    var krS = function(n){ return okKrHel(n) + ' kr'; };
+    var navnOg = function(l, n){ return l.map(n).filter(Boolean).filter(function(x, i, a){ return a.indexOf(x) === i; }).join(' · '); };
+    var oppsummer = {
+      'Verdier': function(){ var l = okVerdier(); return l.length ? [navnOg(l, function(x){ return x.navn; }) + ' – ' + krS(l.reduce(function(s, x){ return s + (Number(x.belop) || 0); }, 0))] : ['Ingen ennå']; },
+      'Gjeld': function(){ var l = okFormue.gjeld; return l.length ? [navnOg(l, function(x){ return okLanTypeNavn(x.type) || x.navn; }) + ' – ' + krS(l.reduce(function(s, x){ return s + (Number(x.belop) || 0); }, 0))] : ['Ingen ennå']; },
+      'Bruttoinntekt': function(){ var s = OK_BRUTTO.reduce(function(t, p){ return t + (okFormue.brutto[p[0]] || []).reduce(function(u, r){ return u + (Number(r.belop) || 0); }, 0); }, 0); return s ? [krS(s) + ' per år'] : ['Ikke fylt inn', 'gammel']; },
+      'Kontoer i bufferen': function(){ var n = (okFormue.buffer || []).length; return n ? [n + ' valgt'] : ['Ingen valgt – rollen Sparing brukes']; },
+      'Familiemål': function(){ var mm = okFormue.maal; return mm && String(mm.navn || '').trim() ? [mm.navn + (Number(mm.belop) ? ' – ' + krS(Number(mm.belop)) : '')] : ['Ikke satt', 'gammel']; }
+    };
+    Array.prototype.slice.call(boks.children).forEach(function(s){
+      if(!s.classList.contains('ok-fo-seksjon')) return;
+      var et = s.querySelector('.ok-etikett'), tittel = et ? et.textContent : '';
+      var nokkel = Object.keys(oppsummer).filter(function(k){ return tittel.indexOf(k) === 0; })[0];
+      if(!nokkel) return;
+      et.remove();
+      var o = oppsummer[nokkel]();
+      var f = okFold('fo-' + nokkel.toLowerCase().replace(/[^a-zæøå]/g, ''), nokkel, o[0], { prikk:o[1] || null, tone:o[1] ? 'varsel' : '' });
+      boks.insertBefore(f.rot, s); f.innhold.appendChild(s);
+    });
     var knapper = okEl('div', 'ok-rad-knapper', ''); knapper.style.marginTop = '14px';
     var lagre = okEl('button', 'btn btn-ny', 'Lagre'); lagre.type = 'button';
     var svarT = okEl('span', 'ok-meta', '');
@@ -2931,17 +2893,37 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     if(snitt != null){ var s = okEl('div', 'ok-bar-strek'); s.style.left = (snitt / skala * 100) + '%'; s.title = 'Snitt'; b.appendChild(s); }
     return b;
   }
+  /* Maanedene perioden dekker: den valgte maaneden, hittil i aar, eller de
+     tolv siste. Budsjettet er da summen av maanedsbudsjettene. */
+  function okMndPeriode(){
+    var naa = new Date().toISOString().slice(0, 7);
+    if(okMnd.periode === 'aar') return okMnd.liste.filter(function(x){ return x.slice(0, 4) === naa.slice(0, 4); });
+    if(okMnd.periode === 'tolv') return okMnd.liste.slice(-12);
+    return [okMnd.valgt];
+  }
+  function okMndSum(ms, hent){
+    var ut = {};
+    ms.forEach(function(mm){ var x = hent(mm) || {}; Object.keys(x).forEach(function(k){ ut[k] = (ut[k] || 0) + (x[k] || 0); }); });
+    return ut;
+  }
   function okMndTegn(){
     var m = okMnd.valgt, i = okMnd.liste.indexOf(m), paagaar = i === okMnd.liste.length - 1;
+    var per = okMnd.periode, ms = okMndPeriode(), enMnd = per === 'mnd';
     var kr = function(n){ return okBuKr(n) + ' kr'; };
     var navn = okMndNavn.format(new Date(m + '-01T12:00:00'));
-    document.getElementById('ok-mnd-navn').textContent = navn.charAt(0).toUpperCase() + navn.slice(1);
+    document.getElementById('ok-mnd-navn').textContent = enMnd ? navn.charAt(0).toUpperCase() + navn.slice(1)
+      : per === 'aar' ? 'Hittil i år ' + new Date().getFullYear() : 'Siste 12 måneder';
+    document.getElementById('ok-mnd-forrige').hidden = !enMnd;
+    document.getElementById('ok-mnd-neste').hidden = !enMnd;
     document.getElementById('ok-mnd-forrige').disabled = i <= 0;
     document.getElementById('ok-mnd-neste').disabled = paagaar;
-    document.getElementById('ok-mndf-meta').textContent = (paagaar ? 'Pågår' : 'Avsluttet') + ' · ' + (okBu.maaneder[m] ? 'månedens eget budsjett' : 'budsjett fra standardbudsjettet');
-    var reg = okMnd.aar[m] || {};
+    document.querySelectorAll('#ok-mnd-periode .ok-fane').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.periode === per)); });
+    document.getElementById('ok-mndf-meta').textContent = enMnd
+      ? (paagaar ? 'Pågår' : 'Avsluttet') + ' · ' + (okBu.maaneder[m] ? 'månedens eget budsjett' : 'budsjett fra standardbudsjettet')
+      : ms.length + (ms.length === 1 ? ' måned' : ' måneder') + ' · budsjettet er summen av månedsbudsjettene';
+    var reg = okMndSum(ms, function(mm){ return okMnd.aar[mm]; });
     var faktisk = function(k){ return okBuLinjer(k).reduce(function(s, l){ return s + (reg[l] || 0); }, reg[k] || 0); };
-    var mb = okBudFor(okBu, m);
+    var mb = okMndSum(ms, function(mm){ return okBudFor(okBu, mm); });
     var budsjett = function(k){ return okBuLinjer(k).reduce(function(s, l){ return s + (mb[l] || 0); }, mb[k] || 0); };
     var poster = okBu.kategorier.filter(function(k){ return k.split(' · ').length === 2; });
     var gruppe = function(k){ return k.split(' · ')[0]; };
@@ -2949,12 +2931,12 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     poster.forEach(function(k){ var g = gruppe(k), v = faktisk(k); if(g === 'Inntekter') inn += v; else if(g === 'Sparing') spar += v; else if(g !== 'Utenfor budsjett') ut += v; });
     var rest = inn - ut - spar;
     okSumBokser(document.getElementById('ok-mnd-sum'), [['Inntekter', kr(inn)], ['Utgifter', kr(ut)], ['Sparing', kr(spar)],
-      [paagaar ? 'Overskudd hittil' : 'Overskudd', (rest >= 0 ? '+' : '−') + kr(Math.abs(rest)), rest >= 0 ? 'pluss' : 'minus']]);
+      [paagaar || !enMnd ? 'Overskudd hittil' : 'Overskudd', (rest >= 0 ? '+' : '−') + kr(Math.abs(rest)), rest >= 0 ? 'pluss' : 'minus']]);
 
     /* Snittet: maanedene foer denne som har foeringer - ikke de foer innboksen kom i gang. */
     var foer = okMnd.liste.slice(0, Math.max(i, 0)).filter(function(mm){ return okMnd.aar[mm] && Object.keys(okMnd.aar[mm]).length; });
     var snittFor = function(liste){
-      if(!foer.length) return null;
+      if(!foer.length || !enMnd) return null;
       return foer.reduce(function(s, mm){ var r = okMnd.aar[mm] || {}; return s + liste.reduce(function(t, k){ return t + (r[k] || 0); }, 0); }, 0) / foer.length;
     };
     var boks = document.getElementById('ok-mnd-tabell'); boks.innerHTML = '';
@@ -2997,7 +2979,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
             var kb = okEl('button', 'ok-lenke', apen ? 'Skjul kjøpene' : 'Vis kjøpene ›'); kb.type = 'button'; kb.id = kbId;
             kb.addEventListener('click', function(){ okMnd.apneKjop[nk] = !apen; okMndTegn(); var x = document.getElementById(kb.id); if(x) x.focus(); });
             rad.appendChild(kb);
-            if(apen) rad.appendChild(okMndKjop(m, k));
+            if(apen) rad.appendChild(okMndKjop(ms, k));
           }
         }
         ur.appendChild(rad);
@@ -3007,26 +2989,27 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     });
     /* Valgt post som ikke finnes i maaneden: velg den foerste neste gang. */
     if(okPc.matches && okMnd.valgtPost && !boks.querySelector('.ok-under-rad.valgt')){ okMnd.valgtPost = null; var f = boks.querySelector('.ok-under-rad .ok-lenke'); if(f){ f.click(); return; } }
-    okMndKjopPanel(m);
+    okMndKjopPanel(ms);
   }
   /* PC-spalten: kjoepene bak posten som er valgt. */
-  function okMndKjopPanel(m){
+  function okMndKjopPanel(ms){
     var boks = document.getElementById('ok-mnd-kjop'), k = okMnd.valgtPost;
     boks.innerHTML = '';
     if(!okPc.matches) return;
     if(!k){ boks.appendChild(okEl('p', 'ok-meta', 'Velg en post for å se kjøpene bak.')); return; }
-    var reg = okMnd.aar[m] || {}, mb = okBudFor(okBu, m);
+    var reg = okMndSum(ms, function(mm){ return okMnd.aar[mm]; }), mb = okMndSum(ms, function(mm){ return okBudFor(okBu, mm); });
     var faktisk = okBuLinjer(k).reduce(function(s, l){ return s + (reg[l] || 0); }, reg[k] || 0);
     var budsjett = okBuLinjer(k).reduce(function(s, l){ return s + (mb[l] || 0); }, mb[k] || 0);
     boks.appendChild(okEl('span', 'ok-etikett', 'Kjøpene bak'));
     boks.appendChild(okEl('div', 'ok-detalj-hode', '<h2 style="margin:0;font-size:var(--t-stor)">' + okVask(k.split(' · ').join(' › ')) + '</h2><span class="ok-detalj-belop">' + okBuKr(faktisk) + ' kr</span>'));
     boks.appendChild(okEl('p', 'ok-meta', 'Budsjett ' + okBuKr(budsjett) + ' kr. Kjøp med kvittering kan åpnes.'));
-    boks.appendChild(okMndKjop(m, k));
+    boks.appendChild(okMndKjop(ms, k));
   }
   /* Kjoepene bak en post: foeringene i maaneden. Med kvittering kan de aapnes. */
-  function okMndKjop(m, k){
+  /* Kjoepene bak en post i perioden: foeringene maaned for maaned, slaatt sammen. */
+  function okMndKjop(ms, k){
     var liste = okEl('div', 'ok-kjop-liste', '<span class="ok-meta" style="padding:8px 12px">Henter …</span>');
-    var nk = m + '|' + k;
+    var nk = ms.join(',') + '|' + k;
     var tegn = function(r){
       liste.innerHTML = '';
       if(!r.ok){ liste.appendChild(okEl('span', 'ok-meta', okVask(r.feil))); return; }
@@ -3049,9 +3032,17 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       });
     };
     if(okMnd.kjop[nk]) tegn(okMnd.kjop[nk]);
-    else okHent('/api/bank?hva=foringer&mnd=' + encodeURIComponent(m) + '&kategori=' + encodeURIComponent(k)).then(function(r){ okMnd.kjop[nk] = r; tegn(r); });
+    else Promise.all(ms.map(function(mm){ return okHent('/api/bank?hva=foringer&mnd=' + encodeURIComponent(mm) + '&kategori=' + encodeURIComponent(k)); })).then(function(svar){
+      var feil = svar.filter(function(r){ return !r.ok; })[0];
+      var r = feil || { ok:true, foringer:[].concat.apply([], svar.map(function(x){ return x.foringer || []; }))
+        .sort(function(a, b){ return String(a.dato).localeCompare(String(b.dato)); }) };
+      okMnd.kjop[nk] = r; tegn(r);
+    });
     return liste;
   }
+  document.querySelectorAll('#ok-mnd-periode .ok-fane').forEach(function(b){
+    b.addEventListener('click', function(){ okMnd.periode = b.dataset.periode; okMndTegn(); });
+  });
   document.getElementById('ok-mnd-forrige').addEventListener('click', function(){ var i = okMnd.liste.indexOf(okMnd.valgt); if(i > 0){ okMnd.valgt = okMnd.liste[i - 1]; okMndTegn(); } });
   document.getElementById('ok-mnd-neste').addEventListener('click', function(){ var i = okMnd.liste.indexOf(okMnd.valgt); if(i < okMnd.liste.length - 1){ okMnd.valgt = okMnd.liste[i + 1]; okMndTegn(); } });
 
@@ -3162,7 +3153,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       angre.addEventListener('click', function(){
         angre.disabled = true;
         okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'angre', ider:[p.id] }) })
-          .then(function(){ okLastInnboks(); okStatusLast(); okVarslerLast(); if(!document.getElementById('ok-bu-kort').hidden) okBuRegnskap(); });
+          .then(function(){ okLastInnboks(); okStatusLast(); okVarslerLast(); if(okMnd.lastet) okMndLast(); });
       });
       rad.appendChild(angre);
       if(p.harFil) rad.appendChild(okFilLenke(p));
@@ -3250,7 +3241,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
      dem bank-funksjonen slipper inn - sys@, Magne og Nina). Sida legger
      ikke til egne verktoey; det Neam kan gjoere her, kan den gjoere fra
      alle sidene. */
-  var OK_VIS_NAVN = { status:'Status', innboks:'Innboks', maaned:'Måned', aar:'År', budsjett:'Budsjett', oppsett:'Oppsett' };
+  var OK_VIS_NAVN = { status:'Status', innboks:'Innboks', maaned:'Regnskap', budsjett:'Budsjett', oppsett:'Oppsett' };
   /* Det som bare kan gjoeres her: endre budsjettets poster og linjer, og
      de godkjente foeringene (Magne, 6. november 2026: «endre alt når vi står
      i økonomisiden»). Beloep i budsjettet og formuen kan Neam sette fra alle
