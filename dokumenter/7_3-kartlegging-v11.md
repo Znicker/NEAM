@@ -93,8 +93,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-tale.js` (tale ut og inn).
 
 **Siste leverte versjoner:** `felles-neam.js ?v=74`, `felles-neam.css
-?v=74`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=8`, `felles-lesalt.js
-?v=8`, `felles-hus.js ?v=22`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
+?v=74`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=9`, `felles-lesalt.js
+?v=9`, `felles-hus.js ?v=22`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
@@ -112,7 +112,7 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–73; neam.css til og
-med 73; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–7, skriv 1–7,
+med 73; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–8, skriv 1–8,
 hus `?v=1–21`, ms `?v=1`, tale 1–4, graph 1–2**. (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -142,10 +142,15 @@ skolearbeidet (lekser, prøver, læringsmål, **og fra 2. november**
 `list_skoleplaner`, `hent_skoleplan`), Matlaging (fra 29. oktober),
 navigasjon, huset og Neamow.
 
-*Fra 6. november også økonomien* – seks leseverktøy (`les_okonomi_*`) i
-`felles-lesalt.js` og to som skriver (`godkjenn_okonomi_poster`,
-`sett_okonomi_budsjett`) i `felles-skriv.js`. De står i lista **bare for
-sys@, magne@ og nina@** – aldri kitchen@ eller barna. Se del 57.
+*Fra 6. november også økonomien* – **bare for sys@, magne@ og nina@**,
+aldri kitchen@ eller barna. **Fra alle sidene:** seks leseverktøy
+(`les_okonomi_*`) i `felles-lesalt.js`, og to som legger inn beløp i
+`felles-skriv.js` (`sett_okonomi_budsjett`, `sett_okonomi_formue`) –
+**bare i felt som finnes**. Ber man om et nytt felt, foreslår Neam det og
+spør om han skal ta deg til Økonomi; `gaa_til` tar med oppgaven, og han
+fortsetter der. **Bare på Økonomi-sida:** `godkjenn_okonomi_poster` og fire
+av sidas egne (budsjettposter, føringer, kjøp for hånd, kontoroller). Regelen
+er Magnes: «endre det meste» på sida, beløp i feltene utenfor. Se del 57.
 
 *Kan ikke flyttes som de er – fem verktøy:*
 - `finn_opprydding` og `slaa_sammen` hviler på **sidas mengdemotor** –
@@ -426,11 +431,14 @@ varselkort når noe trenger noen. Sida henter DNB og Trumf ferskt når den
 **6. november:** kvitteringer fra en Dropbox-mappe (`5c359f7`), sida lagt
 om for PC etter en ny skisse (`aa5bbc8`), og **Neam på sida** – fast til
 høyre på bred skjerm, med økonomiverktøyene på alle Neam-sidene
-(`47b39df`). 31 commits, `0e0050a`–`47b39df`, medregnet en midlertidig
-statustest fra en annen økt (`ce3c32b`, fjernet i `9dc8799`).
+(`47b39df`). Samme kveld: alle seks nøkkeltallene med «Neam trenger» i
+innboksen (`610a23d`), og grensen for hva Neam kan endre på sida og
+utenfor (`f6664ba`). 33 commits, `0e0050a`–`f6664ba`, medregnet en
+midlertidig statustest fra en annen økt (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
-`felles-lesalt.js` og `felles-skriv.js` til `?v=8` på alle sidene som
-laster dem. Se del 57.
+`felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
+`?v=9` (`f6664ba`) på alle sidene som laster dem – nå også `okonomi.html`.
+Se del 57.
 
 **1. november: Rommene, ukeplanen og bildekatalogen.**
 - **Rommene lagt om igjen** (`5208ee2`–`26d1362`). Etasjefanene er borte:
@@ -651,6 +659,11 @@ laster dem. Se del 57.
   magne@ og nina@** – bare sys@ er prøvd, og bare i en lokal
   forhåndsvisning med falsk Neam. Og PC-oppsettet på en skjerm smalere
   enn 1360 px, der Neam er det vanlige panelet.
+- **Turen til Økonomi med ekte Neam** (6. november): be om et nytt felt
+  fra en annen side («legg inn hytta, 900 000»), svar ja, og se at han
+  fortsetter på Økonomi og ber om bekreftelse. Bare prøvd med falsk Neam –
+  at oppgaven kom fram og panelet åpnet seg, ikke hva han gjør med den.
+  Og varelinjer fordelt av Neam mot en ekte kvittering.
 - **Andreas ukeplan på neam.no** (1. november): «Hent ukeplan» skal finne
   uke 45.
 - **Rommene på iPad og telefon** (1. november): kolonnene, Rediger og å
@@ -3801,7 +3814,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 31 commits fra `0e0050a` til `47b39df`.
+verdier. Bygget i 33 commits fra `0e0050a` til `f6664ba`.
 
 ### Banken – Enable Banking
 
@@ -4005,11 +4018,11 @@ til Oppsett med rød prikk på fanen, og Coop-meldingen bort.
 «Skal være samme» Neam – Magne, Nina og sys skal kunne bruke ham på tvers
 av systemene, ikke kjøkkenet og barna.
 
-- **Verktøyene ligger i fellesfilene,** ikke på sida: `les_okonomi_maaned`,
-  `_foringer`, `_innboks`, `_kontoer`, `_aar` og `_kvittering` i
-  `felles-lesalt.js`, `godkjenn_okonomi_poster` og `sett_okonomi_budsjett`
-  i `felles-skriv.js`. Det Neam kan gjøre på Økonomi, kan han gjøre fra
-  alle sidene.
+- **Leseverktøyene ligger i fellesfilene** og virker fra alle sidene:
+  `les_okonomi_maaned`, `_foringer`, `_innboks`, `_kontoer` (med formuen
+  fra `f6664ba`), `_aar` og `_kvittering` (med linjenummer) i
+  `felles-lesalt.js`. Hva han kan **skrive**, avhenger av hvor han står –
+  se «Hva Neam kan endre» under.
 - **Hvem som får dem:** `felles-lesalt.js` spør `/api/bank?hvem=1` når
   sida lastes, og verktøyene står i lista bare når svaret er ja. Grensen er
   likevel bank-funksjonen, som sjekker det signerte Access-beviset.
@@ -4029,6 +4042,57 @@ av systemene, ikke kjøkkenet og barna.
   igjen med en gang. Feltet får ikke fokus av seg selv. Smalere enn
   1360 px er det det vanlige panelet, og blir vinduet smalt mens det står
   åpent, lukkes det.
+
+### Nøkkeltallene og «Neam trenger» (6. november, `610a23d`)
+
+- **Alle seks nøkkeltallene vises** når budsjettet og formuen er lest. Et
+  tall uten grunnlag får en strek og «Mangler boligverdi og boliglån ›»,
+  som åpner innboksen med markøren i feltet. Grunnlaget regnes ett sted
+  (`okGrunnlag()`), for både tallene og kortet.
+- **«Neam trenger»** står øverst i innboksen, med én rad per opplysning:
+  boligverdi, boliglån med rente, renten på lån uten rente, inntekt per
+  måned for Magne og Nina, lenke til Budsjett for utgiftene, sparekonto
+  (rollen Sparing – felleskontoer står ikke i lista, så innboksen ikke
+  mister dem) og familiemålet. Det lagres på samme sted som i Oppsett og
+  Budsjett, og raden forsvinner når tallet finnes. Det som er skrevet i
+  feltene, overlever at sida tegner seg på nytt.
+- **Gjeldsgraden** måles mot «5× brutto», men regnes av budsjettets
+  inntekt, som trolig er netto – tallet blir strengere enn bankens.
+
+### Hva Neam kan endre – på sida og utenfor (6. november, `f6664ba`)
+
+Magnes regel: **«endre det meste» når han står på Økonomi-sida; utenfor
+holder det å legge beløp i feltene som alt finnes.** Ber man om et felt
+som ikke finnes, foreslår han det, sier at det må gjøres på Økonomi, og
+spør om han skal ta deg dit og gjøre det.
+
+- **Utenfor sida:** `sett_okonomi_budsjett` (bare poster som finnes) og
+  `sett_okonomi_formue` (verdier og gjeld som finnes, pluss Bolig,
+  Boliglån og familiemålet når de mangler – feltene i «Neam trenger»). Et
+  nytt navn avvises med en feilmelding som sier hva han skal gjøre
+  (`SKRIV_OK_UTENFOR`).
+- **Bare på sida:** `godkjenn_okonomi_poster` (med varelinjer på egne
+  kategorier), og sidas egne i `okonomi.html`: `endre_okonomi_budsjettposter`
+  (legge til, nytt navn, fjerne), `endre_okonomi_foringer` (ny kategori,
+  stryke, tilbake til innboksen), `legg_til_okonomi_foring` (kjøp for hånd)
+  og `sett_okonomi_kontorolle`. Formuen tar nye navn her.
+- **Hvordan felles-skriv.js vet det:** sida setter `window.okonomiSida =
+  true` (adressen kan være både `/okonomi` og `/okonomi.html`). Verktøy med
+  `okBareSida` står ikke i lista andre steder.
+- **Turen dit:** `gaa_til` har fått `okonomi` og en `oppgave`. Oppgaven
+  legges i sessionStorage (`neam_oppgave`), og Økonomi-sida leser den når
+  den åpnes, venter til budsjettet og formuen er lest, og lar Neam
+  fortsette med `neamStart()`. Eldre enn to minutter er glemt. Skrivingen
+  bekreftes som vanlig.
+- **Nytt navn på en post** (`kategori-navn` i bank-funksjonen) gjelder
+  bare egne poster og linjer. Linjene under, føringene, budsjettbeløpene
+  og det Neam har lært, får det nye navnet. De faste postene i koden kan
+  verken få nytt navn eller fjernes.
+- **Kjøp for hånd** er en kvitteringspost uten varelinjer
+  (`kvittering-ny` med `forHand`), merket «Lagt inn for hånd».
+- **Ny kategori på en godkjent føring** gjøres med `godkjenn` – den sjekker
+  ikke status, og det brukes med vilje. Neam husker kategorien for
+  motparten, som ved vanlig godkjenning.
 
 ### Vekkeren og varselkortet
 
@@ -4097,3 +4161,6 @@ og kontoer og transaksjoner skal ikke kunne leses ut derfra. Nøklene:
   modus:** felles-neam.js skjuler panelet mens skjermen står, og sida åpner
   det igjen med en gang. Ingen av verktøyene sida har i dag, bruker det –
   de som gjør det, hører til handlelista.
+- **Kvitteringsdialogen** skriver fortsatt «Kvittering fra bilde» for en
+  post lagt inn for hånd. Den åpnes ikke for slike poster i dag – de har
+  ingen varelinjer.
