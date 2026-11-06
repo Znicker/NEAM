@@ -2621,6 +2621,12 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   function okFormueLast(){
     okHent('/api/bank?hva=formue').then(function(f){
       if(!f.ok) return;
+      /* Holder noen paa i formueskjemaet i Oppsett, tegnes det ikke paa nytt.
+         Sida henter formuen igjen naar kontoene kommer ferskt fra DNB - ved
+         aapning og Oppdater - og da forsvant det man holdt paa aa skrive
+         (familiemaalet, Magne 6. november 2026). Det som staar i skjemaet,
+         lagres med Lagre som foer. */
+      if(okFormueLastet && okFormueTekst() !== okFormueLagret){ okTegnFormue(); return; }
       okFormue = { verdier:f.verdier || [], gjeld:f.gjeld || [], maal:f.maal, brutto:okBruttoFra(f.brutto), historikk:f.historikk || {} };
       okFormueLastet = true; okFormueLagret = okFormueTekst();
       okTegnFormue(); okTegnFormueSkjema();
