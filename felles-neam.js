@@ -112,13 +112,11 @@ const MERKE_V = 2;
    (.ikon-navn) - det er den store forskjellen fra merkene.
 
    Egen versjon: mappa er ny og ble aldri forespurt foer filene laa der. */
-const IKON_V = 1;
-const NEAM_IKON_STREK = [
-  'kjokken-dash', 'matlaging', 'handleliste', 'kalender', 'sikkerhet',
-  'neamow', 'innstillinger', 'apper', 'enheter', 'ny-avtale', 'fag',
-  'legg-til', 'lekse', 'lim-inn', 'logg-ut', 'oppdater', 'paaminnelse',
-  'endre', 'skann-ark', 'ukeplan'
-];
+const IKON_V = 2;
+/* Tom fra 7. november 2026: de nye ikonene i bronsestilen har alle sin
+   egen flis tegnet inn. Lista staar igjen for et strekikon som kommer
+   uten flis. IKON_V 1 gjaldt de gamle filene. */
+const NEAM_IKON_STREK = [];
 /* Knappenavn som har faatt nytt bilde under et annet filnavn. */
 const NEAM_IKON_FRA = { 'avtale':'ny-avtale', 'rediger':'endre' };
 function neamIkonUrl(navn){

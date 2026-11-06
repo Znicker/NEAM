@@ -239,7 +239,7 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
          huset: merket oeverst er det samme som flisen man trykket paa
          for aa komme hit. -->
     <a class="merke" href="/" aria-label="Til forsiden">
-      <img class="ikon-strek" src="/bilder/ikoner/sikkerhet.png?v=1" alt="Sikkerhet" width="92" height="92">
+      <img class="ikon-flis" src="/bilder/ikoner/sikkerhet.png?v=2" alt="Sikkerhet" width="500" height="512">
     </a>
     <div>
       <h1 class="tittel">Sikkerhet</h1>
@@ -251,7 +251,7 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
 
   <!-- Porten: vises bare foer Homey er godkjent. -->
   <section class="port" id="port" hidden>
-    <img class="ikon-flis" src="/bilder/ikoner/sikkerhet/ytterdor-blaa.png?v=1" alt="" width="218" height="199">
+    <img class="ikon-flis" src="/bilder/ikoner/sikkerhet/ytterdor-blaa.png?v=2" alt="" width="511" height="512">
     <h2>Koble til Homey</h2>
     <p>Neam må få lov av Homey én gang. Etterpå husker den det.</p>
     <button class="knapp-blaa" id="koble">Koble til Homey</button>
@@ -271,7 +271,7 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
 <script src="/felles-lesalt.js?v=14"></script>
 <script src="/felles-skriv.js?v=12"></script>
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=75"></script>
+<script src="/felles-neam.js?v=76"></script>
 <script>
 'use strict';
 
@@ -400,7 +400,7 @@ const SIK_IKON = {
 };
 function sikIkonUrl(art, t){
   const tab = SIK_IKON[art] || SIK_IKON.royk;
-  return '/bilder/ikoner/sikkerhet/' + (tab[t] || tab.gronn || tab.blaa) + '.png?v=1';
+  return '/bilder/ikoner/sikkerhet/' + (tab[t] || tab.gronn || tab.blaa) + '.png?v=2';
 }
 
 /* Én kort linje under merket: det ene som er verdt aa se uten aa
