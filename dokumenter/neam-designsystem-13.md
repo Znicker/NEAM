@@ -753,6 +753,37 @@ Standardenhet er «stk».
 **Navn som står to steder må skrives to steder.** Oppskriftens tittel ligger
 både på oppskrifta og i indeksen forsiden leser.
 
+### Den sammenleggbare linja (fra 6. november 2026)
+
+**Lister som ikke trenger å stå åpne, ligger under en linje man klikker
+opp** (Magne: «vi må kunne legge flere lister under kollapsbare linjer»).
+Den er én byggekloss, ikke en ny tegning for hver side. Første side som
+bruker den, er Økonomi.
+
+- **Oppbygning:** pil (›, dreies ned når linja er åpen), eventuelt en
+  statusprikk, tittelen i fet `--t-brod`, og et **sammendrag** til høyre i
+  `--t-meta` og `--ink-soft`. Klikk hvor som helst på linja åpner og lukker.
+  Innholdet står under, rykket inn 26 px (ikke rykket inn på telefon).
+- **Sammendraget skal gjøre det unødvendig å åpne:** antall («3 poster»),
+  sum («3 poster · 1 240 kr»), status («Hentet i dag 21:52») eller det som
+  mangler («Ikke satt»).
+- **Statusprikken har tre farger:** grønn `--handling-ny` er i orden, gul
+  `--handling-endre` trenger noe, rød `--danger` feilet. Gul og rød farger
+  også sammendraget. Samme betydning som prikkene for kildene.
+- **Flere linjer i ett kort** – skilt med en tynn strek (`--line`) – er
+  vanligere enn ett kort per linje. Er alle linjene i et kort skjult, skjules
+  kortet.
+- **Sida husker hva som er åpent** (localStorage), per linje. Det som må
+  sees først, står åpent første gang: «Trenger et valg» i innboksen,
+  «Uten rolle» blant kontoene.
+- **Tastatur og skjermleser:** en ekte `<button>` med `aria-expanded` og
+  `aria-controls`. Ingen andre grep.
+- **Linjer kan stå inni linjer** – gruppe › post › linje – men lukk ikke
+  mer enn to nivåer inni hverandre.
+
+I koden: `okFold()` og `okFoldSett()` i `okonomi.html`. Skal en annen side
+bruke den, flyttes den til en fellesfil først – to kopier er verre enn én.
+
 ## Navigasjon og historikk
 
 **Ingen tilbakepiler.** På nettbrett og telefon er sveip fra kanten
@@ -1504,6 +1535,43 @@ ganger kommer og noen ganger ikke, er verre enn ett trykk ekstra.
 **Krydderblandinger er byggeklosser.** Navnet blir en lenke i andre
 oppskrifters ingredienslister — understreket og i aksentfarge, ikke en
 knapp: den utfører ingenting, den viser noe.
+
+## Økonomi
+
+Den skjulte `okonomi.html` (sys@, Magne og Nina). Arkitekturen står i
+kartleggingen, del 57; her står det som angår oppbygning og utseende.
+
+**Fem faner, hver ting ett sted** (skissen «Neam Økonomi – ny struktur»,
+godkjent 6. november 2026):
+
+- **Status** – bare oversikt: fire tallbokser, måneden som én stolpe med de
+  tre postene som ligger mest foran skjema, nøkkeltallene, netto formue og
+  familiemålet.
+- **Innboks** – bare poster, i sammenleggbare linjer: Trenger et valg,
+  Klare til godkjenning, Ført automatisk og Neam trenger. Den valgte posten
+  står til høyre på PC.
+- **Regnskap** – budsjett mot faktisk, med **periode**: én måned (med
+  ‹ måned ›), hittil i år, eller siste 12 måneder. Budsjettet er da summen av
+  månedsbudsjettene. Trenden og «Hvor det glir» står som linjer øverst, og
+  kjøpene bak den valgte posten til høyre. Erstatter Måned, År og budsjett
+  mot regnskap.
+- **Budsjett** – bare redigering: standardbudsjettet eller ett
+  månedsbudsjett om gangen.
+- **Oppsett** – alt som sammenleggbare linjer: én linje per kilde (med
+  statusprikk, og kildens kort inni), kontoene per rolle, formuen (verdier,
+  gjeld, bruttoinntekt, buffer, familiemål) og «Neam husker».
+
+**Regler:**
+
+- **Samme tall vises ett sted.** En visning hører ikke hjemme i Oppsett, og
+  en innstilling hører ikke hjemme i innboksen.
+- **Sumboksene er de samme overalt:** Inntekter · Utgifter · Sparing ·
+  Overskudd, i den rekkefølgen og med de ordene.
+- **Periodevalg og budsjettvalg** ser ut som fanene (`.ok-fane` med
+  `aria-pressed`), men er knapper i en gruppe, ikke faner.
+- **Toppen står fast** når man ruller, og sida har plass nederst så det
+  siste kan rulles fram over NEAM-knappen (se lærdommene i kartleggingen,
+  del 57).
 
 ## Angre framfor å spørre
 

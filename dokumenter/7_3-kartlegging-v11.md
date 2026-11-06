@@ -450,10 +450,13 @@ nedtrekk med hele kontonummeret (`df9e9c4`). Til slutt Lagre fri av
 NEAM-knappen, «Hent fra Dropbox nå» og toppen som står fast (`9e211c8`),
 og navnet fra Oppsett med kontonummeret i alle kontovalg (`965bb5b`).
 Til slutt at formueskjemaet ikke tegnes på nytt mens noen skriver i det
-(`70f5931`), og type på lånene med «Neam trenger» som er fornøyd når
+(`70f5931`), type på lånene med «Neam trenger» som er fornøyd når
 info finnes (`bf5826d`), og banktrekk etter en godkjent kvittering merket som
 mulig dobbel (`7c32885`), og bufferen med sin egen liste over kontoer
-(`0a637a8`). 43 commits, `0e0050a`–`0a637a8`, medregnet en midlertidig statustest fra en annen økt
+(`0a637a8`). **Til sist ny struktur** – fem faner og lister under
+sammenleggbare linjer (`8458adc`), etter skissen «Neam Økonomi – ny
+struktur»; sikkerhetskopi i taggen `sikkerhetskopi-okonomi-2026-11-06`.
+44 commits, `0e0050a`–`8458adc`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -626,16 +629,14 @@ mulig dobbel (`7c32885`), og bufferen med sin egen liste over kontoer
   (strektegning, ikke merke), blå knapper (som Neamow), glideren i
   `--aksent`, symbolene per type, varselfargene i båndet, fargeprikken og
   fargehjulet.
-- **Utseendevalg på Økonomi-sida** er tatt under byggingen og er ikke
-  godkjent. Oppsettet i skissen godkjente Magne 29. oktober («dette
-  oppsettet var bra»); dette står fortsatt åpent: fargebruken fra skissen (rødt «over», oker «trenger valg»),
-  prikkene for hvor fersk en kilde er (grønn `--handling-ny`, gul
-  `--handling-endre`, rød `--danger`), formuestablene i trinn av
-  `--aksent` og `--ink-soft`, og – fra PC-skissen 6. november, som Magne
-  sa ja til – rammen på 1440 px, de fire tallboksene øverst på Status,
-  innboksen og Måned i to spalter fra 1100 px, og Neam som spalte på
-  400 px til høyre fra 1360 px. Den røde prikken på Oppsett ba Magne om
-  selv. Ingen av dem står i designsystemet. Se del 57.
+- **Utseendevalg på Økonomi-sida.** Strukturen – fem faner, den
+  sammenleggbare linja, statusprikkene (grønn `--handling-ny`, gul
+  `--handling-endre`, rød `--danger`) og de like sumboksene – godkjente
+  Magne med skissen «Neam Økonomi – ny struktur» 6. november, og den står
+  i designsystemet («Økonomi», og «Den sammenleggbare linja» under
+  Mønstre). **Fortsatt ikke ført inn:** fargebruken fra den første skissen
+  (rødt «over», oker «trenger valg»), formuestablene i trinn av `--aksent`
+  og `--ink-soft`, rammen på 1440 px og to spalter fra 1100 px. Se del 57.
 - **Polonium: metall eller halvmetall?** Masterdataene sier metall,
   grunnstoffspillet sier halvmetall. Det er en faglig uenighet, ikke en
   datafeil, og står urørt begge steder.
@@ -843,8 +844,8 @@ nye visuelle uttrykket – ikonene med navnet under, logoen,
 hjemskjermikonet, bakgrunnen, klapptavla og bildekatalogen – og for
 Rommene, og 6. november for fargekatalogen, de nye mulighetene i
 bildekatalogen og fargetabellen, og samme kveld for Neam fast til høyre på
-PC. **Det er ikke oppdatert for Økonomi-sida** (28. oktober–6. november) –
-se utseendevalgene under «Åpne spørsmål».
+PC, for Økonomi-sida (ny del «Økonomi») og for den sammenleggbare linja
+(under «Mønstre»).
 
 ---
 
@@ -3849,7 +3850,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 43 commits fra `0e0050a` til `0a637a8`.
+verdier. Bygget i 44 commits fra `0e0050a` til `8458adc`.
 
 ### Banken – Enable Banking
 
@@ -4102,6 +4103,42 @@ til Oppsett med rød prikk på fanen, og Coop-meldingen bort.
   forsvant før Lagre. Nå sammenlignes skjemaet med det som sist ble lagret
   (`okFormueTekst()` mot `okFormueLagret`); er det ulikt, oppdateres bare
   visningen (`okTegnFormue()`), og skjemaet blir stående.
+
+### Ny struktur – fem faner og sammenleggbare linjer (6. november, `8458adc`)
+
+Magne: «noe er det mye spredt info og tror det er en del doble funksjoner
+… vi må kunne legge flere lister under kollapsbare linjer». En gjennomgang
+fant sju ting som sto to eller tre steder – budsjett mot faktisk i tre
+tabeller, to måter å se kjøpene bak et tall, tre sett sumbokser,
+kildestatus både i en liste og på hvert kildekort, formuen og inntekten
+fylt inn to steder – og fire som sto på feil fane. Skissen «Neam Økonomi –
+ny struktur» (artifact) ble godkjent («Bygg det men ta en sikkerhetskopi»).
+
+- **Sikkerhetskopi:** taggen `sikkerhetskopi-okonomi-2026-11-06` (på
+  `d36ce35`, pushet) – sida før omleggingen kan hentes derfra.
+- **Fem faner:** Status, Innboks, **Regnskap**, Budsjett, Oppsett.
+  Regnskap er Måned-fanen (over) med periode (måned, hittil i år, siste 12
+  mnd; budsjettet er summen av månedsbudsjettene, kjøpene slås sammen
+  måned for måned) og trenden og «Hvor det glir» fra År som linjer øverst.
+  Internt heter den fortsatt `maaned`; `#aar` og `#regnskap` havner der.
+- **Status** har én stolpe for måneden og de tre postene som ligger mest
+  foran skjema (Bolig regnes som betalt tidlig, resten følger kalenderen),
+  og netto formue er flyttet hit fra Oppsett.
+- **Budsjett** er bare redigering, ett budsjett om gangen. Fjernet: budsjett
+  mot regnskap (`okBuRegnskap`, `okBuTegn`), «Hvor inntekten går» og
+  føringsdialogen (`okVisForinger`) – de samme tallene og kjøpene står i
+  Regnskap. «Ufordelt» heter «Overskudd» som de andre stedene.
+- **Innboks og Oppsett** er sammenleggbare linjer (`okFold`,
+  `okFoldSett`, se designsystemet). Kildene har statusen i sammendraget og
+  prikken (`okTegnKilder` setter dem); den egne Kilder-lista og
+  «Satt manuelt»-radene er borte. Kontoene er én linje per rolle, formuen
+  fem linjer med sammendrag, og «Neam husker» er flyttet til Oppsett.
+- **To avvik fra skissen:** «Klare til godkjenning» står åpen (det er
+  postene som skal godkjennes), og «Neam trenger» har fortsatt feltene sine
+  i innboksen i stedet for å lenke til skjemaet i Oppsett.
+- **Felle underveis:** fanene ble koblet til med `.ok-fane`, og
+  periodevalget og budsjettvalget bruker samme klasse – et trykk på
+  «Hittil i år» byttet til Status. Fanene kobles nå med `.ok-fane[data-vis]`.
 
 ### Neam på Økonomi – og økonomien i Neam (6. november, `47b39df`)
 
