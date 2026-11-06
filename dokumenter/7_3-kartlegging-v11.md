@@ -444,7 +444,8 @@ og navnet fra Oppsett med kontonummeret i alle kontovalg (`965bb5b`).
 Til slutt at formueskjemaet ikke tegnes på nytt mens noen skriver i det
 (`70f5931`), og type på lånene med «Neam trenger» som er fornøyd når
 info finnes (`bf5826d`), og banktrekk etter en godkjent kvittering merket som
-mulig dobbel (`7c32885`). 42 commits, `0e0050a`–`7c32885`, medregnet en midlertidig statustest fra en annen økt
+mulig dobbel (`7c32885`), og bufferen med sin egen liste over kontoer
+(`0a637a8`). 43 commits, `0e0050a`–`0a637a8`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3834,7 +3835,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 42 commits fra `0e0050a` til `7c32885`.
+verdier. Bygget i 43 commits fra `0e0050a` til `0a637a8`.
 
 ### Banken – Enable Banking
 
@@ -4159,15 +4160,25 @@ av systemene, ikke kjøkkenet og barna.
   type.
 - **«Neam trenger» er fornøyd når info finnes** (`bf5826d`, Magne: «om det
   er info skal ikke neam trenge noe her»). Boliglån-raden forsvinner så
-  snart et lån er lagt inn. Sparekonto-raden forsvinner når en konto har
-  rollen Sparing eller er lagt inn som verdi under Verdier, også uten saldo
-  fra banken. Bufferen regnes av saldoen på dem alle, hver konto én gang
-  (`okBufferKontoer()`); mangler banken saldoen, står det på Buffer, ikke i
-  «Neam trenger».
-- **Flere sparekontoer** (`7688c6f`, nedtrekk fra `df9e9c4`):
-  Sparekonto-raden er et nedtrekk der flere kan krysses av («2 valgt:
-  Regningskonto, Magne lønn»). Det lukkes ved klikk utenfor og med Escape.
-  Felleskontoene står ikke i lista, så innboksen ikke mister dem.
+  snart et lån er lagt inn. Buffer-raden forsvinner når bufferen har minst
+  én konto, også uten saldo fra banken; mangler banken saldoen, står det på
+  Buffer, ikke i «Neam trenger».
+- **Bufferen har sin egen liste over kontoer** (`0a637a8`). Den første
+  utgaven brukte rollen Sparing, og felleskontoene måtte holdes utenfor:
+  et kryss ville tatt Felles-rollen fra dem, og innboksen ville sluttet å
+  hente derfra. Magne spurte hvorfor de ikke var med. **Rollen sier hva en
+  konto er, bufferen hvilke penger dere klarer dere på** – nå er de skilt.
+  Lista ligger i formuen (`buffer: [konto-uid …]`, beholdes som `brutto`
+  når en side lagrer uten den), velges i «Neam trenger» («Kontoer til
+  bufferen») og endres under «Kontoer i bufferen» i Oppsett. Alle kontoer
+  kan krysses av; felleskontoer er merket «· felles». Uten liste regnes
+  bufferen som før: rollen Sparing og kontoene under Verdier
+  (`okBufferKontoer()`). Avkrysningen er én felles funksjon,
+  `okKontoFlervalg()`.
+- **Flere sparekontoer** (`7688c6f`, nedtrekk fra `df9e9c4`): et nedtrekk
+  der flere kan krysses av («2 valgt: Regningskonto, Magne lønn»). Det
+  lukkes ved klikk utenfor og med Escape. Fra `0a637a8` er det bufferlista
+  over – rollene røres ikke lenger.
 - **Hele kontonummeret i kontovalgene** (`7688c6f`): «navnet i Neam –
   1234.56.78901», også under kontoene i Oppsett. **Regelen gjelder alle
   steder en konto velges eller vises** (Magne, 6. november): nedtrekkene,
