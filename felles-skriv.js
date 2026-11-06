@@ -3080,14 +3080,20 @@ const SKRIV_OK_FORMUE = {
   description: 'Fyller inn eller endrer beløp i formuen i økonomien: verdier (f.eks. «Bolig»), gjeld med rente '
              + '(f.eks. «Boliglån») og familiemålet. Finnes navnet, får det nytt beløp. Kjør les_okonomi_kontoer '
              + 'først for å se hva som står der. Beløp i hele kroner, rente i prosent. Bare det som nevnes, endres. '
-             + 'På Økonomi-sida kan nye navn legges til. Utenfor den bare felt som finnes, pluss Bolig, Boliglån '
-             + 'og familiemålet (feltene i «Neam trenger») når de mangler.',
+             + 'På Økonomi-sida kan nye navn legges til. Utenfor den bare felt som finnes, pluss Bolig, Boliglån, '
+             + 'familiemålet og Fastlønn i bruttoinntekten (feltene i «Neam trenger») når de mangler. '
+             + 'Bruttoinntekten er lønn før skatt i kroner per ÅR, per person, med punkter som Fastlønn og tillegg.',
   input_schema: { type:'object', properties:{
     verdier: { type:'array', items:{ type:'object', properties:{ navn:{ type:'string' }, belop:{ type:'number' } }, required:['navn', 'belop'] } },
     gjeld: { type:'array', items:{ type:'object', properties:{
       navn:{ type:'string' }, belop:{ type:'number', description:'Restgjeld i kroner.' }, rente:{ type:'number', description:'Nominell rente i prosent, f.eks. 5.1.' }
     }, required:['navn'] } },
-    familiemaal: { type:'object', properties:{ navn:{ type:'string' }, belop:{ type:'number', description:'Målbeløpet i kroner.' } }, required:['navn', 'belop'] }
+    familiemaal: { type:'object', properties:{ navn:{ type:'string' }, belop:{ type:'number', description:'Målbeløpet i kroner.' } }, required:['navn', 'belop'] },
+    bruttoinntekt: { type:'array', items:{ type:'object', properties:{
+      hvem:{ type:'string', enum:['Magne', 'Nina'] },
+      navn:{ type:'string', description:'Punktet, f.eks. «Fastlønn» eller «Tillegg». Utelat for Fastlønn.' },
+      belop:{ type:'number', description:'Kroner per år, før skatt.' }
+    }, required:['hvem', 'belop'] } }
   }, required:[] },
   neamSkriver: true,
   neamBeskriv: function(arg){
@@ -3105,6 +3111,12 @@ const SKRIV_OK_FORMUE = {
       linjer.push('• ' + g.navn + ' (gjeld): ' + del.join(', '));
     });
     if(arg.familiemaal) linjer.push('• Familiemål: ' + arg.familiemaal.navn + ', ' + skrivOkKr(Math.round(Number(arg.familiemaal.belop) || 0)));
+    [].concat(arg.bruttoinntekt || []).forEach(function(b){
+      const hvem = String(b.hvem || ''), navn = String(b.navn || 'Fastlønn');
+      const liste = f && f.brutto ? (f.brutto[hvem.toLowerCase()] || []) : null;
+      const gammel = liste ? liste.filter(function(x){ return String(x.navn).toLowerCase() === navn.toLowerCase(); })[0] : null;
+      linjer.push('• ' + hvem + ', ' + navn + ' (brutto per år): ' + fra(gammel, 'belop', skrivOkKr) + skrivOkKr(Math.round(Number(b.belop) || 0)));
+    });
     return 'Endre formuen i økonomien:\n' + linjer.join('\n');
   }
 };
@@ -3190,9 +3202,23 @@ async function skrivOkUtfor(navn, arg){
       maal = Object.assign({ spart:0, konto:'' }, maal || {}, { navn:n, belop:b });
       endret.push({ familiemaal:n, til:b });
     }
+    /* Bruttoinntekten per person; Fastloenn kan fylles inn utenfor sida naar
+       personen ikke har noe, som feltet i «Neam trenger». */
+    const brutto = { magne:((f.brutto || {}).magne || []).map(function(x){ return Object.assign({}, x); }),
+                     nina:((f.brutto || {}).nina || []).map(function(x){ return Object.assign({}, x); }) };
+    [].concat(arg.bruttoinntekt || []).forEach(function(b){
+      const hvem = String(b && b.hvem || '').toLowerCase(), navn = String(b && b.navn || 'Fastlønn').trim() || 'Fastlønn';
+      const v = Math.round(Number(b && b.belop));
+      if(!brutto[hvem]) throw new Error('Bruttoinntekt gjelder Magne eller Nina.');
+      if(!(v >= 0)) throw new Error('Ugyldig beløp for ' + navn);
+      const x = finn(brutto[hvem], navn);
+      if(x){ endret.push({ brutto:b.hvem, navn:x.navn, fra:x.belop, til:v }); x.belop = v; }
+      else if(!sida && !(/^fastlønn$/i.test(navn) && !brutto[hvem].length)) nekt(b.hvem + ', ' + navn);
+      else { endret.push({ brutto:b.hvem, navn:navn, ny:true, til:v }); brutto[hvem].push({ navn:navn, belop:v }); }
+    });
     if(!endret.length) throw new Error('Ingen endringer.');
-    const r = await skrivOkBank('', { hva:'formue', verdier:verdier, gjeld:gjeld, maal:maal });
-    if(typeof lesAltOkSist !== 'undefined') lesAltOkSist.formue = { verdier:r.verdier || [], gjeld:r.gjeld || [], maal:r.maal || null };
+    const r = await skrivOkBank('', { hva:'formue', verdier:verdier, gjeld:gjeld, maal:maal, brutto:brutto });
+    if(typeof lesAltOkSist !== 'undefined') lesAltOkSist.formue = { verdier:r.verdier || [], gjeld:r.gjeld || [], maal:r.maal || null, brutto:r.brutto || {} };
     skrivOkFerdig();
     return { endret:endret, svar:'Lagret i formuen. Det kan endres i Oppsett på Økonomi.' };
   }

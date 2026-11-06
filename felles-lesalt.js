@@ -626,7 +626,8 @@ const LESALT_OK_VERKTOY = [
   {
     name: 'les_okonomi_kontoer',
     description: 'Kontoene i DNB med eget navn, rolle (felles, sparing, magne, nina …) og saldo, og '
-               + 'formuen som er fylt inn for hånd: verdiene (bolig o.l.), gjelden med rente og familiemålet. '
+               + 'formuen som er fylt inn for hånd: verdiene (bolig o.l.), gjelden med rente, familiemålet og '
+               + 'bruttoinntekten per år for Magne og Nina (til gjeldsgraden). '
                + 'Kjør denne før sett_okonomi_formue.',
     input_schema: { type:'object', properties:{}, required:[] }
   },
@@ -719,7 +720,7 @@ async function lesAltOkUtfor(navn, arg){
     /* Formuen ligger for seg; uten bank virker den likevel. */
     let f = null;
     try{ f = await lesAltBank('?hva=formue'); }catch(e){}
-    if(f) lesAltOkSist.formue = { verdier:f.verdier || [], gjeld:f.gjeld || [], maal:f.maal || null };
+    if(f) lesAltOkSist.formue = { verdier:f.verdier || [], gjeld:f.gjeld || [], maal:f.maal || null, brutto:f.brutto || {} };
     const kontoer = r.kontoer || [];
     const kontoNavn = function(uid){ const k = kontoer.filter(function(x){ return x.uid === uid; })[0]; return k ? k.navn : 'en konto'; };
     return { hentet:new Date(r.hentet).toISOString(), kontoer:kontoer.filter(function(k){ return k.rolle !== 'ignorer'; })
@@ -727,7 +728,9 @@ async function lesAltOkUtfor(navn, arg){
       formue: f ? {
         verdier:(f.verdier || []).map(function(v){ return v.konto ? { navn:v.navn, saldo_fra:kontoNavn(v.konto) } : { navn:v.navn, belop:v.belop }; }),
         gjeld:(f.gjeld || []).map(function(g){ return { navn:g.navn, belop:g.belop, rente:g.rente != null ? g.rente : null }; }),
-        familiemaal: f.maal ? { navn:f.maal.navn, belop:f.maal.belop } : null
+        familiemaal: f.maal ? { navn:f.maal.navn, belop:f.maal.belop } : null,
+        bruttoinntekt_per_aar: { Magne:((f.brutto || {}).magne || []).map(function(r){ return { navn:r.navn, belop:r.belop }; }),
+                                 Nina:((f.brutto || {}).nina || []).map(function(r){ return { navn:r.navn, belop:r.belop }; }) }
       } : null };
   }
 

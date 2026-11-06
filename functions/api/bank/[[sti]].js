@@ -950,7 +950,7 @@ const FORMUE_NOKKEL = 'auth:bank:formue';
 async function formue(env){
   const f = await lesJson(env, FORMUE_NOKKEL, {});
   return svar({ ok:true, verdier:f.verdier || [], gjeld:f.gjeld || [], maal:f.maal || null,
-    historikk:await lesJson(env, FORMUE_MND_NOKKEL, {}) });
+    brutto:f.brutto || { magne:[], nina:[] }, historikk:await lesJson(env, FORMUE_MND_NOKKEL, {}) });
 }
 /* Netto formue per maaned, slik at Status kan vise endringen siden forrige
    maaned. Siste tall i maaneden vinner; det skrives hver gang kontoene
@@ -990,7 +990,18 @@ async function lagreFormue(env, kropp, epost){
     maal = { navn:String(kropp.maal.navn).trim().slice(0, 60), belop:Math.max(0, Math.round(Number(kropp.maal.belop) || 0)),
       spart:Math.max(0, Math.round(Number(kropp.maal.spart) || 0)), konto:String(kropp.maal.konto || '').slice(0, 80) };
   }
-  await env.FAMILIE_KV.put(FORMUE_NOKKEL, JSON.stringify({ verdier:verdier, gjeld:gjeld, maal:maal, endret:new Date().toISOString(), av:epost }));
+  /* Bruttoinntekten (foer skatt, kr per aar) per person, med underpunkter som
+     fastloenn og tillegg - til gjeldsgraden (Magne, 6. november 2026).
+     Sender en side ikke `brutto`, beholdes det som staar: en eldre utgave i
+     nettleseren skal ikke slette den. */
+  let brutto;
+  if(kropp.brutto && typeof kropp.brutto === 'object'){
+    brutto = {};
+    for(const hvem of ['magne', 'nina']) brutto[hvem] = [].concat(kropp.brutto[hvem] || []).slice(0, 20).map(r => rad(r, false)).filter(r => r && !r.konto);
+  } else {
+    brutto = (await lesJson(env, FORMUE_NOKKEL, {})).brutto || { magne:[], nina:[] };
+  }
+  await env.FAMILIE_KV.put(FORMUE_NOKKEL, JSON.stringify({ verdier:verdier, gjeld:gjeld, maal:maal, brutto:brutto, endret:new Date().toISOString(), av:epost }));
   return formue(env);
 }
 
