@@ -265,6 +265,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-kjop-rad .ok-dato{ color:var(--ink-soft); }
 .ok-kjop-rad .ok-sted{ display:flex; flex-direction:column; min-width:0; }
 .ok-kjop-rad b{ white-space:nowrap; }
+/* Lange banktekster («Varekjøp, Kl. 19.50 Versjon 1 Aut. …») kortes av som i innboksen, ikke over beløpet. */
+.ok-kjop-rad .ok-sted b{ overflow:hidden; text-overflow:ellipsis; }
 .ok-kjop-pil{ color:var(--aksent); font-size:18px; line-height:1; }
 
 /* ---------- Kvitteringen ----------
@@ -393,6 +395,23 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-nokkel-verdi{ font-size:var(--t-stor); font-weight:700; line-height:1.1; }
 .ok-nokkel .ok-fram{ height:6px; background:var(--line); }
 .ok-nokkel .ok-meta{ line-height:1.35; }
+/* Et noekkeltall uten grunnlag: strek, og hva som mangler som lenke til innboksen. */
+.ok-nokkel.mangler .ok-nokkel-verdi{ color:var(--ink-soft); }
+.ok-nokkel .ok-lenke{ align-self:flex-start; padding:0; text-align:left; }
+/* «Neam trenger» i innboksen: én rad per opplysning, feltet rett i raden. */
+.ok-trenger-rad{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px 16px; align-items:center; padding:12px 0; border-top:1px solid var(--line); }
+.ok-trenger-rad:first-child{ border-top:0; padding-top:0; }
+.ok-trenger-tekst{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.ok-trenger-felt{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+.ok-trenger-felt input, .ok-trenger-felt select{ width:150px; font-family:inherit; font-size:16px; padding:6px 8px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
+.ok-trenger-felt input.bred, .ok-trenger-felt select{ width:220px; }
+.ok-trenger-felt input:focus, .ok-trenger-felt select:focus{ outline:none; border-color:var(--aksent); }
+.ok-trenger-felt .btn{ width:auto; padding:8px 16px; font-size:var(--t-meta); }
+@media (max-width:640px){
+  .ok-trenger-rad{ grid-template-columns:minmax(0,1fr); }
+  .ok-trenger-felt{ justify-content:flex-start; }
+  .ok-trenger-felt input, .ok-trenger-felt input.bred, .ok-trenger-felt select{ width:100%; }
+}
 .ok-rekke{ display:flex; gap:5px; flex-wrap:wrap; }
 .ok-rekke i{ width:22px; height:22px; border-radius:6px; background:rgba(255,255,255,.22); display:grid; place-items:center; font-style:normal; font-size:11px; font-weight:700; }
 .ok-rekke i.ja{ background:#fff; color:var(--aksent); }
@@ -563,6 +582,11 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     <p class="ok-meta" id="ok-kv-status" aria-live="polite">Bilde eller PDF – Neam leser butikk, dato, sum og varer.</p>
     <div class="ok-filter" id="ok-filter" hidden></div>
     <div id="ok-innboks"></div>
+    <section class="ok-kort" id="ok-trenger-kort" hidden>
+      <div class="ok-kort-hode"><h2>Neam trenger</h2><span class="ok-meta" id="ok-trenger-meta" aria-live="polite"></span></div>
+      <p class="ok-meta">Til nøkkeltallene på Status. Det som fylles inn her, lagres som i Oppsett og Budsjett, og kan endres der.</p>
+      <div id="ok-trenger"></div>
+    </section>
     <div class="ok-ib-to">
       <div class="ok-ib-liste">
         <section class="ok-kort" id="ok-ib-tvil-kort" hidden>
@@ -2236,29 +2260,62 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 
   /* ---------- Status: noekkeltall ----------
      Regnes av budsjettet, verdiene og gjelden i Oppsett og saldoen paa
-     sparekontoene. Et tall vises bare naar det det bygger paa finnes.
-     Belaaningsgraden ser etter «bolig» i navnet paa verdi og laan. */
-  function okTegnNokler(){
-    var b = okSt.bud, kort = document.getElementById('ok-nokler-kort'), boks = document.getElementById('ok-nokler');
+     sparekontoene. Belaaningsgraden ser etter «bolig» i navnet paa verdi
+     og laan. Naar budsjettet og formuen er lest, vises alle seks: et tall
+     uten grunnlag faar en strek og en lenke til «Neam trenger» i
+     innboksen (Magne, 6. november 2026). */
+  var okFormueLastet = false;
+  var okErBolig = function(x){ return /bolig|hus|leilighet/i.test(x.navn); };
+  function okGrunnlag(){
+    var b = okSt.bud;
     var sum = function(l){ return l.reduce(function(s, x){ return s + x.belop; }, 0); };
     var gruppeSum = function(g){ return b ? (b.kategorier || []).filter(function(k){ return okGruppe(k) === g; }).reduce(function(s, k){ return s + (b.standard[k] || 0); }, 0) : 0; };
-    var inn = gruppeSum('Inntekter'), spar = gruppeSum('Sparing'), bolig = gruppeSum('Bolig');
-    var utg = b ? (b.kategorier || []).filter(okErUtgift).reduce(function(s, k){ return s + (b.standard[k] || 0); }, 0) : 0;
-    var erBolig = function(x){ return /bolig|hus|leilighet/i.test(x.navn); };
-    var boligV = sum(okVerdier().filter(erBolig)), boligG = sum(okFormue.gjeld.filter(erBolig)), sumG = sum(okFormue.gjeld);
-    var medRente = okFormue.gjeld.filter(function(g){ return g.rente != null && g.belop; });
-    var buffer = okSparing().reduce(function(s, k){ return s + k.saldo; }, 0);
+    return {
+      b: b, klar: !!b && okFormueLastet,
+      inn: gruppeSum('Inntekter'), spar: gruppeSum('Sparing'), bolig: gruppeSum('Bolig'),
+      utg: b ? (b.kategorier || []).filter(okErUtgift).reduce(function(s, k){ return s + (b.standard[k] || 0); }, 0) : 0,
+      boligV: sum(okVerdier().filter(okErBolig)), boligG: sum(okFormue.gjeld.filter(okErBolig)), sumG: sum(okFormue.gjeld),
+      medRente: okFormue.gjeld.filter(function(g){ return g.rente != null && g.belop; }),
+      buffer: okSparing().reduce(function(s, k){ return s + k.saldo; }, 0), harSparekonto: okSparing().length > 0,
+      sum: sum
+    };
+  }
+  function okOgListe(l){ return l.length < 2 ? (l[0] || '') : l.slice(0, -1).join(', ') + ' og ' + l[l.length - 1]; }
+  function okTegnNokler(){
+    var g = okGrunnlag(), kort = document.getElementById('ok-nokler-kort'), boks = document.getElementById('ok-nokler');
     var pst = function(n){ return Math.round(n * 100) + ' %'; };
     var des = function(n){ return String(Math.round(n * 10) / 10).replace('.', ','); };
+    var M = { boligverdi:{ id:'boligverdi', tekst:'boligverdi' }, boliglan:{ id:'boliglan', tekst:'boliglån' }, lan:{ id:'boliglan', tekst:'lån' },
+      rente:{ id:'rente', tekst:'renten på lånene' }, inntekt:{ id:'inntekt', tekst:'inntekt' },
+      utgifter:{ id:'utgifter', tekst:'utgifter' }, bolig:{ id:'utgifter', tekst:'boligutgifter' }, sparekonto:{ id:'sparekonto', tekst:'en sparekonto' } };
     var n = [];
-    if(boligV && boligG) n.push({ navn:'Belåningsgrad', verdi:pst(boligG / boligV), tak:boligG / boligV / 0.9, tekst:'Boliglån mot boligverdi. Tak 90 %.' });
-    if(sumG && inn) n.push({ navn:'Gjeldsgrad', verdi:des(sumG / (inn * 12)) + '×', tak:sumG / (inn * 12) / 5, tekst:'Gjeld mot årsinntekten i budsjettet. Tak 5× brutto.' });
-    if(medRente.length) n.push({ navn:'Rente', verdi:des(medRente.reduce(function(s, g){ return s + g.rente * g.belop; }, 0) / sum(medRente)) + ' %', tekst:'Snitt av lånene, vektet etter beløp.' });
-    if(inn) n.push({ navn:'Sparerate', verdi:pst(spar / inn), maal:spar / inn / 0.25, tekst:'Sparing i budsjettet mot inntekten. Mål 25 %.' });
-    if(buffer > 0 && utg) n.push({ navn:'Buffer', verdi:des(buffer / utg) + ' mnd', maal:buffer / utg / 6, tekst:'Utgifter dekket av sparekontoene. Mål 6 mnd.' });
-    if(inn && bolig) n.push({ navn:'Faste kostnader', verdi:pst(bolig / inn), tekst:'Bolig mot inntekten i budsjettet.' });
+    var legg = function(navn, finnes, x, mangler){
+      if(finnes) n.push(Object.assign({ navn:navn }, x));
+      else if(g.klar) n.push({ navn:navn, mangler:mangler.filter(Boolean) });
+    };
+    legg('Belåningsgrad', g.boligV && g.boligG, g.boligV ? { verdi:pst(g.boligG / g.boligV), tak:g.boligG / g.boligV / 0.9, tekst:'Boliglån mot boligverdi. Tak 90 %.' } : null,
+      [!g.boligV && M.boligverdi, !g.boligG && M.boliglan]);
+    legg('Gjeldsgrad', g.sumG && g.inn, g.inn ? { verdi:des(g.sumG / (g.inn * 12)) + '×', tak:g.sumG / (g.inn * 12) / 5, tekst:'Gjeld mot årsinntekten i budsjettet. Tak 5× brutto.' } : null,
+      [!g.sumG && M.lan, !g.inn && M.inntekt]);
+    legg('Rente', g.medRente.length, g.medRente.length ? { verdi:des(g.medRente.reduce(function(s, x){ return s + x.rente * x.belop; }, 0) / g.sum(g.medRente)) + ' %', tekst:'Snitt av lånene, vektet etter beløp.' } : null,
+      [okFormue.gjeld.length ? M.rente : M.lan]);
+    legg('Sparerate', g.inn, g.inn ? { verdi:pst(g.spar / g.inn), maal:g.spar / g.inn / 0.25, tekst:'Sparing i budsjettet mot inntekten. Mål 25 %.' } : null,
+      [M.inntekt]);
+    legg('Buffer', g.harSparekonto && g.utg, g.utg ? { verdi:des(g.buffer / g.utg) + ' mnd', maal:g.buffer / g.utg / 6, tekst:'Utgifter dekket av sparekontoene. Mål 6 mnd.' } : null,
+      [!g.harSparekonto && M.sparekonto, !g.utg && M.utgifter]);
+    legg('Faste kostnader', g.inn && g.bolig, g.inn ? { verdi:pst(g.bolig / g.inn), tekst:'Bolig mot inntekten i budsjettet.' } : null,
+      [!g.inn && M.inntekt, !g.bolig && M.bolig]);
     kort.hidden = !n.length; boks.innerHTML = '';
     n.forEach(function(x){
+      if(x.mangler){
+        var m = okEl('div', 'ok-nokkel mangler', '<span class="ok-etikett">' + x.navn + '</span><span class="ok-nokkel-verdi">–</span>');
+        var l = okEl('button', 'ok-lenke', okVask('Mangler ' + okOgListe(x.mangler.map(function(y){ return y.tekst; }))) + ' ›');
+        l.type = 'button';
+        l.addEventListener('click', function(){ okTilTrenger(x.mangler[0].id); });
+        m.appendChild(l);
+        boks.appendChild(m);
+        return;
+      }
       var t = okEl('div', 'ok-nokkel', '<span class="ok-etikett">' + x.navn + '</span><span class="ok-nokkel-verdi">' + x.verdi + '</span>');
       /* Tak: roedt naar det er passert. Maal: fullt naar det er naadd. */
       var a = x.tak != null ? x.tak : x.maal;
@@ -2266,6 +2323,154 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       t.appendChild(okEl('span', 'ok-meta', x.tekst));
       boks.appendChild(t);
     });
+    okTegnTrenger();
+  }
+
+  /* ---------- Innboks: «Neam trenger» ----------
+     Det nøkkeltallene mangler, som rader med feltet rett i raden. Det som
+     lagres, gaar til samme sted som skjemaene i Oppsett og Budsjett, og
+     raden forsvinner naar tallet finnes. Tegnes paa nytt hver gang
+     noekkeltallene gjoer det - det som er skrevet i feltene, beholdes. */
+  function okTilTrenger(id){
+    okVis('innboks');
+    var rad = document.querySelector('#ok-trenger [data-trenger^="' + id + '"]');
+    if(!rad) return;
+    rad.scrollIntoView({ block:'center' });
+    var f = rad.querySelector('input, select, button'); if(f) f.focus();
+  }
+  function okTrengerSi(tekst){ document.getElementById('ok-trenger-meta').textContent = tekst; }
+  function okTrengerTall(id){
+    var f = document.getElementById('ok-tr-' + id);
+    var v = parseFloat(String(f ? f.value : '').replace(/\s/g, '').replace(',', '.'));
+    return isFinite(v) ? v : NaN;
+  }
+  function okTrengerFelt(id, etikett, plass, tekst){
+    var i = document.createElement('input');
+    i.type = 'text'; i.id = 'ok-tr-' + id; i.placeholder = plass; i.setAttribute('aria-label', etikett);
+    if(tekst) i.className = 'bred'; else i.inputMode = 'decimal';
+    return i;
+  }
+  function okTrengerRad(id, tittel, hvorfor, felt, lagre){
+    var rad = okEl('div', 'ok-trenger-rad');
+    rad.dataset.trenger = id;
+    rad.appendChild(okEl('div', 'ok-trenger-tekst', '<b>' + okVask(tittel) + '</b><span class="ok-meta">' + okVask(hvorfor) + '</span>'));
+    var f = okEl('div', 'ok-trenger-felt');
+    felt.forEach(function(x){ f.appendChild(x); });
+    if(lagre){
+      var k = okEl('button', 'btn btn-ny', 'Lagre'); k.type = 'button';
+      k.addEventListener('click', function(){
+        k.disabled = true;
+        Promise.resolve(lagre()).then(function(){ k.disabled = false; }, function(){ k.disabled = false; okTrengerSi('Ble ikke lagret.'); });
+      });
+      f.addEventListener('keydown', function(e){ if(e.key === 'Enter' && e.target.tagName === 'INPUT'){ e.preventDefault(); k.click(); } });
+      f.appendChild(k);
+    }
+    rad.appendChild(f);
+    return rad;
+  }
+  /* Formuen lagres hel, som i Oppsett. Et tomt familiemaal fra skjemaet der sendes ikke. */
+  function okTrengerFormue(endre, hva){
+    var maal = okFormue.maal && String(okFormue.maal.navn || '').trim() ? okFormue.maal : null;
+    var kropp = { hva:'formue', verdier:okFormue.verdier.slice(), gjeld:okFormue.gjeld.map(function(x){ return Object.assign({}, x); }), maal:maal };
+    endre(kropp);
+    return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(kropp) }).then(function(r){
+      if(!r.ok){ okTrengerSi('Ble ikke lagret: ' + r.feil); return; }
+      okFormue = { verdier:r.verdier, gjeld:r.gjeld, maal:r.maal, historikk:r.historikk || {} };
+      okTegnFormue(); okTegnFormueSkjema();
+      okTrengerSi(hva + ' er lagret. Det kan endres i Oppsett.');
+    });
+  }
+  /* Inntekten legges i standardbudsjettet. Som ellers der: maaneder som har
+     startet med et budsjett, beholder sitt (lagreBudsjett i bank-funksjonen). */
+  function okTrengerBudsjett(verdier, hva){
+    return okHent('/api/bank?hva=budsjett').then(function(b){
+      if(!b.ok){ okTrengerSi('Ble ikke lagret: ' + b.feil); return; }
+      var standard = Object.assign({}, b.standard || {}, verdier);
+      return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'budsjett', standard:standard }) }).then(function(s){
+        if(!s.ok){ okTrengerSi('Ble ikke lagret: ' + s.feil); return; }
+        okTrengerSi(hva + ' er lagt i standardbudsjettet.');
+        if(!okBu.redigerer) okBuLast();
+        okStatusLast(); if(okMnd.lastet) okMndLast();
+      });
+    });
+  }
+  function okTrengerRader(g){
+    var rader = [];
+    if(!g.boligV) rader.push(okTrengerRad('boligverdi', 'Boligverdi', 'Til belåningsgraden. En omtrentlig markedsverdi holder.',
+      [okTrengerFelt('boligverdi', 'Boligverdi i kroner', 'Kr')], function(){
+        var v = okTrengerTall('boligverdi');
+        if(!(v > 0)) return okTrengerSi('Skriv boligverdien i kroner.');
+        return okTrengerFormue(function(k){ k.verdier.push({ navn:'Bolig', belop:Math.round(v) }); }, 'Boligverdien');
+      }));
+    if(!g.boligG) rader.push(okTrengerRad('boliglan', 'Boliglån', 'Til belåningsgraden, gjeldsgraden og renten. Restgjelden og den nominelle renten.',
+      [okTrengerFelt('boliglan', 'Restgjeld på boliglånet i kroner', 'Kr'), okTrengerFelt('boliglan-rente', 'Renten på boliglånet i prosent', 'Rente %')], function(){
+        var v = okTrengerTall('boliglan'), r = okTrengerTall('boliglan-rente');
+        if(!(v > 0)) return okTrengerSi('Skriv restgjelden på boliglånet i kroner.');
+        return okTrengerFormue(function(k){ var x = { navn:'Boliglån', belop:Math.round(v) }; if(r >= 0 && r < 30) x.rente = r; k.gjeld.push(x); }, 'Boliglånet');
+      }));
+    okFormue.gjeld.forEach(function(x, i){
+      if(x.rente != null || !x.belop) return;
+      rader.push(okTrengerRad('rente-' + i, 'Renten på ' + x.navn, 'Til rentesnittet på Status.',
+        [okTrengerFelt('rente-' + i, 'Renten på ' + x.navn + ' i prosent', 'Rente %')], function(){
+          var r = okTrengerTall('rente-' + i);
+          if(!(r >= 0 && r < 30)) return okTrengerSi('Skriv renten i prosent, for eksempel 5,1.');
+          return okTrengerFormue(function(k){ if(k.gjeld[i]) k.gjeld[i].rente = r; }, 'Renten på ' + x.navn);
+        }));
+    });
+    var innK = ['Inntekter · Magne', 'Inntekter · Nina'].filter(function(k){ return (g.b.kategorier || []).indexOf(k) !== -1; });
+    var innId = function(k){ return 'inntekt-' + k.split(' · ')[1].toLowerCase(); };
+    if(!g.inn && innK.length) rader.push(okTrengerRad('inntekt', 'Inntekt per måned', 'Til sparerate, gjeldsgrad og faste kostnader. Det som kommer inn på konto.',
+      innK.map(function(k){ var hvem = k.split(' · ')[1]; return okTrengerFelt(innId(k), hvem + ', kroner per måned', hvem + ', kr'); }), function(){
+        var v = {};
+        innK.forEach(function(k){ var x = okTrengerTall(innId(k)); if(x > 0) v[k] = Math.round(x); });
+        if(!Object.keys(v).length) return okTrengerSi('Skriv minst én inntekt.');
+        return okTrengerBudsjett(v, 'Inntekten');
+      }));
+    if(!g.utg || !g.bolig){
+      var til = okEl('button', 'ok-lenke', 'Til Budsjett ›'); til.type = 'button';
+      til.addEventListener('click', function(){ okVis('budsjett'); });
+      rader.push(okTrengerRad('utgifter', !g.utg ? 'Utgiftene i standardbudsjettet' : 'Boligutgiftene i standardbudsjettet',
+        'Til buffer og faste kostnader. Det er mange poster, så de fylles inn under Budsjett – eller be Neam om det.', [til], null));
+    }
+    var kandidater = okKontoer.filter(function(k){ return k.rolle !== 'sparing' && k.rolle !== 'felles'; });
+    if(!g.harSparekonto && kandidater.length){
+      var s = document.createElement('select');
+      s.id = 'ok-tr-sparekonto'; s.setAttribute('aria-label', 'Sparekonto');
+      s.appendChild(new Option('Velg konto', ''));
+      kandidater.forEach(function(k){ s.appendChild(new Option((k.navn || 'Konto') + (k.slutt ? ' •••• ' + k.slutt : ''), k.uid)); });
+      rader.push(okTrengerRad('sparekonto', 'Sparekonto', 'Til bufferen: saldoen på kontoene med rollen Sparing. Rollen kan endres i Oppsett.', [s], function(){
+        var uid = document.getElementById('ok-tr-sparekonto').value;
+        if(!uid) return okTrengerSi('Velg en konto.');
+        var roller = {}; roller[uid] = 'sparing';
+        return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'roller', roller:roller }) }).then(function(r){
+          if(!r.ok){ okTrengerSi('Ble ikke lagret: ' + r.feil); return; }
+          var navn = 'Kontoen';
+          okKontoer.forEach(function(k){ if(k.uid === uid){ k.rolle = 'sparing'; navn = k.navn || navn; } });
+          okTegnKontoer(); okTegnFormue();
+          okTrengerSi(navn + ' er lagret som sparing.');
+        });
+      }));
+    }
+    if(!(okFormue.maal && String(okFormue.maal.navn || '').trim())) rader.push(okTrengerRad('maal', 'Familiemål', 'Det dere sparer til, vist på Status. Kontoen det spares på velges i Oppsett.',
+      [okTrengerFelt('maal-navn', 'Navnet på målet', 'Navn på målet', true), okTrengerFelt('maal-belop', 'Målbeløp i kroner', 'Kr')], function(){
+        var navn = (document.getElementById('ok-tr-maal-navn').value || '').trim(), v = okTrengerTall('maal-belop');
+        if(!navn || !(v > 0)) return okTrengerSi('Skriv navnet på målet og beløpet.');
+        return okTrengerFormue(function(k){ k.maal = { navn:navn, belop:Math.round(v), spart:0, konto:'' }; }, 'Familiemålet');
+      }));
+    return rader;
+  }
+  function okTegnTrenger(){
+    var kort = document.getElementById('ok-trenger-kort'), boks = document.getElementById('ok-trenger');
+    var g = okGrunnlag();
+    if(!g.klar){ kort.hidden = true; return; }
+    var gamle = {}, fokus = boks.contains(document.activeElement) ? document.activeElement.id : '';
+    boks.querySelectorAll('input, select').forEach(function(f){ gamle[f.id] = f.value; });
+    var rader = okTrengerRader(g);
+    kort.hidden = !rader.length;
+    boks.innerHTML = '';
+    rader.forEach(function(r){ boks.appendChild(r); });
+    Object.keys(gamle).forEach(function(id){ var f = document.getElementById(id); if(f && gamle[id]) f.value = gamle[id]; });
+    if(fokus){ var f = document.getElementById(fokus); if(f) f.focus(); }
   }
 
   /* ---------- Formue og familiemaal ----------
@@ -2277,6 +2482,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     okHent('/api/bank?hva=formue').then(function(f){
       if(!f.ok) return;
       okFormue = { verdier:f.verdier || [], gjeld:f.gjeld || [], maal:f.maal, historikk:f.historikk || {} };
+      okFormueLastet = true;
       okTegnFormue(); okTegnFormueSkjema();
     });
   }
@@ -2843,6 +3049,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     if(vis === 'innboks' && okIbValgt) k.valgtPostId = okIbValgt;
     if(vis === 'maaned' && okMnd.valgt){ k.maaned = okMnd.valgt; if(okMnd.valgtPost) k.valgtKategori = okMnd.valgtPost; }
     if(vis === 'budsjett' && okBu.mbValgt) k.budsjettMaaned = okBu.mbValgt;
+    /* Hva nøkkeltallene mangler («Neam trenger» i innboksen) - ingen beløp. */
+    var mangler = document.getElementById('ok-trenger-kort').hidden ? [] : Array.prototype.map.call(document.querySelectorAll('#ok-trenger .ok-trenger-tekst b'), function(b){ return b.textContent; });
+    if(mangler.length) k.manglerForNokkeltall = mangler;
     return k;
   };
   window.neamBakgrunn = async function(){
@@ -2851,7 +3060,11 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       + 'godkjent med en kategori. Budsjettet har et standardbudsjett og egne budsjett per måned.\n\n'
       + 'Les tallene med les_okonomi_* - kontekstlinja sier bare hvilken fane brukeren står på, ikke '
       + 'hva som står der. Ikke gjett beløp. godkjenn_okonomi_poster og sett_okonomi_budsjett endrer '
-      + 'regnskapet og budsjettet; sida tegner seg på nytt etterpå.';
+      + 'regnskapet og budsjettet; sida tegner seg på nytt etterpå.\n\n'
+      + 'Nøkkeltallene på Status trenger inntekt og utgifter i standardbudsjettet, boligverdi, boliglån med rente, '
+      + 'en sparekonto og et familiemål. Det som mangler, står i kontekstlinja (manglerForNokkeltall) og i kortet '
+      + '«Neam trenger» i innboksen. Inntekt og utgifter kan du sette med sett_okonomi_budsjett når brukeren gir deg '
+      + 'tallene; resten fylles inn i kortet - be brukeren om det, ikke gjett.';
     var hus = await husregisterTekst();
     return (hus ? (om + '\n\n' + hus) : om) + '\n\n' + HUS_BAKGRUNN;
   };
