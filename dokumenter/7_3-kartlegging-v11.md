@@ -439,8 +439,9 @@ og at Neam kan laste sida på nytt (`7688c6f`). Så bruttoinntekt per
 person, og gjeldsgraden regnet av den (`3218537`), og beskjed når en
 kvittering ligner en som alt er lagt inn (`fd86515`), og sparekontoene i
 nedtrekk med hele kontonummeret (`df9e9c4`). Til slutt Lagre fri av
-NEAM-knappen, «Hent fra Dropbox nå» og toppen som står fast (`9e211c8`).
-38 commits, `0e0050a`–`9e211c8`, medregnet en midlertidig statustest fra en annen økt
+NEAM-knappen, «Hent fra Dropbox nå» og toppen som står fast (`9e211c8`),
+og navnet fra Oppsett med kontonummeret i alle kontovalg (`965bb5b`).
+39 commits, `0e0050a`–`965bb5b`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3829,7 +3830,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 38 commits fra `0e0050a` til `9e211c8`.
+verdier. Bygget i 39 commits fra `0e0050a` til `965bb5b`.
 
 ### Banken – Enable Banking
 
@@ -4125,7 +4126,12 @@ av systemene, ikke kjøkkenet og barna.
   Regningskonto, Magne lønn»). Det lukkes ved klikk utenfor og med Escape.
   Felleskontoene står ikke i lista, så innboksen ikke mister dem.
 - **Hele kontonummeret i kontovalgene** (`7688c6f`): «navnet i Neam –
-  1234.56.78901», også under kontoene i Oppsett. Bank-funksjonen viste før
+  1234.56.78901», også under kontoene i Oppsett. **Regelen gjelder alle
+  steder en konto velges eller vises** (Magne, 6. november): nedtrekkene,
+  avkrysningen i «Neam trenger», kontofilteret i innboksen og verdier som
+  følger en konto («saldo på Regningskonto – 8601.11.17026») – fra
+  `965bb5b`. Felles formel: `okKontoValg(k)`. Navnet er det som er gitt i
+  Oppsett (`auth:bank:kontonavn`), ellers bankens. Bank-funksjonen viste før
   med vilje bare de fire siste sifrene; Magne ba om hele. `kontonr` går
   bare til sida – `les_okonomi_kontoer` tar det ikke med, så Neam ser det
   ikke. **Kontoene lagres når DNB kobles** (`auth:bank:hus`), og de som ble
