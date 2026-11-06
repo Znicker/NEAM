@@ -471,14 +471,15 @@ i Alle (`f4c292d`), og merker på tvers av gruppene – forsikring, lån,
 abonnement … – med større gruppenavn (`5f06f25`). 7. november: **samme
 trekk med ny tekst fra DNB ble ført to ganger** – tettet, og «Koble» rydder
 opp (`03073b0`). I live-data fant den 5 dobler (Tibber 26. oktober og fire
-kontoreguleringer 2. november); **Magne kobler dem selv** –
-ikke kjørt av Claude. **Foreslått, venter på Magne** (han tester og kommer
+kontoreguleringer 2. november); **Magne kobler dem selv** – ikke kjørt av
+Claude. Så fikk **Neam alt sida kan** på Økonomi (`a106ea2`), og
+formueskjemaet slutter å se ulagret ut. **Foreslått, venter på Magne** (han tester og kommer
 tilbake): Økonomi åpner på ~9 s fordi innboks og kontoer hentes ferskt fra
 DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 52 commits, `0e0050a`–`03073b0`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 53 commits, `0e0050a`–`a106ea2`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3893,7 +3894,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 52 commits fra `0e0050a` til `03073b0`.
+verdier. Bygget i 53 commits fra `0e0050a` til `a106ea2`.
 
 ### Banken – Enable Banking
 
@@ -4202,6 +4203,36 @@ til Oppsett med rød prikk på fanen, og Coop-meldingen bort.
   forsvant før Lagre. Nå sammenlignes skjemaet med det som sist ble lagret
   (`okFormueTekst()` mot `okFormueLagret`); er det ulikt, oppdateres bare
   visningen (`okTegnFormue()`), og skjemaet blir stående.
+
+### Neam kan alt sida kan (7. november, `a106ea2`)
+
+Magne: «Jeg ønsker at neam skal ha alle tilganger på økonomisiden når den
+står der … nå kan han blant annet ikke merke budsjettposter». En
+gjennomgang av hva sida kan mot `OK_NEAM_VERKTOY`, `SKRIV_OK_VERKTOY` og
+`LESALT_OK_VERKTOY` ga dette, alt i `okonomi.html` (ingen `?v=`):
+
+- **Utvidet:** `endre_okonomi_budsjettposter` med `merker`;
+  `sett_okonomi_kontorolle` med `nytt_navn` (rolle valgfri);
+  `endre_okonomi_foringer` med `faktura_til_innboks`.
+- **Nye:** `les_okonomi_transaksjoner` (søket i Alle, `okAlTreff`),
+  `les_okonomi_husk` / `endre_okonomi_husk` (`laert`),
+  `les_okonomi_koble` / `koble_okonomi_poster` (`koble-alle`; kobler alt
+  som ble foreslått), `endre_okonomi_oppsett` (fjerne verdier, lån og
+  bruttopunkter, bufferkontoene, konto som verdi, familiemålets spart og
+  konto – henter formuen fersk og lagrer den hel, `okNeamFormue`),
+  `bruk_standardbudsjett` og `oppdater_okonomi` (`okOppdater`, også
+  Dropbox – derfor `neamSkriver`).
+- **Ikke med, med vilje:** koble DNB, Trumf og Dropbox til eller fra
+  (innlogging), og kvitteringer fra bilde (Neam har ikke fila).
+- **Felle – kontonummeret:** søket ga først `okAlKildeNavn`, som er
+  «navn – kontonr». Neam får nå bare kontonavnet. Regelen fra
+  `les_okonomi_kontoer` gjelder alle verktøy.
+- **Felle – formueskjemaet så alltid ulagret ut:** `okTegnFormue` setter
+  `farge` på verdiene for stolpen, og `okFormueTekst` tok den med. Etter
+  hver tegning var skjemaet «endret», så `okFormueLast` tegnet det aldri
+  på nytt når ferske tall kom fra DNB (vakten fra `70f5931`). Nå ser
+  sammenligningen bort fra `farge`. Kan ha vært en del av at Magne måtte
+  laste sida på nytt.
 
 ### Samme trekk to ganger fra DNB (7. november, `03073b0`)
 
