@@ -93,8 +93,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-tale.js` (tale ut og inn).
 
 **Siste leverte versjoner:** `felles-neam.js ?v=74`, `felles-neam.css
-?v=74`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=11`, `felles-lesalt.js
-?v=11`, `felles-hus.js ?v=22`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
+?v=74`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
+?v=12`, `felles-hus.js ?v=22`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
@@ -112,7 +112,7 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–73; neam.css til og
-med 73; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–10, skriv 1–10,
+med 73; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–11, skriv 1–11,
 hus `?v=1–21`, ms `?v=1`, tale 1–4, graph 1–2**. (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -442,14 +442,16 @@ nedtrekk med hele kontonummeret (`df9e9c4`). Til slutt Lagre fri av
 NEAM-knappen, «Hent fra Dropbox nå» og toppen som står fast (`9e211c8`),
 og navnet fra Oppsett med kontonummeret i alle kontovalg (`965bb5b`).
 Til slutt at formueskjemaet ikke tegnes på nytt mens noen skriver i det
-(`70f5931`). 40 commits, `0e0050a`–`70f5931`, medregnet en midlertidig statustest fra en annen økt
+(`70f5931`), og type på lånene med «Neam trenger» som er fornøyd når
+info finnes (`bf5826d`). 41 commits, `0e0050a`–`bf5826d`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
 `?v=9` (`f6664ba`) på alle sidene som laster dem – nå også `okonomi.html`.
 `felles-skriv.js` gikk videre til `?v=10` (`7688c6f`), og så
 `felles-lesalt.js` til `?v=10` og `felles-skriv.js` til `?v=11`
-(`3218537`). Til slutt `felles-lesalt.js` til `?v=11` (`fd86515`). Se del 57.
+(`3218537`). Så `felles-lesalt.js` til `?v=11` (`fd86515`), og begge til
+`?v=12` (`bf5826d`). Se del 57.
 
 **1. november: Rommene, ukeplanen og bildekatalogen.**
 - **Rommene lagt om igjen** (`5208ee2`–`26d1362`). Etasjefanene er borte:
@@ -3831,7 +3833,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 40 commits fra `0e0050a` til `70f5931`.
+verdier. Bygget i 41 commits fra `0e0050a` til `bf5826d`.
 
 ### Banken – Enable Banking
 
@@ -4127,9 +4129,24 @@ av systemene, ikke kjøkkenet og barna.
   med `sett_okonomi_formue`. Utenfor sida kan han bare endre punkter som
   finnes, eller fylle inn Fastlønn for den som ikke har noe.
 - **Flere boliglån** (`7688c6f`): Boliglån-raden har ett felt per lån og
-  «+ Ett lån til». Navnet må inneholde «bolig» for å telle i
-  belåningsgraden, så «SPK» lagres som «Boliglån – SPK». Senere endringer
-  gjøres under Gjeld i Oppsett.
+  «+ Ett lån til». Fra `bf5826d` får lånene derfra typen Boliglån, og
+  navnet trenger ikke lenger «bolig». Senere endringer gjøres under Gjeld
+  i Oppsett.
+- **Type på lånene** (`bf5826d`, Magne: «bil båt bolig forbruk osv»):
+  `bolig`, `bil`, `baat`, `forbruk`, `studie`, `annet` (`LAN_TYPER` i
+  bank-funksjonen, `OK_LAN_TYPER` på sida). Settes i et nedtrekk under
+  Gjeld i Oppsett og av Neam (`sett_okonomi_formue`). Belåningsgraden
+  bruker lånene med typen Bolig; lån uten type teller som før – «bolig» i
+  navnet, eller alle sammen når ingen lån er boliglån (`okBoligLan()`).
+  Formuekortet viser gjelden gruppert per type. Lån lagt inn før har ingen
+  type.
+- **«Neam trenger» er fornøyd når info finnes** (`bf5826d`, Magne: «om det
+  er info skal ikke neam trenge noe her»). Boliglån-raden forsvinner så
+  snart et lån er lagt inn. Sparekonto-raden forsvinner når en konto har
+  rollen Sparing eller er lagt inn som verdi under Verdier, også uten saldo
+  fra banken. Bufferen regnes av saldoen på dem alle, hver konto én gang
+  (`okBufferKontoer()`); mangler banken saldoen, står det på Buffer, ikke i
+  «Neam trenger».
 - **Flere sparekontoer** (`7688c6f`, nedtrekk fra `df9e9c4`):
   Sparekonto-raden er et nedtrekk der flere kan krysses av («2 valgt:
   Regningskonto, Magne lønn»). Det lukkes ved klikk utenfor og med Escape.
