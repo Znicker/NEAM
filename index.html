@@ -466,6 +466,11 @@ input,select,textarea{font-size:16px}
         <a class="app merke" href="./sikkerhet.html" aria-label="Sikkerhet">
           <span class="app-icon"><img class="ikon-strek" alt="" src="/bilder/ikoner/sikkerhet.png?v=1" width="92" height="92"></span><span class="ikon-navn">Sikkerhet</span>
         </a>
+        <!-- Designverktoeyene (6. november 2026). Bare sys@, se vurderDashFlis().
+             system.png er laant til flisen faar sitt eget bilde. -->
+        <a class="app merke" href="/dokumenter/designverktoy.html" id="designKort" hidden aria-label="Designverktøy">
+          <span class="app-icon"><img class="ikon-flis" alt="" src="/bilder/ikoner/system.png?v=1" width="226" height="186"></span><span class="ikon-navn">Designverktøy</span>
+        </a>
         <div class="app merke soon planlagt">
           <span class="app-icon"><img class="ikon-flis" alt="" src="/bilder/ikoner/arbeidsoppgaver.png?v=1" width="360" height="359"></span><span class="ikon-navn">Arbeidsoppgaver</span>
           <span class="app-badge">Kommer</span>
@@ -926,6 +931,9 @@ async function vurderDashFlis(){
   if(!dash) return;
   const epost = await innloggetEpost();
   if(dash) dash.hidden = DASH_TILGANG.indexOf(epost) === -1;
+  /* Designverktoey-flisen: bare sys@ (Magne, 6. november 2026). */
+  const design = document.getElementById('designKort');
+  if(design) design.hidden = epost !== 'sys@neam.no';
 }
 
 function vekslePlanlagte(){

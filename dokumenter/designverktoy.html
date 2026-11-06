@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Designverktøy – Neam</title>
+<link rel="apple-touch-icon" href="/bilder/neam-hjemskjerm.png?v=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..700&display=swap" rel="stylesheet">
+<!-- ============================================================
+     Designverktoey - valgsida bak flisen paa forsiden (6. november
+     2026). Bare lenker til katalogene ved siden av; samme uttrykk som
+     dem. Kommer det et nytt verktoey, faar det et kort her.
+     Flisen vises bare for sys@ (index.html); sida selv har ingen sperre,
+     like lite som katalogene.
+     ============================================================ -->
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#142036; --ink-2:#56616F; --gulv:#F3F1EC; --kort:#FFFFFF; --linje:#E2DED6; --bla:#3E6A93;
+}
+body{font:15px/1.5 'Figtree',system-ui,sans-serif;color:var(--ink);background:var(--gulv)}
+main{max-width:860px;margin:0 auto;padding:30px 20px 80px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.01em}
+.ingress{max-width:78ch;color:var(--ink-2);margin-top:6px}
+.dv-liste{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:22px}
+.dv-kort{display:block;background:var(--kort);border-radius:18px;box-shadow:0 0 0 1px var(--linje);
+  padding:20px 22px;color:inherit;text-decoration:none}
+.dv-kort:hover{box-shadow:0 0 0 1.5px var(--bla)}
+.dv-kort h2{font-size:20px;color:var(--bla)}
+.dv-kort p{color:var(--ink-2);font-size:14px;margin-top:4px}
+.dv-tilbake{display:inline-block;margin-top:26px;font:600 15px 'Figtree',system-ui,sans-serif;color:var(--ink);
+  text-decoration:none;border-radius:999px;padding:9px 18px;background:#fff;box-shadow:inset 0 0 0 1.5px var(--linje)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Designverktøy</h1>
+  <p class="ingress">Katalogene over det Neam ser ut med. Begge lager en ferdig bestilling til Claude.</p>
+  <div class="dv-liste">
+    <a class="dv-kort" href="/dokumenter/bildekatalog.html">
+      <h2>Bildekatalog</h2>
+      <p>Alle bilder, ikoner, avatarer og strektegninger – hvor de brukes, og hva som mangler.</p>
+    </a>
+    <a class="dv-kort" href="/dokumenter/fargekatalog.html">
+      <h2>Fargekatalog</h2>
+      <p>Alle farger og bakgrunner: variablene, fargene skrevet rett i koden, og bakgrunnene.</p>
+    </a>
+  </div>
+  <a class="dv-tilbake" href="/">Til forsiden</a>
+</main>
+</body>
+</html>
