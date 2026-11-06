@@ -459,12 +459,12 @@ struktur»; sikkerhetskopi i taggen `sikkerhetskopi-okonomi-2026-11-06`.
 Etter det: kvitteringer legges ved transaksjonen som alt ligger der, og
 gjennomgangen «Koble kvitteringer og transaksjoner» for det som er lagt
 inn fra før (`2084e26`). Så fakturaer: de venter på trekket fra banken og
-legges ved det, uansett hva som kommer først (`8a21f18`). **Sett i
-live-data 6. november, ikke rørt:** strømregningen 26. oktober ser ut til
-å være ført to ganger (samme beløp, to banktekster for samme avtalegiro),
-og SPK-fakturaen Magne la i Dropbox ligger i «Ikke lest» – den ble lest
-før fakturaene kom og må flyttes tilbake til mappa. 46 commits,
-`0e0050a`–`8a21f18`, medregnet en midlertidig statustest fra en annen økt
+legges ved det, uansett hva som kommer først (`8a21f18`), og krysset i
+formueskjemaet på raden det sletter (`e1268f5`). **Sett i live-data
+6. november, ikke rørt:** strømregningen 26. oktober ser ut til å være
+ført to ganger (samme beløp, to banktekster for samme avtalegiro).
+SPK-fakturaen ble lest på nytt etter `8a21f18` («det fungerte»). 47 commits,
+`0e0050a`–`e1268f5`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3861,7 +3861,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 46 commits fra `0e0050a` til `8a21f18`.
+verdier. Bygget i 47 commits fra `0e0050a` til `e1268f5`.
 
 ### Banken – Enable Banking
 
@@ -4398,6 +4398,12 @@ og kontoer og transaksjoner skal ikke kunne leses ut derfra. Nøklene:
   traff formueskjemaets `.ok-fo-rad` og dets mobilregel – omdøpt til
   `ok-fr-`. Og en ny `var okKr` ville overskrevet den eksisterende
   formatereren; den nye heter `okKrHel`.
+- **En klasse som er laget for ett rutenett, tar plasseringen med seg.**
+  `.ok-ut` har `grid-area:ut` fra innboksen. I formueskjemaet fantes ingen
+  «ut», så krysset fikk en usynlig ekstra kolonne og en egen linje under
+  raden. Den så ut til å høre til neste rad, og Magne trodde siste linje
+  ikke kunne slettes. Rettet med `.ok-fo-rad .ok-ut{ grid-area:auto }`
+  (`e1268f5`).
 - **Et objekt som bygges på nytt, må få med alle feltene.** Lagre i
   formueskjemaet satte `okFormue` uten `historikk`, og Status krasjet til
   neste lasting. Rettet i `0a8a373`.
