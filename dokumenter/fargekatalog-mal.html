@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Fargekatalog – Neam</title>
+<link rel="apple-touch-icon" href="/bilder/neam-hjemskjerm.png?v=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..700&display=swap" rel="stylesheet">
+<!-- ============================================================
+     MAL. Ikke rediger fargekatalog.html - den skrives av
+     dokumenter/lag-fargekatalog.py, som fyller /*DATA*/ og tallene
+     under. Endringer i utseende og oppfoersel gjoeres HER.
+     Utseendet er bildekatalogens, saa de to leses likt.
+     ============================================================ -->
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#142036; --ink-2:#56616F; --gulv:#F3F1EC; --kort:#FFFFFF; --linje:#E2DED6;
+  --flis:#F7F5F0; --gronn:#3F7A4E; --oker:#9A6B1E; --rod:#A64D3C; --graa:#6F7680; --bla:#3E6A93;
+}
+body{font:15px/1.5 'Figtree',system-ui,sans-serif;color:var(--ink);background:var(--gulv)}
+main{max-width:1280px;margin:0 auto;padding:30px 20px 90px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.01em}
+.ingress{max-width:80ch;color:var(--ink-2);margin-top:6px}
+.tall{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:12px;font-size:14px;color:var(--ink-2)}
+.tall b{color:var(--ink);font-weight:700}
+code{font:13px/1.4 ui-monospace,Consolas,monospace;background:#ECE8E0;padding:1px 5px;border-radius:5px}
+
+/* ---- Bestilling ---- */
+.bestill{margin-top:24px;background:var(--kort);border-radius:18px;box-shadow:0 0 0 1px var(--linje);padding:20px 22px}
+.bestill h2{font-size:20px}
+.bestill > p{color:var(--ink-2);font-size:14px;max-width:84ch;margin-top:2px}
+.bestill-rad{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px;margin-top:14px}
+label{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin:10px 0 4px}
+textarea,input[type=search],input[type=text]{width:100%;font:16px/1.4 'Figtree',system-ui,sans-serif;color:var(--ink);
+  background:#fff;border:1.5px solid var(--linje);border-radius:10px;padding:9px 11px}
+textarea{min-height:96px;resize:vertical}
+#ut{min-height:380px;font:13px/1.45 ui-monospace,Consolas,monospace;background:#FBFAF7}
+.knapper{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+button{font:600 15px 'Figtree',system-ui,sans-serif;cursor:pointer;border:0;border-radius:999px;padding:9px 18px}
+.btn-bla{background:var(--bla);color:#fff}
+.btn-ghost{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--linje)}
+.kvitt{font-size:13px;color:var(--gronn);align-self:center}
+.oppdrag-typer{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.oppdrag-typer label{margin:0;display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:var(--ink);
+  background:#fff;box-shadow:inset 0 0 0 1.5px var(--linje);border-radius:999px;padding:7px 14px;cursor:pointer}
+.oppdrag-typer input{accent-color:var(--bla)}
+.oppdrag-typer label:has(input:checked){box-shadow:inset 0 0 0 2px var(--bla)}
+.flyt{font-size:13px;color:var(--ink-2);margin-top:10px;max-width:85ch}
+
+/* Utvalget: én rad per valgt farge, med plass til ny verdi. */
+.utvalg{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.utvalg .tomt{margin:0}
+.u-rad{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;
+  background:var(--flis);border-radius:10px;padding:6px 8px}
+.u-rad .prove{width:34px;height:34px;border-radius:8px}
+.u-navn{font:13px/1.3 ui-monospace,Consolas,monospace;word-break:break-all}
+.u-navn small{display:block;font:12px 'Figtree',system-ui,sans-serif;color:var(--ink-2)}
+.u-ny{display:flex;align-items:center;gap:6px}
+.u-ny input[type=color]{width:34px;height:34px;border:0;padding:0;background:none;cursor:pointer}
+.u-ny input[type=text]{width:130px;font-size:13px;padding:6px 8px}
+.u-fjern{padding:4px 10px;font-size:13px}
+.u-kontrast{grid-column:2 / -1;font-size:12px;color:var(--ink-2)}
+.u-kontrast .lav{color:var(--rod);font-weight:700}
+
+/* ---- Filter ---- */
+.filter{position:sticky;top:0;z-index:5;background:var(--gulv);padding:14px 0 10px;margin-top:20px;
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filter input{flex:1 1 260px;max-width:420px}
+.chip{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--linje);padding:7px 14px;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--ink);color:#fff;box-shadow:none}
+.velg-alt{padding:7px 14px;font-size:14px}
+.hopp{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;margin:4px 0 0}
+.hopp a{color:var(--bla);text-decoration:none}
+.hopp a:hover{text-decoration:underline}
+
+/* ---- Seksjoner og kort ---- */
+details.seksjon{margin-top:22px}
+details.seksjon > summary{cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+details.seksjon > summary::-webkit-details-marker{display:none}
+details.seksjon > summary h2{font-size:21px}
+details.seksjon > summary .antall{font-size:14px;color:var(--ink-2)}
+details.seksjon > summary::before{content:'▸';color:var(--ink-2);transition:transform .15s}
+details.seksjon[open] > summary::before{transform:rotate(90deg)}
+.seksjon-lapp{font-size:14px;color:var(--ink-2);max-width:88ch;margin:2px 0 12px 18px}
+.velg-alle{margin:0 0 12px 18px;font-size:13px;padding:5px 12px}
+.rutenett{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.kort{background:var(--kort);border-radius:16px;box-shadow:0 0 0 1px var(--linje);display:flex;flex-direction:column;overflow:hidden}
+.kort.valgt{box-shadow:0 0 0 2.5px var(--bla)}
+.kort[hidden]{display:none}
+/* Fargeproeven ligger paa rutemoenster, saa gjennomsiktighet synes. */
+.ruter{background-color:#fff;
+  background-image:linear-gradient(45deg,#E9E5DD 25%,transparent 25%,transparent 75%,#E9E5DD 75%),
+                   linear-gradient(45deg,#E9E5DD 25%,transparent 25%,transparent 75%,#E9E5DD 75%);
+  background-size:14px 14px;background-position:0 0,7px 7px}
+.prove-boks{height:86px;border-bottom:1px solid var(--linje);position:relative}
+.prove-boks .prove{position:absolute;inset:0}
+.kort.bg .prove-boks{height:120px}
+.info{padding:10px 12px 12px;display:flex;flex-direction:column;gap:3px;flex:1}
+.info b{font:600 14px/1.3 ui-monospace,Consolas,monospace;word-break:break-all}
+.verdi{font:12px ui-monospace,Consolas,monospace;color:var(--ink);word-break:break-all}
+.meta{font-size:12px;color:var(--ink-2)}
+.betyr{font-size:12.5px;color:var(--ink)}
+.merke{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;margin-right:4px}
+.m-lik{background:#E3F0E6;color:var(--gronn)}
+.m-naer{background:#F6EBD6;color:var(--oker)}
+.m-uten{background:#ECEDEF;color:var(--graa)}
+.m-avvik{background:#F5E0DB;color:var(--rod)}
+.m-side{background:#E6EDF5;color:var(--bla)}
+details.steder{font-size:12px;margin-top:2px}
+details.steder summary{cursor:pointer;color:var(--bla);font-weight:600}
+details.steder ul{list-style:none;margin-top:4px;display:flex;flex-direction:column;gap:4px}
+details.steder li{color:var(--ink-2)}
+details.steder li code{font-size:11.5px;display:block;white-space:pre-wrap;word-break:break-all;margin-top:1px}
+.velg{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink-2);margin-top:8px;cursor:pointer}
+.velg input{width:18px;height:18px;accent-color:var(--bla)}
+.tomt{color:var(--ink-2);font-size:14px;margin-left:18px}
+
+.valgbar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:10px;
+  background:var(--ink);color:#fff;border-radius:999px;padding:8px 8px 8px 18px;box-shadow:0 8px 24px rgba(20,32,54,.25)}
+.valgbar[hidden]{display:none}
+.valgbar b{font-size:15px}
+.valgbar .btn-ghost{box-shadow:none}
+@media (max-width:760px){ .bestill-rad{grid-template-columns:minmax(0,1fr)} h1{font-size:25px} }
+</style>
+</head>
+<body>
+<main>
+  <h1>Fargekatalog</h1>
+  <p class="ingress">Alle farger og bakgrunner i Neam: variablene, fargene som står skrevet rett i koden, og
+    bakgrunnene. Velg det som skal endres, skriv hva du vil, og send teksten til Claude – den sier nøyaktig
+    hvilke variabler, filer og linjer det gjelder. Kjør <code>python dokumenter/lag-fargekatalog.py</code>
+    etter hver endring i fargene.</p>
+  <div class="tall">
+    <span><b>{{VARIABLER}}</b> fargevariabler</span>
+    <span><b>{{HARD}}</b> hardkodede farger ({{HARD_ULIKE}} ulike)</span>
+    <span><b>{{LIKE}}</b> av dem er lik en variabel</span>
+    <span><b>{{BAKGRUNNER}}</b> bakgrunner</span>
+    <span><b>{{AVVIK}}</b> avvik fra designsystemet</span>
+  </div>
+
+  <section class="bestill" id="bestilling" aria-labelledby="bestillTittel">
+    <h2 id="bestillTittel">Bestilling til Claude</h2>
+    <p>Kryss av fargene og bakgrunnene lenger ned. Sett gjerne ny verdi rett i utvalget – kontrasten regnes
+      ut mens du velger. Kopier teksten og lim den inn hos Claude.</p>
+    <div class="bestill-rad">
+      <div>
+        <label>Utvalget</label>
+        <div class="utvalg" id="utvalg"></div>
+        <label>Oppdrag</label>
+        <div class="oppdrag-typer" role="radiogroup" aria-label="Oppdrag">
+          <label><input type="radio" name="oppdrag" value="endre" checked> Endre fargene</label>
+          <label><input type="radio" name="oppdrag" value="samle"> Samle i variabler</label>
+          <label><input type="radio" name="oppdrag" value="bakgrunn"> Endre bakgrunner</label>
+        </div>
+        <label for="onske">Ønske (valgfritt)</label>
+        <textarea id="onske" placeholder="For eksempel «varmere blå» eller «samme grå på alle kortkanter»"></textarea>
+        <p class="flyt">Står valget ikke i designsystemet, spør Claude før den velger – det er regelen i
+          CLAUDE.md. Paletten er kontrastregnet; teksten ber om at det regnes på nytt.</p>
+      </div>
+      <div>
+        <label for="ut">Teksten til Claude</label>
+        <textarea id="ut" readonly></textarea>
+        <div class="knapper">
+          <button type="button" class="btn-bla" id="kopier">Kopier</button>
+          <span class="kvitt" id="kvitt" aria-live="polite"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="filter" role="search">
+    <input type="search" id="sok" placeholder="Søk i navn, verdi, fil eller betydning" aria-label="Søk i fargene">
+    <button type="button" class="chip" data-merke="" aria-pressed="true">Alle</button>
+    <button type="button" class="chip" data-merke="lik" aria-pressed="false">Lik en variabel</button>
+    <button type="button" class="chip" data-merke="naer" aria-pressed="false">Nær en variabel</button>
+    <button type="button" class="chip" data-merke="uten" aria-pressed="false">Uten variabel</button>
+    <button type="button" class="chip" data-merke="avvik" aria-pressed="false">Avvik</button>
+    <button type="button" class="btn-ghost velg-alt" id="velgAlt">Velg alt</button>
+  </div>
+  <nav class="hopp" id="hopp" aria-label="Seksjoner"></nav>
+  <div id="seksjoner"></div>
+</main>
+
+<div class="valgbar" id="valgbar" hidden>
+  <b id="valgAntall">0 valgt</b>
+  <button type="button" class="btn-bla" id="tilBestilling">Til bestillingen</button>
+  <button type="button" class="btn-ghost" id="tomValg">Tøm</button>
+</div>
+
+<script>
+const KATALOG = /*DATA*/null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+/* Proevene bruker Neams egne verdier. De settes paa .forh og ikke paa
+   :root - katalogen har sin egen --ink, og de to skal ikke blandes. */
+(function(){
+  const st = document.createElement('style');
+  st.textContent = '.forh{' + Object.entries(KATALOG.rot).map(([n, v]) => n + ':' + v).join(';') + '}';
+  document.head.appendChild(st);
+})();
+/* url(bilder/...) i en fil i rota peker feil herfra, fra dokumenter/. */
+const forhVerdi = v => v.replace(/url\(\s*(['"]?)(?!\/|data:|https?:)/g, 'url($1/');
+
+/* ---------- Kontrast (WCAG) ---------- */
+function rgb(v){
+  const m = /^#([0-9A-F]{6})$/i.exec(String(v).trim());
+  if(!m) return null;
+  const n = parseInt(m[1], 16);
+  return [n >> 16 & 255, n >> 8 & 255, n & 255];
+}
+function lum(c){
+  const [r, g, b] = c.map(x => { x /= 255; return x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4); });
+  return .2126 * r + .7152 * g + .0722 * b;
+}
+function kontrast(a, b){
+  const A = rgb(a), B = rgb(b);
+  if(!A || !B) return null;
+  const x = lum(A), y = lum(B);
+  return (Math.max(x, y) + .05) / (Math.min(x, y) + .05);
+}
+const PAPIR = KATALOG.rot['--paper'] || '#FFFFFF', BLEKK = KATALOG.rot['--ink'] || '#2C3E50',
+      BLEKK2 = KATALOG.rot['--ink-soft'] || '#5A6C7D';
+/* Bare parene fargen faktisk brukes i: en lys farge er en flate med
+   tekst paa, en moerk er en knapp med hvit tekst eller tekst paa kortet. */
+function kontrastTekst(hex, html){
+  const lys = (kontrast(hex, BLEKK) || 0) > (kontrast(hex, '#FFFFFF') || 0);
+  const t = (lys
+    ? [['med tekst (--ink)', kontrast(hex, BLEKK)], ['med sekundærtekst (--ink-soft)', kontrast(hex, BLEKK2)]]
+    : [['hvit tekst på', kontrast(hex, '#FFFFFF')], ['som tekst på kortet (--paper)', kontrast(hex, PAPIR)]]
+  ).filter(x => x[1]);
+  return t.map(([n, k]) => {
+    const s = n + ' ' + k.toFixed(1).replace('.', ',') + ':1';
+    return html && k < 4.5 ? '<span class="lav">' + s + '</span>' : s;
+  }).join(' · ');
+}
+
+/* ---------- Postene ---------- */
+const ALLE = new Map();
+KATALOG.variabler.forEach(v => ALLE.set(v.id, Object.assign({ art:'variabel' }, v)));
+KATALOG.hard.forEach(h => ALLE.set(h.id, Object.assign({ art:'hard' }, h)));
+KATALOG.bakgrunner.forEach(b => ALLE.set(b.id, Object.assign({ art:'bakgrunn' }, b)));
+
+function merker(p){
+  if(p.art === 'variabel') return p.avvik ? ['avvik'] : [];
+  if(p.art === 'hard') return [p.lik ? 'lik' : p.naer ? 'naer' : 'uten'];
+  return [];
+}
+function steder(liste, tittel){
+  if(!liste.length) return '';
+  return '<details class="steder"><summary>' + esc(tittel) + '</summary><ul>'
+    + liste.map(s => '<li>' + s + '</li>').join('') + '</ul></details>';
+}
+function velgBoks(p){
+  return '<label class="velg"><input type="checkbox" class="velg-boks" data-id="' + esc(p.id) + '"> Ta med i bestilling</label>';
+}
+
+/* Kommentarene i koden kan vaere lange; kortet viser foerste setning,
+   resten ligger under «Kommentar i koden». */
+function kortTekst(t){
+  const s = t.split(/(?<=[.!?])\s/)[0];
+  return s.length > 150 ? s.slice(0, 147) + '…' : s;
+}
+function kortVariabel(v){
+  const bruk = Object.entries(v.bruk).sort((a, b) => b[1] - a[1]);
+  const andre = v.defs.filter(d => !(d.fil === v.fil && d.linje === v.linje));
+  return '<article class="kort" data-id="' + esc(v.id) + '">'
+    + '<div class="prove-boks ruter"><div class="prove forh" style="background:' + esc(forhVerdi(v.verdi)) + '"></div></div>'
+    + '<div class="info">'
+    +   '<b>' + esc(v.navn) + '</b>'
+    +   '<span class="verdi">' + esc(v.verdi) + '</span>'
+    +   (v.avvik ? '<span><span class="merke m-avvik">Avvik</span><span class="meta">Designsystemet sier ' + esc(v.dsVerdi) + '</span></span>' : '')
+    +   (v.betydning ? '<span class="betyr">' + esc(kortTekst(v.betydning)) + '</span>' : '')
+    +   '<span class="meta">Satt i ' + esc(v.fil) + ':' + v.linje + (v.velger && v.velger !== ':root' ? ' (' + esc(v.velger) + ')' : '') + '</span>'
+    +   (v.hex && v.hex[0] === '#' ? '<span class="meta">' + kontrastTekst(v.hex, true) + '</span>' : '')
+    +   steder(bruk.map(([f, n]) => esc(f) + ' – ' + n), 'Brukt ' + v.antall + ' ganger i ' + bruk.length + (bruk.length === 1 ? ' fil' : ' filer'))
+    +   steder(andre.map(d => esc(d.fil) + ':' + d.linje + ' ' + esc(d.velger) + (d.media ? ' ' + esc(d.media) : '')
+                 + '<code>' + esc(d.verdi) + '</code>'), 'Også satt ' + andre.length + (andre.length === 1 ? ' annet sted' : ' andre steder'))
+    +   (v.kommentar ? steder([esc(v.kommentar)], 'Kommentar i koden') : '')
+    +   velgBoks(v)
+    + '</div></article>';
+}
+
+function kortHard(h){
+  const n = h.naer;
+  const merke = h.lik ? '<span class="merke m-lik">= ' + esc(n.navn) + (n.alfa < 1 ? ', ' + Math.round(n.alfa * 100) + ' % dekning' : '') + '</span>'
+    : n ? '<span class="merke m-naer">nær ' + esc(n.navn) + ' (' + String(n.avstand).replace('.', ',') + ')</span>'
+    : '<span class="merke m-uten">ingen variabel i nærheten</span>';
+  return '<article class="kort" data-id="' + esc(h.id) + '">'
+    + '<div class="prove-boks ruter"><div class="prove" style="background:' + esc(h.verdi) + '"></div></div>'
+    + '<div class="info">'
+    +   '<b>' + esc(h.verdi) + '</b>'
+    +   '<span>' + merke + '</span>'
+    +   '<span class="meta">' + h.antall + (h.antall === 1 ? ' sted' : ' steder') + ' i ' + esc(h.filer.join(', ')) + '</span>'
+    +   (h.verdi[0] === '#' ? '<span class="meta">' + kontrastTekst(h.verdi, true) + '</span>' : '')
+    +   steder(h.steder.map(s => esc(s.fil) + ':' + s.linje + ' ' + esc(s.egenskap) + (s.velger ? ' (' + esc(s.velger) + ')' : '')
+                 + '<code>' + esc(s.utdrag) + '</code>'), 'Vis stedene')
+    +   velgBoks(h)
+    + '</div></article>';
+}
+
+function kortBakgrunn(b){
+  const side = /^(html|body)\b/.test(b.velger);
+  const vis = b.verdi.length > 160 ? b.verdi.slice(0, 157) + '…' : b.verdi;
+  return '<article class="kort bg" data-id="' + esc(b.id) + '">'
+    + '<div class="prove-boks ruter"><div class="prove forh" style="background:' + esc(forhVerdi(b.verdi)) + ';background-size:'
+    +   (/url\(/.test(b.verdi) && !/\//.test(b.verdi.split(')').pop()) ? 'contain;background-repeat:no-repeat;background-position:center' : 'cover') + '"></div></div>'
+    + '<div class="info">'
+    +   '<b>' + esc(b.velger || b.egenskap) + '</b>'
+    +   (side ? '<span><span class="merke m-side">Sidebakgrunn</span></span>' : '')
+    +   '<span class="verdi">' + esc(b.egenskap) + ': ' + esc(vis) + '</span>'
+    +   '<span class="meta">' + esc(b.fil) + ':' + b.linje + (b.media ? ' · ' + esc(b.media) : '') + '</span>'
+    +   velgBoks(b)
+    + '</div></article>';
+}
+
+const SEKSJONER = [
+  { id:'felles', tittel:'Variabler i fellesfilene', poster: KATALOG.variabler.filter(v => v.felles), kort: kortVariabel,
+    lapp:'Fargene alle sidene deler. Endres de her, endres de overalt der variabelen brukes. Betydningen er hentet fra designsystemet der den står der, ellers fra kommentaren i koden.' },
+  { id:'sider', tittel:'Variabler satt i sidene', poster: KATALOG.variabler.filter(v => !v.felles), kort: kortVariabel,
+    lapp:'Variabler som bare finnes på én side eller ett spill – kalenderen, grunnstoffene, klokkespillet.' },
+  { id:'hard', tittel:'Hardkodede farger', poster: KATALOG.hard, kort: kortHard,
+    lapp:'Farger skrevet rett i koden. En endring i variablene når ikke disse. Grønt merke: samme farge som en variabel – kan som regel byttes rett til den. Gult: nær en variabel. Grått: egen farge, ofte med vilje (spill, kartfarger, Google-logoen). Farger inne i data-URL-er (%23…) er ikke med.' },
+  { id:'bakgrunner', tittel:'Bakgrunner', poster: KATALOG.bakgrunner, kort: kortBakgrunn,
+    lapp:'Gradienter, bilder og sidebakgrunnene på html og body. Sidebakgrunnen for alle sidene står på html i felles-rot.css; sidene legger --side-bakgrunn (gjennomsiktig) oppå.' },
+];
+
+function byggSider(){
+  $('hopp').innerHTML = SEKSJONER.map(s => '<a href="#sek-' + s.id + '">' + esc(s.tittel) + ' (' + s.poster.length + ')</a>').join('');
+  $('seksjoner').innerHTML = SEKSJONER.map(s =>
+    '<details class="seksjon" id="sek-' + s.id + '" open>'
+    + '<summary><h2>' + esc(s.tittel) + '</h2><span class="antall">' + s.poster.length + '</span></summary>'
+    + '<p class="seksjon-lapp">' + esc(s.lapp) + '</p>'
+    + (s.poster.length ? '<button type="button" class="btn-ghost velg-alle" data-s="' + s.id + '">Velg hele gruppa</button>' : '')
+    + (s.poster.length ? '<div class="rutenett">' + s.poster.map(s.kort).join('') + '</div>' : '<p class="tomt">Ingenting her.</p>')
+    + '</details>').join('');
+  document.querySelectorAll('.kort').forEach(k => {
+    const p = ALLE.get(k.dataset.id);
+    k.dataset.merker = merker(p).join(' ');
+    k.dataset.sok = [p.navn, p.verdi, p.fil, p.velger, p.betydning, p.kommentar,
+      (p.steder || []).map(s => s.fil + ' ' + s.egenskap + ' ' + s.velger).join(' '),
+      Object.keys(p.bruk || {}).join(' ')].join(' ').toLowerCase();
+  });
+}
+
+/* ---------- Filter ---------- */
+let merkeValg = '';
+function filtrer(){
+  const q = $('sok').value.trim().toLowerCase();
+  document.querySelectorAll('.kort').forEach(k => {
+    k.hidden = !((!q || k.dataset.sok.includes(q)) && (!merkeValg || k.dataset.merker.split(' ').includes(merkeValg)));
+  });
+  document.querySelectorAll('.seksjon').forEach(s => {
+    s.hidden = !s.querySelector('.kort:not([hidden])') && !!(q || merkeValg);
+  });
+}
+let venter;
+$('sok').addEventListener('input', () => { clearTimeout(venter); venter = setTimeout(filtrer, 150); });
+document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+  merkeValg = c.dataset.merke;
+  document.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x === c ? 'true' : 'false'));
+  filtrer();
+}));
+
+/* ============================================================
+   Utvalget
+   ------------------------------------------------------------
+   Huskes i nettleseren som en bekvemmelighet, sammen med de nye
+   verdiene. Noeklene for hardkodede farger og bakgrunner har fil og
+   linje i seg og kan falle bort naar katalogen lages paa nytt.
+   ============================================================ */
+const valgt = new Map();      /* id -> ny verdi ('' = ingen) */
+try{
+  const lagret = JSON.parse(localStorage.getItem('fargekatalog-valgt') || '{}');
+  Object.entries(lagret).forEach(([id, ny]) => { if(ALLE.has(id)) valgt.set(id, ny || ''); });
+}catch(_){}
+function lagre(){
+  try{ localStorage.setItem('fargekatalog-valgt', JSON.stringify(Object.fromEntries(valgt))); }catch(_){}
+}
+/* Verdien som kan faa fargevelger: en ren hex. */
+function hexAv(p){
+  const v = p.art === 'variabel' ? p.hex : p.art === 'hard' ? p.verdi : '';
+  return /^#[0-9A-F]{6}$/i.test(v || '') ? v.toUpperCase() : '';
+}
+function navnAv(p){
+  return p.art === 'variabel' ? p.navn : p.art === 'hard' ? p.verdi : (p.velger || p.egenskap);
+}
+function tegnUtvalg(){
+  $('valgbar').hidden = !valgt.size;
+  $('valgAntall').textContent = valgt.size + ' valgt';
+  if(!valgt.size){
+    $('utvalg').innerHTML = '<p class="tomt">Ingenting valgt ennå – kryss av farger lenger ned.</p>';
+  }else{
+    $('utvalg').innerHTML = [...valgt].map(([id, ny]) => {
+      const p = ALLE.get(id), hex = hexAv(p);
+      const proeve = p.art === 'hard' ? p.verdi : forhVerdi(p.verdi);
+      const under = p.art === 'variabel' ? esc(p.fil) + ':' + p.linje
+        : p.art === 'hard' ? p.antall + (p.antall === 1 ? ' sted' : ' steder') : esc(p.fil) + ':' + p.linje;
+      return '<div class="u-rad" data-id="' + esc(id) + '">'
+        + '<span class="prove ruter"><span class="prove forh" style="display:block;width:100%;height:100%;border-radius:8px;background:'
+        +   esc(ny || proeve) + '"></span></span>'
+        + '<span class="u-navn">' + esc(navnAv(p)) + '<small>' + under + (ny ? ' · ny: ' + esc(ny) : '') + '</small></span>'
+        + '<span class="u-ny">'
+        +   (p.art !== 'bakgrunn' && hex ? '<input type="color" class="u-farge" value="' + esc(/^#[0-9A-F]{6}$/i.test(ny) ? ny : hex) + '" aria-label="Ny farge for ' + esc(navnAv(p)) + '">' : '')
+        +   '<input type="text" class="u-tekst" value="' + esc(ny) + '" placeholder="ny verdi" aria-label="Ny verdi for ' + esc(navnAv(p)) + '">'
+        +   '<button type="button" class="btn-ghost u-fjern" aria-label="Fjern ' + esc(navnAv(p)) + '">×</button>'
+        + '</span>'
+        + (/^#[0-9A-F]{6}$/i.test(ny || hex) && p.art !== 'bakgrunn'
+            ? '<span class="u-kontrast">' + (ny ? 'Ny: ' : 'I dag: ') + kontrastTekst((ny || hex).toUpperCase(), true) + '</span>' : '')
+        + '</div>';
+    }).join('');
+  }
+  document.querySelectorAll('.velg-boks').forEach(b => {
+    b.checked = valgt.has(b.dataset.id);
+    b.closest('.kort').classList.toggle('valgt', b.checked);
+  });
+  lagre();
+  lagTekst();
+}
+document.addEventListener('change', e => {
+  const b = e.target.closest('.velg-boks');
+  if(!b) return;
+  if(b.checked) valgt.set(b.dataset.id, valgt.get(b.dataset.id) || ''); else valgt.delete(b.dataset.id);
+  tegnUtvalg();
+});
+/* Ny verdi: fargevelgeren og tekstfeltet er det samme feltet i to former. */
+$('utvalg').addEventListener('input', e => {
+  const rad = e.target.closest('.u-rad');
+  if(!rad) return;
+  const id = rad.dataset.id;
+  if(e.target.classList.contains('u-farge')){
+    valgt.set(id, e.target.value.toUpperCase());
+    rad.querySelector('.u-tekst').value = e.target.value.toUpperCase();
+  }else if(e.target.classList.contains('u-tekst')){
+    valgt.set(id, e.target.value.trim());
+  }else return;
+  const ny = valgt.get(id), p = ALLE.get(id);
+  rad.querySelector('.prove.forh').style.background = ny || (p.art === 'hard' ? p.verdi : forhVerdi(p.verdi));
+  const k = rad.querySelector('.u-kontrast'), hex = (ny || hexAv(p)).toUpperCase();
+  if(k && /^#[0-9A-F]{6}$/.test(hex)) k.innerHTML = (ny ? 'Ny: ' : 'I dag: ') + kontrastTekst(hex, true);
+  lagre();
+  clearTimeout(venter); venter = setTimeout(lagTekst, 200);
+});
+$('utvalg').addEventListener('change', e => { if(e.target.closest('.u-rad')) tegnUtvalg(); });
+$('utvalg').addEventListener('click', e => {
+  const b = e.target.closest('.u-fjern');
+  if(!b) return;
+  valgt.delete(b.closest('.u-rad').dataset.id);
+  tegnUtvalg();
+});
+function velgMange(kort){
+  const ider = kort.map(k => k.dataset.id);
+  if(!ider.length) return;
+  const alle = ider.every(id => valgt.has(id));
+  ider.forEach(id => { if(alle) valgt.delete(id); else if(!valgt.has(id)) valgt.set(id, ''); });
+  tegnUtvalg();
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.velg-alle');
+  if(b) velgMange([...$('sek-' + b.dataset.s).querySelectorAll('.kort:not([hidden])')]);
+});
+$('velgAlt').addEventListener('click', () => velgMange([...document.querySelectorAll('.seksjon[open]:not([hidden]) .kort:not([hidden])')]));
+$('tomValg').addEventListener('click', () => { valgt.clear(); tegnUtvalg(); });
+$('tilBestilling').addEventListener('click', () => $('bestilling').scrollIntoView({ behavior:'smooth', block:'start' }));
+
+/* ============================================================
+   Teksten til Claude
+   ------------------------------------------------------------
+   Den skal kunne gjoeres uten aa slaa opp noe: navn, fil, linje og
+   verdi for hver post, og reglene som gjelder for farger i Neam.
+   ============================================================ */
+const MAKS_STEDER = 12;
+function postTekst(p, ny, i){
+  const nr = (i + 1) + '. ';
+  const pil = ny ? ' → ny verdi: ' + ny : '';
+  if(p.art === 'variabel'){
+    const bruk = Object.keys(p.bruk).length;
+    const l = [nr + 'Variabel ' + p.navn + ' – satt i ' + p.fil + ':' + p.linje + ' (' + (p.velger || ':root') + ') = ' + p.verdi + pil];
+    if(p.betydning) l.push('   Betydning: ' + p.betydning);
+    l.push('   Brukt ' + p.antall + ' ganger i ' + bruk + (bruk === 1 ? ' fil.' : ' filer.'));
+    const andre = p.defs.filter(d => !(d.fil === p.fil && d.linje === p.linje));
+    if(andre.length) l.push('   Også satt: ' + andre.map(d => d.fil + ':' + d.linje + ' (' + d.velger + (d.media ? ' ' + d.media : '') + ') = ' + d.verdi).join('; '));
+    if(p.avvik) l.push('   Avvik: designsystemet sier ' + p.dsVerdi + ', koden har ' + p.hex + '.');
+    const hex = (ny || p.hex || '').toUpperCase();
+    if(/^#[0-9A-F]{6}$/.test(hex)) l.push('   Kontrast' + (ny ? ' med ny verdi' : '') + ': ' + kontrastTekst(hex, false) + '.');
+    return l.join('\n');
+  }
+  if(p.art === 'hard'){
+    const n = p.naer;
+    const l = [nr + 'Hardkodet farge ' + p.verdi + ' – ' + p.antall + (p.antall === 1 ? ' sted' : ' steder') + pil];
+    l.push('   ' + (p.lik ? 'Samme farge som ' + n.navn + (n.alfa < 1 ? ' med ' + Math.round(n.alfa * 100) + ' % dekning' : '') + '.'
+      : n ? 'Nærmeste variabel: ' + n.navn + ' (avstand ' + n.avstand + ').' : 'Ingen variabel i nærheten.'));
+    p.steder.slice(0, MAKS_STEDER).forEach(s => l.push('   ' + s.fil + ':' + s.linje + ' ' + (s.egenskap || s.sted) + (s.velger ? ' (' + s.velger + ')' : '')));
+    if(p.antall > MAKS_STEDER) l.push('   … og ' + (p.antall - MAKS_STEDER) + ' til – grep etter ' + p.verdi + ' (og kortformen) i filene: ' + p.filer.join(', '));
+    const hex = (ny || p.verdi).toUpperCase();
+    if(/^#[0-9A-F]{6}$/.test(hex)) l.push('   Kontrast' + (ny ? ' med ny verdi' : '') + ': ' + kontrastTekst(hex, false) + '.');
+    return l.join('\n');
+  }
+  const verdi = p.verdi.length > 240 ? p.verdi.slice(0, 237) + '…' : p.verdi;
+  return nr + 'Bakgrunn ' + p.fil + ':' + p.linje + ' – ' + (p.velger || '(i JavaScript)') + (p.media ? ' ' + p.media : '')
+    + ' { ' + p.egenskap + ': ' + verdi + ' }' + pil;
+}
+const OPPDRAG = {
+  endre: 'Endre fargene i utvalget. Der det står «ny verdi», bruk den. Der det ikke står noe, foreslå en verdi ut fra ønsket og vis meg forslaget før du endrer.',
+  samle: 'Samle de hardkodede fargene i variabler. Bytt til en eksisterende variabel der fargen betyr det samme – ikke bare der den ser lik ut. Trengs en ny variabel, foreslå navn, verdi og betydning, og vent på mitt ja før du lager den.',
+  bakgrunn: 'Endre bakgrunnene i utvalget. Sidebakgrunnen for alle sidene står på html i felles-rot.css; --side-bakgrunn er gjennomsiktig med vilje (se kommentaren der).',
+};
+const REGLER = [
+  'Følg designsystemet (' + KATALOG.ds + ', kapitlet «Farger»). Står valget ikke der: spør før du velger, og foreslå at det føres inn.',
+  'Endre en variabel der den er satt – ikke overstyr den side for side.',
+  'Paletten i felles-rot.css er kontrastregnet mot WCAG: tekst minst 4,5:1. Regn på nytt før en flate blir mørkere eller en tekstfarge lysere.',
+  'Dashene er kopier av hverandre (dashboard, emma, andrea): rettes én, si fra om de andre har det samme.',
+  'Bump ?v= på hver fellesfil som endres, i alle sidene som laster den, i samme commit.',
+  'Kjør python dokumenter/lag-fargekatalog.py etterpå, og vis meg før og etter. Ikke commit før jeg sier ja.',
+];
+function oppdragType(){ return document.querySelector('input[name=oppdrag]:checked').value; }
+function lagTekst(){
+  if(!valgt.size){ $('ut').value = ''; return; }
+  const liste = [...valgt].map(([id, ny]) => [ALLE.get(id), ny]);
+  const onske = $('onske').value.trim();
+  $('ut').value = 'Bestilling til Claude – farger og bakgrunner i Neam\n\n'
+    + 'Oppdrag: ' + OPPDRAG[oppdragType()] + '\n'
+    + (onske ? '\nØnske: ' + onske + '\n' : '')
+    + '\nUtvalget (' + liste.length + '):\n' + liste.map(([p, ny], i) => postTekst(p, ny, i)).join('\n\n')
+    + '\n\nRegler:\n' + REGLER.map(r => '- ' + r).join('\n');
+  $('kvitt').textContent = '';
+}
+document.querySelectorAll('input[name=oppdrag]').forEach(r => r.addEventListener('change', lagTekst));
+$('onske').addEventListener('input', () => { clearTimeout(venter); venter = setTimeout(lagTekst, 250); });
+$('kopier').addEventListener('click', async () => {
+  const t = $('ut').value;
+  if(!t){ $('kvitt').textContent = 'Velg farger først.'; return; }
+  try{ await navigator.clipboard.writeText(t); }
+  catch(_){ $('ut').select(); document.execCommand('copy'); }
+  $('kvitt').textContent = 'Kopiert.';
+});
+
+byggSider();
+tegnUtvalg();
+</script>
+</body>
+</html>
