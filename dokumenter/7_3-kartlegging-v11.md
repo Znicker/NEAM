@@ -438,8 +438,9 @@ kontonummeret i kontovalgene, bildet eller PDF-en lagret med kvitteringen,
 og at Neam kan laste sida på nytt (`7688c6f`). Så bruttoinntekt per
 person, og gjeldsgraden regnet av den (`3218537`), og beskjed når en
 kvittering ligner en som alt er lagt inn (`fd86515`), og sparekontoene i
-nedtrekk med hele kontonummeret (`df9e9c4`). 37 commits,
-`0e0050a`–`df9e9c4`, medregnet en midlertidig statustest fra en annen økt
+nedtrekk med hele kontonummeret (`df9e9c4`). Til slutt Lagre fri av
+NEAM-knappen, «Hent fra Dropbox nå» og toppen som står fast (`9e211c8`).
+38 commits, `0e0050a`–`9e211c8`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3828,7 +3829,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 37 commits fra `0e0050a` til `df9e9c4`.
+verdier. Bygget i 38 commits fra `0e0050a` til `9e211c8`.
 
 ### Banken – Enable Banking
 
@@ -3962,7 +3963,8 @@ Cloudflare.
   var lest før), til «Ikke lest» når Neam ikke klarte den. Ingenting leses
   to ganger, og ingenting forsvinner.
 - **Når:** når Økonomi åpnes og når noen trykker Oppdater, etter DNB og
-  Trumf.
+  Trumf – og med **«Hent fra Dropbox nå»** i Dropbox-kortet i Oppsett
+  (`9e211c8`), som sier fra også når mappa er tom.
 - Magne 6. november: «fungerer veldig bra».
 
 ### Budsjett, regnskap og poster
@@ -4046,6 +4048,16 @@ til Oppsett med rød prikk på fanen, og Coop-meldingen bort.
   Telefonen har kortene som før.
 - **Måned i to spalter fra 1100 px:** tabellen til venstre, kjøpene bak
   den valgte posten til høyre.
+- **Toppen står fast** (`9e211c8`, Magne ba om det): «Økonomi», fanene og
+  Oppdater er `position:sticky` med sidas bakgrunn, og kortene glir inn
+  under. `scroll-padding-top` gjør at felt som får fokus, havner under
+  toppen og ikke bak den. På telefon er toppen 145 px høy, fordi fanene og
+  Oppdater ligger på hver sin linje – foreslått å la den stå fast bare på
+  PC, ikke avgjort.
+- **150 px nederst på sida** (`9e211c8`). NEAM-knappen står fast nede til
+  venstre, og da Bruttoinntekt gjorde formueskjemaet lengre, havnet Lagre
+  under den uten at sida kunne rulles lenger. Magne merket det som «jeg
+  får ikke lenger legge til familiemål».
 
 ### Neam på Økonomi – og økonomien i Neam (6. november, `47b39df`)
 
@@ -4189,6 +4201,10 @@ og kontoer og transaksjoner skal ikke kunne leses ut derfra. Nøklene:
 
 ### Lærdommer
 
+- **Det nederste på sida må kunne rulles fram over NEAM-knappen.**
+  Knappen står fast nede til venstre på alle sidene. En side som ender med
+  et skjema, trenger plass under, ellers forsvinner knappen nederst bak den
+  når innholdet vokser. Feilen så ut som en lagringsfeil.
 - **Et samlefelt skal ikke ha én fast forklaring.** «Banken svarte ikke»
   sto på alt som kom tilbake med `advarsel`, også Trumf-feil. Vis teksten
   som kom.
