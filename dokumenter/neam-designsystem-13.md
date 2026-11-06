@@ -1574,8 +1574,9 @@ godkjent 6. november 2026; Innboks ble Transaksjoner samme kveld):
   ‹ måned ›), hittil i år, eller siste 12 måneder. Budsjettet er da summen av
   månedsbudsjettene. Trenden og «Hvor det glir» står som linjer øverst, og
   kjøpene bak den valgte posten til høyre. Erstatter Måned, År og budsjett
-  mot regnskap. Linja «På tvers – forsikring, lån …» viser merkene (under)
-  med brukt, budsjett og avvik for perioden.
+  mot regnskap. Linja «På tvers – forsikring, lån …» viser Fast og
+  Variabel først og så merkene (under), med brukt, budsjett og avvik for
+  perioden.
 - **Budsjett** – bare redigering: standardbudsjettet eller ett
   månedsbudsjett om gangen. Fra 6. november 2026 (Magne: «er veldig
   generisk nå»):
@@ -1597,14 +1598,25 @@ godkjent 6. november 2026; Innboks ble Transaksjoner samme kveld):
     `--t-brod`, så forskjellen synes (Magne: «Kategorinavnene må skille seg
     mer ut»). «Utgifter» over gruppekortene er fortsatt en etikett.
   - **Merker på tvers** (Magne: «vi har forsikringer på tvers av
-    budsjettkategoriene»). En post eller linje kan ha ett merke fra en fast
-    liste: Forsikring, lånetypene fra Gjeld, Abonnement, Strøm og energi,
-    Barnehage og SFO. En linje uten eget merke arver postens. I visning en
+    budsjettkategoriene»). En post eller linje kan ha ett merke. En linje
+    uten eget merke arver postens. **Én inndeling, ikke to** (7. november
+    2026): hvert merke er **fast** eller ikke, og alt uten fast merke er
+    **variabelt** – fast og variabelt er til sammen alle utgiftene.
+    Standardlista er Forsikring, lånetypene fra Gjeld, Abonnement, Strøm og
+    energi og Annen fast utgift; egne merker lages fra posten («+ Nytt
+    merke …» nederst i valget, med navn og «Fast») eller i Oppsett ›
+    Budsjett › «Merker på tvers», der de også får nytt navn, fast eller
+    ikke, og slettes. Slettes et merke som er i bruk, spør raden først
+    («trykk × igjen»), ikke en dialog. I visning en
     **merkelapp** etter navnet (`.ok-bu-merkelapp`: pille, `--boks-mild`
     med `--boks-kant`, `--t-etikett`); i redigering en liten nedtrekksliste
     i samme form, med fylt flate når et merke er satt – på telefon under
     navnet, så navnet ikke kuttes. Øverst i budsjettet «På tvers» med én
-    pille per merke og summen (`.stor`: papir og skygge).
+    pille per merke og summen (`.stor`: papir og skygge). Først Fast og
+    Variabel med beløp og prosent – Fast med en tynn `--aksent`-ring –
+    så en tynn strek, så merkene, og «Merkene ›» til Oppsett.
+  - **Transaksjoner › Alle** viser merket i meta-linja og har filteret
+    Faste utgifter, Variable utgifter eller ett merke.
 - **Oppsett** – alt som sammenleggbare linjer: én linje per kilde (med
   statusprikk, og kildens kort inni), kontoene per rolle, formuen (verdier,
   gjeld, bruttoinntekt, buffer, familiemål) og «Neam husker».

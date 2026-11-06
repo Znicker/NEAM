@@ -96,7 +96,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 
 **Siste leverte versjoner:** `felles-neam.js ?v=75`, `felles-neam.css
 ?v=75`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
-?v=13`, `felles-hus.js ?v=22`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
+?v=14`, `felles-hus.js ?v=22`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
@@ -114,7 +114,7 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–74; neam.css til og
-med 74; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–12, skriv 1–11,
+med 74; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–13, skriv 1–11,
 hus `?v=1–21`, ms `?v=1`, tale 1–4, graph 1–2**. (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -473,13 +473,14 @@ trekk med ny tekst fra DNB ble ført to ganger** – tettet, og «Koble» rydder
 opp (`03073b0`). I live-data fant den 5 dobler (Tibber 26. oktober og fire
 kontoreguleringer 2. november); **Magne kobler dem selv** – ikke kjørt av
 Claude. Så fikk **Neam alt sida kan** på Økonomi (`a106ea2`), og
-formueskjemaet slutter å se ulagret ut. **Foreslått, venter på Magne** (han tester og kommer
+formueskjemaet slutter å se ulagret ut. Til sist **egne merker med fast og
+variabelt** (`51f7c70`). **Foreslått, venter på Magne** (han tester og kommer
 tilbake): Økonomi åpner på ~9 s fordi innboks og kontoer hentes ferskt fra
 DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 53 commits, `0e0050a`–`a106ea2`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 54 commits, `0e0050a`–`51f7c70`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -487,7 +488,7 @@ fungerte»). 53 commits, `0e0050a`–`a106ea2`, medregnet en midlertidig statust
 `felles-skriv.js` gikk videre til `?v=10` (`7688c6f`), og så
 `felles-lesalt.js` til `?v=10` og `felles-skriv.js` til `?v=11`
 (`3218537`). Så `felles-lesalt.js` til `?v=11` (`fd86515`), og begge til
-`?v=12` (`bf5826d`), og `felles-lesalt.js` til `?v=13` (`5f06f25`). Se del 57.
+`?v=12` (`bf5826d`), og `felles-lesalt.js` til `?v=13` (`5f06f25`) og `?v=14` (`51f7c70`). Se del 57.
 
 **1. november: Rommene, ukeplanen og bildekatalogen.**
 - **Rommene lagt om igjen** (`5208ee2`–`26d1362`). Etasjefanene er borte:
@@ -3894,7 +3895,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 53 commits fra `0e0050a` til `a106ea2`.
+verdier. Bygget i 54 commits fra `0e0050a` til `51f7c70`.
 
 ### Banken – Enable Banking
 
@@ -4203,6 +4204,35 @@ til Oppsett med rød prikk på fanen, og Coop-meldingen bort.
   forsvant før Lagre. Nå sammenlignes skjemaet med det som sist ble lagret
   (`okFormueTekst()` mot `okFormueLagret`); er det ulikt, oppdateres bare
   visningen (`okTegnFormue()`), og skjemaet blir stående.
+
+### Egne merker, fast og variabelt (7. november, `51f7c70`)
+
+Magne: «tanken min var at dette skulle merkes likt så det var enkelt å
+sammenligne», så «analysere litt kost nytte», så «jeg må få lage nye
+merker også … du kan ta bort barnehage og sfo».
+
+- **Kost og nytte** (lagt fram for Magne): nytten er at «Faste kostnader»
+  blir riktig (det regnet bare gruppen Bolig), at man ser hva som er
+  valgfritt, og at månedene kan sammenlignes. Kostnaden er mest
+  kompleksiteten: to inndelinger (type og merke) ville gitt to valg per
+  post som kan motsi hverandre. **Valgt: én inndeling** – hvert merke vet
+  om det er fast, og alt uten fast merke er variabelt.
+- **Data:** `auth:bank:merke-liste` = `[{ id, navn, fast }]`. Til noen
+  endrer den, brukes `STANDARD_MERKER` i koden (uten Barnehage og SFO,
+  med «Annen fast utgift»); første endring lagrer hele lista. Ruter
+  `merke-ny`, `merke-endre`, `merke-slett` (sletting tar merket bort fra
+  postene). `settMerke` sjekker mot lista, og `budsjett` svarer med
+  `merkeliste`. Et slettet merke som en post fortsatt har, teller ikke
+  (`okBuMerke`).
+- **Sida:** «+ Nytt merke …» i merkevalget, kortet «Merker på tvers» i
+  Oppsett, Fast og Variabel i «På tvers» (`okFastVariabel`) i budsjettet
+  og Regnskap, filteret i Alle. **Nøkkeltallet** regnes av `g.fast`;
+  uten merker faller det tilbake på Bolig og sier det.
+- **Neam:** `nye_merker` i `endre_okonomi_budsjettposter`, merke ved id
+  eller navn, `endre_okonomi_merker`, og `fast_og_variabelt` og `merker`
+  i `les_okonomi_maaned` (`felles-lesalt.js ?v=14`).
+- **Felle igjen:** `.ok-ut` i merkelista trengte `grid-area:auto`, som i
+  formueskjemaet (`e1268f5`).
 
 ### Neam kan alt sida kan (7. november, `a106ea2`)
 
