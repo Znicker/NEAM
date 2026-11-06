@@ -16,6 +16,7 @@
      POST /api/bank {hva:'trumf-innlogging', cookie} / {hva:'trumf-koble-fra'}
      POST /api/bank {hva:'kvittering-ny', kvittering, forHand} - kvittering lest fra bilde/PDF, eller en foering lagt inn for haand
      GET /api/bank?hva=kvittering&id=<postId>         - varelinjene til en kvitteringspost
+     GET /api/bank?hva=kvittering-fil&id=<postId>     - selve bildet eller PDF-en
      GET /api/bank?hva=budsjett / POST {hva:'budsjett', standard} - standardbudsjettet
      POST /api/bank {hva:'budsjett', mnd, maaned} / {hva:'budsjett', mnd, tilbake:true} - én maaneds budsjett
      GET /api/bank?hva=regnskap&mnd=AAAA-MM            - godkjente poster summert per kategori
@@ -75,7 +76,8 @@
      auth:bank:laert           - { motpart: kategori } - det Neam foreslaar neste gang
      auth:bank:innboks-fra     - datoen innboksen henter fra (satt foerste gang)
      auth:bank:trumf           - innloggingscookien fra trumf.no (se Trumf-delen)
-     auth:bank:kv:<postId>     - varelinjene fra en kvittering lest fra bilde (bildet lagres ikke)
+     auth:bank:kv:<postId>     - varelinjene fra en kvittering lest fra bilde
+     auth:bank:fil:<postId>    - selve bildet eller PDF-en, { type, data } i base64 (fra 6. november 2026)
      auth:bank:sist-hentet     - naar vekkeren sist hentet
      auth:bank:trumf-feil      - siste Trumf-feil (slettes naar hentingen virker igjen)
      auth:bank:dropbox         - Dropbox: refresh-tokenet til appmappa, og naar den sist ble sjekket
@@ -290,11 +292,19 @@ async function medBuffer(env, navn, fersk, hent){
   return Object.assign({ ok:true, fraBuffer:false }, lagre);
 }
 
-/* Kontonummeret vises bare med de fire siste sifrene. Nok til aa kjenne
-   igjen kontoen, lite nok til at et skjermbilde ikke deler det. */
+/* Kontonummeret: de fire siste sifrene (slutt) som foer, og fra 6. november
+   2026 hele nummeret (kontonr), fordi Magne vil se det naar han velger konto
+   paa Oekonomi-sida. Sida er bare for TILGANG, og Neam faar det ikke -
+   les_okonomi_kontoer i felles-lesalt.js tar det ikke med. */
+function kontoNr(iban){
+  const s = String(iban || '').replace(/\s/g, '');
+  if(/^NO\d{13}$/.test(s)){ const b = s.slice(4); return b.slice(0, 4) + '.' + b.slice(4, 6) + '.' + b.slice(6); }
+  return s;
+}
 function kontoUt(k){
   const iban = (k.account_id && k.account_id.iban) || '';
   return {
+    kontonr: kontoNr(iban),
     uid: k.uid,
     navn: k.name || k.product || '',
     produkt: k.product || '',
@@ -1024,6 +1034,7 @@ async function foringer(env, mnd, kat, eksakt){
         kilde: p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? 'Lagt inn for hånd' : 'Kvittering fra bilde') : (kn[p.konto] || p.kontoNavn || ''),
         betaltFra: bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
         kategori:d.kategori, del:deler.length > 1, harKvittering:!!p.fra && p.harKvittering !== false,
+        harFil:!!p.harFil, filType:p.filType || '',
         belop: Math.round((d.kategori.indexOf('Inntekter') === 0 ? d.belop : -d.belop) * 100) / 100 });
     }
   }
@@ -1066,11 +1077,29 @@ async function nyKvittering(env, kropp, epost){
   if(kropp.forHand){ p.forHand = true; p.kontoNavn = 'Lagt inn for hånd'; }
   const f = foreslaa(p, laert);
   p.kategori = f.kategori; p.kilde = f.kilde;
+  /* Bildet eller PDF-en lagres, saa kvitteringen kan aapnes igjen (Magne,
+     6. november 2026). Siden krymper bildene foer de sendes. */
+  const fil = kropp.fil || {};
+  if(KVITTERING_FILTYPER.indexOf(fil.type) !== -1 && typeof fil.data === 'string' && fil.data.length < 14e6 && /^[A-Za-z0-9+/]/.test(fil.data)){
+    await env.FAMILIE_KV.put(filNokkel(id), JSON.stringify({ type:fil.type, data:fil.data }));
+    p.harFil = true; p.filType = fil.type;
+  }
   kobleKvittering(poster, p);
   poster[id] = p;
   if(linjer.length) await env.FAMILIE_KV.put(kvitteringNokkel(p), JSON.stringify({ id:id, belop:sum, linjer:linjer }));
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
   return svar({ ok:true, post:p });
+}
+const KVITTERING_FILTYPER = ['image/jpeg', 'image/png', 'application/pdf'];
+function filNokkel(id){ return 'auth:bank:fil:' + id; }
+/* Selve fila, aapnet i en egen fane fra Oekonomi-sida. */
+async function kvitteringFil(env, id){
+  if(!/^foto:[\w-]{1,40}$/.test(id)) return svar({ ok:false, feil:'Ugyldig id' });
+  const f = await lesJson(env, filNokkel(id), null);
+  if(!f || !f.data) return svar({ ok:false, feil:'Fant ikke fila til kvitteringen' });
+  const bin = atob(f.data), bytes = new Uint8Array(bin.length);
+  for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Response(bytes, { status:200, headers:{ 'Content-Type':f.type, 'Content-Disposition':'inline', 'Cache-Control':'private, no-store' } });
 }
 async function lagretKvittering(env, id){
   const poster = await lesJson(env, POST_NOKKEL, {});
@@ -1584,6 +1613,7 @@ export async function onRequestGet({ request, env }){
     if(hva === 'dropbox') return await dropboxStatus(env);
     if(hva === 'dropbox-filer') return await dropboxFiler(env);
     if(hva === 'dropbox-fil') return await dropboxFil(env, url.searchParams.get('id') || '');
+    if(hva === 'kvittering-fil') return await kvitteringFil(env, url.searchParams.get('id') || '');
     if(hva === 'kilder') return await kilder(env, okt);
     /* Trumf trenger ikke banken - den har sin egen innlogging. */
     if(hva === 'trumf') return await trumfStatus(env, fersk);

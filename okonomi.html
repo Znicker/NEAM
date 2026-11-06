@@ -407,9 +407,15 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-trenger-felt input.bred, .ok-trenger-felt select{ width:220px; }
 .ok-trenger-felt input:focus, .ok-trenger-felt select:focus{ outline:none; border-color:var(--aksent); }
 .ok-trenger-felt .btn{ width:auto; padding:8px 16px; font-size:var(--t-meta); }
+/* Flere laan under hverandre, og sparekontoene som avkrysning. */
+.ok-trenger-felt.liste{ flex-direction:column; align-items:flex-end; }
+.ok-trenger-lan{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.ok-trenger-kryss{ display:flex; gap:8px; align-items:center; font-size:var(--t-meta); cursor:pointer; }
+.ok-trenger-felt input[type="checkbox"]{ width:18px; height:18px; padding:0; accent-color:var(--aksent); }
 @media (max-width:640px){
   .ok-trenger-rad{ grid-template-columns:minmax(0,1fr); }
-  .ok-trenger-felt{ justify-content:flex-start; }
+  .ok-trenger-felt, .ok-trenger-lan{ justify-content:flex-start; }
+  .ok-trenger-felt.liste{ align-items:stretch; }
   .ok-trenger-felt input, .ok-trenger-felt input.bred, .ok-trenger-felt select{ width:100%; }
 }
 .ok-rekke{ display:flex; gap:5px; flex-wrap:wrap; }
@@ -732,6 +738,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       <div><span class="ok-etikett" id="ok-kv-kilde"></span><h2 id="ok-kv-tittel"></h2><p class="ok-meta" id="ok-kv-meta"></p></div>
     </div>
     <div class="ok-kv-total" id="ok-kv-total"></div>
+    <p class="ok-meta" id="ok-kv-filvis" hidden></p>
     <div id="ok-kv-fordelt"></div>
     <div class="ok-kv-linjer" id="ok-kv-linjer"></div>
     <div class="dlg-rad"><button type="button" class="dlg-knapp nei" id="ok-kv-lukk">Lukk</button></div>
@@ -749,7 +756,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 <script src="/felles-data.js?v=5"></script>
 <script src="/felles-ms.js?v=2"></script>
 <script src="/felles-lesalt.js?v=9"></script>
-<script src="/felles-skriv.js?v=9"></script>
+<script src="/felles-skriv.js?v=10"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=74"></script>
 <script>
@@ -822,9 +829,13 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   /* Eget navn paa kontoen. DNB sender ikke navnene fra nettbanken gjennom
      open banking, saa de gis her; banknavnet staar under som stoette. */
   var okNavnApen = null;
+  /* Navnet som er gitt i Neam, og hele kontonummeret (Magne, 6. november 2026). */
+  function okKontoValg(k, foran){
+    return (foran || '') + (k.navn || 'Konto') + (k.kontonr ? ' – ' + k.kontonr : (k.slutt ? ' •••• ' + k.slutt : ''));
+  }
   function okKontoNavn(k){
     var boks = okEl('div', '', '');
-    var meta = (k.slutt ? '•••• ' + okVask(k.slutt) : '')
+    var meta = (k.kontonr ? okVask(k.kontonr) : k.slutt ? '•••• ' + okVask(k.slutt) : '')
       + (k.bankNavn && k.bankNavn !== k.navn ? ' · i banken: ' + okVask(k.bankNavn) : (k.produkt && k.produkt !== k.navn ? ' · ' + okVask(k.produkt) : ''))
       + (k.feil ? ' · saldo mangler' : '');
     if(okNavnApen !== k.uid){
@@ -1105,6 +1116,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     ut.addEventListener('click', function(){ p.ute = !p.ute; okTegnInnboks(); var f = document.getElementById('ok-detalj-ut'); if(f) f.focus(); });
     knapper.appendChild(ut);
     boks.appendChild(knapper);
+    if(p.harFil) boks.appendChild(okFilLenke(p));
     if(p.fra && p.harKvittering !== false && !p.ute){
       var fordelt = okEl('div', ''), liste = okEl('div', 'ok-kv-linjer', '<p class="ok-meta">Henter kvitteringen …</p>');
       boks.appendChild(okEl('span', 'ok-etikett', 'Varene'));
@@ -1154,6 +1166,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var g = okPostGrunn(p);
     if(g.tekst) mer.appendChild(okEl('span', 'ok-kilde' + (g.varsel ? ' mangler' : ''), okVask(g.tekst)));
     if(p.fra && p.harKvittering !== false && !p.ute) mer.appendChild(okKvKnapp(p));
+    if(p.harFil) mer.appendChild(okFilLenke(p));
     if(mer.children.length) rad.appendChild(mer);
     return rad;
   }
@@ -1165,7 +1178,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var flyttet = Object.keys(p.linjeKat).filter(function(i){ return p.linjeKat[i] && p.linjeKat[i] !== p.kategori; }).length;
     var b = okEl('button', 'ok-lenke', 'Se kvittering ›'); b.type = 'button'; b.id = 'ok-kvk-' + p.id;
     b.addEventListener('click', function(){
-      okVisKvittering({ id:p.id, tittel:p.motpart || p.tekst, dato:p.dato, kilde:p.fra === 'trumf' ? 'Trumf-kvittering' : 'Kvittering fra bilde', belop:p.belop, linjer:p.linjer },
+      okVisKvittering({ id:p.id, tittel:p.motpart || p.tekst, dato:p.dato, kilde:p.fra === 'trumf' ? 'Trumf-kvittering' : 'Kvittering fra bilde', belop:p.belop, linjer:p.linjer, harFil:p.harFil, filType:p.filType },
         document.getElementById(b.id) || b, function(linjer, liste, fordelt){ p.linjer = linjer; okKvRedigerbar(p, linjer, liste, fordelt); });
     });
     boks.appendChild(b);
@@ -1816,10 +1829,21 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 
   /* Leser én fil og legger den i innboksen. Gir { post, linjer }, eller
      kaster - med duplikat:true naar kvitteringen alt er lagt inn. */
+  /* Lenke til selve bildet eller PDF-en, i en egen fane (lagret fra 6. november 2026). */
+  function okFilLenke(p){
+    var a = okEl('a', 'ok-lenke', p.filType === 'application/pdf' ? 'Åpne PDF-en ›' : 'Åpne bildet ›');
+    a.href = '/api/bank?hva=kvittering-fil&id=' + encodeURIComponent(p.id);
+    a.target = '_blank'; a.rel = 'noopener';
+    a.style.alignSelf = 'flex-start';
+    a.addEventListener('click', function(e){ e.stopPropagation(); });
+    return a;
+  }
   async function okTolkKvittering(fil){
     var innhold = fil.type === 'application/pdf'
       ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data: await okSomBase64(fil) } }
       : { type:'image', source:{ type:'base64', media_type:'image/jpeg', data: await okKrympBilde(fil) } };
+    /* Den samme fila Neam leste, lagres med kvitteringen - det krympede bildet, eller PDF-en som den er. */
+    var lagres = { type:innhold.source.media_type, data:innhold.source.data };
     var r = await fetch('/api/claude', { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ model:OK_MODELL, max_tokens:4000,
         system:'Du leser butikkvitteringer og svarer bare med JSON. Du gjetter aldri tall du ikke kan lese.',
@@ -1829,7 +1853,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var tekst = (d.content || []).filter(function(c){ return c.type === 'text'; }).map(function(c){ return c.text; }).join('');
     var kv = JSON.parse(tekst.slice(tekst.indexOf('{'), tekst.lastIndexOf('}') + 1));
     var lagret = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ hva:'kvittering-ny', kvittering:kv }) });
+      body: JSON.stringify({ hva:'kvittering-ny', kvittering:kv, fil:lagres }) });
     if(!lagret.ok){ var feil = new Error(lagret.feil); feil.duplikat = /allerede lagt inn/.test(lagret.feil || ''); throw feil; }
     return { post:lagret.post, linjer:(kv.linjer || []).length };
   }
@@ -2264,7 +2288,13 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
      og laan. Naar budsjettet og formuen er lest, vises alle seks: et tall
      uten grunnlag faar en strek og en lenke til «Neam trenger» i
      innboksen (Magne, 6. november 2026). */
-  var okFormueLastet = false;
+  var okFormueLastet = false, okFormueLagret = '';
+  /* Formuen slik den staar, for aa se om skjemaet i Oppsett har ulagrede endringer.
+     Et tomt familiemaal fra skjemaet teller som intet maal. */
+  function okFormueTekst(){
+    var m = okFormue.maal && String(okFormue.maal.navn || '').trim() ? okFormue.maal : null;
+    return JSON.stringify({ v:okFormue.verdier, g:okFormue.gjeld, m:m });
+  }
   var okErBolig = function(x){ return /bolig|hus|leilighet/i.test(x.navn); };
   function okGrunnlag(){
     var b = okSt.bud;
@@ -2331,6 +2361,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
      lagres, gaar til samme sted som skjemaene i Oppsett og Budsjett, og
      raden forsvinner naar tallet finnes. Tegnes paa nytt hver gang
      noekkeltallene gjoer det - det som er skrevet i feltene, beholdes. */
+  var okTrengerLan = 1;
   function okTilTrenger(id){
     okVis('innboks');
     var rad = document.querySelector('#ok-trenger [data-trenger^="' + id + '"]');
@@ -2376,6 +2407,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(kropp) }).then(function(r){
       if(!r.ok){ okTrengerSi('Ble ikke lagret: ' + r.feil); return; }
       okFormue = { verdier:r.verdier, gjeld:r.gjeld, maal:r.maal, historikk:r.historikk || {} };
+      okFormueLagret = okFormueTekst();
       okTegnFormue(); okTegnFormueSkjema();
       okTrengerSi(hva + ' er lagret. Det kan endres i Oppsett.');
     });
@@ -2402,12 +2434,38 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         if(!(v > 0)) return okTrengerSi('Skriv boligverdien i kroner.');
         return okTrengerFormue(function(k){ k.verdier.push({ navn:'Bolig', belop:Math.round(v) }); }, 'Boligverdien');
       }));
-    if(!g.boligG) rader.push(okTrengerRad('boliglan', 'Boliglån', 'Til belåningsgraden, gjeldsgraden og renten. Restgjelden og den nominelle renten.',
-      [okTrengerFelt('boliglan', 'Restgjeld på boliglånet i kroner', 'Kr'), okTrengerFelt('boliglan-rente', 'Renten på boliglånet i prosent', 'Rente %')], function(){
-        var v = okTrengerTall('boliglan'), r = okTrengerTall('boliglan-rente');
-        if(!(v > 0)) return okTrengerSi('Skriv restgjelden på boliglånet i kroner.');
-        return okTrengerFormue(function(k){ var x = { navn:'Boliglån', belop:Math.round(v) }; if(r >= 0 && r < 30) x.rente = r; k.gjeld.push(x); }, 'Boliglånet');
-      }));
+    /* Boliglaanet kan vaere flere laan, og de kan endre seg (Magne, 6. november
+       2026): ett felt per laan, «+ Ett lån til» gir et nytt. Navnet maa
+       inneholde «bolig» for aa telle i belaaningsgraden, saa et annet navn
+       faar «Boliglån – » foran. Senere endringer gjoeres under Gjeld i Oppsett. */
+    if(!g.boligG){
+      var lan = [];
+      for(var n = 0; n < okTrengerLan; n++){
+        var l = okEl('div', 'ok-trenger-lan');
+        l.appendChild(okTrengerFelt('boliglan-navn-' + n, 'Navn på lån ' + (n + 1), n ? 'Boliglån ' + (n + 1) : 'Boliglån', true));
+        l.appendChild(okTrengerFelt('boliglan-' + n, 'Restgjeld på lån ' + (n + 1) + ' i kroner', 'Kr'));
+        l.appendChild(okTrengerFelt('boliglan-rente-' + n, 'Renten på lån ' + (n + 1) + ' i prosent', 'Rente %'));
+        lan.push(l);
+      }
+      var flere = okEl('button', 'ok-lenke', '+ Ett lån til'); flere.type = 'button';
+      flere.addEventListener('click', function(){ okTrengerLan++; okTegnTrenger(); var f = document.getElementById('ok-tr-boliglan-navn-' + (okTrengerLan - 1)); if(f) f.focus(); });
+      lan.push(flere);
+      var lanRad = okTrengerRad('boliglan', 'Boliglån', 'Til belåningsgraden, gjeldsgraden og renten. Ett felt per lån – restgjelden og den nominelle renten.', lan, function(){
+        var nye = [];
+        for(var i = 0; i < okTrengerLan; i++){
+          var v = okTrengerTall('boliglan-' + i), r = okTrengerTall('boliglan-rente-' + i);
+          if(!(v > 0)) continue;
+          var navn = (document.getElementById('ok-tr-boliglan-navn-' + i).value || '').trim() || (i ? 'Boliglån ' + (i + 1) : 'Boliglån');
+          if(!okErBolig({ navn:navn })) navn = 'Boliglån – ' + navn;
+          var x = { navn:navn, belop:Math.round(v) }; if(r >= 0 && r < 30) x.rente = r;
+          nye.push(x);
+        }
+        if(!nye.length) return okTrengerSi('Skriv restgjelden på minst ett lån i kroner.');
+        return okTrengerFormue(function(k){ k.gjeld = k.gjeld.concat(nye); }, nye.length === 1 ? 'Boliglånet' : nye.length + ' boliglån').then(function(){ okTrengerLan = 1; });
+      });
+      lanRad.querySelector('.ok-trenger-felt').classList.add('liste');
+      rader.push(lanRad);
+    }
     okFormue.gjeld.forEach(function(x, i){
       if(x.rente != null || !x.belop) return;
       rader.push(okTrengerRad('rente-' + i, 'Renten på ' + x.navn, 'Til rentesnittet på Status.',
@@ -2434,22 +2492,27 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     }
     var kandidater = okKontoer.filter(function(k){ return k.rolle !== 'sparing' && k.rolle !== 'felles'; });
     if(!g.harSparekonto && kandidater.length){
-      var s = document.createElement('select');
-      s.id = 'ok-tr-sparekonto'; s.setAttribute('aria-label', 'Sparekonto');
-      s.appendChild(new Option('Velg konto', ''));
-      kandidater.forEach(function(k){ s.appendChild(new Option((k.navn || 'Konto') + (k.slutt ? ' •••• ' + k.slutt : ''), k.uid)); });
-      rader.push(okTrengerRad('sparekonto', 'Sparekonto', 'Til bufferen: saldoen på kontoene med rollen Sparing. Rollen kan endres i Oppsett.', [s], function(){
-        var uid = document.getElementById('ok-tr-sparekonto').value;
-        if(!uid) return okTrengerSi('Velg en konto.');
-        var roller = {}; roller[uid] = 'sparing';
+      /* Flere kan krysses av (Magne, 6. november 2026). */
+      var kryss = kandidater.map(function(k){
+        var lab = okEl('label', 'ok-trenger-kryss');
+        var c = document.createElement('input'); c.type = 'checkbox'; c.id = 'ok-tr-spar-' + k.uid; c.value = k.uid;
+        lab.appendChild(c); lab.appendChild(document.createTextNode(okKontoValg(k)));
+        return lab;
+      });
+      var sparRad = okTrengerRad('sparekonto', 'Sparekontoer', 'Til bufferen: saldoen på kontoene med rollen Sparing. Kryss av alle som er sparing. Rollene kan endres i Oppsett.', kryss, function(){
+        var valgte = Array.prototype.filter.call(document.querySelectorAll('#ok-trenger input[type="checkbox"]'), function(c){ return c.checked; }).map(function(c){ return c.value; });
+        if(!valgte.length) return okTrengerSi('Kryss av minst én konto.');
+        var roller = {}; valgte.forEach(function(uid){ roller[uid] = 'sparing'; });
         return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'roller', roller:roller }) }).then(function(r){
           if(!r.ok){ okTrengerSi('Ble ikke lagret: ' + r.feil); return; }
-          var navn = 'Kontoen';
-          okKontoer.forEach(function(k){ if(k.uid === uid){ k.rolle = 'sparing'; navn = k.navn || navn; } });
+          var navn = [];
+          okKontoer.forEach(function(k){ if(valgte.indexOf(k.uid) !== -1){ k.rolle = 'sparing'; navn.push(k.navn || 'Konto'); } });
           okTegnKontoer(); okTegnFormue();
-          okTrengerSi(navn + ' er lagret som sparing.');
+          okTrengerSi(okOgListe(navn) + ' er lagret som sparing.');
         });
-      }));
+      });
+      sparRad.querySelector('.ok-trenger-felt').classList.add('liste');
+      rader.push(sparRad);
     }
     if(!(okFormue.maal && String(okFormue.maal.navn || '').trim())) rader.push(okTrengerRad('maal', 'Familiemål', 'Det dere sparer til, vist på Status. Kontoen det spares på velges i Oppsett.',
       [okTrengerFelt('maal-navn', 'Navnet på målet', 'Navn på målet', true), okTrengerFelt('maal-belop', 'Målbeløp i kroner', 'Kr')], function(){
@@ -2464,12 +2527,12 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var g = okGrunnlag();
     if(!g.klar){ kort.hidden = true; return; }
     var gamle = {}, fokus = boks.contains(document.activeElement) ? document.activeElement.id : '';
-    boks.querySelectorAll('input, select').forEach(function(f){ gamle[f.id] = f.value; });
+    boks.querySelectorAll('input, select').forEach(function(f){ gamle[f.id] = f.type === 'checkbox' ? f.checked : f.value; });
     var rader = okTrengerRader(g);
     kort.hidden = !rader.length;
     boks.innerHTML = '';
     rader.forEach(function(r){ boks.appendChild(r); });
-    Object.keys(gamle).forEach(function(id){ var f = document.getElementById(id); if(f && gamle[id]) f.value = gamle[id]; });
+    Object.keys(gamle).forEach(function(id){ var f = document.getElementById(id); if(!f || !gamle[id]) return; if(f.type === 'checkbox') f.checked = true; else f.value = gamle[id]; });
     if(fokus){ var f = document.getElementById(fokus); if(f) f.focus(); }
   }
 
@@ -2482,7 +2545,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     okHent('/api/bank?hva=formue').then(function(f){
       if(!f.ok) return;
       okFormue = { verdier:f.verdier || [], gjeld:f.gjeld || [], maal:f.maal, historikk:f.historikk || {} };
-      okFormueLastet = true;
+      okFormueLastet = true; okFormueLagret = okFormueTekst();
       okTegnFormue(); okTegnFormueSkjema();
     });
   }
@@ -2640,7 +2703,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         var vk = document.createElement('select'); vk.className = 'ok-mnd'; vk.style.alignSelf = 'flex-start';
         vk.setAttribute('aria-label', 'Legg til konto som verdi');
         vk.appendChild(new Option('+ Legg til konto …', ''));
-        ledige.forEach(function(k){ vk.appendChild(new Option(k.navn + (k.slutt ? ' •••• ' + k.slutt : ''), k.uid)); });
+        ledige.forEach(function(k){ vk.appendChild(new Option(okKontoValg(k), k.uid)); });
         vk.addEventListener('change', function(){
           var k = ledige.filter(function(x){ return x.uid === vk.value; })[0];
           if(k){ liste.push({ navn:k.navn, konto:k.uid }); okTegnFormueSkjema(); }
@@ -2661,7 +2724,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var velg = document.createElement('select'); velg.className = 'ok-mnd'; velg.setAttribute('aria-label', 'Hvor spart beløp kommer fra');
     velg.appendChild(new Option('Spart: fyll inn selv', ''));
     okSparing().concat(okKontoer.filter(function(k){ return k.rolle !== 'sparing' && k.rolle !== 'ignorer' && typeof k.saldo === 'number'; }))
-      .forEach(function(k){ velg.appendChild(new Option('Saldo på ' + k.navn + (k.slutt ? ' •••• ' + k.slutt : ''), k.uid)); });
+      .forEach(function(k){ velg.appendChild(new Option(okKontoValg(k, 'Saldo på '), k.uid)); });
     velg.value = m.konto || '';
     velg.addEventListener('change', function(){ m.konto = velg.value; okTegnFormueSkjema(); });
     rad.appendChild(velg);
@@ -2680,6 +2743,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         lagre.disabled = false;
         if(!r.ok){ svarT.textContent = 'Ble ikke lagret: ' + r.feil; return; }
         okFormue = { verdier:r.verdier, gjeld:r.gjeld, maal:r.maal, historikk:r.historikk || {} };
+        okFormueLagret = okFormueTekst();
         okTegnFormue(); okTegnFormueSkjema();
         document.getElementById('ok-fo-meta').textContent = 'Lagret kl. ' + okKlokke.format(new Date());
       });
@@ -2824,7 +2888,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         if(f.harKvittering){
           rk.type = 'button';
           rk.setAttribute('aria-label', 'Se kvitteringen fra ' + (f.tekst || 'kjøpet') + ' ' + okKort.format(new Date(f.dato)));
-          rk.addEventListener('click', function(){ okVisKvittering({ id:f.id, tittel:f.tekst, dato:f.dato, kilde:f.kilde, belop:-f.belop }, rk); });
+          rk.addEventListener('click', function(){ okVisKvittering({ id:f.id, tittel:f.tekst, dato:f.dato, kilde:f.kilde, belop:-f.belop, harFil:f.harFil, filType:f.filType }, rk); });
+        }else if(f.harFil){
+          rk.querySelector('.ok-sted').appendChild(okFilLenke(f));
         }
         liste.appendChild(rk);
       });
@@ -2846,6 +2912,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     document.getElementById('ok-kv-tittel').textContent = k.tittel || 'Kvittering';
     document.getElementById('ok-kv-meta').textContent = k.dato ? okDato.format(new Date(k.dato)) : '';
     document.getElementById('ok-kv-total').textContent = k.belop != null ? okKr0.format(Math.abs(k.belop)) + ' kr' : '';
+    var filvis = document.getElementById('ok-kv-filvis');
+    filvis.innerHTML = ''; filvis.hidden = !k.harFil;
+    if(k.harFil) filvis.appendChild(okFilLenke({ id:k.id, filType:k.filType }));
     var liste = document.getElementById('ok-kv-linjer'), fordelt = document.getElementById('ok-kv-fordelt');
     liste.innerHTML = '<p class="ok-meta">Henter kvitteringen …</p>'; fordelt.innerHTML = '';
     document.getElementById('ok-kv-bak').hidden = false;
@@ -2943,6 +3012,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
           .then(function(){ okLastInnboks(); okStatusLast(); okVarslerLast(); if(!document.getElementById('ok-bu-kort').hidden) okBuRegnskap(); });
       });
       rad.appendChild(angre);
+      if(p.harFil) rad.appendChild(okFilLenke(p));
       boks.appendChild(rad);
     });
   }
@@ -3033,6 +3103,18 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   /* felles-skriv.js leser dette: her kan Neam endre det meste, utenfor bare
      legge beloep i felt som finnes. */
   window.okonomiSida = true;
+  /* last_sida_paa_nytt i felles-skriv.js viser dette i bekreftelsen. */
+  window.neamUlagret = function(){
+    var u = [];
+    if(okBu.redigerer) u.push('Budsjettet er åpent for redigering');
+    var valgt = okPoster.filter(function(p){ return p.kilde === 'valgt' || (p.ute && !p.mulDobbel) || Object.keys(p.linjeKat || {}).length; }).length;
+    if(valgt) u.push(valgt + (valgt === 1 ? ' post' : ' poster') + ' i innboksen har valg som ikke er godkjent');
+    var skrevet = Array.prototype.some.call(document.querySelectorAll('#ok-trenger input'), function(f){ return f.type === 'checkbox' ? f.checked : f.value.trim(); });
+    if(skrevet) u.push('Noe er fylt inn i «Neam trenger» uten å være lagret');
+    if(okFormueLastet && okFormueTekst() !== okFormueLagret) u.push('Formuen i Oppsett har endringer som ikke er lagret');
+    if(okNavnApen) u.push('Et kontonavn er under redigering');
+    return u;
+  };
   var OK_NEAM_DATO = new Intl.DateTimeFormat('nb-NO', { weekday:'long', day:'numeric', month:'long' });
   function okNeamKat(k){ return String(k || '').split(' · ').join(' › '); }
   function okNeamPost(id){

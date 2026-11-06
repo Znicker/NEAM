@@ -1534,6 +1534,25 @@ const SKRIV_VERKTOY = [
     }
   },
   {
+    name: 'last_sida_paa_nytt',
+    description: 'Laster sida brukeren står på, på nytt - når noe ikke vises riktig, eller for å få med '
+               + 'seg en endring. Brukeren bekrefter først, og bekreftelsen viser det sida vet er ulagret. '
+               + 'Si fra om det før du foreslår det. Samtalen ligger igjen etterpå, men svaret ditt må komme '
+               + 'før sida lastes.',
+    input_schema: { type:'object', properties:{}, required:[] },
+    neamSkriver: true,
+    /* Sider kan svare paa window.neamUlagret() med det som forsvinner -
+       Oekonomi gjoer det. De andre sier ikke noe, og da staar det her. */
+    neamBeskriv: function(){
+      let u = null;
+      try{ if(typeof window.neamUlagret === 'function') u = [].concat(window.neamUlagret() || []); }catch(e){}
+      return 'Laste sida på nytt?'
+        + (u === null ? '\n\nDenne sida sier ikke fra om noe er ulagret - sjekk selv før du sier ja.'
+           : u.length ? '\n\nDette er ikke lagret og forsvinner:\n' + u.map(function(x){ return '• ' + x; }).join('\n')
+           : '\n\nIngenting er ulagret.');
+    }
+  },
+  {
     name: 'gaa_til',
     description: 'Åpner en annen side i Neam. Bruk den når brukeren ber om å komme et '
                + 'sted, eller når svaret ditt er at noe må gjøres et annet sted.\n\n'
@@ -1942,6 +1961,12 @@ async function skrivUtfor(navn, arg){
   if(SKRIV_OK_VERKTOY.some(function(v){ return v.name === navn; })) return await skrivOkUtfor(navn, arg);
 
   /* ---------------- Navigasjon ---------------- */
+  if(navn === 'last_sida_paa_nytt'){
+    /* Som gaa_til: svaret skal rekke aa komme paa skjermen foerst. */
+    setTimeout(function(){ location.reload(); }, 2500);
+    return { laster:true, beskjed:'Sida lastes på nytt om et par sekunder. Si bare kort at du gjør det.' };
+  }
+
   if(navn === 'gaa_til'){
     const side = String(arg.side || '').toLowerCase();
     const mal = SKRIV_SIDER[side];
