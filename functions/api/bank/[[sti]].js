@@ -704,7 +704,7 @@ function kobleKvittering(poster, kv){
   for(const id of Object.keys(poster)){
     const b = poster[id];
     if(b.fra || b.dekketAv || b.belop >= 0 || !erLik(b, kv)) continue;
-    if(b.status === 'ny'){ b.dekketAv = kv.id; kv.bankId = b.id; kv.bankKonto = b.kontoNavn; }
+    if(b.status === 'ny'){ b.dekketAv = kv.id; kv.bankId = b.id; kv.bankKonto = b.kontoNavn; delete b.lignerPaa; }
     else if(b.status === 'godkjent'){ kv.mulDobbel = b.id; kv.bankKonto = b.kontoNavn; }
     return;
   }
@@ -740,6 +740,20 @@ async function innboks(env, okt, fersk, psu){
         const kv = poster[id];
         if(kv.fra && kv.status === 'ny' && !kv.bankId && !kv.mulDobbel && !ny.dekketAv && ny.belop < 0 && erLik(ny, kv)){
           ny.dekketAv = kv.id; kv.bankId = ny.id; kv.bankKonto = ny.kontoNavn;
+        }
+      }
+      /* Var kvitteringen alt godkjent - ofte foert automatisk, fordi Trumf
+         kommer samme dag og banktrekket en dag eller to etter - kan de ikke
+         slaas sammen stille. Banktrekket merkes som mulig dobbel, foeres
+         aldri av seg selv og staar stroeket til noen tar det med (Magne,
+         6. november 2026). Uten dette ble kjoepet telt to ganger. */
+      if(!ny.dekketAv && ny.belop < 0){
+        for(const id of Object.keys(poster)){
+          const kv = poster[id];
+          if(!kv.fra || kv.status !== 'godkjent' || kv.bankId || !erLik(ny, kv)) continue;
+          ny.lignerPaa = { id:kv.id, sted:kv.motpart || kv.tekst || '', dato:kv.dato, belop:kv.belop,
+            kilde:kv.fra === 'trumf' ? 'Trumf-kvittering' : kv.forHand ? 'kjøp lagt inn for hånd' : 'kvittering fra bilde', varer:null };
+          break;
         }
       }
       nye++;
