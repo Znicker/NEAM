@@ -441,7 +441,8 @@ kvittering ligner en som alt er lagt inn (`fd86515`), og sparekontoene i
 nedtrekk med hele kontonummeret (`df9e9c4`). Til slutt Lagre fri av
 NEAM-knappen, «Hent fra Dropbox nå» og toppen som står fast (`9e211c8`),
 og navnet fra Oppsett med kontonummeret i alle kontovalg (`965bb5b`).
-39 commits, `0e0050a`–`965bb5b`, medregnet en midlertidig statustest fra en annen økt
+Til slutt at formueskjemaet ikke tegnes på nytt mens noen skriver i det
+(`70f5931`). 40 commits, `0e0050a`–`70f5931`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3830,7 +3831,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 39 commits fra `0e0050a` til `965bb5b`.
+verdier. Bygget i 40 commits fra `0e0050a` til `70f5931`.
 
 ### Banken – Enable Banking
 
@@ -4059,6 +4060,14 @@ til Oppsett med rød prikk på fanen, og Coop-meldingen bort.
   venstre, og da Bruttoinntekt gjorde formueskjemaet lengre, havnet Lagre
   under den uten at sida kunne rulles lenger. Magne merket det som «jeg
   får ikke lenger legge til familiemål».
+- **Formueskjemaet tegnes ikke på nytt mens det har ulagrede endringer**
+  (`70f5931`). Det var den egentlige grunnen til at familiemålet ikke
+  kunne legges inn. Sida henter kontoene ferskt fra DNB ved åpning og
+  Oppdater, og når de kom, hentet `okFormueLast()` formuen og tegnet
+  skjemaet på nytt fra det som var lagret – det man holdt på å skrive,
+  forsvant før Lagre. Nå sammenlignes skjemaet med det som sist ble lagret
+  (`okFormueTekst()` mot `okFormueLagret`); er det ulikt, oppdateres bare
+  visningen (`okTegnFormue()`), og skjemaet blir stående.
 
 ### Neam på Økonomi – og økonomien i Neam (6. november, `47b39df`)
 
@@ -4207,6 +4216,12 @@ og kontoer og transaksjoner skal ikke kunne leses ut derfra. Nøklene:
 
 ### Lærdommer
 
+- **Et skjema skal ikke tegnes på nytt mens noen skriver i det.** Alt som
+  hentes i bakgrunnen – fersk henting ved åpning, Oppdater, en skriving fra
+  Neam – kan komme midt i at noen fyller ut. Sjekk om skjemaet har
+  ulagrede endringer før det tegnes fra lagret tilstand. Feilen så ut som
+  at lagringen ikke virket, og første retting (plass over NEAM-knappen)
+  traff et annet problem.
 - **Det nederste på sida må kunne rulles fram over NEAM-knappen.**
   Knappen står fast nede til venstre på alle sidene. En side som ender med
   et skjema, trenger plass under, ellers forsvinner knappen nederst bak den
