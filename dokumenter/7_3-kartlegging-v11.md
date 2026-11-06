@@ -93,7 +93,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-tale.js` (tale ut og inn).
 
 **Siste leverte versjoner:** `felles-neam.js ?v=74`, `felles-neam.css
-?v=74`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=9`, `felles-lesalt.js
+?v=74`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=10`, `felles-lesalt.js
 ?v=9`, `felles-hus.js ?v=22`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
@@ -112,7 +112,7 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–73; neam.css til og
-med 73; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–8, skriv 1–8,
+med 73; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–8, skriv 1–9,
 hus `?v=1–21`, ms `?v=1`, tale 1–4, graph 1–2**. (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -433,12 +433,15 @@ om for PC etter en ny skisse (`aa5bbc8`), og **Neam på sida** – fast til
 høyre på bred skjerm, med økonomiverktøyene på alle Neam-sidene
 (`47b39df`). Samme kveld: alle seks nøkkeltallene med «Neam trenger» i
 innboksen (`610a23d`), og grensen for hva Neam kan endre på sida og
-utenfor (`f6664ba`). 33 commits, `0e0050a`–`f6664ba`, medregnet en
-midlertidig statustest fra en annen økt (`ce3c32b`, fjernet i `9dc8799`).
+utenfor (`f6664ba`). Til slutt flere boliglån og sparekontoer, hele
+kontonummeret i kontovalgene, bildet eller PDF-en lagret med kvitteringen,
+og at Neam kan laste sida på nytt (`7688c6f`). 34 commits,
+`0e0050a`–`7688c6f`, medregnet en midlertidig statustest fra en annen økt
+(`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
 `?v=9` (`f6664ba`) på alle sidene som laster dem – nå også `okonomi.html`.
-Se del 57.
+`felles-skriv.js` gikk videre til `?v=10` (`7688c6f`). Se del 57.
 
 **1. november: Rommene, ukeplanen og bildekatalogen.**
 - **Rommene lagt om igjen** (`5208ee2`–`26d1362`). Etasjefanene er borte:
@@ -664,6 +667,10 @@ Se del 57.
   fortsetter på Økonomi og ber om bekreftelse. Bare prøvd med falsk Neam –
   at oppgaven kom fram og panelet åpnet seg, ikke hva han gjør med den.
   Og varelinjer fordelt av Neam mot en ekte kvittering.
+- **Kontonummeret og kvitteringsfila på neam.no** (6. november): at
+  kontovalgene viser «navn – 1234.56.78901» med DNBs ekte IBAN (testen
+  hadde for korte numre til å formateres), og at «Åpne bildet ›» åpner fila
+  for en ny kvittering – både fra «Legg til kvittering» og fra Dropbox.
 - **Andreas ukeplan på neam.no** (1. november): «Hent ukeplan» skal finne
   uke 45.
 - **Rommene på iPad og telefon** (1. november): kolonnene, Rediger og å
@@ -3814,7 +3821,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 33 commits fra `0e0050a` til `f6664ba`.
+verdier. Bygget i 34 commits fra `0e0050a` til `7688c6f`.
 
 ### Banken – Enable Banking
 
@@ -3904,7 +3911,13 @@ verdier. Bygget i 33 commits fra `0e0050a` til `f6664ba`.
   for lite enn én dobbelt.
 - **Varelinjene kan fordeles** på flere kategorier i én post.
 - **Kvittering fra bilde eller PDF:** Neam leser den via `/api/claude`, og
-  bare varelinjene lagres (`auth:bank:kv:<postId>`) – ikke bildet.
+  varelinjene lagres i `auth:bank:kv:<postId>`. **Fra `7688c6f` lagres også
+  fila** – det krympede bildet Neam leste, eller PDF-en som den er – i
+  `auth:bank:fil:<postId>` (`{ type, data }` i base64, høyst ca. 10 MB).
+  Posten får `harFil` og `filType`, og «Åpne bildet ›» / «Åpne PDF-en ›»
+  åpner den i en ny fane (`?hva=kvittering-fil&id=`) fra innboksen,
+  detaljpanelet, kvitteringsdialogen, «Ført automatisk» og «Kjøpene bak».
+  Det gjelder Dropbox-importen også. Kvitteringer fra før har ingen fil.
 - **Trumf-feilen** lagres i `auth:bank:trumf-feil` for varselkortet. Fra
   `7cb2795` viser varselet og kilderaden Trumfs egen tekst («Trumf svarte
   HTTP 403»), ikke «sida er trolig endret».
@@ -4058,6 +4071,17 @@ av systemene, ikke kjøkkenet og barna.
   feltene, overlever at sida tegner seg på nytt.
 - **Gjeldsgraden** måles mot «5× brutto», men regnes av budsjettets
   inntekt, som trolig er netto – tallet blir strengere enn bankens.
+- **Flere boliglån** (`7688c6f`): Boliglån-raden har ett felt per lån og
+  «+ Ett lån til». Navnet må inneholde «bolig» for å telle i
+  belåningsgraden, så «SPK» lagres som «Boliglån – SPK». Senere endringer
+  gjøres under Gjeld i Oppsett.
+- **Flere sparekontoer** (`7688c6f`): Sparekonto-raden er avkrysning, så
+  flere kan bli Sparing på én gang.
+- **Hele kontonummeret i kontovalgene** (`7688c6f`): «navnet i Neam –
+  1234.56.78901», også under kontoene i Oppsett. Bank-funksjonen viste før
+  med vilje bare de fire siste sifrene; Magne ba om hele. `kontonr` går
+  bare til sida – `les_okonomi_kontoer` tar det ikke med, så Neam ser det
+  ikke.
 
 ### Hva Neam kan endre – på sida og utenfor (6. november, `f6664ba`)
 
@@ -4093,6 +4117,13 @@ spør om han skal ta deg dit og gjøre det.
 - **Ny kategori på en godkjent føring** gjøres med `godkjenn` – den sjekker
   ikke status, og det brukes med vilje. Neam husker kategorien for
   motparten, som ved vanlig godkjenning.
+- **Laste sida på nytt** (`last_sida_paa_nytt` i `felles-skriv.js`,
+  `7688c6f`) virker fra alle sidene og må bekreftes. Bekreftelsen viser
+  det sida selv sier er ulagret, gjennom `window.neamUlagret()`. Økonomi
+  svarer med budsjett under redigering, valg i innboksen som ikke er
+  godkjent, noe fylt inn i «Neam trenger», ulagret formue i Oppsett og et
+  kontonavn under redigering. De andre sidene har ingen slik funksjon, og
+  der står det «sjekk selv før du sier ja».
 
 ### Vekkeren og varselkortet
 
@@ -4113,7 +4144,8 @@ Utenfor `fh:` med vilje: `/api/data` slipper familien til alt under `fh:`,
 og kontoer og transaksjoner skal ikke kunne leses ut derfra. Nøklene:
 `hus` (økta), `roller`, `kontonavn`, `tilstand:<rnd>`, `buffer:<navn>`,
 `poster`, `laert`, `innboks-fra`, `trumf`, `trumf-feil`, `kv:<postId>`,
-`sist-hentet`, `budsjett`, `kategorier`, `formue`, `formue-mnd`, `dropbox`.
+`sist-hentet`, `budsjett`, `kategorier`, `formue`, `formue-mnd`, `dropbox`,
+`fil:<postId>`.
 
 ### Lærdommer
 
@@ -4164,3 +4196,6 @@ og kontoer og transaksjoner skal ikke kunne leses ut derfra. Nøklene:
 - **Kvitteringsdialogen** skriver fortsatt «Kvittering fra bilde» for en
   post lagt inn for hånd. Den åpnes ikke for slike poster i dag – de har
   ingen varelinjer.
+- **`window.neamUlagret()` finnes bare på Økonomi.** Vil en annen side at
+  Neam skal si fra om ulagrede endringer før den lastes på nytt, må den
+  svare på den selv.
