@@ -412,8 +412,8 @@ tatt bort. Status har
 formuen, nøkkeltallene, familiemålet og kildene med farge og tid.
 Kjøkkendashen vekker hentingen hver sjette time, og forsiden viser et
 varselkort når noe trenger noen. Sida henter DNB og Trumf ferskt når den
-åpnes og med Oppdater, og Trumf-cookien fornyes underveis. 25 commits,
-`0e0050a`–`6e4c350`.
+åpnes og med Oppdater, og Trumf-cookien fornyes underveis. 26 commits,
+`0e0050a`–`7a823b7`.
 **Ingen `?v=`-numre er brukt eller brent** – ingen fellesfiler ble rørt.
 Se del 57.
 
@@ -3746,7 +3746,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 25 commits fra `0e0050a` til `6e4c350`.
+verdier. Bygget i 26 commits fra `0e0050a` til `7a823b7`.
 
 ### Banken – Enable Banking
 
