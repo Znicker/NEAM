@@ -1116,7 +1116,8 @@ async function lagreBudsjett(env, kropp, epost){
     const ut = {};
     for(const k of Object.keys(inn || {})){
       if(kategorier.indexOf(k) === -1) return { feil:'Ukjent kategori: ' + k };
-      const v = Math.round(Number(inn[k]) || 0);
+      /* Kroner og oere (7. november 2026). */
+      const v = Math.round((Number(inn[k]) || 0) * 100) / 100;
       if(v < 0 || v > 1e7) return { feil:'Ugyldig beløp for ' + k };
       if(v) ut[k] = v;
     }

@@ -1708,7 +1708,16 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
      har den linjer, staar postens eget tall som «Uten linje». */
   function okBuLinjer(p){ return okBu.kategorier.filter(function(x){ return x.indexOf(p + ' · ') === 0; }); }
   function okBuPostSum(p, mal){ return okBuLinjer(p).reduce(function(s, l){ return s + okBuVerdi(l, mal); }, okBuVerdi(p, mal)); }
-  function okBuKr(n){ return okKr.format(Math.round(n)).replace(/,00$/, ''); }
+  /* Kroner og oere: «549,90» er 549,9 – foer ble kommaet fjernet sammen med
+     alt annet, og det ble 54 990 (Magne, 7. november 2026). Punktum foran
+     komma er tusenskille («1.234,50»). */
+  function okBuTall(s){
+    s = String(s || '').replace(/\s/g, '');
+    if(s.indexOf(',') !== -1) s = s.replace(/\./g, '').replace(',', '.');
+    var x = parseFloat(s.replace(/[^0-9.]/g, ''));
+    return isNaN(x) ? 0 : Math.round(x * 100) / 100;
+  }
+  function okBuKr(n){ return okKr.format(Math.round(n * 100) / 100).replace(/,00$/, ''); }
 
   /* Summene og «hvor inntekten gaar» - fra standardbudsjettet, ogsaa mens det redigeres. */
   function okBsTotaler(mal){
@@ -1771,14 +1780,13 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     }
     var felt = function(k, etikett){
       var inp = document.createElement('input');
-      inp.inputMode = 'numeric'; inp.autocomplete = 'off'; inp.id = pre + '-f-' + (nr++); inp.dataset.k = k;
+      inp.inputMode = 'decimal'; inp.autocomplete = 'off'; inp.id = pre + '-f-' + (nr++); inp.dataset.k = k;
       inp.setAttribute('aria-label', 'Budsjett for ' + etikett);
-      var v = okBuVerdi(k, mal); inp.value = v || '';
+      var v = okBuVerdi(k, mal); inp.value = v ? (v % 1 ? v.toFixed(2) : String(v)).replace('.', ',') : '';
       var opprinnelig = function(){ return okBuKilde(mal)[k] || 0; };
       if(okBu.utkast && okBu.utkast[k] != null && okBu.utkast[k] !== opprinnelig()) inp.classList.add('endret');
       inp.addEventListener('input', function(){
-        var x = parseInt(inp.value.replace(/\D/g, ''), 10);
-        okBu.utkast[k] = isNaN(x) ? 0 : x;
+        okBu.utkast[k] = okBuTall(inp.value);
         inp.classList.toggle('endret', okBu.utkast[k] !== opprinnelig());
         if(std) okBsTegn();
       });
