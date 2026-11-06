@@ -515,8 +515,14 @@ const NOKKELORD = [
    selv pluss linjene. */
 const EGNE_NOKKEL = 'auth:bank:kategorier';
 async function lesEgne(env){ return [].concat(await lesJson(env, EGNE_NOKKEL, [])); }
-function flett(egne){
-  const ut = KATEGORIER.slice();
+/* Faste poster med nytt navn: { 'Bolig · Strøm': 'Bolig · Elektrisitet' }.
+   De faste staar i koden; navnet Magne har gitt dem, ligger i KV (6. november
+   2026: «Jeg må kunne endre navn på postene i budsjettet»). */
+const OMDOPT_NOKKEL = 'auth:bank:kategori-omdopt';
+async function lesOmdopt(env){ return await lesJson(env, OMDOPT_NOKKEL, {}); }
+function flett(egne, omdopt){
+  omdopt = omdopt || {};
+  const ut = KATEGORIER.map(k => omdopt[k] || k);
   for(const k of egne){
     if(ut.indexOf(k) !== -1) continue;
     const d = k.split(' · ');
@@ -537,20 +543,20 @@ function flett(egne){
   }
   return ut;
 }
-async function alleKategorier(env){ return flett(await lesEgne(env)); }
+async function alleKategorier(env){ return flett(await lesEgne(env), await lesOmdopt(env)); }
 async function budsjettKategorier(env){ return (await alleKategorier(env)).filter(k => k.indexOf('Utenfor budsjett') !== 0); }
 
 /* Nye poster: { forelder, navn }. Forelderen er en gruppe (gir en ny post)
    eller en post (gir en linje). Utenfor budsjett tar ikke imot nye. */
 async function nyeKategorier(env, kropp){
-  const egne = await lesEgne(env);
+  const egne = await lesEgne(env), omdopt = await lesOmdopt(env);
   const grupper = KATEGORIER.map(k => k.split(' · ')[0]).filter(g => g !== 'Utenfor budsjett');
   const nye = [];
   for(const n of [].concat(kropp.nye || []).slice(0, 200)){
     const navn = String(n && n.navn || '').replace(/·/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
     const forelder = String(n && n.forelder || '');
     if(!navn) return svar({ ok:false, feil:'Posten mangler navn' });
-    const alle = flett(egne);
+    const alle = flett(egne, omdopt);
     if(forelder.indexOf(' · ') === -1){
       if(grupper.indexOf(forelder) === -1) return svar({ ok:false, feil:'Ukjent gruppe: ' + forelder });
     } else if(alle.indexOf(forelder) === -1 || forelder.split(' · ').length !== 2 || forelder.indexOf('Utenfor budsjett') === 0){
@@ -562,7 +568,7 @@ async function nyeKategorier(env, kropp){
     egne.push(ny); nye.push(ny);
   }
   await env.FAMILIE_KV.put(EGNE_NOKKEL, JSON.stringify(egne));
-  return svar({ ok:true, nye:nye, kategorier:flett(egne).filter(k => k.indexOf('Utenfor budsjett') !== 0), egne:egne });
+  return svar({ ok:true, nye:nye, kategorier:flett(egne, omdopt).filter(k => k.indexOf('Utenfor budsjett') !== 0), egne:egne });
 }
 /* Bare egne poster kan fjernes, og bare naar ingen foering bruker dem.
    Budsjettet og det Neam har laert for posten, fjernes sammen med den. */
@@ -587,20 +593,27 @@ async function slettKategori(env, kropp){
   let endret = false;
   for(const m of Object.keys(laert)) if(laert[m] === k){ delete laert[m]; endret = true; }
   if(endret) await env.FAMILIE_KV.put(LAERT_NOKKEL, JSON.stringify(laert));
-  return svar({ ok:true, kategorier:flett(egne).filter(x => x.indexOf('Utenfor budsjett') !== 0), egne:egne });
+  return svar({ ok:true, kategorier:flett(egne, await lesOmdopt(env)).filter(x => x.indexOf('Utenfor budsjett') !== 0), egne:egne });
 }
-/* Nytt navn paa en egen post eller linje: { fra, navn }. Linjene under,
+/* Nytt navn paa en post eller linje: { fra, navn }. Linjene under,
    foeringene, budsjettet og det Neam har laert foelger med (Magne,
-   6. november 2026 - Neam skal kunne endre postene paa Oekonomi-sida). De
-   faste postene staar i koden og faar ikke nytt navn her. */
+   6. november 2026 - Neam skal kunne endre postene paa Oekonomi-sida).
+   En fast post faar navnet i OMDOPT_NOKKEL; gruppene og Utenfor budsjett
+   faar ikke nytt navn. */
 async function nyttKategoriNavn(env, kropp){
   const fra = String(kropp.fra || '');
   const navn = String(kropp.navn || '').replace(/·/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
   if(!navn) return svar({ ok:false, feil:'Det nye navnet mangler' });
-  const egne = await lesEgne(env);
-  if(egne.indexOf(fra) === -1) return svar({ ok:false, feil:KATEGORIER.indexOf(fra) !== -1 ? 'De faste postene kan ikke få nytt navn: ' + fra : 'Ukjent egen post: ' + fra });
+  const egne = await lesEgne(env), omdopt = await lesOmdopt(env);
+  if(flett(egne, omdopt).indexOf(fra) === -1 || fra.split(' · ').length < 2) return svar({ ok:false, feil:'Ukjent post: ' + fra });
+  if(fra.indexOf('Utenfor budsjett') === 0) return svar({ ok:false, feil:'Postene utenfor budsjett får ikke nytt navn' });
   const til = fra.split(' · ').slice(0, -1).concat([navn]).join(' · ');
-  if(til !== fra && flett(egne).some(k => k !== fra && k.toLowerCase() === til.toLowerCase())) return svar({ ok:false, feil:'Det finnes alt en post som heter ' + til });
+  if(til !== fra && flett(egne, omdopt).some(k => k !== fra && k.toLowerCase() === til.toLowerCase())) return svar({ ok:false, feil:'Det finnes alt en post som heter ' + til });
+  const fast = KATEGORIER.filter(k => (omdopt[k] || k) === fra)[0];
+  if(fast){
+    if(til === fast) delete omdopt[fast]; else omdopt[fast] = til;
+    await env.FAMILIE_KV.put(OMDOPT_NOKKEL, JSON.stringify(omdopt));
+  }
   const bytt = k => k === fra ? til : (typeof k === 'string' && k.indexOf(fra + ' · ') === 0 ? til + k.slice(fra.length) : k);
   const nyeEgne = egne.map(bytt);
   await env.FAMILIE_KV.put(EGNE_NOKKEL, JSON.stringify(nyeEgne));
@@ -621,7 +634,7 @@ async function nyttKategoriNavn(env, kropp){
   let lEndret = false;
   for(const m of Object.keys(laert)) if(bytt(laert[m]) !== laert[m]){ laert[m] = bytt(laert[m]); lEndret = true; }
   if(lEndret) await env.FAMILIE_KV.put(LAERT_NOKKEL, JSON.stringify(laert));
-  return svar({ ok:true, fra:fra, til:til, kategorier:flett(nyeEgne).filter(x => x.indexOf('Utenfor budsjett') !== 0), egne:nyeEgne });
+  return svar({ ok:true, fra:fra, til:til, kategorier:flett(nyeEgne, omdopt).filter(x => x.indexOf('Utenfor budsjett') !== 0), egne:nyeEgne });
 }
 const POST_NOKKEL = 'auth:bank:poster';
 const LAERT_NOKKEL = 'auth:bank:laert';
@@ -646,11 +659,12 @@ function motpartNokkel(p){
   const raa = (p.motpart || String(p.tekst || '').split(/\s+/).slice(0, 3).join(' ')).toUpperCase();
   return raa.replace(/[0-9*#.,:/\\-]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
-function foreslaa(p, laert){
+function foreslaa(p, laert, omdopt){
   const n = motpartNokkel(p);
   if(n && laert[n]) return { kategori:laert[n], kilde:'laert' };
   const tekst = (p.motpart + ' ' + p.tekst).toUpperCase();
-  for(const [re, kat] of NOKKELORD) if(re.test(tekst)) return { kategori:kat, kilde:'ord' };
+  /* Noekkelordene peker paa de faste navnene - har posten faatt nytt navn, brukes det. */
+  for(const [re, kat] of NOKKELORD) if(re.test(tekst)) return { kategori:(omdopt && omdopt[kat]) || kat, kilde:'ord' };
   return { kategori:'', kilde:'' };
 }
 async function lesJson(env, nokkel, tom){
@@ -768,7 +782,7 @@ async function innboks(env, okt, fersk, psu){
   let fra = await env.FAMILIE_KV.get(FRA_NOKKEL);
   if(!fra){ fra = new Date().toISOString().slice(0, 8) + '01'; await env.FAMILIE_KV.put(FRA_NOKKEL, fra); }
   const poster = await lesJson(env, POST_NOKKEL, {});
-  const laert = await lesJson(env, LAERT_NOKKEL, {});
+  const laert = await lesJson(env, LAERT_NOKKEL, {}), omdopt = await lesOmdopt(env);
   let hentet = Date.now(), advarsel = '', nye = 0;
   for(const k of felles){
     const r = await hentTransaksjoner(env, k.uid, fra, fersk, psu);
@@ -779,7 +793,7 @@ async function innboks(env, okt, fersk, psu){
       /* Bare bokfoerte. En reservasjon kan endre beloep eller forsvinne. */
       if(t.status && t.status !== 'BOOK') continue;
       if(poster[t.id]) continue;
-      const f = foreslaa(t, laert);
+      const f = foreslaa(t, laert, omdopt);
       const ny = { id:t.id, konto:k.uid, kontoNavn:k.navn, dato:t.dato, belop:t.belop, tekst:t.tekst, motpart:t.motpart,
         status:'ny', kategori:f.kategori, kilde:f.kilde };
       poster[t.id] = ny;
@@ -823,7 +837,7 @@ async function innboks(env, okt, fersk, psu){
         if(poster[id]) continue;
         const kv = { id:id, fra:'trumf', trumfId:k.id, konto:'trumf', kontoNavn:'Trumf-kvittering', dato:dato,
           belop:-Math.abs(k.belop), tekst:'', motpart:k.butikk, harKvittering:k.harKvittering, status:'ny' };
-        const f = foreslaa(kv, laert);
+        const f = foreslaa(kv, laert, omdopt);
         kv.kategori = f.kategori; kv.kilde = f.kilde;
         kobleKvittering(poster, kv);
         const ligner = await finnLignende(env, poster, kv, []);
@@ -845,7 +859,7 @@ async function innboks(env, okt, fersk, psu){
   for(const id of Object.keys(poster)){
     const p = poster[id];
     if(p.status !== 'ny' || p.dekketAv || p.mulDobbel || p.lignerPaa || p.manuell) continue;
-    if(!p.kategori){ const f = foreslaa(p, laert); if(f.kategori){ p.kategori = f.kategori; p.kilde = f.kilde; } }
+    if(!p.kategori){ const f = foreslaa(p, laert, omdopt); if(f.kategori){ p.kategori = f.kategori; p.kilde = f.kilde; } }
     if(!p.kategori || (p.kilde !== 'laert' && p.kilde !== 'ord')) continue;
     autoFoer(poster, p, naa);
     endret = true;
@@ -856,7 +870,7 @@ async function innboks(env, okt, fersk, psu){
   const venter = alle.filter(p => p.status === 'ny' && !p.dekketAv).sort((a, b) => b.dato.localeCompare(a.dato));
   for(const p of venter){
     if(p.kategori) continue;
-    const f = foreslaa(p, laert);
+    const f = foreslaa(p, laert, omdopt);
     if(f.kategori){ p.kategori = f.kategori; p.kilde = f.kilde; }
   }
   /* De automatisk foerte siste 14 dager, nyeste foerst - til gjennomsyn og angre. */
@@ -1276,13 +1290,13 @@ async function nyKvittering(env, kropp, epost){
     const maal = lik && poster[lik.id];
     if(maal && !maal.harFil) return await leggVed(maal, 'kvittering');
   }
-  const laert = await lesJson(env, LAERT_NOKKEL, {});
+  const laert = await lesJson(env, LAERT_NOKKEL, {}), omdopt = await lesOmdopt(env);
   const p = { id:id, fra:'foto', konto:'foto', kontoNavn:'Kvittering fra bilde', dato:dato, belop:-sum, tekst:'', motpart:butikk,
     harKvittering: linjer.length > 0, status:'ny', lagtInnAv:epost, lagtInn:new Date().toISOString() };
   /* Lagt inn for haand - av Neam etter en beskjed, uten kvittering. */
   if(kropp.forHand){ p.forHand = true; p.kontoNavn = 'Lagt inn for hånd'; }
   if(faktura){ p.faktura = true; p.kontoNavn = 'Faktura'; p.status = 'venter'; }
-  const f = foreslaa(p, laert);
+  const f = foreslaa(p, laert, omdopt);
   p.kategori = f.kategori; p.kilde = f.kilde;
   /* Bildet eller PDF-en lagres, saa kvitteringen kan aapnes igjen (Magne,
      6. november 2026). Siden krymper bildene foer de sendes. */

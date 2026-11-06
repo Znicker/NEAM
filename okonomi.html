@@ -200,7 +200,7 @@ html{ scroll-padding-top:90px; }
 .ok-tabell .linje td:first-child{ padding-left:40px; }
 .ok-bu-pil{ font:inherit; border:0; background:none; color:var(--ink-soft); cursor:pointer; padding:0 6px 0 0; display:inline-block; transition:transform .15s; }
 .ok-bu-pil[aria-expanded="true"]{ transform:rotate(90deg); }
-.ok-bu-fjern{ font:inherit; font-size:18px; line-height:1; border:0; background:none; color:var(--ink-soft); cursor:pointer; padding:0 0 0 8px; }
+.ok-bu-fjern{ font:inherit; font-size:18px; line-height:1; border:0; background:none; color:var(--ink-soft); cursor:pointer; padding:0 0 0 2px; flex:none; }
 .ok-tabell .sum td{ font-weight:700; background:var(--boks-mild); }
 .ok-tabell .resultat td{ font-weight:700; border-top:2px solid var(--ink); border-bottom:0; padding-top:10px; }
 .ok-tabell input{ width:100px; text-align:right; font-family:inherit; font-size:16px; padding:4px 8px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
@@ -243,8 +243,37 @@ html{ scroll-padding-top:90px; }
 .ok-std-utvid[aria-expanded="true"] .ok-std-pil{ transform:rotate(90deg); }
 .ok-std-navn{ padding-left:16px; }
 /* Plusstegnet i redigering: ved en gruppe gir det en ny post, ved en post en ny linje. */
-.ok-pluss{ font:inherit; font-size:18px; font-weight:700; line-height:1; width:26px; height:26px; flex:none; border-radius:50%; border:1.5px solid var(--aksent); background:none; color:var(--aksent); cursor:pointer; padding:0; margin-left:8px; vertical-align:middle; }
-.ok-pluss:focus-visible{ outline:2px solid var(--aksent); outline-offset:2px; }
+.ok-pluss{ flex:none; display:inline-grid; place-items:center; width:20px; height:20px; padding:0; border:0; border-radius:50%; cursor:pointer;
+  background:rgba(79,143,95,.14); background:color-mix(in srgb, var(--handling-ny) 14%, transparent); color:var(--handling-ny); transition:background .15s, color .15s; }
+.ok-pluss svg{ width:12px; height:12px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; }
+.ok-pluss:hover{ background:var(--handling-ny); color:#fff; }
+.ok-pluss:active{ background:var(--handling-ny-moerk); color:#fff; }
+.ok-pluss:focus-visible{ outline:2px solid var(--handling-ny); outline-offset:2px; }
+.ok-pluss-plass{ flex:none; width:20px; }
+
+/* Budsjettet friskt opp (6. november 2026): hver gruppe i sitt eget kort,
+   med en tynn stolpe for hvor mye av inntekten den tar. Null er en strek. */
+.ok-bu-flate{ display:flex; flex-direction:column; gap:14px; }
+.ok-bu-flate > .ok-kort-hode h2{ margin:0; }
+.ok-bu-gruppe{ background:var(--paper); border-radius:14px; box-shadow:var(--shadow); padding:14px 16px 10px; display:flex; flex-direction:column; min-width:0; }
+.ok-bu-gruppe .ok-std-hode{ border-bottom:0; padding-bottom:2px; }
+.ok-bu-gruppe .ok-std-gruppe{ border-bottom:0; padding:0 0 2px; font-size:var(--t-brod); }
+.ok-bu-ut{ display:flex; flex-direction:column; gap:14px; }
+.ok-bu-ut > .ok-std-hode{ border-bottom:0; padding:6px 2px 0; }
+.ok-bu-grupper{ gap:14px; }
+@media (min-width:1280px){ .ok-bu-grupper{ grid-template-columns:repeat(3, minmax(0,1fr)); } }
+.ok-bu-topp{ gap:14px; }
+.ok-bu-andel{ display:flex; align-items:center; gap:10px; margin:4px 0 8px; font-size:var(--t-etikett); color:var(--ink-soft); white-space:nowrap; }
+.ok-bu-andel .ok-bar{ flex:1; height:4px; }
+.ok-bu-gruppe .ok-std-rad{ padding-left:0; border-top:1px solid var(--line); }
+.ok-bu-gruppe .ok-std-rad.linje{ padding-left:18px; border-top:0; }
+.ok-bu-gruppe .ok-std-navn{ padding-left:0; }
+.ok-bu-null{ color:var(--ink-soft) !important; opacity:.6; }
+.ok-bu-navnrad{ display:inline-flex; align-items:center; gap:8px; min-width:0; flex:1 1 auto; }
+.ok-std-rad input.ok-bu-navn{ flex:0 1 auto; width:auto; field-sizing:content; min-width:4ch; max-width:240px; text-align:left; font:inherit; color:var(--ink); background:transparent; border:1.5px solid transparent; border-radius:8px; padding:3px 6px; margin-left:-6px; }
+.ok-std-rad input.ok-bu-navn:hover{ border-color:var(--line); }
+.ok-std-rad input.ok-bu-navn:focus{ outline:none; border-color:var(--aksent); background:#fff; }
+.ok-std-rad.linje .ok-bu-navn{ font-size:var(--t-meta); }
 .ok-std-ny{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:6px 0 6px 14px; }
 .ok-std-ny input{ flex:1 1 160px; min-width:0; font-family:inherit; font-size:16px; padding:6px 10px; border:1.5px solid var(--aksent); border-radius:8px; background:#fff; color:var(--ink); }
 .ok-std-ny .btn{ width:auto; padding:8px 14px; font-size:var(--t-meta); }
@@ -778,14 +807,14 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       <button type="button" class="ok-fane" data-bu="maaned" aria-pressed="false">Månedsbudsjett</button>
     </div>
     <div class="ok-sumrad" id="ok-bs-sum"></div>
-    <section class="ok-kort" id="ok-std-kort">
+    <section class="ok-bu-flate" id="ok-std-kort">
       <div class="ok-kort-hode"><h2>Standardbudsjett</h2><div class="ok-rad-knapper" id="ok-std-knapper"></div></div>
       <p class="ok-meta" id="ok-std-meta"></p>
       <div class="ok-melding" id="ok-std-avbryt" hidden></div>
       <div class="ok-std" id="ok-std"></div>
       <p class="ok-meta">Hver måned starter fra standardbudsjettet. En endring her gjelder fra neste måned; måneden som pågår, endres i månedsbudsjettet.</p>
     </section>
-    <section class="ok-kort" id="ok-mb-kort">
+    <section class="ok-bu-flate" id="ok-mb-kort">
       <div class="ok-kort-hode"><h2>Månedsbudsjett</h2><div class="ok-rad-knapper" id="ok-mb-knapper"></div></div>
       <div class="ok-mnd-nav">
         <button type="button" class="ok-pil" id="ok-mb-forrige" aria-label="Forrige måned">‹</button>
@@ -1657,7 +1686,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var verdi = function(k, sum){
       var v = sum ? okBuPostSum(k, mal) : okBuVerdi(k, mal);
       var s = std ? null : (sum ? okBuPostSum(k, 'standard') : okBuVerdi(k, 'standard'));
-      return okEl('span', '', (s != null && Math.round(s) !== Math.round(v) ? '<span class="ok-std-std">standard ' + okBuKr(s) + '</span>' : '') + okBuKr(v));
+      var avvik = s != null && Math.round(s) !== Math.round(v);
+      /* Null vises som en strek - tallene som teller, skal synes (6. november 2026). */
+      return okEl('span', !Math.round(v) && !avvik ? 'ok-bu-null' : '', (avvik ? '<span class="ok-std-std">standard ' + okBuKr(s) + '</span>' : '') + (Math.round(v) || avvik ? okBuKr(v) : '–'));
     };
     var fjern = function(k){
       if(!red || okBu.egne.indexOf(k) === -1 || okBuLinjer(k).length) return null;
@@ -1668,8 +1699,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     };
     var pluss = function(forelder, hva){
       if(!red) return null;
-      var b = okEl('button', 'ok-pluss', '+'); b.type = 'button'; b.id = pre + '-pl-' + (nr++);
-      b.setAttribute('aria-label', hva);
+      var b = okEl('button', 'ok-pluss', '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9"/></svg>'); b.type = 'button'; b.id = pre + '-pl-' + (nr++);
+      b.setAttribute('aria-label', hva); b.title = hva;
       b.addEventListener('click', function(){ okBu.ny = { forelder:forelder, mal:mal, feil:'' }; okBudKortTegn(mal); var f = document.getElementById(pre + '-ny'); if(f) f.focus(); });
       return b;
     };
@@ -1708,17 +1739,28 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       r.appendChild(navnNode); r.appendChild(verdiNode);
       return r;
     };
+    /* I redigering: plusset til venstre, navnet som et felt man kan skrive
+       nytt navn i, og krysset for egne poster (Magne, 6. november 2026). */
     var navnSpan = function(tekst, k, plussNode){
-      var s = okEl('span', '', okVask(tekst));
+      var s = okEl('span', 'ok-bu-navnrad');
+      if(plussNode) s.appendChild(plussNode); else if(red) s.appendChild(okEl('span', 'ok-pluss-plass'));
+      if(red && k){
+        var inp = document.createElement('input'); inp.type = 'text'; inp.className = 'ok-bu-navn'; inp.maxLength = 40;
+        inp.value = tekst; inp.id = pre + '-n-' + (nr++); inp.dataset.navn = k;
+        inp.setAttribute('aria-label', 'Navn på ' + k.split(' · ').slice(1).join(' · '));
+        var lagre = function(){ var v = inp.value.trim(); if(!v || v === tekst){ inp.value = tekst; return; } okBuNyttNavn(k, v, mal, inp); };
+        inp.addEventListener('change', lagre);
+        inp.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); inp.blur(); } if(e.key === 'Escape'){ inp.value = tekst; inp.blur(); } });
+        s.appendChild(inp);
+      } else s.appendChild(okEl('span', '', okVask(tekst)));
       var f = k && fjern(k); if(f) s.appendChild(f);
-      if(plussNode) s.appendChild(plussNode);
       return s;
     };
     var postRader = function(k, mal3){
       var navn = k.split(' · ')[1], linjer = okBuLinjer(k);
       var pl = pluss(k, 'Ny linje under ' + navn);
       if(!linjer.length){
-        if(red) mal3.appendChild(rad(navnSpan(navn, k, pl), felt(k, navn)));
+        if(red) mal3.appendChild(rad(navnSpan(navn, k, pl), felt(k, navn), 'post'));
         else mal3.appendChild(rad(okEl('span', 'ok-std-navn', okVask(navn)), verdi(k)));
         var n0 = nyRad(k, mal); if(n0) mal3.appendChild(n0);
         return;
@@ -1727,42 +1769,54 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       var knapp = okEl('button', 'ok-std-utvid', '<span class="ok-std-pil" aria-hidden="true">›</span>' + okVask(navn)); knapp.type = 'button';
       knapp.setAttribute('aria-expanded', String(apen)); knapp.id = pre + '-u-' + (nr++);
       knapp.addEventListener('click', function(){ if(red) return; okBu.stdApne[k] = !okBu.stdApne[k]; var id = knapp.id; okBudKortTegn('standard'); okBudKortTegn(okBu.mbValgt); var f = document.getElementById(id); if(f) f.focus(); });
-      var hode = okEl('span', ''); hode.appendChild(knapp); if(pl) hode.appendChild(pl);
-      mal3.appendChild(rad(hode, verdi(k, true)));
+      var hode = red ? navnSpan(navn, k, pl) : knapp;
+      mal3.appendChild(rad(hode, verdi(k, true), red ? 'post' : ''));
       if(!apen) return;
       linjer.forEach(function(l){
         var ln = l.split(' · ')[2];
         mal3.appendChild(rad(navnSpan(ln, l), red ? felt(l, navn + ', ' + ln) : verdi(l), 'linje'));
       });
-      if(red || okBuVerdi(k, mal) || (!std && okBuVerdi(k, 'standard'))) mal3.appendChild(rad(okEl('span', '', 'Uten linje'), red ? felt(k, navn + ' uten linje') : verdi(k), 'linje'));
+      /* Postens eget tall naar den har linjer - bare naar det finnes et. Foer
+         sto «Uten linje» under hver post med linjer i redigering, og saa ut som
+         en linje som ble laget om og om igjen (Magne, 6. november 2026). */
+      if(okBuVerdi(k, mal) || (!std && okBuVerdi(k, 'standard'))) mal3.appendChild(rad(navnSpan('Uten linje', null, null), red ? felt(k, navn + ' uten linje') : verdi(k), 'linje'));
       var n1 = nyRad(k, mal); if(n1) mal3.appendChild(n1);
     };
     var hode = function(tittel, sum, g){
-      var h = okEl('div', 'ok-std-hode', '<span class="ok-etikett">' + tittel + '</span>');
-      var pl = g && pluss(g, 'Ny post i ' + g); if(pl) h.firstChild.appendChild(pl);
+      var h = okEl('div', 'ok-std-hode', '<span class="ok-bu-navnrad"><span class="ok-etikett">' + tittel + '</span></span>');
+      var pl = g && pluss(g, 'Ny post i ' + g); if(pl) h.firstChild.insertBefore(pl, h.firstChild.firstChild);
       h.appendChild(okEl('b', '', kr(sum)));
       return h;
     };
     var poster = function(g){ return okBu.kategorier.filter(function(k){ var d = k.split(' · '); return d.length === 2 && d[0] === g; }); };
+    /* Hvor stor del av inntekten gruppen tar - en tynn stolpe under navnet. */
+    var andel = function(sum){
+      if(!(t.inn > 0)) return null;
+      var pst = Math.round(sum / t.inn * 100);
+      return okEl('div', 'ok-bu-andel', '<div class="ok-bar"><div class="ok-bar-fyll" style="width:' + Math.min(100, Math.max(0, sum / t.inn * 100)).toFixed(1) + '%"></div></div><span>' + pst + ' % av inntekten</span>');
+    };
 
-    var topp = okEl('div', 'ok-std-to');
+    var topp = okEl('div', 'ok-std-to ok-bu-topp');
     [['Inntekter', t.inn], ['Sparing', t.spar]].forEach(function(x){
       var b = okEl('div', '');
+      b.className = 'ok-bu-gruppe';
       b.appendChild(hode(x[0], x[1], x[0]));
+      if(x[0] === 'Sparing'){ var an = andel(x[1]); if(an) b.appendChild(an); }
       var n2 = nyRad(x[0], mal); if(n2) b.appendChild(n2);
       poster(x[0]).forEach(function(k){ postRader(k, b); });
       topp.appendChild(b);
     });
     boks.appendChild(topp);
-    var ut = okEl('div', '');
+    var ut = okEl('div', 'ok-bu-ut');
     ut.appendChild(hode('Utgifter', t.ut));
-    var grupper = okEl('div', 'ok-std-to');
+    var grupper = okEl('div', 'ok-std-to ok-bu-grupper');
     t.rekke.forEach(function(g){
-      var b = okEl('div', '');
-      var gh = okEl('div', 'ok-std-gruppe', '<span>' + okVask(g) + '</span>');
-      var pl = pluss(g, 'Ny post i ' + g); if(pl) gh.firstChild.appendChild(pl);
-      gh.appendChild(okEl('span', '', okBuKr(t.grupper[g])));
+      var b = okEl('div', 'ok-bu-gruppe');
+      var gh = okEl('div', 'ok-std-gruppe', '<span class="ok-bu-navnrad"><span>' + okVask(g) + '</span></span>');
+      var pl = pluss(g, 'Ny post i ' + g); if(pl) gh.firstChild.insertBefore(pl, gh.firstChild.firstChild);
+      gh.appendChild(okEl('span', '', okBuKr(t.grupper[g]) + ' kr'));
       b.appendChild(gh);
+      var ag = andel(t.grupper[g]); if(ag) b.appendChild(ag);
       var n3 = nyRad(g, mal); if(n3) b.appendChild(n3);
       poster(g).forEach(function(k){ postRader(k, b); });
       grupper.appendChild(b);
@@ -1780,6 +1834,25 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   function okBuKategorierFra(r){
     okBu.kategorier = r.kategorier; okBu.egne = r.egne || [];
     okBuAlleTegn();
+  }
+  /* Nytt navn paa en post eller linje - ogsaa de faste. Lagres med en gang,
+     som nye poster; foeringene, budsjettet og det Neam har laert foelger med
+     paa serveren (kategori-navn), og her flyttes tallene som er skrevet inn. */
+  function okBuNyttNavn(k, navn, mal, inp){
+    var meta = document.getElementById(mal === 'standard' ? 'ok-std-meta' : 'ok-mb-meta');
+    inp.disabled = true;
+    okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'kategori-navn', fra:k, navn:navn }) })
+      .then(function(r){
+        inp.disabled = false;
+        if(!r.ok){ meta.textContent = 'Fikk ikke nytt navn: ' + r.feil; inp.value = k.split(' · ').pop(); return; }
+        var bytt = function(x){ return x === r.fra ? r.til : (x.indexOf(r.fra + ' · ') === 0 ? r.til + x.slice(r.fra.length) : x); };
+        var flytt = function(o){ if(!o) return; Object.keys(o).forEach(function(x){ var y = bytt(x); if(y !== x){ o[y] = o[x]; delete o[x]; } }); };
+        flytt(okBu.standard); Object.keys(okBu.maaneder).forEach(function(m){ flytt(okBu.maaneder[m]); }); flytt(okBu.utkast); flytt(okBu.stdApne);
+        okBuKategorierFra(r);
+        meta.textContent = '«' + r.fra.split(' · ').slice(1).join(' · ') + '» heter nå «' + r.til.split(' · ').slice(1).join(' · ') + '». Føringene og det Neam har lært, følger med.';
+        okStatusLast(); if(okMnd.lastet) okMndLast(); okAarLastet = false;
+        var f = document.querySelector('#' + (mal === 'standard' ? 'ok-std' : 'ok-mb') + ' input[data-navn="' + r.til.replace(/"/g, '\\"') + '"]'); if(f) f.focus();
+      });
   }
   function okBuFjern(k, mal){
     var meta = document.getElementById(mal === 'standard' ? 'ok-std-meta' : 'ok-mb-meta');
@@ -3636,10 +3709,11 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   var OK_NEAM_VERKTOY = [
     {
       name: 'endre_okonomi_budsjettposter',
-      description: 'Endrer postene og linjene i budsjettet (gruppe · post · linje): legger til nye, gir egne '
+      description: 'Endrer postene og linjene i budsjettet (gruppe · post · linje): legger til nye, gir '
                  + 'poster og linjer nytt navn, og fjerner egne som ingen føring bruker. En ny post legges under '
-                 + 'en gruppe («Bolig»), en ny linje under en post («Bolig · Strøm»). De faste postene kan '
-                 + 'verken få nytt navn eller fjernes. Ved nytt navn følger føringene, budsjettbeløpene og det '
+                 + 'en gruppe («Bolig»), en ny linje under en post («Bolig · Strøm»). Alle poster og linjer kan få '
+                 + 'nytt navn, også de faste; gruppene og Utenfor budsjett kan ikke. De faste kan ikke fjernes. '
+                 + 'Ved nytt navn følger føringene, budsjettbeløpene og det '
                  + 'Neam har lært med. Bare på Økonomi-sida. Navnene står i les_okonomi_maaned.',
       input_schema: { type:'object', properties:{
         legg_til: { type:'array', items:{ type:'object', properties:{
