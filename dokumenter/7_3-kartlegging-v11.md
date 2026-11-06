@@ -468,11 +468,17 @@ søk, filter og periode (`f6b8f21`), og budsjettet ble friskt opp med nye
 navn på alle poster, også de faste (`e4d8c4b`). Så måneden på Status uten
 fullt budsjett, med det som mangler i en gul boks, og vedleggene på radene
 i Alle (`f4c292d`), og merker på tvers av gruppene – forsikring, lån,
-abonnement … – med større gruppenavn (`5f06f25`). **Sett i live-data
-6. november, ikke rørt:** strømregningen 26. oktober ser ut til å være
-ført to ganger (samme beløp, to banktekster for samme avtalegiro).
-SPK-fakturaen ble lest på nytt etter `8a21f18` («det fungerte»). 51 commits,
-`0e0050a`–`5f06f25`, medregnet en midlertidig statustest fra en annen økt
+abonnement … – med større gruppenavn (`5f06f25`). 7. november: **samme
+trekk med ny tekst fra DNB ble ført to ganger** – tettet, og «Koble» rydder
+opp (`03073b0`). I live-data fant den 5 dobler (Tibber 26. oktober og fire
+kontoreguleringer 2. november); **Magne kobler dem selv** –
+ikke kjørt av Claude. **Foreslått, venter på Magne** (han tester og kommer
+tilbake): Økonomi åpner på ~9 s fordi innboks og kontoer hentes ferskt fra
+DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
+varsler og kilder tre ganger – vis det Neam har først og hent i
+bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
+stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
+fungerte»). 52 commits, `0e0050a`–`03073b0`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3887,7 +3893,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 51 commits fra `0e0050a` til `5f06f25`.
+verdier. Bygget i 52 commits fra `0e0050a` til `03073b0`.
 
 ### Banken – Enable Banking
 
@@ -4196,6 +4202,32 @@ til Oppsett med rød prikk på fanen, og Coop-meldingen bort.
   forsvant før Lagre. Nå sammenlignes skjemaet med det som sist ble lagret
   (`okFormueTekst()` mot `okFormueLagret`); er det ulikt, oppdateres bare
   visningen (`okTegnFormue()`), og skjemaet blir stående.
+
+### Samme trekk to ganger fra DNB (7. november, `03073b0`)
+
+Neam fant strømregningen to ganger, og Magne limte inn svaret. **Årsaken:**
+DNB gir ikke `entry_reference`, så `hentTransaksjoner` lager id-en av
+dato, beløp, tekst og motpart (`h` + hash). Når DNB senere la til tekst
+(et referansenummer foran «Giro, …») eller motpart, eller flyttet datoen en dag,
+fikk samme trekk en ny id – og innboksen førte det én gang til,
+automatisk. Det rammet alle trekk banken beriker i ettertid.
+
+- **Kjennetegnet:** den gamle id-en finnes ikke lenger i bankens liste
+  (`bankFinnes`), og et nytt trekk på samme konto har samme beløp og
+  høyst tre dager mellom (`sammeTrekk`). Begge må ha laget id
+  (`lagdId`). To like kjøp som begge står i banken, røres ikke.
+- **Innboksen:** et slikt trekk blir ikke ny post. Den nye id-en legges i
+  `bankIder` på den gamle (`alias` bygges av dem ved hver henting), og
+  den gamle får fyldigere tekst og motpart.
+- **Koble i ettertid:** regelen `bank-dobbel` i `koble-alle` henter
+  bankens lister (buffer, `psuAv(request)`) og foreslår par der nøyaktig
+  den ene er borte. Den med mest (dekket av kvittering, fil, linjer,
+  fordeling, valgt for hånd) beholdes; den andre blir `sammenslatt` med
+  `slaattInn`. Uten bankliste: `advarsel`, og regelen hoppes over.
+  `angre` sletter nå også `slaattInn`.
+- **Live 7. november** (bare forslag, `utfor:false`): 5 dobler. McDonalds
+  8./9. oktober og to overføringer med samme beløp ble ikke foreslått – begge står
+  i banken.
 
 ### Merker på tvers, og måneden uten fullt budsjett (6. november, `f4c292d`, `5f06f25`)
 
