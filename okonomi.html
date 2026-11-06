@@ -526,6 +526,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 /* ---------- Oppsett: verdier, gjeld og maal ---------- */
 .ok-fo-rad{ display:grid; grid-template-columns:minmax(0,1fr) 130px 140px 36px; gap:8px; align-items:center; }
 .ok-fo-rad.rente{ grid-template-columns:minmax(0,1fr) 120px 120px 80px 140px 36px; }
+/* .ok-ut har grid-area:ut fra innboksen - her finnes ingen «ut», og krysset
+   havnet paa en egen linje under raden, som om det hoerte til neste (6. november 2026). */
+.ok-fo-rad .ok-ut{ grid-area:auto; }
 .ok-fo-rad select{ width:100%; min-width:0; font-family:inherit; font-size:16px; padding:6px 8px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
 .ok-fo-rad select:focus{ outline:none; border-color:var(--aksent); }
 .ok-fo-rad input{ width:100%; min-width:0; font-family:inherit; font-size:16px; padding:6px 8px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
