@@ -2793,7 +2793,10 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
      Et tomt familiemaal fra skjemaet teller som intet maal. */
   function okFormueTekst(){
     var m = okFormue.maal && String(okFormue.maal.navn || '').trim() ? okFormue.maal : null;
-    return JSON.stringify({ v:okFormue.verdier, g:okFormue.gjeld, m:m, b:okFormue.brutto, k:okFormue.buffer });
+    /* «farge» settes paa verdiene naar stolpen tegnes - den er ikke en endring
+       (7. november 2026: ellers saa skjemaet alltid ulagret ut, og ble aldri
+       tegnet paa nytt naar ferske tall kom). */
+    return JSON.stringify({ v:okFormue.verdier, g:okFormue.gjeld, m:m, b:okFormue.brutto, k:okFormue.buffer }, function(k, v){ return k === 'farge' ? undefined : v; });
   }
   var okErBolig = function(x){ return /bolig|hus|leilighet/i.test(x.navn); };
   function okGrunnlag(){
@@ -3854,7 +3857,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
                  + 'en gruppe («Bolig»), en ny linje under en post («Bolig · Strøm»). Alle poster og linjer kan få '
                  + 'nytt navn, også de faste; gruppene og Utenfor budsjett kan ikke. De faste kan ikke fjernes. '
                  + 'Ved nytt navn følger føringene, budsjettbeløpene og det '
-                 + 'Neam har lært med. Bare på Økonomi-sida. Navnene står i les_okonomi_maaned.',
+                 + 'Neam har lært med. Gir også postene et merke på tvers av gruppene (forsikring, lån per type, '
+                 + 'abonnement, strøm og energi, barnehage og SFO). Bare på Økonomi-sida. Navnene og merkene står i '
+                 + 'les_okonomi_maaned (pa_tvers).',
       input_schema: { type:'object', properties:{
         legg_til: { type:'array', items:{ type:'object', properties:{
           forelder: { type:'string', description:'Gruppen («Bolig») for en ny post, eller posten («Bolig · Strøm») for en ny linje.' },
@@ -3864,11 +3869,19 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
           fra: { type:'string', description:'Hele navnet, f.eks. «Bolig · Strøm · Nettleie».' },
           navn: { type:'string', description:'Det nye siste leddet, f.eks. «Nettleie Glitre».' }
         }, required:['fra', 'navn'] } },
-        fjern: { type:'array', items:{ type:'string' }, description:'Hele navn på egne poster eller linjer.' }
+        fjern: { type:'array', items:{ type:'string' }, description:'Hele navn på egne poster eller linjer.' },
+        merker: { type:'array', description:'Merket på tvers av gruppene for en post eller linje. En linje uten eget merke arver postens. Tomt merke fjerner det.',
+          items:{ type:'object', properties:{
+            post: { type:'string', description:'Hele navnet, f.eks. «Bil · Forsikring» eller «Andre utgifter · Nina · Studielån».' },
+            merke: { type:'string', enum:[''].concat(OK_MERKER.map(function(m){ return m[0]; })) }
+          }, required:['post', 'merke'] } }
       }, required:[] },
       neamSkriver: true,
       neamBeskriv: function(arg){
         var l = [];
+        [].concat(arg.merker || []).forEach(function(x){
+          l.push('• Merke: ' + okNeamKat(x.post) + ' → ' + (x.merke ? okMerkeNavn(x.merke) : 'uten merke'));
+        });
         [].concat(arg.legg_til || []).forEach(function(x){
           l.push('• Ny ' + (String(x.forelder).indexOf(' · ') === -1 ? 'post' : 'linje') + ': ' + okNeamKat(x.forelder) + ' › ' + x.navn);
         });
@@ -3892,7 +3905,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
           linjer: { type:'object', description:'{ "<linjenummer>": "<kategori>" } for varer som føres for seg.', additionalProperties:{ type:'string' } }
         }, required:['id', 'kategori'] } },
         stryk: { type:'array', items:{ type:'string' }, description:'Id-er som strykes (telles ikke).' },
-        tilbake: { type:'array', items:{ type:'string' }, description:'Id-er som sendes tilbake til innboksen.' }
+        tilbake: { type:'array', items:{ type:'string' }, description:'Id-er som sendes tilbake til innboksen.' },
+        faktura_til_innboks: { type:'array', items:{ type:'string' }, description:'Id-er på fakturaer som venter på trekket, men ble betalt fra en konto Neam ikke henter - de blir poster i innboksen.' }
       }, required:[] },
       neamSkriver: true,
       neamBeskriv: function(arg){
@@ -3904,24 +3918,27 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         });
         [].concat(arg.stryk || []).forEach(function(id){ l.push('• Stryke: ' + okNeamPost(id)); });
         [].concat(arg.tilbake || []).forEach(function(id){ l.push('• Tilbake til innboksen: ' + okNeamPost(id)); });
+        [].concat(arg.faktura_til_innboks || []).forEach(function(id){ l.push('• Fakturaen til innboksen (betalt fra en annen konto): ' + okNeamPost(id)); });
         return 'Endre føringer i regnskapet:\n' + l.join('\n');
       }
     },
     {
       name: 'sett_okonomi_kontorolle',
-      description: 'Gir en DNB-konto en rolle: felles (innboksen henter transaksjonene derfra), sparing (telles i '
-                 + 'formuen og bufferen), magne, nina, emma, andrea, eller ignorer (ikke i bruk). Kontonavnene står '
-                 + 'i les_okonomi_kontoer. Bare på Økonomi-sida.',
+      description: 'Gir en DNB-konto en rolle og/eller et eget navn. Rollene: felles (innboksen henter transaksjonene '
+                 + 'derfra), sparing (telles i formuen og bufferen), magne, nina, emma, andrea, eller ignorer (ikke i bruk). '
+                 + 'Tomt navn gir navnet fra banken tilbake. Kontonavnene står i les_okonomi_kontoer. Bare på Økonomi-sida.',
       input_schema: { type:'object', properties:{
         konto: { type:'string', description:'Kontonavnet, som i les_okonomi_kontoer.' },
-        rolle: { type:'string', enum:OK_ROLLER.map(function(r){ return r[0]; }) }
-      }, required:['konto', 'rolle'] },
+        rolle: { type:'string', enum:OK_ROLLER.map(function(r){ return r[0]; }) },
+        nytt_navn: { type:'string', description:'Valgfritt: kontoens nye navn i Neam.' }
+      }, required:['konto'] },
       neamSkriver: true,
       neamBeskriv: function(arg){
-        var k = okNeamKonto(arg.konto);
-        return 'Endre rollen til kontoen «' + (k ? k.navn : arg.konto) + '»:\n• '
-          + (k ? okRolleNavn(k.rolle || '') + ' → ' : '') + okRolleNavn(arg.rolle)
-          + (arg.rolle === 'felles' || (k && k.rolle === 'felles') ? '\n\nInnboksen henter transaksjonene fra felleskontoene.' : '');
+        var k = okNeamKonto(arg.konto), l = [];
+        if(arg.rolle != null) l.push('• Rolle: ' + (k ? okRolleNavn(k.rolle || '') + ' → ' : '') + okRolleNavn(arg.rolle));
+        if(arg.nytt_navn != null) l.push('• Navn: ' + (String(arg.nytt_navn).trim() ? '«' + String(arg.nytt_navn).trim() + '»' : 'navnet fra banken'));
+        return 'Endre kontoen «' + (k ? k.navn : arg.konto) + '»:\n' + l.join('\n')
+          + (arg.rolle === 'felles' || (arg.rolle != null && k && k.rolle === 'felles') ? '\n\nInnboksen henter transaksjonene fra felleskontoene.' : '');
       }
     },
     {
@@ -3943,6 +3960,137 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       }
     }
   ];
+  /* Resten av det sida kan (Magne, 7. november 2026: «Jeg ønsker at neam
+     skal ha alle tilganger på økonomisiden når den står der»). Ikke med med
+     vilje: aa koble DNB, Trumf og Dropbox til eller fra (innlogging), og
+     kvitteringer fra bilde (Neam har ikke fila). */
+  OK_NEAM_VERKTOY.push(
+    {
+      name: 'les_okonomi_transaksjoner',
+      description: 'Søker i alle transaksjonene fra nullpunktet (Transaksjoner › Alle): bank, Trumf, kvitteringer og '
+                 + 'fakturaer, med status (ny = i innboksen, godkjent, stroket, venter = faktura som venter på trekket). '
+                 + 'Søket treffer navn, banktekst, kategori og kilde, eller et beløp. Gir id-ene endre_okonomi_foringer tar. '
+                 + 'Bare på Økonomi-sida.',
+      input_schema: { type:'object', properties:{
+        sok: { type:'string', description:'Ord eller beløp, f.eks. «tibber» eller «3035».' },
+        fra: { type:'string', description:'ÅÅÅÅ-MM-DD.' }, til: { type:'string', description:'ÅÅÅÅ-MM-DD.' },
+        konto: { type:'string', description:'Kontoen eller kilden, f.eks. «Strømkonto», «Trumf», «Faktura».' },
+        kategori: { type:'string', description:'En gruppe («Bolig») eller post/linje («Bolig · Strøm»).' },
+        type: { type:'string', enum:['ut', 'inn', 'kvittering', 'fil', 'faktura', 'auto', 'ny', 'stroket', 'uten'] },
+        maks: { type:'number', description:'Hvor mange rader, høyst 200. Standard 60.' }
+      }, required:[] }
+    },
+    {
+      name: 'les_okonomi_husk',
+      description: 'Det Neam husker i økonomien: hvilken kategori hver motpart føres på («Neam husker» i Oppsett). '
+                 + 'Bare på Økonomi-sida.',
+      input_schema: { type:'object', properties:{}, required:[] }
+    },
+    {
+      name: 'endre_okonomi_husk',
+      description: 'Endrer det Neam husker: gir en motpart en ny kategori, eller glemmer den så Neam spør igjen neste gang. '
+                 + 'Motpartene står i les_okonomi_husk. Bare på Økonomi-sida.',
+      input_schema: { type:'object', properties:{
+        endre: { type:'array', items:{ type:'object', properties:{ motpart:{ type:'string' }, kategori:{ type:'string' } }, required:['motpart', 'kategori'] } },
+        glem: { type:'array', items:{ type:'string' }, description:'Motparter som glemmes.' }
+      }, required:[] },
+      neamSkriver: true,
+      neamBeskriv: function(arg){
+        var l = [];
+        [].concat(arg.endre || []).forEach(function(x){ l.push('• ' + x.motpart + ' → ' + okNeamKat(x.kategori)); });
+        [].concat(arg.glem || []).forEach(function(m){ l.push('• Glemme ' + m + ' (Neam spør igjen)'); });
+        return 'Endre det Neam husker:\n' + l.join('\n');
+      }
+    },
+    {
+      name: 'les_okonomi_koble',
+      description: 'Det som hører sammen og kan kobles: kvitteringer som hører til en transaksjon, kjøp telt to ganger, og '
+                 + 'trekk DNB har sendt to ganger med ny tekst. Endrer ingenting. Bare på Økonomi-sida.',
+      input_schema: { type:'object', properties:{}, required:[] }
+    },
+    {
+      name: 'koble_okonomi_poster',
+      description: 'Kobler ALT les_okonomi_koble foreslo («Koble kvitteringer og transaksjoner» i Oppsett). Kjør '
+                 + 'les_okonomi_koble først og vis brukeren lista. Kan angres per post med endre_okonomi_foringer (tilbake). '
+                 + 'Bare på Økonomi-sida.',
+      input_schema: { type:'object', properties:{}, required:[] },
+      neamSkriver: true,
+      neamBeskriv: function(){
+        var f = okNeamKobleSist || [];
+        return 'Koble ' + (f.length ? f.length : 'alt som hører sammen') + ' i økonomien:\n'
+          + f.slice(0, 12).map(function(x){ return '• ' + x.fra + ' → ' + x.til + (x.telt_to_ganger ? ' (telt to ganger i dag)' : ''); }).join('\n')
+          + (f.length > 12 ? '\n• … og ' + (f.length - 12) + ' til' : '');
+      }
+    },
+    {
+      name: 'endre_okonomi_oppsett',
+      description: 'Det i formuen i Oppsett som sett_okonomi_formue ikke gjør: fjerner verdier, lån og punkter i '
+                 + 'bruttoinntekten, velger kontoene som teller i bufferen, legger til en konto som verdi (saldoen følger '
+                 + 'banken), og endrer eller fjerner familiemålets «spart» og konto. Navnene står i les_okonomi_kontoer. '
+                 + 'Bare på Økonomi-sida.',
+      input_schema: { type:'object', properties:{
+        fjern_verdier: { type:'array', items:{ type:'string' } },
+        fjern_gjeld: { type:'array', items:{ type:'string' } },
+        fjern_brutto: { type:'array', items:{ type:'object', properties:{ hvem:{ type:'string', enum:['Magne', 'Nina'] }, navn:{ type:'string' } }, required:['hvem', 'navn'] } },
+        buffer: { type:'array', items:{ type:'string' }, description:'Kontonavnene som skal telle i bufferen - erstatter lista. Tom liste: rollen Sparing brukes.' },
+        verdier_fra_konto: { type:'array', items:{ type:'string' }, description:'Kontonavn som legges til under Verdier.' },
+        familiemaal: { type:'object', properties:{
+          spart: { type:'number', description:'Spart så langt, i kroner (når målet ikke følger en konto).' },
+          konto: { type:'string', description:'Kontoen målet følger; tom tekst = fylles inn for hånd.' },
+          fjern: { type:'boolean', description:'Fjerner familiemålet.' }
+        } }
+      }, required:[] },
+      neamSkriver: true,
+      neamBeskriv: function(arg){
+        var l = [];
+        [].concat(arg.fjern_verdier || []).forEach(function(n){ l.push('• Fjerne verdien ' + n); });
+        [].concat(arg.fjern_gjeld || []).forEach(function(n){ l.push('• Fjerne lånet ' + n); });
+        [].concat(arg.fjern_brutto || []).forEach(function(b){ l.push('• Fjerne ' + b.navn + ' fra bruttoinntekten til ' + b.hvem); });
+        if(arg.buffer) l.push('• Bufferen: ' + (arg.buffer.length ? arg.buffer.join(', ') : 'ingen valgt – rollen Sparing brukes'));
+        [].concat(arg.verdier_fra_konto || []).forEach(function(n){ l.push('• Ny verdi som følger kontoen ' + n); });
+        var m = arg.familiemaal;
+        if(m && m.fjern) l.push('• Fjerne familiemålet');
+        else if(m){
+          if(m.konto != null) l.push('• Familiemålet følger ' + (String(m.konto).trim() ? 'kontoen ' + m.konto : 'ingen konto (fylles inn for hånd)'));
+          if(m.spart != null) l.push('• Familiemålet, spart så langt: ' + okKr.format(Math.round(Number(m.spart) || 0)) + ' kr');
+        }
+        return 'Endre formuen i Oppsett:\n' + l.join('\n');
+      }
+    },
+    {
+      name: 'bruk_standardbudsjett',
+      description: 'Sletter én måneds eget budsjett, så måneden følger standardbudsjettet igjen («Bruk standardbudsjettet»). '
+                 + 'Bare på Økonomi-sida.',
+      input_schema: { type:'object', properties:{ mnd:{ type:'string', description:'ÅÅÅÅ-MM.' } }, required:['mnd'] },
+      neamSkriver: true,
+      neamBeskriv: function(arg){
+        var n = /^\d{4}-\d{2}$/.test(arg.mnd || '') ? okMndNavn.format(new Date(arg.mnd + '-01T12:00:00')) : String(arg.mnd);
+        return 'La ' + n + ' følge standardbudsjettet igjen:\n• Månedens eget budsjett slettes.';
+      }
+    },
+    {
+      name: 'oppdater_okonomi',
+      description: 'Henter nytt fra DNB, Trumf og Dropbox nå, som Oppdater-knappen: nye transaksjoner kommer i innboksen, '
+                 + 'og kvitteringer i Dropbox leses inn. Bare på Økonomi-sida.',
+      input_schema: { type:'object', properties:{}, required:[] },
+      neamSkriver: true,
+      neamBeskriv: function(){ return 'Hente nytt i økonomien:\n• Transaksjoner fra DNB og Trumf\n• Kvitteringer som ligger i Dropbox leses inn og flyttes til «Importert»'; }
+    }
+  );
+  var okNeamKobleSist = null;
+  /* Formuen hentes fersk, endres og lagres hel - som Lagre i Oppsett. */
+  async function okNeamFormue(endre){
+    if(okFormueLastet && okFormueTekst() !== okFormueLagret) throw new Error('Formueskjemaet i Oppsett har endringer som ikke er lagret. Be brukeren lagre eller laste sida på nytt først.');
+    var f = await okNeamPost2('?hva=formue');
+    if(!f.ok) throw new Error(f.feil);
+    var k = { verdier:f.verdier || [], gjeld:f.gjeld || [], maal:f.maal || null, brutto:okBruttoFra(f.brutto), buffer:f.buffer || [] };
+    var svar = endre(k);
+    var r = await okNeamPost2('', { hva:'formue', verdier:k.verdier, gjeld:k.gjeld, maal:k.maal, brutto:k.brutto, buffer:k.buffer });
+    if(!r.ok) throw new Error(r.feil);
+    okFormue = { verdier:r.verdier, gjeld:r.gjeld, maal:r.maal, brutto:okBruttoFra(r.brutto), buffer:r.buffer || [], historikk:r.historikk || {} };
+    okFormueLagret = okFormueTekst(); okTegnFormue(); okTegnFormueSkjema();
+    return svar;
+  }
   function okNeamKonto(navn){
     var n = String(navn || '').trim().toLowerCase();
     var treff = okKontoer.filter(function(k){ return String(k.navn || '').toLowerCase() === n; });
@@ -3953,14 +4101,22 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     if(navn === 'sett_okonomi_kontorolle'){
       var k = okNeamKonto(arg.konto);
       if(!k) throw new Error('Fant ikke én konto som heter «' + arg.konto + '». Kontoene: ' + okKontoer.map(function(x){ return x.navn; }).join(', '));
-      var roller = {}; roller[k.uid] = String(arg.rolle || '');
-      var rr = await okNeamPost2('', { hva:'roller', roller:roller });
-      if(!rr.ok) throw new Error(rr.feil);
-      var gammel = k.rolle || '';
-      k.rolle = roller[k.uid];
+      if(arg.rolle == null && arg.nytt_navn == null) throw new Error('Si hva som skal endres: rolle eller nytt_navn.');
+      var svarK = { konto:k.navn };
+      if(arg.rolle != null){
+        var roller = {}; roller[k.uid] = String(arg.rolle || '');
+        var rr = await okNeamPost2('', { hva:'roller', roller:roller });
+        if(!rr.ok) throw new Error(rr.feil);
+        svarK.rolle_fra = okRolleNavn(k.rolle || ''); k.rolle = roller[k.uid]; svarK.rolle_til = okRolleNavn(k.rolle);
+      }
+      if(arg.nytt_navn != null){
+        var kn = await okNeamPost2('', { hva:'kontonavn', uid:k.uid, navn:String(arg.nytt_navn || '') });
+        if(!kn.ok) throw new Error(kn.feil);
+        k.navn = kn.navn || k.bankNavn; svarK.navn = k.navn;
+      }
       okTegnKontoer(); okTegnFormue();
       window.okonomiEtterSkriv();
-      return { konto:k.navn, fra:okRolleNavn(gammel), til:okRolleNavn(k.rolle) };
+      return svarK;
     }
     if(navn === 'endre_okonomi_budsjettposter'){
       var gjort = [], feil = [];
@@ -3978,6 +4134,11 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         var f = await okNeamPost2('', { hva:'kategori-slett', kategori:String(fj[j]) });
         if(f.ok) gjort.push({ fjernet:fj[j] }); else feil.push(fj[j] + ': ' + f.feil);
       }
+      var mk = [].concat(arg.merker || []);
+      for(var q = 0; q < mk.length; q++){
+        var m = await okNeamPost2('', { hva:'kategori-merke', kategori:String(mk[q].post || ''), merke:String(mk[q].merke || '') });
+        if(m.ok){ okBu.merker = m.merker || {}; gjort.push({ merke:mk[q].post, til:mk[q].merke || 'ingen' }); } else feil.push(mk[q].post + ': ' + m.feil);
+      }
       if(gjort.length) window.okonomiEtterSkriv();
       if(!gjort.length && feil.length) throw new Error(feil.join(' · '));
       return { gjort:gjort, feil:feil };
@@ -3989,8 +4150,14 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         return g;
       });
       var stryk = [].concat(arg.stryk || []).map(String), tilbake = [].concat(arg.tilbake || []).map(String);
-      if(!endre.length && !stryk.length && !tilbake.length) throw new Error('Ingen føringer å endre.');
+      var fakt = [].concat(arg.faktura_til_innboks || []).map(String);
+      if(!endre.length && !stryk.length && !tilbake.length && !fakt.length) throw new Error('Ingen føringer å endre.');
       var svar = {};
+      for(var fi = 0; fi < fakt.length; fi++){
+        var fr = await okNeamPost2('', { hva:'faktura-innboks', id:fakt[fi] });
+        if(!fr.ok) throw new Error(fr.feil);
+        svar.fakturaer_til_innboks = (svar.fakturaer_til_innboks || 0) + 1;
+      }
       if(endre.length || stryk.length){
         var g2 = await okNeamPost2('', { hva:'godkjenn', godkjenn:endre, strok:stryk });
         if(!g2.ok) throw new Error(g2.feil);
@@ -4003,6 +4170,103 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       }
       window.okonomiEtterSkriv();
       return svar;
+    }
+    if(navn === 'les_okonomi_transaksjoner'){
+      var al = await okNeamPost2('?hva=alle-poster');
+      if(!al.ok) throw new Error(al.feil);
+      var fl = { sok:String(arg.sok || '').trim().toLowerCase(), konto:'', type:String(arg.type || ''), fra:String(arg.fra || ''), til:String(arg.til || ''),
+        kat:arg.kategori ? (String(arg.kategori).indexOf(' · ') === -1 ? 'g:' + arg.kategori : String(arg.kategori)) : '' };
+      var kn2 = String(arg.konto || '').trim().toLowerCase();
+      /* Kontonavnet, aldri kontonummeret - det skal ikke til Neam (les_okonomi_kontoer). */
+      var kilde = function(x){ return x.fra ? okAlKildeNavn(x) : (x.kontoNavn || 'Banken'); };
+      var treff = al.poster.filter(function(x){ return okAlTreff(x, fl) && (!kn2 || kilde(x).toLowerCase().indexOf(kn2) !== -1); });
+      var maks = Math.min(200, Math.max(1, Number(arg.maks) || 60));
+      treff.slice(0, maks).forEach(function(x){
+        if(typeof lesAltOkSist !== 'undefined') lesAltOkSist.foringer[x.id] = { sted:x.motpart || x.tekst || '', dato:x.dato, belop:x.belop, kategori:x.kategori };
+      });
+      var teller = treff.filter(function(x){ return x.status !== 'stroket' && x.status !== 'venter'; });
+      return { antall:treff.length, viser:Math.min(maks, treff.length), fra_nullpunktet:al.fra,
+        inn:Math.round(teller.reduce(function(s, x){ return s + (x.belop > 0 ? x.belop : 0); }, 0)),
+        ut:Math.round(teller.reduce(function(s, x){ return s + (x.belop < 0 ? -x.belop : 0); }, 0)),
+        transaksjoner:treff.slice(0, maks).map(function(x){
+          return { id:x.id, dato:x.dato, sted:x.motpart || x.tekst || '', tekst:x.motpart && x.tekst !== x.motpart ? x.tekst : undefined, belop:x.belop,
+            kategori:x.kategori || null, status:x.status, kilde:kilde(x), fort_automatisk:x.auto || undefined,
+            vedlegg:x.harFil ? (x.filType === 'application/pdf' ? 'pdf' : 'bilde') : x.harKvittering ? 'varelinjer' : undefined };
+        }) };
+    }
+    if(navn === 'les_okonomi_husk'){
+      var lh = await okNeamPost2('?hva=laert');
+      if(!lh.ok) throw new Error(lh.feil);
+      return { husker:Object.keys(lh.laert || {}).sort().map(function(m){ return { motpart:m, kategori:lh.laert[m] }; }) };
+    }
+    if(navn === 'endre_okonomi_husk'){
+      var gh = [];
+      var eh = [].concat(arg.endre || []), gl = [].concat(arg.glem || []);
+      for(var hi = 0; hi < eh.length; hi++){
+        var hr = await okNeamPost2('', { hva:'laert', motpart:String(eh[hi].motpart || ''), kategori:String(eh[hi].kategori || '') });
+        if(!hr.ok) throw new Error(eh[hi].motpart + ': ' + hr.feil);
+        gh.push({ motpart:eh[hi].motpart, kategori:eh[hi].kategori });
+      }
+      for(var gi = 0; gi < gl.length; gi++){
+        var gr = await okNeamPost2('', { hva:'laert', motpart:String(gl[gi] || ''), kategori:'' });
+        if(!gr.ok) throw new Error(gl[gi] + ': ' + gr.feil);
+        gh.push({ glemt:gl[gi] });
+      }
+      okHuskLast();
+      return { gjort:gh };
+    }
+    if(navn === 'les_okonomi_koble'){
+      var kb = await okNeamPost2('', { hva:'koble-alle', utfor:false });
+      if(!kb.ok) throw new Error(kb.feil);
+      var hvaTekst = { 'legg-ved':'kvitteringen legges ved banktrekket', 'slaa-sammen':'slås sammen, kvitteringen blir posten', 'kvittering':'to kvitteringer for samme kjøp', 'bank-dobbel':'samme trekk to ganger fra DNB' };
+      okNeamKobleSist = (kb.forslag || []).map(function(x){
+        var lin = function(y){ return (y.sted || 'Uten navn') + ', ' + y.dato + ', ' + okKr.format(Math.abs(y.belop)) + ' kr (' + y.kilde + ')'; };
+        return { hva:hvaTekst[x.hva] || x.hva, fra:lin(x.kvittering), til:lin(x.transaksjon), telt_to_ganger:!!x.dobbelt };
+      });
+      return { antall:okNeamKobleSist.length, advarsel:kb.advarsel, forslag:okNeamKobleSist };
+    }
+    if(navn === 'koble_okonomi_poster'){
+      var ka = await okNeamPost2('', { hva:'koble-alle', utfor:true });
+      if(!ka.ok) throw new Error(ka.feil);
+      okNeamKobleSist = null;
+      window.okonomiEtterSkriv();
+      return { koblet:ka.gjort };
+    }
+    if(navn === 'endre_okonomi_oppsett'){
+      var finnK = function(n){ var x = okNeamKonto(n); if(!x) throw new Error('Fant ikke én konto som heter «' + n + '».'); return x; };
+      var bufferUid = arg.buffer ? [].concat(arg.buffer).map(function(n){ return finnK(n).uid; }) : null;
+      var fraKonto = [].concat(arg.verdier_fra_konto || []).map(finnK);
+      var mKonto = arg.familiemaal && arg.familiemaal.konto != null && String(arg.familiemaal.konto).trim() ? finnK(arg.familiemaal.konto).uid : null;
+      return await okNeamFormue(function(k){
+        var ut = {}, lik = function(a, b){ return String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase(); };
+        var fjern = function(liste, navn, hva){ var i = liste.findIndex(function(x){ return lik(x.navn, navn); }); if(i === -1) throw new Error('Fant ikke ' + hva + ' «' + navn + '».'); liste.splice(i, 1); };
+        [].concat(arg.fjern_verdier || []).forEach(function(n){ fjern(k.verdier, n, 'verdien'); });
+        [].concat(arg.fjern_gjeld || []).forEach(function(n){ fjern(k.gjeld, n, 'lånet'); });
+        [].concat(arg.fjern_brutto || []).forEach(function(b){ fjern(k.brutto[String(b.hvem || '').toLowerCase()] || [], b.navn, 'punktet'); });
+        if(bufferUid) k.buffer = bufferUid;
+        fraKonto.forEach(function(x){ if(!k.verdier.some(function(v){ return v.konto === x.uid; })) k.verdier.push({ navn:x.navn, konto:x.uid }); });
+        var m = arg.familiemaal;
+        if(m && m.fjern) k.maal = null;
+        else if(m){
+          if(!k.maal) throw new Error('Det finnes ikke noe familiemål ennå - lag det med sett_okonomi_formue.');
+          if(m.konto != null) k.maal.konto = mKonto || '';
+          if(m.spart != null) k.maal.spart = Math.max(0, Math.round(Number(m.spart) || 0));
+        }
+        ut.lagret = true;
+        return ut;
+      });
+    }
+    if(navn === 'bruk_standardbudsjett'){
+      if(!/^\d{4}-\d{2}$/.test(arg.mnd || '')) throw new Error('Måneden må være ÅÅÅÅ-MM.');
+      var bs = await okNeamPost2('', { hva:'budsjett', mnd:arg.mnd, tilbake:true });
+      if(!bs.ok) throw new Error(bs.feil);
+      okBuSett(bs); okBuAlleTegn();
+      window.okonomiEtterSkriv();
+      return { mnd:arg.mnd, folger:'standardbudsjettet' };
+    }
+    if(navn === 'oppdater_okonomi'){
+      await okOppdater();
+      return { hentet:true, dropbox:(okDb && okDb.resultat) || undefined, i_innboksen:okPoster.length };
     }
     if(navn === 'legg_til_okonomi_foring'){
       var ny = await okNeamPost2('', { hva:'kvittering-ny', forHand:true,
@@ -4061,9 +4325,13 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       + 'en sparekonto og et familiemål. Det som mangler, står i kontekstlinja (manglerForNokkeltall) og i kortet '
       + '«Neam trenger» i innboksen. Inntekt og utgifter kan du sette med sett_okonomi_budsjett når brukeren gir deg '
       + 'tallene, og boligverdi, lån og familiemål med sett_okonomi_formue.\n\n'
-      + 'HER PÅ ØKONOMI-SIDA kan du også endre budsjettets poster og linjer (endre_okonomi_budsjettposter), '
-      + 'endre, stryke eller sende tilbake godkjente føringer (endre_okonomi_foringer) og legge inn kjøp for hånd '
-      + '(legg_til_okonomi_foring). Les først, så du har id-ene og navnene.';
+      + 'HER PÅ ØKONOMI-SIDA kan du gjøre alt brukeren kan, unntatt å koble DNB, Trumf og Dropbox til eller fra og '
+      + 'å lese kvitteringer fra bilde: budsjettets poster, linjer og merker (endre_okonomi_budsjettposter), la en måned '
+      + 'følge standarden igjen (bruk_standardbudsjett), endre, stryke eller sende tilbake føringer og sende fakturaer '
+      + 'til innboksen (endre_okonomi_foringer), legge inn kjøp for hånd (legg_til_okonomi_foring), søke i alle '
+      + 'transaksjonene (les_okonomi_transaksjoner), koble kvitteringer og dobler (les_okonomi_koble, koble_okonomi_poster), '
+      + 'kontoenes rolle og navn (sett_okonomi_kontorolle), det Neam husker (les_okonomi_husk, endre_okonomi_husk), '
+      + 'resten av formuen (endre_okonomi_oppsett) og hente nytt (oppdater_okonomi). Les først, så du har id-ene og navnene.';
     var hus = await husregisterTekst();
     return (hus ? (om + '\n\n' + hus) : om) + '\n\n' + HUS_BAKGRUNN;
   };
