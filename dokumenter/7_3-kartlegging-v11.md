@@ -1,6 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 6. november 2026: fargekatalogen er ny, og bildekatalogen
+*Ført à jour 6. november 2026, natt: Økonomi-flisen på forsiden er vekket,
+og Designverktøy-flisen er ny (se toppblokka). Ført à jour 6. november
+2026: fargekatalogen er ny, og bildekatalogen
 kan bestille strektegningene og dele store utvalg i flere ark (se
 toppblokka). Ført à jour 2. november 2026, kveld: Kjøkken dash viser bildet når
 en bil kommer på tunet – bevegelse fra Homey, bilde over WebRTC, og Claude
@@ -591,6 +593,24 @@ SPK-fakturaen ble lest på nytt etter `8a21f18` («det fungerte»). 51 commits,
 - **Foreslått, ikke avgjort:** bytte de hardkodede fargene som er lik en
   variabel til variabelen, fil for fil. Det er det som gjør de personlige
   palettene til ett sett overstyringer i `felles-rot.css`.
+
+**6. november, natt: to fliser på forsiden** (`5f06f25`, `2f97f3b` – bare
+`index.html` og en ny side i `dokumenter/`, **ingen `?v=`-numre er brukt
+eller brent**).
+- **Økonomi-flisen er vekket** (`#ixokFlis`, kom med i `5f06f25`). Den var
+  en sovende «Kommer»; nå lenker den til `okonomi.html`. Den vises når
+  `/api/bank?hva=varsler` svarer `ok` – samme kall som varselkortet, og
+  `ok:true` er sperra selv, så flisen har ingen egen liste.
+- **Designverktøy-flisen** (`#designKort`, `2f97f3b`) vises bare for sys@,
+  samme vei som Kjøkken dash (`vurderDashFlis()`). Den åpner
+  `dokumenter/designverktoy.html`, en valgside med Bildekatalog og
+  Fargekatalog i katalogenes uttrykk. Bildet er lånt (`system.png`) til
+  flisen får sitt eget. Sida har ingen sperre, like lite som katalogene.
+- **Funnet, ikke rettet:** toppkommentaren i `okonomi.html` sier fortsatt
+  «SKJULT MED VILJE. Sida lenkes ikke fra noe sted» – det stemmer ikke
+  lenger.
+- **Ikke sett på skjermen:** forsiden sender til innlogging lokalt, så
+  flisene er bare sjekket i koden. Må prøves på neam.no som sys@.
 
 ### Åpne tråder
 
