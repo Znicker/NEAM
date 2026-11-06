@@ -23,8 +23,13 @@ Mye ligger nå i **fellesfiler** (`felles-rot.css`, `felles-skall.css`,
 `felles-skriv.js`, `felles-hus.js`, `felles-ms.js`, `felles-tale.js`). Det som ennå er kopiert per fil, holdes likt av dette
 dokumentet – det er fortsatt fasiten for hva som skal være likt på tvers.
 
-*Sist oppdatert 2. november 2026: Kjøkken dash fikk Dag | Uke i
-avtalekortet, som Emma dash. Forrige oppdatering 1. november 2026: nytt
+*Sist oppdatert 6. november 2026: **fargekatalogen** er nytt verktøy for
+farger og bakgrunner (se «Farger → Fargekatalogen»), bildekatalogen kan
+bestille strektegningene i koden og dele store utvalg i flere ark (se
+«Bilder – ikoner og bestilling»), og fargetabellen har fått verdiene fra
+den varme paletten. Forrige oppdatering 2. november 2026: Kjøkken dash
+fikk Dag | Uke i avtalekortet, som Emma dash. Forrige oppdatering
+1. november 2026: nytt
 visuelt uttrykk (24. oktober–
 1. november, alternativ C). Steampunk-bakgrunnen og treklokka er borte,
 merkelappene er erstattet av ikoner med **navnet som tekst under**,
@@ -127,16 +132,46 @@ senere i god tro.
 
 ## Farger
 
+### Fargekatalogen
+
+*Fra 6. november 2026.*
+
+**Fargekatalogen er stedet å begynne.** `dokumenter/fargekatalog.html`
+viser tre ting: fargevariablene – hvor de er satt, hva de betyr, hvor de
+brukes og kontrasten; fargene som står hardkodet i koden – fil, linje og
+den variabelen de ligger nærmest; og bakgrunnene – gradienter, bilder og
+sidebakgrunnene. Velg det som skal endres, sett eventuelt ny verdi, og
+kopier bestillingsteksten til Claude. Den har med variabel, fil, linje og
+reglene i dette kapitlet. **Etter hver endring i farger eller bakgrunner
+kjøres `python dokumenter/lag-fargekatalog.py`**, ellers lyver katalogen.
+Betydningen hentes fra tabellene under; står ikke variabelen der, brukes
+kommentaren i koden. Utseendet ligger i `dokumenter/fargekatalog-mal.html`.
+
+**Kontrasten regnes for bruken fargen har.** En lys farge regnes som flate
+med `--ink` og `--ink-soft` på; en mørk som knapp med hvit tekst og som
+tekst på `--paper`. Under 4,5:1 merkes rødt.
+
+**Hardkodede farger når ikke en endring i variablene.** 6. november sto
+671 farger skrevet rett i koden, 196 ulike – og 432 av stedene hadde samme
+farge som en variabel. Om de skal byttes til variabelen, er foreslått,
+ikke avgjort; det er det som ville gjort de personlige palettene til ett
+sett overstyringer.
+
 ### Flater og tekst
 
 | Variabel | Betydning |
 |---|---|
 | `--ink` `#2C3E50` | tekst |
 | `--ink-soft` `#5A6C7D` | sekundær tekst |
-| `--paper` `#FFFFFF` | **kort** – hvit tilhører kortene |
-| `--line` `#E4E8EC` | kanter |
-| `--boks-mild` `#EDF3F8` | **flate** – grupperingsbokser |
-| `--boks-kant` `#DCE6EF` | kant på slike bokser |
+| `--paper` `#FBF9F5` | **kort** – hvit tilhører kortene |
+| `--line` `#E6E1D8` | kanter |
+| `--boks-mild` `#F1EDE5` | **flate** – grupperingsbokser |
+| `--boks-kant` `#E2DCD0` | kant på slike bokser |
+
+**Verdiene er varmet 29. august 2026** og ført inn her 6. november.
+Kortet er en varm, nesten hvit tone; før sto det `#FFFFFF`, `#E4E8EC`,
+`#EDF3F8` og `#DCE6EF`. Begrunnelsen og angrelista står øverst i
+`felles-rot.css`. Betydningene er de samme.
 
 Skrivefelt er unntaket fra hvit-regelen: et `input` er hvitt med egen kant
 inne i en mild boks. Det er en kontroll, ikke en flate.
@@ -1475,6 +1510,16 @@ dokumenter/lag-bildekatalog.py`**, ellers lyver katalogen. Stilblokkene
 og motivbeskrivelsene står øverst i den fila; utseendet i
 `dokumenter/bildekatalog-mal.html`. Bildene som kommer tilbake, klippes og
 legges på filnavnet nummereringen sier.
+
+**Store utvalg og strektegningene** (6. november 2026). «Velg alt» velger
+det som vises – søk og filter gjelder. Over 40 bilder deles
+referansearket i flere ark med fortløpende nummer, og hvert ark får sin
+egen nedlastingsknapp: nettleseren slipper bare én nedlasting per trykk.
+**Strektegningene i koden** (SVG) bestilles som strekikoner og kobles inn i
+stedet. Motivet og det nye filnavnet står i `SVG_MOTIV` i
+`lag-bildekatalog.py`, nøklet på hashen i `svg-xxxxxxxx`; endres en
+tegning, får den ny hash og står som «uten beskrivelse» til den føres inn
+igjen. Der et strekikon alt finnes, sier kortet at det bare må kobles inn.
 
 **Alle bildeadresser har versjon.** `IKON_V` (ikonene i `bilder/ikoner/`),
 `FAG_MERKE_V` (fagmerker), `NMW_SYMBOL_V` (klippersymbolet i

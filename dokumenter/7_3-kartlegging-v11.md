@@ -1,6 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 2. november 2026, kveld: Kjøkken dash viser bildet når
+*Ført à jour 6. november 2026: fargekatalogen er ny, og bildekatalogen
+kan bestille strektegningene og dele store utvalg i flere ark (se
+toppblokka). Ført à jour 2. november 2026, kveld: Kjøkken dash viser bildet når
 en bil kommer på tunet – bevegelse fra Homey, bilde over WebRTC, og Claude
 som avgjør (se toppblokka). Ført à jour 2. november 2026, senere samme dag: ti verktøy flyttet inn i
 fellesfilene – Neam har nå 56 verktøy som virker fra alle sidene, og det
@@ -70,7 +72,7 @@ ny tråd alltid lander på samme sted.*
 
 ---
 
-## Nåstatus – 2. november 2026
+## Nåstatus – 6. november 2026
 
 **Hvor prosjektet er nå.** Ni sider og fire spill, og Andreas tre spill
 nås fra én egen spillside. To økter 12.–13. september
@@ -501,6 +503,34 @@ Se del 57.
   (spør først). Virker bare mens dashen er åpen (del 49). Ikke ført inn
   i designsystemet, og ikke på Emma eller Andrea dash.
 
+**6. november: bildekatalogen utvidet, og fargekatalogen** (`3f0d3db`,
+`ddbe3bd`, `9fa5d85`, `e73db36` – bare `dokumenter/`, ingen fellesfil,
+**ingen `?v=`-numre er brukt eller brent**).
+- **Bildekatalogen:** «Velg alt» velger det som vises. Grensen på 40
+  gjelder nå arket, ikke utvalget – et større utvalg deles i ark med
+  fortløpende nummer, hvert med egen nedlastingsknapp (nettleseren slapp
+  bare ark 1 gjennom da alle ble lastet ned på ett trykk).
+- **Strektegningene kan bestilles** som strekikoner. Motiv og nytt filnavn
+  står i `SVG_MOTIV` i `lag-bildekatalog.py`. Åtte har alt et strekikon og
+  trenger bare å kobles inn: lukk, sted, påminnelse, ny avtale, sikkerhet,
+  snakk, kalender og oppdater. Urskiva, atomdefinisjonene og Google
+  Maps-logoen bestilles ikke. Generatoren skjøter nå JavaScript-strenger
+  (`'a' + 'b'`) før SVG-en leses – elleve tegninger i fellesfilene kom
+  før med skjøtene i seg og lot seg ikke tegne på arket.
+- **Fargekatalogen** (`e73db36`): `dokumenter/fargekatalog.html`, laget av
+  `dokumenter/lag-fargekatalog.py`. 54 fargevariabler, 671 hardkodede
+  farger (196 ulike, 432 av stedene lik en variabel) og 54 bakgrunner, med
+  kontrast og en bestillingstekst til Claude med fil, linje og reglene.
+  Kjøres etter hver endring i farger eller bakgrunner.
+- **Designsystemets fargetabell** hadde fire verdier fra før den varme
+  paletten (`--paper`, `--line`, `--boks-mild`, `--boks-kant`) – funnet av
+  fargekatalogen og ført inn.
+- **Funnet, ikke rettet:** `--aksent` med hvit tekst gir 4,3:1 – under
+  4,5:1 for vanlig tekst.
+- **Foreslått, ikke avgjort:** bytte de hardkodede fargene som er lik en
+  variabel til variabelen, fil for fil. Det er det som gjør de personlige
+  palettene til ett sett overstyringer i `felles-rot.css`.
+
 ### Åpne tråder
 
 **Besluttet, ikke bygget – fem systemer med begrunnelse i del 47–50 og 52:**
@@ -741,7 +771,8 @@ Se del 57.
 **Dokumenter:** designsystemet (v13) er ført à jour 1. november for det
 nye visuelle uttrykket – ikonene med navnet under, logoen,
 hjemskjermikonet, bakgrunnen, klapptavla og bildekatalogen – og for
-Rommene. **Det er ikke oppdatert for Økonomi-sida** (28.–30. oktober) –
+Rommene, og 6. november for fargekatalogen, de nye mulighetene i
+bildekatalogen og fargetabellen. **Det er ikke oppdatert for Økonomi-sida** (28.–30. oktober) –
 se utseendevalgene under «Åpne spørsmål».
 
 ---
