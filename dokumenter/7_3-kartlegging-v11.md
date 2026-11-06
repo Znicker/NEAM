@@ -443,7 +443,8 @@ NEAM-knappen, «Hent fra Dropbox nå» og toppen som står fast (`9e211c8`),
 og navnet fra Oppsett med kontonummeret i alle kontovalg (`965bb5b`).
 Til slutt at formueskjemaet ikke tegnes på nytt mens noen skriver i det
 (`70f5931`), og type på lånene med «Neam trenger» som er fornøyd når
-info finnes (`bf5826d`). 41 commits, `0e0050a`–`bf5826d`, medregnet en midlertidig statustest fra en annen økt
+info finnes (`bf5826d`), og banktrekk etter en godkjent kvittering merket som
+mulig dobbel (`7c32885`). 42 commits, `0e0050a`–`7c32885`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3833,7 +3834,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 41 commits fra `0e0050a` til `bf5826d`.
+verdier. Bygget i 42 commits fra `0e0050a` til `7c32885`.
 
 ### Banken – Enable Banking
 
@@ -3920,7 +3921,23 @@ verdier. Bygget i 41 commits fra `0e0050a` til `bf5826d`.
   banktrekket merkes `dekketAv`. **Lik** er samme beløp til øret og høyst
   tre dager mellom datoene. Er banktrekket alt godkjent, merkes
   kvitteringen `mulDobbel` og står strøket til noen tar den med – heller én
-  for lite enn én dobbelt.
+  for lite enn én dobbelt. Alle fire rekkefølgene:
+
+  | Hva kommer først | Hva skjer |
+  |---|---|
+  | Kvitteringen, banktrekket ikke godkjent | slås sammen stille |
+  | Banktrekket alt godkjent, så kvitteringen | kvitteringen `mulDobbel` |
+  | Kvitteringen i innboksen, så banktrekket | slås sammen stille |
+  | Kvitteringen alt godkjent, så banktrekket | banktrekket `lignerPaa` (fra `7c32885`) |
+
+  **Den siste var et hull til `7c32885`:** banktrekket ble en vanlig post
+  og kunne føres automatisk, så kjøpet ble telt to ganger. Det skjedde
+  ofte – Trumf kommer samme dag og føres gjerne automatisk, banktrekket en
+  dag eller to etter. Nå merkes det som mulig dobbel, føres aldri av seg
+  selv og står strøket til noen tar det med. Det slås ikke sammen stille:
+  to kjøp med samme beløp innen tre dager kan være ekte. Sendes
+  kvitteringen tilbake til innboksen, kobles de på vanlig måte og merket
+  forsvinner. Det som alt var telt dobbelt, ble ikke rettet bakover.
 - **Kvittering mot kvittering** (`fd86515`, Magne: «dersom summer og varer
   ligner veldig så bør jeg ha beskjed»). En helt lik kvittering avvises som
   før – id-en er butikk, dato og sum. Men samme kjøp kan komme to ganger
