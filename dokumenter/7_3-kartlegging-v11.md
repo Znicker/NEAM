@@ -94,7 +94,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 
 **Siste leverte versjoner:** `felles-neam.js ?v=74`, `felles-neam.css
 ?v=74`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=11`, `felles-lesalt.js
-?v=10`, `felles-hus.js ?v=22`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
+?v=11`, `felles-hus.js ?v=22`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
@@ -112,7 +112,7 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–73; neam.css til og
-med 73; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–9, skriv 1–10,
+med 73; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–10, skriv 1–10,
 hus `?v=1–21`, ms `?v=1`, tale 1–4, graph 1–2**. (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -436,15 +436,16 @@ innboksen (`610a23d`), og grensen for hva Neam kan endre på sida og
 utenfor (`f6664ba`). Til slutt flere boliglån og sparekontoer, hele
 kontonummeret i kontovalgene, bildet eller PDF-en lagret med kvitteringen,
 og at Neam kan laste sida på nytt (`7688c6f`). Så bruttoinntekt per
-person, og gjeldsgraden regnet av den (`3218537`). 35 commits,
-`0e0050a`–`3218537`, medregnet en midlertidig statustest fra en annen økt
+person, og gjeldsgraden regnet av den (`3218537`), og beskjed når en
+kvittering ligner en som alt er lagt inn (`fd86515`). 36 commits,
+`0e0050a`–`fd86515`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
 `?v=9` (`f6664ba`) på alle sidene som laster dem – nå også `okonomi.html`.
 `felles-skriv.js` gikk videre til `?v=10` (`7688c6f`), og så
 `felles-lesalt.js` til `?v=10` og `felles-skriv.js` til `?v=11`
-(`3218537`). Se del 57.
+(`3218537`). Til slutt `felles-lesalt.js` til `?v=11` (`fd86515`). Se del 57.
 
 **1. november: Rommene, ukeplanen og bildekatalogen.**
 - **Rommene lagt om igjen** (`5208ee2`–`26d1362`). Etasjefanene er borte:
@@ -3824,7 +3825,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 35 commits fra `0e0050a` til `3218537`.
+verdier. Bygget i 36 commits fra `0e0050a` til `fd86515`.
 
 ### Banken – Enable Banking
 
@@ -3912,6 +3913,20 @@ verdier. Bygget i 35 commits fra `0e0050a` til `3218537`.
   tre dager mellom datoene. Er banktrekket alt godkjent, merkes
   kvitteringen `mulDobbel` og står strøket til noen tar den med – heller én
   for lite enn én dobbelt.
+- **Kvittering mot kvittering** (`fd86515`, Magne: «dersom summer og varer
+  ligner veldig så bør jeg ha beskjed»). En helt lik kvittering avvises som
+  før – id-en er butikk, dato og sum. Men samme kjøp kan komme to ganger
+  med en annen id: fra Trumf og som bilde, eller samme bilde lest litt
+  ulikt («Coop Extra» mot «Coop Extra Mandal»). `finnLignende()` sjekker
+  hver ny kvittering, både bilde, PDF, Dropbox og Trumf, mot de som alt er
+  lagt inn. **Ligner** betyr beløp innen 1 % (minst 1 kr), høyst tre dager
+  mellom, og – når begge har varelinjer – minst halvparten av varene like.
+  Den nye merkes `lignerPaa`, føres aldri automatisk, havner under «Trenger
+  et valg» som «Mulig dobbel – føres ikke» og er strøket til noen tar den
+  med. Du får beskjed med en gang du legger den inn, i Dropbox-resultatet
+  og i detaljpanelet («ligner en kvittering fra bilde som alt er lagt inn:
+  Coop Extra, 24. okt., 489,50 kr – 100 % av varene like»).
+  `les_okonomi_innboks` gir Neam det samme.
 - **Varelinjene kan fordeles** på flere kategorier i én post.
 - **Kvittering fra bilde eller PDF:** Neam leser den via `/api/claude`, og
   varelinjene lagres i `auth:bank:kv:<postId>`. **Fra `7688c6f` lagres også
