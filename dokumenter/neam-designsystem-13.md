@@ -888,6 +888,49 @@ like bevegelser med ulik betydning, centimeter fra hverandre, lærer hånden
 aldri. Stemmen er dessuten det ene skjulte grepet systemet har råd til; flere
 blir en hemmelighet folk ikke finner.
 
+### Fast til høyre på PC (fra 6. november 2026)
+
+**På PC står Neam oppe hele tiden, til høyre** (Magne: «på pc kan neam ha
+adskillig større plass på høyre side og være oppe hele tiden»). Ligger i
+`felles-neam.js` og `felles-neam.css`, og gjelder alle sidene som laster
+Neam.
+
+- **PC betyr bred skjerm og mus:** `(min-width:1280px) and (pointer:fine)`.
+  Berøringsskjermer – kjøkkenskjermen, iPadene – får det vanlige panelet,
+  også når de er brede. Smalere enn 1280 px er det også det vanlige.
+- **Bredden er omtrent en tredjedel av skjermen:** `clamp(420px, 33vw,
+  760px)` – 475 px på en 1440-skjerm, 634 px på en 1920-skjerm. Panelet står
+  16 px fra kantene, med samme skygge som kortene (`--shadow`).
+- **Det lukkes ikke.** Ingen ×-knapp, og Escape stopper tale og mikrofon
+  uten å skjule panelet. Det åpnes uten å ta fokus – sida skal kunne brukes
+  med tastaturet uten at Neam tar det. Blir vinduet smalt, lukkes det, så
+  det ikke plutselig legger seg over sida.
+- **Sidenes egne dialoger og lag ligger over Neam.** Panelet har z-index 30
+  i fast modus, under sidenes lag (40 og opp): en dialog fra sida dekker
+  Neam slik den dekker resten. Bekreftelsene fra `felles-dialog.js` (120)
+  ligger fortsatt over.
+- **Sida får plassen som er igjen** gjennom `padding-right` på `body`.
+  Rammen på sida står midt i den.
+
+**Regler for sidene:**
+
+- **Noe som er festet til høyre kant, trekker fra `--neam-plass`:**
+  `right:calc(20px + var(--neam-plass, 0px))`, og en linje i full bredde
+  `right:var(--neam-plass, 0px)`. Variabelen finnes bare når Neam står fast;
+  reserven `0px` gjør at alt er som før ellers. Handlelista, kalenderen og
+  oppskriftene gjør det.
+- **Plasseringer regnet fra `50vw` eller `100vw` må regne med den:** midten
+  av plassen som er igjen er `50vw - var(--neam-plass, 0px) / 2`, og full
+  bredde er `100vw - var(--neam-plass, 0px)`. Se blapilene på kalenderen og
+  detaljvisningen i oppskriftene.
+- **Sidefireren i høyre hjørne flytter seg selv** – den måles fra
+  `--f-marg-h`, som er `--f-marg-x` pluss plassen til Neam.
+- **En side som trenger hele bredden, melder seg ut** med
+  `window.neamFast = false`, satt før sida er lastet ferdig. Ingen gjør det
+  i dag.
+- **Ny side med noe festet til høyre: sjekk den på 1440 px med mus** – at
+  den ikke ruller sidelengs, og at ingenting ligger oppå Neam.
+
 ## Ikonene og navnet under
 
 *Fra 27. oktober 2026. Erstatter merkelappene – reglene for dem står

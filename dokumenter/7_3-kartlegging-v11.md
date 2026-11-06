@@ -92,8 +92,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=74`, `felles-neam.css
-?v=74`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
+**Siste leverte versjoner:** `felles-neam.js ?v=75`, `felles-neam.css
+?v=75`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
 ?v=12`, `felles-hus.js ?v=22`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
@@ -111,8 +111,8 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–73; neam.css til og
-med 73; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–11, skriv 1–11,
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–74; neam.css til og
+med 74; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–11, skriv 1–11,
 hus `?v=1–21`, ms `?v=1`, tale 1–4, graph 1–2**. (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -151,6 +151,14 @@ spør om han skal ta deg til Økonomi; `gaa_til` tar med oppgaven, og han
 fortsetter der. **Bare på Økonomi-sida:** `godkjenn_okonomi_poster` og fire
 av sidas egne (budsjettposter, føringer, kjøp for hånd, kontoroller). Regelen
 er Magnes: «endre det meste» på sida, beløp i feltene utenfor. Se del 57.
+
+**Neam fast til høyre på PC – alle sidene** (6. november, `62fa248`). På
+bred skjerm med mus står panelet oppe hele tiden til høyre og tar omtrent
+en tredjedel av skjermen (420–760 px); berøringsskjermer får det vanlige.
+Det ligger i `felles-neam.js` og `-css` (`?v=75`), og Økonomi – der det
+startet – bruker nå den felles løsningen. Det som er festet til høyre kant
+på handlelista, kalenderen og oppskriftene, flytter seg inn med
+`--neam-plass`. Reglene står i designsystemet («Fast til høyre på PC»).
 
 *Kan ikke flyttes som de er – fem verktøy:*
 - `finn_opprydding` og `slaa_sammen` hviler på **sidas mengdemotor** –
@@ -674,6 +682,11 @@ mulig dobbel (`7c32885`), og bufferen med sin egen liste over kontoer
   magne@ og nina@** – bare sys@ er prøvd, og bare i en lokal
   forhåndsvisning med falsk Neam. Og PC-oppsettet på en skjerm smalere
   enn 1360 px, der Neam er det vanlige panelet.
+- **Neam fast til høyre på neam.no** (6. november, `62fa248`): forsiden
+  (ble sendt til Microsoft-innloggingen i testen) og selve kalenderen
+  (viste innloggingen) er ikke sett med Neam fast. Og at kjøkkenskjermen,
+  som har berøring, får det vanlige panelet – en bred berøringsskjerm kan
+  ikke etterlignes i testen.
 - **Turen til Økonomi med ekte Neam** (6. november): be om et nytt felt
   fra en annen side («legg inn hytta, 900 000»), svar ja, og se at han
   fortsetter på Økonomi og ber om bekreftelse. Bare prøvd med falsk Neam –
@@ -829,7 +842,8 @@ mulig dobbel (`7c32885`), og bufferen med sin egen liste over kontoer
 nye visuelle uttrykket – ikonene med navnet under, logoen,
 hjemskjermikonet, bakgrunnen, klapptavla og bildekatalogen – og for
 Rommene, og 6. november for fargekatalogen, de nye mulighetene i
-bildekatalogen og fargetabellen. **Det er ikke oppdatert for Økonomi-sida** (28. oktober–6. november) –
+bildekatalogen og fargetabellen, og samme kveld for Neam fast til høyre på
+PC. **Det er ikke oppdatert for Økonomi-sida** (28. oktober–6. november) –
 se utseendevalgene under «Åpne spørsmål».
 
 ---
@@ -4113,11 +4127,13 @@ av systemene, ikke kjøkkenet og barna.
 - **Konteksten sier hvor, ikke hva:** fanen, hvor mange poster som venter,
   og id-en til den valgte posten eller måneden – ingen butikknavn eller
   beløp, samme prinsipp som avtaletitlene på kalenderen.
-- **Fast til høyre fra 1360 px:** `body.ok-neam-fast`, panelet 400 px inne
-  i rammen, uten lukkeknapp. Lukker felles-neam.js det (Escape), åpnes det
-  igjen med en gang. Feltet får ikke fokus av seg selv. Smalere enn
-  1360 px er det det vanlige panelet, og blir vinduet smalt mens det står
-  åpent, lukkes det.
+- **Fast til høyre** startet her (`47b39df`): `body.ok-neam-fast`, 400 px
+  inne i rammen fra 1360 px, holdt oppe av en vakt på `hidden`. **Fra
+  `62fa248` ligger det i `felles-neam.js` og `-css` for alle sidene** –
+  bredere (omtrent en tredjedel av skjermen) og bare på PC med mus – og
+  sidas egen kode er fjernet. Magne: «det er masse plass på sidene av
+  skjermen som ikke er tatt i bruk». Se designsystemet, «Fast til høyre på
+  PC».
 
 ### Nøkkeltallene og «Neam trenger» (6. november, `610a23d`)
 
