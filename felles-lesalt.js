@@ -709,7 +709,8 @@ async function lesAltOkUtfor(navn, arg){
       return { id:p.id, dato:p.dato, sted:sted, tekst:p.tekst && p.tekst !== sted ? p.tekst : undefined, belop:p.belop,
                kilde:p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? 'lagt inn for hånd' : 'kvittering fra bilde') : (p.kontoNavn || 'bank'),
                kategori:p.kategori || '', forslag:!p.kategori ? 'mangler kategori' : p.kilde === 'ai-usikker' ? 'Neam er usikker' : 'Neam er sikker',
-               mulig_dobbel:!!p.mulDobbel, kvittering:!!p.fra };
+               mulig_dobbel:!!(p.mulDobbel || p.lignerPaa), kvittering:!!p.fra,
+               ligner_paa:p.lignerPaa ? { sted:p.lignerPaa.sted, dato:p.lignerPaa.dato, belop:p.lignerPaa.belop, kilde:p.lignerPaa.kilde, varer_like_prosent:p.lignerPaa.varer } : undefined };
     });
     return { antall:poster.length, poster:poster.slice(0, 60), avkortet:poster.length > 60,
              kategorier:(r.kategorier || []).filter(function(k){ return k.split(' · ').length >= 2; }) };

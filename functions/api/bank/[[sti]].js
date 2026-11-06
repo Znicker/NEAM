@@ -650,6 +650,36 @@ function dagerMellom(a, b){ return Math.abs(Date.parse(a) - Date.parse(b)) / 864
 function erLik(bank, kv){
   return Math.abs(Math.abs(bank.belop) - Math.abs(kv.belop)) < 0.005 && dagerMellom(bank.dato, kv.dato) <= 3;
 }
+/* Ligner kvitteringen en som alt er lagt inn? (Magne, 6. november 2026)
+   Samme kjoep kan komme to ganger: fra Trumf og som bilde, eller samme
+   bilde lest litt ulikt, saa id-en (butikk, dato, sum) blir en annen.
+   Ligner: beloepet innen 1 % (minst 1 kr), hoeyst tre dager mellom, og -
+   naar begge har varelinjer - minst halvparten av varene like. Da merkes
+   den nye `lignerPaa`, foeres aldri av seg selv, og sida stryker den til
+   noen tar den med. Samme regel som mulDobbel mot banktrekket. */
+function varenavn(l){ return String(l && l.navn || '').toLowerCase().replace(/[^a-zæøå0-9]+/g, ' ').trim(); }
+function vareLikhet(a, b){
+  if(!a.length || !b.length) return null;
+  const sa = new Set(a.map(varenavn)), sb = new Set(b.map(varenavn));
+  let felles = 0;
+  sa.forEach(n => { if(sb.has(n)) felles++; });
+  return felles / Math.min(sa.size, sb.size);
+}
+async function finnLignende(env, poster, kv, linjer){
+  const sum = Math.abs(kv.belop);
+  for(const id of Object.keys(poster)){
+    const a = poster[id];
+    if(id === kv.id || !a.fra || a.status === 'stroket' || a.status === 'sammenslatt') continue;
+    if(Math.abs(Math.abs(a.belop) - sum) > Math.max(1, sum * 0.01) || dagerMellom(a.dato, kv.dato) > 3) continue;
+    const andre = ((await lesJson(env, kvitteringNokkel(a), null)) || {}).linjer || [];
+    const lik = vareLikhet(linjer || [], andre);
+    if(lik !== null && lik < 0.5) continue;
+    return { id:a.id, sted:a.motpart || a.tekst || '', dato:a.dato, belop:a.belop,
+      kilde:a.fra === 'trumf' ? 'Trumf-kvittering' : a.forHand ? 'kjøp lagt inn for hånd' : 'kvittering fra bilde',
+      varer:lik === null ? null : Math.round(lik * 100) };
+  }
+  return null;
+}
 function kobleKvittering(poster, kv){
   if(kv.bankId || kv.mulDobbel) return;
   for(const id of Object.keys(poster)){
@@ -715,6 +745,8 @@ async function innboks(env, okt, fersk, psu){
         const f = foreslaa(kv, laert);
         kv.kategori = f.kategori; kv.kilde = f.kilde;
         kobleKvittering(poster, kv);
+        const ligner = await finnLignende(env, poster, kv, []);
+        if(ligner) kv.lignerPaa = ligner;
         poster[id] = kv;
         nye++;
       }
@@ -729,7 +761,7 @@ async function innboks(env, okt, fersk, psu){
   let endret = nye > 0;
   for(const id of Object.keys(poster)){
     const p = poster[id];
-    if(p.status !== 'ny' || p.dekketAv || p.mulDobbel || p.manuell) continue;
+    if(p.status !== 'ny' || p.dekketAv || p.mulDobbel || p.lignerPaa || p.manuell) continue;
     if(!p.kategori){ const f = foreslaa(p, laert); if(f.kategori){ p.kategori = f.kategori; p.kilde = f.kilde; } }
     if(!p.kategori || (p.kilde !== 'laert' && p.kilde !== 'ord')) continue;
     autoFoer(poster, p, naa);
@@ -791,7 +823,7 @@ async function lagreForslag(env, kropp){
     if(!f.kategori || kategorier.indexOf(f.kategori) === -1) continue;
     if(p.kategori && p.kilde !== 'ai-usikker') continue;   /* et menneskes eller en regels valg vinner */
     p.kategori = f.kategori;
-    if(f.sikker && !p.mulDobbel && !p.manuell){
+    if(f.sikker && !p.mulDobbel && !p.lignerPaa && !p.manuell){
       p.kilde = 'ai'; autoFoer(poster, p, naa); foert++;
       const n = motpartNokkel(p);
       if(n) laert[n] = f.kategori;
@@ -817,10 +849,10 @@ async function varsler(env, okt){
     + (uten ? ', ' + uten + ' uten kategori' : '') });
   /* Til Status-kortet «Til godkjenning»: hvor sikker Neam er paa det som venter. */
   const innboks = {
-    forslag: venter.filter(p => p.kategori && p.kilde !== 'ai-usikker' && !p.mulDobbel).length,
-    usikker: venter.filter(p => p.kategori && p.kilde === 'ai-usikker' && !p.mulDobbel).length,
-    uten: venter.filter(p => !p.kategori && !p.mulDobbel).length,
-    dobbel: venter.filter(p => p.mulDobbel).length,
+    forslag: venter.filter(p => p.kategori && p.kilde !== 'ai-usikker' && !p.mulDobbel && !p.lignerPaa).length,
+    usikker: venter.filter(p => p.kategori && p.kilde === 'ai-usikker' && !p.mulDobbel && !p.lignerPaa).length,
+    uten: venter.filter(p => !p.kategori && !p.mulDobbel && !p.lignerPaa).length,
+    dobbel: venter.filter(p => p.mulDobbel || p.lignerPaa).length,
     eldste: venter.reduce((m, p) => !m || String(p.dato) < m ? String(p.dato) : m, '')
   };
   if(tf) ut.push({ type:'trumf', tekst: tf.kode === 'innlogging' ? 'Trumf trenger ny innlogging' : 'Trumf-hentingen virker ikke: ' + tf.feil });
@@ -1096,6 +1128,8 @@ async function nyKvittering(env, kropp, epost){
     p.harFil = true; p.filType = fil.type;
   }
   kobleKvittering(poster, p);
+  const ligner = await finnLignende(env, poster, p, linjer);
+  if(ligner) p.lignerPaa = ligner;
   poster[id] = p;
   if(linjer.length) await env.FAMILIE_KV.put(kvitteringNokkel(p), JSON.stringify({ id:id, belop:sum, linjer:linjer }));
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));

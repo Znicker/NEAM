@@ -755,7 +755,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 <script src="/felles-hus.js?v=22"></script>
 <script src="/felles-data.js?v=5"></script>
 <script src="/felles-ms.js?v=2"></script>
-<script src="/felles-lesalt.js?v=10"></script>
+<script src="/felles-lesalt.js?v=11"></script>
 <script src="/felles-skriv.js?v=11"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=74"></script>
@@ -943,8 +943,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       /* En kvittering som kan vaere telt i banken allerede, staar stroeket
          til noen tar den med - heller én for lite enn én dobbelt. */
       okPoster = (r.poster || []).map(function(p){
-        p.ute = !!p.mulDobbel; p.linjeKat = {}; p.apen = false;
-        p.gruppe = p.mulDobbel || !p.kategori || p.kilde === 'ai-usikker' ? 'tvil' : 'sikre';
+        p.ute = !!(p.mulDobbel || p.lignerPaa); p.linjeKat = {}; p.apen = false;
+        p.gruppe = p.mulDobbel || p.lignerPaa || !p.kategori || p.kilde === 'ai-usikker' ? 'tvil' : 'sikre';
         return p;
       });
       document.getElementById('ok-innboks-meta').textContent = 'Fra ' + okKort.format(new Date(r.fra)) + ' · hentet kl. '
@@ -1067,14 +1067,21 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var n = okMotpart(p);
     okPoster.forEach(function(q){ if(q !== p && !q.kategori && !q.ute && n && okMotpart(q) === n){ q.kategori = p.kategori; q.kilde = 'laert'; } });
   }
+  /* «ligner en Trumf-kvittering som alt er lagt inn: KIWI, 25. okt., 489,50 kr – 5 av 6 varer like.» */
+  function okLignerTekst(l){
+    return 'ligner en ' + (l.kilde || 'kvittering') + ' som alt er lagt inn: ' + (l.sted || 'uten navn') + ', '
+      + okKort.format(new Date(l.dato)) + ', ' + okKr0.format(Math.abs(l.belop)) + ' kr'
+      + (l.varer != null ? ' – ' + l.varer + ' % av varene like.' : '.');
+  }
   function okPostGrunn(p){
     var tekst = p.mulDobbel ? 'Mulig dobbel: et banktrekk med samme beløp fra ' + (p.bankKonto || 'banken') + ' er alt godkjent. Strøket til du tar den med.'
+      : p.lignerPaa ? 'Mulig dobbel: ' + okLignerTekst(p.lignerPaa) + ' Strøket til du tar den med.'
       : p.ute ? 'Føres ikke'
       : !p.kategori ? 'Trenger kategori – blir liggende til den har en'
       : p.kilde === 'ai-usikker' ? 'Neam er usikker – sjekk at kategorien stemmer'
       : p.kilde === 'laert' ? 'Forslag: samme som sist'
       : p.kilde === 'ord' ? 'Forslag fra Neam' : '';
-    return { tekst:tekst, varsel:(!p.kategori && !p.ute) || p.mulDobbel || (p.kilde === 'ai-usikker' && !p.ute) };
+    return { tekst:tekst, varsel:(!p.kategori && !p.ute) || p.mulDobbel || p.lignerPaa || (p.kilde === 'ai-usikker' && !p.ute) };
   }
   function okKontoTekst(p){
     return p.fra
@@ -1085,7 +1092,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   /* PC-raden: dato, sted med kategori under, beloep. Trykk velger posten. */
   function okPostRadPc(p){
     var hva = p.motpart || p.tekst || 'Uten tekst', g = okPostGrunn(p);
-    var kat = p.ute ? 'Føres ikke' : p.kategori ? p.kategori.split(' · ').join(' › ') : 'Velg kategori';
+    var kat = p.mulDobbel || p.lignerPaa ? 'Mulig dobbel – føres ikke' : p.ute ? 'Føres ikke' : p.kategori ? p.kategori.split(' · ').join(' › ') : 'Velg kategori';
     var b = okEl('button', 'ok-ib-rad' + (p.id === okIbValgt ? ' valgt' : '') + (p.ute ? ' ute' : ''),
       '<span class="ok-dato">' + okVask(okKort.format(new Date(p.dato))) + '</span>'
       + '<span class="ok-sted"><b>' + okVask(hva) + '</b><span class="' + (g.varsel ? 'mangler' : '') + '">' + okVask(kat) + '</span></span>'
@@ -1864,7 +1871,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     try{
       var res = await okTolkKvittering(fil);
       status.textContent = 'Lagt i innboksen: ' + res.post.motpart + ', ' + okKort.format(new Date(res.post.dato))
-        + ', ' + okKr0.format(-res.post.belop) + ' kr' + (res.linjer ? ' med ' + res.linjer + ' varer' : '') + '. Sjekk og godkjenn.';
+        + ', ' + okKr0.format(-res.post.belop) + ' kr' + (res.linjer ? ' med ' + res.linjer + ' varer' : '') + '. '
+        + (res.post.lignerPaa ? 'Obs: den ' + okLignerTekst(res.post.lignerPaa) + ' Den er strøket til du tar den med.' : 'Sjekk og godkjenn.');
       okLastInnboks();
     }catch(e){
       status.textContent = 'Kvitteringen ble ikke lagt inn: ' + (e && e.message || e);
@@ -1931,7 +1939,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     try{
       var r = await okHent('/api/bank?hva=dropbox-filer');
       if(!r.ok || !(r.filer || []).length) return;
-      var lagt = 0, dobbel = 0, feil = [];
+      var lagt = 0, dobbel = 0, feil = [], ligner = [];
       for(var i = 0; i < r.filer.length; i++){
         var f = r.filer[i];
         status.textContent = 'Neam leser kvittering ' + (i + 1) + ' av ' + r.filer.length + ' fra Dropbox …';
@@ -1942,8 +1950,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
           blob = await svar.blob();
         }catch(e){ feil.push(f.navn + ': ' + (e && e.message || e)); continue; }   /* blir liggende og proeves igjen */
         try{
-          await okTolkKvittering(new File([blob], f.navn, { type:f.type }));
+          var lest = await okTolkKvittering(new File([blob], f.navn, { type:f.type }));
           lagt++;
+          if(lest.post.lignerPaa) ligner.push(f.navn);
           await ferdig(f, 'Importert');
         }catch(e){
           if(e && e.duplikat){ dobbel++; await ferdig(f, 'Importert'); continue; }
@@ -1952,7 +1961,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         }
       }
       var tekst = [lagt ? lagt + (lagt === 1 ? ' kvittering' : ' kvitteringer') + ' fra Dropbox lest og lagt inn.' : '',
-        dobbel ? dobbel + ' var lagt inn fra før.' : '', feil.length ? 'Ble ikke lest: ' + feil.join('; ') + '.' : ''].filter(Boolean).join(' ');
+        dobbel ? dobbel + ' var lagt inn fra før.' : '',
+        ligner.length ? 'Obs: ' + ligner.join(', ') + ' ligner' + ' en kvittering som alt er lagt inn – se «Trenger et valg» i innboksen.' : '',
+        feil.length ? 'Ble ikke lest: ' + feil.join('; ') + '.' : ''].filter(Boolean).join(' ');
       status.textContent = tekst + (r.flere ? ' Flere ligger igjen – de tas neste gang.' : '');
       okDb.resultat = tekst;
       if(lagt) okLastInnboks();
@@ -3158,7 +3169,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   window.neamUlagret = function(){
     var u = [];
     if(okBu.redigerer) u.push('Budsjettet er åpent for redigering');
-    var valgt = okPoster.filter(function(p){ return p.kilde === 'valgt' || (p.ute && !p.mulDobbel) || Object.keys(p.linjeKat || {}).length; }).length;
+    var valgt = okPoster.filter(function(p){ return p.kilde === 'valgt' || (p.ute && !p.mulDobbel && !p.lignerPaa) || Object.keys(p.linjeKat || {}).length; }).length;
     if(valgt) u.push(valgt + (valgt === 1 ? ' post' : ' poster') + ' i innboksen har valg som ikke er godkjent');
     var skrevet = Array.prototype.some.call(document.querySelectorAll('#ok-trenger input'), function(f){ return f.type === 'checkbox' ? f.checked : f.value.trim(); });
     if(skrevet) u.push('Noe er fylt inn i «Neam trenger» uten å være lagret');
