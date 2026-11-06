@@ -1542,14 +1542,26 @@ Den skjulte `okonomi.html` (sys@, Magne og Nina). Arkitekturen står i
 kartleggingen, del 57; her står det som angår oppbygning og utseende.
 
 **Fem faner, hver ting ett sted** (skissen «Neam Økonomi – ny struktur»,
-godkjent 6. november 2026):
+godkjent 6. november 2026; Innboks ble Transaksjoner samme kveld):
 
 - **Status** – bare oversikt: fire tallbokser, måneden som én stolpe med de
   tre postene som ligger mest foran skjema, nøkkeltallene, netto formue og
   familiemålet.
-- **Innboks** – bare poster, i sammenleggbare linjer: Trenger et valg,
-  Klare til godkjenning, Ført automatisk og Neam trenger. Den valgte posten
-  står til høyre på PC.
+- **Transaksjoner** (fra 6. november 2026, het Innboks) – to underfaner:
+  - **Innboks** – det som venter på deg, i sammenleggbare linjer: Trenger
+    et valg, Klare til godkjenning, Ført automatisk, Fakturaer som venter og
+    Neam trenger. Den valgte posten står til høyre på PC. Tallet for det
+    som venter står både på fanen og på underfanen.
+  - **Alle** – kontoutskriften fra nullpunktet. Øverst ‹ måned ›, så et
+    kort med søk, konto, kategori, type og fra–til, så en meta-linje med
+    antall og inn/ut, og radene som kjøpene i Regnskap (dato, navn med
+    kategori og kilde under, beløp, ›). **Uten filter** vises én måned;
+    **med søk, filter eller periode** vises alt som treffer, med måneden
+    som overskrift (`.ok-etikett`), og ‹ måned › byttes mot «Søk og
+    filter» og Nullstill. En rad åpnes på stedet med detaljene og
+    handlingene (varene, PDF-en, «Send tilbake til innboksen»). Strøket
+    vises med lav opasitet og streket navn, som i innboksen.
+  Valgt ut uten skisse (Magne: «bare kjør det ut på neam»).
 - **Regnskap** – budsjett mot faktisk, med **periode**: én måned (med
   ‹ måned ›), hittil i år, eller siste 12 måneder. Budsjettet er da summen av
   månedsbudsjettene. Trenden og «Hvor det glir» står som linjer øverst, og
@@ -1567,8 +1579,11 @@ godkjent 6. november 2026):
   en innstilling hører ikke hjemme i innboksen.
 - **Sumboksene er de samme overalt:** Inntekter · Utgifter · Sparing ·
   Overskudd, i den rekkefølgen og med de ordene.
-- **Periodevalg og budsjettvalg** ser ut som fanene (`.ok-fane` med
-  `aria-pressed`), men er knapper i en gruppe, ikke faner.
+- **Periodevalg, budsjettvalg og underfanene** ser ut som fanene
+  (`.ok-fane` med `aria-pressed`), men er knapper i en gruppe, ikke faner.
+- **Toppfanene må få plass på 375 px.** Med «Transaksjoner» er de tettere
+  på telefon (3 px sidepolstring, litt tettere bokstaver). Et lengre
+  fanenavn må måles der før det tas i bruk.
 - **Toppen står fast** når man ruller, og sida har plass nederst så det
   siste kan rulles fram over NEAM-knappen (se lærdommene i kartleggingen,
   del 57).

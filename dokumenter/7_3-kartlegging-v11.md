@@ -460,11 +460,13 @@ Etter det: kvitteringer legges ved transaksjonen som alt ligger der, og
 gjennomgangen «Koble kvitteringer og transaksjoner» for det som er lagt
 inn fra før (`2084e26`). Så fakturaer: de venter på trekket fra banken og
 legges ved det, uansett hva som kommer først (`8a21f18`), og krysset i
-formueskjemaet på raden det sletter (`e1268f5`). **Sett i live-data
+formueskjemaet på raden det sletter (`e1268f5`). Til sist ble Innboks
+til **Transaksjoner** med underfanene Innboks og Alle – kontoutskriften med
+søk, filter og periode (`f6b8f21`). **Sett i live-data
 6. november, ikke rørt:** strømregningen 26. oktober ser ut til å være
 ført to ganger (samme beløp, to banktekster for samme avtalegiro).
-SPK-fakturaen ble lest på nytt etter `8a21f18` («det fungerte»). 47 commits,
-`0e0050a`–`e1268f5`, medregnet en midlertidig statustest fra en annen økt
+SPK-fakturaen ble lest på nytt etter `8a21f18` («det fungerte»). 48 commits,
+`0e0050a`–`f6b8f21`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3861,7 +3863,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 47 commits fra `0e0050a` til `e1268f5`.
+verdier. Bygget i 48 commits fra `0e0050a` til `f6b8f21`.
 
 ### Banken – Enable Banking
 
@@ -4170,6 +4172,42 @@ til Oppsett med rød prikk på fanen, og Coop-meldingen bort.
   forsvant før Lagre. Nå sammenlignes skjemaet med det som sist ble lagret
   (`okFormueTekst()` mot `okFormueLagret`); er det ulikt, oppdateres bare
   visningen (`okTegnFormue()`), og skjemaet blir stående.
+
+### Transaksjoner – Innboks og Alle (6. november, `f6b8f21`)
+
+Magne: «Jeg ønsker mye mer oversikt over innboksen … søke på transaksjoner
+og filtrere på type, konto mm. … nesten som en kontoutskrift … velge
+periode fra til, og bla mellom måneder når det ikke er filter». Han
+foreslo selv å døpe Innboks om til Transaksjoner, og to underfaner i
+stedet for en sjette fane. **Nullpunktet holder** («vi har et nullpunkt
+nå, det er ok»): lista går fra `auth:bank:innboks-fra` (1. oktober), og
+ingenting eldre hentes fra DNB. Bygget uten skisse («bare kjør det ut på
+neam»); utseendet står i designsystemet, «Økonomi».
+
+- **Fanen** heter Transaksjoner, internt fortsatt `innboks`;
+  `#transaksjoner` fører dit. Underfanene (`#ok-tr-valg`, `okTrVis()`)
+  huskes i localStorage `ok-tr`.
+- **Alle** henter alt én gang fra `?hva=alle-poster` (`allePoster()`) og
+  søker og filtrerer i sida (`okAlTreff`). Det som er slått inn i en annen
+  post, vises som den: et banktrekk med `dekketAv` og poster med
+  `sammenslatt` er utelatt. Lista er bare det som ligger i Neam –
+  felleskontoene, Trumf, kvitteringer og fakturaer. Deres egne kontoer er
+  ikke med; det kan legges til.
+- **Søket** treffer navn, banktekst, kategori og kilde, alle ordene; et tall
+  treffer beløpet («8236»). **Type** er inn/ut, med varelinjer, med fil,
+  faktura, ført automatisk, venter i innboksen, strøket og uten kategori.
+  Kategori kan velges som hel gruppe (`g:Bolig`).
+- **Månedene** går fra nullpunktet til i dag – eller lenger når en faktura
+  venter med forfall fram i tid. Summen i meta-linja regner ikke med
+  strøkne og fakturaer som venter. Over 400 treff vises de 400 nyeste.
+- **Raden** åpnes på stedet: banktekst, dato og kilde, «Se varene»
+  (`okVisKvittering`), PDF-en, «Send tilbake til innboksen» (`angre`) for
+  godkjent og strøket, og «Legg i innboksen» for en faktura som venter.
+- **Ikke gjort:** «Ført automatisk» står fortsatt i Innboks selv om radene
+  i Alle har merket; Neam har ikke et verktøy for å søke i Alle.
+- **Felle:** «Transaksjoner» er 37 px lenger enn «Innboks», og Oppsett
+  rullet ut av fanelinja på 375 px. Tettere faner på telefon løste det;
+  rundt 360 px kan linja fortsatt måtte rulles.
 
 ### Ny struktur – fem faner og sammenleggbare linjer (6. november, `8458adc`)
 
