@@ -437,8 +437,9 @@ utenfor (`f6664ba`). Til slutt flere boliglån og sparekontoer, hele
 kontonummeret i kontovalgene, bildet eller PDF-en lagret med kvitteringen,
 og at Neam kan laste sida på nytt (`7688c6f`). Så bruttoinntekt per
 person, og gjeldsgraden regnet av den (`3218537`), og beskjed når en
-kvittering ligner en som alt er lagt inn (`fd86515`). 36 commits,
-`0e0050a`–`fd86515`, medregnet en midlertidig statustest fra en annen økt
+kvittering ligner en som alt er lagt inn (`fd86515`), og sparekontoene i
+nedtrekk med hele kontonummeret (`df9e9c4`). 37 commits,
+`0e0050a`–`df9e9c4`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -672,9 +673,11 @@ kvittering ligner en som alt er lagt inn (`fd86515`). 36 commits,
   at oppgaven kom fram og panelet åpnet seg, ikke hva han gjør med den.
   Og varelinjer fordelt av Neam mot en ekte kvittering.
 - **Kontonummeret og kvitteringsfila på neam.no** (6. november): at
-  kontovalgene viser «navn – 1234.56.78901» med DNBs ekte IBAN (testen
-  hadde for korte numre til å formateres), og at «Åpne bildet ›» åpner fila
-  for en ny kvittering – både fra «Legg til kvittering» og fra Dropbox.
+  kontovalgene viser «navn – 1234.56.78901» – at **DNB svarer på
+  `/accounts/{uid}/details` gjennom Enable Banking** med IBAN-en (bare
+  prøvd mot en falsk bank; svarer den ikke, står de fire sifrene som før) –
+  og at «Åpne bildet ›» åpner fila for en ny kvittering, både fra «Legg til
+  kvittering» og fra Dropbox.
 - **Andreas ukeplan på neam.no** (1. november): «Hent ukeplan» skal finne
   uke 45.
 - **Rommene på iPad og telefon** (1. november): kolonnene, Rediger og å
@@ -3825,7 +3828,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 36 commits fra `0e0050a` til `fd86515`.
+verdier. Bygget i 37 commits fra `0e0050a` til `df9e9c4`.
 
 ### Banken – Enable Banking
 
@@ -4105,13 +4108,20 @@ av systemene, ikke kjøkkenet og barna.
   «+ Ett lån til». Navnet må inneholde «bolig» for å telle i
   belåningsgraden, så «SPK» lagres som «Boliglån – SPK». Senere endringer
   gjøres under Gjeld i Oppsett.
-- **Flere sparekontoer** (`7688c6f`): Sparekonto-raden er avkrysning, så
-  flere kan bli Sparing på én gang.
+- **Flere sparekontoer** (`7688c6f`, nedtrekk fra `df9e9c4`):
+  Sparekonto-raden er et nedtrekk der flere kan krysses av («2 valgt:
+  Regningskonto, Magne lønn»). Det lukkes ved klikk utenfor og med Escape.
+  Felleskontoene står ikke i lista, så innboksen ikke mister dem.
 - **Hele kontonummeret i kontovalgene** (`7688c6f`): «navnet i Neam –
   1234.56.78901», også under kontoene i Oppsett. Bank-funksjonen viste før
   med vilje bare de fire siste sifrene; Magne ba om hele. `kontonr` går
   bare til sida – `les_okonomi_kontoer` tar det ikke med, så Neam ser det
-  ikke.
+  ikke. **Kontoene lagres når DNB kobles** (`auth:bank:hus`), og de som ble
+  koblet før 6. november, hadde bare de fire sifrene. Fra `df9e9c4` hentes
+  nummeret for dem én gang per konto fra `/accounts/{uid}/details` og
+  lagres i `auth:bank:kontonr` – bare med noen til stede (PSU-headerne), så
+  kjøkkenskjermens vekker ikke bruker av bankens kvote på fire hentinger i
+  døgnet.
 
 ### Hva Neam kan endre – på sida og utenfor (6. november, `f6664ba`)
 
@@ -4175,7 +4185,7 @@ og kontoer og transaksjoner skal ikke kunne leses ut derfra. Nøklene:
 `hus` (økta), `roller`, `kontonavn`, `tilstand:<rnd>`, `buffer:<navn>`,
 `poster`, `laert`, `innboks-fra`, `trumf`, `trumf-feil`, `kv:<postId>`,
 `sist-hentet`, `budsjett`, `kategorier`, `formue`, `formue-mnd`, `dropbox`,
-`fil:<postId>`.
+`fil:<postId>`, `kontonr`.
 
 ### Lærdommer
 
