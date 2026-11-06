@@ -462,11 +462,12 @@ inn fra før (`2084e26`). Så fakturaer: de venter på trekket fra banken og
 legges ved det, uansett hva som kommer først (`8a21f18`), og krysset i
 formueskjemaet på raden det sletter (`e1268f5`). Til sist ble Innboks
 til **Transaksjoner** med underfanene Innboks og Alle – kontoutskriften med
-søk, filter og periode (`f6b8f21`). **Sett i live-data
+søk, filter og periode (`f6b8f21`), og budsjettet ble friskt opp med nye
+navn på alle poster, også de faste (`e4d8c4b`). **Sett i live-data
 6. november, ikke rørt:** strømregningen 26. oktober ser ut til å være
 ført to ganger (samme beløp, to banktekster for samme avtalegiro).
-SPK-fakturaen ble lest på nytt etter `8a21f18` («det fungerte»). 48 commits,
-`0e0050a`–`f6b8f21`, medregnet en midlertidig statustest fra en annen økt
+SPK-fakturaen ble lest på nytt etter `8a21f18` («det fungerte»). 49 commits,
+`0e0050a`–`e4d8c4b`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3863,7 +3864,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 48 commits fra `0e0050a` til `f6b8f21`.
+verdier. Bygget i 49 commits fra `0e0050a` til `e4d8c4b`.
 
 ### Banken – Enable Banking
 
@@ -4172,6 +4173,32 @@ til Oppsett med rød prikk på fanen, og Coop-meldingen bort.
   forsvant før Lagre. Nå sammenlignes skjemaet med det som sist ble lagret
   (`okFormueTekst()` mot `okFormueLagret`); er det ulikt, oppdateres bare
   visningen (`okTegnFormue()`), og skjemaet blir stående.
+
+### Budsjettet friskt opp – nye navn og grønt pluss (6. november, `e4d8c4b`)
+
+Magne: «Jeg må kunne endre navn på postene i budsjettet … pluss tegnet …
+mer rafinert og grønt og … på venstre side av navnet … det lages en ny
+linje som heter "uten linje" flere ganger … er veldig generisk nå».
+Bygget uten skisse; utseendet står i designsystemet, «Økonomi».
+
+- **Nytt navn på alle poster og linjer**, også de faste i `KATEGORIER`.
+  Gruppene og Utenfor budsjett får ikke nytt navn. En fast post får
+  navnet i **`auth:bank:kategori-omdopt`** (`{ fast: nyttNavn }`), og
+  `flett(egne, omdopt)` setter det inn på den faste plassen. Ved navnet
+  tilbake slettes oppføringen. `kategori-navn` flytter som før linjene
+  under, føringene (også `deler`), budsjettene og det Neam har lært.
+  **`foreslaa(p, laert, omdopt)`**: nøkkelordene peker på de faste
+  navnene og gir det nye – et nytt Tibber-trekk havnet på det nye navnet
+  i testen. Sida flytter tallene som er skrevet inn men ikke lagret.
+  Neams `endre_okonomi_budsjettposter` kan det samme.
+- **Kjent følge:** «Neam trenger» leter etter `Inntekter · Magne` og
+  `Inntekter · Nina` ved navn; får de nytt navn, finner den dem ikke.
+- **«Uten linje» var en feil:** i redigering sto den under hver post med
+  linjer, også uten beløp, og så ut som en linje som ble laget om og om
+  igjen. Den vises nå bare når posten har et eget beløp.
+- **Felle:** `.ok-std-rad input` (beløpsfeltene: 112 px, høyrestilt)
+  traff også navnefeltet – det trenger `.ok-std-rad input.ok-bu-navn`.
+  Navnefeltet bruker `field-sizing:content`, så krysset står ved navnet.
 
 ### Transaksjoner – Innboks og Alle (6. november, `f6b8f21`)
 

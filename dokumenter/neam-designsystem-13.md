@@ -1568,7 +1568,21 @@ godkjent 6. november 2026; Innboks ble Transaksjoner samme kveld):
   kjøpene bak den valgte posten til høyre. Erstatter Måned, År og budsjett
   mot regnskap.
 - **Budsjett** – bare redigering: standardbudsjettet eller ett
-  månedsbudsjett om gangen.
+  månedsbudsjett om gangen. Fra 6. november 2026 (Magne: «er veldig
+  generisk nå»):
+  - **Hver gruppe i sitt eget kort** (`.ok-bu-gruppe`, papir, skygge,
+    radius 14 px) – Inntekter og Sparing øverst, utgiftsgruppene under, to i
+    bredden og tre fra 1280 px. Ingen ramme rundt hele budsjettet.
+  - **Under gruppenavnet en tynn stolpe** (4 px, `--aksent` som stolpene i
+    Regnskap) med «25 % av inntekten». På Sparing blir det sparegraden.
+  - **Null er en dempet strek** (–), så tallene som teller, synes.
+  - **I redigering er navnet et felt** uten synlig ramme til man holder
+    over eller skriver; nytt navn lagres med en gang.
+  - **Plusset er grønt og står til venstre for navnet** (`.ok-pluss`):
+    20 px rund, `--handling-ny` på 14 % som flate og fullt grønn ved
+    hover – grønt fordi det legger til, som `.btn-ny`. Rader uten pluss
+    holder av plassen, så navnene står rett under hverandre.
+  - «Uten linje» vises bare når en post med linjer har et eget beløp.
 - **Oppsett** – alt som sammenleggbare linjer: én linje per kilde (med
   statusprikk, og kildens kort inni), kontoene per rolle, formuen (verdier,
   gjeld, bruttoinntekt, buffer, familiemål) og «Neam husker».
