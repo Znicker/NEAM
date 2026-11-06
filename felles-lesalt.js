@@ -349,6 +349,9 @@ async function lesAltUtfor(navn, arg){
     return await lesAltKalender(arg);
   }
 
+  /* ---------------- Økonomien ---------------- */
+  if(LESALT_OK_VERKTOY.some(function(v){ return v.name === navn; })) return await lesAltOkUtfor(navn, arg);
+
   return null;
 }
 
@@ -543,8 +546,196 @@ async function lesAltKalender(arg){
 function lesAltVerktoy(egne){
   const tatt = {};
   (egne || []).forEach(function(v){ if(v && v.name) tatt[v.name] = true; });
-  const alle = lesAltHarToken()
+  let alle = lesAltHarToken()
     ? LESALT_VERKTOY.concat([LESALT_KAL_VERKTOY])
     : LESALT_VERKTOY;
+  /* Økonomien bare for dem bank-funksjonen slipper inn - se under. */
+  if(lesAltOkonomiTillatt()) alle = alle.concat(LESALT_OK_VERKTOY);
   return alle.filter(function(v){ return !tatt[v.name]; });
+}
+
+/* ------------------------------------------------------------
+   Økonomien (6. november 2026)
+   ------------------------------------------------------------
+   Neam skal kunne svare på økonomien fra hvilken som helst side -
+   «samme Neam» for Magne, Nina og sys, men ikke for kjøkkenskjermen
+   og ikke for barna (Magne, 6. november). Grensen er bank-funksjonen
+   (TILGANG i functions/api/bank/[[sti]].js): den sjekker det signerte
+   Access-beviset og nekter alle andre uansett hva sida tror. Her
+   spoerres den én gang ved lasting (?hvem=1), og verktoeyene vises
+   bare naar svaret er ja - et verktoey som ikke kan virke, er verre
+   enn ingen.
+
+   Det som leses sist, huskes i lesAltOkSist, saa bekreftelsene i
+   felles-skriv.js kan vise navn og beloep i stedet for id-er. */
+let lesAltOkTilgang = false;
+const lesAltOkSist = { innboks:{}, budsjett:null };
+(function(){
+  try{
+    fetch('/api/bank?hvem=1', { credentials:'same-origin', cache:'no-store' })
+      .then(function(r){ return r.json(); })
+      .then(function(d){ lesAltOkTilgang = !!(d && d.voksen); })
+      .catch(function(){});
+  }catch(e){}
+})();
+function lesAltOkonomiTillatt(){ return lesAltOkTilgang; }
+
+async function lesAltBank(sti){
+  const r = await fetch('/api/bank' + sti, { credentials:'same-origin', cache:'no-store' });
+  let d = null;
+  try{ d = await r.json(); }catch(e){}
+  if(!d) throw new Error('Fikk ikke svar fra økonomien.');
+  if(!d.ok) throw new Error(d.feil || 'Økonomien svarte ikke.');
+  return d;
+}
+function lesAltOkMnd(m){
+  return /^\d{4}-\d{2}$/.test(String(m || '')) ? m : new Date().toISOString().slice(0, 7);
+}
+/* Budsjettet for en maaned: maanedens egen kopi, ellers standarden. */
+function lesAltOkBudFor(b, m){ return (b.maaneder && b.maaneder[m]) || b.standard || {}; }
+
+const LESALT_OK_VERKTOY = [
+  {
+    name: 'les_okonomi_maaned',
+    description: 'Husholdningsbudsjettet mot regnskapet for én måned: per gruppe (Bolig, Mat …) og post, '
+               + 'med budsjett, faktisk og avvik, og summene for inntekter, utgifter, sparing og overskudd. '
+               + 'Beløp i kroner; utgifter og inntekter begge som positive tall. Regnskapet er bare '
+               + 'GODKJENTE poster - det som ligger i innboksen, er ikke med. Bruk denne til «hvordan '
+               + 'ligger vi an», «er vi over på mat» o.l.',
+    input_schema: { type:'object', properties:{
+      mnd: { type:'string', description:'Måneden som ÅÅÅÅ-MM. Utelat for måneden som pågår.' }
+    }, required:[] }
+  },
+  {
+    name: 'les_okonomi_foringer',
+    description: 'De godkjente føringene bak ett tall i regnskapet: hvert kjøp med dato, sted, kilde og '
+               + 'beløp. Kategorien kan være en gruppe («Mat»), en post («Mat · Dagligvare») eller en '
+               + 'linje. Føringer med kvittering har id som les_okonomi_kvittering tar.',
+    input_schema: { type:'object', properties:{
+      kategori: { type:'string', description:'Gruppe, post eller linje, skrevet som i les_okonomi_maaned.' },
+      mnd: { type:'string', description:'Måneden som ÅÅÅÅ-MM. Utelat for måneden som pågår.' }
+    }, required:['kategori'] }
+  },
+  {
+    name: 'les_okonomi_innboks',
+    description: 'Postene som venter på godkjenning i økonomien, med id, dato, sted, beløp (negativt = '
+               + 'penger ut), kategorien Neam foreslår og hvor sikker forslaget er. Gir også lista over '
+               + 'gyldige kategorier. Kjør denne før godkjenn_okonomi_poster.',
+    input_schema: { type:'object', properties:{}, required:[] }
+  },
+  {
+    name: 'les_okonomi_kontoer',
+    description: 'Kontoene i DNB med eget navn, rolle (felles, sparing, magne, nina …) og saldo.',
+    input_schema: { type:'object', properties:{}, required:[] }
+  },
+  {
+    name: 'les_okonomi_aar',
+    description: 'Hele perioden måned for måned: utgifter mot budsjett, inntekter og sparing. Til '
+               + 'spørsmål om utvikling over tid.',
+    input_schema: { type:'object', properties:{}, required:[] }
+  },
+  {
+    name: 'les_okonomi_kvittering',
+    description: 'Varelinjene på én kvittering (Trumf eller lest fra bilde), med navn, antall og beløp. '
+               + 'Id-en kommer fra les_okonomi_innboks eller les_okonomi_foringer.',
+    input_schema: { type:'object', properties:{
+      id: { type:'string', description:'Postens id.' }
+    }, required:['id'] }
+  }
+];
+
+async function lesAltOkUtfor(navn, arg){
+  arg = arg || {};
+  if(!lesAltOkonomiTillatt()) throw new Error('Økonomien er ikke åpnet for denne innloggingen.');
+  const kr = function(n){ return Math.round(Number(n) || 0); };
+
+  if(navn === 'les_okonomi_maaned'){
+    const mnd = lesAltOkMnd(arg.mnd);
+    const b = await lesAltBank('?hva=budsjett'), r = await lesAltBank('?hva=regnskap&mnd=' + mnd);
+    const bud = lesAltOkBudFor(b, mnd), reg = r.regnskap || {};
+    const kat = b.kategorier || [];
+    const linjer = function(p){ return kat.filter(function(k){ return k.indexOf(p + ' · ') === 0; }); };
+    const sum = function(kilde, p){ return linjer(p).reduce(function(s, l){ return s + (kilde[l] || 0); }, kilde[p] || 0); };
+    const grupper = {}, rekke = [];
+    let inn = 0, ut = 0, spar = 0, innB = 0, utB = 0, sparB = 0;
+    kat.filter(function(k){ return k.split(' · ').length === 2; }).forEach(function(p){
+      const g = p.split(' · ')[0], fb = sum(bud, p), ff = sum(reg, p);
+      if(g === 'Inntekter'){ inn += ff; innB += fb; }
+      else if(g === 'Sparing'){ spar += ff; sparB += fb; }
+      else if(g !== 'Utenfor budsjett'){ ut += ff; utB += fb; }
+      if(!fb && !ff) return;
+      if(!grupper[g]){ grupper[g] = { gruppe:g, budsjett:0, faktisk:0, poster:[] }; rekke.push(g); }
+      grupper[g].budsjett += fb; grupper[g].faktisk += ff;
+      grupper[g].poster.push({ post:p, budsjett:kr(fb), faktisk:kr(ff), avvik:kr(ff - fb) });
+    });
+    rekke.forEach(function(g){ grupper[g].budsjett = kr(grupper[g].budsjett); grupper[g].faktisk = kr(grupper[g].faktisk); grupper[g].avvik = grupper[g].faktisk - grupper[g].budsjett; });
+    const naa = new Date(), d = new Date(mnd + '-01T12:00:00');
+    const dager = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    lesAltOkSist.budsjett = { maal:mnd, verdier:Object.assign({}, bud) };
+    return {
+      mnd:mnd, pagaar:mnd === naa.toISOString().slice(0, 7),
+      dager_igjen:mnd === naa.toISOString().slice(0, 7) ? dager - naa.getDate() : 0,
+      budsjett:b.maaneder && b.maaneder[mnd] ? 'månedens eget budsjett' : 'standardbudsjettet',
+      godkjente_poster:r.poster,
+      summer:{ inntekter:kr(inn), utgifter:kr(ut), sparing:kr(spar), overskudd:kr(inn - ut - spar),
+               budsjett_inntekter:kr(innB), budsjett_utgifter:kr(utB), budsjett_sparing:kr(sparB) },
+      grupper:rekke.map(function(g){ return grupper[g]; })
+    };
+  }
+
+  if(navn === 'les_okonomi_foringer'){
+    const mnd = lesAltOkMnd(arg.mnd), kat = String(arg.kategori || '').trim();
+    if(!kat) throw new Error('Mangler kategori.');
+    const r = await lesAltBank('?hva=foringer&mnd=' + mnd + '&kategori=' + encodeURIComponent(kat));
+    const liste = (r.foringer || []).map(function(f){
+      return { id:f.id, dato:f.dato, sted:f.tekst, kilde:f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''),
+               kategori:f.kategori, belop:f.belop, kvittering:!!f.harKvittering, del_av_kvittering:!!f.del };
+    });
+    return { mnd:mnd, kategori:kat, antall:liste.length, sum:Math.round(liste.reduce(function(s, f){ return s + f.belop; }, 0) * 100) / 100,
+             foringer:liste.slice(0, 80), avkortet:liste.length > 80 };
+  }
+
+  if(navn === 'les_okonomi_innboks'){
+    const r = await lesAltBank('?hva=innboks');
+    lesAltOkSist.innboks = {};
+    const poster = (r.poster || []).map(function(p){
+      const sted = p.motpart || p.tekst || 'Uten tekst';
+      lesAltOkSist.innboks[p.id] = { sted:sted, dato:p.dato, belop:p.belop };
+      return { id:p.id, dato:p.dato, sted:sted, tekst:p.tekst && p.tekst !== sted ? p.tekst : undefined, belop:p.belop,
+               kilde:p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : 'kvittering fra bilde') : (p.kontoNavn || 'bank'),
+               kategori:p.kategori || '', forslag:!p.kategori ? 'mangler kategori' : p.kilde === 'ai-usikker' ? 'Neam er usikker' : 'Neam er sikker',
+               mulig_dobbel:!!p.mulDobbel, kvittering:!!p.fra };
+    });
+    return { antall:poster.length, poster:poster.slice(0, 60), avkortet:poster.length > 60,
+             kategorier:(r.kategorier || []).filter(function(k){ return k.split(' · ').length >= 2; }) };
+  }
+
+  if(navn === 'les_okonomi_kontoer'){
+    const r = await lesAltBank('?hva=kontoer');
+    return { hentet:new Date(r.hentet).toISOString(), kontoer:(r.kontoer || []).filter(function(k){ return k.rolle !== 'ignorer'; })
+      .map(function(k){ return { navn:k.navn, rolle:k.rolle || 'uten rolle', saldo:typeof k.saldo === 'number' ? k.saldo : null, feil:k.feil || undefined }; }) };
+  }
+
+  if(navn === 'les_okonomi_aar'){
+    const b = await lesAltBank('?hva=budsjett'), r = await lesAltBank('?hva=regnskap-aar');
+    const gr = function(k){ return k.split(' · ')[0]; };
+    const mnder = Object.keys(r.maaneder || {}).sort();
+    return { maaneder:mnder.map(function(m){
+      const x = r.maaneder[m], bud = lesAltOkBudFor(b, m);
+      const s = function(f, kilde){ return kr(Object.keys(kilde).filter(f).reduce(function(t, k){ return t + kilde[k]; }, 0)); };
+      const utgift = function(k){ return gr(k) !== 'Inntekter' && gr(k) !== 'Sparing' && gr(k) !== 'Utenfor budsjett'; };
+      return { mnd:m, utgifter:s(utgift, x), budsjett_utgifter:s(utgift, bud),
+               inntekter:s(function(k){ return gr(k) === 'Inntekter'; }, x), sparing:s(function(k){ return gr(k) === 'Sparing'; }, x) };
+    }) };
+  }
+
+  if(navn === 'les_okonomi_kvittering'){
+    const id = String(arg.id || '');
+    if(!id) throw new Error('Mangler id.');
+    const r = await lesAltBank('?hva=kvittering&id=' + encodeURIComponent(id));
+    return { id:id, linjer:(r.linjer || []).map(function(l){
+      return { navn:l.navn, antall:l.antall, belop:Math.round(((l.belop || 0) + (l.rabatt || 0)) * 100) / 100 }; }) };
+  }
+
+  throw new Error('Ukjent økonomiverktøy: ' + navn);
 }

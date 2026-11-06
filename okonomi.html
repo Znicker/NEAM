@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=6">
 <link rel="stylesheet" href="/felles-knapper.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
+<link rel="stylesheet" href="/felles-neam.css?v=74">
 <style>
 /* ============================================================
    NEAM - oekonomi
@@ -487,6 +488,23 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-fo-maal input, .ok-fo-maal select{ width:100%; min-width:0; font-family:inherit; font-size:16px; padding:6px 8px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
 @media (max-width:560px){ .ok-fo-maal{ grid-template-columns:minmax(0,1fr); } }
 .ok-fo-seksjon + .ok-fo-seksjon{ margin-top:14px; }
+
+/* ---------- Neam fast til hoeyre paa PC ----------
+   Skissen: Neam staar alltid til hoeyre paa PC (Magne, 6. november 2026).
+   felles-neam.js bygger panelet som et lag over sida; her blir det en
+   spalte innenfor rammen. body.ok-neam-fast settes av okNeamFast() nederst
+   i skriptet. Smalere skjerm og telefonen har det vanlige panelet. */
+@media (min-width:1360px){
+  body.ok-neam-fast .ok-ramme{ padding-right:440px; }
+  body.ok-neam-fast #neamBak{
+    inset:16px max(16px, calc((100vw - 1440px) / 2 + 16px)) 16px auto; width:400px; padding:0;
+    background:none; -webkit-backdrop-filter:none; backdrop-filter:none;
+    align-items:stretch; pointer-events:none;
+  }
+  body.ok-neam-fast #neamBak .neam-panel{ pointer-events:auto; height:100%; max-width:none; box-shadow:var(--shadow); }
+  /* Panelet lukkes ikke her - det er en del av sida. */
+  body.ok-neam-fast #neamLukk{ display:none; }
+}
 </style>
 </head>
 <body>
@@ -702,6 +720,14 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     <div class="dlg-rad"><button type="button" class="dlg-knapp nei" id="ok-fr-lukk">Lukk</button></div>
   </div>
 </div>
+<script src="/felles-dialog.js?v=1"></script>
+<script src="/felles-hus.js?v=22"></script>
+<script src="/felles-data.js?v=5"></script>
+<script src="/felles-ms.js?v=2"></script>
+<script src="/felles-lesalt.js?v=8"></script>
+<script src="/felles-skriv.js?v=8"></script>
+<script src="/felles-tale.js?v=5"></script>
+<script src="/felles-neam.js?v=74"></script>
 <script>
 (function(){
   'use strict';
@@ -2786,6 +2812,90 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     });
   }
   okOppdaterKnapp.addEventListener('click', okOppdater);
+
+  /* ---------- Neam ----------
+     Samme Neam som paa de andre sidene: husets verktoey, og oekonomi-
+     verktoeyene fra felles-lesalt.js og felles-skriv.js (de vises bare for
+     dem bank-funksjonen slipper inn - sys@, Magne og Nina). Sida legger
+     ikke til egne verktoey; det Neam kan gjoere her, kan den gjoere fra
+     alle sidene. */
+  var OK_VIS_NAVN = { status:'Status', innboks:'Innboks', maaned:'Måned', aar:'År', budsjett:'Budsjett', oppsett:'Oppsett' };
+  window.neamVerktoy = async function(){
+    return HJEM_VERKTOY.concat(skrivVerktoy([]), lesAltVerktoy(HJEM_VERKTOY), HUS_VERKTOY);
+  };
+  window.neamUtfor = async function(navn, arg){
+    var mitt = await hjemUtfor(navn, arg);
+    if(mitt) return mitt;
+    var skr = await skrivUtfor(navn, arg);
+    if(skr) return skr;
+    var alt = await lesAltUtfor(navn, arg);
+    if(alt) return alt;
+    var hus = await husUtfor(navn, arg);
+    if(hus) return hus.svar;
+    throw new Error('Ukjent verkt\u00f8y: ' + navn);
+  };
+  /* Hvor man staar, ikke hva som staar der: som paa kalenderen sendes
+     ingen butikknavn eller beloep med hver melding. Neam slaar dem opp med
+     les_okonomi_* naar noen spoer. */
+  window.neamKontekst = async function(){
+    var vis = OK_VISNINGER.filter(function(v){ return !document.getElementById('ok-vis-' + v).hidden; })[0] || 'status';
+    var k = { sted:'Økonomi', visning:OK_VIS_NAVN[vis], tilGodkjenning:okPoster.length };
+    if(vis === 'innboks' && okIbValgt) k.valgtPostId = okIbValgt;
+    if(vis === 'maaned' && okMnd.valgt){ k.maaned = okMnd.valgt; if(okMnd.valgtPost) k.valgtKategori = okMnd.valgtPost; }
+    if(vis === 'budsjett' && okBu.mbValgt) k.budsjettMaaned = okBu.mbValgt;
+    return k;
+  };
+  window.neamBakgrunn = async function(){
+    var om = 'ØKONOMI er husstandens regnskap og budsjett. Transaksjonene fra DNB, Trumf og '
+      + 'kvitteringene i Dropbox kommer inn i innboksen; en post blir regnskap når den er '
+      + 'godkjent med en kategori. Budsjettet har et standardbudsjett og egne budsjett per måned.\n\n'
+      + 'Les tallene med les_okonomi_* - kontekstlinja sier bare hvilken fane brukeren står på, ikke '
+      + 'hva som står der. Ikke gjett beløp. godkjenn_okonomi_poster og sett_okonomi_budsjett endrer '
+      + 'regnskapet og budsjettet; sida tegner seg på nytt etterpå.';
+    var hus = await husregisterTekst();
+    return (hus ? (om + '\n\n' + hus) : om) + '\n\n' + HUS_BAKGRUNN;
+  };
+  /* felles-skriv.js kaller denne etter at Neam har godkjent poster eller
+     endret budsjettet. Et budsjett under redigering roeres ikke. */
+  window.okonomiEtterSkriv = function(){
+    okLastInnboks();
+    if(!okBu.redigerer) okBuLast();
+    if(okMnd.lastet) okMndLast();
+    okStatusLast(); okVarslerLast();
+  };
+
+  /* Fast til hoeyre paa bred skjerm (CSS-en «Neam fast til hoeyre»). Lukker
+     felles-neam.js panelet (Escape), aapnes det igjen - det er en del av
+     sida her. Feltet faar ikke fokus av seg selv: sida skal kunne leses og
+     brukes med tastaturet uten at Neam tar det. Blir vinduet smalt, lukkes
+     panelet, saa det ikke plutselig legger seg over sida. */
+  var okNeamPc = window.matchMedia('(min-width:1360px)');
+  var okNeamVakt = null;
+  function okNeamFast(){
+    var bak = document.getElementById('neamBak');
+    var fast = okNeamPc.matches && !!bak && typeof neamAapne === 'function';
+    document.body.classList.toggle('ok-neam-fast', fast);
+    if(!bak) return;
+    if(fast){
+      if(!okNeamVakt){
+        okNeamVakt = new MutationObserver(function(){
+          if(document.body.classList.contains('ok-neam-fast') && bak.hidden) bak.hidden = false;
+        });
+        okNeamVakt.observe(bak, { attributes:true, attributeFilter:['hidden'] });
+      }
+      if(bak.hidden){
+        var forrige = document.activeElement;
+        neamAapne();
+        var felt = document.getElementById('neamFelt');
+        if(felt && document.activeElement === felt){
+          felt.blur();
+          if(forrige && forrige !== document.body && forrige.focus) forrige.focus();
+        }
+      }
+    }else if(!bak.hidden && typeof neamLukk === 'function') neamLukk();
+  }
+  if(okNeamPc.addEventListener) okNeamPc.addEventListener('change', okNeamFast);
+  okNeamFast();
 
   okVarslerLast();
 

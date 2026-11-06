@@ -98,9 +98,9 @@ const API = 'https://api.enablebanking.com';
 const APP_ID = '429ce2c9-55e4-4183-a695-d9df8763a260';   // ikke hemmelig - staar i kontrollpanelet
 const BANK = { name:'DNB', country:'NO' };
 const TILBAKE = 'https://neam.no/api/bank/tilbake';
-/* Bare sys@ mens okonomi.html er under arbeid (Magne, 28. oktober 2026).
-   magne@ og nina@ legges til naar sida tas i bruk. */
-const TILGANG = ['sys@neam.no'];
+/* sys@, Magne og Nina - Neam skal kunne bruke økonomien fra alle sidene
+   for dem (Magne, 6. november 2026). Aldri kitchen@ eller barna. */
+const TILGANG = ['sys@neam.no', 'magne@neam.no', 'nina@neam.no'];
 /* Kan vekke hentingen (?hva=hent), men faar ikke se noe. Se der. */
 const HENT_TILGANG = TILGANG.concat(['kitchen@neam.no']);
 const SIST_HENTET_NOKKEL = 'auth:bank:sist-hentet';

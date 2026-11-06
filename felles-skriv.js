@@ -1927,6 +1927,9 @@ const SKRIV_SIDER = {
 async function skrivUtfor(navn, arg){
   arg = arg || {};
 
+  /* ---------------- Økonomien (se nederst) ---------------- */
+  if(SKRIV_OK_VERKTOY.some(function(v){ return v.name === navn; })) return await skrivOkUtfor(navn, arg);
+
   /* ---------------- Navigasjon ---------------- */
   if(navn === 'gaa_til'){
     const mal = SKRIV_SIDER[String(arg.side || '').toLowerCase()];
@@ -2918,7 +2921,9 @@ function skrivVerktoy(egne){
   const tatt = {};
   (egne || []).forEach(function(v){ if(v && v.name) tatt[v.name] = true; });
   const skole = skrivSkoleTillatt();
-  return SKRIV_VERKTOY.filter(function(v){
+  /* Økonomien bare for dem bank-funksjonen slipper inn (felles-lesalt.js spoer). */
+  const okonomi = typeof lesAltOkonomiTillatt === 'function' && lesAltOkonomiTillatt();
+  return SKRIV_VERKTOY.concat(okonomi ? SKRIV_OK_VERKTOY : []).filter(function(v){
     if(tatt[v.name]) return false;
     /* Skolearbeidet bare der noen er logget inn som seg selv - se
        avsnittet om skolearbeidet over. Et verktoey som ikke kan virke
@@ -2926,4 +2931,123 @@ function skrivVerktoy(egne){
     if(!skole && SKRIV_SKOLE.indexOf(v.name) !== -1) return false;
     return true;
   });
+}
+
+/* ------------------------------------------------------------
+   Økonomien (6. november 2026)
+   ------------------------------------------------------------
+   Godkjenne poster i innboksen og endre budsjettet, fra hvilken som
+   helst side - for Magne, Nina og sys (Magne, 6. november). Grensen er
+   bank-funksjonen: den sjekker det signerte Access-beviset og nekter alle
+   andre. Lista viser verktoeyene bare naar felles-lesalt.js har faatt ja
+   fra ?hvem=1.
+
+   Bekreftelsene viser navn, dato og beloep fra det Neam sist leste
+   (lesAltOkSist i felles-lesalt.js) - id-ene sier ingen noe. Etter en
+   skriving faar Økonomi-sida beskjed (window.okonomiEtterSkriv), saa den
+   tegner seg paa nytt. */
+const SKRIV_OK_DATO = new Intl.DateTimeFormat('nb-NO', { weekday:'long', day:'numeric', month:'long' });
+function skrivOkKr(n){ return new Intl.NumberFormat('nb-NO', { maximumFractionDigits:2 }).format(n) + ' kr'; }
+function skrivOkPost(id){
+  const p = typeof lesAltOkSist !== 'undefined' && lesAltOkSist.innboks[id];
+  if(!p) return 'en post Neam ikke har lest ennå (' + id + ')';
+  return p.sted + ', ' + SKRIV_OK_DATO.format(new Date(String(p.dato).slice(0, 10) + 'T12:00:00')) + ', ' + skrivOkKr(p.belop);
+}
+function skrivOkMaal(maal){
+  if(maal === 'standard') return 'standardbudsjettet';
+  const n = new Intl.DateTimeFormat('nb-NO', { month:'long', year:'numeric' }).format(new Date(maal + '-01T12:00:00'));
+  return 'budsjettet for ' + n;
+}
+
+const SKRIV_OK_VERKTOY = [
+  {
+    name: 'godkjenn_okonomi_poster',
+    description: 'Godkjenner poster i økonomi-innboksen med kategori, og/eller stryker poster så de ikke '
+               + 'føres. Id og gyldige kategorier kommer fra les_okonomi_innboks - kjør den først. '
+               + 'Godkjent blir regnskap, og Neam husker kategorien for motparten til neste gang.',
+    input_schema: { type:'object', properties:{
+      godkjenn: { type:'array', description:'Poster som skal godkjennes.', items:{ type:'object', properties:{
+        id: { type:'string' }, kategori: { type:'string', description:'En kategori fra lista, f.eks. «Mat · Dagligvare».' }
+      }, required:['id', 'kategori'] } },
+      stryk: { type:'array', description:'Id-er som strykes (føres ikke).', items:{ type:'string' } }
+    }, required:[] },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      const g = [].concat(arg.godkjenn || []), s = [].concat(arg.stryk || []);
+      let t = '';
+      if(g.length) t += 'Godkjenne i økonomien:\n' + g.map(function(x){ return '• ' + skrivOkPost(x.id) + ' → ' + String(x.kategori || '').split(' · ').join(' › '); }).join('\n');
+      if(s.length) t += (t ? '\n\n' : '') + 'Stryke (føres ikke):\n' + s.map(function(id){ return '• ' + skrivOkPost(id); }).join('\n');
+      return t;
+    }
+  },
+  {
+    name: 'sett_okonomi_budsjett',
+    description: 'Endrer beløp i budsjettet: standardbudsjettet (gjelder fra neste måned; måneder som har '
+               + 'startet, beholder sitt) eller én måneds eget budsjett. Kategoriene er postene eller linjene '
+               + 'fra les_okonomi_maaned. Beløp i hele kroner per måned. Bare postene som nevnes, endres.',
+    input_schema: { type:'object', properties:{
+      maal: { type:'string', description:'«standard», eller måneden som ÅÅÅÅ-MM.' },
+      endringer: { type:'array', items:{ type:'object', properties:{
+        kategori: { type:'string' }, belop: { type:'number', description:'Nytt beløp i kroner.' }
+      }, required:['kategori', 'belop'] } }
+    }, required:['maal', 'endringer'] },
+    neamSkriver: true,
+    neamBeskriv: function(arg){
+      const sist = typeof lesAltOkSist !== 'undefined' && lesAltOkSist.budsjett;
+      const gamle = sist && sist.maal === arg.maal ? sist.verdier : null;
+      return 'Endre ' + skrivOkMaal(arg.maal) + ':\n' + [].concat(arg.endringer || []).map(function(e){
+        const fra = gamle ? skrivOkKr(gamle[e.kategori] || 0) + ' → ' : '';
+        return '• ' + String(e.kategori || '').split(' · ').join(' › ') + ': ' + fra + skrivOkKr(Math.round(Number(e.belop) || 0));
+      }).join('\n') + (arg.maal === 'standard' ? '\n\nGjelder fra neste måned. Måneder som har startet, beholder budsjettet de har.' : '');
+    }
+  }
+];
+
+async function skrivOkBank(sti, kropp){
+  const r = await fetch('/api/bank' + sti, kropp
+    ? { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(kropp) }
+    : { credentials:'same-origin', cache:'no-store' });
+  let d = null;
+  try{ d = await r.json(); }catch(e){}
+  if(!d) throw new Error('Fikk ikke svar fra økonomien.');
+  if(!d.ok) throw new Error(d.feil || 'Økonomien sa nei.');
+  return d;
+}
+function skrivOkFerdig(){ try{ if(typeof window.okonomiEtterSkriv === 'function') window.okonomiEtterSkriv(); }catch(e){} }
+
+async function skrivOkUtfor(navn, arg){
+  if(!(typeof lesAltOkonomiTillatt === 'function' && lesAltOkonomiTillatt())) throw new Error('Økonomien er ikke åpnet for denne innloggingen.');
+
+  if(navn === 'godkjenn_okonomi_poster'){
+    const g = [].concat(arg.godkjenn || []).filter(function(x){ return x && x.id && x.kategori; })
+      .map(function(x){ return { id:String(x.id), kategori:String(x.kategori) }; });
+    const s = [].concat(arg.stryk || []).map(String).filter(Boolean);
+    if(!g.length && !s.length) throw new Error('Ingen poster å godkjenne eller stryke.');
+    const r = await skrivOkBank('', { hva:'godkjenn', godkjenn:g, strok:s });
+    skrivOkFerdig();
+    return { godkjent:g.length, stroket:s.length, svar:'Ført. Det kan angres fra Økonomi-sida.', detaljer:{ godkjent:r.godkjent, stroket:r.stroket } };
+  }
+
+  if(navn === 'sett_okonomi_budsjett'){
+    const maal = String(arg.maal || '');
+    if(maal !== 'standard' && !/^\d{4}-\d{2}$/.test(maal)) throw new Error('maal må være «standard» eller ÅÅÅÅ-MM.');
+    const b = await skrivOkBank('?hva=budsjett');
+    const kat = b.kategorier || [];
+    const grunn = maal === 'standard' ? (b.standard || {}) : ((b.maaneder || {})[maal] || b.standard || {});
+    const nytt = Object.assign({}, grunn), endret = [];
+    [].concat(arg.endringer || []).forEach(function(e){
+      const k = String(e && e.kategori || ''), v = Math.round(Number(e && e.belop));
+      if(kat.indexOf(k) === -1) throw new Error('Ukjent kategori: ' + k);
+      if(!(v >= 0)) throw new Error('Ugyldig beløp for ' + k);
+      endret.push({ kategori:k, fra:grunn[k] || 0, til:v });
+      nytt[k] = v;
+    });
+    if(!endret.length) throw new Error('Ingen endringer.');
+    await skrivOkBank('', maal === 'standard' ? { hva:'budsjett', standard:nytt } : { hva:'budsjett', mnd:maal, maaned:nytt });
+    if(typeof lesAltOkSist !== 'undefined') lesAltOkSist.budsjett = { maal:maal, verdier:nytt };
+    skrivOkFerdig();
+    return { maal:maal, endret:endret };
+  }
+
+  throw new Error('Ukjent økonomiverktøy: ' + navn);
 }
