@@ -2864,7 +2864,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       okSt.mnd = { navn:mndNavn, bud:bud, brukt:brukt, ventet:ventet, dagerIgjen:iMnd ? dager - naa.getDate() : null };
       var meta = document.getElementById('ok-mnd-meta');
       meta.className = 'ok-meta';
-      meta.textContent = (iMnd ? naa.getDate() + '. ' + mndNavn + ' · ' + (dager - naa.getDate()) + ' dager igjen · ' + (bud ? 'streken er det som var ventet i dag · ' : '') : '') + r.poster + ' godkjente poster';
+      meta.textContent = (iMnd ? naa.getDate() + '. ' + mndNavn + ' · ' + (dager - naa.getDate()) + ' dager igjen · ' : '') + r.poster + ' godkjente poster';
       boks.innerHTML = '';
       okTegnMaal(); okTegnNokler(); okTegnKpi();
       /* Kortet på Status er bare oversikt (skissen, 6. november 2026): én
@@ -2892,7 +2892,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       alle.sort(function(x, y){ return y.pr - x.pr; });
       boks.appendChild(okEl('div', 'ok-kort-hode', '<span><b>' + kr(brukt) + '</b> ' + (bud ? 'brukt av ' + kr(bud) : 'brukt så langt') + '</span><span class="ok-meta">'
         + (iMnd ? (dager - naa.getDate()) + ' dager igjen' : 'Avsluttet') + '</span>'));
-      if(bud) boks.appendChild(okFram(brukt / bud, ventet / bud));
+      /* Stolpen viser bare brukt av budsjettet - ingen strek for hvor langt i
+         maaneden man er kommet (Magne, 7. november 2026). */
+      if(bud) boks.appendChild(okFram(brukt / bud));
       if(!bud || uten.length){
         var utenSum = uten.reduce(function(s, x){ return s + x.pr; }, 0);
         var navn = uten.slice(0, 3).map(function(x){ return x.k.split(' · ').join(' › '); }).join(', ') + (uten.length > 3 ? ' og ' + (uten.length - 3) + ' til' : '');
