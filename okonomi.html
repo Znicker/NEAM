@@ -51,10 +51,18 @@ body::before{ display:none; }
 /* PC foerst: gjennomgangen gjoeres ved en PC (Magne, 6. november). */
 .ok-ramme{
   max-width:1440px; margin:0 auto;
-  padding:max(20px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px));
+  /* 150 px nederst: NEAM-knappen staar fast nede til venstre, og det
+     nederste paa sida - Lagre i formueskjemaet - maa kunne rulles fram over
+     den (6. november 2026). */
+  padding:max(20px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 150px max(16px, env(safe-area-inset-left, 0px));
   display:flex; flex-direction:column; gap:18px;
 }
 .ok-topp{ display:flex; align-items:baseline; justify-content:space-between; gap:8px 16px; flex-wrap:wrap; }
+/* Toppen med fanene foelger med naar man ruller (Magne, 6. november 2026).
+   Samme bakgrunn som sida, saa kortene glir inn under den. Felt som faar
+   fokus, rulles fram under den, ikke bak den. */
+.ok-topp{ position:sticky; top:0; z-index:30; background:var(--bg-1); padding:10px 0; margin:-10px 0; }
+html{ scroll-padding-top:90px; }
 .ok-topp h1{ margin:0; font-size:var(--t-stor); font-weight:700; }
 .ok-topp-hoyre{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; max-width:100%; }
 .ok-etikett{ font-size:var(--t-etikett); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); }
@@ -1931,6 +1939,16 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     if(s.feil) boks.appendChild(okEl('p', 'ok-melding feil', okVask(s.feil)));
     if(okDb && okDb.resultat) boks.appendChild(okEl('p', 'ok-meta', okVask(okDb.resultat)));
     var knapper = okEl('div', 'ok-rad-knapper');
+    /* Hent med en gang, uten aa vente paa neste aapning eller Oppdater (Magne, 6. november 2026). */
+    var hent = okEl('button', 'btn btn-blaa', okDbKjorer ? 'Henter …' : 'Hent fra Dropbox nå'); hent.type = 'button'; hent.id = 'ok-db-hent';
+    hent.disabled = okDbKjorer;
+    hent.addEventListener('click', function(){
+      if(okDbKjorer) return;
+      hent.disabled = true; hent.textContent = 'Henter …';
+      /* Kortet tegnes paa nytt naar hentingen er ferdig (okDbImport kaller okDbStatus). */
+      okDbImport(true);
+    });
+    knapper.appendChild(hent);
     var fra = okEl('button', 'ok-lenke fare', 'Koble fra Dropbox'); fra.type = 'button';
     fra.addEventListener('click', function(){
       okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'dropbox-koble-fra' }) }).then(function(){ okDbStatus(); });
@@ -1938,7 +1956,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     knapper.appendChild(fra);
     boks.appendChild(knapper);
   }
-  async function okDbImport(){
+  /* manuell: trykket paa «Hent fra Dropbox nå» - da sies det ogsaa fra naar mappa er tom. */
+  async function okDbImport(manuell){
     if(okDbKjorer || !okDb || !okDb.koblet) return;
     okDbKjorer = true;
     var status = document.getElementById('ok-kv-status');
@@ -1947,7 +1966,10 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     };
     try{
       var r = await okHent('/api/bank?hva=dropbox-filer');
-      if(!r.ok || !(r.filer || []).length) return;
+      if(!r.ok || !(r.filer || []).length){
+        if(manuell && r.ok) okDb.resultat = 'Ingen nye kvitteringer i mappa (sjekket kl. ' + okKlokke.format(new Date()) + ').';
+        return;
+      }
       var lagt = 0, dobbel = 0, feil = [], ligner = [];
       for(var i = 0; i < r.filer.length; i++){
         var f = r.filer[i];
