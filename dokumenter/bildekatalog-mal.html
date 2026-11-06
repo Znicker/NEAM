@@ -133,7 +133,8 @@ details.seksjon[open] > summary::before{transform:rotate(90deg)}
     <h2 id="oppdragTittel">Oppdrag med utvalg</h2>
     <p>Kryss av ikonene du vil ha med – eller «Velg hele gruppa» i en seksjon, eller «Velg alt» for alt
       som vises. Last ned referansearket og legg det ved hos AI-en sammen med teksten, så ser den nøyaktig
-      hva den skal jobbe med. Over 40 ikoner deles det i flere ark med fortløpende nummer, hvert med sin egen nedlastingsknapp.</p>
+      hva den skal jobbe med. Over ni ikoner deles det i flere ark med fortløpende nummer, hvert med sin egen nedlastingsknapp
+      – ni er det AI-en rekker på ett bilde med minst 512 px til hvert ikon. Ta ett ark om gangen.</p>
     <div class="bestill-rad">
       <div>
         <label>Utvalget</label>
@@ -383,9 +384,11 @@ document.addEventListener('click', e => {
    katalogen lages paa nytt. Huskes i nettleseren som en bekvemmelighet -
    forsvinner det, er det bare aa krysse av igjen.
    ============================================================ */
-/* Grensen gjelder arket, ikke utvalget: over 40 blir rutene for smaa
-   for AI-en aa lese, saa et stoerre utvalg deles i flere ark. */
-const ARK_MAKS = 40;
+/* Grensen gjelder arket, ikke utvalget. AI-en leverer samme rutenett som
+   den faar, og ett bilde fra den er rundt 1536 px: ni ruter i tre kolonner
+   gir 512 px til hvert ikon. Med 40 ble de 185 px og uskarpe paa flisene.
+   Et stoerre utvalg deles i flere ark. */
+const ARK_MAKS = 9;
 const valgt = new Map();              /* nokkel -> post */
 const alleposter = new Map();
 /* Bildefiler kjennes paa stien; strektegningene i koden har ingen sti,
@@ -486,12 +489,24 @@ function hovedstil(liste){
   return KATALOG.stiler[k] ? k : null;
 }
 
+/* Stilblokkene for stilene i utvalget, uendret. Uten dem tegner AI-en
+   etter bildet alene - roboten ble en annen figur, og alt fikk flis. */
+function stilKey(p){ const k = p.nystil || p.stil; return KATALOG.stiler[k] ? k : null; }
+function stilBlokker(liste){
+  const k = [...new Set(liste.map(stilKey).filter(Boolean))];
+  return k.length
+    ? 'STIL – behold, limt inn uendret:\n' + k.map(s => KATALOG.stiler[s].navn + ' (' + KATALOG.stiler[s].format + '):\n'
+        + KATALOG.stiler[s].stil).join('\n\n') + '\n\n'
+    : '';
+}
+
 function lagOppdrag(){
   const liste = [...valgt.values()];
   const n = liste.length;
   if(!n){ $('oppdragUt').value = ''; return; }
   const tekst = $('oppdragTekst').value.trim();
-  const nummer = liste.map((p, i) => (i + 1) + '. ' + filnavn(p) + (p.motiv ? ' – ' + p.motiv : ''));
+  const nummer = liste.map((p, i) => (i + 1) + '. ' + filnavn(p) + (p.motiv ? ' – ' + p.motiv : '')
+    + (stilKey(p) ? ' [' + KATALOG.stiler[stilKey(p)].navn + ']' : ''));
   const antArk = Math.ceil(n / ARK_MAKS);
   const ark = (antArk === 1
       ? 'Vedlagt: referanseark med ' + n + (n === 1 ? ' ikon' : ' ikoner') + ' slik de ser ut i dag, nummerert 1–' + n
@@ -500,7 +515,9 @@ function lagOppdrag(){
         + ' fortløpende, inntil ' + ARK_MAKS + ' per ark.')
     + ' Tallene og filnavnene under rutene er bare merkelapper for oss – de skal ikke tegnes.';
   const regler = 'Ingen tekst, ingen bokstaver og ingen tall i ikonene. NO text, NO letters, NO numbers inside the icons. '
-    + 'God luft mellom rutene, og gjennomsiktig bakgrunn utenfor flisene.';
+    + 'God luft mellom rutene, og gjennomsiktig bakgrunn utenfor flisene. '
+    + 'Ingen ekstra plate, ramme eller skygge bak hvert ikon utover det stilen sier – strekikonene har ingen flis. '
+    + 'Hver rute minst 512 × 512 px. Lever i full oppløsning, ikke nedskalert.';
   const type = oppdragType();
   let ut;
   if(type === 'prove'){
@@ -516,6 +533,7 @@ function lagOppdrag(){
   }else if(type === 'juster'){
     ut = 'Oppdrag til NEAM – juster ' + n + (n === 1 ? ' ikon' : ' ikoner') + '\n\n' + ark + '\n\n'
       + 'Endring: ' + (tekst || '[skriv endringen her]') + '\n\n'
+      + stilBlokker(liste)
       + 'Lag alle ' + n + ' på nytt med endringen. Behold motivet, rekkefølgen og nummereringen. '
       + (antArk === 1
           ? 'Lever som ett ark med samme rutenett (' + kolonner(n) + ' kolonner) og like store ruter, '
