@@ -600,7 +600,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         <input type="file" id="ok-kv-fil" accept="image/*,application/pdf" hidden>
       </div>
     </div>
-    <p class="ok-meta" id="ok-kv-status" aria-live="polite">Bilde eller PDF – Neam leser butikk, dato, sum og varer.</p>
+    <p class="ok-meta" id="ok-kv-status" aria-live="polite">Bilde eller PDF – Neam leser butikk, dato, sum og varer. En faktura venter på trekket fra banken og legges ved det.</p>
     <div class="ok-filter" id="ok-filter" hidden></div>
     <div id="ok-innboks"></div>
     <div class="ok-ib-to">
@@ -625,6 +625,13 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         <div class="ok-fold-innhold">
           <p class="ok-meta">Disse kjente Neam, og de er ført uten å spørre. Er noe feil, trykk Angre – da havner posten i innboksen, og Neam fører den aldri automatisk igjen.</p>
           <div id="ok-auto"></div>
+        </div>
+      </div>
+      <div class="ok-fold" data-fold="ib-faktura" id="ok-faktura-kort" hidden>
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Fakturaer som venter</span><span class="ok-fold-sum" id="ok-faktura-meta"></span></button>
+        <div class="ok-fold-innhold">
+          <p class="ok-meta">Telles ikke selv. Når trekket kommer fra banken, legges PDF-en ved det. Betalte du fra en konto Neam ikke henter, trykk «Legg i innboksen».</p>
+          <div id="ok-faktura"></div>
         </div>
       </div>
       <div class="ok-fold" data-fold="ib-trenger" id="ok-trenger-kort" hidden>
@@ -1036,6 +1043,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         + okKlokke.format(new Date(r.hentet)) + (r.advarsel ? ' · ' + r.advarsel + ' – viser forrige henting' : '');
       okTegnInnboks();
       okTegnAuto(r.auto || []);
+      okTegnFakturaer(r.fakturaer || []);
       /* Innboksen kan ha foert poster automatisk - varslene og Status
          hentes paa nytt, ellers viser de tall fra foer foeringen. */
       okVarslerLast(); okStatusLast(); okKilderLast(); okHuskLast();
@@ -1800,9 +1808,14 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     });
   }
 
-  var OK_KV_INSTRUKS = 'Les denne norske kvitteringen. Svar BARE med JSON på formen\n'
-    + '{"butikk":"…","dato":"ÅÅÅÅ-MM-DD","belop":0,"linjer":[{"navn":"…","antall":1,"belop":0,"rabatt":0}]}\n\n'
+  /* Fakturaer leses ogsaa (Magne, 6. november 2026): de venter paa trekket
+     fra banken og legges ved det, i stedet for aa telles selv. */
+  var OK_KV_INSTRUKS = 'Les dette norske dokumentet – en kvittering eller en faktura. Svar BARE med JSON på formen\n'
+    + '{"type":"kvittering","butikk":"…","dato":"ÅÅÅÅ-MM-DD","belop":0,"linjer":[{"navn":"…","antall":1,"belop":0,"rabatt":0}]}\n\n'
     + 'Regler:\n'
+    + '- "type" er "faktura" når det er en regning som skal betales – faktura, e-faktura, giro eller avtalegiro med forfallsdato og beløp å betale. Ellers "kvittering".\n'
+    + '- For en faktura: "butikk" er den som sender fakturaen, f.eks. "Statens pensjonskasse". "dato" er forfallsdatoen, "belop" er beløpet som skal betales, og "linjer" er tom.\n'
+    + 'For en kvittering:\n'
     + '- "butikk" er navnet på butikken slik det står øverst, f.eks. "Coop Extra Mandal".\n'
     + '- "belop" er totalsummen kunden betalte, i kroner, med punktum som desimaltegn.\n'
     + '- Hver vare blir én linje. "belop" på linja er prisen før rabatt; "antall" er antall eller vekt.\n'
@@ -1830,7 +1843,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var lagres = { type:innhold.source.media_type, data:innhold.source.data };
     var r = await fetch('/api/claude', { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ model:OK_MODELL, max_tokens:4000,
-        system:'Du leser butikkvitteringer og svarer bare med JSON. Du gjetter aldri tall du ikke kan lese.',
+        system:'Du leser butikkvitteringer og fakturaer og svarer bare med JSON. Du gjetter aldri tall du ikke kan lese.',
         messages:[{ role:'user', content:[ innhold, { type:'text', text:OK_KV_INSTRUKS } ] }] }) });
     var d = await r.json();
     if(d.error) throw new Error(d.error.message || 'Neam kunne ikke lese kvitteringen');
@@ -1841,12 +1854,22 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     if(!lagret.ok){ var feil = new Error(lagret.feil); feil.duplikat = /allerede lagt inn/.test(lagret.feil || ''); throw feil; }
     return { post:lagret.post, linjer:(kv.linjer || []).length, festet:lagret.festet || '' };
   }
+  function okFakturaTekst(p, festet){
+    var hvem = (p.motpart || p.tekst || 'fakturaen') + ', ' + okKr0.format(Math.abs(p.belop)) + ' kr';
+    return festet ? 'Fakturaen er lagt ved trekket fra ' + hvem + ', ' + okKort.format(new Date(p.dato)) + '. PDF-en kan åpnes fra posten.'
+      : 'Fakturaen fra ' + hvem + ', forfall ' + okKort.format(new Date(p.dato)) + ', venter på trekket fra banken. Den telles ikke selv – PDF-en legges ved trekket når det kommer.';
+  }
   async function okLesKvittering(fil){
     var status = document.getElementById('ok-kv-status'), knapp = document.getElementById('ok-kv-knapp');
     knapp.disabled = true;
     status.textContent = 'Neam leser kvitteringen …';
     try{
       var res = await okTolkKvittering(fil);
+      if(res.festet === 'faktura' || res.post.status === 'venter'){
+        status.textContent = okFakturaTekst(res.post, res.festet === 'faktura');
+        okLastInnboks(); if(okMnd.lastet) okMndLast();
+        return;
+      }
       if(res.festet){
         /* Kvitteringen hoerte til noe som alt laa der, og er lagt ved det (6. november 2026). */
         status.textContent = 'Lagt ved ' + (res.post.motpart || res.post.tekst || 'transaksjonen') + ', ' + okKort.format(new Date(res.post.dato))
@@ -1937,7 +1960,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         if(manuell && r.ok) okDb.resultat = 'Ingen nye kvitteringer i mappa (sjekket kl. ' + okKlokke.format(new Date()) + ').';
         return;
       }
-      var lagt = 0, dobbel = 0, feil = [], ligner = [], festet = 0;
+      var lagt = 0, dobbel = 0, feil = [], ligner = [], festet = 0, fFestet = 0, fVenter = 0;
       for(var i = 0; i < r.filer.length; i++){
         var f = r.filer[i];
         status.textContent = 'Neam leser kvittering ' + (i + 1) + ' av ' + r.filer.length + ' fra Dropbox …';
@@ -1949,7 +1972,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         }catch(e){ feil.push(f.navn + ': ' + (e && e.message || e)); continue; }   /* blir liggende og proeves igjen */
         try{
           var lest = await okTolkKvittering(new File([blob], f.navn, { type:f.type }));
-          if(lest.festet) festet++; else lagt++;
+          if(lest.festet === 'faktura') fFestet++; else if(lest.post.status === 'venter') fVenter++; else if(lest.festet) festet++; else lagt++;
           if(lest.post.lignerPaa) ligner.push(f.navn);
           await ferdig(f, 'Importert');
         }catch(e){
@@ -1961,11 +1984,13 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       var tekst = [lagt ? lagt + (lagt === 1 ? ' kvittering' : ' kvitteringer') + ' fra Dropbox lest og lagt inn.' : '',
         dobbel ? dobbel + ' var lagt inn fra før.' : '',
         festet ? festet + (festet === 1 ? ' ble lagt ved en transaksjon' : ' ble lagt ved transaksjoner') + ' som lå der fra før.' : '',
+        fFestet ? fFestet + (fFestet === 1 ? ' faktura ble lagt ved trekket' : ' fakturaer ble lagt ved trekkene') + ' fra banken.' : '',
+        fVenter ? fVenter + (fVenter === 1 ? ' faktura venter' : ' fakturaer venter') + ' på trekket fra banken.' : '',
         ligner.length ? 'Obs: ' + ligner.join(', ') + ' ligner' + ' en kvittering som alt er lagt inn – se «Trenger et valg» i innboksen.' : '',
         feil.length ? 'Ble ikke lest: ' + feil.join('; ') + '.' : ''].filter(Boolean).join(' ');
       status.textContent = tekst + (r.flere ? ' Flere ligger igjen – de tas neste gang.' : '');
       okDb.resultat = tekst;
-      if(lagt || festet) okLastInnboks();
+      if(lagt || festet || fFestet || fVenter) okLastInnboks();
     } finally {
       okDbKjorer = false;
       okDbStatus();
@@ -3208,6 +3233,31 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
           .then(function(){ okLastInnboks(); okStatusLast(); okVarslerLast(); if(okMnd.lastet) okMndLast(); });
       });
       rad.appendChild(angre);
+      if(p.harFil) rad.appendChild(okFilLenke(p));
+      boks.appendChild(rad);
+    });
+  }
+
+  /* Fakturaer som venter paa trekket fra banken (6. november 2026). */
+  function okTegnFakturaer(liste){
+    var kort = document.getElementById('ok-faktura-kort'), boks = document.getElementById('ok-faktura');
+    kort.hidden = !liste.length;
+    if(!liste.length) return;
+    document.getElementById('ok-faktura-meta').textContent = liste.length + (liste.length === 1 ? ' faktura · ' : ' fakturaer · ')
+      + okKr0.format(liste.reduce(function(s, p){ return s + Math.abs(p.belop); }, 0)) + ' kr';
+    boks.innerHTML = '';
+    liste.forEach(function(p){
+      var rad = okEl('div', 'ok-kjop',
+        '<span class="ok-meta">' + okVask(okKort.format(new Date(p.dato))) + '</span>'
+        + '<span><span class="ok-navn">' + okVask(p.motpart || '') + '</span><br><span class="ok-meta">Forfall · ' + okVask(p.kategori || 'uten kategori') + '</span></span>'
+        + '<b>' + okKr0.format(p.belop) + '</b>');
+      var inn = okEl('button', 'ok-lenke', 'Legg i innboksen'); inn.type = 'button';
+      inn.addEventListener('click', function(){
+        inn.disabled = true;
+        okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'faktura-innboks', id:p.id }) })
+          .then(function(){ okLastInnboks(); });
+      });
+      rad.appendChild(inn);
       if(p.harFil) rad.appendChild(okFilLenke(p));
       boks.appendChild(rad);
     });

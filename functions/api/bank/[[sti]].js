@@ -24,6 +24,7 @@
      POST /api/bank {hva:'kategori-ny', nye:[{forelder, navn}]} / {hva:'kategori-slett', kategori} - egne poster
      POST /api/bank {hva:'kategori-navn', fra, navn} - nytt navn paa en egen post eller linje
      POST /api/bank {hva:'koble-alle', utfor} - kvitteringer og transaksjoner som hoerer sammen, i ettertid
+     POST /api/bank {hva:'faktura-innboks', id} - en faktura som venter, blir en post i innboksen
      GET /api/bank?hva=varsler          - det som trenger noen (kortet paa forsiden)
      GET /api/bank?hva=laert / POST {hva:'laert', motpart, kategori} - «Neam husker» (tom kategori glemmer)
      GET /api/bank/dropbox-start / dropbox-tilbake - kobler Dropbox (appmappa) med OAuth
@@ -689,7 +690,7 @@ async function finnLignende(env, poster, kv, linjer){
   const sum = Math.abs(kv.belop);
   for(const id of Object.keys(poster)){
     const a = poster[id];
-    if(id === kv.id || !a.fra || a.status === 'stroket' || a.status === 'sammenslatt') continue;
+    if(id === kv.id || !a.fra || a.status === 'stroket' || a.status === 'sammenslatt' || a.status === 'venter') continue;
     if(Math.abs(Math.abs(a.belop) - sum) > Math.max(1, sum * 0.01) || dagerMellom(a.dato, kv.dato) > 3) continue;
     const andre = ((await lesJson(env, kvitteringNokkel(a), null)) || {}).linjer || [];
     const lik = vareLikhet(linjer || [], andre);
@@ -699,6 +700,51 @@ async function finnLignende(env, poster, kv, linjer){
       varer:lik === null ? null : Math.round(lik * 100) };
   }
   return null;
+}
+/* ---------- Fakturaer ----------
+   En faktura (e-faktura, giro) er ikke et kjoep, men varselet om et trekk.
+   Den telles aldri selv: kommer den foer trekket, venter den (status
+   `venter`), og naar trekket kommer fra banken, legges PDF-en ved det. Ligger
+   trekket der alt, legges den ved med en gang. Samme vei begge veier -
+   «det skal bare synces» (Magne, 6. november 2026).
+   Lik: samme beloep til oeret, og trekket fra ti dager foer forfall til fem
+   dager etter (betalt tidlig, eller forfall i en helg). */
+function fakturaLik(bank, f){
+  const d = (Date.parse(bank.dato) - Date.parse(f.dato)) / 86400000;
+  return Math.abs(Math.abs(bank.belop) - Math.abs(f.belop)) < 0.005 && d >= -10 && d <= 5;
+}
+function fakturaTrekk(poster, f){
+  return Object.keys(poster).map(x => poster[x]).filter(b => !b.fra && b.belop < 0 && !b.dekketAv
+    && (b.status === 'ny' || b.status === 'godkjent') && fakturaLik(b, f));
+}
+async function flyttFaktura(env, f, b, naa){
+  const fil = await lesJson(env, filNokkel(f.id), null);
+  if(fil){ await env.FAMILIE_KV.put(filNokkel(b.id), JSON.stringify(fil)); b.harFil = true; b.filType = fil.type; }
+  b.vedlagt = naa; b.faktura = { id:f.id, forfall:f.dato };
+  Object.assign(f, { status:'sammenslatt', slaattInn:b.id, behandlet:naa });
+}
+async function synkFakturaer(env, poster){
+  const naa = new Date().toISOString();
+  let n = 0;
+  for(const id of Object.keys(poster)){
+    const f = poster[id];
+    if(f.status !== 'venter' || !f.faktura) continue;
+    const b = fakturaTrekk(poster, f).filter(x => !x.harFil)[0];
+    if(!b) continue;
+    await flyttFaktura(env, f, b, naa);
+    n++;
+  }
+  return n;
+}
+async function fakturaInnboks(env, kropp){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const p = poster[String(kropp.id || '')];
+  if(!p || p.status !== 'venter') return svar({ ok:false, feil:'Fant ikke fakturaen' });
+  /* Betalt fra en konto Neam ikke henter - da blir fakturaen selve posten. */
+  p.status = 'ny';
+  kobleKvittering(poster, p);
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  return svar({ ok:true });
 }
 function kobleKvittering(poster, kv){
   if(kv.bankId || kv.mulDobbel) return;
@@ -786,6 +832,8 @@ async function innboks(env, okt, fersk, psu){
       }
     }
   }
+  /* Fakturaer som venter, legges ved trekket naar det er kommet. */
+  if(await synkFakturaer(env, poster)) nye++;
   /* «Spoer bare naar den er usikker» (Magne, 29. oktober). En post Neam
      kjenner - samme motpart foert foer, eller et kjent navn - foeres med en
      gang og merkes `auto`. Den vises under «Foert automatisk» og kan angres;
@@ -823,7 +871,8 @@ async function innboks(env, okt, fersk, psu){
     return ut;
   };
   return svar({ ok:true, hentet:hentet, advarsel:advarsel || undefined, fra:fra, kontoer:felles.length, trumf:trumfKoblet,
-    kategorier:await alleKategorier(env), poster:venter.map(medNavn), auto:auto.map(medNavn), godkjent:alle.filter(p => p.status === 'godkjent').length });
+    kategorier:await alleKategorier(env), poster:venter.map(medNavn), auto:auto.map(medNavn),
+    fakturaer:alle.filter(p => p.status === 'venter').sort((a, b) => a.dato.localeCompare(b.dato)).map(medNavn), godkjent:alle.filter(p => p.status === 'godkjent').length });
 }
 async function lagreKontonavn(env, kropp){
   const okt = await lesOekt(env);
@@ -1182,7 +1231,20 @@ async function nyKvittering(env, kropp, epost){
     if(!poster[id].harFil && filOk) return await leggVed(poster[id], 'samme');
     return svar({ ok:false, feil:'Denne kvitteringen er allerede lagt inn (' + butikk + ', ' + dato + ')' });
   }
-  if(filOk && !kropp.forHand){
+  /* En faktura legges ved trekket som alt ligger der, ellers venter den (over). */
+  const faktura = k.type === 'faktura' && !kropp.forHand;
+  if(faktura){
+    const trekk = fakturaTrekk(poster, { belop:-sum, dato:dato });
+    const ledig = trekk.filter(b => !b.harFil)[0];
+    if(ledig){
+      if(filOk){ await env.FAMILIE_KV.put(filNokkel(ledig.id), JSON.stringify({ type:fil.type, data:fil.data })); ledig.harFil = true; ledig.filType = fil.type; }
+      ledig.vedlagt = new Date().toISOString(); ledig.faktura = { id:id, forfall:dato };
+      await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+      return svar({ ok:true, post:ledig, festet:'faktura' });
+    }
+    if(trekk.some(b => b.faktura)) return svar({ ok:false, feil:'Denne fakturaen er allerede lagt inn (' + butikk + ', ' + dato + ')' });
+  }
+  if(filOk && !kropp.forHand && !faktura){
     const forsoek = { id:id, belop:-sum, dato:dato };
     const bank = Object.keys(poster).map(x => poster[x])
       .filter(b => !b.fra && b.status === 'godkjent' && !b.harFil && b.belop < 0 && erLik(b, forsoek))[0];
@@ -1196,6 +1258,7 @@ async function nyKvittering(env, kropp, epost){
     harKvittering: linjer.length > 0, status:'ny', lagtInnAv:epost, lagtInn:new Date().toISOString() };
   /* Lagt inn for haand - av Neam etter en beskjed, uten kvittering. */
   if(kropp.forHand){ p.forHand = true; p.kontoNavn = 'Lagt inn for hånd'; }
+  if(faktura){ p.faktura = true; p.kontoNavn = 'Faktura'; p.status = 'venter'; }
   const f = foreslaa(p, laert);
   p.kategori = f.kategori; p.kilde = f.kilde;
   /* Bildet eller PDF-en lagres, saa kvitteringen kan aapnes igjen (Magne,
@@ -1204,9 +1267,11 @@ async function nyKvittering(env, kropp, epost){
     await env.FAMILIE_KV.put(filNokkel(id), JSON.stringify({ type:fil.type, data:fil.data }));
     p.harFil = true; p.filType = fil.type;
   }
-  kobleKvittering(poster, p);
-  const ligner = await finnLignende(env, poster, p, linjer);
-  if(ligner) p.lignerPaa = ligner;
+  if(!faktura){
+    kobleKvittering(poster, p);
+    const ligner = await finnLignende(env, poster, p, linjer);
+    if(ligner) p.lignerPaa = ligner;
+  }
   poster[id] = p;
   if(linjer.length) await env.FAMILIE_KV.put(kvitteringNokkel(p), JSON.stringify({ id:id, belop:sum, linjer:linjer }));
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
@@ -1319,7 +1384,7 @@ async function kobleAlle(env, kropp){
   const kort = p => ({ id:p.id, sted:p.motpart || p.tekst || '', dato:p.dato, belop:p.belop, status:p.status,
     kilde:p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? 'kjøp lagt inn for hånd' : 'kvittering fra bilde') : (p.kontoNavn || 'banken') });
   const linjerAv = async p => ((await lesJson(env, kvitteringNokkel(p), null)) || {}).linjer || [];
-  const kv = alle.filter(p => p.fra && !p.forHand && p.status !== 'sammenslatt' && !p.bankId && !p.slaattInn);
+  const kv = alle.filter(p => p.fra && !p.forHand && p.status !== 'sammenslatt' && p.status !== 'venter' && !p.bankId && !p.slaattInn);
   const bank = alle.filter(p => !p.fra && p.belop < 0 && !p.dekketAv && p.status !== 'sammenslatt' && p.status !== 'stroket');
   const brukt = {}, forslag = [];
   for(const r of kv){
@@ -1858,6 +1923,7 @@ export async function onRequestPost({ request, env }){
   if(kropp && kropp.hva === 'godkjenn') return await godkjenn(env, kropp, v.epost);
   if(kropp && kropp.hva === 'angre') return await angre(env, kropp);
   if(kropp && kropp.hva === 'koble-alle') return await kobleAlle(env, kropp);
+  if(kropp && kropp.hva === 'faktura-innboks') return await fakturaInnboks(env, kropp);
   if(kropp && kropp.hva === 'laert') return await lagreLaert(env, kropp);
   if(kropp && kropp.hva === 'dropbox-ferdig') return await dropboxFerdig(env, kropp);
   if(kropp && kropp.hva === 'dropbox-koble-fra') return await dropboxKobleFra(env);
