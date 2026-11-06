@@ -83,6 +83,7 @@
      auth:bank:dropbox         - Dropbox: refresh-tokenet til appmappa, og naar den sist ble sjekket
      auth:bank:formue          - verdier, gjeld og familiemaal, fylt inn for haand
      auth:bank:kontonavn       - { <konto-uid>: eget navn } - DNB sender ikke nettbanknavnene
+     auth:bank:kontonr         - { <konto-uid>: '1234.56.78901' } - hentet én gang fra /details
      auth:bank:budsjett        - { standard:{ kategori: kr }, maaneder:{ 'AAAA-MM':{ kategori: kr } } } - ALDRI i koden,
                                  repoet er offentlig
    `/api/data` slipper familien til alt under `fh:`. Kontoer og
@@ -117,6 +118,7 @@ const ROLLE_NOKKEL = 'auth:bank:roller';
 /* Egne navn paa kontoene. DNB sender ikke navnene man har satt i nettbanken
    gjennom open banking - bare produktnavn - saa de gis i Neam (Oppsett). */
 const KONTONAVN_NOKKEL = 'auth:bank:kontonavn';
+const KONTONR_NOKKEL = 'auth:bank:kontonr';
 
 const NOKKEL = 'auth:bank:hus';
 const BUFFER_TID = 6 * 3600 * 1000;
@@ -375,9 +377,25 @@ async function kontoer(env, okt, fersk, psu){
      sida ikke venter paa 21 hentinger etter tur hver gang den aapnes. */
   const svarene = await iBolker(okt.kontoer, 4, k => medBuffer(env, 'saldo:' + k.uid, fersk && !!psu,
     () => eb(env, 'GET', '/accounts/' + encodeURIComponent(k.uid) + '/balances', null, psu)));
+  /* Hele kontonummeret. Kontoene lagres naar DNB kobles, og de som ble
+     koblet foer 6. november 2026, har bare de fire siste sifrene. Nummeret
+     hentes da én gang per konto fra /details og lagres for godt - bare med
+     noen til stede (psu), saa kjoekkenskjermens vekker ikke bruker av
+     bankens kvote paa fire hentinger i doegnet. */
+  const nr = await lesJson(env, KONTONR_NOKKEL, {});
+  const utenNr = okt.kontoer.filter(k => !k.kontonr && !nr[k.uid]);
+  if(utenNr.length && psu){
+    const det = await iBolker(utenNr, 4, k => eb(env, 'GET', '/accounts/' + encodeURIComponent(k.uid) + '/details', null, psu));
+    let nye = 0;
+    utenNr.forEach((k, i) => {
+      const iban = det[i] && det[i].ok && det[i].data && det[i].data.account_id && det[i].data.account_id.iban;
+      if(iban){ nr[k.uid] = kontoNr(iban); nye++; }
+    });
+    if(nye) await env.FAMILIE_KV.put(KONTONR_NOKKEL, JSON.stringify(nr));
+  }
   for(const [i, k] of okt.kontoer.entries()){
     const r = svarene[i];
-    if(!r.ok){ ut.push(Object.assign({}, k, { navn:navn[k.uid] || k.navn, bankNavn:k.navn, rolle:roller[k.uid] || '', feil:r.feil })); continue; }
+    if(!r.ok){ ut.push(Object.assign({}, k, { navn:navn[k.uid] || k.navn, bankNavn:k.navn, kontonr:k.kontonr || nr[k.uid] || '', rolle:roller[k.uid] || '', feil:r.feil })); continue; }
     if(r.advarsel) advarsel = r.advarsel;
     eldst = Math.min(eldst, r.hentet);
     const saldoer = (r.data && r.data.balances) || [];
@@ -388,6 +406,7 @@ async function kontoer(env, okt, fersk, psu){
     ut.push(Object.assign({}, k, {
       navn: navn[k.uid] || k.navn,
       bankNavn: k.navn,
+      kontonr: k.kontonr || nr[k.uid] || '',
       rolle: roller[k.uid] || '',
       saldo: s ? Number(s.balance_amount.amount) : null,
       saldoType: s ? s.balance_type : '',

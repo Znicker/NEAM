@@ -410,7 +410,16 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 /* Flere laan under hverandre, og sparekontoene som avkrysning. */
 .ok-trenger-felt.liste{ flex-direction:column; align-items:flex-end; }
 .ok-trenger-lan{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
-.ok-trenger-kryss{ display:flex; gap:8px; align-items:center; font-size:var(--t-meta); cursor:pointer; }
+.ok-trenger-kryss{ display:flex; gap:8px; align-items:center; font-size:var(--t-meta); cursor:pointer; padding:6px 4px; border-radius:6px; }
+.ok-trenger-kryss:hover{ background:var(--aksent-lys); }
+/* Nedtrekk med avkrysning (Magne, 6. november 2026): ser ut som de andre
+   nedtrekkene, og aapner en liste der flere kan krysses av. */
+.ok-flervalg{ position:relative; width:360px; max-width:100%; }
+.ok-flervalg > summary{ list-style:none; cursor:pointer; font-size:16px; padding:6px 30px 6px 8px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; position:relative; }
+.ok-flervalg > summary::-webkit-details-marker{ display:none; }
+.ok-flervalg > summary::after{ content:'▾'; position:absolute; right:10px; top:50%; transform:translateY(-50%); color:var(--ink-soft); }
+.ok-flervalg[open] > summary, .ok-flervalg > summary:focus-visible{ outline:none; border-color:var(--aksent); }
+.ok-flervalg-liste{ position:absolute; right:0; left:0; top:calc(100% + 4px); z-index:20; background:#fff; border:1.5px solid var(--line); border-radius:8px; box-shadow:var(--shadow); padding:6px; max-height:320px; overflow-y:auto; display:flex; flex-direction:column; }
 .ok-trenger-felt input[type="checkbox"]{ width:18px; height:18px; padding:0; accent-color:var(--aksent); }
 @media (max-width:640px){
   .ok-trenger-rad{ grid-template-columns:minmax(0,1fr); }
@@ -2377,6 +2386,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
      raden forsvinner naar tallet finnes. Tegnes paa nytt hver gang
      noekkeltallene gjoer det - det som er skrevet i feltene, beholdes. */
   var okTrengerLan = 1;
+  document.addEventListener('click', function(e){
+    document.querySelectorAll('.ok-flervalg[open]').forEach(function(d){ if(!d.contains(e.target)) d.open = false; });
+  });
   function okTilTrenger(id){
     okVis('innboks');
     var rad = document.querySelector('#ok-trenger [data-trenger^="' + id + '"]');
@@ -2515,14 +2527,26 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     }
     var kandidater = okKontoer.filter(function(k){ return k.rolle !== 'sparing' && k.rolle !== 'felles'; });
     if(!g.harSparekonto && kandidater.length){
-      /* Flere kan krysses av (Magne, 6. november 2026). */
-      var kryss = kandidater.map(function(k){
+      /* Nedtrekk der flere kan krysses av (Magne, 6. november 2026), med
+         navnet i Neam og hele kontonummeret. */
+      var valg = document.createElement('details'); valg.className = 'ok-flervalg';
+      var sum = document.createElement('summary'); sum.textContent = 'Velg kontoer';
+      valg.appendChild(sum);
+      var liste = okEl('div', 'ok-flervalg-liste');
+      kandidater.forEach(function(k){
         var lab = okEl('label', 'ok-trenger-kryss');
         var c = document.createElement('input'); c.type = 'checkbox'; c.id = 'ok-tr-spar-' + k.uid; c.value = k.uid;
+        c.dataset.navn = k.navn || 'Konto';
         lab.appendChild(c); lab.appendChild(document.createTextNode(okKontoValg(k)));
-        return lab;
+        liste.appendChild(lab);
       });
-      var sparRad = okTrengerRad('sparekonto', 'Sparekontoer', 'Til bufferen: saldoen på kontoene med rollen Sparing. Kryss av alle som er sparing. Rollene kan endres i Oppsett.', kryss, function(){
+      valg.appendChild(liste);
+      valg.addEventListener('change', function(){
+        var v = Array.prototype.filter.call(valg.querySelectorAll('input'), function(c){ return c.checked; }).map(function(c){ return c.dataset.navn; });
+        sum.textContent = v.length ? v.length + ' valgt: ' + v.join(', ') : 'Velg kontoer';
+      });
+      valg.addEventListener('keydown', function(e){ if(e.key === 'Escape' && valg.open){ e.stopPropagation(); valg.open = false; sum.focus(); } });
+      var sparRad = okTrengerRad('sparekonto', 'Sparekontoer', 'Til bufferen: saldoen på kontoene med rollen Sparing. Kryss av alle som er sparing. Rollene kan endres i Oppsett.', [valg], function(){
         var valgte = Array.prototype.filter.call(document.querySelectorAll('#ok-trenger input[type="checkbox"]'), function(c){ return c.checked; }).map(function(c){ return c.value; });
         if(!valgte.length) return okTrengerSi('Kryss av minst én konto.');
         var roller = {}; valgte.forEach(function(uid){ roller[uid] = 'sparing'; });
@@ -2556,6 +2580,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     boks.innerHTML = '';
     rader.forEach(function(r){ boks.appendChild(r); });
     Object.keys(gamle).forEach(function(id){ var f = document.getElementById(id); if(!f || !gamle[id]) return; if(f.type === 'checkbox') f.checked = true; else f.value = gamle[id]; });
+    boks.querySelectorAll('.ok-flervalg').forEach(function(d){ d.dispatchEvent(new Event('change')); });
     if(fokus){ var f = document.getElementById(fokus); if(f) f.focus(); }
   }
 
