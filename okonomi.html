@@ -762,6 +762,14 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     </section>
     <section class="ok-kort ok-fold-gruppe">
       <span class="ok-etikett">Neam</span>
+      <div class="ok-fold" data-fold="koble">
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Koble kvitteringer og transaksjoner</span><span class="ok-fold-sum" id="ok-koble-sum">Gå gjennom det som er lagt inn</span></button>
+        <div class="ok-fold-innhold">
+          <p class="ok-meta">Finner kvitteringer som hører til en transaksjon som alt ligger der, og kjøp som er telt to ganger. Ingenting kobles før du trykker Koble, og alt kan angres.</p>
+          <div class="ok-rad-knapper"><button type="button" class="btn btn-blaa" id="ok-koble-se">Se hva som hører sammen</button></div>
+          <div id="ok-koble" aria-live="polite"></div>
+        </div>
+      </div>
       <div class="ok-fold" data-fold="husk" id="ok-husk-kort" hidden>
         <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Neam husker</span><span class="ok-fold-sum" id="ok-husk-sum"></span></button>
         <div class="ok-fold-innhold">
@@ -1315,6 +1323,42 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         okHusk.feil = null; okHusk.liste = r.laert || {}; etter(); okTegnHusk();
       });
   }
+  /* ---------- Koble i ettertid ----------
+     Forslagene fra bank-funksjonen (koble-alle) vises foer noe gjoeres
+     (Magne, 6. november 2026). */
+  function okKobleTegn(r){
+    var boks = document.getElementById('ok-koble');
+    boks.innerHTML = '';
+    if(!r.ok){ boks.appendChild(okEl('p', 'ok-melding feil', okVask(r.feil))); return; }
+    var f = r.forslag || [];
+    okFoldSett('koble', f.length ? f.length + ' hører sammen' : 'Ingenting å koble', f.length ? 'gammel' : '', f.length ? 'varsel' : '');
+    if(!f.length){ boks.appendChild(okEl('p', 'ok-meta', 'Ingenting å koble – alt som hører sammen, er koblet.')); return; }
+    var hva = { 'legg-ved':'Kvitteringen legges ved banktrekket', 'slaa-sammen':'Slås sammen – kvitteringen blir posten', 'kvittering':'Slås sammen – fila legges ved den som beholdes' };
+    var linje = function(x){ return okVask(x.sted || 'Uten navn') + ', ' + okKort.format(new Date(x.dato)) + ', ' + okKr0.format(Math.abs(x.belop)) + ' kr <span class="ok-meta">(' + okVask(x.kilde) + ')</span>'; };
+    f.forEach(function(x){
+      boks.appendChild(okEl('div', 'ok-husk-rad', '<div><b>' + linje(x.kvittering) + '</b><br>→ ' + linje(x.transaksjon)
+        + '<br><span class="ok-meta">' + hva[x.hva] + '</span>' + (x.dobbelt ? ' <span class="ok-avvik over">Telt to ganger i dag</span>' : '') + '</div>'));
+    });
+    var k = okEl('button', 'btn btn-ny', 'Koble ' + f.length); k.type = 'button'; k.style.alignSelf = 'flex-start';
+    k.addEventListener('click', function(){
+      k.disabled = true;
+      okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'koble-alle', utfor:true }) }).then(function(s){
+        boks.innerHTML = '';
+        if(!s.ok){ boks.appendChild(okEl('p', 'ok-melding feil', 'Ble ikke koblet: ' + okVask(s.feil))); k.disabled = false; return; }
+        boks.appendChild(okEl('p', 'ok-melding', s.gjort + ' er koblet.' + ' Regnskapet og innboksen er oppdatert.'));
+        okFoldSett('koble', s.gjort + ' koblet');
+        okLastInnboks(); okStatusLast(); okVarslerLast(); if(okMnd.lastet) okMndLast();
+      });
+    });
+    boks.appendChild(k);
+  }
+  document.getElementById('ok-koble-se').addEventListener('click', function(){
+    var b = this; b.disabled = true;
+    document.getElementById('ok-koble').innerHTML = '<p class="ok-meta">Leter …</p>';
+    okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'koble-alle', utfor:false }) })
+      .then(function(r){ b.disabled = false; okKobleTegn(r); });
+  });
+
   function okTegnHusk(){
     var kort = document.getElementById('ok-husk-kort'), boks = document.getElementById('ok-husk');
     var navn = Object.keys(okHusk.liste || {}).sort(function(a, b){ return a.localeCompare(b, 'nb'); });
@@ -1795,7 +1839,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var lagret = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ hva:'kvittering-ny', kvittering:kv, fil:lagres }) });
     if(!lagret.ok){ var feil = new Error(lagret.feil); feil.duplikat = /allerede lagt inn/.test(lagret.feil || ''); throw feil; }
-    return { post:lagret.post, linjer:(kv.linjer || []).length };
+    return { post:lagret.post, linjer:(kv.linjer || []).length, festet:lagret.festet || '' };
   }
   async function okLesKvittering(fil){
     var status = document.getElementById('ok-kv-status'), knapp = document.getElementById('ok-kv-knapp');
@@ -1803,6 +1847,13 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     status.textContent = 'Neam leser kvitteringen …';
     try{
       var res = await okTolkKvittering(fil);
+      if(res.festet){
+        /* Kvitteringen hoerte til noe som alt laa der, og er lagt ved det (6. november 2026). */
+        status.textContent = 'Lagt ved ' + (res.post.motpart || res.post.tekst || 'transaksjonen') + ', ' + okKort.format(new Date(res.post.dato))
+          + ', ' + okKr0.format(Math.abs(res.post.belop)) + ' kr – ' + (res.festet === 'banktrekk' ? 'banktrekket' : 'kvitteringen') + ' lå der fra før. Bildet kan åpnes fra posten.';
+        okLastInnboks(); if(okMnd.lastet) okMndLast();
+        return;
+      }
       status.textContent = 'Lagt i innboksen: ' + res.post.motpart + ', ' + okKort.format(new Date(res.post.dato))
         + ', ' + okKr0.format(-res.post.belop) + ' kr' + (res.linjer ? ' med ' + res.linjer + ' varer' : '') + '. '
         + (res.post.lignerPaa ? 'Obs: den ' + okLignerTekst(res.post.lignerPaa) + ' Den er strøket til du tar den med.' : 'Sjekk og godkjenn.');
@@ -1886,7 +1937,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         if(manuell && r.ok) okDb.resultat = 'Ingen nye kvitteringer i mappa (sjekket kl. ' + okKlokke.format(new Date()) + ').';
         return;
       }
-      var lagt = 0, dobbel = 0, feil = [], ligner = [];
+      var lagt = 0, dobbel = 0, feil = [], ligner = [], festet = 0;
       for(var i = 0; i < r.filer.length; i++){
         var f = r.filer[i];
         status.textContent = 'Neam leser kvittering ' + (i + 1) + ' av ' + r.filer.length + ' fra Dropbox …';
@@ -1898,7 +1949,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         }catch(e){ feil.push(f.navn + ': ' + (e && e.message || e)); continue; }   /* blir liggende og proeves igjen */
         try{
           var lest = await okTolkKvittering(new File([blob], f.navn, { type:f.type }));
-          lagt++;
+          if(lest.festet) festet++; else lagt++;
           if(lest.post.lignerPaa) ligner.push(f.navn);
           await ferdig(f, 'Importert');
         }catch(e){
@@ -1909,11 +1960,12 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       }
       var tekst = [lagt ? lagt + (lagt === 1 ? ' kvittering' : ' kvitteringer') + ' fra Dropbox lest og lagt inn.' : '',
         dobbel ? dobbel + ' var lagt inn fra før.' : '',
+        festet ? festet + (festet === 1 ? ' ble lagt ved en transaksjon' : ' ble lagt ved transaksjoner') + ' som lå der fra før.' : '',
         ligner.length ? 'Obs: ' + ligner.join(', ') + ' ligner' + ' en kvittering som alt er lagt inn – se «Trenger et valg» i innboksen.' : '',
         feil.length ? 'Ble ikke lest: ' + feil.join('; ') + '.' : ''].filter(Boolean).join(' ');
       status.textContent = tekst + (r.flere ? ' Flere ligger igjen – de tas neste gang.' : '');
       okDb.resultat = tekst;
-      if(lagt) okLastInnboks();
+      if(lagt || festet) okLastInnboks();
     } finally {
       okDbKjorer = false;
       okDbStatus();

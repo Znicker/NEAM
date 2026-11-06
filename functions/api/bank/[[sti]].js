@@ -23,6 +23,7 @@
      GET /api/bank?hva=foringer&mnd=AAAA-MM&kategori=<k>[&eksakt=1] - foeringene bak ett tall
      POST /api/bank {hva:'kategori-ny', nye:[{forelder, navn}]} / {hva:'kategori-slett', kategori} - egne poster
      POST /api/bank {hva:'kategori-navn', fra, navn} - nytt navn paa en egen post eller linje
+     POST /api/bank {hva:'koble-alle', utfor} - kvitteringer og transaksjoner som hoerer sammen, i ettertid
      GET /api/bank?hva=varsler          - det som trenger noen (kortet paa forsiden)
      GET /api/bank?hva=laert / POST {hva:'laert', motpart, kategori} - «Neam husker» (tom kategori glemmer)
      GET /api/bank/dropbox-start / dropbox-tilbake - kobler Dropbox (appmappa) med OAuth
@@ -1119,7 +1120,7 @@ async function foringer(env, mnd, kat, eksakt){
       ut.push({ id:p.id, dato:p.dato, tekst:p.motpart || p.tekst || '', mer:p.motpart && p.tekst && p.tekst !== p.motpart ? p.tekst : '',
         kilde: p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? 'Lagt inn for hånd' : 'Kvittering fra bilde') : (kn[p.konto] || p.kontoNavn || ''),
         betaltFra: bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
-        kategori:d.kategori, del:deler.length > 1, harKvittering:!!p.fra && p.harKvittering !== false,
+        kategori:d.kategori, del:deler.length > 1, harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false,
         harFil:!!p.harFil, filType:p.filType || '',
         belop: Math.round((d.kategori.indexOf('Inntekter') === 0 ? d.belop : -d.belop) * 100) / 100 });
     }
@@ -1155,7 +1156,41 @@ async function nyKvittering(env, kropp, epost){
   /* Samme kvittering lest to ganger skal ikke bli to poster. */
   const id = 'foto:' + b64url(await crypto.subtle.digest('SHA-256', tekstTilBytes([butikk, dato, sum.toFixed(2)].join('|')))).slice(0, 18);
   const poster = await lesJson(env, POST_NOKKEL, {});
-  if(poster[id]) return svar({ ok:false, feil:'Denne kvitteringen er allerede lagt inn (' + butikk + ', ' + dato + ')' });
+  const fil = kropp.fil || {};
+  const filOk = KVITTERING_FILTYPER.indexOf(fil.type) !== -1 && typeof fil.data === 'string' && fil.data.length < 14e6 && /^[A-Za-z0-9+/]/.test(fil.data);
+  /* Hoerer kvitteringen til en transaksjon som alt ligger der, legges den
+     VED den i stedet for aa bli en ny post (Magne, 6. november 2026):
+       1. samme kvittering lagt inn paa nytt, men uten fil
+       2. et banktrekk som alt er godkjent - samme beloep til oeret, hoeyst
+          tre dager mellom (erLik)
+       3. en kvittering som ligner (finnLignende) - fra Trumf, eller samme
+          bilde lest litt ulikt
+     Fila (og varelinjene, paa et banktrekk) legges ved. Et banktrekk som
+     venter, slaas sammen som foer (kobleKvittering). Har det som finnes alt
+     en fil, blir det en ny post som merkes som mulig dobbel, som foer. */
+  const leggVed = async function(maal, hva){
+    if(filOk){ await env.FAMILIE_KV.put(filNokkel(maal.id), JSON.stringify({ type:fil.type, data:fil.data })); maal.harFil = true; maal.filType = fil.type; }
+    if(linjer.length && !maal.fra && !maal.harLinjer){
+      await env.FAMILIE_KV.put(kvitteringNokkel(maal), JSON.stringify({ id:maal.id, belop:sum, linjer:linjer }));
+      maal.harLinjer = true;
+    }
+    maal.vedlagt = new Date().toISOString();
+    await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+    return svar({ ok:true, post:maal, festet:hva });
+  };
+  if(poster[id]){
+    if(!poster[id].harFil && filOk) return await leggVed(poster[id], 'samme');
+    return svar({ ok:false, feil:'Denne kvitteringen er allerede lagt inn (' + butikk + ', ' + dato + ')' });
+  }
+  if(filOk && !kropp.forHand){
+    const forsoek = { id:id, belop:-sum, dato:dato };
+    const bank = Object.keys(poster).map(x => poster[x])
+      .filter(b => !b.fra && b.status === 'godkjent' && !b.harFil && b.belop < 0 && erLik(b, forsoek))[0];
+    if(bank) return await leggVed(bank, 'banktrekk');
+    const lik = await finnLignende(env, poster, forsoek, linjer);
+    const maal = lik && poster[lik.id];
+    if(maal && !maal.harFil) return await leggVed(maal, 'kvittering');
+  }
   const laert = await lesJson(env, LAERT_NOKKEL, {});
   const p = { id:id, fra:'foto', konto:'foto', kontoNavn:'Kvittering fra bilde', dato:dato, belop:-sum, tekst:'', motpart:butikk,
     harKvittering: linjer.length > 0, status:'ny', lagtInnAv:epost, lagtInn:new Date().toISOString() };
@@ -1165,8 +1200,7 @@ async function nyKvittering(env, kropp, epost){
   p.kategori = f.kategori; p.kilde = f.kilde;
   /* Bildet eller PDF-en lagres, saa kvitteringen kan aapnes igjen (Magne,
      6. november 2026). Siden krymper bildene foer de sendes. */
-  const fil = kropp.fil || {};
-  if(KVITTERING_FILTYPER.indexOf(fil.type) !== -1 && typeof fil.data === 'string' && fil.data.length < 14e6 && /^[A-Za-z0-9+/]/.test(fil.data)){
+  if(filOk){
     await env.FAMILIE_KV.put(filNokkel(id), JSON.stringify({ type:fil.type, data:fil.data }));
     p.harFil = true; p.filType = fil.type;
   }
@@ -1182,7 +1216,8 @@ const KVITTERING_FILTYPER = ['image/jpeg', 'image/png', 'application/pdf'];
 function filNokkel(id){ return 'auth:bank:fil:' + id; }
 /* Selve fila, aapnet i en egen fane fra Oekonomi-sida. */
 async function kvitteringFil(env, id){
-  if(!/^foto:[\w-]{1,40}$/.test(id)) return svar({ ok:false, feil:'Ugyldig id' });
+  /* Ogsaa et banktrekk kan ha en fil lagt ved - id-en er da bankens. */
+  if(!/^[\w:.-]{1,120}$/.test(id)) return svar({ ok:false, feil:'Ugyldig id' });
   const f = await lesJson(env, filNokkel(id), null);
   if(!f || !f.data) return svar({ ok:false, feil:'Fant ikke fila til kvitteringen' });
   const bin = atob(f.data), bytes = new Uint8Array(bin.length);
@@ -1192,7 +1227,7 @@ async function kvitteringFil(env, id){
 async function lagretKvittering(env, id){
   const poster = await lesJson(env, POST_NOKKEL, {});
   const p = poster[id];
-  if(!p || !p.fra) return svar({ ok:false, feil:'Ukjent kvittering' });
+  if(!p || !(p.fra || p.harLinjer)) return svar({ ok:false, feil:'Ukjent kvittering' });
   if(p.fra === 'trumf') return trumfKvittering(env, p.trumfId);
   const kv = await lesJson(env, kvitteringNokkel(p), null);
   if(!kv) return svar({ ok:false, feil:'Kvitteringen har ingen varelinjer' });
@@ -1239,7 +1274,7 @@ async function godkjenn(env, kropp, epost){
     if(g.linjer && Object.keys(g.linjer).some(i => g.linjer[i] && kategorier.indexOf(g.linjer[i]) === -1)){
       return svar({ ok:false, feil:'Ukjent kategori på en vare' });
     }
-    if(p.fra && g.linjer){
+    if((p.fra || p.harLinjer) && g.linjer){
       const deler = await fordelKvittering(env, p, g.linjer, g.kategori);
       if(deler) p.deler = deler;
     }
@@ -1264,6 +1299,86 @@ async function godkjenn(env, kropp, epost){
 }
 /* Angre-stripa: legger nettopp behandlede poster tilbake i innboksen.
    Det Neam laerte, blir staaende - det er et forslag, ikke en foering. */
+/* Koble i ettertid (Magne, 6. november 2026): det som ble lagt inn foer
+   kvitteringer ble lagt ved transaksjonen som alt laa der. { utfor:false }
+   gir forslagene, { utfor:true } gjoer dem. Reglene:
+     - kvittering mot banktrekk (samme beloep til oeret, hoeyst tre dager):
+       er kvitteringen ikke telt (venter eller stroeket) og banktrekket
+       godkjent, legges fila og varelinjene ved banktrekket, og kvitteringen
+       slaas inn i det («legg-ved»). Ellers blir kvitteringen posten og
+       banktrekket slaas inn i den, som ved vanlig sammenslaaing
+       («slaa-sammen») - er begge godkjent, var kjoepet telt to ganger.
+     - kvittering mot kvittering med samme beloep til oeret, hoeyst tre
+       dager mellom, og minst halvparten av varene like naar begge har
+       varelinjer: den med mest innhold (Trumf, saa flest varer) beholdes,
+       den andre slaas inn i den, og fila legges ved.
+   Alt kan angres med angre paa den som ble slaatt inn. */
+async function kobleAlle(env, kropp){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const alle = Object.keys(poster).map(id => poster[id]);
+  const kort = p => ({ id:p.id, sted:p.motpart || p.tekst || '', dato:p.dato, belop:p.belop, status:p.status,
+    kilde:p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? 'kjøp lagt inn for hånd' : 'kvittering fra bilde') : (p.kontoNavn || 'banken') });
+  const linjerAv = async p => ((await lesJson(env, kvitteringNokkel(p), null)) || {}).linjer || [];
+  const kv = alle.filter(p => p.fra && !p.forHand && p.status !== 'sammenslatt' && !p.bankId && !p.slaattInn);
+  const bank = alle.filter(p => !p.fra && p.belop < 0 && !p.dekketAv && p.status !== 'sammenslatt' && p.status !== 'stroket');
+  const brukt = {}, forslag = [];
+  for(const r of kv){
+    const b = bank.find(x => !brukt[x.id] && erLik(x, r));
+    if(!b) continue;
+    const ikkeTelt = r.status === 'ny' || r.status === 'stroket';
+    const hva = ikkeTelt && b.status === 'godkjent' ? 'legg-ved' : r.status === 'stroket' ? null : 'slaa-sammen';
+    if(!hva) continue;
+    brukt[b.id] = brukt[r.id] = true;
+    forslag.push({ hva:hva, kvittering:kort(r), transaksjon:kort(b), dobbelt:r.status === 'godkjent' && b.status === 'godkjent', _r:r, _b:b });
+  }
+  const rang = async p => (p.fra === 'trumf' ? 1000 : 0) + (await linjerAv(p)).length + (p.harFil ? 0.5 : 0);
+  for(const r of kv){
+    if(brukt[r.id] || r.status === 'stroket') continue;
+    for(const o of kv){
+      if(o.id === r.id || brukt[o.id] || o.status === 'stroket') continue;
+      if(Math.abs(Math.abs(o.belop) - Math.abs(r.belop)) >= 0.005 || dagerMellom(o.dato, r.dato) > 3) continue;
+      const lik = vareLikhet(await linjerAv(r), await linjerAv(o));
+      if(lik !== null && lik < 0.5) continue;
+      const [behold, inn] = (await rang(r)) >= (await rang(o)) ? [r, o] : [o, r];
+      brukt[r.id] = brukt[o.id] = true;
+      forslag.push({ hva:'kvittering', kvittering:kort(inn), transaksjon:kort(behold), dobbelt:r.status === 'godkjent' && o.status === 'godkjent', _r:inn, _b:behold });
+      break;
+    }
+  }
+  if(!kropp.utfor) return svar({ ok:true, forslag:forslag.map(f => ({ hva:f.hva, kvittering:f.kvittering, transaksjon:f.transaksjon, dobbelt:f.dobbelt })) });
+
+  const naa = new Date().toISOString();
+  const kopierFil = async (fra, til) => {
+    if(!fra.harFil || til.harFil) return;
+    const fil = await lesJson(env, filNokkel(fra.id), null);
+    if(!fil) return;
+    await env.FAMILIE_KV.put(filNokkel(til.id), JSON.stringify(fil));
+    til.harFil = true; til.filType = fra.filType;
+  };
+  let gjort = 0;
+  for(const f of forslag){
+    const r = f._r, b = f._b;
+    if(f.hva === 'legg-ved'){
+      await kopierFil(r, b);
+      const l = await linjerAv(r);
+      if(l.length && !b.harLinjer){ await env.FAMILIE_KV.put(kvitteringNokkel(b), JSON.stringify({ id:b.id, belop:Math.abs(b.belop), linjer:l })); b.harLinjer = true; }
+      Object.assign(r, { status:'sammenslatt', slaattInn:b.id, behandlet:naa });
+      b.vedlagt = naa;
+    } else if(f.hva === 'slaa-sammen'){
+      r.bankId = b.id; r.bankKonto = b.kontoNavn; b.dekketAv = r.id;
+      delete r.mulDobbel; delete r.lignerPaa;
+      if(b.status === 'godkjent') Object.assign(b, { status:'sammenslatt', behandlet:naa });
+    } else {
+      await kopierFil(r, b);
+      Object.assign(r, { status:'sammenslatt', slaattInn:b.id, behandlet:naa });
+      delete b.lignerPaa;
+    }
+    gjort++;
+  }
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  return svar({ ok:true, gjort:gjort });
+}
+
 async function angre(env, kropp){
   const poster = await lesJson(env, POST_NOKKEL, {});
   let n = 0;
@@ -1742,6 +1857,7 @@ export async function onRequestPost({ request, env }){
   try{ kropp = await request.json(); }catch(e){ return svar({ ok:false, feil:'Ugyldig JSON' }); }
   if(kropp && kropp.hva === 'godkjenn') return await godkjenn(env, kropp, v.epost);
   if(kropp && kropp.hva === 'angre') return await angre(env, kropp);
+  if(kropp && kropp.hva === 'koble-alle') return await kobleAlle(env, kropp);
   if(kropp && kropp.hva === 'laert') return await lagreLaert(env, kropp);
   if(kropp && kropp.hva === 'dropbox-ferdig') return await dropboxFerdig(env, kropp);
   if(kropp && kropp.hva === 'dropbox-koble-fra') return await dropboxKobleFra(env);
