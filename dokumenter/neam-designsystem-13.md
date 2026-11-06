@@ -1546,7 +1546,13 @@ godkjent 6. november 2026; Innboks ble Transaksjoner samme kveld):
 
 - **Status** – bare oversikt: fire tallbokser, måneden som én stolpe med de
   tre postene som ligger mest foran skjema, nøkkeltallene, netto formue og
-  familiemålet.
+  familiemålet. **Måneden vises også uten fullt budsjett** (fra 6. november
+  2026): uten budsjett «… brukt så langt» og «Mest brukt», uten stolpe; med
+  delvis budsjett stolpen som før. Det som mangler, står i **mangel-boksen**
+  (`.ok-mangler`): mild flate, kant og venstrestrek i `--handling-endre` –
+  gul fordi det trenger noe, ikke rød som en feil – med «Fyll inn ›» til
+  høyre. Poster med forbruk uten budsjett står der, ikke under «Mest foran
+  skjema».
 - **Transaksjoner** (fra 6. november 2026, het Innboks) – to underfaner:
   - **Innboks** – det som venter på deg, i sammenleggbare linjer: Trenger
     et valg, Klare til godkjenning, Ført automatisk, Fakturaer som venter og
@@ -1560,13 +1566,16 @@ godkjent 6. november 2026; Innboks ble Transaksjoner samme kveld):
     som overskrift (`.ok-etikett`), og ‹ måned › byttes mot «Søk og
     filter» og Nullstill. En rad åpnes på stedet med detaljene og
     handlingene (varene, PDF-en, «Send tilbake til innboksen»). Strøket
-    vises med lav opasitet og streket navn, som i innboksen.
+    vises med lav opasitet og streket navn, som i innboksen. Vedlegget
+    står i meta-linja på raden («PDF vedlagt», «bilde vedlagt»,
+    «varelinjer») – en lenke inni radknappen ville vært en knapp i en knapp.
   Valgt ut uten skisse (Magne: «bare kjør det ut på neam»).
 - **Regnskap** – budsjett mot faktisk, med **periode**: én måned (med
   ‹ måned ›), hittil i år, eller siste 12 måneder. Budsjettet er da summen av
   månedsbudsjettene. Trenden og «Hvor det glir» står som linjer øverst, og
   kjøpene bak den valgte posten til høyre. Erstatter Måned, År og budsjett
-  mot regnskap.
+  mot regnskap. Linja «På tvers – forsikring, lån …» viser merkene (under)
+  med brukt, budsjett og avvik for perioden.
 - **Budsjett** – bare redigering: standardbudsjettet eller ett
   månedsbudsjett om gangen. Fra 6. november 2026 (Magne: «er veldig
   generisk nå»):
@@ -1583,6 +1592,19 @@ godkjent 6. november 2026; Innboks ble Transaksjoner samme kveld):
     hover – grønt fordi det legger til, som `.btn-ny`. Rader uten pluss
     holder av plassen, så navnene står rett under hverandre.
   - «Uten linje» vises bare når en post med linjer har et eget beløp.
+  - **Gruppenavnene og summene deres står i `--t-stor`, fet** – Inntekter
+    og Sparing som de andre, ikke som en liten etikett. Postene står i
+    `--t-brod`, så forskjellen synes (Magne: «Kategorinavnene må skille seg
+    mer ut»). «Utgifter» over gruppekortene er fortsatt en etikett.
+  - **Merker på tvers** (Magne: «vi har forsikringer på tvers av
+    budsjettkategoriene»). En post eller linje kan ha ett merke fra en fast
+    liste: Forsikring, lånetypene fra Gjeld, Abonnement, Strøm og energi,
+    Barnehage og SFO. En linje uten eget merke arver postens. I visning en
+    **merkelapp** etter navnet (`.ok-bu-merkelapp`: pille, `--boks-mild`
+    med `--boks-kant`, `--t-etikett`); i redigering en liten nedtrekksliste
+    i samme form, med fylt flate når et merke er satt – på telefon under
+    navnet, så navnet ikke kuttes. Øverst i budsjettet «På tvers» med én
+    pille per merke og summen (`.stor`: papir og skygge).
 - **Oppsett** – alt som sammenleggbare linjer: én linje per kilde (med
   statusprikk, og kildens kort inni), kontoene per rolle, formuen (verdier,
   gjeld, bruttoinntekt, buffer, familiemål) og «Neam husker».

@@ -94,7 +94,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 
 **Siste leverte versjoner:** `felles-neam.js ?v=75`, `felles-neam.css
 ?v=75`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
-?v=12`, `felles-hus.js ?v=22`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
+?v=13`, `felles-hus.js ?v=22`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
@@ -112,7 +112,7 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–74; neam.css til og
-med 74; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–11, skriv 1–11,
+med 74; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–12, skriv 1–11,
 hus `?v=1–21`, ms `?v=1`, tale 1–4, graph 1–2**. (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -463,11 +463,14 @@ legges ved det, uansett hva som kommer først (`8a21f18`), og krysset i
 formueskjemaet på raden det sletter (`e1268f5`). Til sist ble Innboks
 til **Transaksjoner** med underfanene Innboks og Alle – kontoutskriften med
 søk, filter og periode (`f6b8f21`), og budsjettet ble friskt opp med nye
-navn på alle poster, også de faste (`e4d8c4b`). **Sett i live-data
+navn på alle poster, også de faste (`e4d8c4b`). Så måneden på Status uten
+fullt budsjett, med det som mangler i en gul boks, og vedleggene på radene
+i Alle (`f4c292d`), og merker på tvers av gruppene – forsikring, lån,
+abonnement … – med større gruppenavn (`5f06f25`). **Sett i live-data
 6. november, ikke rørt:** strømregningen 26. oktober ser ut til å være
 ført to ganger (samme beløp, to banktekster for samme avtalegiro).
-SPK-fakturaen ble lest på nytt etter `8a21f18` («det fungerte»). 49 commits,
-`0e0050a`–`e4d8c4b`, medregnet en midlertidig statustest fra en annen økt
+SPK-fakturaen ble lest på nytt etter `8a21f18` («det fungerte»). 51 commits,
+`0e0050a`–`5f06f25`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -475,7 +478,7 @@ SPK-fakturaen ble lest på nytt etter `8a21f18` («det fungerte»). 49 commits,
 `felles-skriv.js` gikk videre til `?v=10` (`7688c6f`), og så
 `felles-lesalt.js` til `?v=10` og `felles-skriv.js` til `?v=11`
 (`3218537`). Så `felles-lesalt.js` til `?v=11` (`fd86515`), og begge til
-`?v=12` (`bf5826d`). Se del 57.
+`?v=12` (`bf5826d`), og `felles-lesalt.js` til `?v=13` (`5f06f25`). Se del 57.
 
 **1. november: Rommene, ukeplanen og bildekatalogen.**
 - **Rommene lagt om igjen** (`5208ee2`–`26d1362`). Etasjefanene er borte:
@@ -3864,7 +3867,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 49 commits fra `0e0050a` til `e4d8c4b`.
+verdier. Bygget i 51 commits fra `0e0050a` til `5f06f25`.
 
 ### Banken – Enable Banking
 
@@ -4173,6 +4176,43 @@ til Oppsett med rød prikk på fanen, og Coop-meldingen bort.
   forsvant før Lagre. Nå sammenlignes skjemaet med det som sist ble lagret
   (`okFormueTekst()` mot `okFormueLagret`); er det ulikt, oppdateres bare
   visningen (`okTegnFormue()`), og skjemaet blir stående.
+
+### Merker på tvers, og måneden uten fullt budsjett (6. november, `f4c292d`, `5f06f25`)
+
+**Måneden uten fullt budsjett** (`f4c292d`, Magne: «så trenger jeg ikke
+fylle inn alt i budsjett før måned så langt vises. men det kan stå
+tydelig at det er mangler i budsjettet»). Før sto bare «Standardbudsjettet
+er tomt» på Status. Nå regner `okStatusLast()` ut postene med forbruk uten
+budsjett (`uten`): uten budsjett vises det som er brukt og «Mest brukt»,
+med delvis budsjett stolpen som før, og begge får `.ok-mangler`-boksen med
+«Fyll inn ›» (åpner Budsjett i redigering). Postene uten budsjett er tatt
+ut av «Mest foran skjema». Toppboksen «Brukt i …» vises også uten budsjett.
+Samme commit: vedlegget i meta-linja på radene i Alle.
+
+**Merker på tvers** (`5f06f25`, Magne: «nina sitt studielån, jeg vil at
+dette merkes som det også i budsjettet, så dette blir enkelt å hente inn
+andre steder, samme med forsikringer»). Kategoriene er et tre; et merke
+går på tvers av det.
+- **Data:** `auth:bank:kategori-merker` = `{ kategori: merke }`, med
+  merkene i `MERKER` (`forsikring`, `lan-bolig`, `lan-bil`, `lan-baat`,
+  `lan-studie`, `lan-forbruk`, `lan-annet`, `abonnement`, `energi`,
+  `barnehage`). Lånetypene er de samme som `LAN_TYPER` for gjelden.
+  `POST {hva:'kategori-merke', kategori, merke}`; tomt merke sletter.
+  `budsjett` svarer med `merker`. Nytt navn flytter merket, sletting av en
+  egen post fjerner det. Grupper får ikke merke.
+- **Arv:** en linje uten eget merke arver postens (`okBuMerke`); summene
+  regnes på hvert ledd for seg, så ingenting telles to ganger.
+- **Sida:** merkevalg i redigering, merkelapp i visning, «På tvers» øverst
+  i budsjettet (`okMerkeSummer`) og linja «På tvers» i Regnskap
+  (`okMndMerker`, brukt mot budsjett for perioden).
+- **Neam:** `les_okonomi_maaned` gir `pa_tvers` (merke, budsjett, faktisk,
+  avvik, postene) og `merke` på hver post. `felles-lesalt.js ?v=13`.
+- **Ikke gjort:** Gjeld i Oppsett kobles ikke til merkene ennå – at det
+  månedlige studielånet i budsjettet hører til studielånet i gjelden, må
+  Neam fortsatt slutte seg til fra typen.
+- **Felle:** på telefon kuttet merkevalget navnene («Bolig», «Komı»).
+  Navnefeltet krymper ikke der (`flex-shrink:0`), og valget går ned under.
+- **Samme commit:** gruppenavnene i budsjettet i `--t-stor`.
 
 ### Budsjettet friskt opp – nye navn og grønt pluss (6. november, `e4d8c4b`)
 
