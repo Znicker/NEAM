@@ -906,7 +906,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       <div class="ok-fold" data-fold="koble">
         <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Koble kvitteringer og transaksjoner</span><span class="ok-fold-sum" id="ok-koble-sum">Gå gjennom det som er lagt inn</span></button>
         <div class="ok-fold-innhold">
-          <p class="ok-meta">Finner kvitteringer som hører til en transaksjon som alt ligger der, og kjøp som er telt to ganger. Ingenting kobles før du trykker Koble, og alt kan angres.</p>
+          <p class="ok-meta">Finner kvitteringer som hører til en transaksjon som alt ligger der, kjøp som er telt to ganger, og trekk banken har sendt to ganger med ny tekst. Ingenting kobles før du trykker Koble, og alt kan angres.</p>
           <div class="ok-rad-knapper"><button type="button" class="btn btn-blaa" id="ok-koble-se">Se hva som hører sammen</button></div>
           <div id="ok-koble" aria-live="polite"></div>
         </div>
@@ -1473,10 +1473,12 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var boks = document.getElementById('ok-koble');
     boks.innerHTML = '';
     if(!r.ok){ boks.appendChild(okEl('p', 'ok-melding feil', okVask(r.feil))); return; }
+    if(r.advarsel) boks.appendChild(okEl('p', 'ok-meta', 'Fikk ikke sjekket mot banken (' + okVask(r.advarsel) + ') – trekk ført to ganger er ikke med.'));
     var f = r.forslag || [];
     okFoldSett('koble', f.length ? f.length + ' hører sammen' : 'Ingenting å koble', f.length ? 'gammel' : '', f.length ? 'varsel' : '');
     if(!f.length){ boks.appendChild(okEl('p', 'ok-meta', 'Ingenting å koble – alt som hører sammen, er koblet.')); return; }
-    var hva = { 'legg-ved':'Kvitteringen legges ved banktrekket', 'slaa-sammen':'Slås sammen – kvitteringen blir posten', 'kvittering':'Slås sammen – fila legges ved den som beholdes' };
+    var hva = { 'legg-ved':'Kvitteringen legges ved banktrekket', 'slaa-sammen':'Slås sammen – kvitteringen blir posten', 'kvittering':'Slås sammen – fila legges ved den som beholdes',
+      'bank-dobbel':'Samme trekk to ganger – DNB endret teksten eller datoen. Den øverste slås inn i den andre' };
     var linje = function(x){ return okVask(x.sted || 'Uten navn') + ', ' + okKort.format(new Date(x.dato)) + ', ' + okKr0.format(Math.abs(x.belop)) + ' kr <span class="ok-meta">(' + okVask(x.kilde) + ')</span>'; };
     f.forEach(function(x){
       boks.appendChild(okEl('div', 'ok-husk-rad', '<div><b>' + linje(x.kvittering) + '</b><br>→ ' + linje(x.transaksjon)

@@ -784,6 +784,19 @@ async function fakturaInnboks(env, kropp){
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
   return svar({ ok:true });
 }
+/* ---------- Samme trekk med ny tekst ----------
+   DNB gir ikke trekkene egne id-er, saa id-en lages av dato, beloep, tekst
+   og motpart (hentTransaksjoner). Naar DNB senere legger til tekst eller
+   motpart, eller flytter datoen en dag, faar samme trekk en ny id - og ble
+   foert én gang til (Magne, 7. november 2026: Tibber to ganger, og flere).
+   Kjennetegnet: den gamle id-en finnes ikke lenger i bankens liste, og et
+   nytt trekk paa samme konto har samme beloep og hoeyst tre dager mellom.
+   Da er det samme trekk; den nye id-en huskes paa den gamle posten
+   (`bankIder`), og den gamle faar den rikere teksten. To like kjoep som
+   begge staar i banken (to kaffer), roeres ikke. */
+function bankFinnes(p, iBanken){ return iBanken.has(p.id) || (p.bankIder || []).some(i => iBanken.has(i)); }
+function sammeTrekk(a, b){ return Math.abs(a.belop - b.belop) < 0.005 && dagerMellom(a.dato, b.dato) <= 3; }
+function lagdId(id){ return /^h[\w-]{10,}$/.test(String(id || '')); }
 function kobleKvittering(poster, kv){
   if(kv.bankId || kv.mulDobbel) return;
   for(const id of Object.keys(poster)){
@@ -806,16 +819,32 @@ async function innboks(env, okt, fersk, psu){
   if(!fra){ fra = new Date().toISOString().slice(0, 8) + '01'; await env.FAMILIE_KV.put(FRA_NOKKEL, fra); }
   const poster = await lesJson(env, POST_NOKKEL, {});
   const laert = await lesJson(env, LAERT_NOKKEL, {}), omdopt = await lesOmdopt(env);
-  let hentet = Date.now(), advarsel = '', nye = 0;
+  let hentet = Date.now(), advarsel = '', nye = 0, oppdatert = false;
+  /* Id-er DNB har gitt samme trekk paa nytt (se sammeTrekk). */
+  const alias = {};
+  for(const id of Object.keys(poster)) for(const a of poster[id].bankIder || []) alias[a] = id;
   for(const k of felles){
     const r = await hentTransaksjoner(env, k.uid, fra, fersk, psu);
     if(!r.ok){ advarsel = r.feil; continue; }
     hentet = Math.min(hentet, r.hentet);
     if(r.advarsel) advarsel = r.advarsel;
+    const iBanken = new Set(r.liste.map(x => x.id)), brukt = {};
     for(const t of r.liste){
       /* Bare bokfoerte. En reservasjon kan endre beloep eller forsvinne. */
       if(t.status && t.status !== 'BOOK') continue;
-      if(poster[t.id]) continue;
+      if(poster[t.id] || alias[t.id]) continue;
+      if(lagdId(t.id)){
+        const gammel = Object.keys(poster).map(x => poster[x]).filter(p => !p.fra && p.konto === k.uid && lagdId(p.id)
+          && p.status !== 'sammenslatt' && !brukt[p.id] && sammeTrekk(p, t) && !bankFinnes(p, iBanken))[0];
+        if(gammel){
+          brukt[gammel.id] = true; alias[t.id] = gammel.id;
+          (gammel.bankIder = gammel.bankIder || []).push(t.id);
+          if(t.motpart && !gammel.motpart) gammel.motpart = t.motpart;
+          if(String(t.tekst || '').length > String(gammel.tekst || '').length) gammel.tekst = t.tekst;
+          oppdatert = true;
+          continue;
+        }
+      }
       const f = foreslaa(t, laert, omdopt);
       const ny = { id:t.id, konto:k.uid, kontoNavn:k.navn, dato:t.dato, belop:t.belop, tekst:t.tekst, motpart:t.motpart,
         status:'ny', kategori:f.kategori, kilde:f.kilde };
@@ -878,7 +907,7 @@ async function innboks(env, okt, fersk, psu){
      en angret post (`manuell`) foeres aldri automatisk igjen. Mulig dobbel
      foeres aldri av seg selv. */
   const naa = new Date().toISOString();
-  let endret = nye > 0;
+  let endret = nye > 0 || oppdatert;
   for(const id of Object.keys(poster)){
     const p = poster[id];
     if(p.status !== 'ny' || p.dekketAv || p.mulDobbel || p.lignerPaa || p.manuell) continue;
@@ -1438,9 +1467,19 @@ async function godkjenn(env, kropp, epost){
        varelinjer: den med mest innhold (Trumf, saa flest varer) beholdes,
        den andre slaas inn i den, og fila legges ved.
    Alt kan angres med angre paa den som ble slaatt inn. */
-async function kobleAlle(env, kropp){
+async function kobleAlle(env, kropp, request){
   const poster = await lesJson(env, POST_NOKKEL, {});
   const alle = Object.keys(poster).map(id => poster[id]);
+  /* Bankens lister akkurat naa - for samme trekk ført to ganger (sammeTrekk). */
+  const iBanken = {}; let bankFeil = '';
+  const okt = await lesOekt(env);
+  if(okt){
+    const roller = await lesRoller(env), fra = await env.FAMILIE_KV.get(FRA_NOKKEL);
+    for(const k of okt.kontoer.filter(x => roller[x.uid] === 'felles')){
+      const r = fra ? await hentTransaksjoner(env, k.uid, fra, false, psuAv(request)) : { ok:false, feil:'Innboksen er ikke startet' };
+      if(r.ok) iBanken[k.uid] = new Set(r.liste.map(x => x.id)); else bankFeil = r.feil;
+    }
+  }
   const kort = p => ({ id:p.id, sted:p.motpart || p.tekst || '', dato:p.dato, belop:p.belop, status:p.status,
     kilde:p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? 'kjøp lagt inn for hånd' : 'kvittering fra bilde') : (p.kontoNavn || 'banken') });
   const linjerAv = async p => ((await lesJson(env, kvitteringNokkel(p), null)) || {}).linjer || [];
@@ -1470,7 +1509,25 @@ async function kobleAlle(env, kropp){
       break;
     }
   }
-  if(!kropp.utfor) return svar({ ok:true, forslag:forslag.map(f => ({ hva:f.hva, kvittering:f.kvittering, transaksjon:f.transaksjon, dobbelt:f.dobbelt })) });
+  /* Samme trekk to ganger fra banken: den ene finnes ikke lenger hos DNB.
+     Er begge der - eller ingen - kan det vaere to ekte kjoep, og de roeres ikke. */
+  const trekk = alle.filter(p => !p.fra && lagdId(p.id) && iBanken[p.konto] && p.status !== 'sammenslatt' && p.status !== 'stroket');
+  for(let i = 0; i < trekk.length; i++){
+    for(let j = i + 1; j < trekk.length; j++){
+      const a = trekk[i], b = trekk[j];
+      if(brukt[a.id] || brukt[b.id] || a.konto !== b.konto || !sammeTrekk(a, b)) continue;
+      const fa = bankFinnes(a, iBanken[a.konto]), fb = bankFinnes(b, iBanken[b.konto]);
+      if(fa === fb) continue;
+      const borte = fa ? b : a, igjen = fa ? a : b;
+      /* Den som har mest (kvittering, fil, fordeling, valgt for haand), beholdes. */
+      const mer = p => (p.dekketAv ? 8 : 0) + (p.harFil ? 4 : 0) + (p.harLinjer || (p.deler && p.deler.length) ? 2 : 0) + (p.status === 'godkjent' && !p.auto ? 1 : 0);
+      const [behold, inn] = mer(borte) > mer(igjen) ? [borte, igjen] : [igjen, borte];
+      brukt[a.id] = brukt[b.id] = true;
+      forslag.push({ hva:'bank-dobbel', kvittering:kort(inn), transaksjon:kort(behold), dobbelt:a.status === 'godkjent' && b.status === 'godkjent', _r:inn, _b:behold });
+      break;
+    }
+  }
+  if(!kropp.utfor) return svar({ ok:true, advarsel:bankFeil || undefined, forslag:forslag.map(f => ({ hva:f.hva, kvittering:f.kvittering, transaksjon:f.transaksjon, dobbelt:f.dobbelt })) });
 
   const naa = new Date().toISOString();
   const kopierFil = async (fra, til) => {
@@ -1489,6 +1546,12 @@ async function kobleAlle(env, kropp){
       if(l.length && !b.harLinjer){ await env.FAMILIE_KV.put(kvitteringNokkel(b), JSON.stringify({ id:b.id, belop:Math.abs(b.belop), linjer:l })); b.harLinjer = true; }
       Object.assign(r, { status:'sammenslatt', slaattInn:b.id, behandlet:naa });
       b.vedlagt = naa;
+    } else if(f.hva === 'bank-dobbel'){
+      await kopierFil(r, b);
+      if(!b.kategori && r.kategori){ b.kategori = r.kategori; b.kilde = r.kilde; }
+      (b.bankIder = b.bankIder || []).push(r.id);
+      if(r.motpart && !b.motpart) b.motpart = r.motpart;
+      Object.assign(r, { status:'sammenslatt', slaattInn:b.id, behandlet:naa });
     } else if(f.hva === 'slaa-sammen'){
       r.bankId = b.id; r.bankKonto = b.kontoNavn; b.dekketAv = r.id;
       delete r.mulDobbel; delete r.lignerPaa;
@@ -1512,7 +1575,7 @@ async function angre(env, kropp){
     if(!p || p.status === 'ny') continue;
     /* En automatisk foert post som angres, foeres aldri automatisk igjen. */
     if(p.auto){ p.manuell = true; delete p.auto; }
-    p.status = 'ny'; delete p.behandlet; delete p.av; delete p.deler; n++;
+    p.status = 'ny'; delete p.behandlet; delete p.av; delete p.deler; delete p.slaattInn; n++;
     /* Banktrekket som ble slaatt sammen, gaar tilbake til «dekket». Ble
        kvitteringen stroeket, mistet den koblingen; da kobles den paa nytt,
        ellers staar kjoepet dobbelt i innboksen. */
@@ -1983,7 +2046,7 @@ export async function onRequestPost({ request, env }){
   try{ kropp = await request.json(); }catch(e){ return svar({ ok:false, feil:'Ugyldig JSON' }); }
   if(kropp && kropp.hva === 'godkjenn') return await godkjenn(env, kropp, v.epost);
   if(kropp && kropp.hva === 'angre') return await angre(env, kropp);
-  if(kropp && kropp.hva === 'koble-alle') return await kobleAlle(env, kropp);
+  if(kropp && kropp.hva === 'koble-alle') return await kobleAlle(env, kropp, request);
   if(kropp && kropp.hva === 'faktura-innboks') return await fakturaInnboks(env, kropp);
   if(kropp && kropp.hva === 'kategori-merke') return await settMerke(env, kropp);
   if(kropp && kropp.hva === 'laert') return await lagreLaert(env, kropp);
