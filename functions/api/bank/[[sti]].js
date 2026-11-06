@@ -8,6 +8,7 @@
      GET /api/bank?hva=transaksjoner&konto=<uid>[&fra=AAAA-MM-DD]
      GET /api/bank?hva=banker          - bankene Enable Banking tilbyr i Norge
      GET /api/bank?hva=innboks         - nye transaksjoner fra felleskontoene, med forslag
+     GET /api/bank?hva=alle-poster     - alle transaksjonene fra nullpunktet (kontoutskriften)
      POST /api/bank {hva:'godkjenn'}   - godkjenner og stryker poster
      POST /api/bank {hva:'angre'}      - legger poster tilbake i innboksen
      GET /api/bank?hva=trumf           - er Trumf koblet, og virker innloggingen
@@ -1178,6 +1179,28 @@ async function foringer(env, mnd, kat, eksakt){
   return svar({ ok:true, mnd:mnd, kategori:kat, foringer:ut });
 }
 
+/* Alle transaksjonene fra nullpunktet - kontoutskriften under Transaksjoner
+   › Alle (Magne, 6. november 2026). Det som er slaatt inn i en annen post,
+   vises som den posten: et banktrekk dekket av en kvittering, og en
+   kvittering eller faktura lagt ved et trekk. Sida soeker og filtrerer selv. */
+async function allePoster(env){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const kn = await lesJson(env, KONTONAVN_NOKKEL, {});
+  const ut = [];
+  for(const id of Object.keys(poster)){
+    const p = poster[id];
+    if(p.status === 'sammenslatt' || p.dekketAv) continue;
+    const bank = p.bankId && poster[p.bankId];
+    ut.push({ id:p.id, dato:p.dato, belop:p.belop, motpart:p.motpart || '', tekst:p.tekst || '', kategori:p.kategori || '',
+      status:p.status, auto:!!p.auto, fra:p.fra || '', forHand:!!p.forHand, faktura:!!p.faktura,
+      konto:p.konto || '', kontoNavn:kn[p.konto] || p.kontoNavn || '', betaltFra:bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
+      deler:p.deler && p.deler.length > 1 ? p.deler.length : 0,
+      harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, harFil:!!p.harFil, filType:p.filType || '' });
+  }
+  ut.sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
+  return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', poster:ut });
+}
+
 /* Hvor varelinjene til en kvitteringspost ligger. Trumf bufrer dem selv;
    en kvittering lest fra bilde lagres naar den kommer inn. */
 function kvitteringNokkel(p){
@@ -1896,6 +1919,7 @@ export async function onRequestGet({ request, env }){
     if(hva === 'regnskap') return await regnskap(env, url.searchParams.get('mnd') || '');
     if(hva === 'foringer') return await foringer(env, url.searchParams.get('mnd') || '', url.searchParams.get('kategori') || '', url.searchParams.get('eksakt') === '1');
     if(hva === 'regnskap-aar') return await regnskapAar(env);
+    if(hva === 'alle-poster') return await allePoster(env);
     if(hva === 'formue') return await formue(env);
     if(!okt) return svar({ ok:false, feil:'Banken er ikke koblet. Åpne /api/bank/start.' });
     if(hva === 'kontoer') return await kontoer(env, okt, fersk, psu);
