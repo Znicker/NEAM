@@ -1231,7 +1231,11 @@ Nær kanten av kortet rulles det. **Enhetene flyttes innad i rommet**
 med grepet til høyre på raden – ikke mellom rom. Avhukingen er en egen
 label og grepet står utenfor den, ellers huket et drag av enheten idet
 man slapp. Rekkefølgen gjelder også utenfor «Rediger»; nye enheter havner
-nederst i rommet. **Oppsettet lagres per skjerm**
+nederst i rommet. **Hele rom kan skjules** med avhukingen først i
+båndet (2. november 2026): et rom uten hake dempes under «Rediger» og
+står ikke utenfor – unntatt når en varsler i det ikke er i orden, av
+samme grunn som for enhetene. Kolonnene fordeles med de skjulte rommene
+med, så de står likt under «Rediger» og utenfor. **Oppsettet lagres per skjerm**
 (`neam-rommene:v1` i nettleseren, Magnes valg) og per antall kolonner, så
 iPaden på tvers og på høykant kan ha hvert sitt.
 
@@ -1272,6 +1276,13 @@ side om side: de deler linja likt og krymper (`--t-meta`) heller enn å
 legge seg under hverandre. Begge tenner lampa om den var av. **Glider,
 knapper og hjul går under hele raden, også under bryteren** – i
 navnefeltet alene ble det for trangt (1. november 2026).
+
+**Viftestyrken** (varmepumpen i stua, `fan_speed` 0–5) er «Vifte 3» på
+egen linje, og under den **− Auto +**, blå som temperaturknappene. Auto
+setter 0 – automatisk vifte – og er markert med samme ring som
+«Fargevalg» når hjulet er oppe; − og + går mellom 1 og 5, og − er
+dempet mens Auto står på. Tallet står over knappene fordi + ble skjøvet
+ut på telefon på én linje. Valgt av Magne 2. november 2026.
 
 **Lamper som ikke melder hvitmodus** (`light_mode`, f.eks. taklysene hos
 Andrea): skjermen husker om noen sist trykket «Naturlig hvitt» eller valgte
