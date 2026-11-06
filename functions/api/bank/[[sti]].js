@@ -26,6 +26,7 @@
      POST /api/bank {hva:'kategori-navn', fra, navn} - nytt navn paa en egen post eller linje
      POST /api/bank {hva:'koble-alle', utfor} - kvitteringer og transaksjoner som hoerer sammen, i ettertid
      POST /api/bank {hva:'faktura-innboks', id} - en faktura som venter, blir en post i innboksen
+     POST /api/bank {hva:'kategori-merke', kategori, merke} - merket paa en post (forsikring, laan …); tomt fjerner
      GET /api/bank?hva=varsler          - det som trenger noen (kortet paa forsiden)
      GET /api/bank?hva=laert / POST {hva:'laert', motpart, kategori} - «Neam husker» (tom kategori glemmer)
      GET /api/bank/dropbox-start / dropbox-tilbake - kobler Dropbox (appmappa) med OAuth
@@ -543,6 +544,22 @@ function flett(egne, omdopt){
   }
   return ut;
 }
+/* Merker paa tvers av gruppene (Magne, 6. november 2026: «vi har
+   forsikringer på tvers av budsjettkategoriene»). Én post eller linje har
+   hoeyst ett merke; en linje uten eget merke arver postens. Laanemerkene
+   er de samme typene som gjelden i formuen (LAN_TYPER). */
+const MERKE_NOKKEL = 'auth:bank:kategori-merker';
+const MERKER = ['forsikring', 'lan-bolig', 'lan-bil', 'lan-baat', 'lan-studie', 'lan-forbruk', 'lan-annet', 'abonnement', 'energi', 'barnehage'];
+async function lesMerker(env){ return await lesJson(env, MERKE_NOKKEL, {}); }
+async function settMerke(env, kropp){
+  const k = String(kropp.kategori || ''), m = String(kropp.merke || '');
+  if((await budsjettKategorier(env)).indexOf(k) === -1 || k.split(' · ').length < 2) return svar({ ok:false, feil:'Ukjent post: ' + k });
+  if(m && MERKER.indexOf(m) === -1) return svar({ ok:false, feil:'Ukjent merke: ' + m });
+  const merker = await lesMerker(env);
+  if(m) merker[k] = m; else delete merker[k];
+  await env.FAMILIE_KV.put(MERKE_NOKKEL, JSON.stringify(merker));
+  return svar({ ok:true, merker:merker });
+}
 async function alleKategorier(env){ return flett(await lesEgne(env), await lesOmdopt(env)); }
 async function budsjettKategorier(env){ return (await alleKategorier(env)).filter(k => k.indexOf('Utenfor budsjett') !== 0); }
 
@@ -582,6 +599,8 @@ async function slettKategori(env, kropp){
   if(brukt) return svar({ ok:false, feil:'Posten er brukt i ' + brukt + (brukt === 1 ? ' føring' : ' føringer') + ' og kan ikke fjernes' });
   egne.splice(egne.indexOf(k), 1);
   await env.FAMILIE_KV.put(EGNE_NOKKEL, JSON.stringify(egne));
+  const merker = await lesMerker(env);
+  if(merker[k]){ delete merker[k]; await env.FAMILIE_KV.put(MERKE_NOKKEL, JSON.stringify(merker)); }
   const b = await lesJson(env, BUDSJETT_NOKKEL, null);
   if(b){
     let bEndret = false;
@@ -634,6 +653,10 @@ async function nyttKategoriNavn(env, kropp){
   let lEndret = false;
   for(const m of Object.keys(laert)) if(bytt(laert[m]) !== laert[m]){ laert[m] = bytt(laert[m]); lEndret = true; }
   if(lEndret) await env.FAMILIE_KV.put(LAERT_NOKKEL, JSON.stringify(laert));
+  const merker = await lesMerker(env);
+  let mEndret = false;
+  for(const k of Object.keys(merker)) if(bytt(k) !== k){ merker[bytt(k)] = merker[k]; delete merker[k]; mEndret = true; }
+  if(mEndret) await env.FAMILIE_KV.put(MERKE_NOKKEL, JSON.stringify(merker));
   return svar({ ok:true, fra:fra, til:til, kategorier:flett(nyeEgne, omdopt).filter(x => x.indexOf('Utenfor budsjett') !== 0), egne:nyeEgne });
 }
 const POST_NOKKEL = 'auth:bank:poster';
@@ -1009,7 +1032,7 @@ const BUDSJETT_NOKKEL = 'auth:bank:budsjett';
 async function budsjett(env){
   const b = await lesJson(env, BUDSJETT_NOKKEL, null);
   return svar({ ok:true, kategorier:await budsjettKategorier(env), egne:await lesEgne(env), standard:(b && b.standard) || {},
-    maaneder:(b && b.maaneder) || {}, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', endret:b && b.endret, av:b && masker(b.av) });
+    maaneder:(b && b.maaneder) || {}, merker:await lesMerker(env), fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', endret:b && b.endret, av:b && masker(b.av) });
 }
 async function lagreBudsjett(env, kropp, epost){
   const kategorier = await budsjettKategorier(env);
@@ -1962,6 +1985,7 @@ export async function onRequestPost({ request, env }){
   if(kropp && kropp.hva === 'angre') return await angre(env, kropp);
   if(kropp && kropp.hva === 'koble-alle') return await kobleAlle(env, kropp);
   if(kropp && kropp.hva === 'faktura-innboks') return await fakturaInnboks(env, kropp);
+  if(kropp && kropp.hva === 'kategori-merke') return await settMerke(env, kropp);
   if(kropp && kropp.hva === 'laert') return await lagreLaert(env, kropp);
   if(kropp && kropp.hva === 'dropbox-ferdig') return await dropboxFerdig(env, kropp);
   if(kropp && kropp.hva === 'dropbox-koble-fra') return await dropboxKobleFra(env);

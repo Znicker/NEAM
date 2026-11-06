@@ -601,7 +601,9 @@ const LESALT_OK_VERKTOY = [
                + 'med budsjett, faktisk og avvik, og summene for inntekter, utgifter, sparing og overskudd. '
                + 'Beløp i kroner; utgifter og inntekter begge som positive tall. Regnskapet er bare '
                + 'GODKJENTE poster - det som ligger i innboksen, er ikke med. Bruk denne til «hvordan '
-               + 'ligger vi an», «er vi over på mat» o.l.',
+               + 'ligger vi an», «er vi over på mat» o.l. «pa_tvers» samler poster med samme merke på tvers '
+               + 'av gruppene: forsikring, lan-bolig, lan-bil, lan-baat, lan-studie, lan-forbruk, lan-annet, '
+               + 'abonnement, energi, barnehage - bruk den til «hvor mye budsjetterer vi med forsikring» o.l.',
     input_schema: { type:'object', properties:{
       mnd: { type:'string', description:'Måneden som ÅÅÅÅ-MM. Utelat for måneden som pågår.' }
     }, required:[] }
@@ -673,6 +675,19 @@ async function lesAltOkUtfor(navn, arg){
       grupper[g].poster.push({ post:p, budsjett:kr(fb), faktisk:kr(ff), avvik:kr(ff - fb) });
     });
     rekke.forEach(function(g){ grupper[g].budsjett = kr(grupper[g].budsjett); grupper[g].faktisk = kr(grupper[g].faktisk); grupper[g].avvik = grupper[g].faktisk - grupper[g].budsjett; });
+    /* Merkene paa tvers av gruppene - forsikring, laan … (6. november 2026).
+       En linje uten eget merke arver postens. */
+    const mk = b.merker || {}, merker = {};
+    const merkeAv = function(k){ const d = k.split(' · '); return mk[k] || (d.length === 3 ? mk[d[0] + ' · ' + d[1]] : '') || ''; };
+    kat.forEach(function(k){
+      const m = merkeAv(k), fb = bud[k] || 0, ff = reg[k] || 0;
+      if(!m || (!fb && !ff)) return;
+      if(!merker[m]) merker[m] = { merke:m, budsjett:0, faktisk:0, poster:[] };
+      merker[m].budsjett += fb; merker[m].faktisk += ff;
+      if(merker[m].poster.indexOf(k) === -1) merker[m].poster.push(k);
+    });
+    Object.keys(merker).forEach(function(m){ merker[m].budsjett = kr(merker[m].budsjett); merker[m].faktisk = kr(merker[m].faktisk); merker[m].avvik = merker[m].faktisk - merker[m].budsjett; });
+    rekke.forEach(function(g){ grupper[g].poster.forEach(function(x){ if(merkeAv(x.post)) x.merke = merkeAv(x.post); }); });
     const naa = new Date(), d = new Date(mnd + '-01T12:00:00');
     const dager = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
     lesAltOkSist.budsjett = { maal:mnd, verdier:Object.assign({}, bud) };
@@ -683,7 +698,8 @@ async function lesAltOkUtfor(navn, arg){
       godkjente_poster:r.poster,
       summer:{ inntekter:kr(inn), utgifter:kr(ut), sparing:kr(spar), overskudd:kr(inn - ut - spar),
                budsjett_inntekter:kr(innB), budsjett_utgifter:kr(utB), budsjett_sparing:kr(sparB) },
-      grupper:rekke.map(function(g){ return grupper[g]; })
+      grupper:rekke.map(function(g){ return grupper[g]; }),
+      pa_tvers:Object.keys(merker).map(function(m){ return merker[m]; })
     };
   }
 
