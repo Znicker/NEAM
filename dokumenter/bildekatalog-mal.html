@@ -134,7 +134,8 @@ details.seksjon[open] > summary::before{transform:rotate(90deg)}
     <p>Kryss av ikonene du vil ha med – eller «Velg hele gruppa» i en seksjon, eller «Velg alt» for alt
       som vises. Last ned referansearket og legg det ved hos AI-en sammen med teksten, så ser den nøyaktig
       hva den skal jobbe med. Over ni ikoner deles det i flere ark med fortløpende nummer, hvert med sin egen nedlastingsknapp
-      – ni er det AI-en rekker på ett bilde med minst 512 px til hvert ikon. Ta ett ark om gangen.</p>
+      – ni er det AI-en rekker på ett bilde med minst 512 px til hvert ikon. Flere ark lastes ned samlet i én zip.
+      Ta ett ark om gangen hos AI-en.</p>
     <div class="bestill-rad">
       <div>
         <label>Utvalget</label>
@@ -603,7 +604,7 @@ $('lastArk').addEventListener('click', async () => {
   for(let a = 0; a < antArk; a++){
     const fra = a * ARK_MAKS;
     const blob = await tegnArk(liste.slice(fra, fra + ARK_MAKS), bilder.slice(fra, fra + ARK_MAKS), fra);
-    arkFiler.push({ url: URL.createObjectURL(blob),
+    arkFiler.push({ url: URL.createObjectURL(blob), blob,
       navn: 'neam-referanseark-' + new Date().toISOString().slice(0, 10) + '-'
         + (antArk === 1 ? liste.length : 'ark' + (a + 1) + 'av' + antArk) + '.png' });
   }
@@ -613,14 +614,20 @@ $('lastArk').addEventListener('click', async () => {
     $('kvittOppdrag').textContent = 'Referansearket er lastet ned.';
     return;
   }
+  const zip = URL.createObjectURL(await lagZip(arkFiler));
+  const el = document.createElement('a');
+  el.href = zip;
+  el.download = 'neam-referanseark-' + new Date().toISOString().slice(0, 10) + '-' + antArk + 'ark.zip';
+  el.click();
+  setTimeout(() => URL.revokeObjectURL(zip), 60000);
   $('arkKnapper').innerHTML = arkFiler.map((f, a) =>
     '<button type="button" class="btn-ghost ark-knapp" data-a="' + a + '">Ark ' + (a + 1) + ' av ' + antArk + '</button>').join('');
   $('arkKnapper').hidden = false;
-  $('kvittOppdrag').textContent = antArk + ' ark er klare – last dem ned ett for ett med knappene under «Last ned referanseark».';
+  $('kvittOppdrag').textContent = 'Alle ' + antArk + ' arkene er lastet ned i én zip. Knappene under «Last ned referanseark» gir ett og ett.';
 });
 /* Nettleseren slipper bare gjennom én nedlasting per trykk, saa flere
-   ark faar hver sin knapp. Lenkene gjelder utvalget de ble laget av og
-   fjernes naar utvalget endres. */
+   ark kommer samlet i en zip - og hvert ark har i tillegg sin knapp.
+   Lenkene gjelder utvalget de ble laget av og fjernes naar utvalget endres. */
 const arkFiler = [];
 function tomArkKnapper(){
   arkFiler.splice(0).forEach(f => URL.revokeObjectURL(f.url));
@@ -636,6 +643,46 @@ document.addEventListener('click', e => {
   const b = e.target.closest('.ark-knapp');
   if(b && arkFiler[+b.dataset.a]) lastNedArk(+b.dataset.a);
 });
+/* Zip uten komprimering (metode 0): PNG er komprimert fra foer, saa det
+   eneste som maa regnes ut er CRC-32. Filnavnene merkes som UTF-8. */
+const ZIP_CRC = (() => {
+  const t = new Uint32Array(256);
+  for(let n = 0; n < 256; n++){ let c = n; for(let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t;
+})();
+function zipCrc(b){
+  let c = 0xFFFFFFFF;
+  for(let i = 0; i < b.length; i++) c = ZIP_CRC[(c ^ b[i]) & 255] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+async function lagZip(filer){
+  const d = new Date();
+  const tid = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const dato = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  const deler = [], sentral = [];
+  let pos = 0;
+  for(const f of filer){
+    const data = new Uint8Array(await f.blob.arrayBuffer());
+    const navn = new TextEncoder().encode(f.navn), crc = zipCrc(data);
+    const lok = new DataView(new ArrayBuffer(30));
+    lok.setUint32(0, 0x04034b50, true); lok.setUint16(4, 20, true); lok.setUint16(6, 0x0800, true);
+    lok.setUint16(10, tid, true); lok.setUint16(12, dato, true); lok.setUint32(14, crc, true);
+    lok.setUint32(18, data.length, true); lok.setUint32(22, data.length, true); lok.setUint16(26, navn.length, true);
+    const sen = new DataView(new ArrayBuffer(46));
+    sen.setUint32(0, 0x02014b50, true); sen.setUint16(4, 20, true); sen.setUint16(6, 20, true); sen.setUint16(8, 0x0800, true);
+    sen.setUint16(12, tid, true); sen.setUint16(14, dato, true); sen.setUint32(16, crc, true);
+    sen.setUint32(20, data.length, true); sen.setUint32(24, data.length, true); sen.setUint16(28, navn.length, true);
+    sen.setUint32(42, pos, true);
+    deler.push(lok, navn, data);
+    sentral.push(sen, navn);
+    pos += 30 + navn.length + data.length;
+  }
+  const storrelse = sentral.reduce((s, x) => s + x.byteLength, 0);
+  const slutt = new DataView(new ArrayBuffer(22));
+  slutt.setUint32(0, 0x06054b50, true); slutt.setUint16(8, filer.length, true); slutt.setUint16(10, filer.length, true);
+  slutt.setUint32(12, storrelse, true); slutt.setUint32(16, pos, true);
+  return new Blob([...deler, ...sentral, slutt], { type: 'application/zip' });
+}
 /* Ett ark: rutene nummereres fra fra+1, saa nummeret er det samme som i teksten. */
 function tegnArk(liste, bilder, fra){
   const kol = kolonner(liste.length), rad = Math.ceil(liste.length / kol);
