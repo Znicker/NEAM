@@ -621,6 +621,10 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       <div id="ok-kontoer"></div>
       <p class="ok-lagret" id="ok-lagret" aria-live="polite"></p>
     </section>
+    <section class="ok-kort" id="ok-db-kort">
+      <div class="ok-kort-hode"><h2>Kvitteringer fra Dropbox</h2><span class="ok-meta" id="ok-db-meta"></span></div>
+      <div id="ok-db"><p class="ok-meta">Henter …</p></div>
+    </section>
     <section class="ok-kort" id="ok-trumf-kort">
       <div class="ok-kort-hode"><h2>Trumf</h2><span class="ok-meta" id="ok-trumf-meta"></span></div>
       <div id="ok-trumf"><p class="ok-meta">Henter …</p></div>
@@ -1645,27 +1649,33 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     + '- Ta ikke med summer, mva, betalingslinjer eller bonus som linjer.\n'
     + '- Klarer du ikke å lese dato eller totalsum sikkert, sett dem til null. Gjett aldri.';
 
+  /* Leser én fil og legger den i innboksen. Gir { post, linjer }, eller
+     kaster - med duplikat:true naar kvitteringen alt er lagt inn. */
+  async function okTolkKvittering(fil){
+    var innhold = fil.type === 'application/pdf'
+      ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data: await okSomBase64(fil) } }
+      : { type:'image', source:{ type:'base64', media_type:'image/jpeg', data: await okKrympBilde(fil) } };
+    var r = await fetch('/api/claude', { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ model:OK_MODELL, max_tokens:4000,
+        system:'Du leser butikkvitteringer og svarer bare med JSON. Du gjetter aldri tall du ikke kan lese.',
+        messages:[{ role:'user', content:[ innhold, { type:'text', text:OK_KV_INSTRUKS } ] }] }) });
+    var d = await r.json();
+    if(d.error) throw new Error(d.error.message || 'Neam kunne ikke lese kvitteringen');
+    var tekst = (d.content || []).filter(function(c){ return c.type === 'text'; }).map(function(c){ return c.text; }).join('');
+    var kv = JSON.parse(tekst.slice(tekst.indexOf('{'), tekst.lastIndexOf('}') + 1));
+    var lagret = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ hva:'kvittering-ny', kvittering:kv }) });
+    if(!lagret.ok){ var feil = new Error(lagret.feil); feil.duplikat = /allerede lagt inn/.test(lagret.feil || ''); throw feil; }
+    return { post:lagret.post, linjer:(kv.linjer || []).length };
+  }
   async function okLesKvittering(fil){
     var status = document.getElementById('ok-kv-status'), knapp = document.getElementById('ok-kv-knapp');
     knapp.disabled = true;
     status.textContent = 'Neam leser kvitteringen …';
     try{
-      var innhold = fil.type === 'application/pdf'
-        ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data: await okSomBase64(fil) } }
-        : { type:'image', source:{ type:'base64', media_type:'image/jpeg', data: await okKrympBilde(fil) } };
-      var r = await fetch('/api/claude', { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ model:OK_MODELL, max_tokens:4000,
-          system:'Du leser butikkvitteringer og svarer bare med JSON. Du gjetter aldri tall du ikke kan lese.',
-          messages:[{ role:'user', content:[ innhold, { type:'text', text:OK_KV_INSTRUKS } ] }] }) });
-      var d = await r.json();
-      if(d.error) throw new Error(d.error.message || 'Neam kunne ikke lese kvitteringen');
-      var tekst = (d.content || []).filter(function(c){ return c.type === 'text'; }).map(function(c){ return c.text; }).join('');
-      var kv = JSON.parse(tekst.slice(tekst.indexOf('{'), tekst.lastIndexOf('}') + 1));
-      var lagret = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ hva:'kvittering-ny', kvittering:kv }) });
-      if(!lagret.ok) throw new Error(lagret.feil);
-      status.textContent = 'Lagt i innboksen: ' + lagret.post.motpart + ', ' + okKort.format(new Date(lagret.post.dato))
-        + ', ' + okKr0.format(-lagret.post.belop) + ' kr' + ((kv.linjer || []).length ? ' med ' + kv.linjer.length + ' varer' : '') + '. Sjekk og godkjenn.';
+      var res = await okTolkKvittering(fil);
+      status.textContent = 'Lagt i innboksen: ' + res.post.motpart + ', ' + okKort.format(new Date(res.post.dato))
+        + ', ' + okKr0.format(-res.post.belop) + ' kr' + (res.linjer ? ' med ' + res.linjer + ' varer' : '') + '. Sjekk og godkjenn.';
       okLastInnboks();
     }catch(e){
       status.textContent = 'Kvitteringen ble ikke lagt inn: ' + (e && e.message || e);
@@ -1676,6 +1686,92 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   }
   document.getElementById('ok-kv-knapp').addEventListener('click', function(){ document.getElementById('ok-kv-fil').click(); });
   document.getElementById('ok-kv-fil').addEventListener('change', function(){ if(this.files && this.files[0]) okLesKvittering(this.files[0]); });
+
+  /* ---------- Kvitteringer fra Dropbox ----------
+     Filene i Dropbox-appens mappe leses naar sida aapnes og med Oppdater,
+     én om gangen, akkurat som «Legg til kvittering». Ferdige flyttes til
+     «Importert», de Neam ikke klarte til «Ikke lest» - saa ingenting leses
+     (og betales) to ganger. Se Dropbox-delen i bank-funksjonen. */
+  var okDb = null, okDbKjorer = false;
+  function okDbStatus(){
+    return okHent('/api/bank?hva=dropbox').then(function(s){
+      var resultat = okDb && okDb.resultat;   /* siste import blir staaende i kortet */
+      okDb = s.ok ? s : null;
+      if(okDb && resultat) okDb.resultat = resultat;
+      okTegnDb(s); okTegnKilder(); return s;
+    });
+  }
+  function okTegnDb(s){
+    var boks = document.getElementById('ok-db'), meta = document.getElementById('ok-db-meta');
+    boks.innerHTML = ''; meta.textContent = '';
+    if(!s || !s.ok){ boks.appendChild(okEl('p', 'ok-melding feil', okVask((s && s.feil) || 'Fikk ikke sjekket Dropbox'))); return; }
+    if(!s.oppsatt){
+      boks.appendChild(okEl('p', 'ok-meta', 'Lagre skjermbilder eller PDF-er av kvitteringer i én Dropbox-mappe fra telefonen, så legger Neam dem i innboksen. Først må Dropbox-appen settes opp:'));
+      boks.appendChild(okEl('ol', 'ok-steg',
+        '<li>dropbox.com/developers → Create app → «Scoped access» og «App folder».</li>'
+        + '<li>Under Permissions: kryss av files.metadata.read, files.content.read og files.content.write.</li>'
+        + '<li>Under Settings: legg til Redirect URI <code>https://neam.no/api/bank/dropbox-tilbake</code>.</li>'
+        + '<li>Legg App key og App secret inn som hemmeligheter i Cloudflare Pages: <code>DROPBOX_APP_KEY</code> og <code>DROPBOX_APP_SECRET</code>. De tas i bruk ved neste utrulling.</li>'));
+      return;
+    }
+    if(!s.koblet){
+      boks.appendChild(okEl('p', 'ok-meta', 'Appen er satt opp. Koble den til Dropboxen din – Neam får bare tilgang til appens egen mappe.'));
+      var a = okEl('a', 'btn btn-ny', 'Koble Dropbox'); a.href = '/api/bank/dropbox-start'; a.style.alignSelf = 'flex-start'; a.style.width = 'auto';
+      boks.appendChild(a);
+      return;
+    }
+    meta.textContent = s.sist ? 'Sjekket ' + okNaar(s.sist) : 'Koblet';
+    boks.appendChild(okEl('p', 'ok-meta', 'Lagre kvitteringer i Dropbox → Apper → appens mappe. Neam leser dem når Økonomi åpnes eller du trykker Oppdater, og flytter dem til «Importert» – eller til «Ikke lest» hvis han ikke klarte dem.'));
+    if(s.feil) boks.appendChild(okEl('p', 'ok-melding feil', okVask(s.feil)));
+    if(okDb && okDb.resultat) boks.appendChild(okEl('p', 'ok-meta', okVask(okDb.resultat)));
+    var knapper = okEl('div', 'ok-rad-knapper');
+    var fra = okEl('button', 'ok-lenke fare', 'Koble fra Dropbox'); fra.type = 'button';
+    fra.addEventListener('click', function(){
+      okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'dropbox-koble-fra' }) }).then(function(){ okDbStatus(); });
+    });
+    knapper.appendChild(fra);
+    boks.appendChild(knapper);
+  }
+  async function okDbImport(){
+    if(okDbKjorer || !okDb || !okDb.koblet) return;
+    okDbKjorer = true;
+    var status = document.getElementById('ok-kv-status');
+    var ferdig = function(f, mappe){
+      return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'dropbox-ferdig', id:f.id, navn:f.navn, mappe:mappe }) });
+    };
+    try{
+      var r = await okHent('/api/bank?hva=dropbox-filer');
+      if(!r.ok || !(r.filer || []).length) return;
+      var lagt = 0, dobbel = 0, feil = [];
+      for(var i = 0; i < r.filer.length; i++){
+        var f = r.filer[i];
+        status.textContent = 'Neam leser kvittering ' + (i + 1) + ' av ' + r.filer.length + ' fra Dropbox …';
+        var blob;
+        try{
+          var svar = await fetch('/api/bank?hva=dropbox-fil&id=' + encodeURIComponent(f.id), { credentials:'same-origin', cache:'no-store' });
+          if((svar.headers.get('content-type') || '').indexOf('application/json') === 0){ var j = await svar.json(); throw new Error(j.feil || 'Fikk ikke hentet fila'); }
+          blob = await svar.blob();
+        }catch(e){ feil.push(f.navn + ': ' + (e && e.message || e)); continue; }   /* blir liggende og proeves igjen */
+        try{
+          await okTolkKvittering(new File([blob], f.navn, { type:f.type }));
+          lagt++;
+          await ferdig(f, 'Importert');
+        }catch(e){
+          if(e && e.duplikat){ dobbel++; await ferdig(f, 'Importert'); continue; }
+          feil.push(f.navn + ': ' + (e && e.message || e));
+          await ferdig(f, 'Ikke lest');
+        }
+      }
+      var tekst = [lagt ? lagt + (lagt === 1 ? ' kvittering' : ' kvitteringer') + ' fra Dropbox lest og lagt inn.' : '',
+        dobbel ? dobbel + ' var lagt inn fra før.' : '', feil.length ? 'Ble ikke lest: ' + feil.join('; ') + '.' : ''].filter(Boolean).join(' ');
+      status.textContent = tekst + (r.flere ? ' Flere ligger igjen – de tas neste gang.' : '');
+      okDb.resultat = tekst;
+      if(lagt) okLastInnboks();
+    } finally {
+      okDbKjorer = false;
+      okDbStatus();
+    }
+  }
 
   /* ---------- Trumf ----------
      Kvitteringene fra KIWI, MENY, SPAR og Joker. Innloggingen er Cookie-
@@ -1897,6 +1993,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       else rad('Trumf', 'Hentet ' + hentet(t), t.feil ? 'stopp' : farge(t.hentet), t.feil);
     }
     rad('Coop', 'Venter på Coops nye Min side', 'gammel');
+    if(okDb && okDb.koblet) rad('Dropbox', okDb.sist ? 'Sjekket ' + okNaar(new Date(okDb.sist).getTime()) : 'Ikke sjekket ennå', okDb.feil ? 'stopp' : farge(okDb.sist ? new Date(okDb.sist).getTime() : 0), okDb.feil);
     var manuelt = okFormue.verdier.filter(function(x){ return !x.konto; }).concat(okFormue.gjeld);
     if(manuelt.length) k.appendChild(okEl('span', 'ok-etikett', 'Satt manuelt'));
     manuelt.forEach(function(x){
@@ -2525,7 +2622,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var arbeid = okDnbKoblet
       ? [okLastInnboks(true).then(function(){ return okTrumfStatus(false); }), okKontoerLast(true)]
       : [okTrumfStatus(true)];
-    return Promise.all(arbeid).then(function(){
+    return Promise.all(arbeid).then(function(){ return okDbStatus(); }).then(function(){ return okDbImport(); }).then(function(){
       okOppdaterKnapp.disabled = false;
       okOppdaterKnapp.textContent = 'Oppdater';
       okVarslerLast(); okKilderLast();

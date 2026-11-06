@@ -23,6 +23,11 @@
      POST /api/bank {hva:'kategori-ny', nye:[{forelder, navn}]} / {hva:'kategori-slett', kategori} - egne poster
      GET /api/bank?hva=varsler          - det som trenger noen (kortet paa forsiden)
      GET /api/bank?hva=laert / POST {hva:'laert', motpart, kategori} - «Neam husker» (tom kategori glemmer)
+     GET /api/bank/dropbox-start / dropbox-tilbake - kobler Dropbox (appmappa) med OAuth
+     GET /api/bank?hva=dropbox          - er Dropbox koblet
+     GET /api/bank?hva=dropbox-filer    - kvitteringsfilene som ligger i appmappa
+     GET /api/bank?hva=dropbox-fil&id=<id> - selve fila (bilde eller PDF)
+     POST {hva:'dropbox-ferdig', id, navn, mappe} / {hva:'dropbox-koble-fra'}
      GET /api/bank?hva=regnskap-aar     - godkjente poster per maaned og kategori, hele perioden
      GET /api/bank?hva=formue / POST {hva:'formue', verdier, gjeld, maal} - det banken ikke gir
      POST /api/bank {hva:'forslag', forslag:[{id, kategori, sikker}]}    - Neams kategoriforslag
@@ -46,6 +51,8 @@
 
    HEMMELIGHETER OG MILJOEVARIABLER (Cloudflare Pages -> Settings):
      ENABLE_BANKING_KEY  - hele .pem-fila (hemmelighet)
+     DROPBOX_APP_KEY, DROPBOX_APP_SECRET - Dropbox-appen med tilgang til egen
+                           mappe (hemmeligheter; se Dropbox-delen)
      ACCESS_TEAM         - teamnavnet i Cloudflare Zero Trust, det som
                            staar foran .cloudflareaccess.com (vanlig variabel)
    En hemmelighet tas foerst i bruk ved neste utrulling.
@@ -70,6 +77,7 @@
      auth:bank:kv:<postId>     - varelinjene fra en kvittering lest fra bilde (bildet lagres ikke)
      auth:bank:sist-hentet     - naar vekkeren sist hentet
      auth:bank:trumf-feil      - siste Trumf-feil (slettes naar hentingen virker igjen)
+     auth:bank:dropbox         - Dropbox: refresh-tokenet til appmappa, og naar den sist ble sjekket
      auth:bank:formue          - verdier, gjeld og familiemaal, fylt inn for haand
      auth:bank:kontonavn       - { <konto-uid>: eget navn } - DNB sender ikke nettbanknavnene
      auth:bank:budsjett        - { standard:{ kategori: kr }, maaneder:{ 'AAAA-MM':{ kategori: kr } } } - ALDRI i koden,
@@ -1351,6 +1359,126 @@ async function trumfInnlogging(env, kropp, epost){
   return trumfStatus(env);
 }
 
+/* ---------- Kvitteringer fra Dropbox ----------
+   Det enkleste fra telefonen: lagre skjermbildet eller PDF-en av en
+   kvittering (Coop-appen, papirkvitteringer) i Dropbox (Magne, 6. november).
+   Dropbox-appen har bare tilgang til sin egen mappe, «Apper/<appnavn>».
+   Sida henter filene derfra naar Økonomi aapnes, Neam leser dem som
+   «Legg til kvittering», og ferdige filer flyttes til «Importert» (eller
+   «Ikke lest» naar Neam ikke klarte dem) - ingenting leses to ganger.
+
+   Oppsett (gjoeres av Magne):
+     1. dropbox.com/developers -> Create app -> Scoped access, App folder.
+        Tillatelser: files.metadata.read, files.content.read, files.content.write.
+        Redirect URI: https://neam.no/api/bank/dropbox-tilbake
+     2. App key og App secret som hemmeligheter i Pages: DROPBOX_APP_KEY,
+        DROPBOX_APP_SECRET. En hemmelighet tas foerst i bruk ved neste utrulling.
+     3. «Koble Dropbox» i Oppsett.
+   Refresh-tokenet er en innlogging og lagres som en: under `auth:bank:`,
+   aldri i svar, aldri i logg. Tilgangstokenet hentes per foresporsel og
+   lagres ikke. */
+const DROPBOX_NOKKEL = 'auth:bank:dropbox';
+const DROPBOX_TILBAKE = 'https://neam.no/api/bank/dropbox-tilbake';
+const DROPBOX_TYPER = { jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', webp:'image/webp', gif:'image/gif', heic:'image/heic', heif:'image/heif', pdf:'application/pdf' };
+function dropboxOppsatt(env){ return !!(env.DROPBOX_APP_KEY && env.DROPBOX_APP_SECRET); }
+
+async function dropboxStart(env){
+  if(!dropboxOppsatt(env)) return side('Dropbox er ikke satt opp', 'DROPBOX_APP_KEY og DROPBOX_APP_SECRET mangler i Cloudflare Pages. Se Oppsett på Økonomi-sida.');
+  const tilstand = b64url(crypto.getRandomValues(new Uint8Array(24)));
+  await env.FAMILIE_KV.put('auth:bank:tilstand:db:' + tilstand, '1', { expirationTtl:900 });
+  const q = new URLSearchParams({ client_id:env.DROPBOX_APP_KEY, response_type:'code', token_access_type:'offline', redirect_uri:DROPBOX_TILBAKE, state:tilstand });
+  return Response.redirect('https://www.dropbox.com/oauth2/authorize?' + q, 302);
+}
+async function dropboxTilbake(env, url, epost){
+  const feil = url.searchParams.get('error');
+  if(feil) return side('Dropbox ble ikke koblet', 'Dropbox svarte: ' + (url.searchParams.get('error_description') || feil));
+  const tilstand = url.searchParams.get('state') || '', kode = url.searchParams.get('code') || '';
+  if(!tilstand || !(await env.FAMILIE_KV.get('auth:bank:tilstand:db:' + tilstand))){
+    return side('Dropbox ble ikke koblet', 'Lenken er brukt eller for gammel. Start på nytt fra Oppsett.');
+  }
+  await env.FAMILIE_KV.delete('auth:bank:tilstand:db:' + tilstand);
+  const r = await fetch('https://api.dropboxapi.com/oauth2/token', { method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded' },
+    body:new URLSearchParams({ code:kode, grant_type:'authorization_code', redirect_uri:DROPBOX_TILBAKE, client_id:env.DROPBOX_APP_KEY, client_secret:env.DROPBOX_APP_SECRET }) });
+  let d = null; try{ d = await r.json(); }catch(e){}
+  if(!r.ok || !d || !d.refresh_token) return side('Dropbox ble ikke koblet', 'Dropbox svarte: ' + ((d && (d.error_description || d.error)) || 'HTTP ' + r.status));
+  await env.FAMILIE_KV.put(DROPBOX_NOKKEL, JSON.stringify({ refresh:d.refresh_token, konto:d.account_id || '', koblet:new Date().toISOString(), av:epost }));
+  return side('Dropbox er koblet', 'Legg kvitteringer i Dropbox-mappa «Apper» → appens mappe, så leser Neam dem neste gang Økonomi åpnes. Du kan lukke denne fanen.');
+}
+/* Et kortlivet tilgangstoken fra refresh-tokenet. Lagres ikke. */
+async function dropboxToken(env){
+  const lagret = await lesJson(env, DROPBOX_NOKKEL, null);
+  if(!lagret || !lagret.refresh) return { ok:false, feil:'Dropbox er ikke koblet' };
+  if(!dropboxOppsatt(env)) return { ok:false, feil:'Dropbox er ikke satt opp i Cloudflare' };
+  const r = await fetch('https://api.dropboxapi.com/oauth2/token', { method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded' },
+    body:new URLSearchParams({ grant_type:'refresh_token', refresh_token:lagret.refresh, client_id:env.DROPBOX_APP_KEY, client_secret:env.DROPBOX_APP_SECRET }) });
+  let d = null; try{ d = await r.json(); }catch(e){}
+  if(!r.ok || !d || !d.access_token) return { ok:false, feil:'Dropbox må kobles på nytt (' + ((d && (d.error_description || d.error)) || 'HTTP ' + r.status) + ')' };
+  return { ok:true, token:d.access_token, lagret:lagret };
+}
+async function dropboxApi(token, sti, kropp){
+  const r = await fetch('https://api.dropboxapi.com/2/' + sti, { method:'POST', headers:{ Authorization:'Bearer ' + token, 'Content-Type':'application/json' }, body:JSON.stringify(kropp) });
+  let d = null; try{ d = await r.json(); }catch(e){}
+  if(!r.ok) return { ok:false, status:r.status, feil:'Dropbox svarte ' + ((d && (d.error_summary || d.error)) || 'HTTP ' + r.status), data:d };
+  return { ok:true, data:d };
+}
+async function dropboxStatus(env){
+  const lagret = await lesJson(env, DROPBOX_NOKKEL, null);
+  return svar({ ok:true, oppsatt:dropboxOppsatt(env), koblet:!!(lagret && lagret.refresh),
+    koblet_:lagret ? lagret.koblet : undefined, av:lagret ? masker(lagret.av) : undefined, sist:lagret ? lagret.sist : undefined, feil:lagret ? lagret.feil : undefined });
+}
+/* Filene i appmappa (ikke undermapper). Sjekket-tiden og en eventuell feil huskes for Kilder. */
+async function dropboxFiler(env){
+  const t = await dropboxToken(env);
+  if(!t.ok) return svar(t);
+  let r = await dropboxApi(t.token, 'files/list_folder', { path:'', recursive:false });
+  const filer = [];
+  let runder = 0;
+  while(r.ok){
+    for(const e of r.data.entries || []){
+      if(e['.tag'] !== 'file') continue;
+      const ending = String(e.name).split('.').pop().toLowerCase();
+      if(!DROPBOX_TYPER[ending] || e.size > 15e6) continue;
+      filer.push({ id:e.id, navn:e.name, storrelse:e.size, type:DROPBOX_TYPER[ending], endret:e.server_modified });
+    }
+    if(!r.data.has_more || ++runder > 10) break;
+    r = await dropboxApi(t.token, 'files/list_folder/continue', { cursor:r.data.cursor });
+  }
+  const lagret = Object.assign({}, t.lagret, { sist:new Date().toISOString(), feil:r.ok ? undefined : r.feil });
+  await env.FAMILIE_KV.put(DROPBOX_NOKKEL, JSON.stringify(lagret));
+  if(!r.ok) return svar(r);
+  filer.sort((a, b) => String(a.endret).localeCompare(String(b.endret)));
+  return svar({ ok:true, filer:filer.slice(0, 20), flere:filer.length > 20 });
+}
+async function dropboxFil(env, id){
+  if(!/^id:[\w-]{1,80}$/.test(id)) return svar({ ok:false, feil:'Ugyldig fil-id' });
+  const t = await dropboxToken(env);
+  if(!t.ok) return svar(t);
+  const r = await fetch('https://content.dropboxapi.com/2/files/download', { method:'POST', headers:{ Authorization:'Bearer ' + t.token, 'Dropbox-API-Arg':JSON.stringify({ path:id }) } });
+  if(!r.ok) return svar({ ok:false, feil:'Dropbox svarte HTTP ' + r.status + ' på fila' });
+  let navn = '';
+  try{ navn = JSON.parse(r.headers.get('Dropbox-API-Result') || '{}').name || ''; }catch(e){}
+  const type = DROPBOX_TYPER[String(navn).split('.').pop().toLowerCase()] || 'application/octet-stream';
+  return new Response(r.body, { status:200, headers:{ 'Content-Type':type, 'Cache-Control':'no-store' } });
+}
+/* Ferdig: flyttes til «Importert», eller «Ikke lest» naar Neam ikke klarte den. */
+async function dropboxFerdig(env, kropp){
+  const id = String(kropp.id || ''), navn = String(kropp.navn || '').replace(/[\/\\]/g, '_').slice(0, 200);
+  if(!/^id:[\w-]{1,80}$/.test(id) || !navn) return svar({ ok:false, feil:'Mangler fil' });
+  const mappe = kropp.mappe === 'Ikke lest' ? 'Ikke lest' : 'Importert';
+  const t = await dropboxToken(env);
+  if(!t.ok) return svar(t);
+  await dropboxApi(t.token, 'files/create_folder_v2', { path:'/' + mappe, autorename:false });   /* finnes den, er det greit */
+  const r = await dropboxApi(t.token, 'files/move_v2', { from_path:id, to_path:'/' + mappe + '/' + navn, autorename:true });
+  if(!r.ok) return svar(r);
+  return svar({ ok:true, mappe:mappe });
+}
+async function dropboxKobleFra(env){
+  const t = await dropboxToken(env);
+  if(t.ok){ try{ await fetch('https://api.dropboxapi.com/2/auth/token/revoke', { method:'POST', headers:{ Authorization:'Bearer ' + t.token } }); }catch(e){} }
+  await env.FAMILIE_KV.delete(DROPBOX_NOKKEL);
+  return dropboxStatus(env);
+}
+
 export async function onRequestGet({ request, env }){
   const url = new URL(request.url);
   const sti = url.pathname.replace(/\/+$/, '');
@@ -1393,10 +1521,13 @@ export async function onRequestGet({ request, env }){
   }
 
   const v = await voksen(request, env);
-  const iNettleser = sti.endsWith('/start') || sti.endsWith('/tilbake');
+  const iNettleser = sti.endsWith('/start') || sti.endsWith('/tilbake') || sti.endsWith('/dropbox-start') || sti.endsWith('/dropbox-tilbake');
   if(!v.ok) return iNettleser ? side('Ingen tilgang', v.feil) : svar(v);
 
   try{
+    /* Dropbox foer banken: «/dropbox-start» slutter ikke paa «/start», men vaer tydelig. */
+    if(sti.endsWith('/dropbox-start')) return await dropboxStart(env);
+    if(sti.endsWith('/dropbox-tilbake')) return await dropboxTilbake(env, url, v.epost);
     if(sti.endsWith('/start')) return await start(env);
     if(sti.endsWith('/tilbake')) return await tilbake(env, url, v.epost);
 
@@ -1413,6 +1544,9 @@ export async function onRequestGet({ request, env }){
     if(hva === 'banker') return await banker(env);
     if(hva === 'varsler') return await varsler(env, okt);
     if(hva === 'laert') return svar({ ok:true, laert:await lesJson(env, LAERT_NOKKEL, {}) });
+    if(hva === 'dropbox') return await dropboxStatus(env);
+    if(hva === 'dropbox-filer') return await dropboxFiler(env);
+    if(hva === 'dropbox-fil') return await dropboxFil(env, url.searchParams.get('id') || '');
     if(hva === 'kilder') return await kilder(env, okt);
     /* Trumf trenger ikke banken - den har sin egen innlogging. */
     if(hva === 'trumf') return await trumfStatus(env, fersk);
@@ -1454,6 +1588,8 @@ export async function onRequestPost({ request, env }){
   if(kropp && kropp.hva === 'godkjenn') return await godkjenn(env, kropp, v.epost);
   if(kropp && kropp.hva === 'angre') return await angre(env, kropp);
   if(kropp && kropp.hva === 'laert') return await lagreLaert(env, kropp);
+  if(kropp && kropp.hva === 'dropbox-ferdig') return await dropboxFerdig(env, kropp);
+  if(kropp && kropp.hva === 'dropbox-koble-fra') return await dropboxKobleFra(env);
   if(kropp && kropp.hva === 'trumf-innlogging') return await trumfInnlogging(env, kropp, v.epost);
   if(kropp && kropp.hva === 'kvittering-ny') return await nyKvittering(env, kropp, v.epost);
   if(kropp && kropp.hva === 'budsjett') return await lagreBudsjett(env, kropp, v.epost);
