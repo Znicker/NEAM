@@ -458,7 +458,13 @@ sammenleggbare linjer (`8458adc`), etter skissen «Neam Økonomi – ny
 struktur»; sikkerhetskopi i taggen `sikkerhetskopi-okonomi-2026-11-06`.
 Etter det: kvitteringer legges ved transaksjonen som alt ligger der, og
 gjennomgangen «Koble kvitteringer og transaksjoner» for det som er lagt
-inn fra før (`2084e26`). 45 commits, `0e0050a`–`2084e26`, medregnet en midlertidig statustest fra en annen økt
+inn fra før (`2084e26`). Så fakturaer: de venter på trekket fra banken og
+legges ved det, uansett hva som kommer først (`8a21f18`). **Sett i
+live-data 6. november, ikke rørt:** strømregningen 26. oktober ser ut til
+å være ført to ganger (samme beløp, to banktekster for samme avtalegiro),
+og SPK-fakturaen Magne la i Dropbox ligger i «Ikke lest» – den ble lest
+før fakturaene kom og må flyttes tilbake til mappa. 46 commits,
+`0e0050a`–`8a21f18`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3855,7 +3861,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 45 commits fra `0e0050a` til `2084e26`.
+verdier. Bygget i 46 commits fra `0e0050a` til `8a21f18`.
 
 ### Banken – Enable Banking
 
@@ -4003,6 +4009,32 @@ verdier. Bygget i 45 commits fra `0e0050a` til `2084e26`.
     like varer: den med mest innhold (Trumf, så flest varer) beholdes, fila
     fra den andre legges ved.
   Det som slås inn, kan angres med `angre`.
+- **Fakturaer venter på trekket** (`8a21f18`, Magne om en e-faktura fra
+  SPK som ikke fantes igjen: «og motsatt også … jeg ønsker at dette bare
+  synces»). Før dette leste Neam alt som butikkvitteringer; en faktura har
+  forfallsdato og «å betale», Neam ga opp, og fila havnet i «Ikke lest».
+  Nå sier `OK_KV_INSTRUKS` `"type":"faktura"`, med utsteder, forfallsdato
+  og beløp å betale. En faktura telles **aldri** selv – den varsler et
+  trekk:
+  - ligger trekket der (venter eller godkjent, ingen fil fra før), legges
+    PDF-en ved det med en gang (`festet:'faktura'`, `b.faktura = {id,
+    forfall}`), og det blir ingen ny post;
+  - ellers lagres den med `status:'venter'` og `faktura:true`, og
+    `synkFakturaer()` legger den ved når trekket kommer. Det kjøres i
+    `innboks()` – altså når Økonomi åpnes, ved Oppdater, når Neam leser
+    innboksen, og fra kjøkkenskjermens vekker hver sjette time. Fakturaen
+    blir `sammenslatt` med `slaattInn`.
+  - **Lik** (`fakturaLik`): samme beløp til øret, og trekket fra ti dager
+    før forfall til fem dager etter. Det skiller månedene for et lån som
+    trekker likt hver måned.
+  - Innboksen har linja «Fakturaer som venter» (`r.fakturaer`), med PDF-en
+    og «Legg i innboksen» (`faktura-innboks`) for en regning betalt fra en
+    konto Neam ikke henter – da blir fakturaen selve posten.
+  - Samme faktura lagt inn på nytt avvises som «allerede lagt inn», også
+    når den bare finnes som vedlegg på trekket. `finnLignende` og
+    `koble-alle` hopper over fakturaer som venter.
+  Fila i Dropbox leses fortsatt bare fra sida – ligger en faktura der,
+  skjer ingenting før noen åpner Økonomi.
 - **Varelinjene kan fordeles** på flere kategorier i én post.
 - **Kvittering fra bilde eller PDF:** Neam leser den via `/api/claude`, og
   varelinjene lagres i `auth:bank:kv:<postId>`. **Fra `7688c6f` lagres også
