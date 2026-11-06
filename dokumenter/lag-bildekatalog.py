@@ -128,7 +128,7 @@ IKKE_AI = {
     'logo': 'Logoen er fast. Endres bare som et bevisst valg, ikke som bestilling.',
     'butikk': 'Butikkens egen logo – hentes fra butikken, lages ikke av AI.',
     'gammel': 'Gammel stil (steampunk). Bestill på nytt i en av stilene over.',
-    'svg': 'Strektegning i koden – tegnes av Claude, bestilles ikke.',
+    'svg': 'Strektegning i koden.',
     'tekstur': 'Bakgrunn eller tekstur, ikke et ikon.',
 }
 
@@ -422,10 +422,50 @@ for sti, navn, stil, merk in [
 legg('andre', 'Andre bilder', 'Bilder som ikke er ikoner.', andre)
 
 # ---- Strektegninger i koden ----------------------------------------------
+# Hva hver tegning er, noeklet paa hashen under (den staar i filnavnet
+# svg-xxxxxxxx). Bestilles som strekikon og kobles inn i stedet for SVG-en.
+# Tredje felt: motivet. Fjerde: merknad. Uten nytt filnavn bestilles den ikke.
+# Endres en tegning, faar den ny hash og havner som «uten beskrivelse».
+SVG_MOTIV = {
+    'de032e6d': ('Les høyt', 'les-hoyt.png', 'Høyttaler med lydbølger – øv med opplesing.', ''),
+    '77be3b17': ('Skriv ut', 'skriv-ut.png', 'Skriver med et ark – diktat på papir.', ''),
+    'bde53739': ('Ta bilde', 'ta-bilde.png', 'Kamera – ta bilde av diktatet.', ''),
+    '00613e73': ('Les klokka', 'les-klokka.png', 'Analog klokke med to visere.', ''),
+    '79579545': ('Still klokka', 'still-klokka.png', 'Klokke med én viser som dras rundt.', ''),
+    '42dcade1': ('Urskiva', '', '', 'Urskiva i klokkespillet – tegnes av koden, bestilles ikke.'),
+    'b29aefde': ('Slett tall', 'slett-tegn.png', 'Tilbaketast: pil mot venstre med kryss i.', ''),
+    '0c84bcf9': ('Dag', 'dag.png', 'Sol med stråler – dagtid i klokkespillet.', ''),
+    '35138fb3': ('Natt', 'natt.png', 'Månesigd – kveld og natt i klokkespillet.', ''),
+    '59a466cd': ('Last ned', 'last-ned.png', 'Pil ned mot en strek – last ned fil.', ''),
+    'a51af6b0': ('Lukk', 'lukk.png', 'Kryss – lukk.', 'Strekikonet lukk.png finnes – kan kobles inn uten ny bestilling.'),
+    'd00526eb': ('Sted', 'sted.png', 'Kartnål – stedet for været.', 'Strekikonet sted.png finnes – kan kobles inn uten ny bestilling.'),
+    'c5382ba8': ('Påminnelser', 'paaminnelse.png', 'Bokmerke med pluss – ny påminnelse.', 'Strekikonet paaminnelse.png finnes – kan kobles inn uten ny bestilling.'),
+    '2fa8dadd': ('Påminnelse denne uken', 'ny-avtale.png', 'Kalender med pluss.', 'Strekikonet ny-avtale.png finnes – kan kobles inn uten ny bestilling.'),
+    'c7bdf352': ('Atomdefinisjoner', '', '', 'Usynlig: bare definisjoner for atomtegningene, ikke et ikon.'),
+    '1fbf9b40': ('Grunnstoffer', 'grunnstoffer.png', 'Atom med tre elektronbaner rundt en kjerne.', ''),
+    '4cde63eb': ('Naturfag', 'naturfag.png', 'Erlenmeyerkolbe med væske og bobler.', ''),
+    '7b4e85cd': ('Skjold', 'sikkerhet.png', 'Skjold med hake.', 'Strekikonet sikkerhet.png finnes – kan kobles inn uten ny bestilling.'),
+    'e81ba00a': ('Varsel', 'varsel.png', 'Varseltrekant med utropstegn.', ''),
+    'bd645307': ('Flytt', 'flytt.png', 'Seks prikker i to kolonner – håndtak for å dra og flytte.', ''),
+    '171c1249': ('Rommene', 'rommene.png', 'Lyspære – lys og enheter i rommene.', ''),
+    '0d323d35': ('Snakk', 'snakk.png', 'Mikrofon – snakk til Neam.', 'Strekikonet snakk.png finnes – kan kobles inn uten ny bestilling.'),
+    '288ad02b': ('Send', 'send.png', 'Pil mot høyre – send meldingen til Neam.', ''),
+    'b3d4e5d1': ('Logg inn', 'logg-inn.png', 'Pil mot høyre inn mot en dør – logg inn.', ''),
+    '48939684': ('Forrige', 'forrige.png', 'Vinkel mot venstre – bla bakover.', ''),
+    'b137224f': ('Neste', 'neste.png', 'Vinkel mot høyre – bla fremover.', ''),
+    '2a718cce': ('Snu telefonen', 'snu-telefonen.png', 'Mobil som vris fra stående til liggende, med pil.', ''),
+    '99ee53d3': ('Kalendere', 'kalender.png', 'Kalenderblad.', 'Strekikonet kalender.png finnes – kan kobles inn uten ny bestilling.'),
+    'b9d084bf': ('Oppdater', 'oppdater.png', 'Sirkelpil – oppdater.', 'Strekikonet oppdater.png finnes – kan kobles inn uten ny bestilling.'),
+    '57cfc19a': ('Google Maps', '', '', 'Google Maps sin egen logo – merkevare, lages ikke av AI.'),
+    '9733fab1': ('Lyd av', 'lyd-av.png', 'Høyttaler med kryss – lyd av.', ''),
+    'ee82591c': ('Lyd på', 'lyd-paa.png', 'Høyttaler med lydbølger – lyd på.', ''),
+}
 svger = {}
 for f, s in KODE.items():
     for m in re.finditer(r'<svg\b[^>]*>.*?</svg>', s, re.S):
-        blokk = m.group(0)
+        # Tegninger i JavaScript-strenger staar i biter: 'a' + 'b'. Bitene
+        # skjoetes; det som fortsatt har variabler i seg, hoppes over.
+        blokk = re.sub(r"""(['"])\s*\+\s*\1""", '', m.group(0))
         if "' +" in blokk or '" +' in blokk or '${' in blokk or "\\'" in blokk:
             continue
         norm = re.sub(r'\s+', ' ', blokk)
@@ -436,12 +476,19 @@ for f, s in KODE.items():
         svger[h]['bruk'].add(f)
 svgposter = []
 for i, (h, v) in enumerate(sorted(svger.items(), key=lambda kv: sorted(kv[1]['bruk'])[0])):
-    svgposter.append({'sti': '', 'fil': 'svg-' + h, 'navn': 'Strektegning %d' % (i + 1), 'stil': 'svg',
-                      'motiv': '', 'merknad': '', 'status': 'i bruk', 'bruk': sorted(v['bruk']),
-                      'b': 0, 'h': 0, 'kb': 0, 'svg': v['svg']})
+    navn, nyfil, motiv, merk = SVG_MOTIV.get(h, (
+        'Strektegning %d' % (i + 1), '', '',
+        'Ny strektegning uten beskrivelse – før den inn i SVG_MOTIV i lag-bildekatalog.py.'))
+    p = {'sti': '', 'fil': 'svg-' + h, 'navn': navn, 'stil': 'svg',
+         'motiv': motiv, 'merknad': merk, 'status': 'i bruk', 'bruk': sorted(v['bruk']),
+         'b': 0, 'h': 0, 'kb': 0, 'svg': v['svg']}
+    if nyfil:
+        p.update(nystil='strek', nyfil=nyfil)
+    svgposter.append(p)
 seksjoner.append({'id': 'svg', 'tittel': 'Strektegninger i koden', 'apen': False, 'poster': svgposter,
-                  'lapp': 'SVG skrevet rett i sidene. Bare de som står i ett stykke er med – tegninger '
-                          'som bygges av JavaScript i biter, kan ikke vises uten å kjøre sida.'})
+                  'lapp': 'SVG skrevet rett i sidene. De bestilles som strekikoner og kobles inn i stedet. '
+                          'Bare de som står i ett stykke er med – tegninger som bygges av JavaScript i '
+                          'biter, kan ikke vises uten å kjøre sida.'})
 
 # ---- Varer og butikker ---------------------------------------------------
 varer = []

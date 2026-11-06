@@ -103,6 +103,8 @@ details.seksjon[open] > summary::before{transform:rotate(90deg)}
 .oppdrag-typer label:has(input:checked){box-shadow:inset 0 0 0 2px var(--bla)}
 .utvalg-stripe{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;min-height:44px;align-items:center}
 .utvalg-stripe img{width:44px;height:44px;object-fit:contain;background:var(--flis);border-radius:8px}
+.utvalg-stripe .utvalg-svg{width:44px;height:44px;padding:9px;background:var(--flis);border-radius:8px;color:#1F2A3C;box-sizing:border-box}
+.utvalg-stripe .utvalg-svg svg{width:100%;height:100%;display:block}
 .utvalg-stripe .tomt{margin:0}
 .flyt{font-size:13px;color:var(--ink-2);margin-top:10px;max-width:85ch}
 .valgbar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:10px;
@@ -236,8 +238,7 @@ function kort(p, i, s){
   else bilde = '<img src="' + esc(p.sti) + '" alt="" loading="lazy" width="' + p.b + '" height="' + p.h + '">';
   const kanBestilles = KATALOG.stiler[p.nystil || p.stil] || p.stil === 'gammel';
   /* Bare ekte bildefiler kan velges - de skal tegnes paa referansearket. */
-  const kanVelges = p.b && !p.svg;
-  const er = valgt.has(p.sti);
+  const er = valgt.has(nokkel(p));
   return '<article class="kort' + (er ? ' valgt' : '') + '">'
     + '<div class="bilde">' + bilde + '</div>'
     + '<div class="info">'
@@ -246,11 +247,12 @@ function kort(p, i, s){
     +   '<span class="meta"><span class="status ' + STATUS_KL[p.status] + '">' + esc(p.status) + '</span>'
     +     esc(stilNavn(p.stil)) + (p.b ? ' · ' + p.b + ' × ' + p.h + ' px · ' + p.kb + ' kB' : '') + '</span>'
     +   (p.bruk.length ? '<span class="meta">Brukt i ' + esc(p.bruk.join(', ')) + '</span>' : '')
+    +   (p.nyfil ? '<span class="meta">Nytt filnavn: ' + esc(p.nyfil) + '</span>' : '')
     +   (p.motiv ? '<span class="meta">Motiv: ' + esc(p.motiv) + '</span>' : '')
     +   (p.merknad ? '<span class="merk">' + esc(p.merknad) + '</span>' : '')
     +   (KATALOG.ikkeAi[p.stil] && !p.nystil && p.stil !== 'gammel' ? '<span class="meta">' + esc(KATALOG.ikkeAi[p.stil]) + '</span>' : '')
     +   (kanBestilles ? '<button type="button" class="btn-ghost bestill-knapp" data-s="' + s + '" data-i="' + i + '">Bestill nytt</button>' : '')
-    +   (kanVelges ? '<label class="velg"><input type="checkbox" class="velg-boks" data-s="' + s + '" data-i="' + i + '"'
+    +   (kanVelges(p) ? '<label class="velg"><input type="checkbox" class="velg-boks" data-s="' + s + '" data-i="' + i + '"'
                      + (er ? ' checked' : '') + '> Ta med i oppdrag</label>' : '')
     + '</div></article>';
 }
@@ -273,7 +275,7 @@ function byggSider(){
     '<details class="seksjon" id="sek-' + s.id + '"' + (s.apen ? ' open' : '') + '>'
     + '<summary><h2>' + esc(s.tittel) + '</h2><span class="antall">' + s.poster.length + '</span></summary>'
     + '<p class="seksjon-lapp">' + esc(s.lapp) + '</p>'
-    + (s.poster.some(p => p.b && !p.svg)
+    + (s.poster.some(kanVelges)
         ? '<button type="button" class="btn-ghost velg-alle" data-s="' + n + '">Velg hele gruppa</button>' : '')
     + '<div class="rutenett"></div></details>').join('');
   KATALOG.seksjoner.forEach((s, n) => {
@@ -367,7 +369,7 @@ document.addEventListener('click', e => {
   let stil = p.nystil || p.stil;
   if(!KATALOG.stiler[stil]) stil = 'flis';
   $('stil').value = stil; visStil();
-  let fil = (p.fil || '').replace(/\.(png|webp|svg)$/i, '');
+  let fil = filnavn(p).replace(/\.(png|webp|svg)$/i, '');
   if(stil === 'tilstand') fil = fil.replace(/-(normal|varsel|alarm|blaa|gronn|gul|rod)$/, '');
   $('motiver').value = fil + ' – ' + (p.motiv || p.navn);
   lagBestilling();
@@ -384,9 +386,16 @@ document.addEventListener('click', e => {
 /* Grensen gjelder arket, ikke utvalget: over 40 blir rutene for smaa
    for AI-en aa lese, saa et stoerre utvalg deles i flere ark. */
 const ARK_MAKS = 40;
-const valgt = new Map();              /* sti -> post */
+const valgt = new Map();              /* nokkel -> post */
 const alleposter = new Map();
-KATALOG.seksjoner.forEach(s => s.poster.forEach(p => { if(p.sti) alleposter.set(p.sti, p); }));
+/* Bildefiler kjennes paa stien; strektegningene i koden har ingen sti,
+   saa de kjennes paa svg-hashen i fil. */
+function nokkel(p){ return p.sti || p.fil; }
+/* Filnavnet AI-en skal levere: det nye for strektegningene, ellers det som er. */
+function filnavn(p){ return p.nyfil || p.fil; }
+/* Ekte bildefiler, og strektegninger som har faatt et nytt filnavn. */
+function kanVelges(p){ return p.svg ? !!p.nyfil : !!p.b; }
+KATALOG.seksjoner.forEach(s => s.poster.forEach(p => { if(kanVelges(p)) alleposter.set(nokkel(p), p); }));
 try{
   JSON.parse(localStorage.getItem('bildekatalog-valgt') || '[]')
     .forEach(sti => { if(alleposter.has(sti)) valgt.set(sti, alleposter.get(sti)); });
@@ -398,19 +407,21 @@ function oppdaterValg(){
   $('valgbar').hidden = !valgt.size;
   $('valgAntall').textContent = valgt.size + ' valgt';
   $('utvalgStripe').innerHTML = valgt.size
-    ? [...valgt.values()].map(p => '<img src="' + esc(p.sti) + '" alt="" title="' + esc(p.fil)
-        + '" width="' + p.b + '" height="' + p.h + '">').join('')
+    ? [...valgt.values()].map(p => p.svg
+        ? '<span class="utvalg-svg" title="' + esc(filnavn(p)) + '">' + p.svg + '</span>'
+        : '<img src="' + esc(p.sti) + '" alt="" title="' + esc(p.fil)
+          + '" width="' + p.b + '" height="' + p.h + '">').join('')
     : '<p class="tomt">Ingenting valgt ennå – kryss av ikoner lenger ned.</p>';
   document.querySelectorAll('.velg-boks').forEach(b => {
     const p = KATALOG.seksjoner[+b.dataset.s].poster[+b.dataset.i];
-    b.checked = valgt.has(p.sti);
+    b.checked = valgt.has(nokkel(p));
     b.closest('.kort').classList.toggle('valgt', b.checked);
   });
   lagreValg();
   tomArkKnapper();
 }
 function velg(p, paa){
-  if(paa) valgt.set(p.sti, p); else valgt.delete(p.sti);
+  if(paa) valgt.set(nokkel(p), p); else valgt.delete(nokkel(p));
   return true;
 }
 document.addEventListener('change', e => {
@@ -423,8 +434,8 @@ document.addEventListener('change', e => {
 document.addEventListener('click', e => {
   const b = e.target.closest('.velg-alle');
   if(!b) return;
-  const kan = KATALOG.seksjoner[+b.dataset.s].poster.filter(p => p.b && !p.svg);
-  const alleValgt = kan.every(p => valgt.has(p.sti));
+  const kan = KATALOG.seksjoner[+b.dataset.s].poster.filter(kanVelges);
+  const alleValgt = kan.every(p => valgt.has(nokkel(p)));
   kan.forEach(p => velg(p, !alleValgt));
   oppdaterValg();
 });
@@ -434,7 +445,7 @@ $('velgAlt').addEventListener('click', () => {
   const kan = [...document.querySelectorAll('.seksjon[open]:not([hidden]) .velg-boks')]
     .map(b => KATALOG.seksjoner[+b.dataset.s].poster[+b.dataset.i]);
   if(!kan.length) return;
-  const alleValgt = kan.every(p => valgt.has(p.sti));
+  const alleValgt = kan.every(p => valgt.has(nokkel(p)));
   kan.forEach(p => velg(p, !alleValgt));
   oppdaterValg();
 });
@@ -480,7 +491,7 @@ function lagOppdrag(){
   const n = liste.length;
   if(!n){ $('oppdragUt').value = ''; return; }
   const tekst = $('oppdragTekst').value.trim();
-  const nummer = liste.map((p, i) => (i + 1) + '. ' + p.fil + (p.motiv ? ' – ' + p.motiv : ''));
+  const nummer = liste.map((p, i) => (i + 1) + '. ' + filnavn(p) + (p.motiv ? ' – ' + p.motiv : ''));
   const antArk = Math.ceil(n / ARK_MAKS);
   const ark = (antArk === 1
       ? 'Vedlagt: referanseark med ' + n + (n === 1 ? ' ikon' : ' ikoner') + ' slik de ser ut i dag, nummerert 1–' + n
@@ -495,7 +506,7 @@ function lagOppdrag(){
   if(type === 'prove'){
     const tre = treTypiske(liste);
     ut = 'Oppdrag til NEAM – prøverunde, tre retninger\n\n' + ark + '\n\n'
-      + 'Ta ' + (tre.length === 1 ? 'dette' : 'disse') + ': ' + tre.map(p => 'nr. ' + (liste.indexOf(p) + 1) + ' (' + p.fil + ')').join(', ') + '.\n'
+      + 'Ta ' + (tre.length === 1 ? 'dette' : 'disse') + ': ' + tre.map(p => 'nr. ' + (liste.indexOf(p) + 1) + ' (' + filnavn(p) + ')').join(', ') + '.\n'
       + 'Lag tre tydelig forskjellige stilretninger, A, B og C. Vis hver retning som én rad med '
       + (tre.length === 1 ? 'ikonet' : 'de samme ' + tre.length + ' ikonene') + ', i samme rekkefølge. Alle retningene skal passe i en lys, '
       + 'moden familieapp og være tydelige i 64–128 px.\n'
@@ -545,6 +556,16 @@ $('kopierOppdrag').addEventListener('click', async () => {
    Tegnes i nettleseren: hvert valgt bilde i sin rute, med nummer og
    filnavn under. Bildene ligger paa samme adresse som sida, saa lerretet
    kan lagres som PNG. */
+/* En strektegning har ingen fil: den gjoeres om til et SVG-bilde i stor
+   stoerrelse, med currentColor satt til strekfargen i strekstilen. */
+function bildeKilde(p){
+  if(!p.svg) return p.sti;
+  let s = p.svg.replace(/currentColor/g, '#1F2A3C');
+  if(!/\sxmlns=/.test(s)) s = s.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  s = s.replace(/<svg\b([^>]*)>/, (m, a) =>
+    '<svg' + a.replace(/\s(width|height)="[^"]*"/g, '') + ' width="256" height="256">');
+  return URL.createObjectURL(new Blob([s], { type: 'image/svg+xml' }));
+}
 function lastBilde(sti){
   return new Promise((ok, feil) => {
     const im = new Image();
@@ -557,7 +578,7 @@ $('lastArk').addEventListener('click', async () => {
   const liste = [...valgt.values()];
   if(!liste.length){ $('kvittOppdrag').textContent = 'Velg ikoner først.'; return; }
   let bilder;
-  try{ bilder = await Promise.all(liste.map(p => lastBilde(p.sti))); }
+  try{ bilder = await Promise.all(liste.map(p => lastBilde(bildeKilde(p)))); }
   catch(e){ $('kvittOppdrag').textContent = 'Fikk ikke lastet ' + e.message; return; }
   const antArk = Math.ceil(liste.length / ARK_MAKS);
   tomArkKnapper();
@@ -614,7 +635,7 @@ function tegnArk(liste, bilder, fra){
     const b = im.naturalWidth * s, h = im.naturalHeight * s;
     g.drawImage(im, x + (R - b) / 2, y + (R - h) / 2, b, h);
     g.fillStyle = '#142036'; g.font = '600 17px Figtree, system-ui, sans-serif'; g.textAlign = 'center';
-    g.fillText((fra + i + 1) + '  ' + liste[i].fil, x + R / 2, y + R + 24, R);
+    g.fillText((fra + i + 1) + '  ' + filnavn(liste[i]), x + R / 2, y + R + 24, R);
   });
   return new Promise(ok => c.toBlob(ok, 'image/png'));
 }
