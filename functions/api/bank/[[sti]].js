@@ -1023,6 +1023,7 @@ async function formuePunkt(env, kontoliste){
   hist[mnd] = netto;
   await env.FAMILIE_KV.put(FORMUE_MND_NOKKEL, JSON.stringify(hist));
 }
+const LAN_TYPER = ['bolig', 'bil', 'baat', 'forbruk', 'studie', 'annet'];
 async function lagreFormue(env, kropp, epost){
   const rad = (r, medRente) => {
     const navn = String(r && r.navn || '').trim().slice(0, 60);
@@ -1032,6 +1033,8 @@ async function lagreFormue(env, kropp, epost){
     if(!navn || belop < 0 || belop > 1e9) return null;
     const ut = { navn:navn, belop:belop, dato:/^\d{4}-\d{2}-\d{2}$/.test(r.dato || '') ? r.dato : new Date().toISOString().slice(0, 10) };
     if(medRente){ const rente = Number(r.rente); if(rente >= 0 && rente < 30) ut.rente = Math.round(rente * 100) / 100; }
+    /* Typen paa laanet - bolig, bil, baat … (Magne, 6. november 2026). */
+    if(medRente && LAN_TYPER.indexOf(r.type) !== -1) ut.type = r.type;
     return ut;
   };
   const verdier = [].concat(kropp.verdier || []).slice(0, 30).map(r => rad(r, false)).filter(Boolean);

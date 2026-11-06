@@ -728,7 +728,7 @@ async function lesAltOkUtfor(navn, arg){
       .map(function(k){ return { navn:k.navn, rolle:k.rolle || 'uten rolle', saldo:typeof k.saldo === 'number' ? k.saldo : null, feil:k.feil || undefined }; }),
       formue: f ? {
         verdier:(f.verdier || []).map(function(v){ return v.konto ? { navn:v.navn, saldo_fra:kontoNavn(v.konto) } : { navn:v.navn, belop:v.belop }; }),
-        gjeld:(f.gjeld || []).map(function(g){ return { navn:g.navn, belop:g.belop, rente:g.rente != null ? g.rente : null }; }),
+        gjeld:(f.gjeld || []).map(function(g){ return { navn:g.navn, type:g.type || null, belop:g.belop, rente:g.rente != null ? g.rente : null }; }),
         familiemaal: f.maal ? { navn:f.maal.navn, belop:f.maal.belop } : null,
         bruttoinntekt_per_aar: { Magne:((f.brutto || {}).magne || []).map(function(r){ return { navn:r.navn, belop:r.belop }; }),
                                  Nina:((f.brutto || {}).nina || []).map(function(r){ return { navn:r.navn, belop:r.belop }; }) }

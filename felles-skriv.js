@@ -3075,6 +3075,7 @@ const SKRIV_OK_VERKTOY = [
    Neam fra hvilken som helst side (Magne, 6. november 2026). Navnet er
    noekkelen: finnes det, faar det nytt beloep, ellers legges det til.
    En verdi som foelger en konto, har saldoen fra banken og endres ikke her. */
+const SKRIV_OK_LAN = { bolig:'boliglån', bil:'billån', baat:'båtlån', forbruk:'forbrukslån', studie:'studielån', annet:'annet lån' };
 const SKRIV_OK_FORMUE = {
   name: 'sett_okonomi_formue',
   description: 'Fyller inn eller endrer beløp i formuen i økonomien: verdier (f.eks. «Bolig»), gjeld med rente '
@@ -3086,7 +3087,8 @@ const SKRIV_OK_FORMUE = {
   input_schema: { type:'object', properties:{
     verdier: { type:'array', items:{ type:'object', properties:{ navn:{ type:'string' }, belop:{ type:'number' } }, required:['navn', 'belop'] } },
     gjeld: { type:'array', items:{ type:'object', properties:{
-      navn:{ type:'string' }, belop:{ type:'number', description:'Restgjeld i kroner.' }, rente:{ type:'number', description:'Nominell rente i prosent, f.eks. 5.1.' }
+      navn:{ type:'string' }, belop:{ type:'number', description:'Restgjeld i kroner.' }, rente:{ type:'number', description:'Nominell rente i prosent, f.eks. 5.1.' },
+      type:{ type:'string', enum:['bolig', 'bil', 'baat', 'forbruk', 'studie', 'annet'], description:'Hva slags lån. Boliglån teller i belåningsgraden.' }
     }, required:['navn'] } },
     familiemaal: { type:'object', properties:{ navn:{ type:'string' }, belop:{ type:'number', description:'Målbeløpet i kroner.' } }, required:['navn', 'belop'] },
     bruttoinntekt: { type:'array', items:{ type:'object', properties:{
@@ -3108,6 +3110,7 @@ const SKRIV_OK_FORMUE = {
       const gammel = finn('gjeld', g.navn), del = [];
       if(g.belop != null) del.push(fra(gammel, 'belop', skrivOkKr) + skrivOkKr(Math.round(Number(g.belop) || 0)));
       if(g.rente != null) del.push('rente ' + fra(gammel, 'rente', function(r){ return String(r).replace('.', ',') + ' %'; }) + String(g.rente).replace('.', ',') + ' %');
+      if(g.type) del.push('type ' + (SKRIV_OK_LAN[g.type] || g.type));
       linjer.push('• ' + g.navn + ' (gjeld): ' + del.join(', '));
     });
     if(arg.familiemaal) linjer.push('• Familiemål: ' + arg.familiemaal.navn + ', ' + skrivOkKr(Math.round(Number(arg.familiemaal.belop) || 0)));
@@ -3192,6 +3195,7 @@ async function skrivOkUtfor(navn, arg){
       }
       if(g.belop != null){ const b = Math.round(Number(g.belop)); if(!(b >= 0)) throw new Error('Ugyldig beløp for ' + n); x.belop = b; }
       if(g.rente != null){ const r = Number(g.rente); if(!(r >= 0 && r < 30)) throw new Error('Ugyldig rente for ' + n); x.rente = r; }
+      if(g.type){ if(!SKRIV_OK_LAN[g.type]) throw new Error('Ukjent type lån: ' + g.type); x.type = g.type; }
       endret.push({ navn:x.navn, gjeld:x.belop, rente:x.rente });
     });
     let maal = f.maal && String(f.maal.navn || '').trim() ? f.maal : null;

@@ -515,13 +515,15 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 
 /* ---------- Oppsett: verdier, gjeld og maal ---------- */
 .ok-fo-rad{ display:grid; grid-template-columns:minmax(0,1fr) 130px 140px 36px; gap:8px; align-items:center; }
-.ok-fo-rad.rente{ grid-template-columns:minmax(0,1fr) 120px 80px 140px 36px; }
+.ok-fo-rad.rente{ grid-template-columns:minmax(0,1fr) 120px 120px 80px 140px 36px; }
+.ok-fo-rad select{ width:100%; min-width:0; font-family:inherit; font-size:16px; padding:6px 8px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
+.ok-fo-rad select:focus{ outline:none; border-color:var(--aksent); }
 .ok-fo-rad input{ width:100%; min-width:0; font-family:inherit; font-size:16px; padding:6px 8px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
 .ok-fo-rad input:focus{ outline:none; border-color:var(--aksent); }
 .ok-fo-hode{ font-size:var(--t-etikett); font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); }
 @media (max-width:560px){
   .ok-fo-rad, .ok-fo-rad.rente{ grid-template-columns:minmax(0,1fr) 36px; }
-  .ok-fo-rad input{ grid-column:1; }
+  .ok-fo-rad input, .ok-fo-rad select{ grid-column:1; }
   .ok-fo-rad .ok-ut{ grid-column:2; grid-row:1; }
   .ok-fo-hode.ok-fo-rad{ display:none; }
 }
@@ -772,8 +774,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 <script src="/felles-hus.js?v=22"></script>
 <script src="/felles-data.js?v=5"></script>
 <script src="/felles-ms.js?v=2"></script>
-<script src="/felles-lesalt.js?v=11"></script>
-<script src="/felles-skriv.js?v=11"></script>
+<script src="/felles-lesalt.js?v=12"></script>
+<script src="/felles-skriv.js?v=12"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=74"></script>
 <script>
@@ -2351,12 +2353,28 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       b: b, klar: !!b && okFormueLastet,
       inn: gruppeSum('Inntekter'), spar: gruppeSum('Sparing'), bolig: gruppeSum('Bolig'),
       utg: b ? (b.kategorier || []).filter(okErUtgift).reduce(function(s, k){ return s + (b.standard[k] || 0); }, 0) : 0,
-      boligV: sum(okVerdier().filter(okErBolig)), boligG: sum(okFormue.gjeld.filter(okErBolig)), sumG: sum(okFormue.gjeld),
+      /* Boliglaan: typen Bolig, eller - for laan uten type - «bolig» i navnet.
+         Er det fylt inn, er Neam fornoeyd (Magne, 6. november 2026): finnes
+         ikke noe boliglaan, regnes laanene uten type som boliglaan. */
+      boligV: sum(okVerdier().filter(okErBolig)), boligG: sum(okBoligLan()), sumG: sum(okFormue.gjeld),
       medRente: okFormue.gjeld.filter(function(g){ return g.rente != null && g.belop; }),
-      buffer: okSparing().reduce(function(s, k){ return s + k.saldo; }, 0), harSparekonto: okSparing().length > 0,
+      /* Bufferen: kontoene med rollen Sparing og kontoene som er lagt inn som
+         verdi under Verdier - hver konto én gang. En slik konto holder for
+         at sparekontoen er paa plass, ogsaa uten saldo fra banken. */
+      buffer: okBufferKontoer().filter(function(k){ return typeof k.saldo === 'number'; }).reduce(function(s, k){ return s + Math.max(0, k.saldo); }, 0),
+      harSparekonto: okBufferKontoer().length > 0,
+      harSparesaldo: okBufferKontoer().some(function(k){ return typeof k.saldo === 'number'; }),
       bruttoAar: OK_BRUTTO.reduce(function(s, p){ return s + (okFormue.brutto[p[0]] || []).reduce(function(t, r){ return t + (Number(r.belop) || 0); }, 0); }, 0),
       sum: sum
     };
+  }
+  function okBoligLan(){
+    var bolig = okFormue.gjeld.filter(function(g){ return g.type ? g.type === 'bolig' : okErBolig(g); });
+    return bolig.length ? bolig : okFormue.gjeld.filter(function(g){ return !g.type; });
+  }
+  function okBufferKontoer(){
+    var uid = okFormue.verdier.map(function(v){ return v.konto; }).filter(Boolean);
+    return okKontoer.filter(function(k){ return k.rolle === 'sparing' || uid.indexOf(k.uid) !== -1; });
   }
   function okOgListe(l){ return l.length < 2 ? (l[0] || '') : l.slice(0, -1).join(', ') + ' og ' + l[l.length - 1]; }
   function okTegnNokler(){
@@ -2382,8 +2400,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       [okFormue.gjeld.length ? M.rente : M.lan]);
     legg('Sparerate', g.inn, g.inn ? { verdi:pst(g.spar / g.inn), maal:g.spar / g.inn / 0.25, tekst:'Sparing i budsjettet mot inntekten. Mål 25 %.' } : null,
       [M.inntekt]);
-    legg('Buffer', g.harSparekonto && g.utg, g.utg ? { verdi:des(g.buffer / g.utg) + ' mnd', maal:g.buffer / g.utg / 6, tekst:'Utgifter dekket av sparekontoene. Mål 6 mnd.' } : null,
-      [!g.harSparekonto && M.sparekonto, !g.utg && M.utgifter]);
+    legg('Buffer', g.harSparesaldo && g.utg, g.utg ? { verdi:des(g.buffer / g.utg) + ' mnd', maal:g.buffer / g.utg / 6, tekst:'Utgifter dekket av sparekontoene. Mål 6 mnd.' } : null,
+      [!g.harSparekonto && M.sparekonto, g.harSparekonto && !g.harSparesaldo && { id:'sparekonto', tekst:'saldo fra banken på sparekontoene' }, !g.utg && M.utgifter]);
     legg('Faste kostnader', g.inn && g.bolig, g.inn ? { verdi:pst(g.bolig / g.inn), tekst:'Bolig mot inntekten i budsjettet.' } : null,
       [!g.inn && M.inntekt, !g.bolig && M.bolig]);
     kort.hidden = !n.length; boks.innerHTML = '';
@@ -2490,9 +2508,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         return okTrengerFormue(function(k){ k.verdier.push({ navn:'Bolig', belop:Math.round(v) }); }, 'Boligverdien');
       }));
     /* Boliglaanet kan vaere flere laan, og de kan endre seg (Magne, 6. november
-       2026): ett felt per laan, «+ Ett lån til» gir et nytt. Navnet maa
-       inneholde «bolig» for aa telle i belaaningsgraden, saa et annet navn
-       faar «Boliglån – » foran. Senere endringer gjoeres under Gjeld i Oppsett. */
+       2026): ett felt per laan, «+ Ett lån til» gir et nytt. De faar typen
+       Boliglån. Senere endringer gjoeres under Gjeld i Oppsett. */
     if(!g.boligG){
       var lan = [];
       for(var n = 0; n < okTrengerLan; n++){
@@ -2511,8 +2528,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
           var v = okTrengerTall('boliglan-' + i), r = okTrengerTall('boliglan-rente-' + i);
           if(!(v > 0)) continue;
           var navn = (document.getElementById('ok-tr-boliglan-navn-' + i).value || '').trim() || (i ? 'Boliglån ' + (i + 1) : 'Boliglån');
-          if(!okErBolig({ navn:navn })) navn = 'Boliglån – ' + navn;
-          var x = { navn:navn, belop:Math.round(v) }; if(r >= 0 && r < 30) x.rente = r;
+          var x = { navn:navn, belop:Math.round(v), type:'bolig' }; if(r >= 0 && r < 30) x.rente = r;
           nye.push(x);
         }
         if(!nye.length) return okTrengerSi('Skriv restgjelden på minst ett lån i kroner.');
@@ -2617,6 +2633,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
      finnes noe aa vise. */
   var okFormue = { verdier:[], gjeld:[], maal:null, brutto:{ magne:[], nina:[] }, historikk:{} };
   var OK_BRUTTO = [['magne', 'Magne'], ['nina', 'Nina']];
+  /* Typen paa et laan (Magne, 6. november 2026). Samme liste som LAN_TYPER i bank-funksjonen. */
+  var OK_LAN_TYPER = [['bolig', 'Boliglån'], ['bil', 'Billån'], ['baat', 'Båtlån'], ['forbruk', 'Forbrukslån'], ['studie', 'Studielån'], ['annet', 'Annet lån']];
+  function okLanTypeNavn(t){ var x = OK_LAN_TYPER.filter(function(y){ return y[0] === t; })[0]; return x ? x[1] : ''; }
   function okBruttoFra(b){ return { magne:(b && b.magne) || [], nina:(b && b.nina) || [] }; }
   function okFormueLast(){
     okHent('/api/bank?hva=formue').then(function(f){
@@ -2688,7 +2707,10 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         r.appendChild(spor); stabel.appendChild(r);
       };
       stabelRad('Eiendeler', verdier, sumV, '--aksent');
-      stabelRad('Gjeld', gjeld.map(function(g){ return { navn:g.navn, belop:g.belop }; }), sumG, '--ink-soft');
+      /* Laan med type samles per type (Boliglån, Billån …); laan uten type staar med navnet sitt. */
+      var perType = {};
+      gjeld.forEach(function(g){ var n = okLanTypeNavn(g.type) || g.navn; perType[n] = (perType[n] || 0) + g.belop; });
+      stabelRad('Gjeld', Object.keys(perType).map(function(n){ return { navn:n, belop:perType[n] }; }), sumG, '--ink-soft');
       boks.appendChild(stabel);
       var fk = okEl('div', 'ok-forklaring', '');
       verdier.forEach(function(v){ fk.appendChild(okEl('span', '', '<i style="background:' + v.farge + '"></i>' + okVask(v.navn) + ' ' + tusen(v.belop))); });
@@ -2747,7 +2769,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var idag = new Date().toISOString().slice(0, 10);
     var seksjon = function(tittel, liste, medRente, nyTekst){
       var s = okEl('div', 'ok-fo-seksjon', '<span class="ok-etikett">' + tittel + '</span>');
-      s.appendChild(okEl('div', 'ok-fo-hode ok-fo-rad' + (medRente ? ' rente' : ''), '<span>Navn</span><span>Beløp, kr</span>' + (medRente ? '<span>Rente %</span>' : '') + '<span>Dato</span><span></span>'));
+      s.appendChild(okEl('div', 'ok-fo-hode ok-fo-rad' + (medRente ? ' rente' : ''), '<span>Navn</span>' + (medRente ? '<span>Type</span>' : '') + '<span>Beløp, kr</span>' + (medRente ? '<span>Rente %</span>' : '') + '<span>Dato</span><span></span>'));
       liste.forEach(function(r, i){
         var rad = okEl('div', 'ok-fo-rad' + (medRente ? ' rente' : ''), '');
         var felt = function(nokkel, type, etikett){
@@ -2768,7 +2790,16 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
           saldo.style.gridColumn = 'span 2';
           rad.appendChild(saldo);
         } else {
-          felt('navn', 'text', 'Navn'); felt('belop', 'text', 'Beløp');
+          felt('navn', 'text', 'Navn');
+          if(medRente){
+            var ty = document.createElement('select'); ty.setAttribute('aria-label', 'Type lån ' + (i + 1));
+            ty.appendChild(new Option('Type …', ''));
+            OK_LAN_TYPER.forEach(function(x){ ty.appendChild(new Option(x[1], x[0])); });
+            ty.value = r.type || '';
+            ty.addEventListener('change', function(){ if(ty.value) r.type = ty.value; else delete r.type; });
+            rad.appendChild(ty);
+          }
+          felt('belop', 'text', 'Beløp');
           if(medRente) felt('rente', 'text', 'Rente');
           felt('dato', 'date', 'Dato');
         }
@@ -3460,7 +3491,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       + 'Les tallene med les_okonomi_* - kontekstlinja sier bare hvilken fane brukeren står på, ikke '
       + 'hva som står der. Ikke gjett beløp. godkjenn_okonomi_poster og sett_okonomi_budsjett endrer '
       + 'regnskapet og budsjettet; sida tegner seg på nytt etterpå.\n\n'
-      + 'Nøkkeltallene på Status trenger inntekt og utgifter i standardbudsjettet, bruttoinntekt (til gjeldsgraden), boligverdi, boliglån med rente, '
+      + 'Nøkkeltallene på Status trenger inntekt og utgifter i standardbudsjettet, bruttoinntekt (til gjeldsgraden), boligverdi, boliglån med rente (lånene har en type: bolig, bil, båt, forbruk, studie, annet), '
       + 'en sparekonto og et familiemål. Det som mangler, står i kontekstlinja (manglerForNokkeltall) og i kortet '
       + '«Neam trenger» i innboksen. Inntekt og utgifter kan du sette med sett_okonomi_budsjett når brukeren gir deg '
       + 'tallene, og boligverdi, lån og familiemål med sett_okonomi_formue.\n\n'
