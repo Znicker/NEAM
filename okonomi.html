@@ -981,7 +981,12 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
      vises - det skjulte blir liggende. */
   var okSkjult = (function(){ try{ return JSON.parse(localStorage.getItem('ok-skjul-kontoer') || '[]') || []; }catch(e){ return []; } })();
   function okKilde(p){ return p.fra ? 'fra:' + p.fra : 'konto:' + p.konto; }
-  function okKildeNavn(p){ return p.fra ? (p.fra === 'trumf' ? 'Trumf' : p.forHand ? 'Lagt inn for hånd' : 'Kvittering fra bilde') : (p.kontoNavn || 'Ukjent konto'); }
+  /* Kontoene vises overalt med navnet fra Oppsett og hele kontonummeret (Magne, 6. november 2026). */
+  function okKildeNavn(p){
+    if(p.fra) return p.fra === 'trumf' ? 'Trumf' : p.forHand ? 'Lagt inn for hånd' : 'Kvittering fra bilde';
+    var k = okKontoer.filter(function(x){ return x.uid === p.konto; })[0];
+    return k ? okKontoValg(k) : (p.kontoNavn || 'Ukjent konto');
+  }
   function okSynlig(p){ return okSkjult.indexOf(okKilde(p)) === -1; }
   function okSettSkjult(liste){
     okSkjult = liste;
@@ -2753,8 +2758,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         if(r.konto){
           var k = okKontoer.filter(function(x){ return x.uid === r.konto; })[0];
           felt('navn', 'text', 'Navn');
-          rad.appendChild(okEl('span', 'ok-meta', k && typeof k.saldo === 'number' ? okKrHel(k.saldo) + ' kr · saldo' : 'Fant ikke kontoen'));
-          rad.appendChild(okEl('span', '', ''));
+          var saldo = okEl('span', 'ok-meta', k ? (typeof k.saldo === 'number' ? okKrHel(k.saldo) + ' kr · ' : '') + 'saldo på ' + okVask(okKontoValg(k)) : 'Fant ikke kontoen');
+          saldo.style.gridColumn = 'span 2';
+          rad.appendChild(saldo);
         } else {
           felt('navn', 'text', 'Navn'); felt('belop', 'text', 'Beløp');
           if(medRente) felt('rente', 'text', 'Rente');
@@ -3174,6 +3180,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       document.getElementById('ok-hentet').textContent = 'Hentet kl. ' + okKlokke.format(new Date(r.hentet)) + (r.advarsel ? ' · ' + r.advarsel + ' – viser forrige henting' : '');
       okTegnKontoer();
       okFormueLast();
+      /* Kontofilteret i innboksen faar navnene og numrene naar kontoene er lest. */
+      if(okPoster.length) okTegnFilter();
     });
   }
 
