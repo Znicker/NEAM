@@ -27,6 +27,7 @@
      POST /api/bank {hva:'koble-alle', utfor} - kvitteringer og transaksjoner som hoerer sammen, i ettertid
      POST /api/bank {hva:'faktura-innboks', id} - en faktura som venter, blir en post i innboksen
      POST /api/bank {hva:'kategori-merke', kategori, merke} - merket paa en post (forsikring, laan …); tomt fjerner
+     POST /api/bank {hva:'merke-ny', navn, fast} / {hva:'merke-endre', id, navn, fast} / {hva:'merke-slett', id} - merkene selv
      GET /api/bank?hva=varsler          - det som trenger noen (kortet paa forsiden)
      GET /api/bank?hva=laert / POST {hva:'laert', motpart, kategori} - «Neam husker» (tom kategori glemmer)
      GET /api/bank/dropbox-start / dropbox-tilbake - kobler Dropbox (appmappa) med OAuth
@@ -549,12 +550,58 @@ function flett(egne, omdopt){
    hoeyst ett merke; en linje uten eget merke arver postens. Laanemerkene
    er de samme typene som gjelden i formuen (LAN_TYPER). */
 const MERKE_NOKKEL = 'auth:bank:kategori-merker';
-const MERKER = ['forsikring', 'lan-bolig', 'lan-bil', 'lan-baat', 'lan-studie', 'lan-forbruk', 'lan-annet', 'abonnement', 'energi', 'barnehage'];
+/* Merkene selv: { id, navn, fast }. «fast» sier om utgiften er fast - alt
+   uten et fast merke regnes som variabelt, saa fast + variabelt er alle
+   utgiftene (Magne, 7. november 2026). Lista er standarden til noen endrer
+   den; da ligger hele lista i KV, og egne merker kan legges til. Barnehage
+   og SFO er tatt ut («ungene er for gamle for det»). */
+const MERKELISTE_NOKKEL = 'auth:bank:merke-liste';
+const STANDARD_MERKER = [
+  { id:'forsikring', navn:'Forsikring', fast:true },
+  { id:'lan-bolig', navn:'Boliglån', fast:true }, { id:'lan-bil', navn:'Billån', fast:true }, { id:'lan-baat', navn:'Båtlån', fast:true },
+  { id:'lan-studie', navn:'Studielån', fast:true }, { id:'lan-forbruk', navn:'Forbrukslån', fast:true }, { id:'lan-annet', navn:'Annet lån', fast:true },
+  { id:'abonnement', navn:'Abonnement', fast:true }, { id:'energi', navn:'Strøm og energi', fast:true },
+  { id:'fast-annet', navn:'Annen fast utgift', fast:true }
+];
 async function lesMerker(env){ return await lesJson(env, MERKE_NOKKEL, {}); }
+async function lesMerkeliste(env){ return await lesJson(env, MERKELISTE_NOKKEL, null) || STANDARD_MERKER; }
+async function endreMerkeliste(env, kropp){
+  const liste = (await lesMerkeliste(env)).map(m => Object.assign({}, m));
+  const navn = String(kropp.navn == null ? '' : kropp.navn).replace(/\s+/g, ' ').trim().slice(0, 40);
+  const finnes = n => liste.some(m => m.navn.toLowerCase() === n.toLowerCase());
+  let id = String(kropp.id || '');
+  if(kropp.hva === 'merke-ny'){
+    if(!navn) return svar({ ok:false, feil:'Merket mangler navn' });
+    if(finnes(navn)) return svar({ ok:false, feil:'Det finnes alt et merke som heter ' + navn });
+    if(liste.length >= 40) return svar({ ok:false, feil:'For mange merker' });
+    id = 'm-' + b64url(crypto.getRandomValues(new Uint8Array(6)));
+    liste.push({ id:id, navn:navn, fast:!!kropp.fast });
+  } else {
+    const m = liste.filter(x => x.id === id)[0];
+    if(!m) return svar({ ok:false, feil:'Ukjent merke' });
+    if(kropp.hva === 'merke-slett'){
+      liste.splice(liste.indexOf(m), 1);
+      /* Postene som hadde merket, mister det. */
+      const merker = await lesMerker(env);
+      let endret = false;
+      for(const k of Object.keys(merker)) if(merker[k] === id){ delete merker[k]; endret = true; }
+      if(endret) await env.FAMILIE_KV.put(MERKE_NOKKEL, JSON.stringify(merker));
+    } else {
+      if(kropp.navn != null){
+        if(!navn) return svar({ ok:false, feil:'Merket mangler navn' });
+        if(navn.toLowerCase() !== m.navn.toLowerCase() && finnes(navn)) return svar({ ok:false, feil:'Det finnes alt et merke som heter ' + navn });
+        m.navn = navn;
+      }
+      if(kropp.fast != null) m.fast = !!kropp.fast;
+    }
+  }
+  await env.FAMILIE_KV.put(MERKELISTE_NOKKEL, JSON.stringify(liste));
+  return svar({ ok:true, id:id, merkeliste:liste, merker:await lesMerker(env) });
+}
 async function settMerke(env, kropp){
   const k = String(kropp.kategori || ''), m = String(kropp.merke || '');
   if((await budsjettKategorier(env)).indexOf(k) === -1 || k.split(' · ').length < 2) return svar({ ok:false, feil:'Ukjent post: ' + k });
-  if(m && MERKER.indexOf(m) === -1) return svar({ ok:false, feil:'Ukjent merke: ' + m });
+  if(m && !(await lesMerkeliste(env)).some(x => x.id === m)) return svar({ ok:false, feil:'Ukjent merke: ' + m });
   const merker = await lesMerker(env);
   if(m) merker[k] = m; else delete merker[k];
   await env.FAMILIE_KV.put(MERKE_NOKKEL, JSON.stringify(merker));
@@ -1061,7 +1108,7 @@ const BUDSJETT_NOKKEL = 'auth:bank:budsjett';
 async function budsjett(env){
   const b = await lesJson(env, BUDSJETT_NOKKEL, null);
   return svar({ ok:true, kategorier:await budsjettKategorier(env), egne:await lesEgne(env), standard:(b && b.standard) || {},
-    maaneder:(b && b.maaneder) || {}, merker:await lesMerker(env), fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', endret:b && b.endret, av:b && masker(b.av) });
+    maaneder:(b && b.maaneder) || {}, merker:await lesMerker(env), merkeliste:await lesMerkeliste(env), fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', endret:b && b.endret, av:b && masker(b.av) });
 }
 async function lagreBudsjett(env, kropp, epost){
   const kategorier = await budsjettKategorier(env);
@@ -2049,6 +2096,7 @@ export async function onRequestPost({ request, env }){
   if(kropp && kropp.hva === 'koble-alle') return await kobleAlle(env, kropp, request);
   if(kropp && kropp.hva === 'faktura-innboks') return await fakturaInnboks(env, kropp);
   if(kropp && kropp.hva === 'kategori-merke') return await settMerke(env, kropp);
+  if(kropp && (kropp.hva === 'merke-ny' || kropp.hva === 'merke-endre' || kropp.hva === 'merke-slett')) return await endreMerkeliste(env, kropp);
   if(kropp && kropp.hva === 'laert') return await lagreLaert(env, kropp);
   if(kropp && kropp.hva === 'dropbox-ferdig') return await dropboxFerdig(env, kropp);
   if(kropp && kropp.hva === 'dropbox-koble-fra') return await dropboxKobleFra(env);

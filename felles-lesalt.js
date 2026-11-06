@@ -602,8 +602,9 @@ const LESALT_OK_VERKTOY = [
                + 'Beløp i kroner; utgifter og inntekter begge som positive tall. Regnskapet er bare '
                + 'GODKJENTE poster - det som ligger i innboksen, er ikke med. Bruk denne til «hvordan '
                + 'ligger vi an», «er vi over på mat» o.l. «pa_tvers» samler poster med samme merke på tvers '
-               + 'av gruppene: forsikring, lan-bolig, lan-bil, lan-baat, lan-studie, lan-forbruk, lan-annet, '
-               + 'abonnement, energi, barnehage - bruk den til «hvor mye budsjetterer vi med forsikring» o.l.',
+               + 'av gruppene (forsikring, lån, abonnement … – lista står i «merker») - bruk den til «hvor mye '
+               + 'budsjetterer vi med forsikring» o.l. «fast_og_variabelt» deler utgiftene: med et fast merke er '
+               + 'fast, resten variabelt - til «hvor mye er faste kostnader».',
     input_schema: { type:'object', properties:{
       mnd: { type:'string', description:'Måneden som ÅÅÅÅ-MM. Utelat for måneden som pågår.' }
     }, required:[] }
@@ -677,16 +678,25 @@ async function lesAltOkUtfor(navn, arg){
     rekke.forEach(function(g){ grupper[g].budsjett = kr(grupper[g].budsjett); grupper[g].faktisk = kr(grupper[g].faktisk); grupper[g].avvik = grupper[g].faktisk - grupper[g].budsjett; });
     /* Merkene paa tvers av gruppene - forsikring, laan … (6. november 2026).
        En linje uten eget merke arver postens. */
-    const mk = b.merker || {}, merker = {};
-    const merkeAv = function(k){ const d = k.split(' · '); return mk[k] || (d.length === 3 ? mk[d[0] + ' · ' + d[1]] : '') || ''; };
+    /* Merkene er egne fra 7. november 2026 ({ id, navn, fast }); et fast
+       merke gjoer utgiften fast, resten er variabelt. Et slettet merke teller ikke. */
+    const mk = b.merker || {}, merker = {}, liste = b.merkeliste || [];
+    const merkeObj = function(id){ return liste.filter(function(x){ return x.id === id; })[0] || null; };
+    const merkeAv = function(k){ const d = k.split(' · '); const m = mk[k] || (d.length === 3 ? mk[d[0] + ' · ' + d[1]] : '') || ''; return merkeObj(m) ? m : ''; };
+    const fv = { fast:{ budsjett:0, faktisk:0 }, variabelt:{ budsjett:0, faktisk:0 } };
     kat.forEach(function(k){
-      const m = merkeAv(k), fb = bud[k] || 0, ff = reg[k] || 0;
+      const m = merkeAv(k), fb = bud[k] || 0, ff = reg[k] || 0, g = k.split(' · ')[0];
+      if(g !== 'Inntekter' && g !== 'Sparing' && g !== 'Utenfor budsjett'){
+        const del = m && merkeObj(m).fast ? fv.fast : fv.variabelt;
+        del.budsjett += fb; del.faktisk += ff;
+      }
       if(!m || (!fb && !ff)) return;
-      if(!merker[m]) merker[m] = { merke:m, budsjett:0, faktisk:0, poster:[] };
+      if(!merker[m]) merker[m] = { merke:m, navn:merkeObj(m).navn, fast:!!merkeObj(m).fast, budsjett:0, faktisk:0, poster:[] };
       merker[m].budsjett += fb; merker[m].faktisk += ff;
       if(merker[m].poster.indexOf(k) === -1) merker[m].poster.push(k);
     });
     Object.keys(merker).forEach(function(m){ merker[m].budsjett = kr(merker[m].budsjett); merker[m].faktisk = kr(merker[m].faktisk); merker[m].avvik = merker[m].faktisk - merker[m].budsjett; });
+    ['fast', 'variabelt'].forEach(function(n){ fv[n].budsjett = kr(fv[n].budsjett); fv[n].faktisk = kr(fv[n].faktisk); fv[n].avvik = fv[n].faktisk - fv[n].budsjett; });
     rekke.forEach(function(g){ grupper[g].poster.forEach(function(x){ if(merkeAv(x.post)) x.merke = merkeAv(x.post); }); });
     const naa = new Date(), d = new Date(mnd + '-01T12:00:00');
     const dager = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
@@ -699,7 +709,9 @@ async function lesAltOkUtfor(navn, arg){
       summer:{ inntekter:kr(inn), utgifter:kr(ut), sparing:kr(spar), overskudd:kr(inn - ut - spar),
                budsjett_inntekter:kr(innB), budsjett_utgifter:kr(utB), budsjett_sparing:kr(sparB) },
       grupper:rekke.map(function(g){ return grupper[g]; }),
-      pa_tvers:Object.keys(merker).map(function(m){ return merker[m]; })
+      pa_tvers:Object.keys(merker).map(function(m){ return merker[m]; }),
+      fast_og_variabelt:fv,
+      merker:liste.map(function(x){ return { id:x.id, navn:x.navn, fast:!!x.fast }; })
     };
   }
 

@@ -256,6 +256,22 @@ html{ scroll-padding-top:90px; }
 .ok-bu-merkelapp.stor{ font-size:var(--t-meta); padding:4px 12px; color:var(--ink); background:var(--paper); box-shadow:var(--shadow); border-color:transparent; }
 .ok-bu-merkelapp.stor b{ margin-left:4px; }
 .ok-bu-merker{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; }
+.ok-bu-merkelapp.stor.fast{ box-shadow:inset 0 0 0 1.5px var(--aksent), var(--shadow); }
+.ok-bu-merkelapp .ok-meta{ font-weight:400; margin-left:2px; }
+.ok-bu-skille{ width:1px; align-self:stretch; background:var(--line); margin:0 2px; }
+.ok-bu-nymerke{ display:inline-flex; flex-wrap:wrap; align-items:center; gap:6px 10px; }
+.ok-bu-nymerke input[type="text"]{ width:150px; font-family:inherit; font-size:var(--t-meta); padding:3px 8px; border:1.5px solid var(--aksent); border-radius:999px; background:#fff; color:var(--ink); }
+.ok-bu-fast{ display:inline-flex; align-items:center; gap:4px; font-size:var(--t-meta); color:var(--ink-soft); cursor:pointer; white-space:nowrap; }
+.ok-merke-rad{ display:grid; grid-template-columns:minmax(0,1fr) 64px 84px 36px; gap:6px 14px; align-items:center; padding:6px 0; border-top:1px solid var(--line); }
+.ok-merke-rad:first-child{ border-top:0; }
+.ok-merke-rad.ny{ grid-template-columns:minmax(0,1fr) 64px auto; padding-top:12px; }
+.ok-merke-navn{ min-width:0; font-family:inherit; font-size:16px; padding:5px 8px; border:1.5px solid transparent; border-radius:8px; background:transparent; color:var(--ink); }
+.ok-merke-navn:hover{ border-color:var(--line); }
+.ok-merke-navn:focus{ outline:none; border-color:var(--aksent); background:#fff; }
+.ok-merke-rad.ny .ok-merke-navn{ border-color:var(--line); background:#fff; }
+.ok-merke-inn{ padding-left:14px; }
+.ok-merke-rad .ok-ut{ grid-area:auto; }   /* som i formueskjemaet: .ok-ut har grid-area:ut fra innboksen */
+@media (max-width:560px){ .ok-merke-rad{ grid-template-columns:minmax(0,1fr) 64px 36px; } .ok-merke-rad > .ok-meta{ grid-column:1 / -1; grid-row:2; padding-left:8px; } }
 .ok-bu-merker > .ok-etikett{ margin-right:2px; }
 .ok-std-rad select.ok-bu-merke{ flex:none; max-width:150px; font-family:inherit; font-size:var(--t-etikett); padding:2px 4px; border:1px solid var(--line); border-radius:999px; background:transparent; color:var(--ink-soft); }
 .ok-std-rad select.ok-bu-merke.satt{ background:var(--boks-mild); border-color:var(--boks-kant); color:var(--ink); font-weight:600; }
@@ -690,6 +706,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         <div class="ok-al-valg">
           <select class="ok-mnd" id="ok-al-konto" aria-label="Konto"><option value="">Alle kontoer</option></select>
           <select class="ok-mnd" id="ok-al-kat" aria-label="Kategori"><option value="">Alle kategorier</option></select>
+          <select class="ok-mnd" id="ok-al-merke" aria-label="Merke"><option value="">Alle merker</option></select>
           <select class="ok-mnd" id="ok-al-type" aria-label="Type">
             <option value="">Alle typer</option>
             <option value="ut">Penger ut</option>
@@ -902,6 +919,16 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       <div id="ok-fo"></div>
     </section>
     <section class="ok-kort ok-fold-gruppe">
+      <span class="ok-etikett">Budsjett</span>
+      <div class="ok-fold" data-fold="merker">
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Merker på tvers</span><span class="ok-fold-sum"></span></button>
+        <div class="ok-fold-innhold">
+          <p class="ok-meta">Merkene postene i budsjettet kan få. Et fast merke gjør utgiften fast; alt annet regnes som variabelt. <span id="ok-merker-meta" aria-live="polite"></span></p>
+          <div id="ok-merker"></div>
+        </div>
+      </div>
+    </section>
+    <section class="ok-kort ok-fold-gruppe">
       <span class="ok-etikett">Neam</span>
       <div class="ok-fold" data-fold="koble">
         <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Koble kvitteringer og transaksjoner</span><span class="ok-fold-sum" id="ok-koble-sum">Gå gjennom det som er lagt inn</span></button>
@@ -938,7 +965,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 <script src="/felles-hus.js?v=22"></script>
 <script src="/felles-data.js?v=5"></script>
 <script src="/felles-ms.js?v=2"></script>
-<script src="/felles-lesalt.js?v=13"></script>
+<script src="/felles-lesalt.js?v=14"></script>
 <script src="/felles-skriv.js?v=12"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=75"></script>
@@ -1601,7 +1628,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
      Standardbudsjettet ligger i KV bak bank-sperra, aldri i koden -
      repoet er offentlig. Regnskapet er de godkjente postene i maaneden. */
   /* redigerer: false, 'standard' eller 'AAAA-MM' - det ene budsjettet som redigeres. */
-  var okBu = { kategorier:[], egne:[], standard:{}, maaneder:{}, merker:{}, fra:'', regnskap:{}, regBud:{}, redigerer:false, utkast:null, apne:{}, stdApne:{}, ny:null, mnder:[], mbValgt:'' };
+  var okBu = { kategorier:[], egne:[], standard:{}, maaneder:{}, merker:{}, merkeliste:[], nyMerke:null, fra:'', regnskap:{}, regBud:{}, redigerer:false, utkast:null, apne:{}, stdApne:{}, ny:null, mnder:[], mbValgt:'' };
   /* Budsjettet for en maaned: maanedens egen kopi, ellers standarden. */
   function okBudFor(b, m){ return (b && b.maaneder && b.maaneder[m]) || (b && b.standard) || {}; }
   /* Maaned-fanen (se «Måned» lenger ned). Her oppe fordi fanevelgeren leser den ved oppstart. */
@@ -1611,6 +1638,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   function okBuSett(b){
     okBu.kategorier = b.kategorier; okBu.egne = b.egne || []; okBu.standard = b.standard || {}; okBu.maaneder = b.maaneder || {};
     if(b.merker) okBu.merker = b.merker;
+    if(b.merkeliste) okBu.merkeliste = b.merkeliste;
     if(b.fra != null) okBu.fra = b.fra;
     /* Maanedene man kan bla i: fra innboksen startet til et aar fram. */
     var naa = new Date().toISOString().slice(0, 7), d = new Date(((okBu.fra || naa).slice(0, 7)) + '-01T12:00:00');
@@ -1627,7 +1655,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       okBsTegn(); okBudKortTegn('standard'); okBudKortTegn(okBu.mbValgt);
     });
   }
-  function okBuAlleTegn(){ okBsTegn(); okBudKortTegn('standard'); okBudKortTegn(okBu.mbValgt); }
+  function okBuAlleTegn(){ okBsTegn(); okBudKortTegn('standard'); okBudKortTegn(okBu.mbValgt); okTegnMerkeliste(); }
 
 
   /* Tallet for en kategori i et budsjett (mal: 'standard' eller 'AAAA-MM'),
@@ -1642,13 +1670,29 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   /* Merker paa tvers av gruppene - forsikring, laan, abonnement … (Magne,
      6. november 2026). En linje uten eget merke arver postens. Laanetypene
      er de samme som gjelden i Oppsett (OK_LAN_TYPER). */
-  var OK_MERKER = [['forsikring', 'Forsikring'], ['lan-bolig', 'Boliglån'], ['lan-bil', 'Billån'], ['lan-baat', 'Båtlån'], ['lan-studie', 'Studielån'],
-    ['lan-forbruk', 'Forbrukslån'], ['lan-annet', 'Annet lån'], ['abonnement', 'Abonnement'], ['energi', 'Strøm og energi'], ['barnehage', 'Barnehage og SFO']];
-  function okMerkeNavn(m){ var x = OK_MERKER.filter(function(y){ return y[0] === m; })[0]; return x ? x[1] : ''; }
+  /* Merkene selv kommer fra serveren ({ id, navn, fast }) og kan endres i
+     Oppsett (7. november 2026). Et merke som er slettet, teller ikke. */
+  function okMerkeliste(){ return okBu.merkeliste || []; }
+  function okMerkeAv(m){ return okMerkeliste().filter(function(y){ return y.id === m; })[0] || null; }
+  function okMerkeNavn(m){ var x = okMerkeAv(m); return x ? x.navn : ''; }
+  function okMerkeFast(m){ var x = okMerkeAv(m); return !!(x && x.fast); }
   function okBuMerke(k){
-    if(okBu.merker[k]) return okBu.merker[k];
-    var d = k.split(' · ');
-    return d.length === 3 ? (okBu.merker[d[0] + ' · ' + d[1]] || '') : '';
+    var d = String(k || '').split(' · ');
+    var m = okBu.merker[k] || (d.length === 3 ? okBu.merker[d[0] + ' · ' + d[1]] : '') || '';
+    return okMerkeAv(m) ? m : '';
+  }
+  /* Utgiftene fordelt paa fast og variabelt: fast er det med et fast merke,
+     variabelt resten. Inntekter og Sparing er ikke utgifter. */
+  function okFastVariabel(tall){
+    var fast = 0, alt = 0;
+    okBu.kategorier.forEach(function(k){
+      var g = k.split(' · ')[0];
+      if(g === 'Inntekter' || g === 'Sparing' || g === 'Utenfor budsjett') return;
+      var v = tall(k) || 0;
+      alt += v;
+      if(okMerkeFast(okBuMerke(k))) fast += v;
+    });
+    return { fast:fast, variabel:alt - fast, alt:alt };
   }
   /* Summen per merke av et sett tall per kategori (budsjett eller regnskap). */
   function okMerkeSummer(tall){
@@ -1822,11 +1866,14 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       var v = document.createElement('select'); v.className = 'ok-bu-merke'; v.id = pre + '-m-' + (nr++);
       v.setAttribute('aria-label', 'Merke for ' + k.split(' · ').slice(1).join(' · '));
       var d = k.split(' · '), arv = d.length === 3 ? okBu.merker[d[0] + ' · ' + d[1]] : '';
-      v.appendChild(new Option(arv ? 'Som posten: ' + okMerkeNavn(arv) : 'Uten merke', ''));
-      OK_MERKER.forEach(function(x){ v.appendChild(new Option(x[1], x[0])); });
-      v.value = okBu.merker[k] || '';
-      v.classList.toggle('satt', !!okBu.merker[k]);
+      v.appendChild(new Option(arv && okMerkeAv(arv) ? 'Som posten: ' + okMerkeNavn(arv) : 'Uten merke', ''));
+      okMerkeliste().forEach(function(x){ v.appendChild(new Option(x.navn, x.id)); });
+      v.appendChild(new Option('+ Nytt merke …', '__ny'));
+      v.value = okMerkeAv(okBu.merker[k]) ? okBu.merker[k] : '';
+      v.classList.toggle('satt', !!v.value);
+      if(okBu.nyMerke && okBu.nyMerke.k === k && okBu.nyMerke.mal === mal) return okBuNyttMerkeSkjema(k, mal, pre);
       v.addEventListener('change', function(){
+        if(v.value === '__ny'){ okBu.nyMerke = { k:k, mal:mal }; okBudKortTegn(mal); var nf = document.getElementById(pre + '-nymerke'); if(nf) nf.focus(); return; }
         var id = v.id; v.disabled = true;
         okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'kategori-merke', kategori:k, merke:v.value }) })
           .then(function(r){
@@ -1883,11 +1930,20 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 
     /* Sum per merke - paa tvers av gruppene. */
     var mSum = okMerkeSummer(function(k){ return okBuVerdi(k, mal); });
-    var mListe = OK_MERKER.filter(function(x){ return mSum[x[0]]; });
+    var mListe = okMerkeliste().filter(function(x){ return mSum[x.id]; });
+    var fv = okFastVariabel(function(k){ return okBuVerdi(k, mal); });
     var mBoks = okEl('div', 'ok-bu-merker');
     mBoks.appendChild(okEl('span', 'ok-etikett', 'På tvers'));
-    if(mListe.length) mListe.forEach(function(x){ mBoks.appendChild(okEl('span', 'ok-bu-merkelapp stor', okVask(x[1]) + ' <b>' + okBuKr(mSum[x[0]]) + ' kr</b>')); });
-    else mBoks.appendChild(okEl('span', 'ok-meta', red ? 'Gi postene et merke – forsikring, lån, abonnement … – så samles de her.' : 'Ingen poster har merke ennå. Trykk Rediger og velg merke på postene.'));
+    if(fv.alt){
+      mBoks.appendChild(okEl('span', 'ok-bu-merkelapp stor fast', 'Fast <b>' + okBuKr(fv.fast) + ' kr</b> <span class="ok-meta">' + Math.round(fv.fast / fv.alt * 100) + ' %</span>'));
+      mBoks.appendChild(okEl('span', 'ok-bu-merkelapp stor', 'Variabel <b>' + okBuKr(fv.variabel) + ' kr</b> <span class="ok-meta">' + Math.round(fv.variabel / fv.alt * 100) + ' %</span>'));
+      if(mListe.length) mBoks.appendChild(okEl('span', 'ok-bu-skille', ''));
+    }
+    mListe.forEach(function(x){ mBoks.appendChild(okEl('span', 'ok-bu-merkelapp stor', okVask(x.navn) + ' <b>' + okBuKr(mSum[x.id]) + ' kr</b>')); });
+    if(!mListe.length) mBoks.appendChild(okEl('span', 'ok-meta', red ? 'Gi de faste postene et merke – forsikring, lån, abonnement … – så regnes de som faste.' : 'Alt uten et fast merke regnes som variabelt. Trykk Rediger og merk de faste postene.'));
+    var tilMerker = okEl('button', 'ok-lenke', 'Merkene ›'); tilMerker.type = 'button';
+    tilMerker.addEventListener('click', function(){ okVis('oppsett'); okFoldAapne('merker'); var m = document.querySelector('[data-fold="merker"]'); if(m) m.scrollIntoView({ block:'start' }); });
+    mBoks.appendChild(tilMerker);
     boks.appendChild(mBoks);
     var topp = okEl('div', 'ok-std-to ok-bu-topp');
     [['Inntekter', t.inn], ['Sparing', t.spar]].forEach(function(x){
@@ -1928,6 +1984,86 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     okBu.kategorier = r.kategorier; okBu.egne = r.egne || [];
     okBuAlleTegn();
   }
+  /* Nytt merke rett fra posten i budsjettet: navn og om det er fast. Merket
+     lages, og posten faar det med en gang. */
+  function okBuNyttMerkeSkjema(k, mal, pre){
+    var s = okEl('span', 'ok-bu-nymerke');
+    var inp = document.createElement('input'); inp.type = 'text'; inp.maxLength = 40; inp.id = pre + '-nymerke'; inp.placeholder = 'Nytt merke';
+    inp.setAttribute('aria-label', 'Navn på det nye merket');
+    var fl = okEl('label', 'ok-bu-fast', '<input type="checkbox" checked> Fast');
+    var legg = okEl('button', 'ok-lenke', 'Legg til'); legg.type = 'button';
+    var avbryt = okEl('button', 'ok-lenke', 'Avbryt'); avbryt.type = 'button';
+    var lukk = function(){ okBu.nyMerke = null; okBudKortTegn(mal); };
+    var lagre = function(){
+      if(!inp.value.trim()){ inp.focus(); return; }
+      legg.disabled = true;
+      okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'merke-ny', navn:inp.value, fast:fl.querySelector('input').checked }) })
+        .then(function(r){
+          var meta = document.getElementById(mal === 'standard' ? 'ok-std-meta' : 'ok-mb-meta');
+          if(!r.ok){ legg.disabled = false; meta.textContent = 'Merket ble ikke laget: ' + r.feil; return; }
+          okBu.merkeliste = r.merkeliste;
+          return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'kategori-merke', kategori:k, merke:r.id }) }).then(function(m){
+            if(m.ok) okBu.merker = m.merker || {};
+            okBu.nyMerke = null;
+            okBuAlleTegn(); okTegnMerkeliste(); if(okMnd.lastet) okMndTegn();
+          });
+        });
+    };
+    legg.addEventListener('click', lagre);
+    avbryt.addEventListener('click', lukk);
+    inp.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); lagre(); } if(e.key === 'Escape') lukk(); });
+    s.appendChild(inp); s.appendChild(fl); s.appendChild(legg); s.appendChild(avbryt);
+    return s;
+  }
+
+  /* ---------- Merkene i Oppsett ----------
+     Navn, om det er fast, hvor mange poster som har det, og slett. Egne
+     merker legges til her eller rett fra posten (7. november 2026). */
+  function okTegnMerkeliste(){
+    var boks = document.getElementById('ok-merker');
+    if(!boks) return;
+    boks.innerHTML = '';
+    var liste = okMerkeliste();
+    var bruk = {}; Object.keys(okBu.merker).forEach(function(k){ bruk[okBu.merker[k]] = (bruk[okBu.merker[k]] || 0) + 1; });
+    okFoldSett('merker', liste.filter(function(x){ return x.fast; }).length + ' faste · ' + liste.filter(function(x){ return !x.fast; }).length + ' andre');
+    var post = function(kropp){ return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(kropp) }).then(function(r){
+      var meta = document.getElementById('ok-merker-meta');
+      if(!r.ok){ meta.textContent = r.feil; return r; }
+      okBu.merkeliste = r.merkeliste; if(r.merker) okBu.merker = r.merker;
+      meta.textContent = '';
+      okTegnMerkeliste(); okBuAlleTegn(); if(okMnd.lastet) okMndTegn(); okStatusLast();
+      return r;
+    }); };
+    liste.forEach(function(x){
+      var rad = okEl('div', 'ok-merke-rad');
+      var navn = document.createElement('input'); navn.type = 'text'; navn.maxLength = 40; navn.value = x.navn; navn.className = 'ok-merke-navn';
+      navn.setAttribute('aria-label', 'Navn på merket ' + x.navn);
+      navn.addEventListener('change', function(){ var v = navn.value.trim(); if(!v || v === x.navn){ navn.value = x.navn; return; } post({ hva:'merke-endre', id:x.id, navn:v }); });
+      navn.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); navn.blur(); } });
+      var fast = okEl('label', 'ok-bu-fast', '<input type="checkbox"' + (x.fast ? ' checked' : '') + '> Fast');
+      fast.querySelector('input').addEventListener('change', function(){ post({ hva:'merke-endre', id:x.id, fast:this.checked }); });
+      var n = bruk[x.id] || 0;
+      var ant = okEl('span', 'ok-meta', n ? n + (n === 1 ? ' post' : ' poster') : 'Ikke brukt');
+      var slett = okEl('button', 'ok-ut', '×'); slett.type = 'button'; slett.setAttribute('aria-label', 'Slett merket ' + x.navn);
+      slett.addEventListener('click', function(){
+        /* Brukt: spoer i raden foerst - postene mister merket. */
+        if(n && !slett.dataset.sikker){ slett.dataset.sikker = '1'; ant.innerHTML = '<b>Slett? ' + n + (n === 1 ? ' post mister' : ' poster mister') + ' merket – trykk × igjen</b>'; return; }
+        post({ hva:'merke-slett', id:x.id });
+      });
+      rad.appendChild(navn); rad.appendChild(fast); rad.appendChild(ant); rad.appendChild(slett);
+      boks.appendChild(rad);
+    });
+    var ny = okEl('div', 'ok-merke-rad ny');
+    var nn = document.createElement('input'); nn.type = 'text'; nn.maxLength = 40; nn.placeholder = 'Nytt merke'; nn.className = 'ok-merke-navn'; nn.setAttribute('aria-label', 'Navn på nytt merke');
+    var nf = okEl('label', 'ok-bu-fast', '<input type="checkbox" checked> Fast');
+    var nl = okEl('button', 'btn btn-ny', 'Legg til'); nl.type = 'button';
+    var leggTil = function(){ if(!nn.value.trim()){ nn.focus(); return; } nl.disabled = true; post({ hva:'merke-ny', navn:nn.value, fast:nf.querySelector('input').checked }).then(function(){ nl.disabled = false; }); };
+    nl.addEventListener('click', leggTil);
+    nn.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); leggTil(); } });
+    ny.appendChild(nn); ny.appendChild(nf); ny.appendChild(nl);
+    boks.appendChild(ny);
+  }
+
   /* Nytt navn paa en post eller linje - ogsaa de faste. Lagres med en gang,
      som nye poster; foeringene, budsjettet og det Neam har laert foelger med
      paa serveren (kategori-navn), og her flyttes tallene som er skrevet inn. */
@@ -2431,16 +2567,29 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     konto.value = kv; kat.value = katv;
     if(konto.value !== kv) konto.value = '';
     if(kat.value !== katv) kat.value = '';
+    /* Merkene: fast, variabelt og hvert merke (fra budsjettet). */
+    var mv = document.getElementById('ok-al-merke'), mvv = mv.value;
+    mv.length = 1;
+    mv.appendChild(new Option('Faste utgifter', 'fast')); mv.appendChild(new Option('Variable utgifter', 'variabel'));
+    okMerkeliste().forEach(function(x){ mv.appendChild(new Option(x.navn, x.id)); });
+    mv.value = mvv; if(mv.value !== mvv) mv.value = '';
   }
   function okAlFilter(){
     var v = function(id){ return document.getElementById(id).value; };
-    return { sok:v('ok-al-sok').trim().toLowerCase(), konto:v('ok-al-konto'), kat:v('ok-al-kat'), type:v('ok-al-type'), fra:v('ok-al-fra'), til:v('ok-al-til') };
+    return { sok:v('ok-al-sok').trim().toLowerCase(), konto:v('ok-al-konto'), kat:v('ok-al-kat'), merke:v('ok-al-merke'), type:v('ok-al-type'), fra:v('ok-al-fra'), til:v('ok-al-til') };
   }
   function okAlTreff(p, f){
     if(f.konto && okAlKilde(p) !== f.konto) return false;
     if(f.kat){
       if(f.kat.indexOf('g:') === 0){ var g = f.kat.slice(2); if(p.kategori !== g && String(p.kategori).indexOf(g + ' · ') !== 0) return false; }
       else if(p.kategori !== f.kat) return false;
+    }
+    if(f.merke){
+      var pm = okBuMerke(p.kategori), g0 = String(p.kategori || '').split(' · ')[0];
+      var utgift = p.belop < 0 && g0 !== 'Inntekter' && g0 !== 'Sparing' && g0 !== 'Utenfor budsjett';
+      if(f.merke === 'fast'){ if(!utgift || !okMerkeFast(pm)) return false; }
+      else if(f.merke === 'variabel'){ if(!utgift || okMerkeFast(pm)) return false; }
+      else if(pm !== f.merke) return false;
     }
     if(f.fra && p.dato < f.fra) return false;
     if(f.til && p.dato > f.til) return false;
@@ -2473,7 +2622,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   }
   function okAlTegn(){
     if(!okAl.poster) return;
-    var f = okAlFilter(), filtrert = !!(f.sok || f.konto || f.kat || f.type || f.fra || f.til);
+    var f = okAlFilter(), filtrert = !!(f.sok || f.konto || f.kat || f.merke || f.type || f.fra || f.til);
     var mnder = okAlMnder();
     if(mnder.indexOf(okAl.mnd) === -1) okAl.mnd = mnder[mnder.length - 1];
     var i = mnder.indexOf(okAl.mnd);
@@ -2506,6 +2655,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   }
   function okAlRad(p){
     var merker = [p.kategori || 'Uten kategori', okAlKildeNavn(p) + (p.betaltFra ? ', betalt fra ' + p.betaltFra : '')];
+    if(okBuMerke(p.kategori)) merker.splice(1, 0, okMerkeNavn(okBuMerke(p.kategori)));
     if(p.status === 'ny') merker.push('venter i innboksen');
     if(p.status === 'stroket') merker.push('strøket');
     if(p.status === 'venter') merker.push('faktura som venter på trekket');
@@ -2561,10 +2711,10 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     holder.appendChild(detalj);
     return holder;
   }
-  ['ok-al-konto', 'ok-al-kat', 'ok-al-type', 'ok-al-fra', 'ok-al-til'].forEach(function(id){ document.getElementById(id).addEventListener('change', okAlTegn); });
+  ['ok-al-konto', 'ok-al-kat', 'ok-al-merke', 'ok-al-type', 'ok-al-fra', 'ok-al-til'].forEach(function(id){ document.getElementById(id).addEventListener('change', okAlTegn); });
   document.getElementById('ok-al-sok').addEventListener('input', okAlTegn);
   document.getElementById('ok-al-nullstill').addEventListener('click', function(){
-    ['ok-al-sok', 'ok-al-konto', 'ok-al-kat', 'ok-al-type', 'ok-al-fra', 'ok-al-til'].forEach(function(id){ document.getElementById(id).value = ''; });
+    ['ok-al-sok', 'ok-al-konto', 'ok-al-kat', 'ok-al-merke', 'ok-al-type', 'ok-al-fra', 'ok-al-til'].forEach(function(id){ document.getElementById(id).value = ''; });
     okAlTegn();
   });
   document.getElementById('ok-al-forrige').addEventListener('click', function(){ var m = okAlMnder(), i = m.indexOf(okAl.mnd); if(i > 0){ okAl.mnd = m[i - 1]; okAlTegn(); } });
@@ -2806,6 +2956,12 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     return {
       b: b, klar: !!b && okFormueLastet,
       inn: gruppeSum('Inntekter'), spar: gruppeSum('Sparing'), bolig: gruppeSum('Bolig'),
+      /* Faste kostnader: utgiftene med et fast merke (7. november 2026). Uten
+         merker faller tallet tilbake paa Bolig, og teksten sier det. */
+      fast: b ? (b.kategorier || []).filter(okErUtgift).filter(function(k){
+        var d = k.split(' · '), mk = b.merker || {}, m = mk[k] || (d.length === 3 ? mk[d[0] + ' · ' + d[1]] : '');
+        return (b.merkeliste || []).some(function(x){ return x.id === m && x.fast; });
+      }).reduce(function(s, k){ return s + (b.standard[k] || 0); }, 0) : 0,
       utg: b ? (b.kategorier || []).filter(okErUtgift).reduce(function(s, k){ return s + (b.standard[k] || 0); }, 0) : 0,
       /* Boliglaan: typen Bolig, eller - for laan uten type - «bolig» i navnet.
          Er det fylt inn, er Neam fornoeyd (Magne, 6. november 2026): finnes
@@ -2888,8 +3044,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       [M.inntekt]);
     legg('Buffer', g.harSparesaldo && g.utg, g.utg ? { verdi:des(g.buffer / g.utg) + ' mnd', maal:g.buffer / g.utg / 6, tekst:'Utgifter dekket av kontoene i bufferen. Mål 6 mnd.' } : null,
       [!g.harSparekonto && M.sparekonto, g.harSparekonto && !g.harSparesaldo && { id:'sparekonto', tekst:'saldo fra banken på kontoene i bufferen' }, !g.utg && M.utgifter]);
-    legg('Faste kostnader', g.inn && g.bolig, g.inn ? { verdi:pst(g.bolig / g.inn), tekst:'Bolig mot inntekten i budsjettet.' } : null,
-      [!g.inn && M.inntekt, !g.bolig && M.bolig]);
+    legg('Faste kostnader', g.inn && (g.fast || g.bolig), g.inn ? { verdi:pst((g.fast || g.bolig) / g.inn),
+      tekst:g.fast ? 'Utgiftene merket som faste, mot inntekten i budsjettet.' : 'Bare Bolig, mot inntekten – merk de faste postene i Budsjett for et riktig tall.' } : null,
+      [!g.inn && M.inntekt, !g.fast && !g.bolig && M.bolig]);
     kort.hidden = !n.length; boks.innerHTML = '';
     n.forEach(function(x){
       if(x.mangler){
@@ -3529,18 +3686,22 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var boks = document.getElementById('ok-mnd-merker');
     if(!boks) return;
     var r = okMerkeSummer(function(k){ return reg[k] || 0; }), b = okMerkeSummer(function(k){ return mb[k] || 0; });
-    var liste = OK_MERKER.filter(function(x){ return r[x[0]] || b[x[0]]; });
+    var liste = okMerkeliste().filter(function(x){ return r[x.id] || b[x.id]; });
+    var fr = okFastVariabel(function(k){ return reg[k] || 0; }), fb = okFastVariabel(function(k){ return mb[k] || 0; });
     boks.innerHTML = '';
-    okFoldSett('rs-merker', liste.length ? liste.length + (liste.length === 1 ? ' merke' : ' merker') : 'Ingen poster har merke');
-    if(!liste.length){ boks.appendChild(okEl('p', 'ok-meta', 'Gi postene i budsjettet et merke – forsikring, lån, abonnement … – så samles de her på tvers av gruppene.')); return; }
+    okFoldSett('rs-merker', fr.alt ? 'Fast ' + okBuKr(fr.fast) + ' kr · variabel ' + okBuKr(fr.variabel) + ' kr' : 'Ingenting brukt ennå');
     var tab = okEl('div', 'ok-mt');
-    tab.appendChild(okEl('div', 'ok-mt-rad ok-mt-hode', '<span>Merke</span><span>Brukt</span><span>Budsjett</span><span>Avvik</span>'));
-    liste.forEach(function(x){
-      var a = (r[x[0]] || 0) - (b[x[0]] || 0);
-      tab.appendChild(okEl('div', 'ok-mt-rad', '<span>' + okVask(x[1]) + '</span><b>' + okBuKr(r[x[0]] || 0) + ' kr</b><span class="ok-meta">' + okBuKr(b[x[0]] || 0) + ' kr</span>'
+    var rad = function(navn, brukt, bud, kl){
+      var a = brukt - bud;
+      tab.appendChild(okEl('div', 'ok-mt-rad' + (kl ? ' ' + kl : ''), '<span>' + navn + '</span><b>' + okBuKr(brukt) + ' kr</b><span class="ok-meta">' + okBuKr(bud) + ' kr</span>'
         + '<span class="ok-avvik ' + (a > 0 ? 'over' : 'under') + '">' + (a > 0 ? '+' : a < 0 ? '−' : '') + okBuKr(Math.abs(a)) + ' kr</span>'));
-    });
+    };
+    tab.appendChild(okEl('div', 'ok-mt-rad ok-mt-hode', '<span>Utgiftene</span><span>Brukt</span><span>Budsjett</span><span>Avvik</span>'));
+    rad('<b>Fast</b>', fr.fast, fb.fast);
+    rad('<b>Variabel</b>', fr.variabel, fb.variabel);
+    liste.forEach(function(x){ rad('<span class="ok-merke-inn">' + okVask(x.navn) + (x.fast ? '' : ' <span class="ok-meta">(ikke fast)</span>') + '</span>', r[x.id] || 0, b[x.id] || 0); });
     boks.appendChild(tab);
+    if(!liste.length) boks.appendChild(okEl('p', 'ok-meta', 'Ingen poster har merke ennå, så alt regnes som variabelt. Merk de faste postene i Budsjett.'));
   }
   /* PC-spalten: kjoepene bak posten som er valgt. */
   function okMndKjopPanel(ms){
@@ -3857,9 +4018,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
                  + 'en gruppe («Bolig»), en ny linje under en post («Bolig · Strøm»). Alle poster og linjer kan få '
                  + 'nytt navn, også de faste; gruppene og Utenfor budsjett kan ikke. De faste kan ikke fjernes. '
                  + 'Ved nytt navn følger føringene, budsjettbeløpene og det '
-                 + 'Neam har lært med. Gir også postene et merke på tvers av gruppene (forsikring, lån per type, '
-                 + 'abonnement, strøm og energi, barnehage og SFO). Bare på Økonomi-sida. Navnene og merkene står i '
-                 + 'les_okonomi_maaned (pa_tvers).',
+                 + 'Neam har lært med. Gir også postene et merke på tvers av gruppene, og lager nye merker. Et merke '
+                 + 'er fast eller ikke; utgifter med et fast merke er faste kostnader, resten variable. Bare på '
+                 + 'Økonomi-sida. Navnene og merkene står i les_okonomi_maaned (merker, pa_tvers).',
       input_schema: { type:'object', properties:{
         legg_til: { type:'array', items:{ type:'object', properties:{
           forelder: { type:'string', description:'Gruppen («Bolig») for en ny post, eller posten («Bolig · Strøm») for en ny linje.' },
@@ -3873,14 +4034,17 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         merker: { type:'array', description:'Merket på tvers av gruppene for en post eller linje. En linje uten eget merke arver postens. Tomt merke fjerner det.',
           items:{ type:'object', properties:{
             post: { type:'string', description:'Hele navnet, f.eks. «Bil · Forsikring» eller «Andre utgifter · Nina · Studielån».' },
-            merke: { type:'string', enum:[''].concat(OK_MERKER.map(function(m){ return m[0]; })) }
-          }, required:['post', 'merke'] } }
+            merke: { type:'string', description:'Merkets id eller navn fra les_okonomi_maaned (merker), eller tomt for å fjerne.' }
+          }, required:['post', 'merke'] } },
+        nye_merker: { type:'array', description:'Nye merker som lages først. «fast»: om utgiftene med merket er faste. Kan brukes med navnet i merker i samme kall.',
+          items:{ type:'object', properties:{ navn:{ type:'string' }, fast:{ type:'boolean' } }, required:['navn', 'fast'] } }
       }, required:[] },
       neamSkriver: true,
       neamBeskriv: function(arg){
         var l = [];
+        [].concat(arg.nye_merker || []).forEach(function(x){ l.push('• Nytt merke: ' + x.navn + (x.fast ? ' (fast)' : ' (ikke fast)')); });
         [].concat(arg.merker || []).forEach(function(x){
-          l.push('• Merke: ' + okNeamKat(x.post) + ' → ' + (x.merke ? okMerkeNavn(x.merke) : 'uten merke'));
+          l.push('• Merke: ' + okNeamKat(x.post) + ' → ' + (x.merke ? (okMerkeNavn(x.merke) || x.merke) : 'uten merke'));
         });
         [].concat(arg.legg_til || []).forEach(function(x){
           l.push('• Ny ' + (String(x.forelder).indexOf(' · ') === -1 ? 'post' : 'linje') + ': ' + okNeamKat(x.forelder) + ' › ' + x.navn);
@@ -4058,6 +4222,28 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       }
     },
     {
+      name: 'endre_okonomi_merker',
+      description: 'Endrer merkene selv (Merker på tvers i Oppsett): nytt navn, om merket er fast, eller sletter det - '
+                 + 'postene som har det, mister det. Nye merker lages med endre_okonomi_budsjettposter (nye_merker). '
+                 + 'Merkene står i les_okonomi_maaned. Bare på Økonomi-sida.',
+      input_schema: { type:'object', properties:{
+        endre: { type:'array', items:{ type:'object', properties:{ merke:{ type:'string', description:'Id eller navn.' }, navn:{ type:'string' }, fast:{ type:'boolean' } }, required:['merke'] } },
+        slett: { type:'array', items:{ type:'string' }, description:'Id eller navn.' }
+      }, required:[] },
+      neamSkriver: true,
+      neamBeskriv: function(arg){
+        var l = [];
+        [].concat(arg.endre || []).forEach(function(x){
+          var n = okMerkeNavn(x.merke) || x.merke, d = [];
+          if(x.navn != null) d.push('nytt navn «' + x.navn + '»');
+          if(x.fast != null) d.push(x.fast ? 'fast' : 'ikke fast');
+          l.push('• ' + n + ': ' + d.join(', '));
+        });
+        [].concat(arg.slett || []).forEach(function(x){ l.push('• Slette merket ' + (okMerkeNavn(x) || x) + ' – postene som har det, mister det'); });
+        return 'Endre merkene:\n' + l.join('\n');
+      }
+    },
+    {
       name: 'bruk_standardbudsjett',
       description: 'Sletter én måneds eget budsjett, så måneden følger standardbudsjettet igjen («Bruk standardbudsjettet»). '
                  + 'Bare på Økonomi-sida.',
@@ -4134,9 +4320,20 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         var f = await okNeamPost2('', { hva:'kategori-slett', kategori:String(fj[j]) });
         if(f.ok) gjort.push({ fjernet:fj[j] }); else feil.push(fj[j] + ': ' + f.feil);
       }
+      var nm = [].concat(arg.nye_merker || []);
+      for(var z = 0; z < nm.length; z++){
+        var nr2 = await okNeamPost2('', { hva:'merke-ny', navn:String(nm[z].navn || ''), fast:!!nm[z].fast });
+        if(nr2.ok){ okBu.merkeliste = nr2.merkeliste; gjort.push({ nytt_merke:nm[z].navn }); } else feil.push(nm[z].navn + ': ' + nr2.feil);
+      }
+      /* Merket kan gis med id eller navn. */
+      var merkeId = function(x){
+        var s = String(x || '').trim(); if(!s) return '';
+        var t2 = okMerkeliste().filter(function(y){ return y.id === s || y.navn.toLowerCase() === s.toLowerCase(); })[0];
+        return t2 ? t2.id : s;
+      };
       var mk = [].concat(arg.merker || []);
       for(var q = 0; q < mk.length; q++){
-        var m = await okNeamPost2('', { hva:'kategori-merke', kategori:String(mk[q].post || ''), merke:String(mk[q].merke || '') });
+        var m = await okNeamPost2('', { hva:'kategori-merke', kategori:String(mk[q].post || ''), merke:merkeId(mk[q].merke) });
         if(m.ok){ okBu.merker = m.merker || {}; gjort.push({ merke:mk[q].post, til:mk[q].merke || 'ingen' }); } else feil.push(mk[q].post + ': ' + m.feil);
       }
       if(gjort.length) window.okonomiEtterSkriv();
@@ -4255,6 +4452,28 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         ut.lagret = true;
         return ut;
       });
+    }
+    if(navn === 'endre_okonomi_merker'){
+      var finnM = function(x){ var s = String(x || '').trim().toLowerCase(); var y = okMerkeliste().filter(function(z){ return z.id.toLowerCase() === s || z.navn.toLowerCase() === s; })[0]; if(!y) throw new Error('Fant ikke merket «' + x + '».'); return y; };
+      var gm = [];
+      var em = [].concat(arg.endre || []);
+      for(var ei = 0; ei < em.length; ei++){
+        var y = finnM(em[ei].merke), kr = { hva:'merke-endre', id:y.id };
+        if(em[ei].navn != null) kr.navn = String(em[ei].navn);
+        if(em[ei].fast != null) kr.fast = !!em[ei].fast;
+        var er = await okNeamPost2('', kr);
+        if(!er.ok) throw new Error(er.feil);
+        okBu.merkeliste = er.merkeliste; gm.push({ endret:y.navn });
+      }
+      var sm = [].concat(arg.slett || []);
+      for(var si = 0; si < sm.length; si++){
+        var y2 = finnM(sm[si]);
+        var sr = await okNeamPost2('', { hva:'merke-slett', id:y2.id });
+        if(!sr.ok) throw new Error(sr.feil);
+        okBu.merkeliste = sr.merkeliste; if(sr.merker) okBu.merker = sr.merker; gm.push({ slettet:y2.navn });
+      }
+      okTegnMerkeliste(); window.okonomiEtterSkriv();
+      return { gjort:gm };
     }
     if(navn === 'bruk_standardbudsjett'){
       if(!/^\d{4}-\d{2}$/.test(arg.mnd || '')) throw new Error('Måneden må være ÅÅÅÅ-MM.');
