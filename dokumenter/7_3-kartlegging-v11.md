@@ -456,7 +456,9 @@ mulig dobbel (`7c32885`), og bufferen med sin egen liste over kontoer
 (`0a637a8`). **Til sist ny struktur** – fem faner og lister under
 sammenleggbare linjer (`8458adc`), etter skissen «Neam Økonomi – ny
 struktur»; sikkerhetskopi i taggen `sikkerhetskopi-okonomi-2026-11-06`.
-44 commits, `0e0050a`–`8458adc`, medregnet en midlertidig statustest fra en annen økt
+Etter det: kvitteringer legges ved transaksjonen som alt ligger der, og
+gjennomgangen «Koble kvitteringer og transaksjoner» for det som er lagt
+inn fra før (`2084e26`). 45 commits, `0e0050a`–`2084e26`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -699,6 +701,9 @@ struktur»; sikkerhetskopi i taggen `sikkerhetskopi-okonomi-2026-11-06`.
   prøvd mot en falsk bank; svarer den ikke, står de fire sifrene som før) –
   og at «Åpne bildet ›» åpner fila for en ny kvittering, både fra «Legg til
   kvittering» og fra Dropbox.
+- **«Koble kvitteringer og transaksjoner» på neam.no** (6. november): kjørt
+  bare mot testdata. Se over forslagene før Koble – særlig «Telt to ganger
+  i dag» – og si fra om noe ser feil ut.
 - **Andreas ukeplan på neam.no** (1. november): «Hent ukeplan» skal finne
   uke 45.
 - **Rommene på iPad og telefon** (1. november): kolonnene, Rediger og å
@@ -3850,7 +3855,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 44 commits fra `0e0050a` til `8458adc`.
+verdier. Bygget i 45 commits fra `0e0050a` til `2084e26`.
 
 ### Banken – Enable Banking
 
@@ -3953,7 +3958,8 @@ verdier. Bygget i 44 commits fra `0e0050a` til `8458adc`.
   selv og står strøket til noen tar det med. Det slås ikke sammen stille:
   to kjøp med samme beløp innen tre dager kan være ekte. Sendes
   kvitteringen tilbake til innboksen, kobles de på vanlig måte og merket
-  forsvinner. Det som alt var telt dobbelt, ble ikke rettet bakover.
+  forsvinner. Det som alt var telt dobbelt, ble ikke rettet bakover – se
+  «Koble i ettertid» under.
 - **Kvittering mot kvittering** (`fd86515`, Magne: «dersom summer og varer
   ligner veldig så bør jeg ha beskjed»). En helt lik kvittering avvises som
   før – id-en er butikk, dato og sum. Men samme kjøp kan komme to ganger
@@ -3968,6 +3974,35 @@ verdier. Bygget i 44 commits fra `0e0050a` til `8458adc`.
   og i detaljpanelet («ligner en kvittering fra bilde som alt er lagt inn:
   Coop Extra, 24. okt., 489,50 kr – 100 % av varene like»).
   `les_okonomi_innboks` gir Neam det samme.
+- **Kvitteringen legges ved det som finnes** (`2084e26`, Magne: «dersom jeg
+  legger inn en kvittering på en transaksjon som allerede ligger der …
+  legge vedlegget ved transaksjonen»). Før en ny kvitteringspost lages,
+  sjekker `nyKvittering()`, i denne rekkefølgen: samme kvittering lagt inn
+  på nytt uten fil fra før; et **godkjent** banktrekk med samme beløp til
+  øret og høyst tre dager mellom (`erLik`); en kvittering som ligner
+  (`finnLignende`). Treffer en av dem, legges fila ved den – og på et
+  banktrekk også varelinjene (`harLinjer`, i `auth:bank:kv:<bankens id>`).
+  Svaret har `festet` (`samme`, `banktrekk`, `kvittering`), og sida sier
+  «Lagt ved Coop Extra, 24. okt., 489,50 kr – kvitteringen lå der fra før».
+  Et banktrekk som venter, slås sammen som før; har det som finnes alt en
+  fil, blir det en ny post merket mulig dobbel, som før. Et banktrekk med
+  varelinjer kan åpnes i kvitteringsdialogen, og linjene kan fordeles på
+  kategorier som på en kvittering.
+- **Koble i ettertid** (`2084e26`, `koble-alle` i bank-funksjonen) – for
+  det som ble lagt inn før dette. Oppsett → Neam → «Koble kvitteringer og
+  transaksjoner» viser forslagene først (`utfor:false`) og kobler når man
+  trykker Koble (`utfor:true`):
+  - kvittering som ikke er telt mot et godkjent banktrekk: fila og
+    varelinjene legges ved banktrekket, kvitteringen slås inn i det
+    (`slaattInn`);
+  - kvittering mot et banktrekk som venter, eller **begge godkjent**: de
+    slås sammen som vanlig, kvitteringen blir posten – i det siste
+    tilfellet var kjøpet telt to ganger, og raden sier «Telt to ganger i
+    dag»;
+  - to kvitteringer med samme beløp til øret, høyst tre dager mellom og
+    like varer: den med mest innhold (Trumf, så flest varer) beholdes, fila
+    fra den andre legges ved.
+  Det som slås inn, kan angres med `angre`.
 - **Varelinjene kan fordeles** på flere kategorier i én post.
 - **Kvittering fra bilde eller PDF:** Neam leser den via `/api/claude`, og
   varelinjene lagres i `auth:bank:kv:<postId>`. **Fra `7688c6f` lagres også
