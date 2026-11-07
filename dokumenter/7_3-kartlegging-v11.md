@@ -4,7 +4,9 @@
 Samsung-TV-ene, gjennom en Logic-variabel og HomeyScript i Homey, og
 enheter kan dras oppå hverandre til navngitte grupper med felles bryter.
 Senere samme kveld: innstillingene (Husregisteret, myk og hard reset, Logg ut) ved å holde inne høyre tommelknapp på alle
-sidene, og tommelknappene over Rommene og i spillene (se toppblokka). Ført à jour 7. november 2026: ikonene er byttet til bronsestilen, og
+sidene, og tommelknappene over Rommene og i spillene. Til slutt: knappen
+kan ikke dras mens man holder, ikonet blir innstillinger når tiden er ute,
+og menyene på telefon er strammet inn (se toppblokka). Ført à jour 7. november 2026: ikonene er byttet til bronsestilen, og
 strektegningene i koden med dem der de står på lys flate (se toppblokka).
 Ført à jour 6. november 2026, natt: Økonomi-flisen på forsiden er vekket,
 og Designverktøy-flisen er ny (se toppblokka). Ført à jour 6. november
@@ -100,8 +102,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=79`, `felles-neam.css
-?v=83`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
+**Siste leverte versjoner:** `felles-neam.js ?v=81`, `felles-neam.css
+?v=85`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
@@ -121,8 +123,8 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–78; neam.css til og
-med 82; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–11,
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–80; neam.css til og
+med 84; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–11,
 hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -794,6 +796,35 @@ som ligger på forsiden også».
   lang smal oval, på kalenderen har den virket på hjørnet en stund uten å
   synes like godt. 17 steder i `felles-neam.css`, fire i `felles-neam.js`,
   ingen sider.
+
+**7. november, natt: hold inne uten dra, og menyene på telefon** (`cfa6407`
+og `120133b`; neam.js `?v=81`, neam.css `?v=85`, på alle 18 sidene).
+Magne: knappen lot seg dra mens man holdt den inne, og «Når tiden er ute
+bør knappen endre seg til innstilling». Om menyene: stegene ble for store
+på telefon.
+- **Knappen kan ikke dras.** Bildet i høyre knapp har
+  `pointer-events:none` og `-webkit-user-drag:none`, knappen har
+  `touch-action:none`, og holdet tar pekeren (`setPointerCapture`), så
+  fingeren kan gli uten at holdet brytes.
+- **Ikonet blir innstillinger** når de tre sekundene er gått, og tilbake
+  hvis man svarer nei eller lukker. Samtidig et kort rykk
+  (`navigator.vibrate`) – det virker på Android, **ikke på iPhone**. Et
+  forsøk med iOS' bryter-input (`<input type=checkbox switch>`) ligger i
+  `neamRykk()`, men gjør ingenting; Magne: «Ikke vibrasjon. Men fungerer
+  greit.»
+- **Ringen er større** – 36 px rundt knappen – fordi den forsvant under
+  tommelen.
+- **«Ved»-menyer med flere enn tre valg får to rader på telefon.** Under
+  900 px ble de en høy søyle, og «Legg til» på Emma dash og Andrea dash nådde
+  107 px fra toppen. Nå legges de som skrå-stabelen (`via-skraa bred`), og
+  ledningen forlenges ned til `ved`-knappen. Målt på 393 px: alle knappene
+  73×73, høyst to rader, alt på skjermen.
+- **`.merke` på Neams knapper er døpt om til `.neam-merke`.** Dashene har
+  sin egen `.merke{width:100%}`, som gjorde knappene i to-raders menyer
+  280 px brede, og spillene har `.merke` på 64 px, som krympet dem. 21 steder
+  i `felles-neam.css`, fem i `felles-neam.js`, ingen sider.
+- **Kjent, ikke rettet:** i mattespillet dekker NEAM-knappen venstre ende av
+  Start på telefon, og i naturfag noen av avkrysningsboksene.
 
 ### Åpne tråder
 

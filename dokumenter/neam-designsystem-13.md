@@ -847,7 +847,10 @@ stabel på samme plass og lar fireren stå. Fem valg med to undervalg hver
 ville vært femten knapper i et hjørne. Tilbake er andre trykk på merket.
 
 **Over tre valg legges stabelen i to rader** – også på telefon. Fire over
-hverandre nådde toppen av skjermen.
+hverandre nådde toppen av skjermen. **Det gjelder også `ved`:** på smal
+skjerm (under 900 px) legges en `ved`-stabel med flere enn tre valg som
+skrå-stabelen, og ledningen forlenges ned til knappen (7. november 2026 –
+før det ble den en søyle som nådde 107 px fra toppen på telefon).
 
 **Bildeknapper.** En knapp kan bære et ikon (`merke:true`,
 `knappMerke('navn')`, filene i `bilder/ikoner/`). Da faller papirskiva bort,
@@ -905,6 +908,12 @@ nytt», «Hent på nytt», «Logg ut»), fordi det som ikke er lagret,
 forsvinner. Andre trykk på knappen lukker bare. Forsidens egen «System»
 er borte – den ligger her nå.
 
+Ringen er 36 px bred, så den synes rundt tommelen. **Knappen kan ikke
+dras** mens man holder (bildet tar ikke imot pekeren, knappen har
+`touch-action:none`). Når tiden er ute, **blir ikonet innstillinger**, og
+det kommer et kort rykk – bare der nettleseren kan (Android; iPhone gir
+ikke rykk). Svarer man nei, kommer sidas ikon tilbake.
+
 **Tommelknappene synes alltid** (7. november 2026): Rommene og Neamow
 legger seg under dem (z-index 88), og spillsidene har dem også – uten
 samtalen, så andre trykk på NEAM bare lukker. Høyre knapp står også på
@@ -914,7 +923,9 @@ for innstillinger. Dialogene (120) ligger fortsatt øverst.
 **Neams egne klasser har `neam-`-prefiks, også modifikatorene.** Høyre
 hjørne het `.side` til 7. november 2026, og fem spillsider og kalenderen
 har sin egen `.side` – på spillene ble knappen en lang smal oval. Nå
-`.neam-hoyre`.
+`.neam-hoyre`. Samme dag ble `.merke` på knappene til `.neam-merke`: dashene
+har `.merke{width:100%}` (knappene ble 280 px brede) og spillene `.merke`
+på 64 px (knappene krympet). Vanlige ord er alt tatt av sidene.
 
 **Venstre firer: `ved` er Sikkerhet, ikke Dash** (fra 11. september 2026).
 Kjøkkendashen nås fra applista som alle andre sider; sikkerhet er det ene
@@ -940,6 +951,11 @@ til stemme, skal ikke et annet «langt trykk» legges på de ytre knappene – t
 like bevegelser med ulik betydning, centimeter fra hverandre, lærer hånden
 aldri. Stemmen er dessuten det ene skjulte grepet systemet har råd til; flere
 blir en hemmelighet folk ikke finner.
+
+**Unntak, Magnes valg 7. november 2026:** høyre knapp har likevel fått et
+langt trykk – tre sekunder til innstillingene (se over). Det er langt nok
+til ikke å forveksles med stemmens ~0,5 sek, og et vanlig trykk på en side
+uten handlinger sier at grepet finnes.
 
 ### Fast til høyre på PC (fra 6. november 2026)
 
