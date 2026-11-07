@@ -237,6 +237,7 @@ html{ scroll-padding-top:90px; }
 .ok-std-rad input{ width:112px; text-align:right; font-family:inherit; font-size:16px; padding:5px 8px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
 .ok-std-rad input:focus{ outline:none; border-color:var(--aksent); }
 .ok-std-rad input.endret{ border-color:var(--handling-endre); }
+input.ok-regnefeil{ border-color:var(--danger) !important; }
 .ok-std-utvid{ font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; display:inline-flex; align-items:baseline; gap:6px; text-align:left; }
 .ok-std-utvid:hover{ color:var(--aksent); }
 .ok-std-pil{ display:inline-block; width:10px; color:var(--aksent); font-weight:700; transition:transform .15s; }
@@ -1747,11 +1748,66 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
      alt annet, og det ble 54 990 (Magne, 7. november 2026). Punktum foran
      komma er tusenskille («1.234,50»). */
   function okBuTall(s){
-    s = String(s || '').replace(/\s/g, '');
-    if(s.indexOf(',') !== -1) s = s.replace(/\./g, '').replace(',', '.');
-    var x = parseFloat(s.replace(/[^0-9.]/g, ''));
+    /* Et regnestykke halvveis skrevet («1500+») regnes uten det siste tegnet. */
+    var x = okRegn(s);
+    if(isNaN(x)) x = okRegn(String(s || '').replace(/[-+*/×x÷:\s]+$/i, ''));
     return isNaN(x) ? 0 : Math.round(x * 100) / 100;
   }
+  /* ---------- Enkle regnestykker i tallfeltene ----------
+     «1500+2342+112», «3 200 × 4 : 12», «(500 + 250,50) * 2» - pluss,
+     minus, gange og dele, med komma som desimaltegn og parenteser (Magne,
+     7. november 2026). Ingen eval: en liten parser for tall og de fire
+     regneartene. Ugyldig gir NaN. Punktum foran komma er tusenskille
+     («1.234,50»); uten komma er «1.234» tusen og «1.5» halvannen. */
+  function okRegn(s){
+    s = String(s == null ? '' : s).replace(/\s/g, '').replace(/[×xX]/g, '*').replace(/[÷:]/g, '/').replace(/[−–]/g, '-');
+    if(!s) return NaN;
+    var i = 0;
+    var tall = function(){
+      var m = /^[0-9.,]+/.exec(s.slice(i));
+      if(!m) return NaN;
+      i += m[0].length;
+      var x = m[0];
+      if(x.indexOf(',') !== -1) x = x.replace(/\./g, '').replace(',', '.');
+      else if(/^\d{1,3}(\.\d{3})+$/.test(x)) x = x.replace(/\./g, '');
+      if(!/^\d*\.?\d*$/.test(x) || x === '.' ) return NaN;
+      return parseFloat(x);
+    };
+    var faktor = function(){
+      var c = s[i];
+      if(c === '-'){ i++; return -faktor(); }
+      if(c === '+'){ i++; return faktor(); }
+      if(c === '('){ i++; var v = uttrykk(); if(s[i] !== ')') return NaN; i++; return v; }
+      return tall();
+    };
+    var ledd = function(){
+      var v = faktor();
+      while(s[i] === '*' || s[i] === '/'){ var op = s[i++], w = faktor(); v = op === '*' ? v * w : v / w; }
+      return v;
+    };
+    var uttrykk = function(){
+      var v = ledd();
+      while(s[i] === '+' || s[i] === '-'){ var op = s[i++], w = ledd(); v = op === '+' ? v + w : v - w; }
+      return v;
+    };
+    var v = uttrykk();
+    return i === s.length && isFinite(v) ? v : NaN;
+  }
+  /* Naar et tallfelt forlates (eller Enter), regnes stykket ut og svaret
+     settes i feltet - foer feltets egne lyttere, som saa leser svaret.
+     Gjelder alle tallfeltene paa sida (inputmode decimal). */
+  document.addEventListener('change', function(e){
+    var inp = e.target;
+    if(!inp || inp.tagName !== 'INPUT' || inp.inputMode !== 'decimal') return;
+    var s = String(inp.value || '');
+    if(!/\d\s*[-+*/×xX÷:]/.test(s) && !/[()]/.test(s)) return;
+    var v = okRegn(s);
+    if(isNaN(v)){ inp.title = 'Kan ikke regne ut «' + s + '»'; inp.classList.add('ok-regnefeil'); return; }
+    v = Math.round(v * 100) / 100;
+    inp.classList.remove('ok-regnefeil'); inp.title = s + ' = ' + String(v).replace('.', ',');
+    inp.value = (v % 1 ? v.toFixed(2) : String(v)).replace('.', ',');
+    inp.dispatchEvent(new Event('input', { bubbles:true }));
+  }, true);
   function okBuKr(n){ return okKr.format(Math.round(n * 100) / 100).replace(/,00$/, ''); }
 
   /* Summene og «hvor inntekten gaar» - fra standardbudsjettet, ogsaa mens det redigeres. */
