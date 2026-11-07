@@ -1588,7 +1588,9 @@ godkjent 6. november 2026; Innboks ble Transaksjoner samme kveld):
   tallet som «Faktisk 4 200 kr + forfaller 1 800 kr». På posten står
   «Forfaller … (20. nov.) – telles når trekket kommer fra banken».
   Sumboksene viser det betalte; «+ … forfaller» og «etter forfall …» står
-  under i `--t-meta`. En måned fram i tid heter «Fram i tid».
+  under i `--t-meta`. En måned fram i tid heter «Fram i tid». Under
+  kjøpene bak posten står regningen først, som en vanlig rad med
+  «Forfaller – ikke betalt ennå» i meta-linja og «Åpne PDF-en ›».
 - **Budsjett** – bare redigering: standardbudsjettet eller ett
   månedsbudsjett om gangen. Fra 6. november 2026 (Magne: «er veldig
   generisk nå»):

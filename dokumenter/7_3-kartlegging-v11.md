@@ -485,7 +485,8 @@ regnestykker i tallfeltene (`53c7cdf`), menyen på postene i budsjettet
 (`8a9096d`), en strengere regel for mulig dobbel (`8b81b51`) og
 innliming av kvitteringer – bilde, PDF eller tekst (`2c947dc`), en
 PDF-kopi i Dropbox av alt som legges inn på sida (`c66917a`) og ubetalte
-regninger som «forfaller» i Regnskap (`fa530bc`).
+regninger som «forfaller» i Regnskap (`fa530bc`), også under kjøpene bak
+posten (`ce1aa39`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -494,7 +495,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 65 commits, `0e0050a`–`fa530bc`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 66 commits, `0e0050a`–`ce1aa39`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3945,7 +3946,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 65 commits fra `0e0050a` til `fa530bc`.
+verdier. Bygget i 66 commits fra `0e0050a` til `ce1aa39`.
 
 ### Banken – Enable Banking
 
@@ -4132,6 +4133,13 @@ verdier. Bygget i 65 commits fra `0e0050a` til `fa530bc`.
     «Siste 12 måneder» slutter i dag.
   - **Kategori på fakturaen** (`faktura-kategori`): nedtrekk i «Fakturaer
     som venter». Uten kategori vises den ikke i Regnskap.
+  - **Under kjøpene bak posten** (`ce1aa39`, Magne: «Jeg må kunne trykke
+    på posten under regnskap og se den regningen som enda ikke er
+    forfalt»). «Vis kjøpene ›» kommer også når posten bare har noe som
+    forfaller. Regningen står først – dato, utsteder, «Forfaller – ikke
+    betalt ennå», beløpet og «Åpne PDF-en ›» – så det betalte. Spalten til
+    høyre på PC sier «Forfaller … kr i tillegg». `forfaller` har fått
+    `harFil` og `filType`.
   - **Synken:** når trekket kommer (`flyttFaktura`), får det fakturaens
     kategori (`kilde:'faktura'`) og **føres automatisk** – ellers ville
     regningen forsvinne fra Regnskap fra den er betalt til noen godkjenner.
