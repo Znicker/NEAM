@@ -602,7 +602,8 @@ const LESALT_OK_VERKTOY = [
                + 'Beløp i kroner; utgifter og inntekter begge som positive tall. Regnskapet er bare '
                + 'GODKJENTE poster - det som ligger i innboksen, er ikke med. Bruk denne til «hvordan '
                + 'ligger vi an», «er vi over på mat» o.l. «pa_tvers» samler poster med samme merke på tvers '
-               + 'av gruppene (forsikring, lån, abonnement … – lista står i «merker») - bruk den til «hvor mye '
+               + 'av gruppene (forsikring, lån, abonnement … – lista står i «merker»; et undermerke har «under», '
+               + 'f.eks. Studielån under Lån, og hovedmerket er summen av seg og undermerkene) - bruk den til «hvor mye '
                + 'budsjetterer vi med forsikring» o.l. «fast_og_variabelt» deler utgiftene: med et fast merke er '
                + 'fast, resten variabelt - til «hvor mye er faste kostnader».',
     input_schema: { type:'object', properties:{
@@ -683,15 +684,18 @@ async function lesAltOkUtfor(navn, arg){
     const mk = b.merker || {}, merker = {}, liste = b.merkeliste || [];
     const merkeObj = function(id){ return liste.filter(function(x){ return x.id === id; })[0] || null; };
     const merkeAv = function(k){ const d = k.split(' · '); const m = mk[k] || (d.length === 3 ? mk[d[0] + ' · ' + d[1]] : '') || ''; return merkeObj(m) ? m : ''; };
+    /* Undermerker: «fast» staar paa hovedmerket (7. november 2026). */
+    const hovedAv = function(id){ const x = merkeObj(id); return x && x.forelder ? merkeObj(x.forelder) : x; };
+    const erFast = function(id){ const h = hovedAv(id); return !!(h && h.fast); };
     const fv = { fast:{ budsjett:0, faktisk:0 }, variabelt:{ budsjett:0, faktisk:0 } };
     kat.forEach(function(k){
       const m = merkeAv(k), fb = bud[k] || 0, ff = reg[k] || 0, g = k.split(' · ')[0];
       if(g !== 'Inntekter' && g !== 'Sparing' && g !== 'Utenfor budsjett'){
-        const del = m && merkeObj(m).fast ? fv.fast : fv.variabelt;
+        const del = m && erFast(m) ? fv.fast : fv.variabelt;
         del.budsjett += fb; del.faktisk += ff;
       }
       if(!m || (!fb && !ff)) return;
-      if(!merker[m]) merker[m] = { merke:m, navn:merkeObj(m).navn, fast:!!merkeObj(m).fast, budsjett:0, faktisk:0, poster:[] };
+      if(!merker[m]) merker[m] = { merke:m, navn:merkeObj(m).navn, under:merkeObj(m).forelder ? hovedAv(m).navn : undefined, fast:erFast(m), budsjett:0, faktisk:0, poster:[] };
       merker[m].budsjett += fb; merker[m].faktisk += ff;
       if(merker[m].poster.indexOf(k) === -1) merker[m].poster.push(k);
     });
@@ -711,7 +715,7 @@ async function lesAltOkUtfor(navn, arg){
       grupper:rekke.map(function(g){ return grupper[g]; }),
       pa_tvers:Object.keys(merker).map(function(m){ return merker[m]; }),
       fast_og_variabelt:fv,
-      merker:liste.map(function(x){ return { id:x.id, navn:x.navn, fast:!!x.fast }; })
+      merker:liste.map(function(x){ return { id:x.id, navn:x.navn, under:x.forelder ? (merkeObj(x.forelder) || {}).navn : undefined, fast:erFast(x.id) }; })
     };
   }
 

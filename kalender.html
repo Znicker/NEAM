@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
-<link rel="stylesheet" href="/felles-neam.css?v=75">
+<link rel="stylesheet" href="/felles-neam.css?v=76">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -522,7 +522,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   font-family:'Archivo',sans-serif;color:var(--ink);max-width:300px;
 }
 .snu-ikon{color:var(--aksent)}
-.snu-ikon svg{width:76px;height:76px;display:block}
+.snu-ikon svg,.snu-ikon img{width:76px;height:76px;display:block;object-fit:contain}
 .snu-tekst{font-size:var(--t-stor);font-weight:700}
 .snu-under{font-size:var(--t-meta);color:var(--ink-soft);line-height:1.5}
 .snu-knapp{
@@ -1493,12 +1493,7 @@ input,select,textarea{font-size:16px}
 <div class="snu" id="snu" hidden>
   <div class="snu-kort">
     <span class="snu-ikon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
-           stroke-linecap="round" stroke-linejoin="round">
-        <rect x="4.5" y="2.5" width="15" height="19" rx="2.5"/>
-        <path d="M9.5 19h5"/>
-        <path d="M2.2 12.5a9.8 9.8 0 0 0 2.3 5.6M21.8 11.5a9.8 9.8 0 0 0-2.3-5.6"/>
-      </svg>
+      <img src="/bilder/ikoner/snu-telefonen.png?v=2" alt="" width="512" height="461">
     </span>
     <span class="snu-tekst">Snu telefonen</span>
     <span class="snu-under">Måned og uke trenger liggende skjerm</span>
@@ -1660,14 +1655,14 @@ input,select,textarea{font-size:16px}
 
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
 <script src="/felles-graph.js?v=3"></script>
-<script src="/felles-hus.js?v=22"></script>
+<script src="/felles-hus.js?v=23"></script>
 <script src="/felles-data.js?v=5"></script>
-<script src="/felles-lesalt.js?v=14"></script>
+<script src="/felles-lesalt.js?v=15"></script>
 <script src="/felles-skriv.js?v=12"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-filviser.js?v=2"></script>
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=76"></script>
+<script src="/felles-neam.js?v=77"></script>
 <script>
 /* ============================================================
    Konfigurasjon — Azure app-registrering
@@ -5199,17 +5194,12 @@ window.neamSideHandlinger = function(){
     { plass:'skraa',
       navn: sistHentet ? ('Oppdater – sist hentet ' + sistHentet) : 'Oppdater',
       tekst:'Oppdater',
-      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-         + '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4.5V11h-6.5"/></svg>',
+      merke:true, ikon:knappMerke('oppdater'),
       gjor: refresh }
   ];
   if(erKalAdmin){
     liste.push({ plass:'opp', navn:'Kalendere', tekst:'Kalendere',
-      ikon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
-         + 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-         + '<rect x="3" y="4.5" width="18" height="16" rx="2.5"/>'
-         + '<path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>',
+      merke:true, ikon:knappMerke('kalender'),
       gjor: function(){ toggleCalMeny(); } });
   }
   return liste;

@@ -27,7 +27,7 @@
      POST /api/bank {hva:'koble-alle', utfor} - kvitteringer og transaksjoner som hoerer sammen, i ettertid
      POST /api/bank {hva:'faktura-innboks', id} - en faktura som venter, blir en post i innboksen
      POST /api/bank {hva:'kategori-merke', kategori, merke} - merket paa en post (forsikring, laan …); tomt fjerner
-     POST /api/bank {hva:'merke-ny', navn, fast} / {hva:'merke-endre', id, navn, fast} / {hva:'merke-slett', id} - merkene selv
+     POST /api/bank {hva:'merke-ny', navn, fast, forelder} / {hva:'merke-endre', id, navn, fast, forelder} / {hva:'merke-slett', id} - merkene selv
      GET /api/bank?hva=varsler          - det som trenger noen (kortet paa forsiden)
      GET /api/bank?hva=laert / POST {hva:'laert', motpart, kategori} - «Neam husker» (tom kategori glemmer)
      GET /api/bank/dropbox-start / dropbox-tilbake - kobler Dropbox (appmappa) med OAuth
@@ -556,30 +556,63 @@ const MERKE_NOKKEL = 'auth:bank:kategori-merker';
    den; da ligger hele lista i KV, og egne merker kan legges til. Barnehage
    og SFO er tatt ut («ungene er for gamle for det»). */
 const MERKELISTE_NOKKEL = 'auth:bank:merke-liste';
+/* Merker og undermerker (Magne, 7. november 2026: «Lån - studielån,
+   Abonnement - telefon …»): et undermerke har `forelder`, hoeyst to ledd.
+   Om utgiften er fast, staar paa hovedmerket og gjelder undermerkene. */
 const STANDARD_MERKER = [
   { id:'forsikring', navn:'Forsikring', fast:true },
-  { id:'lan-bolig', navn:'Boliglån', fast:true }, { id:'lan-bil', navn:'Billån', fast:true }, { id:'lan-baat', navn:'Båtlån', fast:true },
-  { id:'lan-studie', navn:'Studielån', fast:true }, { id:'lan-forbruk', navn:'Forbrukslån', fast:true }, { id:'lan-annet', navn:'Annet lån', fast:true },
+  { id:'lan', navn:'Lån', fast:true },
+  { id:'lan-bolig', navn:'Boliglån', forelder:'lan' }, { id:'lan-bil', navn:'Billån', forelder:'lan' }, { id:'lan-baat', navn:'Båtlån', forelder:'lan' },
+  { id:'lan-studie', navn:'Studielån', forelder:'lan' }, { id:'lan-forbruk', navn:'Forbrukslån', forelder:'lan' }, { id:'lan-annet', navn:'Annet lån', forelder:'lan' },
   { id:'abonnement', navn:'Abonnement', fast:true }, { id:'energi', navn:'Strøm og energi', fast:true },
   { id:'fast-annet', navn:'Annen fast utgift', fast:true }
 ];
 async function lesMerker(env){ return await lesJson(env, MERKE_NOKKEL, {}); }
-async function lesMerkeliste(env){ return await lesJson(env, MERKELISTE_NOKKEL, null) || STANDARD_MERKER; }
+async function lesMerkeliste(env){
+  const lagret = await lesJson(env, MERKELISTE_NOKKEL, null);
+  if(!lagret) return STANDARD_MERKER.map(m => Object.assign({}, m));
+  /* En liste lagret foer undermerkene: laanene legges under «Lån». */
+  if(!lagret.some(m => m.forelder) && lagret.some(m => /^lan-/.test(m.id)) && !lagret.some(m => m.id === 'lan')){
+    const i = lagret.findIndex(m => /^lan-/.test(m.id));
+    lagret.splice(i, 0, { id:'lan', navn:'Lån', fast:true });
+    lagret.forEach(m => { if(/^lan-/.test(m.id)){ m.forelder = 'lan'; delete m.fast; } });
+  }
+  return lagret;
+}
 async function endreMerkeliste(env, kropp){
   const liste = (await lesMerkeliste(env)).map(m => Object.assign({}, m));
   const navn = String(kropp.navn == null ? '' : kropp.navn).replace(/\s+/g, ' ').trim().slice(0, 40);
   const finnes = n => liste.some(m => m.navn.toLowerCase() === n.toLowerCase());
   let id = String(kropp.id || '');
+  /* Forelderen maa vaere et hovedmerke (uten egen forelder): to ledd. */
+  const forelderOk = (f, selv) => {
+    if(!f) return '';
+    const fm = liste.filter(x => x.id === f)[0];
+    if(!fm) return 'Ukjent hovedmerke';
+    if(fm.forelder) return fm.navn + ' er selv et undermerke';
+    if(selv && f === selv) return 'Et merke kan ikke ligge under seg selv';
+    if(selv && liste.some(x => x.forelder === selv)) return 'Merket har undermerker og kan ikke selv bli et undermerke';
+    return '';
+  };
   if(kropp.hva === 'merke-ny'){
     if(!navn) return svar({ ok:false, feil:'Merket mangler navn' });
     if(finnes(navn)) return svar({ ok:false, feil:'Det finnes alt et merke som heter ' + navn });
-    if(liste.length >= 40) return svar({ ok:false, feil:'For mange merker' });
+    if(liste.length >= 80) return svar({ ok:false, feil:'For mange merker' });
+    const f = String(kropp.forelder || ''), ff = forelderOk(f);
+    if(ff) return svar({ ok:false, feil:ff });
     id = 'm-' + b64url(crypto.getRandomValues(new Uint8Array(6)));
-    liste.push({ id:id, navn:navn, fast:!!kropp.fast });
+    const ny = { id:id, navn:navn };
+    if(f) ny.forelder = f; else ny.fast = !!kropp.fast;
+    /* Undermerket legges etter de andre under samme hovedmerke. */
+    let i = -1;
+    if(f) liste.forEach((x, j) => { if(x.id === f || x.forelder === f) i = j; });
+    if(i === -1) liste.push(ny); else liste.splice(i + 1, 0, ny);
   } else {
     const m = liste.filter(x => x.id === id)[0];
     if(!m) return svar({ ok:false, feil:'Ukjent merke' });
     if(kropp.hva === 'merke-slett'){
+      const under = liste.filter(x => x.forelder === id);
+      if(under.length) return svar({ ok:false, feil:m.navn + ' har undermerker (' + under.map(x => x.navn).join(', ') + ') – slett eller flytt dem først' });
       liste.splice(liste.indexOf(m), 1);
       /* Postene som hadde merket, mister det. */
       const merker = await lesMerker(env);
@@ -592,7 +625,21 @@ async function endreMerkeliste(env, kropp){
         if(navn.toLowerCase() !== m.navn.toLowerCase() && finnes(navn)) return svar({ ok:false, feil:'Det finnes alt et merke som heter ' + navn });
         m.navn = navn;
       }
-      if(kropp.fast != null) m.fast = !!kropp.fast;
+      if(kropp.forelder != null){
+        const f = String(kropp.forelder || ''), ff = forelderOk(f, id);
+        if(ff) return svar({ ok:false, feil:ff });
+        if(f){
+          m.forelder = f; delete m.fast;
+          /* Flytt det til de andre under samme hovedmerke. */
+          liste.splice(liste.indexOf(m), 1);
+          let i = -1; liste.forEach((x, j) => { if(x.id === f || x.forelder === f) i = j; });
+          liste.splice(i + 1, 0, m);
+        } else if(m.forelder){
+          const gammel = liste.filter(x => x.id === m.forelder)[0];
+          delete m.forelder; m.fast = gammel ? !!gammel.fast : false;
+        }
+      }
+      if(kropp.fast != null && !m.forelder) m.fast = !!kropp.fast;
     }
   }
   await env.FAMILIE_KV.put(MERKELISTE_NOKKEL, JSON.stringify(liste));
