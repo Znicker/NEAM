@@ -486,7 +486,7 @@ regnestykker i tallfeltene (`53c7cdf`), menyen på postene i budsjettet
 innliming av kvitteringer – bilde, PDF eller tekst (`2c947dc`), en
 PDF-kopi i Dropbox av alt som legges inn på sida (`c66917a`) og ubetalte
 regninger som «forfaller» i Regnskap (`fa530bc`), også under kjøpene bak
-posten (`ce1aa39`).
+posten (`ce1aa39`) og i de store summene og diagrammet (`93ef3ec`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -495,7 +495,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 66 commits, `0e0050a`–`ce1aa39`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 67 commits, `0e0050a`–`93ef3ec`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3946,7 +3946,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 66 commits fra `0e0050a` til `ce1aa39`.
+verdier. Bygget i 67 commits fra `0e0050a` til `93ef3ec`.
 
 ### Banken – Enable Banking
 
@@ -4127,10 +4127,21 @@ verdier. Bygget i 66 commits fra `0e0050a` til `ce1aa39`.
     på et vis, og dette må synces når betalingen er gjennomført»; valgte
     «i stolpene, lysere» framfor et eget kort). `regnskap-aar` gir
     `forfaller` – fakturaene som venter, med kategori, i forfallsmåneden.
-    De telles **ved siden av** det betalte, ikke i det: en lysere del av
-    stolpen, «+ forfaller» i tallet, og avviket regnes med dem. Måneder
-    fram i tid med regninger kan åpnes («Fram i tid»); «Hittil i år» og
-    «Siste 12 måneder» slutter i dag.
+    I stolpen er de en lysere del etter det betalte, og avviket regnes med
+    dem. Måneder fram i tid med regninger kan åpnes («Fram i tid»);
+    «Hittil i år» og «Siste 12 måneder» slutter i dag.
+  - **De store tallene tar dem med** (`93ef3ec`, Magne: «jeg vil at
+    summene som er mest synlige i regnskap inkluderer de med forfall frem
+    i tid»). Utgifter og Sparing i sumboksene er betalt + forfaller, med
+    «herav … forfaller» under; Overskudd er regnet med dem, med «betalt så
+    langt …» under. Gruppene sier «Faktisk 8 236 kr (herav forfaller …)»,
+    postene og spalten til høyre har summen med. Diagrammet «Utgifter per
+    måned» legger det som forfaller lysere oppå det betalte, og tar med
+    måneder fram i tid med regninger. **Varmekartet** viser fortsatt bare
+    det betalte og slutter i dag. Diagrammet tegnes bare første gang
+    Regnskap åpnes (som før), så en regning lest inn etterpå kommer med
+    neste gang sida lastes. Fra `fa530bc` til `93ef3ec` var det motsatt:
+    det betalte stort, «+ forfaller» ved siden av.
   - **Kategori på fakturaen** (`faktura-kategori`): nedtrekk i «Fakturaer
     som venter». Uten kategori vises den ikke i Regnskap.
   - **Under kjøpene bak posten** (`ce1aa39`, Magne: «Jeg må kunne trykke

@@ -1584,11 +1584,15 @@ godkjent 6. november 2026; Innboks ble Transaksjoner samme kveld):
   avvik for perioden.
   **Det som forfaller** (fakturaer som venter, 7. november 2026) står i
   stolpen som en lysere del etter det betalte (`.ok-bar-fyll.forfaller`,
-  samme farge med opasitet .38, rød når summen går over budsjettet), og i
-  tallet som «Faktisk 4 200 kr + forfaller 1 800 kr». På posten står
-  «Forfaller … (20. nov.) – telles når trekket kommer fra banken».
-  Sumboksene viser det betalte; «+ … forfaller» og «etter forfall …» står
-  under i `--t-meta`. En måned fram i tid heter «Fram i tid». Under
+  samme farge med opasitet .38, rød når summen går over budsjettet).
+  **De store tallene tar det med** (fra 7. november 2026): «Faktisk 6 000 kr
+  (herav forfaller 1 800 kr)», og summen på posten og i spalten til høyre.
+  Sumboksene viser Utgifter og Sparing med det som forfaller, «herav …
+  forfaller» under, og Overskudd med «betalt så langt …» under, i
+  `--t-meta`. I diagrammet «Utgifter per måned» ligger det oppå det
+  betalte med samme opasitet. På posten står «Forfaller … (20. nov.) –
+  telles når trekket kommer fra banken». En måned fram i tid heter «Fram i
+  tid». Under
   kjøpene bak posten står regningen først, som en vanlig rad med
   «Forfaller – ikke betalt ennå» i meta-linja og «Åpne PDF-en ›».
 - **Budsjett** – bare redigering: standardbudsjettet eller ett
