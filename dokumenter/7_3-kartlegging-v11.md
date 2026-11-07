@@ -481,8 +481,8 @@ formueskjemaet slutter å se ulagret ut. Så egne merker (`51f7c70`),
 kroner og øre i budsjettet (`777a39f`), stolpen på Status uten strek for
 «ventet i dag» (`6a58ce7`), **undermerker** (`797e6bb`) og til sist
 **månedene en post kommer i**, med «Fast» tatt ut igjen (`7fb6d17`), så
-regnestykker i tallfeltene (`53c7cdf`) og menyen på postene i budsjettet
-(`8a9096d`).
+regnestykker i tallfeltene (`53c7cdf`), menyen på postene i budsjettet
+(`8a9096d`) og en strengere regel for mulig dobbel (`8b81b51`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -491,7 +491,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 61 commits, `0e0050a`–`8a9096d`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 62 commits, `0e0050a`–`8b81b51`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3942,7 +3942,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 61 commits fra `0e0050a` til `8a9096d`.
+verdier. Bygget i 62 commits fra `0e0050a` til `8b81b51`.
 
 ### Banken – Enable Banking
 
@@ -4053,8 +4053,12 @@ verdier. Bygget i 61 commits fra `0e0050a` til `8a9096d`.
   med en annen id: fra Trumf og som bilde, eller samme bilde lest litt
   ulikt («Coop Extra» mot «Coop Extra Mandal»). `finnLignende()` sjekker
   hver ny kvittering, både bilde, PDF, Dropbox og Trumf, mot de som alt er
-  lagt inn. **Ligner** betyr beløp innen 1 % (minst 1 kr), høyst tre dager
-  mellom, og – når begge har varelinjer – minst halvparten av varene like.
+  lagt inn. **Ligner** betyr beløp innen 1 kr, høyst tre dager mellom,
+  og – når begge har varelinjer – minst halvparten av varene like. To
+  Trumf-kvitteringer ligner aldri: Trumf gir hvert kjøp sin egen id
+  (`8b81b51`, Magne 7. november: to dagligvarekjøp noen kroner fra
+  hverandre, dagen etter, ble stoppet – «likheten er ikke nok»; «beløpet
+  må matche på krona +-1 krone»). Før var grensen 1 % av summen.
   Den nye merkes `lignerPaa`, føres aldri automatisk, havner under «Trenger
   et valg» som «Mulig dobbel – føres ikke» og er strøket til noen tar den
   med. Du får beskjed med en gang du legger den inn, i Dropbox-resultatet
