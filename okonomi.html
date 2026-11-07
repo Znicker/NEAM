@@ -767,10 +767,11 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       </div>
       <div class="ok-rad-knapper">
         <button type="button" class="btn btn-ny" id="ok-kv-knapp">Legg til kvittering</button>
+        <button type="button" class="btn btn-blaa" id="ok-kv-lim">Lim inn</button>
         <input type="file" id="ok-kv-fil" accept="image/*,application/pdf" hidden>
       </div>
     </div>
-    <p class="ok-meta" id="ok-kv-status" aria-live="polite">Bilde eller PDF – Neam leser butikk, dato, sum og varer. En faktura venter på trekket fra banken og legges ved det.</p>
+    <p class="ok-meta" id="ok-kv-status" aria-live="polite">Bilde, PDF eller tekst – velg en fil, eller kopier og lim inn (Ctrl+V). Neam leser butikk, dato, sum og varer. En faktura venter på trekket fra banken og legges ved det.</p>
     <div class="ok-filter" id="ok-filter" hidden></div>
     <div id="ok-innboks"></div>
     <div class="ok-ib-to">
@@ -2530,12 +2531,15 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     a.addEventListener('click', function(e){ e.stopPropagation(); });
     return a;
   }
-  async function okTolkKvittering(fil){
-    var innhold = fil.type === 'application/pdf'
+  /* tekst: kopiert tekst fra en kvittering eller faktura i stedet for en fil
+     (Magne, 7. november 2026). Da lagres ingen fil med posten. */
+  async function okTolkKvittering(fil, tekst){
+    var innhold = tekst ? { type:'text', text:'Teksten under er kopiert fra dokumentet:\n\n' + String(tekst).slice(0, 40000) }
+      : fil.type === 'application/pdf'
       ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data: await okSomBase64(fil) } }
       : { type:'image', source:{ type:'base64', media_type:'image/jpeg', data: await okKrympBilde(fil) } };
     /* Den samme fila Neam leste, lagres med kvitteringen - det krympede bildet, eller PDF-en som den er. */
-    var lagres = { type:innhold.source.media_type, data:innhold.source.data };
+    var lagres = tekst ? null : { type:innhold.source.media_type, data:innhold.source.data };
     var r = await fetch('/api/claude', { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ model:OK_MODELL, max_tokens:4000,
         system:'Du leser butikkvitteringer og fakturaer og svarer bare med JSON. Du gjetter aldri tall du ikke kan lese.',
@@ -2554,12 +2558,12 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     return festet ? 'Fakturaen er lagt ved trekket fra ' + hvem + ', ' + okKort.format(new Date(p.dato)) + '. PDF-en kan åpnes fra posten.'
       : 'Fakturaen fra ' + hvem + ', forfall ' + okKort.format(new Date(p.dato)) + ', venter på trekket fra banken. Den telles ikke selv – PDF-en legges ved trekket når det kommer.';
   }
-  async function okLesKvittering(fil){
-    var status = document.getElementById('ok-kv-status'), knapp = document.getElementById('ok-kv-knapp');
-    knapp.disabled = true;
+  async function okLesKvittering(fil, tekst){
+    var status = document.getElementById('ok-kv-status'), knapp = document.getElementById('ok-kv-knapp'), lim = document.getElementById('ok-kv-lim');
+    knapp.disabled = true; lim.disabled = true;
     status.textContent = 'Neam leser kvitteringen …';
     try{
-      var res = await okTolkKvittering(fil);
+      var res = await okTolkKvittering(fil, tekst);
       if(res.festet === 'faktura' || res.post.status === 'venter'){
         status.textContent = okFakturaTekst(res.post, res.festet === 'faktura');
         okLastInnboks(); if(okMnd.lastet) okMndLast();
@@ -2579,12 +2583,65 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     }catch(e){
       status.textContent = 'Kvitteringen ble ikke lagt inn: ' + (e && e.message || e);
     }finally{
-      knapp.disabled = false;
+      knapp.disabled = false; lim.disabled = false;
       document.getElementById('ok-kv-fil').value = '';
     }
   }
   document.getElementById('ok-kv-knapp').addEventListener('click', function(){ document.getElementById('ok-kv-fil').click(); });
   document.getElementById('ok-kv-fil').addEventListener('change', function(){ if(this.files && this.files[0]) okLesKvittering(this.files[0]); });
+
+  /* ---------- Lim inn bilde, PDF eller tekst ----------
+     «Det må være mulig å kopiere inn bilder, tekst og pdf når jeg skal legge
+     til regninger og kvitteringer» (Magne, 7. november 2026). Ctrl+V hvor
+     som helst i innboksen (utenom i et felt), eller «Lim inn» - knappen
+     leser utklippstavla, ogsaa paa telefonen. En fil (bilde eller PDF) gaar
+     foran teksten; et bilde blir krympet som et valgt bilde. */
+  function okKvLimFil(f){
+    if(!f) return false;
+    if(f.type === 'application/pdf' || /^image\//.test(f.type)){ okLesKvittering(f); return true; }
+    document.getElementById('ok-kv-status').textContent = 'Kan ikke lese «' + (f.name || f.type) + '» – lim inn et bilde, en PDF eller tekst.';
+    return true;
+  }
+  function okKvLimTekst(s){
+    s = String(s || '').trim();
+    if(s.length < 10){ document.getElementById('ok-kv-status').textContent = 'Utklippstavla har ingen kvittering å lese – kopier et bilde, en PDF eller teksten fra regningen først.'; return; }
+    okLesKvittering(null, s);
+  }
+  document.addEventListener('paste', function(e){
+    var maal = e.target, innboks = document.getElementById('ok-tr-innboks');
+    if(!innboks || innboks.offsetParent === null || document.getElementById('ok-kv-knapp').disabled) return;
+    if(maal && (maal.tagName === 'INPUT' || maal.tagName === 'TEXTAREA' || maal.tagName === 'SELECT' || maal.isContentEditable)) return;
+    if(!document.getElementById('ok-kv-bak').hidden) return;
+    var d = e.clipboardData;
+    if(!d) return;
+    var filer = Array.prototype.slice.call(d.files || []);
+    if(!filer.length) Array.prototype.forEach.call(d.items || [], function(it){ if(it.kind === 'file'){ var f = it.getAsFile(); if(f) filer.push(f); } });
+    e.preventDefault();
+    if(filer.length){ okKvLimFil(filer[0]); return; }
+    okKvLimTekst(d.getData('text/plain'));
+  });
+  document.getElementById('ok-kv-lim').addEventListener('click', async function(){
+    var status = document.getElementById('ok-kv-status');
+    if(!navigator.clipboard){ status.textContent = 'Nettleseren gir ikke tilgang til utklippstavla her – trykk Ctrl+V på sida i stedet.'; return; }
+    try{
+      if(navigator.clipboard.read){
+        var ting = await navigator.clipboard.read();
+        for(var i = 0; i < ting.length; i++){
+          var typer = ting[i].types || [];
+          var ft = typer.filter(function(x){ return x === 'application/pdf' || /^image\//.test(x); })[0];
+          if(ft){ var b = await ting[i].getType(ft); okKvLimFil(new File([b], 'utklipp', { type:ft })); return; }
+        }
+        for(var j = 0; j < ting.length; j++){
+          if((ting[j].types || []).indexOf('text/plain') !== -1){ okKvLimTekst(await (await ting[j].getType('text/plain')).text()); return; }
+        }
+        okKvLimTekst('');
+        return;
+      }
+      okKvLimTekst(await navigator.clipboard.readText());
+    }catch(e){
+      status.textContent = 'Fikk ikke lest utklippstavla' + (e && e.name === 'NotAllowedError' ? ' – nettleseren sa nei' : '') + '. Trykk Ctrl+V på sida i stedet.';
+    }
+  });
 
   /* ---------- Kvitteringer fra Dropbox ----------
      Filene i Dropbox-appens mappe leses naar sida aapnes og med Oppdater,
