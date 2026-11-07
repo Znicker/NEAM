@@ -2531,15 +2531,15 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     a.addEventListener('click', function(e){ e.stopPropagation(); });
     return a;
   }
-  /* tekst: kopiert tekst fra en kvittering eller faktura i stedet for en fil
+  /* limt: kopiert tekst fra en kvittering eller faktura i stedet for en fil
      (Magne, 7. november 2026). Da lagres ingen fil med posten. */
-  async function okTolkKvittering(fil, tekst){
-    var innhold = tekst ? { type:'text', text:'Teksten under er kopiert fra dokumentet:\n\n' + String(tekst).slice(0, 40000) }
+  async function okTolkKvittering(fil, limt){
+    var innhold = limt ? { type:'text', text:'Teksten under er kopiert fra dokumentet:\n\n' + String(limt).slice(0, 40000) }
       : fil.type === 'application/pdf'
       ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data: await okSomBase64(fil) } }
       : { type:'image', source:{ type:'base64', media_type:'image/jpeg', data: await okKrympBilde(fil) } };
     /* Den samme fila Neam leste, lagres med kvitteringen - det krympede bildet, eller PDF-en som den er. */
-    var lagres = tekst ? null : { type:innhold.source.media_type, data:innhold.source.data };
+    var lagres = limt ? null : { type:innhold.source.media_type, data:innhold.source.data };
     var r = await fetch('/api/claude', { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ model:OK_MODELL, max_tokens:4000,
         system:'Du leser butikkvitteringer og fakturaer og svarer bare med JSON. Du gjetter aldri tall du ikke kan lese.',
@@ -2551,7 +2551,84 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var lagret = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ hva:'kvittering-ny', kvittering:kv, fil:lagres }) });
     if(!lagret.ok){ var feil = new Error(lagret.feil); feil.duplikat = /allerede lagt inn/.test(lagret.feil || ''); throw feil; }
-    return { post:lagret.post, linjer:(kv.linjer || []).length, festet:lagret.festet || '' };
+    return { post:lagret.post, linjer:(kv.linjer || []).length, festet:lagret.festet || '', kv:kv, lest:lagres, tekst:limt || '' };
+  }
+  /* ---------- Kopi som PDF i Dropbox ----------
+     Alt som legges inn paa sida - valgt fil eller limt inn - lagres ogsaa som
+     PDF i Dropbox-mappa «Importert», der de leste Dropbox-filene havner
+     (Magne, 7. november 2026: «disse tingene også blir lagret som pdf i
+     dropbox»). En PDF lagres som den er; et bilde (det krympede Neam leste)
+     og en tekst blir en enkel A4-PDF. Ingen bibliotek: PDF-en skrives her. */
+  function okPdfLag(objekter){
+    /* objekter: innholdet i objekt 1..n som binaerstrenger; 1 er katalogen. */
+    var ut = '%PDF-1.4\n%\xE2\xE3\xCF\xD3\n', pos = [];
+    objekter.forEach(function(o, i){ pos.push(ut.length); ut += (i + 1) + ' 0 obj\n' + o + '\nendobj\n'; });
+    var xref = ut.length;
+    ut += 'xref\n0 ' + (objekter.length + 1) + '\n0000000000 65535 f \n';
+    pos.forEach(function(p){ ut += String(p).padStart(10, '0') + ' 00000 n \n'; });
+    ut += 'trailer\n<< /Size ' + (objekter.length + 1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF\n';
+    return btoa(ut);
+  }
+  function okPdfStroem(s){ return '<< /Length ' + s.length + ' >>\nstream\n' + s + '\nendstream'; }
+  function okPdfFraBilde(jpeg64){
+    var bin = atob(jpeg64), b = 2, w = 0, h = 0;
+    /* Bredde og hoeyde fra JPEG-ens SOF-markoer. */
+    while(b < bin.length - 9){
+      if(bin.charCodeAt(b) !== 0xFF){ b++; continue; }
+      var m = bin.charCodeAt(b + 1), len = bin.charCodeAt(b + 2) * 256 + bin.charCodeAt(b + 3);
+      if(m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC){
+        h = bin.charCodeAt(b + 5) * 256 + bin.charCodeAt(b + 6); w = bin.charCodeAt(b + 7) * 256 + bin.charCodeAt(b + 8); break;
+      }
+      b += 2 + len;
+    }
+    if(!w || !h) throw new Error('Kunne ikke lese bildet');
+    var skala = Math.min(539 / w, 786 / h), bw = Math.round(w * skala), bh = Math.round(h * skala);
+    var innhold = 'q ' + bw + ' 0 0 ' + bh + ' 28 ' + (814 - bh) + ' cm /Bilde Do Q';
+    return okPdfLag([
+      '<< /Type /Catalog /Pages 2 0 R >>',
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Bilde 4 0 R >> >> /Contents 5 0 R >>',
+      '<< /Type /XObject /Subtype /Image /Width ' + w + ' /Height ' + h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + bin.length + ' >>\nstream\n' + bin + '\nendstream',
+      okPdfStroem(innhold)
+    ]);
+  }
+  function okPdfFraTekst(tekst){
+    /* Helvetica med WinAnsi: æøå og resten av latin-1 gaar rett, annet blir «?». */
+    var linjer = [];
+    String(tekst).replace(/\r\n?/g, '\n').replace(/\t/g, '    ').split('\n').forEach(function(l){
+      l = l.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, '-').replace(/\u20AC/g, 'EUR').replace(/[^\u0020-\u007E\u00A0-\u00FF]/g, '?');
+      if(!l){ linjer.push(''); return; }
+      while(l.length > 100){
+        var kutt = l.lastIndexOf(' ', 100); if(kutt < 40) kutt = 100;
+        linjer.push(l.slice(0, kutt)); l = l.slice(kutt).replace(/^ /, '');
+      }
+      linjer.push(l);
+    });
+    var PER = 58, sider = [];
+    for(var i = 0; i < Math.max(1, linjer.length); i += PER) sider.push(linjer.slice(i, i + PER));
+    var obj = ['<< /Type /Catalog /Pages 2 0 R >>', '', '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'];
+    var kids = [];
+    sider.forEach(function(s){
+      var nr = obj.length + 1;
+      kids.push(nr + ' 0 R');
+      var str = 'BT /F1 10 Tf 13 TL 40 800 Td ' + s.map(function(l){ return '(' + l.replace(/[\\()]/g, '\\$&') + ") '"; }).join(' ') + ' ET';
+      obj.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents ' + (nr + 1) + ' 0 R >>');
+      obj.push(okPdfStroem(str));
+    });
+    obj[1] = '<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + kids.length + ' >>';
+    return okPdfLag(obj);
+  }
+  async function okLagreIDropbox(res){
+    if(!okDb || !okDb.koblet) return '';
+    var kv = res.kv || {}, lest = res.lest;
+    var data = res.tekst ? okPdfFraTekst(res.tekst)
+      : lest && lest.type === 'application/pdf' ? lest.data
+      : lest ? okPdfFraBilde(lest.data) : '';
+    if(!data) return '';
+    var sum = kv.belop != null ? String(Math.abs(Number(kv.belop)).toFixed(2)).replace('.', ',') + ' kr' : '';
+    var navn = [kv.dato || new Date().toISOString().slice(0, 10), kv.butikk || (kv.type === 'faktura' ? 'Faktura' : 'Kvittering'), sum].filter(Boolean).join(' ') + '.pdf';
+    var r = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'dropbox-lagre', navn:navn, data:data }) });
+    return r.ok ? ' Lagret som PDF i Dropbox › Importert.' : ' Ikke lagret i Dropbox: ' + (r.feil || 'ukjent feil') + '.';
   }
   function okFakturaTekst(p, festet){
     var hvem = (p.motpart || p.tekst || 'fakturaen') + ', ' + okKr0.format(Math.abs(p.belop)) + ' kr';
@@ -2564,21 +2641,23 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     status.textContent = 'Neam leser kvitteringen …';
     try{
       var res = await okTolkKvittering(fil, tekst);
+      var db = '';
+      try{ db = await okLagreIDropbox(res); }catch(e){ db = ' Ikke lagret i Dropbox: ' + (e && e.message || e) + '.'; }
       if(res.festet === 'faktura' || res.post.status === 'venter'){
-        status.textContent = okFakturaTekst(res.post, res.festet === 'faktura');
+        status.textContent = okFakturaTekst(res.post, res.festet === 'faktura') + db;
         okLastInnboks(); if(okMnd.lastet) okMndLast();
         return;
       }
       if(res.festet){
         /* Kvitteringen hoerte til noe som alt laa der, og er lagt ved det (6. november 2026). */
         status.textContent = 'Lagt ved ' + (res.post.motpart || res.post.tekst || 'transaksjonen') + ', ' + okKort.format(new Date(res.post.dato))
-          + ', ' + okKr0.format(Math.abs(res.post.belop)) + ' kr – ' + (res.festet === 'banktrekk' ? 'banktrekket' : 'kvitteringen') + ' lå der fra før. Bildet kan åpnes fra posten.';
+          + ', ' + okKr0.format(Math.abs(res.post.belop)) + ' kr – ' + (res.festet === 'banktrekk' ? 'banktrekket' : 'kvitteringen') + ' lå der fra før. Bildet kan åpnes fra posten.' + db;
         okLastInnboks(); if(okMnd.lastet) okMndLast();
         return;
       }
       status.textContent = 'Lagt i innboksen: ' + res.post.motpart + ', ' + okKort.format(new Date(res.post.dato))
         + ', ' + okKr0.format(-res.post.belop) + ' kr' + (res.linjer ? ' med ' + res.linjer + ' varer' : '') + '. '
-        + (res.post.lignerPaa ? 'Obs: den ' + okLignerTekst(res.post.lignerPaa) + ' Den er strøket til du tar den med.' : 'Sjekk og godkjenn.');
+        + (res.post.lignerPaa ? 'Obs: den ' + okLignerTekst(res.post.lignerPaa) + ' Den er strøket til du tar den med.' : 'Sjekk og godkjenn.') + db;
       okLastInnboks();
     }catch(e){
       status.textContent = 'Kvitteringen ble ikke lagt inn: ' + (e && e.message || e);

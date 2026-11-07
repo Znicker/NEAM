@@ -36,6 +36,7 @@
      GET /api/bank?hva=dropbox-filer    - kvitteringsfilene som ligger i appmappa
      GET /api/bank?hva=dropbox-fil&id=<id> - selve fila (bilde eller PDF)
      POST {hva:'dropbox-ferdig', id, navn, mappe} / {hva:'dropbox-koble-fra'}
+     POST {hva:'dropbox-lagre', navn, data} - en PDF (base64) til «Importert»
      GET /api/bank?hva=regnskap-aar     - godkjente poster per maaned og kategori, hele perioden
      GET /api/bank?hva=formue / POST {hva:'formue', verdier, gjeld, maal} - det banken ikke gir
      POST /api/bank {hva:'forslag', forslag:[{id, kategori, sikker}]}    - Neams kategoriforslag
@@ -2068,6 +2069,31 @@ async function dropboxFerdig(env, kropp){
   if(!r.ok) return svar(r);
   return svar({ ok:true, mappe:mappe });
 }
+/* Det som legges inn paa sida - valgt fil eller limt inn - lagres som PDF i
+   «Importert», saa alle kvitteringene og regningene ligger samlet i Dropbox
+   (Magne, 7. november 2026). Sida lager PDF-en; her lastes den bare opp.
+   Finnes navnet, faar den nye et tall bak (autorename). */
+function dropboxArg(o){
+  /* Dropbox-API-Arg er en HTTP-header: bare ASCII, resten som \uXXXX. */
+  return JSON.stringify(o).replace(/[\u007f-\uffff]/g, c => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+}
+async function dropboxLagre(env, kropp){
+  const navn = String(kropp.navn || '').replace(/[\/\\:*?"<>|\u0000-\u001f]/g, '_').trim().slice(0, 180);
+  const data = kropp.data;
+  if(!/\.pdf$/i.test(navn) || typeof data !== 'string' || !data || data.length > 14e6 || !/^[A-Za-z0-9+/=]+$/.test(data)) return svar({ ok:false, feil:'Mangler PDF' });
+  const t = await dropboxToken(env);
+  if(!t.ok) return svar(t);
+  const bin = atob(data), bytes = new Uint8Array(bin.length);
+  for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  await dropboxApi(t.token, 'files/create_folder_v2', { path:'/Importert', autorename:false });   /* finnes den, er det greit */
+  const r = await fetch('https://content.dropboxapi.com/2/files/upload', { method:'POST',
+    headers:{ Authorization:'Bearer ' + t.token, 'Content-Type':'application/octet-stream', 'Dropbox-API-Arg':dropboxArg({ path:'/Importert/' + navn, mode:'add', autorename:true, mute:true }) },
+    body:bytes });
+  let d = null;
+  try{ d = await r.json(); }catch(e){}
+  if(!r.ok) return svar({ ok:false, feil:'Dropbox svarte ' + ((d && (d.error_summary || d.error)) || 'HTTP ' + r.status) });
+  return svar({ ok:true, navn:(d && d.name) || navn });
+}
 async function dropboxKobleFra(env){
   const t = await dropboxToken(env);
   if(t.ok){ try{ await fetch('https://api.dropboxapi.com/2/auth/token/revoke', { method:'POST', headers:{ Authorization:'Bearer ' + t.token } }); }catch(e){} }
@@ -2192,6 +2218,7 @@ export async function onRequestPost({ request, env }){
   if(kropp && (kropp.hva === 'merke-ny' || kropp.hva === 'merke-endre' || kropp.hva === 'merke-slett')) return await endreMerkeliste(env, kropp);
   if(kropp && kropp.hva === 'laert') return await lagreLaert(env, kropp);
   if(kropp && kropp.hva === 'dropbox-ferdig') return await dropboxFerdig(env, kropp);
+  if(kropp && kropp.hva === 'dropbox-lagre') return await dropboxLagre(env, kropp);
   if(kropp && kropp.hva === 'dropbox-koble-fra') return await dropboxKobleFra(env);
   if(kropp && kropp.hva === 'trumf-innlogging') return await trumfInnlogging(env, kropp, v.epost);
   if(kropp && kropp.hva === 'kvittering-ny') return await nyKvittering(env, kropp, v.epost);
