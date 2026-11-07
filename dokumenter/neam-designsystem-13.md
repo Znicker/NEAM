@@ -1559,7 +1559,10 @@ godkjent 6. november 2026; Innboks ble Transaksjoner samme kveld):
   - **Innboks** – det som venter på deg, i sammenleggbare linjer: Trenger
     et valg, Klare til godkjenning, Ført automatisk, Fakturaer som venter og
     Neam trenger. Den valgte posten står til høyre på PC. Tallet for det
-    som venter står både på fanen og på underfanen.
+    som venter står både på fanen og på underfanen. Øverst «Legg til
+    kvittering» (`.btn-ny`) og «Lim inn» (`.btn-blaa`, 7. november 2026):
+    bilde, PDF eller tekst fra utklippstavla – eller Ctrl+V på sida, når
+    markøren ikke står i et felt.
   - **Alle** – kontoutskriften fra nullpunktet. Øverst ‹ måned ›, så et
     kort med søk, konto, kategori, type og fra–til, så en meta-linje med
     antall og inn/ut, og radene som kjøpene i Regnskap (dato, navn med

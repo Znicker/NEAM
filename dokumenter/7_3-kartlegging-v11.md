@@ -482,7 +482,8 @@ kroner og øre i budsjettet (`777a39f`), stolpen på Status uten strek for
 «ventet i dag» (`6a58ce7`), **undermerker** (`797e6bb`) og til sist
 **månedene en post kommer i**, med «Fast» tatt ut igjen (`7fb6d17`), så
 regnestykker i tallfeltene (`53c7cdf`), menyen på postene i budsjettet
-(`8a9096d`) og en strengere regel for mulig dobbel (`8b81b51`).
+(`8a9096d`), en strengere regel for mulig dobbel (`8b81b51`) og
+innliming av kvitteringer – bilde, PDF eller tekst (`2c947dc`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -491,7 +492,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 62 commits, `0e0050a`–`8b81b51`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 63 commits, `0e0050a`–`2c947dc`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3942,7 +3943,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 62 commits fra `0e0050a` til `8b81b51`.
+verdier. Bygget i 63 commits fra `0e0050a` til `2c947dc`.
 
 ### Banken – Enable Banking
 
@@ -4129,6 +4130,18 @@ verdier. Bygget i 62 commits fra `0e0050a` til `8b81b51`.
   åpner den i en ny fane (`?hva=kvittering-fil&id=`) fra innboksen,
   detaljpanelet, kvitteringsdialogen, «Ført automatisk» og «Kjøpene bak».
   Det gjelder Dropbox-importen også. Kvitteringer fra før har ingen fil.
+- **Lim inn** (`2c947dc`, Magne 7. november: «Det må være mulig å kopiere
+  inn bilder, tekst og pdf når jeg skal legge til regninger og
+  kvitteringer»). Ctrl+V hvor som helst i Transaksjoner › Innboks (ikke i
+  et felt, og ikke mens kvitteringsdialogen er åpen), eller knappen
+  «Lim inn» ved «Legg til kvittering», som leser utklippstavla med
+  `navigator.clipboard.read()` – nettleseren spør om lov første gang.
+  En fil går foran tekst: bilde krympes og lagres som et valgt bilde, PDF
+  lagres som den er. **Tekst** (en e-postkvittering, en e-faktura) sendes
+  til Neam som tekst i `okTolkKvittering(fil, tekst)`; da lagres **ingen
+  fil**, og posten har ikke noe å åpne. Mindre enn ti tegn gir en melding i
+  stedet for et kall. Testet i testserveren med tekst og bilde; ikke
+  prøvd på ekte telefon eller med en PDF kopiert fra Utforsker.
 - **Trumf-feilen** lagres i `auth:bank:trumf-feil` for varselkortet. Fra
   `7cb2795` viser varselet og kilderaden Trumfs egen tekst («Trumf svarte
   HTTP 403»), ikke «sida er trolig endret».
