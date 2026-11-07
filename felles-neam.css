@@ -1560,6 +1560,53 @@
 }
 /* Fargevalg er markert mens hjulet er oppe. */
 .hsk-fargerad .dlg-knapp.aapen{ box-shadow:0 0 0 2px var(--bg-solid), 0 0 0 4px var(--aksent); }
+/* Fjernkontrollen til Samsung-TV-ene - se «Fjernkontrollen» i
+   felles-hus.js. UNNTAK FRA HUSETS FARGER, valgt av Magne 7. november
+   2026 («Lag den slik den er»): den ser ut som TV-ens egen, moerk med
+   moerke runde knapper og roed av/paa. Fargene staar her og ikke i
+   felles-rot.css fordi de bare gjelder denne ene tingen. */
+.hsk-fk{
+  margin:14px auto 4px; width:min(220px, 100%); box-sizing:border-box;
+  padding:20px 18px 26px; border-radius:34px; background:#1E2328; color:#E8ECEF;
+  display:grid; gap:16px;
+}
+.hsk-fk button{
+  border:0; background:#2E353C; color:#E8ECEF; cursor:pointer; padding:0;
+  font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:600;
+  display:flex; align-items:center; justify-content:center;
+  touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+}
+.hsk-fk button:active{ background:#46505A; }
+.hsk-fk svg{ width:20px; height:20px; display:block; }
+.hsk-fk-rad{ display:flex; justify-content:space-between; align-items:center; }
+.hsk-fk-r{ width:44px; height:44px; border-radius:50%; }
+.hsk-fk .hsk-fk-av{ color:#E2574C; }
+.hsk-fk-r.aapen{ box-shadow:0 0 0 2px #1E2328, 0 0 0 4px #E8ECEF; }
+.hsk-fk-prikker{ display:flex; gap:3px; }
+.hsk-fk-prikker i{ width:5px; height:5px; border-radius:50%; display:block; }
+.hsk-fk-tall{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+.hsk-fk-tall button{ height:40px; border-radius:12px; }
+.hsk-fk-farger{ display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; }
+.hsk-fk-farger button{ height:36px; border-radius:12px; }
+.hsk-fk .hsk-fk-rod{ background:#E2574C; }
+.hsk-fk .hsk-fk-gronn{ background:#5BB56B; }
+.hsk-fk .hsk-fk-gul{ background:#E8C547; }
+.hsk-fk .hsk-fk-blaa{ background:#4A8FD8; }
+/* Hjulet: fire piler i ringen, OK i midten. */
+.hsk-fk-hjul{ position:relative; width:164px; height:164px; margin:0 auto; border-radius:50%; background:#2E353C; }
+.hsk-fk-hjul button{ position:absolute; width:52px; height:52px; border-radius:50%; background:transparent; }
+.hsk-fk-hjul .hsk-fk-opp{ left:56px; top:2px; }
+.hsk-fk-hjul .hsk-fk-ned{ left:56px; bottom:2px; }
+.hsk-fk-hjul .hsk-fk-venstre{ left:2px; top:56px; }
+.hsk-fk-hjul .hsk-fk-hoyre{ right:2px; top:56px; }
+.hsk-fk-hjul .hsk-fk-ok{ left:44px; top:44px; width:76px; height:76px; background:#181C20; }
+/* Vippene for volum og kanal: én avlang knapp delt i to. */
+.hsk-fk-vipp{ width:44px; height:100px; border-radius:22px; overflow:hidden; background:#2E353C;
+  display:grid; grid-template-rows:1fr 1fr; }
+.hsk-fk-vipp button{ background:transparent; font-size:20px; }
+.hsk-fk-apper{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+.hsk-fk-apper button{ height:34px; border-radius:14px; font-size:var(--t-etikett); }
+
 
 /* Et rom med bare varslere i orden er bare baandet. */
 .hsk-rom.hsk-bare-baand{ padding-bottom:0; }

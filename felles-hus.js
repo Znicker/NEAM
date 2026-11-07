@@ -935,6 +935,8 @@ let hskRor = false;      /* en glider eller fargehjulet holdes - da tegnes korte
 let hskFeil = '';
 let hskRediger = false;  /* «Rediger»: alle enhetene med avhuking, og rommene kan flyttes */
 let hskApenFarge = '';   /* enheten som har fargehjulet oppe */
+let hskApenFk = '';      /* TV-en som har fjernkontrollen oppe */
+let hskFkSide = '';      /* '123' eller 'farge' naar talltastene eller fargetastene er oppe */
 
 function hskVask(s){
   return String(s === undefined || s === null ? '' : s)
@@ -1035,9 +1037,13 @@ function hskKort(navn, sti){
    - etasjene i HSK_ETASJE_REKKE, rommene og enhetene sortert. */
 function hskEtasjer(){
   const etasjer = {};
+  const fjern = {};
+  Object.keys(enheter).forEach(function(id){
+    if(enheter[id] && hskErFjern(enheter[id])) fjern[enheter[id].zone] = id;
+  });
   Object.keys(enheter).forEach(function(id){
     const d = enheter[id];
-    if(!d) return;
+    if(!d || hskErFjern(d)) return;
     const sti = hskSti(d.zone);
     const etasje = sti[1] || 'Uten etasje';
     const rom = sti[2] || etasje;
@@ -1047,7 +1053,8 @@ function hskEtasjer(){
     if(!E.rom[rk]) E.rom[rk] = { navn: hskStor(rom), etasje: E.navn, enheter: [] };
     E.rom[rk].enheter.push({
       id: id, navn: String(d.name || ''), kort: hskKort(d.name, sti), d: d,
-      kap: hskKap(id, d), art: hskArt(d), farge: hskHarFarge(id, d)
+      kap: hskKap(id, d), art: hskArt(d), farge: hskHarFarge(id, d),
+      fk: (hskArt(d) === 'tv' && fjern[d.zone]) || ''
     });
   });
   const plass = function(k){ const i = HSK_ETASJE_REKKE.indexOf(k); return i === -1 ? 99 : i; };
@@ -1486,6 +1493,29 @@ function hskBygg(){
     const hvitt = t.closest('button[data-hvitt]');
     if(hvitt){ hskSettHvitt(hvitt.dataset.hvitt); return; }
 
+    /* Fjernkontrollen: aapne og lukke, talltastene og fargetastene, og
+       tastene selv. Av/paa i fjernkontrollen er en vanlig data-kap-knapp
+       og gaar videre ned. */
+    const fk = t.closest('button[data-fk]');
+    if(fk){
+      hskApenFk = hskApenFk === fk.dataset.fk ? '' : fk.dataset.fk;
+      hskFkSide = '';
+      hskTegn();
+      return;
+    }
+    const fkSide = t.closest('button[data-fk-side]');
+    if(fkSide){
+      hskFkSide = hskFkSide === fkSide.dataset.fkSide ? '' : fkSide.dataset.fkSide;
+      hskTegn();
+      return;
+    }
+    const fkTast = t.closest('button[data-fk-tast]');
+    if(fkTast){
+      const panel = fkTast.closest('[data-fk-enhet]');
+      if(panel) hskFkSend(panel.dataset.fkEnhet, fkTast.dataset.fkTast);
+      return;
+    }
+
     const prikk = t.closest('button[data-farge]');
     if(prikk){
       hskApenFarge = hskApenFarge === prikk.dataset.farge ? '' : prikk.dataset.farge;
@@ -1578,6 +1608,7 @@ function hskBygg(){
 function hskSettRediger(paa){
   hskRediger = !!paa;
   hskApenFarge = '';
+  hskApenFk = '';
   const k = hskBygg().querySelector('.hsk-rediger');
   k.textContent = hskRediger ? 'Ferdig' : 'Rediger';
   k.setAttribute('aria-pressed', String(hskRediger));
@@ -1791,6 +1822,130 @@ function hskStyring(e){
   return ut;
 }
 
+/* ---------- Fjernkontrollen til Samsung-TV-ene ----------
+   Hver TV ligger to ganger i Homey (7. november 2026):
+     - den gamle enheten fra SmartThings, som vet om TV-en er paa og kan
+       vekke den fra dyp hvilemodus - den er raden i Rommene, og av/paa
+       gaar dit;
+     - den nye fra appen Samsung SmartTV, som tar imot tastene - den
+       vises ikke som egen rad, men gir raden en fjernkontroll.
+   De to kobles paa rommet: en Samsung SmartTV-enhet i samme sone som en
+   TV hoerer til den. Kommer det to TV-er i samme rom, maa dette tenkes
+   paa nytt.
+
+   Tastene gaar til /api/homey (hva:'tast'), som skriver en Logic-variabel;
+   en flyt og HomeyScript-skriptet «neam-tast» i Homey sender dem videre -
+   se functions/api/homey.js for hvorfor. Trykkene sendes ett og ett i
+   rekkefoelge, saa tre trykk paa hoeyre blir tre steg i riktig orden.
+
+   Utseendet er TV-ens egen fjernkontroll, moerk (Magne, 7. november
+   2026: «Lag den slik den er») - et unntak fra husets farger, se
+   designsystemet, «Rommene». Uten mikrofon: den kan ikke styres utenfra. */
+function hskErFjern(d){
+  return /^homey:app:com\.samsung\.smart:/.test(String(d.driverId || d.driverUri || ''));
+}
+
+const HSK_FK_SVG = {
+  av:     '<path d="M12 3v8"/><path d="M6.3 6.3a8 8 0 1 0 11.4 0"/>',
+  opp:    '<path d="M6 15l6-6 6 6"/>',
+  ned:    '<path d="M6 9l6 6 6-6"/>',
+  venstre:'<path d="M15 6l-6 6 6 6"/>',
+  hoyre:  '<path d="M9 6l6 6-6 6"/>',
+  tilbake:'<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
+  hjem:   '<path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/>',
+  spill:  '<path d="M4 6l7 6-7 6z"/><path d="M15 6v12M19 6v12"/>',
+  lydav:  '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9l4 6M21 9l-4 6"/>'
+};
+function hskFkIkon(n){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+       + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + HSK_FK_SVG[n] + '</svg>';
+}
+function hskFkTast(tast, innhold, merke, ekstra){
+  return '<button type="button" data-fk-tast="' + tast + '" aria-label="' + merke + '"'
+       + (ekstra ? ' class="' + ekstra + '"' : '') + '>' + innhold + '</button>';
+}
+
+/* Appene paa knappene - navnene slik TV-ens egen liste skriver dem. */
+const HSK_FK_APPER = [['Netflix', 'Netflix'], ['Prime Video', 'Prime'], ['Rakuten TV', 'Rakuten']];
+
+function hskFkHtml(e){
+  if(!e.fk) return '';
+  const aapen = hskApenFk === e.id;
+  let h = '<div class="hsk-styr hsk-fargerad">'
+        +   '<button type="button" class="dlg-knapp ja hsk-knapp' + (aapen ? ' aapen' : '') + '" data-fk="' + hskVask(e.id) + '"'
+        +   ' aria-expanded="' + aapen + '">Fjernkontroll</button>'
+        + '</div>';
+  if(!aapen) return h;
+
+  const side = function(navn, innhold, merke){
+    return '<button type="button" class="hsk-fk-r' + (hskFkSide === navn ? ' aapen' : '') + '" data-fk-side="' + navn + '"'
+         + ' aria-label="' + merke + '" aria-expanded="' + (hskFkSide === navn) + '">' + innhold + '</button>';
+  };
+  h += '<div class="hsk-fk" data-fk-enhet="' + hskVask(e.fk) + '">'
+     /* Av/paa er den gamle enhetens bryter - samme vei som skyvebryteren. */
+     +   '<div class="hsk-fk-rad">'
+     +     '<button type="button" class="hsk-fk-r hsk-fk-av" data-hsk="' + hskVask(e.id) + '" data-kap="onoff" aria-label="Av/på">'
+     +       hskFkIkon('av') + '</button>'
+     +   '</div>'
+     +   '<div class="hsk-fk-rad">'
+     +     side('123', '123', 'Talltaster')
+     +     side('farge', '<span class="hsk-fk-prikker"><i style="background:#E2574C"></i><i style="background:#5BB56B"></i>'
+                      + '<i style="background:#E8C547"></i><i style="background:#4A8FD8"></i></span>', 'Fargetaster')
+     +   '</div>';
+  if(hskFkSide === '123'){
+    h += '<div class="hsk-fk-tall">'
+       + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(function(n){ return hskFkTast('KEY_' + n, String(n), String(n)); }).join('')
+       + '<span></span>' + hskFkTast('KEY_0', '0', '0') + '<span></span>'
+       + '</div>';
+  }
+  if(hskFkSide === 'farge'){
+    h += '<div class="hsk-fk-farger">'
+       + hskFkTast('KEY_RED', '', 'Rød', 'hsk-fk-rod') + hskFkTast('KEY_GREEN', '', 'Grønn', 'hsk-fk-gronn')
+       + hskFkTast('KEY_YELLOW', '', 'Gul', 'hsk-fk-gul') + hskFkTast('KEY_CYAN', '', 'Blå', 'hsk-fk-blaa')
+       + '</div>';
+  }
+  h +=   '<div class="hsk-fk-hjul">'
+     +     hskFkTast('KEY_UP', hskFkIkon('opp'), 'Opp', 'hsk-fk-opp')
+     +     hskFkTast('KEY_LEFT', hskFkIkon('venstre'), 'Venstre', 'hsk-fk-venstre')
+     +     hskFkTast('KEY_ENTER', 'OK', 'OK', 'hsk-fk-ok')
+     +     hskFkTast('KEY_RIGHT', hskFkIkon('hoyre'), 'Høyre', 'hsk-fk-hoyre')
+     +     hskFkTast('KEY_DOWN', hskFkIkon('ned'), 'Ned', 'hsk-fk-ned')
+     +   '</div>'
+     +   '<div class="hsk-fk-rad">'
+     +     hskFkTast('KEY_RETURN', hskFkIkon('tilbake'), 'Tilbake', 'hsk-fk-r')
+     +     hskFkTast('KEY_HOME', hskFkIkon('hjem'), 'Hjem', 'hsk-fk-r')
+     +     hskFkTast('SPILL', hskFkIkon('spill'), 'Spill/pause', 'hsk-fk-r')
+     +   '</div>'
+     +   '<div class="hsk-fk-rad">'
+     +     '<div class="hsk-fk-vipp">' + hskFkTast('KEY_VOLUP', '+', 'Volum opp') + hskFkTast('KEY_VOLDOWN', '−', 'Volum ned') + '</div>'
+     +     hskFkTast('KEY_MUTE', hskFkIkon('lydav'), 'Lyd av', 'hsk-fk-r')
+     +     '<div class="hsk-fk-vipp">' + hskFkTast('KEY_CHUP', hskFkIkon('opp'), 'Kanal opp') + hskFkTast('KEY_CHDOWN', hskFkIkon('ned'), 'Kanal ned') + '</div>'
+     +   '</div>'
+     +   '<div class="hsk-fk-apper">'
+     +     HSK_FK_APPER.map(function(a){ return hskFkTast('APP:' + a[0], a[1], a[0]); }).join('')
+     +   '</div>'
+     + '</div>';
+  return h;
+}
+
+/* Spill/pause er én knapp, men TV-en har to taster. Den husker hva den
+   sendte sist og sender det andre - foerste trykk er pause. Det er et
+   minne, ikke lest fra TV-en: er den pauset fra den vanlige
+   fjernkontrollen, maa man trykke to ganger. */
+const hskFkPauset = {};
+let hskFkKo = Promise.resolve();
+function hskFkSend(enhet, tast){
+  if(tast === 'SPILL'){
+    tast = hskFkPauset[enhet] ? 'KEY_PLAY' : 'KEY_PAUSE';
+    hskFkPauset[enhet] = !hskFkPauset[enhet];
+  }
+  hskFkKo = hskFkKo.then(function(){ return post({ hva:'tast', enhet:enhet, tast:tast }); })
+    .then(function(r){
+      if(r && !r.ok){ hskFeil = 'Fjernkontrollen: ' + r.feil; hskTegn(); }
+    })
+    .catch(function(){});
+}
+
 function hskEnhetHtml(e){
   const art = HSK_ART[e.art] || HSK_ART.annet;
   /* Under «Rediger»: bare avhuking, symbol og navn. Knappene er borte,
@@ -1827,7 +1982,7 @@ function hskEnhetHtml(e){
        /* Glider, knapper og hjul under hele raden, ogsaa under bryteren -
           i navnefeltet alene ble det for trangt til to knapper ved
           siden av hverandre. */
-       +   '<div class="hsk-under">' + hskIgjenHtml(e) + hskStyring(e) + '</div>'
+       +   '<div class="hsk-under">' + hskIgjenHtml(e) + hskStyring(e) + hskFkHtml(e) + '</div>'
        + '</div>';
 }
 
@@ -2034,6 +2189,7 @@ function hskLukk(){
   if(hskTimer){ clearTimeout(hskTimer); hskTimer = null; }
   hskRor = false;
   hskApenFarge = '';
+  hskApenFk = '';
   if(hskRediger) hskSettRediger(false);
   if(hskBak) hskBak.hidden = true;
 }

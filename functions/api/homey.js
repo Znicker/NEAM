@@ -422,7 +422,11 @@ export async function onRequestPost({ request, env }){
     const id   = String(inn.enhet || '');
     const tast = String(inn.tast || '');
     if(!/^[0-9a-f-]{36}$/i.test(id))      return svar({ ok:false, feil:'Ugyldig enhet' });
-    if(!/^KEY_[A-Z0-9_]{1,40}$/.test(tast)) return svar({ ok:false, feil:'Ugyldig tast' });
+    /* En tast (KEY_UP) eller en app som skal startes (APP:Netflix) -
+       skriptet slaar opp appen i TV-ens egen liste med navnet. */
+    if(!/^KEY_[A-Z0-9_]{1,40}$/.test(tast) && !/^APP:[A-Za-z0-9 .+_-]{1,40}$/.test(tast)){
+      return svar({ ok:false, feil:'Ugyldig tast' });
+    }
     /* Kroppen er { value } rett, ikke { variable:{ value } } som i
        HomeyScript - den formen svarte 200 uten aa endre noe
        (7. november). */
