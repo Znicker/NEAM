@@ -291,7 +291,7 @@
   height:var(--ror-tykk); top:calc(50% - var(--ror-tykk) / 2);
   right:50%; width:calc(50% + var(--f-luft) + var(--f-aapen) / 2);
 }
-.neam-firer.side .neam-knapp.ved::after{ right:auto; left:50%; }
+.neam-firer.neam-hoyre .neam-knapp.ved::after{ right:auto; left:50%; }
 
 /* Diagonalt: fra «skraa» tvers over til haandtaket. Lengden er
    hypotenusen i kvadratet knappene staar i - 1,4142 ganger avstanden
@@ -306,7 +306,7 @@
   transform-origin:0 50%;
   transform:rotate(135deg);      /* ned mot venstre: haandtaket */
 }
-.neam-firer.side .neam-knapp.skraa::after{
+.neam-firer.neam-hoyre .neam-knapp.skraa::after{
   transform:rotate(45deg);       /* speilvendt: ned mot hoeyre */
 }
 
@@ -389,12 +389,12 @@
 }
 
 /* Hoeyre hjoerne: speilvendt. */
-.neam-stabel.side.fra-opp{ left:auto; right:var(--f-marg-h, var(--f-marg-x)); align-items:flex-end; }
-.neam-stabel.side.fra-skraa{
+.neam-stabel.neam-hoyre.fra-opp{ left:auto; right:var(--f-marg-h, var(--f-marg-x)); align-items:flex-end; }
+.neam-stabel.neam-hoyre.fra-skraa{
   left:auto; align-items:flex-end;
   right:calc(var(--f-marg-h, var(--f-marg-x)) + var(--f-aapen) + var(--f-luft));
 }
-.neam-stabel.side.fra-ved{
+.neam-stabel.neam-hoyre.fra-ved{
   left:auto; align-items:flex-end;
   right:calc(var(--f-marg-h, var(--f-marg-x)) + var(--f-aapen) + var(--f-luft));
 }
@@ -419,13 +419,13 @@
   max-height:calc(2 * var(--f-aapen) + var(--f-luft));
   width:auto;
 }
-.neam-stabel.side.bred{ flex-wrap:wrap-reverse; }
+.neam-stabel.neam-hoyre.bred{ flex-wrap:wrap-reverse; }
 
 /* Roeret ligger under kolonnen som staar over moderknappen - den foerste.
    `50%` var riktig da boksen var én knapp bred; med flere kolonner peker
    den midt mellom dem. */
 .neam-stabel.bred::before{ left:calc(var(--f-aapen) / 2 - var(--ror-tykk) / 2); }
-.neam-stabel.side.bred::before{
+.neam-stabel.neam-hoyre.bred::before{
   left:auto; right:calc(var(--f-aapen) / 2 - var(--ror-tykk) / 2);
 }
 
@@ -521,7 +521,7 @@
   left:calc(var(--f-marg-x) + 2 * var(--f-aapen) + 2 * var(--f-luft));
   right:auto;
 }
-.neam-stabel.side.rad{
+.neam-stabel.neam-hoyre.rad{
   flex-direction:row-reverse;
   left:auto;
   right:calc(var(--f-marg-h, var(--f-marg-x)) + 2 * var(--f-aapen) + 2 * var(--f-luft));
@@ -563,7 +563,7 @@
     bottom:calc(var(--f-marg-y) + env(safe-area-inset-bottom)
                 + 2 * var(--f-aapen) + var(--f-luft) + 16px);
   }
-  .neam-stabel.side.rad{
+  .neam-stabel.neam-hoyre.rad{
     flex-direction:column-reverse; align-items:flex-end;
     left:auto;
     right:calc(var(--f-marg-h, var(--f-marg-x)) + var(--f-aapen) + var(--f-luft));
@@ -1299,12 +1299,21 @@
    Posisjonsklassene beholder betydningen sin - .opp er rett over
    haandtaket ogsaa her - men maales fra hoeyre kant, saa bildet speiles
    og hjoernet er det samme. */
-.neam-handtak.side{ left:auto; right:var(--f-marg-h, var(--f-marg-x)); }
-.neam-firer.side{ left:auto; right:var(--f-marg-h, var(--f-marg-x)); }
-.neam-firer.side .neam-knapp{ left:auto; right:0; }
-.neam-firer.side.oppe .ved  { right:calc(var(--f-aapen) + var(--f-luft)); bottom:0; }
-.neam-firer.side.oppe .opp  { right:0; bottom:calc(var(--f-aapen) + var(--f-luft)); }
-.neam-firer.side.oppe .skraa{
+.neam-handtak.neam-hoyre{ left:auto; right:var(--f-marg-h, var(--f-marg-x)); }
+/* Hold inne i tre sekunder for innstillingene (felles-neam.js,
+   neamSideHoldStart): en blaa ring vokser rundt haandtaket mens man
+   holder, og staar fullt ute naar man kan slippe. Ingen lang-trykk-meny
+   eller markering fra telefonen. */
+.neam-handtak.neam-hoyre{ -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
+.neam-handtak.neam-hoyre.holdes{
+  box-shadow:0 0 0 10px rgba(74,127,168,.45), 0 4px 14px rgba(44,62,80,.28);
+  transition:box-shadow 3s linear, width .18s ease, height .18s ease;
+}
+.neam-firer.neam-hoyre{ left:auto; right:var(--f-marg-h, var(--f-marg-x)); }
+.neam-firer.neam-hoyre .neam-knapp{ left:auto; right:0; }
+.neam-firer.neam-hoyre.oppe .ved  { right:calc(var(--f-aapen) + var(--f-luft)); bottom:0; }
+.neam-firer.neam-hoyre.oppe .opp  { right:0; bottom:calc(var(--f-aapen) + var(--f-luft)); }
+.neam-firer.neam-hoyre.oppe .skraa{
   right:calc(var(--f-aapen) + var(--f-luft));
   bottom:calc(var(--f-aapen) + var(--f-luft));
 }

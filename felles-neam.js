@@ -1033,15 +1033,22 @@ function neamSideHarNoe(){
   }catch(e){ return false; }
 }
 
-function neamSideFirer(){
+/* `overstyr` er en liste som tar plassen til sidas egne handlinger -
+   innstillingene (neamSystemValg). Da gjoer andre trykk ikke noe mer enn
+   aa lukke. */
+let neamSideInnst = false;
+function neamSideFirer(overstyr){
   const f = document.getElementById('neamSideFirer');
   const h = document.getElementById('neamSideHandtak');
   if(!f || !h) return;
   /* Aldri to aapne samtidig: to firere er bredere enn en telefonskjerm
      til sammen, og to menyer oppe er uansett to spoersmaal om gangen. */
   neamFirerNed();
-  if(f.classList.contains('oppe')){
+  const innst = Array.isArray(overstyr);
+  if(f.classList.contains('oppe') && !innst){
+    const varInnst = neamSideInnst;
     neamSideFirerNed();
+    if(varInnst) return;
     /* Andre trykk gjoer mer enn aa lukke naar sida ber om det. Speilet av
        venstre haandtak, der andre trykk aapner samtalen: det andre
        trykket er en vei VIDERE, ikke en angring.
@@ -1059,12 +1066,13 @@ function neamSideFirer(){
   /* Hentes ved hver aapning, ikke bare én gang: hva som er mulig
      avhenger av visningen man staar i. */
   neamSideValg = {};
+  neamSideInnst = innst;
   try{
-    if(typeof window.neamSideHandlinger === 'function'){
-      (window.neamSideHandlinger() || []).forEach(function(v){
-        if(v && NEAM_SIDEPLASSER.indexOf(v.plass) !== -1) neamSideValg[v.plass] = v;
-      });
-    }
+    const liste = innst ? overstyr
+                : typeof window.neamSideHandlinger === 'function' ? (window.neamSideHandlinger() || []) : [];
+    liste.forEach(function(v){
+      if(v && NEAM_SIDEPLASSER.indexOf(v.plass) !== -1) neamSideValg[v.plass] = v;
+    });
   }catch(e){ console.warn('neamSideHandlinger feilet:', e); }
 
   NEAM_SIDEPLASSER.forEach(function(p){
@@ -1478,13 +1486,13 @@ function neamSideStabel(plass, liste){
   /* Over tre valg legges kolonnen i TO RADER, ogsaa paa telefon: fire
      valg over hverandre blir en stolpe som naar toppen av skjermen, og
      to rader ved siden av hverandre leses som fireren selv. Radene
-     vokser innover fra kanten - se .neam-stabel.side.bred.
+     vokser innover fra kanten - se .neam-stabel.neam-hoyre.bred.
 
      Da tegner CSS roerene sine, og JS skal ikke tegne sine oppaa: to
      kolonner er en annen figur enn én ledning med avstikkere. */
   const bred = loddrett && liste.length > 3;
   const kolonne = (loddrett || smal) && !bred;
-  boks.className = 'neam-stabel side '
+  boks.className = 'neam-stabel neam-hoyre '
                  + (loddrett
                       ? ('fra-' + plass + (bred ? ' bred' : ''))
                       : 'fra-ved rad')
@@ -1554,21 +1562,95 @@ function neamGrenPaa(id, plass){
 function neamGren(plass){     neamGrenPaa('neamFirer', plass); }
 function neamSideGren(plass){ neamGrenPaa('neamSideFirer', plass); }
 
-/* ---------- Myk og hard reset ----------
-   Under «Enheter og lys» paa alle sidene (Magne, 7. november 2026: «en
-   hard og en soft resetknapp», «Legg den under enheter og lys så lenge»).
-   Begge spoer foerst.
+/* ---------- Innstillingene: myk og hard reset ----------
+   Aapnes ved aa holde hoeyre tommelknapp inne i 3 sekunder, paa alle
+   sidene (Magne, 7. november 2026: «Holder man den inne i 3 sekunder blir
+   man promtet om man vil åpne innstillinger. Da ekspanderes
+   innstillingknappene som eneste på høyre tommelknapp»). Til samme kveld
+   laa de under «Enheter og lys». Begge spoer foerst.
 
    Myk: laster sida paa nytt, som aa dra ned.
    Hard: henter sida og alle filene den bruker paa nytt fra nett, forbi
    nettleserens lager, og laster saa sida - det Ctrl+Shift+R gjoer paa PC,
    og som ikke finnes paa iPad og telefon. Cloudflares eget lager rekker
    den ikke; det styres av ?v= (se CLAUDE.md, «Versjonsregelen»). */
+/* Innstillingene er de samme som paa forsiden (Magne: «Long press kan
+   åpne alle andre innstillinger som ligger på forsiden også»):
+   Husregisteret, reset og Logg ut. Husregisteret og utloggingen bor paa
+   forsiden; fra en annen side gaar de dit (?huset, ?loggut). */
+function neamPaaForsiden(){ return location.pathname === '/' || location.pathname === '/index.html'; }
 function neamSystemValg(){
   return [
-    { navn:'Myk reset', merke:true, ikon:knappMerke('oppdater'), gjor: neamMykReset },
-    { navn:'Hard reset', merke:true, ikon:knappMerke('oppdater'), gjor: neamHardReset }
+    { plass:'opp', navn:'Husregisteret', merke:true, ikon:knappMerke('husregister'),
+      gjor: function(){
+        if(neamPaaForsiden() && typeof aapneHus === 'function') aapneHus();
+        else location.href = '/?huset';
+      } },
+    { plass:'skraa', navn:'Reset', behold:true, merke:true, ikon:knappMerke('oppdater'),
+      gjor: function(){
+        neamSideStabel('skraa', [
+          { navn:'Myk reset',  merke:true, ikon:knappMerke('oppdater'), gjor: neamMykReset },
+          { navn:'Hard reset', merke:true, ikon:knappMerke('oppdater'), gjor: neamHardReset }
+        ]);
+      } },
+    { plass:'ved', navn:'Logg ut', merke:true, ikon:knappMerke('logg-ut'), gjor: neamLoggUt }
   ];
+}
+async function neamLoggUt(){
+  neamSideFirerNed();
+  if(!(await neamSpoer('Logge ut av Neam på denne skjermen?', 'Logg ut'))) return;
+  if(neamPaaForsiden() && typeof loggUt === 'function') loggUt();
+  else location.href = '/?loggut';
+}
+
+/* Hold inne: haandtaket vokser sakte i tre sekunder (.holdes i CSS-en),
+   saa man ser at noe skjer. Slippes det foer, er det et vanlig trykk.
+
+   Spoersmaalet kommer foerst naar man SLIPPER. Kom det mens fingeren
+   laa paa, landet slippet paa dialogens bakteppe - og det er nei. Trykket
+   som foelger slippet, svelges foer det naar haandtaket: forsiden setter
+   sin egen onclick, og den ville ellers aapnet sidas meny bak spoersmaalet. */
+const NEAM_HOLD_MS = 3000;
+let neamHoldTimer = null;
+let neamHoldKlar = false;
+let neamHoldSvelg = false;
+function neamSideHoldStart(ev){
+  if(ev.button !== undefined && ev.button !== 0) return;
+  neamSideHoldStopp();
+  const h = document.getElementById('neamSideHandtak');
+  if(h) h.classList.add('holdes');
+  neamHoldTimer = setTimeout(function(){
+    neamHoldTimer = null;
+    neamHoldKlar = true;
+  }, NEAM_HOLD_MS);
+}
+function neamSideHoldStopp(){
+  if(neamHoldTimer){ clearTimeout(neamHoldTimer); neamHoldTimer = null; }
+  const h = document.getElementById('neamSideHandtak');
+  if(h) h.classList.remove('holdes');
+  if(!neamHoldKlar) return;
+  neamHoldKlar = false;
+  neamHoldSvelg = true;
+  setTimeout(function(){ neamHoldSvelg = false; }, 600);
+  neamSideFirerNed();
+  setTimeout(async function(){
+    if(await neamSpoer('Åpne innstillinger?', 'Åpne')) neamSideFirer(neamSystemValg());
+  }, 60);
+}
+window.addEventListener('click', function(ev){
+  if(!neamHoldSvelg || !ev.target.closest || !ev.target.closest('#neamSideHandtak')) return;
+  neamHoldSvelg = false;
+  ev.preventDefault();
+  ev.stopPropagation();
+}, true);
+function neamSideKlikk(){
+  /* En side uten egne handlinger: haandtaket staar der likevel, for
+     innstillingenes skyld, og et trykk sier hvordan de naas. */
+  if(!neamSideHarNoe() && !document.getElementById('neamSideFirer').classList.contains('oppe')){
+    if(typeof varsle === 'function') varsle('Hold inne i tre sekunder for innstillinger.');
+    return;
+  }
+  neamSideFirer();
 }
 function neamSpoer(tekst, ja){
   if(typeof bekreft === 'function') return bekreft(tekst, { jaTekst: ja });
@@ -1617,8 +1699,6 @@ function neamVisEnheter(){
     if(typeof window.neamEnheter === 'function') liste = window.neamEnheter() || [];
     else if(Array.isArray(window.neamEnheter))   liste = window.neamEnheter;
   }catch(e){ liste = []; }
-  /* Myk og hard reset staar sist, paa alle sidene - se neamMykReset(). */
-  liste = liste.concat(neamSystemValg());
 
   if(!liste.length){
     if(typeof varsle === 'function'){
@@ -1897,25 +1977,32 @@ function neamBygg(){
 
   const sHandtak = document.createElement('button');
   sHandtak.type = 'button';
-  sHandtak.className = 'neam-handtak side';
+  sHandtak.className = 'neam-handtak neam-hoyre';
   sHandtak.id = 'neamSideHandtak';
   sHandtak.title = sm.navn;
   sHandtak.setAttribute('aria-label', sm.navn + ' - handlinger');
   sHandtak.innerHTML = neamIkonImg(sm.ikon);
-  sHandtak.onclick = neamSideFirer;
-  sHandtak.hidden = !neamSideHarNoe();
+  /* Staar paa alle sidene fra 7. november 2026, ogsaa uten egne
+     handlinger: hold inne i tre sekunder aapner innstillingene (se
+     neamSideHoldStart). */
+  sHandtak.onclick = neamSideKlikk;
+  sHandtak.addEventListener('pointerdown', neamSideHoldStart);
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function(t){
+    sHandtak.addEventListener(t, neamSideHoldStopp);
+  });
+  sHandtak.addEventListener('contextmenu', function(ev){ ev.preventDefault(); });
   document.body.appendChild(sHandtak);
 
   /* Sidas egen stabel. Hvilken plass den henger under settes naar den
      aapnes - se neamSideStabel(). */
   const sStabel = document.createElement('div');
-  sStabel.className = 'neam-stabel side fra-ved';
+  sStabel.className = 'neam-stabel neam-hoyre fra-ved';
   sStabel.id = 'neamSideStabel';
   sStabel.hidden = true;
   document.body.appendChild(sStabel);
 
   const sFirer = document.createElement('div');
-  sFirer.className = 'neam-firer side';
+  sFirer.className = 'neam-firer neam-hoyre';
   sFirer.id = 'neamSideFirer';
   sFirer.hidden = true;
   sFirer.innerHTML =

@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=6">
 <link rel="stylesheet" href="/felles-knapper.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=82">
+<link rel="stylesheet" href="/felles-neam.css?v=83">
 <!-- Datalaget baerer husregisteret og lastes foer sidens eget skript.
      felles-skjema.js gir avbryt-regelen paa husskjemaet og krever
      felles-dialog.js, som ligger nederst - derfor staar begge to der,
@@ -864,7 +864,18 @@ function start(){
      naar porten er passert. start() kalles av slippInn(), og de tre
      skriptblokkene er ferdig lastet lenge foer det - oppstart() venter paa
      et Graph-kall. */
+  if(loggutFraUrl()) return;
   if(typeof husFraUrl === 'function') husFraUrl();
+}
+
+/* index.html?loggut kommer fra innstillingene paa en annen side
+   (felles-neam.js, neamLoggUt - hold inne hoeyre tommelknapp). Der er det
+   alt spurt, saa her logges det rett ut. */
+function loggutFraUrl(){
+  if(!new URLSearchParams(location.search).has('loggut')) return false;
+  history.replaceState(null, '', location.pathname);
+  loggUt();
+  return true;
 }
 
 /* hent på nytt når skjermen vekkes */
@@ -1274,6 +1285,6 @@ window.neamUtfor = async function(navn, arg){
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=78"></script>
+<script src="/felles-neam.js?v=79"></script>
 </body>
 </html>
