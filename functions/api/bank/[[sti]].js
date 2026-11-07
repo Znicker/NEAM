@@ -117,7 +117,8 @@ const TILBAKE = 'https://neam.no/api/bank/tilbake';
    for dem (Magne, 6. november 2026). Aldri kitchen@ eller barna. */
 const TILGANG = ['sys@neam.no', 'magne@neam.no', 'nina@neam.no'];
 /* Kan vekke hentingen (?hva=hent), men faar ikke se noe. Se der. */
-const HENT_TILGANG = TILGANG.concat(['kitchen@neam.no']);
+/* felles@ er kitchen@ med nytt navn (8. november 2026); begge til kitchen@ er borte. */
+const HENT_TILGANG = TILGANG.concat(['kitchen@neam.no', 'felles@neam.no']);
 const SIST_HENTET_NOKKEL = 'auth:bank:sist-hentet';
 const TRUMF_FEIL_NOKKEL = 'auth:bank:trumf-feil';
 

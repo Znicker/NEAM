@@ -1885,7 +1885,10 @@ async function neamPinkoder(){
 
    Hvem som staar der, leses med neamHvemStaar(). felles-skriv.js
    aapner skolearbeidet for den personen (skrivSkoleTillatt). */
-const NEAM_KJOKKEN = 'kitchen@neam.no';
+/* Fellesenhetene. kitchen@ doepes om til felles@ (Magne, 8. november
+   2026: «dette oppsettet vil jo passe på alle fellesenhetene våre»);
+   begge staar her til kitchen@ er borte. */
+const NEAM_FELLES = ['kitchen@neam.no', 'felles@neam.no'];
 const NEAM_PIN_HVILE_MS = 3 * 60 * 1000;
 let neamPinPerson = null;
 let neamPinSistTrykk = 0;
@@ -1904,7 +1907,7 @@ function neamPinLagre(){
   }catch(e){}
 })();
 function neamErKjokken(){
-  return typeof skrivMeg !== 'undefined' && skrivMeg === NEAM_KJOKKEN;
+  return typeof skrivMeg !== 'undefined' && NEAM_FELLES.indexOf(skrivMeg) !== -1;
 }
 function neamHvemStaar(){
   if(neamPinPerson && Date.now() - neamPinSistTrykk > NEAM_PIN_HVILE_MS) neamPinPerson = null;

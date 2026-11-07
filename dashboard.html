@@ -1083,7 +1083,7 @@ select.hu-felt{
 <script src="/felles-ms.js?v=2"></script>
 <script src="/felles-data.js?v=5"></script>
 <script src="/felles-lesalt.js?v=16"></script>
-<script src="/felles-skriv.js?v=13"></script>
+<script src="/felles-skriv.js?v=14"></script>
 <script src="/felles-graph.js?v=3"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
@@ -1091,7 +1091,7 @@ select.hu-felt{
 <!-- Neam: femmeren for navigering. Veggskjermen baerer ingen samtale -
      tilbakeTilStandard() legger femmeren ned naar skjermen hviler. -->
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=84"></script>
+<script src="/felles-neam.js?v=85"></script>
 <script>
 /* ============================================================
    NEAM – Kjøkken dash (pilot)
@@ -1244,7 +1244,9 @@ function visPort(paa){
 /* Kjoekkenskjermen kjoerer som kitchen. Sys staar igjen med vilje:
    uten den ville en feil paa kitchen-kontoen laast oss ute av
    veggskjermen uten vei inn. */
-const DASH_TILGANG = ['kitchen@neam.no', 'sys@neam.no'];
+/* felles@ er kitchen@ med nytt navn (8. november 2026); begge til
+   kitchen@ er borte. */
+const DASH_TILGANG = ['kitchen@neam.no', 'felles@neam.no', 'sys@neam.no'];
 
 
 async function harTilgang(){

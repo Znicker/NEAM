@@ -1658,11 +1658,11 @@ input,select,textarea{font-size:16px}
 <script src="/felles-hus.js?v=28"></script>
 <script src="/felles-data.js?v=5"></script>
 <script src="/felles-lesalt.js?v=16"></script>
-<script src="/felles-skriv.js?v=13"></script>
+<script src="/felles-skriv.js?v=14"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-filviser.js?v=2"></script>
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=84"></script>
+<script src="/felles-neam.js?v=85"></script>
 <script>
 /* ============================================================
    Konfigurasjon — Azure app-registrering
@@ -1820,17 +1820,22 @@ function tomTildeling(){
   for(const n in tildeling) if(Object.prototype.hasOwnProperty.call(tildeling, n)) return false;
   return true;
 }
+/* felles@ er kitchen@ med nytt navn (8. november 2026). Tildelingen i KV
+   staar fortsatt paa kitchen@, saa felles@ leser den til den er flyttet. */
+function tildelingEpost(){
+  return minEpost === 'felles@neam.no' ? 'kitchen@neam.no' : minEpost;
+}
 function harTilgang(navn){
   if(!minEpost || tomTildeling()) return true;
   const t = tildeling[navn];
-  return !!(t && t.tilgang && t.tilgang.indexOf(minEpost) !== -1);
+  return !!(t && t.tilgang && t.tilgang.indexOf(tildelingEpost()) !== -1);
 }
 function visVedStart(navn){
   if(!harTilgang(navn)) return false;
   if(!minEpost || tomTildeling()) return true;
   const t = tildeling[navn];
   if(!t || !t.vis) return true;
-  return t.vis.indexOf(minEpost) !== -1;
+  return t.vis.indexOf(tildelingEpost()) !== -1;
 }
 
 async function lagreFarger(){
