@@ -1633,6 +1633,18 @@ godkjent 6. november 2026; Innboks ble Transaksjoner samme kveld):
     (`.ok-bu-valg`), så navnet aldri kuttes – på PC som på telefon.
   - **Beløpene har kroner og øre**: «549,90» er 549,90; punktum foran komma
     er tusenskille. Øre vises bare når de finnes.
+  - **Regnestykker i tallfeltene** (7. november 2026), i alle feltene med
+    desimaltastatur på Økonomi – budsjettet og formuen: «1500+2342+112»,
+    «3200 x 4 : 12», parenteser. Svaret settes i feltet når det forlates
+    eller med Enter; regnestykket står i feltets tittel. Kan det ikke
+    regnes ut, får feltet rød kant (`--danger`).
+  - **Menyen på en post** (`.ok-meny`): høyreklikk, eller hold fingeren
+    på telefon. Papir, `--line`-kant, skygge, radius 12; tre deler under
+    små overskrifter – «Endre» (snarveier som åpner redigeringen), «Regn»
+    (endrer utkastet, lagres med Lagre) og «Kopier – lagres med en gang»
+    (grået ut mens noe redigeres). Valg som sletter, er røde og må trykkes
+    to ganger. Nederst: «Shift + høyreklikk: vanlig meny». Lukkes med
+    Escape, klikk utenfor eller rulling.
 - **Oppsett** – alt som sammenleggbare linjer: én linje per kilde (med
   statusprikk, og kildens kort inni), kontoene per rolle, formuen (verdier,
   gjeld, bruttoinntekt, buffer, familiemål) og «Neam husker».

@@ -480,7 +480,9 @@ Claude. Så fikk **Neam alt sida kan** på Økonomi (`a106ea2`), og
 formueskjemaet slutter å se ulagret ut. Så egne merker (`51f7c70`),
 kroner og øre i budsjettet (`777a39f`), stolpen på Status uten strek for
 «ventet i dag» (`6a58ce7`), **undermerker** (`797e6bb`) og til sist
-**månedene en post kommer i**, med «Fast» tatt ut igjen (`7fb6d17`).
+**månedene en post kommer i**, med «Fast» tatt ut igjen (`7fb6d17`), så
+regnestykker i tallfeltene (`53c7cdf`) og menyen på postene i budsjettet
+(`8a9096d`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -489,7 +491,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 59 commits, `0e0050a`–`7fb6d17`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 61 commits, `0e0050a`–`8a9096d`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3940,7 +3942,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 59 commits fra `0e0050a` til `7fb6d17`.
+verdier. Bygget i 61 commits fra `0e0050a` til `8a9096d`.
 
 ### Banken – Enable Banking
 
@@ -4249,6 +4251,27 @@ til Oppsett med rød prikk på fanen, og Coop-meldingen bort.
   forsvant før Lagre. Nå sammenlignes skjemaet med det som sist ble lagret
   (`okFormueTekst()` mot `okFormueLagret`); er det ulikt, oppdateres bare
   visningen (`okTegnFormue()`), og skjemaet blir stående.
+
+### Regnestykker og menyen på postene (7. november, `53c7cdf`, `8a9096d`)
+
+- **Regnestykker** (Magne: «1500+2342+112 og så summeres det? alle fire
+  regnearter med komma»). `okRegn` er en liten parser – ingen `eval` – for
+  tall, + − × ÷ (også `x`, `:`, `÷`) og parenteser, med komma som
+  desimaltegn og punktum foran komma som tusenskille. En `change`-lytter
+  på `document` i fangstfasen regner ut stykket i alle felt med
+  `inputmode=decimal` og sender et `input`-event, så feltets egne lyttere
+  leser svaret – ingen felt måtte endres hver for seg. `okBuTall` regner
+  et halvskrevet stykke uten det siste tegnet, så summene følger med mens
+  man skriver.
+- **Menyen** (Magne: «andre museknapp og valg om å endre på input feltene»
+  – og «alle sammen» av forslagene). Radene i budsjettet har `data-k`
+  (og `data-sum` når raden er summen av linjene). `okBuMenyAapne`:
+  snarveier (beløp, navn, merke, måneder, ny linje, slett), regnehjelp på
+  utkastet (×12, ÷12, legg til, sett til standard, forrige måned, tøm) og
+  kopiering som lagres med en gang – til standarden, eller beløpet i
+  standarden og hver måned med eget budsjett, én POST per måned i kjede.
+  Kopieringen er av mens noe redigeres, så utkast ikke går tapt. Hold
+  fingeren: 550 ms uten å flytte seg. **Ikke prøvd på en ekte telefon.**
 
 ### Undermerker og månedene en post kommer i (7. november, `797e6bb`, `7fb6d17`)
 
