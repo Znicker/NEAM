@@ -501,9 +501,10 @@ bufferen regningskontoen trenger, i Oppsett (`1c8754a`), det som
 forfaller i «måned så langt» på Status, med overlappen i Oppsett på
 telefon (`27b3802`), Regnskap, Budsjett og Resultat med samme oppsett, og
 Oppdater og Oppsett på høyre tommelknapp (`9dbb2d5`), kjøpene bak en post
-i en dialog, med én spalte i alle tre (`be1e0ca`, `9339f30`), og til sist
-filene lagt ved postene i husets filviser i stedet for en ny fane
-(`106893c`).
+i en dialog, med én spalte i alle tre (`be1e0ca`, `9339f30`), filene lagt
+ved postene i husets filviser i stedet for en ny fane (`106893c`), og til
+sist differansen i «måned så langt», Resultat før Transaksjoner og
+innboksen på én linje også på PC (`44395ab`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -512,7 +513,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 72 commits, `0e0050a`–`106893c`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 73 commits, `0e0050a`–`44395ab`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4164,7 +4165,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 72 commits fra `0e0050a` til `106893c` (dialogen med
+verdier. Bygget i 73 commits fra `0e0050a` til `44395ab` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4566,7 +4567,8 @@ resultat viser sammenligningen mellom budsjett og regnskapet». Skissen
 «Oppdater kan man legge på høyre tommelknapp», «Oppsett kan også kanskje
 ligge under høyre tommelknapp»).
 
-- **Fanene:** Status, Transaksjoner, Regnskap, Budsjett, Resultat – fem,
+- **Fanene:** Status, Transaksjoner, Regnskap, Budsjett, Resultat – fem
+  (fra `44395ab` Status, Resultat, Regnskap, Budsjett, Transaksjoner),
   og de får plass på telefon. Resultat er den gamle Regnskap-fanen,
   internt fortsatt `maaned`; `#aar` og `#resultat` havner der, `#regnskap`
   i den nye.
@@ -4608,6 +4610,24 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Differanse, fanerekkefølge og innboksen på én linje** (`44395ab`).
+  Magne: «Misvisende å skrive roan [foran] på november så lang. bør heller
+  stå differanse, overforbruk står som røde minustall, underorbruk eller
+  lik bruk kan stå som grønne tall. Transaksjoner og Resultatfanen kan
+  bytte plass. Under transaksjoner kan man også dropp de to kollone og ha
+  alt på en transasksjon på en linje».
+  - **Status, «November så langt»:** «Mest foran skjema» (regnet mot hvor
+    langt i måneden man er) er byttet mot **differansen** mot månedens
+    budsjett – budsjett minus brukt, røde minustall ved overforbruk,
+    grønne tall ved under eller lik. Tabellen heter «Minst igjen» og viser
+    de tre postene med minst igjen. På telefon vises Differanse i stedet
+    for Budsjett (`.ok-mt-diff`). «Under/over skjema» ved familiemålet er
+    uendret.
+  - **Fanene:** Status, Resultat, Regnskap, Budsjett, Transaksjoner.
+  - **Innboksen på PC:** én linje per post, som på telefon (`okPostRad`:
+    navn, kategorivalg, beløp, ×); panelet med den valgte posten ved
+    siden av er borte (`okPostRadPc` og `okTegnDetalj` ligger igjen
+    ubrukt). Varene i en kvittering åpnes med «Se kvittering ›».
 - **Filene i husets filviser** (`106893c`; Magne: «går det an å åpne filer i
   en popup, så tungvindt med egen fane»). «Åpne PDF-en ›» og «Åpne bildet ›»
   overalt på sida (kjøpene bak, kvitteringen, fakturaene, innboksen) åpner

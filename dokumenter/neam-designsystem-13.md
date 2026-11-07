@@ -1647,7 +1647,7 @@ kartleggingen, del 57; her står det som angår oppbygning og utseende.
 **Fem faner, hver ting ett sted** (skissen «Neam Økonomi – ny struktur»,
 godkjent 6. november 2026; Innboks ble Transaksjoner samme kveld). Fra
 8. november 2026 (skissen «Regnskap, Budsjett, Resultat»): Status,
-Transaksjoner, Regnskap, Budsjett og Resultat. **Oppsett og Oppdater ligger
+Resultat, Regnskap, Budsjett og Transaksjoner. **Oppsett og Oppdater ligger
 på høyre tommelknapp** – Oppdater på skrå, Oppsett ved siden av, gult når
 en kilde ikke er oppdatert. **Regnskap, Budsjett og Resultat har samme
 plassering:** én periodevelger over alle tre (‹ måned ›, Måned / Hittil i
@@ -1656,14 +1656,16 @@ som sammenleggbare linjer, og postene gruppe for gruppe – Inntekter
 først, Sparing sist. Bare tallene skiller dem:
 
 - **Status** – bare oversikt: fire tallbokser, måneden som én stolpe med de
-  tre postene som ligger mest foran skjema, nøkkeltallene, netto formue og
-  familiemålet. **Måneden vises også uten fullt budsjett** (fra 6. november
+  tre postene med minst igjen, nøkkeltallene, netto formue og
+  familiemålet. **Differanse, ikke «foran skjema»** (fra 8. november 2026):
+  budsjett minus brukt for måneden, overforbruk som røde minustall og
+  under eller lik bruk som grønne tall (`.ok-avvik.over`/`.under`). På
+  telefon står Differanse i stedet for Budsjett. **Måneden vises også uten fullt budsjett** (fra 6. november
   2026): uten budsjett «… brukt så langt» og «Mest brukt», uten stolpe; med
   delvis budsjett stolpen som før. Det som mangler, står i **mangel-boksen**
   (`.ok-mangler`): mild flate, kant og venstrestrek i `--handling-endre` –
   gul fordi det trenger noe, ikke rød som en feil – med «Fyll inn ›» til
-  høyre. Poster med forbruk uten budsjett står der, ikke under «Mest foran
-  skjema». **Stolpen har ingen strek** for det som var ventet i dag (fra
+  høyre. Poster med forbruk uten budsjett står der, ikke i tabellen. **Stolpen har ingen strek** for det som var ventet i dag (fra
   7. november: «det har vi oversikt over selv») – den viser bare brukt av
   budsjettet; dato og dager igjen står i teksten. **Det som forfaller** i
   måneden er med (fra 7. november 2026): «3 000 kr brukt av 11 000 kr
@@ -1673,7 +1675,8 @@ først, Sparing sist. Bare tallene skiller dem:
 - **Transaksjoner** (fra 6. november 2026, het Innboks) – to underfaner:
   - **Innboks** – det som venter på deg, i sammenleggbare linjer: Trenger
     et valg, Klare til godkjenning, Ført automatisk, Fakturaer som venter og
-    Neam trenger. Den valgte posten står til høyre på PC. Tallet for det
+    Neam trenger. Én linje per post også på PC (fra 8. november 2026;
+    før sto den valgte posten til høyre). Tallet for det
     som venter står både på fanen og på underfanen. Øverst «Legg til
     kvittering» (`.btn-ny`) og «Lim inn» (`.btn-blaa`, 7. november 2026):
     bilde, PDF eller tekst fra utklippstavla – eller Ctrl+V på sida, når
