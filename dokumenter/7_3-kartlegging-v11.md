@@ -483,7 +483,8 @@ kroner og øre i budsjettet (`777a39f`), stolpen på Status uten strek for
 **månedene en post kommer i**, med «Fast» tatt ut igjen (`7fb6d17`), så
 regnestykker i tallfeltene (`53c7cdf`), menyen på postene i budsjettet
 (`8a9096d`), en strengere regel for mulig dobbel (`8b81b51`) og
-innliming av kvitteringer – bilde, PDF eller tekst (`2c947dc`).
+innliming av kvitteringer – bilde, PDF eller tekst (`2c947dc`) – og en
+PDF-kopi i Dropbox av alt som legges inn på sida (`c66917a`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -492,7 +493,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 63 commits, `0e0050a`–`2c947dc`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 64 commits, `0e0050a`–`c66917a`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3943,7 +3944,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 63 commits fra `0e0050a` til `2c947dc`.
+verdier. Bygget i 64 commits fra `0e0050a` til `c66917a`.
 
 ### Banken – Enable Banking
 
@@ -4168,6 +4169,24 @@ Cloudflare.
   Trumf – og med **«Hent fra Dropbox nå»** i Dropbox-kortet i Oppsett
   (`9e211c8`), som sier fra også når mappa er tom.
 - Magne 6. november: «fungerer veldig bra».
+- **Kopi som PDF i «Importert»** (`c66917a`, Magne 7. november: «Kan vi
+  ordne så disse tingene også blir lagret som pdf i dropbox?» – alt som
+  legges inn på sida, i «Importert»). Det som velges med «Legg til
+  kvittering» eller limes inn, lastes opp som PDF etter at Neam har lest
+  det: en PDF som den er, et bilde (det krympede Neam leste) og en tekst
+  som en enkel A4-PDF. PDF-en skrives i sida uten bibliotek
+  (`okPdfFraBilde`, `okPdfFraTekst`: Helvetica med WinAnsi, så æøå går
+  rett; annet blir «?», € blir «EUR»). Funksjonen laster bare opp
+  (`dropbox-lagre`, `files/upload` med `autorename`), og
+  `Dropbox-API-Arg` får ikke-ASCII som `\uXXXX` – headeren tåler bare
+  ASCII. Navnet er dato, butikk og sum («2026-11-05 REMA 1000 123,45
+  kr.pdf»). Det som kom fra Dropbox, lastes ikke opp igjen; en duplikat
+  heller ikke. Statuslinja sier om det ble lagret. Uten Dropbox koblet
+  skjer ingenting. Testet mot falsk Dropbox (PDF-ene åpnet i pdf.js);
+  ikke mot ekte Dropbox.
+- **Lærdom:** en `var tekst` lenger ned i `okTolkKvittering` overskrev
+  parameteren med samme navn, og den første tekst-PDF-en inneholdt Neams
+  svar. Parameteren heter nå `limt`.
 
 ### Budsjett, regnskap og poster
 
