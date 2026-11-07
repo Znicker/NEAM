@@ -1,6 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 6. november 2026, natt: Økonomi-flisen på forsiden er vekket,
+*Ført à jour 7. november 2026: ikonene er byttet til bronsestilen, og
+strektegningene i koden med dem der de står på lys flate (se toppblokka).
+Ført à jour 6. november 2026, natt: Økonomi-flisen på forsiden er vekket,
 og Designverktøy-flisen er ny (se toppblokka). Ført à jour 6. november
 2026: fargekatalogen er ny, og bildekatalogen
 kan bestille strektegningene og dele store utvalg i flere ark (se
@@ -74,7 +76,7 @@ ny tråd alltid lander på samme sted.*
 
 ---
 
-## Nåstatus – 6. november 2026
+## Nåstatus – 7. november 2026
 
 **Hvor prosjektet er nå.** Ni sider og fire spill, og Andreas tre spill
 nås fra én egen spillside. To økter 12.–13. september
@@ -94,9 +96,9 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=75`, `felles-neam.css
-?v=75`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
-?v=14`, `felles-hus.js ?v=22`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
+**Siste leverte versjoner:** `felles-neam.js ?v=77`, `felles-neam.css
+?v=76`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
+?v=15`, `felles-hus.js ?v=23`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
@@ -104,18 +106,20 @@ alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `functions/api/` med `hent.js`, `sandnes.js`, `sjo.js`, `claude.js`,
 `data.js`, `ms.js`, `homey.js`, `roborock.js`, `turn.js` og
 `bank/[[sti]].js`.
-Bildeversjoner: **`IKON_V=1`** (i `felles-neam.js`) for de nye ikonene i
+Bildeversjoner: **`IKON_V=2`** (i `felles-neam.js`) for ikonene i
 `bilder/ikoner/` og `bilder/ikoner/sikkerhet/` – sidene som lenker dem
-direkte, skriver `?v=1` selv. `FAG_MERKE_V=3` (fagmerkene, fortsatt i
+direkte, skriver `?v=2` selv. `?v=1` gjaldt ikonene fra 27. oktober og er
+brent for alle som ble byttet 7. november; `neam-logo.png` fikk ikke nytt
+bilde og står fortsatt med `?v=1`. `FAG_MERKE_V=3` (fagmerkene, fortsatt i
 bruk), `NMW_SYMBOL_V=1` (klippersymbolet i kartet, i `felles-hus.js`),
 hagebildet `NMW_HAGE` er `null` fra 1. november (se del 56; brukte `v=1`),
 spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–74; neam.css til og
-med 74; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–13, skriv 1–11,
-hus `?v=1–21`, ms `?v=1`, tale 1–4, graph 1–2**. (1. november: hus 13–16
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–76; neam.css til og
+med 75; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–14, skriv 1–11,
+hus `?v=1–22`, ms `?v=1`, tale 1–4, graph 1–2**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -619,6 +623,42 @@ eller brent**).
   lenger.
 - **Ikke sett på skjermen:** forsiden sender til innlogging lokalt, så
   flisene er bare sjekket i koden. Må prøves på neam.no som sys@.
+
+**7. november: ikonene i bronsestilen** (`22fd41b`, `cab6b9d`, `fed022a`,
+`ce94b26`; neam.js `?v=76` og `?v=77`, neam.css `?v=76`, hus `?v=23`,
+ikonene `?v=2`).
+- **Bestillingen:** bildekatalogen deler utvalget i ark på ni, krever minst
+  512 px per rute og ingen ekstra plate bak ikonene, og «Juster gruppa» tar
+  med stilblokkene. Flere ark lastes ned i én zip. Med 40 per ark kom
+  ikonene tilbake på rundt 185 px.
+- **75 bilder byttet** (`fed022a`): ikonene i `bilder/ikoner/`,
+  sikkerhetsflisene, avatarene og spill-logoene, fra Magnes ark i
+  `Dropbox/Bilder Neam`. Skalert til 512 px (robotene i egen størrelse,
+  rundt 580) og lagret med 256 farger – 3,1 MB mot 26 MB uten. Alle har
+  egen flis, så sidene bruker `ikon-flis`. **Sikkerhetskopi av de gamle**
+  i `Dropbox/Bilder Neam/Sikkerhetskopi 2026-11-07 (før bronse)`, og i
+  git før `fed022a`.
+- **Strektegningene** (`ce94b26`): 23 steder bruker nå bildene – fireren
+  (påminnelsene på Kjøkken dash som på Andrea dash, Oppdater og Kalendere,
+  Rommene), Diktat, Klokkespillet, Mattespillet, Emmas spill, «Snu
+  telefonen» og flytt-håndtaket. **Hvit strek på fargede knapper står igjen
+  som SVG** (Magnes valg), og det samme gjør Lukk i filviseren og kartnåla
+  ved været, som ville blitt fliser under 40 px. Rommene er strekikon uten
+  flis og eneste navn i `NEAM_IKON_STREK`.
+- **Ved de doble filnavnene vant flisene.** Åtte strektegninger hadde samme
+  navn som en flis; de nye strekikonene for dem, og for logg inn, forrige,
+  neste, send, last ned, lyd av, lyd på og varsel, er ikke tatt i bruk.
+- **Avvik fra stilen, godtatt:** strekikonene er bronsebrune og ikke
+  marineblå, roboten mangler N-merket, og spill-logoene mangler tekst i
+  båndet. Spill-logoene og avatarene lenkes ikke fra noen side.
+- **Nesten-uhell:** en annen økt committet sidene med `neam.js ?v=77` fra
+  arbeidstreet (`797e6bb`) før fellesfilene var pushet, og tok det ut igjen
+  i `00e02c8`. Etter utrullingen ble alle de nye adressene sjekket forbi
+  nettleserens lager: riktig innhold, ingen numre brent.
+- **Ikke sett på skjermen:** Rommene-knappen i husfireren og sol og måne i
+  Klokkespillet – bildene finnes og lastes.
+- **Arbeidsfiler, ikke committet:** `dokumenter/ikon-sammenligning.html` og
+  `dokumenter/nye-ikoner/` (44 MB) med alle 107 utklipp.
 
 ### Åpne tråder
 
