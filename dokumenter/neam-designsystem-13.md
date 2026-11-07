@@ -1385,6 +1385,29 @@ regnbue – begge med mørk tekst, fordi hvit forsvinner på gult og mørk på
 sterk blå. Valgt av Magne 1. november 2026, vel vitende om at det avviker
 fra malen.
 
+**Fjernkontrollen til TV-ene** (7. november 2026). «Fjernkontroll» står
+under TV-raden, en blå knapp over hele bredden som åpner fjernkontrollen
+under, med samme ring som «Fargevalg» når den er oppe. Bare én TV har den
+oppe om gangen. Hver TV er **én rad**: bryteren og av/på-knappen går til
+TV-ens SmartThings-enhet, som vet om den er på, og tastene til
+Samsung SmartTV-enheten i samme rom, som ikke vises for seg.
+
+**Unntak fra husets farger, valgt av Magne** («Lag den slik den er», etter
+et bilde av TV-ens egen fjernkontroll): mørk kropp og mørke runde knapper,
+rød av/på, fargeprikker på fargetasten, et rundt hjul med pilene i ringen
+og OK i midten, vipper for volum og kanal, og tre appknapper med navnet som
+tekst (Netflix, Prime, Rakuten) – ingen logoer. Fargene står i
+`felles-neam.css` og ikke i paletten, fordi de bare gjelder denne. Ingen
+mikrofon – den kan ikke styres utenfra. 123 og fargeprikken åpner
+talltaster og fire fargetaster inne i fjernkontrollen.
+
+**På telefon (under 700 px) fyller den skjermen** (Magne: «fylle store
+deler av skjermen. Men må ha en tydelig exit»), på den milde flaten, med
+TV-navnet og **Lukk** øverst – nøytral, som Lukk ellers. Den forstørres
+etter plassen. Escape lukker bare fjernkontrollen, ikke Rommene. Trykkene
+bekreftes ikke: bekreftelsesregelen gjelder det Neam gjør, ikke knapper man
+trykker selv.
+
 **Ytterdøra, kameraet og varslerne styres ikke herfra.** De vises med
 tilstand; låsen styres fra sikkerhetssida og av Neam, der opplåsing
 alltid spør.
@@ -1663,7 +1686,10 @@ godkjent 6. november 2026; Innboks ble Transaksjoner samme kveld):
     Escape, klikk utenfor eller rulling.
 - **Oppsett** – alt som sammenleggbare linjer: én linje per kilde (med
   statusprikk, og kildens kort inni), kontoene per rolle, formuen (verdier,
-  gjeld, bruttoinntekt, buffer, familiemål) og «Neam husker».
+  gjeld, bruttoinntekt, buffer, familiemål), **Regningskontoen** (7. november
+  2026: kontoen i et nedtrekk, «anbefalt buffer» som `.ok-stort`, og
+  månedene som rader – hvor langt ned saldoen gikk før påfyllet) og «Neam
+  husker».
 
 **Regler:**
 

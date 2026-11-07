@@ -1,6 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 7. november 2026: ikonene er byttet til bronsestilen, og
+*Ført à jour 7. november 2026, kveld: Rommene har fått fjernkontroll til
+Samsung-TV-ene, gjennom en Logic-variabel og HomeyScript i Homey (se
+toppblokka). Ført à jour 7. november 2026: ikonene er byttet til bronsestilen, og
 strektegningene i koden med dem der de står på lys flate (se toppblokka).
 Ført à jour 6. november 2026, natt: Økonomi-flisen på forsiden er vekket,
 og Designverktøy-flisen er ny (se toppblokka). Ført à jour 6. november
@@ -97,8 +99,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-tale.js` (tale ut og inn).
 
 **Siste leverte versjoner:** `felles-neam.js ?v=77`, `felles-neam.css
-?v=76`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
-?v=16`, `felles-hus.js ?v=23`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
+?v=78`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
+?v=16`, `felles-hus.js ?v=25`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
@@ -118,8 +120,8 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–76; neam.css til og
-med 75; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–11,
-hus `?v=1–22`, ms `?v=1`, tale 1–4, graph 1–2**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+med 77; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–11,
+hus `?v=1–24`, ms `?v=1`, tale 1–4, graph 1–2**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -486,7 +488,8 @@ regnestykker i tallfeltene (`53c7cdf`), menyen på postene i budsjettet
 innliming av kvitteringer – bilde, PDF eller tekst (`2c947dc`), en
 PDF-kopi i Dropbox av alt som legges inn på sida (`c66917a`) og ubetalte
 regninger som «forfaller» i Regnskap (`fa530bc`), også under kjøpene bak
-posten (`ce1aa39`) og i de store summene og diagrammet (`93ef3ec`).
+posten (`ce1aa39`) og i de store summene og diagrammet (`93ef3ec`), og
+til sist bufferen regningskontoen trenger, i Oppsett (`1c8754a`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -495,7 +498,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 67 commits, `0e0050a`–`93ef3ec`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 68 commits, `0e0050a`–`1c8754a`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -671,6 +674,47 @@ ikonene `?v=2`).
 - **Arbeidsfiler, ikke committet:** `dokumenter/ikon-sammenligning.html` og
   `dokumenter/nye-ikoner/` (44 MB) med alle 107 utklipp.
 
+**7. november, kveld: fjernkontroll til Samsung-TV-ene** (`e599c40`–`8954969`;
+hus `?v=24` og `?v=25`, neam.css `?v=77` og `?v=78`). Magne: «full
+fjernkontrollstyring på samsung tv i appen». Testet fra neam.no på Stue TV:
+på, Hjem, piler, Tilbake, volum og av («det fungerte nå»), og fjernkontrollen
+i Rommene («Fungerte meget bra»).
+- **Veier som ble prøvd og forlatt.** Homeys egen SmartThings-kobling gir
+  TV-ene bare av/på, volum og kanal. **SmartThings direkte:** alle fire TV-ene
+  har `samsungvd.remoteControl`, men egne apper mot SmartThings krever et
+  betalt Developer- eller Business-abonnement («API Access is a paid
+  feature»), og egne nøkler varer 24 timer. **Kortet «Send key» rett fra
+  Neam:** krever tillatelsen `homey.flow`, som en Web API-app ikke kan få –
+  403 «Missing Scopes», også med `homey.flow.start`.
+- **Veien som virker:** appen **Samsung SmartTV** (`com.samsung.smart`,
+  Bjørnar Almli) er installert i Homey, og alle fire TV-ene er lagt til –
+  hver godkjent på TV-en. Neam skriver Logic-variabelen **«Neam
+  fjernkontroll»** som `enhets-id|KEY_X|tidspunkt` (eller `APP:Netflix`) via
+  `hva:'tast'` i `homey.js`; flyten **«Neam fjernkontroll»** kjører
+  HomeyScript-skriptet **`neam-tast`**, som sender tasten eller starter
+  appen. Variabelen skrives med `{ value }` rett i kroppen –
+  `{ variable:{ value } }` svarte 200 uten å endre noe.
+- **Nye tillatelser på Neam-appen hos Athom** (Homey Developer Tools):
+  `homey.flow.readonly`, `homey.flow.start` og `homey.logic`, og Homey
+  godkjent på nytt med `godkjenn()` på sikkerhetssida. `homey.flow.start`
+  brukes ikke og kan tas bort. `homey.flow.readonly` gjør at lesingen av
+  flyter (`hva=flyter`) virker – den manglet før.
+- **Hver TV ligger to ganger i Homey, med vilje.** Den nye (Samsung
+  SmartTV) tar tastene, men tror Stue TV (UE55RU8005, 2019) alltid er på –
+  den svarer på nettet i hvilemodus. Den slår den derfor ikke på, og etter
+  en stund av tar den ikke imot taster heller. Den gamle (SmartThings) vet
+  om TV-en er på og kan vekke den. I Rommene er den gamle raden, og den nye
+  gir raden en fjernkontroll – koblet på rommet.
+- **Fjernkontrollen** («Lag den slik den er», etter et bilde av TV-ens egen):
+  mørk, med av/på, 123 (talltaster), fargetaster, hjul med OK, Tilbake,
+  Hjem, spill/pause (sender pause og spill annenhver gang), volum, lyd av,
+  kanal og Netflix, Prime Video og Rakuten TV. Uten mikrofon. På telefon
+  fyller den skjermen med TV-navnet og Lukk øverst. Reglene står i
+  designsystemet, «Rommene».
+- **Neam ser hver TV én gang** – Samsung SmartTV-enhetene er tatt ut av
+  lista både Rommene og Neam bruker, så Neam kan ikke sende taster.
+- **Ryddet:** testskriptet `neam-tv-test` i HomeyScript er slettet.
+
 ### Åpne tråder
 
 **Besluttet, ikke bygget – fem systemer med begrunnelse i del 47–50 og 52:**
@@ -763,6 +807,9 @@ ikonene `?v=2`).
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **Fjernkontrollen på de tre andre TV-ene** (7. november): bare volum opp
+  er prøvd på Kjellerstue, Emma og Andrea – av/på, appknappene, 123 og
+  fargetastene er bare prøvd på Stue TV eller ikke i det hele tatt.
 - **Økonomi på neam.no** (29. oktober). De nye fanene Innboks, Måned og
   Budsjett med ekte tall; at **DNB godtar PSU-headerne** (fersk henting
   ved åpning – ellers står feilen i Kilder); at **Trumf-cookien lever over
@@ -3946,7 +3993,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 67 commits fra `0e0050a` til `93ef3ec`.
+verdier. Bygget i 68 commits fra `0e0050a` til `1c8754a`.
 
 ### Banken – Enable Banking
 
@@ -4327,6 +4374,39 @@ til Oppsett med rød prikk på fanen, og Coop-meldingen bort.
   forsvant før Lagre. Nå sammenlignes skjemaet med det som sist ble lagret
   (`okFormueTekst()` mot `okFormueLagret`); er det ulikt, oppdateres bare
   visningen (`okTegnFormue()`), og skjemaet blir stående.
+
+### Bufferen på regningskontoen (7. november, `1c8754a`)
+
+Magne: «vi får lønning i midten av måneden og regninger som er både i
+slutten og i midten av måneden». Lønning-til-lønning-måneder ble foreslått,
+men Magne valgte en **buffer på regningskontoen** i stedet – «slik at vi
+kan starte på nytt hver måned». Da kan månedene være kalendermåneder som
+før, og ingenting annet i Økonomi endres. Vist i Oppsett, ikke på Status
+(Magne: «vis dette under oppsett»).
+
+- **Kortet «Regningskontoen»** i Oppsett, linja «Buffer på
+  regningskontoen». Kontoen velges i et nedtrekk blant kontoene med rollen
+  Felles – bare de har trekk i Neam. Valget ligger i
+  `auth:bank:regningskonto` (`{ uid }`; `regningskonto` GET og POST).
+- **Utregningen** (`regningskonto()` i bank-funksjonen): for hver
+  kalendermåned, hvor langt ned saldoen gikk fra den 1. til **påfyllet** –
+  den største innbetalingen i måneden. Utbetalinger samme dag regnes før
+  påfyllet (rekkefølgen er ukjent). Alle banktrekk på kontoen teller, også
+  strøkne; samme trekk to ganger fra DNB (sammenslått inn i et annet
+  banktrekk) telles én gang. En måned uten påfyll ennå står som «hittil»
+  og teller ikke i anbefalingen.
+- **Anbefalt buffer:** den tyngste måneden + 10 %, rundet opp til hele
+  tusen. Saldoen nå står ved siden av, uten vurdering – midt i måneden sier
+  den lite.
+- **Neam:** `les_okonomi_regningskonto` (kontonavn, aldri kontonummer – og
+  ikke teksten på påfyllet, som kan ha et kontonummer) og
+  `sett_okonomi_regningskonto` (bekreftes).
+- **Begrensninger:** historikken går bare til nullpunktet, så en post som
+  bare kommer i enkelte måneder, er ikke med før den har vært trukket. Er en
+  annen innbetaling større enn lønna, blir den påfyllet den måneden.
+  Fakturaer som venter, er ikke med – Neam vet ikke hvilken konto de
+  betales fra. Testet i testserveren; `sett_okonomi_regningskonto` ikke
+  kjørt.
 
 ### Regnestykker og menyen på postene (7. november, `53c7cdf`, `8a9096d`)
 
@@ -4781,7 +4861,7 @@ og kontoer og transaksjoner skal ikke kunne leses ut derfra. Nøklene:
 `hus` (økta), `roller`, `kontonavn`, `tilstand:<rnd>`, `buffer:<navn>`,
 `poster`, `laert`, `innboks-fra`, `trumf`, `trumf-feil`, `kv:<postId>`,
 `sist-hentet`, `budsjett`, `kategorier`, `formue`, `formue-mnd`, `dropbox`,
-`fil:<postId>`, `kontonr`.
+`fil:<postId>`, `kontonr`, `regningskonto`.
 
 ### Lærdommer
 
