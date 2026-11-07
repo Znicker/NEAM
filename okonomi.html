@@ -87,8 +87,10 @@ html{ scroll-padding-top:90px; }
 .ok-fold-prikk{ flex:none; width:10px; height:10px; border-radius:50%; background:var(--handling-ny); }
 .ok-fold-prikk.gammel{ background:var(--handling-endre); }
 .ok-fold-prikk.stopp{ background:var(--danger); }
-.ok-fold-tittel{ flex:1; min-width:0; font-weight:700; }
-.ok-fold-sum{ font-size:var(--t-meta); color:var(--ink-soft); text-align:right; }
+/* Tittelen krymper ikke; et langt sammendrag bryter i stedet (7. november
+   2026: «Verdier» havnet under sammendraget paa telefon). */
+.ok-fold-tittel{ flex:1 0 auto; max-width:100%; font-weight:700; }
+.ok-fold-sum{ flex:0 1 auto; min-width:0; font-size:var(--t-meta); color:var(--ink-soft); text-align:right; }
 .ok-fold-sum.varsel{ color:var(--handling-endre); font-weight:600; }
 .ok-fold-sum.stopp{ color:var(--danger); font-weight:600; }
 .ok-fold-innhold{ padding:0 0 16px 26px; display:flex; flex-direction:column; gap:12px; min-width:0; }
@@ -604,6 +606,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-fram{ position:relative; height:12px; background:var(--boks-mild); border-radius:999px; }
 .ok-fram span{ position:absolute; inset:0 auto 0 0; background:var(--aksent); border-radius:999px; }
 .ok-fram span.over{ background:var(--danger); }
+/* Det som forfaller, lysere etter det betalte - som i Regnskap (7. november 2026). */
+.ok-fram span.forfaller{ inset:0 auto 0 auto; opacity:.38; }
 .ok-fram i{ position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--ink); border-radius:2px; }
 .ok-kat-liste{ display:flex; flex-direction:column; gap:12px; }
 .ok-kat-rad{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:5px 12px; align-items:baseline; }
@@ -3271,11 +3275,11 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var f = okSt.formue, m = okSt.mnd, ib = okSt.varsler && okSt.varsler.innboks, kort = [];
     if(f) kort.push(['Netto formue', kr(f.netto), f.forrige ? (f.diff < 0 ? '−' : '+') + kr(Math.abs(f.diff)) + ' siden ' + f.forrigeNavn : 'Fra verdiene i Oppsett']);
     if(m && m.bud){
-      kort.push(['Brukt i ' + m.navn, kr(m.brukt), 'av ' + kr(m.bud) + ' i budsjett']);
+      kort.push(['Brukt i ' + m.navn, kr(m.brukt), 'av ' + kr(m.bud) + ' i budsjett' + (m.ff ? ' · herav ' + kr(m.ff) + ' forfaller' : '')]);
       kort.push([m.brukt <= m.bud ? 'Igjen' : 'Over budsjett', kr(Math.abs(m.bud - m.brukt)), m.dagerIgjen != null ? m.dagerIgjen + ' dager igjen av måneden' : 'Måneden er avsluttet']);
     } else if(m && m.brukt){
       /* Uten budsjett vises det som er brukt likevel (6. november 2026). */
-      kort.push(['Brukt i ' + m.navn, kr(m.brukt), 'Budsjettet er ikke fylt inn']);
+      kort.push(['Brukt i ' + m.navn, kr(m.brukt), 'Budsjettet er ikke fylt inn' + (m.ff ? ' · herav ' + kr(m.ff) + ' forfaller' : '')]);
     }
     if(ib){
       var sum = ib.forslag + ib.usikker + ib.uten + ib.dobbel, tvil = ib.usikker + ib.uten + ib.dobbel;
@@ -3361,20 +3365,31 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       var mndNavn = okMndNavn.format(d).replace(/ \d{4}$/, '');
       document.getElementById('ok-mnd-tittel').textContent = mndNavn.replace(/^\w/, function(c){ return c.toUpperCase(); }) + ' så langt';
       var kats = (b.kategorier || []).filter(okErUtgift);
+      /* Det som forfaller i maaneden (fakturaer som venter), telles med i
+         brukt - som de store tallene i Regnskap (Magne, 7. november 2026:
+         «Forfallende må også inn i november så langt»). */
+      var ffK = {}, ffSum = 0;
+      (okSt.aar && okSt.aar.forfaller || []).forEach(function(f){
+        if(f.mnd !== r.mnd || kats.indexOf(f.kategori) === -1) return;
+        ffK[f.kategori] = (ffK[f.kategori] || 0) + f.belop; ffSum += f.belop;
+      });
+      var regn = {};
+      Object.keys(r.regnskap).forEach(function(k){ regn[k] = r.regnskap[k]; });
+      Object.keys(ffK).forEach(function(k){ regn[k] = (regn[k] || 0) + ffK[k]; });
       var bud = 0, brukt = 0, grupper = {}, rekke = [];
       kats.forEach(function(k){
         var g = okGruppe(k);
         if(!grupper[g]){ grupper[g] = { b:0, r:0 }; rekke.push(g); }
         var mb = okBudFor(b, r.mnd);
-        grupper[g].b += mb[k] || 0; grupper[g].r += r.regnskap[k] || 0;
-        bud += mb[k] || 0; brukt += r.regnskap[k] || 0;
+        grupper[g].b += mb[k] || 0; grupper[g].r += regn[k] || 0;
+        bud += mb[k] || 0; brukt += regn[k] || 0;
       });
       var naa = new Date(), dager = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
       var iMnd = r.mnd === naa.toISOString().slice(0, 7);
       var andelTid = iMnd ? naa.getDate() / dager : 1;
       var fast = (grupper.Bolig || { b:0 }).b;
       var ventet = fast + (bud - fast) * andelTid;
-      okSt.mnd = { navn:mndNavn, bud:bud, brukt:brukt, ventet:ventet, dagerIgjen:iMnd ? dager - naa.getDate() : null };
+      okSt.mnd = { navn:mndNavn, bud:bud, brukt:brukt, ff:ffSum, ventet:ventet, dagerIgjen:iMnd ? dager - naa.getDate() : null };
       var meta = document.getElementById('ok-mnd-meta');
       meta.className = 'ok-meta';
       meta.textContent = (iMnd ? naa.getDate() + '. ' + mndNavn + ' · ' + (dager - naa.getDate()) + ' dager igjen · ' : '') + r.poster + ' godkjente poster';
@@ -3393,7 +3408,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       kats.filter(function(k){ return k.split(' · ').length === 2; }).forEach(function(k){
         var linjer = kats.filter(function(x){ return x.indexOf(k + ' · ') === 0; });
         var pb = linjer.reduce(function(s, l){ return s + (mbS[l] || 0); }, mbS[k] || 0);
-        var pr = linjer.reduce(function(s, l){ return s + (r.regnskap[l] || 0); }, r.regnskap[k] || 0);
+        var pr = linjer.reduce(function(s, l){ return s + (regn[l] || 0); }, regn[k] || 0);
         if(pr > 0) alle.push({ k:k, pr:pr, pb:pb });
         /* Brukt uten budsjett er en mangel i budsjettet, ikke «foran skjema». */
         if(pr > 0 && !pb){ uten.push({ k:k, pr:pr }); return; }
@@ -3403,11 +3418,24 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       foran.sort(function(x, y){ return y.f - x.f; });
       uten.sort(function(x, y){ return y.pr - x.pr; });
       alle.sort(function(x, y){ return y.pr - x.pr; });
-      boks.appendChild(okEl('div', 'ok-kort-hode', '<span><b>' + kr(brukt) + '</b> ' + (bud ? 'brukt av ' + kr(bud) : 'brukt så langt') + '</span><span class="ok-meta">'
+      boks.appendChild(okEl('div', 'ok-kort-hode', '<span><b>' + kr(brukt) + '</b> ' + (bud ? 'brukt av ' + kr(bud) : 'brukt så langt')
+        + (ffSum ? ' (herav forfaller ' + kr(ffSum) + ')' : '') + '</span><span class="ok-meta">'
         + (iMnd ? (dager - naa.getDate()) + ' dager igjen' : 'Avsluttet') + '</span>'));
       /* Stolpen viser bare brukt av budsjettet - ingen strek for hvor langt i
-         maaneden man er kommet (Magne, 7. november 2026). */
-      if(bud) boks.appendChild(okFram(brukt / bud));
+         maaneden man er kommet (Magne, 7. november 2026). Det som forfaller,
+         ligger lysere etter det betalte. */
+      if(bud){
+        var fram = okFram((brukt - ffSum) / bud);
+        if(ffSum){
+          var ffDel = document.createElement('span');
+          ffDel.className = 'forfaller' + (brukt > bud ? ' over' : '');
+          ffDel.style.left = Math.min(Math.max((brukt - ffSum) / bud, 0), 1) * 100 + '%';
+          ffDel.style.width = Math.max(0, Math.min(brukt / bud, 1) - Math.min(Math.max((brukt - ffSum) / bud, 0), 1)) * 100 + '%';
+          ffDel.title = 'Forfaller';
+          fram.appendChild(ffDel);
+        }
+        boks.appendChild(fram);
+      }
       if(!bud || uten.length){
         var utenSum = uten.reduce(function(s, x){ return s + x.pr; }, 0);
         var navn = uten.slice(0, 3).map(function(x){ return x.k.split(' · ').join(' › '); }).join(', ') + (uten.length > 3 ? ' og ' + (uten.length - 3) + ' til' : '');
