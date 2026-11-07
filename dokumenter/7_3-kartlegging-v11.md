@@ -98,7 +98,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 
 **Siste leverte versjoner:** `felles-neam.js ?v=77`, `felles-neam.css
 ?v=76`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
-?v=15`, `felles-hus.js ?v=23`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
+?v=16`, `felles-hus.js ?v=23`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
@@ -118,7 +118,7 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–76; neam.css til og
-med 75; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–14, skriv 1–11,
+med 75; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–11,
 hus `?v=1–22`, ms `?v=1`, tale 1–4, graph 1–2**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -477,14 +477,19 @@ trekk med ny tekst fra DNB ble ført to ganger** – tettet, og «Koble» rydder
 opp (`03073b0`). I live-data fant den 5 dobler (Tibber 26. oktober og fire
 kontoreguleringer 2. november); **Magne kobler dem selv** – ikke kjørt av
 Claude. Så fikk **Neam alt sida kan** på Økonomi (`a106ea2`), og
-formueskjemaet slutter å se ulagret ut. Til sist **egne merker med fast og
-variabelt** (`51f7c70`). **Foreslått, venter på Magne** (han tester og kommer
+formueskjemaet slutter å se ulagret ut. Så egne merker (`51f7c70`),
+kroner og øre i budsjettet (`777a39f`), stolpen på Status uten strek for
+«ventet i dag» (`6a58ce7`), **undermerker** (`797e6bb`) og til sist
+**månedene en post kommer i**, med «Fast» tatt ut igjen (`7fb6d17`).
+`797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
+ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
+del 57. **Foreslått, venter på Magne** (han tester og kommer
 tilbake): Økonomi åpner på ~9 s fordi innboks og kontoer hentes ferskt fra
 DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 54 commits, `0e0050a`–`51f7c70`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 59 commits, `0e0050a`–`7fb6d17`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -492,7 +497,7 @@ fungerte»). 54 commits, `0e0050a`–`51f7c70`, medregnet en midlertidig statust
 `felles-skriv.js` gikk videre til `?v=10` (`7688c6f`), og så
 `felles-lesalt.js` til `?v=10` og `felles-skriv.js` til `?v=11`
 (`3218537`). Så `felles-lesalt.js` til `?v=11` (`fd86515`), og begge til
-`?v=12` (`bf5826d`), og `felles-lesalt.js` til `?v=13` (`5f06f25`) og `?v=14` (`51f7c70`). Se del 57.
+`?v=12` (`bf5826d`), og `felles-lesalt.js` til `?v=13` (`5f06f25`), `?v=14` (`51f7c70`), `?v=15` (`797e6bb`) og `?v=16` (`7fb6d17`). Se del 57.
 
 **1. november: Rommene, ukeplanen og bildekatalogen.**
 - **Rommene lagt om igjen** (`5208ee2`–`26d1362`). Etasjefanene er borte:
@@ -3935,7 +3940,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 54 commits fra `0e0050a` til `51f7c70`.
+verdier. Bygget i 59 commits fra `0e0050a` til `7fb6d17`.
 
 ### Banken – Enable Banking
 
@@ -4244,6 +4249,48 @@ til Oppsett med rød prikk på fanen, og Coop-meldingen bort.
   forsvant før Lagre. Nå sammenlignes skjemaet med det som sist ble lagret
   (`okFormueTekst()` mot `okFormueLagret`); er det ulikt, oppdateres bare
   visningen (`okTegnFormue()`), og skjemaet blir stående.
+
+### Undermerker og månedene en post kommer i (7. november, `797e6bb`, `7fb6d17`)
+
+- **Undermerker** (Magne: «Lån - studielån, Lån - boliglån, Abonement -
+  telefon … Jeg kan lage denne strukturen selv»): et merke kan ha
+  `forelder`, to ledd. `STANDARD_MERKER` har fått «Lån» med lånetypene
+  under; en lagret liste uten undermerker legges om likt i
+  `lesMerkeliste`. `merke-ny` og `merke-endre` tar `forelder`; et
+  hovedmerke med undermerker kan ikke slettes eller bli undermerke. Sida:
+  `okHovedmerker`, `okUndermerker`, `okMerkeSamlet` (hovedmerket er
+  summen), «Eget hovedmerke / Under …» i skjemaene. Neam: `under`.
+- **«Fast» ut igjen** (Magne: «Er dette nødvendig da? vi har jo stort sett
+  faste summer hver måned»). Delingen i fast og variabelt, filteret og
+  nøkkeltallet Faste kostnader er fjernet. `fast` kan ligge igjen i KV
+  og brukes ikke.
+- **Månedene en post kommer i** (Magne: «kommunale utgifter er hver
+  tredje måned, da velger jeg 01,04,07,10»). `auth:bank:budsjett-perioder`
+  = `{ kategori: [1, 4, 7, 10] }`; mangler den, kommer posten hver måned,
+  og en linje følger posten. Rute `budsjett-perioder` (tom eller alle tolv
+  = månedlig). **Beløpet er det som kommer hver gang.** Måneder som følger
+  standarden, har posten bare i de valgte månedene: `okBudFor` og
+  `lesAltOkBudFor` filtrerer, og `standardFor` på serveren lager kopiene
+  for måneder som har startet. Summene i standardbudsjettet og
+  nøkkeltallene regner snitt per måned (`okBuVerdiSnitt`,
+  `okPeriodeAndel`). Nytt navn og sletting tar med månedene. Neam:
+  `perioder` i `endre_okonomi_budsjettposter`, `maaneder` per post i
+  `les_okonomi_maaned`. `felles-lesalt.js ?v=16`.
+- **Også i `7fb6d17`:** merket og månedsvalget på egen linje under navnet i
+  redigering (`.ok-bu-valg`) – navnene ble kuttet til «Kor» – og
+  merkelappen som forsvant i visning når posten hadde måneder.
+- **Kroner og øre** (`777a39f`): beløpsfeltene fjernet alt som ikke var
+  siffer, også kommaet – «549,90» ble 54 990. `okBuTall` og øre på
+  serveren.
+- **Stolpen uten strek** (`6a58ce7`): bare den – «Mest foran skjema» og
+  resten står (Magne bremset et forslag som gikk lenger).
+- **Lærdom – andre økter i samme mappe:** `git add` av hele sider tok med
+  en annen økts `?v=`-bumper (`felles-neam.js ?v=77`, `.css ?v=76`,
+  `felles-hus.js ?v=23`) og ikonendringer før fellesfilene var pushet.
+  Rettet med en commit bygget fra blobs (`git update-index --cacheinfo`)
+  uten å røre den andre øktas filer. Etterpå ga alle tre numrene nytt
+  innhold på neam.no – ingenting ble bufret feil. Sjekk `git diff --cached`
+  per fil før hver commit.
 
 ### Egne merker, fast og variabelt (7. november, `51f7c70`)
 
