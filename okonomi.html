@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=6">
 <link rel="stylesheet" href="/felles-knapper.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
+<link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-neam.css?v=86">
 <style>
 /* ============================================================
@@ -422,6 +423,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 
 /* ---------- Kvitteringen ----------
    Dialogen fra felles-dialog.css, med varelinjene. Paa telefon fyller den skjermen. */
+/* Filviseren (felles-filviser) over dialogene - en fil åpnet fra kjøpene
+   eller kvitteringen skal ligge øverst (8. november 2026). */
+#filviser{ z-index:130; }
 .ok-kv-kort{ width:min(520px, 100%); max-height:88vh; overflow-y:auto; display:flex; flex-direction:column; gap:12px; }
 .ok-kv-total{ font-size:30px; font-weight:700; line-height:1.1; }
 .ok-kv-linjer{ display:flex; flex-direction:column; }
@@ -1076,7 +1080,30 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     <div class="dlg-rad"><button type="button" class="dlg-knapp nei" id="ok-kv-lukk">Lukk</button></div>
   </div>
 </div>
+<!-- Filene lagt ved postene (PDF og bilde) åpnes her i stedet for i en ny
+     fane (8. november 2026: «går det an å åpne filer i en popup, så
+     tungvindt med egen fane»). Markupen er kalenderens; knappene kobles i
+     sidas skript. -->
+<div class="filviser" id="filviser" hidden>
+  <div class="filviser-kort" role="dialog" aria-modal="true" aria-labelledby="filviserNavn">
+    <div class="filviser-topp">
+      <span class="filviser-navn" id="filviserNavn"></span>
+      <button type="button" class="filviser-knapp last" id="ok-fil-last">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 11l5 5 5-5M4 20h16"/></svg>
+        <span>Last ned</span>
+      </button>
+      <button type="button" class="filviser-knapp" id="ok-fil-lukk">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        <span>Lukk</span>
+      </button>
+    </div>
+    <div class="filviser-inn" id="filviserInn"></div>
+  </div>
+</div>
 <script src="/felles-dialog.js?v=1"></script>
+<!-- felles-filviser.js slår opp med $, som dashbordet og kalenderen. -->
+<script>const $ = function(id){ return document.getElementById(id); };</script>
+<script src="/felles-filviser.js?v=2"></script>
 <script src="/felles-hus.js?v=28"></script>
 <script src="/felles-data.js?v=5"></script>
 <script src="/felles-ms.js?v=2"></script>
@@ -2680,14 +2707,54 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   /* Leser én fil og legger den i innboksen. Gir { post, linjer }, eller
      kaster - med duplikat:true naar kvitteringen alt er lagt inn. */
   /* Lenke til selve bildet eller PDF-en, i en egen fane (lagret fra 6. november 2026). */
+  /* Fila aapnes i husets filviser (felles-filviser), ikke i en ny fane
+     (8. november 2026). */
   function okFilLenke(p){
-    var a = okEl('a', 'ok-lenke', p.filType === 'application/pdf' ? 'Åpne PDF-en ›' : 'Åpne bildet ›');
-    a.href = '/api/bank?hva=kvittering-fil&id=' + encodeURIComponent(p.id);
-    a.target = '_blank'; a.rel = 'noopener';
+    var a = okEl('button', 'ok-lenke', p.filType === 'application/pdf' ? 'Åpne PDF-en ›' : 'Åpne bildet ›');
+    a.type = 'button';
     a.style.alignSelf = 'flex-start';
-    a.addEventListener('click', function(e){ e.stopPropagation(); });
+    a.addEventListener('click', function(e){ e.stopPropagation(); okVisFil(p, a); });
     return a;
   }
+  var okFilFra = null;
+  function okVisFil(p, fra){
+    okFilFra = fra || null;
+    var pdf = p.filType === 'application/pdf';
+    var navn = [p.dato ? String(p.dato).slice(0, 10) : '', p.motpart || p.tekst || p.tittel || (pdf ? 'Dokument' : 'Bilde')].filter(Boolean).join(' ') + (pdf ? '.pdf' : '.jpg');
+    var feil = function(tekst){
+      lukkViser();
+      $('filviserNavn').textContent = navn;
+      $('filviserInn').appendChild(okEl('p', 'ok-meta', okVask(tekst))).style.color = '#FFFFFF';
+      $('filviser').hidden = false; $('ok-fil-lukk').focus();
+    };
+    if(fra) fra.disabled = true;
+    fetch('/api/bank?hva=kvittering-fil&id=' + encodeURIComponent(p.id), { credentials:'same-origin' })
+      .then(function(r){ return r.blob(); })
+      .then(function(b){
+        /* Bank-funksjonen svarer 200 + { feil } naar fila mangler. */
+        if(/json/.test(b.type)) return b.text().then(function(s){ var j = {}; try{ j = JSON.parse(s); }catch(e){} feil(j.feil || 'Fant ikke fila'); });
+        return filTilBase64(b).then(function(bytes){
+          aapneViser({ name:navn, contentType:b.type || p.filType, contentBytes:bytes });
+          $('ok-fil-lukk').focus();
+        });
+      })
+      .catch(function(){ feil('Fikk ikke hentet fila'); })
+      .then(function(){ if(fra) fra.disabled = false; });
+  }
+  function okLukkFil(){
+    lukkViser();
+    if(okFilFra && document.body.contains(okFilFra)) okFilFra.focus();
+    okFilFra = null;
+  }
+  document.getElementById('ok-fil-lukk').addEventListener('click', okLukkFil);
+  document.getElementById('ok-fil-last').addEventListener('click', function(){ lastNedFraViser(); });
+  document.getElementById('filviser').addEventListener('click', function(e){ if(e.target === this) okLukkFil(); });
+  /* Escape lukker fila foerst - den ligger over kjoepene og kvitteringen. */
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Escape' || document.getElementById('filviser').hidden) return;
+    e.stopImmediatePropagation();
+    okLukkFil();
+  }, true);
   /* limt: kopiert tekst fra en kvittering eller faktura i stedet for en fil
      (Magne, 7. november 2026). Da lagres ingen fil med posten. */
   async function okTolkKvittering(fil, limt){
