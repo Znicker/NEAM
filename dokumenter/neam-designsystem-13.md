@@ -1582,6 +1582,13 @@ godkjent 6. november 2026; Innboks ble Transaksjoner samme kveld):
   mot regnskap. Linja «På tvers – forsikring, lån …» viser hovedmerkene
   med undermerkene rykket inn under (se Budsjett), med brukt, budsjett og
   avvik for perioden.
+  **Det som forfaller** (fakturaer som venter, 7. november 2026) står i
+  stolpen som en lysere del etter det betalte (`.ok-bar-fyll.forfaller`,
+  samme farge med opasitet .38, rød når summen går over budsjettet), og i
+  tallet som «Faktisk 4 200 kr + forfaller 1 800 kr». På posten står
+  «Forfaller … (20. nov.) – telles når trekket kommer fra banken».
+  Sumboksene viser det betalte; «+ … forfaller» og «etter forfall …» står
+  under i `--t-meta`. En måned fram i tid heter «Fram i tid».
 - **Budsjett** – bare redigering: standardbudsjettet eller ett
   månedsbudsjett om gangen. Fra 6. november 2026 (Magne: «er veldig
   generisk nå»):

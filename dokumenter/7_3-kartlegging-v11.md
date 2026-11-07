@@ -483,8 +483,9 @@ kroner og øre i budsjettet (`777a39f`), stolpen på Status uten strek for
 **månedene en post kommer i**, med «Fast» tatt ut igjen (`7fb6d17`), så
 regnestykker i tallfeltene (`53c7cdf`), menyen på postene i budsjettet
 (`8a9096d`), en strengere regel for mulig dobbel (`8b81b51`) og
-innliming av kvitteringer – bilde, PDF eller tekst (`2c947dc`) – og en
-PDF-kopi i Dropbox av alt som legges inn på sida (`c66917a`).
+innliming av kvitteringer – bilde, PDF eller tekst (`2c947dc`), en
+PDF-kopi i Dropbox av alt som legges inn på sida (`c66917a`) og ubetalte
+regninger som «forfaller» i Regnskap (`fa530bc`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -493,7 +494,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 64 commits, `0e0050a`–`c66917a`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 65 commits, `0e0050a`–`fa530bc`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -3944,7 +3945,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 64 commits fra `0e0050a` til `c66917a`.
+verdier. Bygget i 65 commits fra `0e0050a` til `fa530bc`.
 
 ### Banken – Enable Banking
 
@@ -4120,6 +4121,26 @@ verdier. Bygget i 64 commits fra `0e0050a` til `c66917a`.
   - Samme faktura lagt inn på nytt avvises som «allerede lagt inn», også
     når den bare finnes som vedlegg på trekket. `finnLignende` og
     `koble-alle` hopper over fakturaer som venter.
+  - **Forfaller i Regnskap** (`fa530bc`, Magne 7. november: «skannede
+    regninger til betaling må også bli med på oversikten over regnskapet
+    på et vis, og dette må synces når betalingen er gjennomført»; valgte
+    «i stolpene, lysere» framfor et eget kort). `regnskap-aar` gir
+    `forfaller` – fakturaene som venter, med kategori, i forfallsmåneden.
+    De telles **ved siden av** det betalte, ikke i det: en lysere del av
+    stolpen, «+ forfaller» i tallet, og avviket regnes med dem. Måneder
+    fram i tid med regninger kan åpnes («Fram i tid»); «Hittil i år» og
+    «Siste 12 måneder» slutter i dag.
+  - **Kategori på fakturaen** (`faktura-kategori`): nedtrekk i «Fakturaer
+    som venter». Uten kategori vises den ikke i Regnskap.
+  - **Synken:** når trekket kommer (`flyttFaktura`), får det fakturaens
+    kategori (`kilde:'faktura'`) og **føres automatisk** – ellers ville
+    regningen forsvinne fra Regnskap fra den er betalt til noen godkjenner.
+    «Ført automatisk» sier «betalt faktura», og Angre virker som vanlig.
+    Ikke ved mulig dobbel. Testet i testserveren fra faktura til betalt
+    trekk; ikke med en ekte regning.
+  - **Ikke gjort:** Neam (`les_okonomi_maaned`) ser ikke det som forfaller
+    – krever ny `?v=` på `felles-lesalt.js`. Og kommer trekket *før*
+    fakturaen legges inn, legges PDF-en ved som før, men uten kategori.
   Fila i Dropbox leses fortsatt bare fra sida – ligger en faktura der,
   skjer ingenting før noen åpner Økonomi.
 - **Varelinjene kan fordeles** på flere kategorier i én post.
