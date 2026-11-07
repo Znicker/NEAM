@@ -395,6 +395,35 @@ export async function onRequestPost({ request, env }){
     return svar({ ok:true, svar:r.data });
   }
 
+  /* ---------- Fjernkontrolltast til en Samsung-TV ----------
+     TV-ene fra Homeys egen SmartThings-kobling kan bare av/paa, volum
+     og kanal. Appen Samsung SmartTV (com.samsung.smart, installert
+     7. november 2026) gir i tillegg kortet «Send key» med 244 taster.
+     Det er et flytkort, ikke en kapabilitet, saa det kjoeres her.
+
+     BARE det ene kortet, og bare taster som ser ut som taster - dette
+     er ikke en aapen doer til alle flytkort i huset. Tasten sendes som
+     { id }, slik appens egen liste gir den (proevd med HomeyScript
+     7. november: KEY_VOLUP paa Stue TV og Kjellerstue TV). */
+  if(hva === 'tast'){
+    const id   = String(inn.enhet || '');
+    const tast = String(inn.tast || '');
+    if(!/^[0-9a-f-]{36}$/i.test(id))      return svar({ ok:false, feil:'Ugyldig enhet' });
+    if(!/^KEY_[A-Z0-9_]{1,40}$/.test(tast)) return svar({ ok:false, feil:'Ugyldig tast' });
+    const uri = 'homey:device:' + id;
+    const kropp = { args: { key: { id: tast, name: tast } } };
+    /* Nyere Homey bruker hele kort-id-en (uri + ':send_key'), eldre
+       bare 'send_key'. Den andre proeves bare om den foerste ikke finnes. */
+    let r = await motHomey(env, epost, '/api/manager/flow/flowcardaction/' + encodeURIComponent(uri)
+                         + '/' + encodeURIComponent(uri + ':send_key') + '/run', { method:'POST', body:kropp });
+    if(r.feil && / 404/.test(r.feil)){
+      r = await motHomey(env, epost, '/api/manager/flow/flowcardaction/' + encodeURIComponent(uri)
+                       + '/send_key/run', { method:'POST', body:kropp });
+    }
+    if(r.feil) return svar({ ok:false, feil:r.feil, maaGodkjenne: !!r.maaGodkjenne });
+    return svar({ ok:true });
+  }
+
   /* ---------- WebRTC: tilbud inn, svar ut ----------
      Nettleseren lager et tilbud (SDP), vi sender det videre til Homey,
      og Homey svarer med sitt. Deretter gaar selve videostroemmen DIREKTE
