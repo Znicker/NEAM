@@ -370,6 +370,8 @@ input.ok-regnefeil{ border-color:var(--danger) !important; }
 .ok-bar{ grid-column:1 / -1; position:relative; height:10px; background:var(--boks-mild); border-radius:999px; }
 .ok-bar-fyll{ position:absolute; inset:0 auto 0 0; background:var(--aksent); border-radius:999px; }
 .ok-bar-fyll.over{ background:var(--danger); }
+/* Det som forfaller (fakturaer som venter), lysere etter det betalte (7. november 2026). */
+.ok-bar-fyll.forfaller{ inset:0 auto 0 auto; opacity:.38; }
 .ok-bar-strek{ position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--ink); opacity:.55; }
 .ok-bar-strek.budsjett{ width:3px; opacity:1; background:var(--paper); }
 .ok-bar-tall{ grid-column:1 / -1; display:flex; justify-content:space-between; font-size:var(--t-meta); color:var(--ink-soft); gap:8px; flex-wrap:wrap; }
@@ -483,6 +485,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-kjop{ display:grid; grid-template-columns:70px minmax(0,1fr) auto; gap:2px 12px; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--line); }
 .ok-kjop:last-child{ border-bottom:0; }
 .ok-kjop .ok-lenke{ grid-column:2 / -1; justify-self:start; padding:0; }
+.ok-kjop select{ grid-column:2 / -1; width:100%; font-family:inherit; font-size:16px; padding:6px 8px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
 .ok-linjer{ grid-column:1 / -1; background:var(--boks-mild); border-radius:10px; padding:8px 12px; margin-top:6px; display:flex; flex-direction:column; gap:3px; font-size:var(--t-meta); }
 .ok-linje{ display:flex; justify-content:space-between; gap:12px; }
 .ok-linje b{ white-space:nowrap; }
@@ -801,7 +804,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       <div class="ok-fold" data-fold="ib-faktura" id="ok-faktura-kort" hidden>
         <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Fakturaer som venter</span><span class="ok-fold-sum" id="ok-faktura-meta"></span></button>
         <div class="ok-fold-innhold">
-          <p class="ok-meta">Telles ikke selv. Når trekket kommer fra banken, legges PDF-en ved det. Betalte du fra en konto Neam ikke henter, trykk «Legg i innboksen».</p>
+          <p class="ok-meta">Vises i Regnskap som «forfaller» på kategorien sin, i forfallsmåneden. Når trekket kommer fra banken, legges PDF-en ved det og trekket føres på samme kategori. Betalte du fra en konto Neam ikke henter, trykk «Legg i innboksen».</p>
           <div id="ok-faktura"></div>
         </div>
       </div>
@@ -1676,7 +1679,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   var OK_MND_KORT = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des'];
   function okPeriodeTekst(p){ return p ? p.map(function(n){ return OK_MND_KORT[n - 1]; }).join(' · ') : 'Månedlig'; }
   /* Maaned-fanen (se «Måned» lenger ned). Her oppe fordi fanevelgeren leser den ved oppstart. */
-  var okMnd = { lastet:false, valgt:'', liste:[], aar:{}, apneKjop:{}, kjop:{}, valgtPost:null, periode:'mnd' };
+  var okMnd = { lastet:false, valgt:'', liste:[], aar:{}, forfall:[], apneKjop:{}, kjop:{}, valgtPost:null, periode:'mnd' };
   var okMndNavn = new Intl.DateTimeFormat('nb-NO', { month:'long', year:'numeric' });
 
   function okBuSett(b){
@@ -1843,6 +1846,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       var b = okEl('div', 'ok-sumboks');
       b.appendChild(okEl('span', 'ok-etikett', okVask(x[0])));
       b.appendChild(okEl('span', 'ok-sumtall' + (x[2] ? ' ' + x[2] : ''), okVask(x[1])));
+      if(x[3]) b.appendChild(okEl('span', 'ok-meta', okVask(x[3])));
       boks.appendChild(b);
     });
   }
@@ -2633,7 +2637,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   function okFakturaTekst(p, festet){
     var hvem = (p.motpart || p.tekst || 'fakturaen') + ', ' + okKr0.format(Math.abs(p.belop)) + ' kr';
     return festet ? 'Fakturaen er lagt ved trekket fra ' + hvem + ', ' + okKort.format(new Date(p.dato)) + '. PDF-en kan åpnes fra posten.'
-      : 'Fakturaen fra ' + hvem + ', forfall ' + okKort.format(new Date(p.dato)) + ', venter på trekket fra banken. Den telles ikke selv – PDF-en legges ved trekket når det kommer.';
+      : 'Fakturaen fra ' + hvem + ', forfall ' + okKort.format(new Date(p.dato)) + ', venter på trekket fra banken. Til da står den som «forfaller» i Regnskap – PDF-en legges ved trekket når det kommer.';
   }
   async function okLesKvittering(fil, tekst){
     var status = document.getElementById('ok-kv-status'), knapp = document.getElementById('ok-kv-knapp'), lim = document.getElementById('ok-kv-lim');
@@ -4016,17 +4020,26 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       var r = s[0], boks = document.getElementById('ok-mnd-tabell');
       if(!r.ok){ boks.innerHTML = '<p class="ok-melding feil">' + okVask(r.feil) + '</p>'; return; }
       okMnd.aar = r.maaneder || {};
+      okMnd.forfall = r.forfaller || [];
+      /* Maanedene fram til i dag - og videre til siste forfall, saa en regning
+         fram i tid kan sees i sin maaned. */
       var naa = new Date().toISOString().slice(0, 7), fra = (r.fra || naa).slice(0, 7), d = new Date(fra + '-01T12:00:00');
+      var siste = okMnd.forfall.reduce(function(s, f){ return f.mnd > s ? f.mnd : s; }, naa);
       okMnd.liste = [];
-      while(d.toISOString().slice(0, 7) <= naa){ okMnd.liste.push(d.toISOString().slice(0, 7)); d.setMonth(d.getMonth() + 1); }
+      while(d.toISOString().slice(0, 7) <= siste){ okMnd.liste.push(d.toISOString().slice(0, 7)); d.setMonth(d.getMonth() + 1); }
       if(!okMnd.valgt || okMnd.liste.indexOf(okMnd.valgt) === -1) okMnd.valgt = naa;
       okMnd.kjop = {};
       okMndTegn();
     });
   }
-  function okMndBar(faktisk, budsjett, snitt, skala){
+  function okMndBar(faktisk, budsjett, snitt, skala, forfaller){
     var b = okEl('div', 'ok-bar');
     var f = okEl('div', 'ok-bar-fyll' + (faktisk > budsjett ? ' over' : '')); f.style.width = Math.max(0, faktisk / skala * 100) + '%'; b.appendChild(f);
+    if(forfaller > 0){
+      var ff = okEl('div', 'ok-bar-fyll forfaller' + (faktisk + forfaller > budsjett ? ' over' : ''));
+      ff.style.left = Math.max(0, faktisk / skala * 100) + '%'; ff.style.width = forfaller / skala * 100 + '%'; ff.title = 'Forfaller';
+      b.appendChild(ff);
+    }
     if(budsjett > 0){ var g = okEl('div', 'ok-bar-strek budsjett'); g.style.left = (budsjett / skala * 100) + '%'; g.title = 'Budsjett'; b.appendChild(g); }
     if(snitt != null){ var s = okEl('div', 'ok-bar-strek'); s.style.left = (snitt / skala * 100) + '%'; s.title = 'Snitt'; b.appendChild(s); }
     return b;
@@ -4035,8 +4048,10 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
      tolv siste. Budsjettet er da summen av maanedsbudsjettene. */
   function okMndPeriode(){
     var naa = new Date().toISOString().slice(0, 7);
-    if(okMnd.periode === 'aar') return okMnd.liste.filter(function(x){ return x.slice(0, 4) === naa.slice(0, 4); });
-    if(okMnd.periode === 'tolv') return okMnd.liste.slice(-12);
+    /* Hittil i aar og de tolv siste slutter i dag, ogsaa naar regninger forfaller senere. */
+    var hit = okMnd.liste.filter(function(x){ return x <= naa; });
+    if(okMnd.periode === 'aar') return hit.filter(function(x){ return x.slice(0, 4) === naa.slice(0, 4); });
+    if(okMnd.periode === 'tolv') return hit.slice(-12);
     return [okMnd.valgt];
   }
   function okMndSum(ms, hent){
@@ -4045,7 +4060,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     return ut;
   }
   function okMndTegn(){
-    var m = okMnd.valgt, i = okMnd.liste.indexOf(m), paagaar = i === okMnd.liste.length - 1;
+    var naaM = new Date().toISOString().slice(0, 7);
+    var m = okMnd.valgt, i = okMnd.liste.indexOf(m), paagaar = m === naaM, fram = m > naaM;
     var per = okMnd.periode, ms = okMndPeriode(), enMnd = per === 'mnd';
     var kr = function(n){ return okBuKr(n) + ' kr'; };
     var navn = okMndNavn.format(new Date(m + '-01T12:00:00'));
@@ -4054,22 +4070,31 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     document.getElementById('ok-mnd-forrige').hidden = !enMnd;
     document.getElementById('ok-mnd-neste').hidden = !enMnd;
     document.getElementById('ok-mnd-forrige').disabled = i <= 0;
-    document.getElementById('ok-mnd-neste').disabled = paagaar;
+    document.getElementById('ok-mnd-neste').disabled = i >= okMnd.liste.length - 1;
     document.querySelectorAll('#ok-mnd-periode .ok-fane').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.periode === per)); });
     document.getElementById('ok-mndf-meta').textContent = enMnd
-      ? (paagaar ? 'Pågår' : 'Avsluttet') + ' · ' + (okBu.maaneder[m] ? 'månedens eget budsjett' : 'budsjett fra standardbudsjettet')
+      ? (fram ? 'Fram i tid' : paagaar ? 'Pågår' : 'Avsluttet') + ' · ' + (okBu.maaneder[m] ? 'månedens eget budsjett' : 'budsjett fra standardbudsjettet')
       : ms.length + (ms.length === 1 ? ' måned' : ' måneder') + ' · budsjettet er summen av månedsbudsjettene';
     var reg = okMndSum(ms, function(mm){ return okMnd.aar[mm]; });
     var faktisk = function(k){ return okBuLinjer(k).reduce(function(s, l){ return s + (reg[l] || 0); }, reg[k] || 0); };
     var mb = okMndSum(ms, function(mm){ return okBudFor(okBu, mm); });
     var budsjett = function(k){ return okBuLinjer(k).reduce(function(s, l){ return s + (mb[l] || 0); }, mb[k] || 0); };
+    /* Det som forfaller i perioden (fakturaer som venter), per kategori. */
+    var ffListe = okMnd.forfall.filter(function(f){ return ms.indexOf(f.mnd) !== -1; });
+    var ffSum = {};
+    ffListe.forEach(function(f){ ffSum[f.kategori] = (ffSum[f.kategori] || 0) + f.belop; });
+    var forfaller = function(k){ return okBuLinjer(k).reduce(function(s, l){ return s + (ffSum[l] || 0); }, ffSum[k] || 0); };
+    var ffDatoer = function(k){
+      var ks = [k].concat(okBuLinjer(k));
+      return ffListe.filter(function(f){ return ks.indexOf(f.kategori) !== -1; }).map(function(f){ return okKort.format(new Date(f.dato)); }).join(', ');
+    };
     var poster = okBu.kategorier.filter(function(k){ return k.split(' · ').length === 2; });
     var gruppe = function(k){ return k.split(' · ')[0]; };
-    var inn = 0, ut = 0, spar = 0;
-    poster.forEach(function(k){ var g = gruppe(k), v = faktisk(k); if(g === 'Inntekter') inn += v; else if(g === 'Sparing') spar += v; else if(g !== 'Utenfor budsjett') ut += v; });
+    var inn = 0, ut = 0, spar = 0, ffUt = 0, ffSpar = 0;
+    poster.forEach(function(k){ var g = gruppe(k), v = faktisk(k), w = forfaller(k); if(g === 'Inntekter') inn += v; else if(g === 'Sparing'){ spar += v; ffSpar += w; } else if(g !== 'Utenfor budsjett'){ ut += v; ffUt += w; } });
     var rest = inn - ut - spar;
-    okSumBokser(document.getElementById('ok-mnd-sum'), [['Inntekter', kr(inn)], ['Utgifter', kr(ut)], ['Sparing', kr(spar)],
-      [paagaar || !enMnd ? 'Overskudd hittil' : 'Overskudd', (rest >= 0 ? '+' : '−') + kr(Math.abs(rest)), rest >= 0 ? 'pluss' : 'minus']]);
+    okSumBokser(document.getElementById('ok-mnd-sum'), [['Inntekter', kr(inn)], ['Utgifter', kr(ut), '', ffUt ? '+ ' + kr(ffUt) + ' forfaller' : ''], ['Sparing', kr(spar), '', ffSpar ? '+ ' + kr(ffSpar) + ' forfaller' : ''],
+      [paagaar || fram || !enMnd ? 'Overskudd hittil' : 'Overskudd', (rest >= 0 ? '+' : '−') + kr(Math.abs(rest)), rest >= 0 ? 'pluss' : 'minus', ffUt + ffSpar ? 'etter forfall ' + (rest - ffUt - ffSpar >= 0 ? '+' : '−') + kr(Math.abs(rest - ffUt - ffSpar)) : '']]);
     okMndMerker(reg, mb);
 
     /* Snittet: maanedene foer denne som har foeringer - ikke de foer innboksen kom i gang. */
@@ -4086,25 +4111,27 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       var gp = poster.filter(function(k){ return gruppe(k) === g; });
       var alleK = []; gp.forEach(function(k){ alleK.push(k); okBuLinjer(k).forEach(function(l){ alleK.push(l); }); });
       var f = gp.reduce(function(s, k){ return s + faktisk(k); }, 0), b = gp.reduce(function(s, k){ return s + budsjett(k); }, 0);
-      if(!f && !b) return;
-      var sn = snittFor(alleK), skala = Math.max(b, f, sn || 0) * 1.05 || 1, avvik = f - b;
+      var ff = gp.reduce(function(s, k){ return s + forfaller(k); }, 0);
+      if(!f && !b && !ff) return;
+      var sn = snittFor(alleK), skala = Math.max(b, f + ff, sn || 0) * 1.05 || 1, avvik = f + ff - b;
       var d = okEl('details', 'ok-mnd-kat');
       d.open = !!okMnd.apneKjop['g:' + g];
       d.addEventListener('toggle', function(){ okMnd.apneKjop['g:' + g] = d.open; });
       var s = document.createElement('summary');
       s.appendChild(okEl('span', 'ok-mnd-kat-navn', okVask(g)));
       s.appendChild(okEl('span', 'ok-avvik ' + (avvik > 0 ? 'over' : 'under'), (avvik > 0 ? '+' : '−') + kr(Math.abs(avvik))));
-      s.appendChild(okMndBar(f, b, sn, skala));
-      s.appendChild(okEl('div', 'ok-bar-tall', '<span>Faktisk <b style="color:var(--ink)">' + kr(f) + '</b></span><span>Budsjett ' + kr(b) + (sn != null ? ' · snitt ' + kr(sn) : '') + '</span>'));
+      s.appendChild(okMndBar(f, b, sn, skala, ff));
+      s.appendChild(okEl('div', 'ok-bar-tall', '<span>Faktisk <b style="color:var(--ink)">' + kr(f) + '</b>' + (ff ? ' + forfaller ' + kr(ff) : '') + '</span><span>Budsjett ' + kr(b) + (sn != null ? ' · snitt ' + kr(sn) : '') + '</span>'));
       d.appendChild(s);
       var ur = okEl('div', 'ok-under-rader');
       gp.forEach(function(k){
-        var uf = faktisk(k), ub = budsjett(k);
-        if(!uf && !ub) return;
-        var ua = uf - ub, rad = okEl('div', 'ok-under-rad');
+        var uf = faktisk(k), ub = budsjett(k), uff = forfaller(k);
+        if(!uf && !ub && !uff) return;
+        var ua = uf + uff - ub, rad = okEl('div', 'ok-under-rad');
         rad.appendChild(okEl('span', '', okVask(k.split(' · ')[1])));
         rad.appendChild(okEl('span', '', '<b>' + kr(uf) + '</b> <span class="ok-meta">/ ' + okBuKr(ub) + '</span>' + (ua > 0.5 ? ' <span class="ok-avvik over">+' + okBuKr(ua) + '</span>' : '')));
-        rad.appendChild(okMndBar(uf, ub, null, Math.max(ub, uf) * 1.05 || 1));
+        rad.appendChild(okMndBar(uf, ub, null, Math.max(ub, uf + uff) * 1.05 || 1, uff));
+        if(uff){ var fm = okEl('span', 'ok-meta', 'Forfaller ' + okVask(kr(uff)) + ' (' + okVask(ffDatoer(k)) + ') – telles når trekket kommer fra banken'); fm.style.gridColumn = '1 / -1'; rad.appendChild(fm); }
         if(uf){
           var nk = m + '|' + k, apen = !!okMnd.apneKjop[nk], kbId = 'ok-mnd-kb-' + okVask(k).replace(/[^\w]/g, '');
           if(okPc.matches){
@@ -4306,7 +4333,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     if(!liste.length) return;
     document.getElementById('ok-auto-meta').textContent = liste.length + ' siste 14 dager';
     boks.innerHTML = '';
-    var kilde = { laert:'samme som sist', ord:'kjent navn', ai:'Neam' };
+    var kilde = { laert:'samme som sist', ord:'kjent navn', ai:'Neam', faktura:'betalt faktura' };
     liste.forEach(function(p){
       var rad = okEl('div', 'ok-kjop',
         '<span class="ok-meta">' + okVask(okKort.format(new Date(p.dato))) + '</span>'
@@ -4335,8 +4362,17 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     liste.forEach(function(p){
       var rad = okEl('div', 'ok-kjop',
         '<span class="ok-meta">' + okVask(okKort.format(new Date(p.dato))) + '</span>'
-        + '<span><span class="ok-navn">' + okVask(p.motpart || '') + '</span><br><span class="ok-meta">Forfall · ' + okVask(p.kategori || 'uten kategori') + '</span></span>'
+        + '<span><span class="ok-navn">' + okVask(p.motpart || '') + '</span><br><span class="ok-meta">Forfall' + (p.kategori ? '' : ' · velg kategori, så vises den i Regnskap') + '</span></span>'
         + '<b>' + okKr0.format(p.belop) + '</b>');
+      /* Kategorien bestemmer linja den forfaller paa i Regnskap, og foelger
+         med til trekket naar det kommer (7. november 2026). */
+      var ks = okKatVelg('ok-faktura-kat-' + okVask(p.id).replace(/[^\w]/g, ''), p.kategori, p.kategori ? null : 'Velg kategori', 'Kategori for fakturaen fra ' + (p.motpart || ''));
+      ks.addEventListener('change', function(){
+        ks.disabled = true;
+        okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'faktura-kategori', id:p.id, kategori:ks.value }) })
+          .then(function(r){ ks.disabled = false; if(r.ok){ p.kategori = ks.value; if(okMnd.lastet) okMndLast(); } });
+      });
+      rad.appendChild(ks);
       var inn = okEl('button', 'ok-lenke', 'Legg i innboksen'); inn.type = 'button';
       inn.addEventListener('click', function(){
         inn.disabled = true;

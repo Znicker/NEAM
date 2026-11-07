@@ -26,6 +26,7 @@
      POST /api/bank {hva:'kategori-navn', fra, navn} - nytt navn paa en egen post eller linje
      POST /api/bank {hva:'koble-alle', utfor} - kvitteringer og transaksjoner som hoerer sammen, i ettertid
      POST /api/bank {hva:'faktura-innboks', id} - en faktura som venter, blir en post i innboksen
+     POST /api/bank {hva:'faktura-kategori', id, kategori} - kategorien paa en faktura som venter
      POST /api/bank {hva:'kategori-merke', kategori, merke} - merket paa en post (forsikring, laan …); tomt fjerner
      POST /api/bank {hva:'budsjett-perioder', kategori, maaneder} - hvilke maaneder posten kommer (tom = hver maaned)
      POST /api/bank {hva:'merke-ny', navn, fast, forelder} / {hva:'merke-endre', id, navn, fast, forelder} / {hva:'merke-slett', id} - merkene selv
@@ -37,7 +38,8 @@
      GET /api/bank?hva=dropbox-fil&id=<id> - selve fila (bilde eller PDF)
      POST {hva:'dropbox-ferdig', id, navn, mappe} / {hva:'dropbox-koble-fra'}
      POST {hva:'dropbox-lagre', navn, data} - en PDF (base64) til «Importert»
-     GET /api/bank?hva=regnskap-aar     - godkjente poster per maaned og kategori, hele perioden
+     GET /api/bank?hva=regnskap-aar     - godkjente poster per maaned og kategori, hele perioden,
+                                          og fakturaene som venter (forfaller)
      GET /api/bank?hva=formue / POST {hva:'formue', verdier, gjeld, maal} - det banken ikke gir
      POST /api/bank {hva:'forslag', forslag:[{id, kategori, sikker}]}    - Neams kategoriforslag
      POST /api/bank {hva:'kontonavn', uid, navn}                         - eget navn paa en konto (tomt fjerner)
@@ -867,6 +869,15 @@ async function flyttFaktura(env, f, b, naa){
   const fil = await lesJson(env, filNokkel(f.id), null);
   if(fil){ await env.FAMILIE_KV.put(filNokkel(b.id), JSON.stringify(fil)); b.harFil = true; b.filType = fil.type; }
   b.vedlagt = naa; b.faktura = { id:f.id, forfall:f.dato };
+  /* Kategorien fra fakturaen foelger med til trekket, saa det som sto som
+     «forfaller» havner paa samme linje naar det er betalt (7. november 2026).
+     Trekket foeres med en gang - regningen var alt i regnskapet som
+     «forfaller», og skal ikke forsvinne derfra til noen godkjenner. Angre
+     legger det i innboksen som vanlig. */
+  if(b.status === 'ny' && f.kategori && !b.manuell){
+    b.kategori = f.kategori; b.kilde = 'faktura';
+    if(!b.mulDobbel && !b.lignerPaa && !b.dekketAv) autoFoer({}, b, naa);
+  }
   Object.assign(f, { status:'sammenslatt', slaattInn:b.id, behandlet:naa });
 }
 async function synkFakturaer(env, poster){
@@ -881,6 +892,18 @@ async function synkFakturaer(env, poster){
     n++;
   }
   return n;
+}
+/* Kategorien paa en faktura som venter - den bestemmer hvilken linje i
+   Regnskap den forfaller paa, og foelger med til trekket (7. november 2026). */
+async function fakturaKategori(env, kropp){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const p = poster[String(kropp.id || '')];
+  if(!p || p.status !== 'venter') return svar({ ok:false, feil:'Fant ikke fakturaen' });
+  const k = String(kropp.kategori || '');
+  if(k && (await alleKategorier(env)).indexOf(k) === -1) return svar({ ok:false, feil:'Ukjent kategori' });
+  if(k){ p.kategori = k; p.kilde = 'manuell'; } else { delete p.kategori; delete p.kilde; }
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  return svar({ ok:true, post:p });
 }
 async function fakturaInnboks(env, kropp){
   const poster = await lesJson(env, POST_NOKKEL, {});
@@ -1244,12 +1267,22 @@ async function lagreBudsjett(env, kropp, epost){
   return budsjett(env);
 }
 /* Hele perioden, maaned for maaned: { 'AAAA-MM': { kategori: beloep } }. For År-fanen. */
+/* Fakturaene som venter, telles som «forfaller» i forfallsmaaneden - ved
+   siden av det betalte, ikke i det (Magne, 7. november 2026: «skannede
+   regninger til betaling må også bli med på oversikten over regnskapet på
+   et vis, og dette må synces når betalingen er gjennomført»). Naar trekket
+   kommer, legges fakturaen ved det (synkFakturaer) og er ikke lenger
+   `venter` - da forsvinner den herfra, og trekket teller naar det er godkjent. */
 async function regnskapAar(env){
   const poster = await lesJson(env, POST_NOKKEL, {});
   const kategorier = await budsjettKategorier(env);
-  const ut = {};
+  const ut = {}, forfaller = [];
   for(const id of Object.keys(poster)){
     const p = poster[id];
+    if(p.status === 'venter' && p.faktura && kategorier.indexOf(p.kategori) !== -1 && p.kategori.indexOf('Inntekter') !== 0){
+      forfaller.push({ id:p.id, mnd:String(p.dato).slice(0, 7), dato:p.dato, kategori:p.kategori, belop:Math.round(-p.belop * 100) / 100, motpart:p.motpart || p.tekst || '' });
+      continue;
+    }
     if(p.status !== 'godkjent') continue;
     const m = String(p.dato).slice(0, 7);
     const deler = p.deler && p.deler.length ? p.deler : [{ kategori:p.kategori, belop:p.belop }];
@@ -1260,7 +1293,7 @@ async function regnskapAar(env){
       ut[m][d.kategori] = Math.round(((ut[m][d.kategori] || 0) + v) * 100) / 100;
     }
   }
-  return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', maaneder:ut });
+  return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', maaneder:ut, forfaller:forfaller });
 }
 
 /* ---------- Verdier, gjeld og familiemaal ----------
@@ -2213,6 +2246,7 @@ export async function onRequestPost({ request, env }){
   if(kropp && kropp.hva === 'angre') return await angre(env, kropp);
   if(kropp && kropp.hva === 'koble-alle') return await kobleAlle(env, kropp, request);
   if(kropp && kropp.hva === 'faktura-innboks') return await fakturaInnboks(env, kropp);
+  if(kropp && kropp.hva === 'faktura-kategori') return await fakturaKategori(env, kropp);
   if(kropp && kropp.hva === 'kategori-merke') return await settMerke(env, kropp);
   if(kropp && kropp.hva === 'budsjett-perioder') return await settPerioder(env, kropp);
   if(kropp && (kropp.hva === 'merke-ny' || kropp.hva === 'merke-endre' || kropp.hva === 'merke-slett')) return await endreMerkeliste(env, kropp);
