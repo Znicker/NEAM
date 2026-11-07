@@ -92,7 +92,7 @@ a:focus-visible{ outline:3px solid var(--aksent); outline-offset:2px; }
   }
 }
 
-.spill-ikon{ width:72px; height:72px; flex-shrink:0; display:block; color:var(--handling-endre); }
+.spill-ikon{ width:72px; height:72px; flex-shrink:0; display:block; object-fit:contain; color:var(--handling-endre); }
 @media(min-width:700px){ .spill-ikon{ width:min(150px, 100%); height:auto; aspect-ratio:1; } }
 
 .spill-navn{ display:block; font-size:var(--t-stor); font-weight:700; line-height:1.2; }
@@ -132,29 +132,13 @@ a:focus-visible{ outline:3px solid var(--aksent); outline-offset:2px; }
       </li>
       <li>
         <a class="spill-lenke" href="/emma-naturfag.html">
-          <svg class="spill-ikon" viewBox="0 0 48 48" fill="none" stroke="currentColor"
-               stroke-width="2.2" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 5h12M20 5v13L8.5 38.5A3 3 0 0 0 11.2 43h25.6a3 3 0 0 0 2.7-4.5L28 18V5"/>
-            <path d="M13.5 30h21L39 38.5A3 3 0 0 1 36.8 43H11.2A3 3 0 0 1 9 38.5z" fill="currentColor" stroke="none" opacity=".35"/>
-            <circle cx="21" cy="35" r="2" fill="currentColor" stroke="none"/>
-            <circle cx="27.5" cy="37.5" r="1.5" fill="currentColor" stroke="none"/>
-            <circle cx="25" cy="32" r="1.2" fill="currentColor" stroke="none"/>
-          </svg>
+          <img class="spill-ikon" src="/bilder/ikoner/naturfag.png?v=2" alt="" width="425" height="502">
           <span><span class="spill-navn">Naturfag</span><span class="spill-sub">Stoffer, reaksjoner og modeller</span></span>
         </a>
       </li>
       <li>
         <a class="spill-lenke" href="/emma-grunnstoff.html">
-          <svg class="spill-ikon" viewBox="0 0 48 48" fill="none" stroke="currentColor"
-               stroke-width="2.2" aria-hidden="true">
-            <circle cx="24" cy="24" r="4.5" fill="currentColor" stroke="none"/>
-            <ellipse cx="24" cy="24" rx="19" ry="7.5"/>
-            <ellipse cx="24" cy="24" rx="19" ry="7.5" transform="rotate(60 24 24)"/>
-            <ellipse cx="24" cy="24" rx="19" ry="7.5" transform="rotate(120 24 24)"/>
-            <circle cx="43" cy="24" r="2.6" fill="currentColor" stroke="none"/>
-            <circle cx="14.5" cy="7.6" r="2.6" fill="currentColor" stroke="none"/>
-            <circle cx="14.5" cy="40.4" r="2.6" fill="currentColor" stroke="none"/>
-          </svg>
+          <img class="spill-ikon" src="/bilder/ikoner/grunnstoffer.png?v=2" alt="" width="512" height="466">
           <span><span class="spill-navn">Grunnstoffer</span><span class="spill-sub">Periodesystemet</span></span>
         </a>
       </li>

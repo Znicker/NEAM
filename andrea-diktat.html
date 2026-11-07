@@ -302,7 +302,7 @@ body.over .rekorder{ display:none; }
   border:2px solid var(--messing); color:var(--messing-moerk);
   display:flex; align-items:center; justify-content:center;
 }
-.vei-ikon svg{ width:24px; height:24px; }
+.vei-ikon svg, .vei-ikon img{ width:24px; height:24px; object-fit:contain; }
 .vei-navn{ display:block; font-size:var(--t-brod); font-weight:700; }
 .vei-sub{ display:block; font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; margin-top:2px; }
 .vei.hoved{ border-color:var(--aksent); background:var(--aksent-lys); }
@@ -594,11 +594,7 @@ body.over .rekorder{ display:none; }
         <div class="veier">
           <button type="button" class="vei hoved" id="veiOv">
             <span class="vei-ikon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                   stroke-linecap="round" stroke-linejoin="round">
-                <path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/>
-                <path d="M18.5 5.5a9 9 0 0 1 0 13"/>
-              </svg>
+              <img src="/bilder/ikoner/les-hoyt.png?v=2" alt="" width="512" height="456">
             </span>
             <span><span class="vei-navn">Hør ordene</span>
                   <span class="vei-sub">Neam leser ett og ett</span></span>
@@ -606,11 +602,7 @@ body.over .rekorder{ display:none; }
 
           <button type="button" class="vei" id="veiArk">
             <span class="vei-ikon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                   stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-                <rect x="6" y="14" width="12" height="7" rx="1"/>
-              </svg>
+              <img src="/bilder/ikoner/skriv-ut.png?v=2" alt="" width="512" height="482">
             </span>
             <span><span class="vei-navn">Skriv ut ark</span>
                   <span class="vei-sub">Ruter til å skrive i</span></span>
@@ -618,11 +610,7 @@ body.over .rekorder{ display:none; }
 
           <button type="button" class="vei" id="veiBilde">
             <span class="vei-ikon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                   stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 8a2 2 0 0 1 2-2h2l1.5-2h7L17 6h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                <circle cx="12" cy="12.5" r="3.5"/>
-              </svg>
+              <img src="/bilder/ikoner/ta-bilde.png?v=2" alt="" width="512" height="446">
             </span>
             <span><span class="vei-navn">Ta bilde av arket</span>
                   <span class="vei-sub">Neam leser og gir stjerner</span></span>

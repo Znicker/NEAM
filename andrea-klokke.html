@@ -300,7 +300,7 @@ body.spiller .rekorder{ display:none; }
   height:36px; display:flex; align-items:center; justify-content:center;
   font-size:24px; line-height:1; font-weight:700; font-variant-numeric:tabular-nums;
 }
-.art-tegn svg{ width:36px; height:36px; display:block; }
+.art-tegn svg, .art-tegn img{ width:36px; height:36px; display:block; object-fit:contain; }
 .art-sub{ font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); line-height:1.25; }
 
 .nivaer{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
@@ -353,7 +353,7 @@ body.spiller .rekorder{ display:none; }
   background:var(--boks-mild); border:1px solid var(--boks-kant);
   font-size:var(--t-brod); font-weight:700; color:var(--ink);
 }
-.k-dagsdel svg{ width:22px; height:22px; display:block; color:var(--messing-moerk); }
+.k-dagsdel svg, .k-dagsdel img{ width:22px; height:22px; display:block; object-fit:contain; color:var(--messing-moerk); }
 
 .k-inn{ display:flex; flex-direction:column; align-items:center; gap:14px; }
 .k-svar{
@@ -464,7 +464,7 @@ body.spiller .rekorder{ display:none; }
 }
 .tast:active{ transform:translateY(2px); box-shadow:none; background:var(--paper-soft); }
 .tast:disabled{ opacity:.4; cursor:default; }
-.tast-slett svg{ width:.9em; height:.9em; }
+.tast-slett svg, .tast-slett img{ width:.9em; height:.9em; object-fit:contain; }
 .tast-svar{
   background:var(--aksent); color:#FFFFFF; border-color:var(--aksent);
   box-shadow:0 2px 0 var(--aksent-moerk); font-size:calc(var(--tast-h) * .32);
@@ -616,16 +616,12 @@ body.spiller .rekorder{ display:none; }
       <div class="arter" role="group" aria-label="Oppgavetype">
         <button type="button" class="valg art" data-art="les" aria-pressed="false">
           <span class="art-tegn" aria-hidden="true">
-            <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
-              <circle cx="18" cy="18" r="15"/><path d="M18 18V8M18 18l6 4"/>
-            </svg>
+            <img src="/bilder/ikoner/les-klokka.png?v=2" alt="" width="498" height="512">
           </span>
           <span>Les klokka</span><span class="art-sub">Skriv hva den viser</span></button>
         <button type="button" class="valg art" data-art="still" aria-pressed="false">
           <span class="art-tegn" aria-hidden="true">
-            <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="18" cy="18" r="15"/><path d="M18 18l7-7"/><circle cx="25" cy="11" r="2.6" fill="currentColor"/>
-            </svg>
+            <img src="/bilder/ikoner/still-klokka.png?v=2" alt="" width="496" height="512">
           </span>
           <span>Still klokka</span><span class="art-sub">Dra viserne</span></button>
         <button type="button" class="valg art" data-art="ord" aria-pressed="false">
@@ -690,11 +686,7 @@ body.spiller .rekorder{ display:none; }
             <button type="button" class="tast" data-tall="8">8</button>
             <button type="button" class="tast" data-tall="9">9</button>
             <button type="button" class="tast tast-slett" id="tastSlett" aria-label="Slett siste tall">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/>
-                <path d="M17 9l-6 6M11 9l6 6"/>
-              </svg>
+              <img src="/bilder/ikoner/slett-tegn.png?v=2" alt="" width="512" height="386">
             </button>
             <button type="button" class="tast" data-tall="0">0</button>
             <button type="button" class="tast tast-svar" id="tastSvar">Svar</button>
@@ -1471,10 +1463,8 @@ function visOppgave(){
 
 /* Sol og maane til delen av doegnet. Strek, ikke flate - de er
    merker, ikke knapper. */
-const SOL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">'
-  + '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>';
-const MAANE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
-  + '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg>';
+const SOL = '<img src="/bilder/ikoner/dag.png?v=2" alt="" width="487" height="512">';
+const MAANE = '<img src="/bilder/ikoner/natt.png?v=2" alt="" width="494" height="503">';
 
 function settTaster(paa){
   document.querySelectorAll('.tast[data-tall], #tastSlett').forEach(function(t){ t.disabled = !paa; });

@@ -405,7 +405,7 @@ body.spiller .rekorder{ display:none; }
 }
 .tast:active{ transform:translateY(2px); box-shadow:none; background:var(--paper-soft); }
 .tast:disabled{ opacity:.4; cursor:default; }
-.tast-slett svg{ width:.9em; height:.9em; }
+.tast-slett svg, .tast-slett img{ width:.9em; height:.9em; object-fit:contain; }
 .tast-svar{
   background:var(--aksent); color:#FFFFFF; border-color:var(--aksent);
   box-shadow:0 2px 0 var(--aksent-moerk); font-size:calc(var(--tast-h) * .32);
@@ -587,11 +587,7 @@ body.spiller .rekorder{ display:none; }
           <button type="button" class="tast" data-tall="8">8</button>
           <button type="button" class="tast" data-tall="9">9</button>
           <button type="button" class="tast tast-slett" id="tastSlett" aria-label="Slett siste tall">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/>
-              <path d="M17 9l-6 6M11 9l6 6"/>
-            </svg>
+            <img src="/bilder/ikoner/slett-tegn.png?v=2" alt="" width="512" height="386">
           </button>
           <button type="button" class="tast" data-tall="0">0</button>
           <button type="button" class="tast tast-svar" id="tastSvar">Svar</button>

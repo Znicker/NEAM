@@ -113,10 +113,10 @@ const MERKE_V = 2;
 
    Egen versjon: mappa er ny og ble aldri forespurt foer filene laa der. */
 const IKON_V = 2;
-/* Tom fra 7. november 2026: de nye ikonene i bronsestilen har alle sin
-   egen flis tegnet inn. Lista staar igjen for et strekikon som kommer
-   uten flis. IKON_V 1 gjaldt de gamle filene. */
-const NEAM_IKON_STREK = [];
+/* Fra 7. november 2026 har ikonene i bronsestilen sin egen flis tegnet
+   inn. Bare strekikonene uten flis staar her - Rommene i husfireren.
+   IKON_V 1 gjaldt de gamle filene. */
+const NEAM_IKON_STREK = ['rommene'];
 /* Knappenavn som har faatt nytt bilde under et annet filnavn. */
 const NEAM_IKON_FRA = { 'avtale':'ny-avtale', 'rediger':'endre' };
 function neamIkonUrl(navn){

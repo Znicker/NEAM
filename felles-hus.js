@@ -1914,10 +1914,7 @@ function hskRomHtml(r){
        + tittel + rader.map(hskEnhetHtml).join('') + '</section>';
 }
 
-const HSK_GREP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
-  + '<circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/>'
-  + '<circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/>'
-  + '<circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+const HSK_GREP = '<img src="/bilder/ikoner/flytt.png?v=2" alt="" width="277" height="426">';
 
 function hskTegn(){
   const rom = hskAlleRom();
@@ -2058,10 +2055,7 @@ window.neamEnheter = function(){
     navn: 'Neamow', merke: true, gjor: nmwApne,
     ikon: knappMerke('neamow')
   }, {
-    navn: 'Rommene', gjor: hskApne,
-    ikon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
-        + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
-        + '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg>'
-        + '<span class="neam-knapp-tekst">Rommene</span>'
+    navn: 'Rommene', merke: true, gjor: hskApne,
+    ikon: knappMerke('rommene')
   }];
 };

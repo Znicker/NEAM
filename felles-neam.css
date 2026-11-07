@@ -1579,7 +1579,7 @@
   display:inline-flex; padding:6px 2px 6px 8px; color:var(--ink-soft);
   cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none;
 }
-.hsk-grep-enhet svg{ width:18px; height:18px; display:block; }
+.hsk-grep-enhet svg, .hsk-grep-enhet img{ width:18px; height:18px; display:block; object-fit:contain; }
 /* En enhet som dras: hvit rad med skygge over alt annet. */
 .hsk-enhet.hsk-drar{
   position:fixed; z-index:200; margin:0; pointer-events:none;
@@ -1598,7 +1598,7 @@
 .hsk-rom-merk{ display:inline-flex; cursor:pointer; margin:-4px 0; padding:4px 0; }
 .hsk-rom-merk input{ width:20px; height:20px; margin:0; accent-color:var(--aksent); cursor:pointer; }
 .hsk-rom.hsk-rom-av{ opacity:.45; }
-.hsk-grep svg{ width:18px; height:18px; display:block; }
+.hsk-grep svg, .hsk-grep img{ width:18px; height:18px; display:block; object-fit:contain; }
 /* Rommet som dras, foelger fingeren over alt annet. */
 .hsk-rom.hsk-drar{
   position:fixed; z-index:200; margin:0; pointer-events:none;
