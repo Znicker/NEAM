@@ -3,7 +3,7 @@
 *Ført à jour 7. november 2026, kveld: Rommene har fått fjernkontroll til
 Samsung-TV-ene, gjennom en Logic-variabel og HomeyScript i Homey, og
 enheter kan dras oppå hverandre til navngitte grupper med felles bryter.
-Senere samme kveld: myk og hard reset under «Enheter og lys» på alle
+Senere samme kveld: innstillingene (Husregisteret, myk og hard reset, Logg ut) ved å holde inne høyre tommelknapp på alle
 sidene, og tommelknappene over Rommene og i spillene (se toppblokka). Ført à jour 7. november 2026: ikonene er byttet til bronsestilen, og
 strektegningene i koden med dem der de står på lys flate (se toppblokka).
 Ført à jour 6. november 2026, natt: Økonomi-flisen på forsiden er vekket,
@@ -100,8 +100,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=78`, `felles-neam.css
-?v=82`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
+**Siste leverte versjoner:** `felles-neam.js ?v=79`, `felles-neam.css
+?v=83`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
@@ -121,8 +121,8 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–77; neam.css til og
-med 81; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–11,
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–78; neam.css til og
+med 82; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–11,
 hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -747,7 +747,8 @@ venter med på tvers av rom.»
 neam.js `?v=78`, neam.css `?v=82`, på alle 18 sidene).
 - **Myk og hard reset** under «Enheter og lys» i venstre tommelknapp, på
   alle sidene (Magne: «Legg den under enheter og lys så lenge» – høyre
-  tommelknapp er full på fire av sidene). Begge spør først («Man må få en
+  tommelknapp er full på fire av sidene). **Flyttet samme natt** til
+  innstillingene – se under. Begge spør først («Man må få en
   prompt før man gjennomfører»). Myk laster sida på nytt. Hard tømmer
   nettleserens Cache Storage og eventuelle service workers, henter sida og
   alle skript og stilark den bruker med `cache:'reload'` (høyst 8 s) og
@@ -765,9 +766,34 @@ neam.js `?v=78`, neam.css `?v=82`, på alle 18 sidene).
   `felles-dialog`, `felles-hus` og `felles-neam` med
   `window.neamUtenSamtale = true`: apper, enheter og reset, men andre trykk
   på NEAM lukker bare, og panelet står ikke fast på PC. Ingen navn i
-  spillene kolliderer med fellesfilene (sjekket med skript). Høyre
-  tommelknapp vises ikke der – spillene har ingen egne handlinger.
+  spillene kolliderer med fellesfilene (sjekket med skript).
   `kort.html` er ikke med.
+
+**7. november, natt: innstillingene på høyre tommelknapp** (`76d50da` og
+neste; neam.js `?v=79`, neam.css `?v=83`). Magne: «Høyre tommelknapp kan
+få ny funksjon. Holder man den inne i 3 sekunder blir man promtet om man
+vil åpne innstillinger», og «Long press kan åpne alle andre innstillinger
+som ligger på forsiden også».
+- **Hold inne i tre sekunder:** en blå ring vokser rundt knappen; når man
+  slipper, spør Neam «Åpne innstillinger?». Spørsmålet kommer først ved
+  slipp – kom det mens fingeren lå på, landet slippet på dialogens
+  bakteppe, og det er nei. Trykket etter slippet svelges, ellers åpnet
+  forsidens egen onclick menyen bak spørsmålet.
+- **Innstillingene alene i hjørnet:** Husregisteret (opp), Reset (skrå,
+  med Myk og Hard reset under) og Logg ut (ved, spør først). Fra andre
+  sider går Husregisteret til `/?huset` og Logg ut til `/?loggut`, som
+  forsiden nå forstår (`loggutFraUrl()`). Funksjonene er `neamSystemValg()`,
+  `neamSideHoldStart()` og `neamLoggUt()` i `felles-neam.js`.
+- **Høyre tommelknapp står på alle sidene,** også spillene. På en side
+  uten egne handlinger sier et vanlig trykk «Hold inne i tre sekunder for
+  innstillinger.»
+- **Reset er tatt bort fra «Enheter og lys»,** og forsidens egen «System»
+  (Oppdater og Logg ut) er fjernet – det ligger i innstillingene nå.
+- **`.side` på Neams høyre hjørne er døpt om til `.neam-hoyre`.** Fem
+  spillsider og kalenderen har sin egen `.side`; på spillene ble knappen en
+  lang smal oval, på kalenderen har den virket på hjørnet en stund uten å
+  synes like godt. 17 steder i `felles-neam.css`, fire i `felles-neam.js`,
+  ingen sider.
 
 ### Åpne tråder
 

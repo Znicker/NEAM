@@ -894,16 +894,27 @@ boksen vises, og en skjult boks har ingen høyde å måle.
 er det lista som må filtreres på innlogget bruker — ikke skalaen som skal
 settes lavere.
 
-**Myk og hard reset står sist under «Enheter og lys»**, på alle sidene
-(7. november 2026), med oppdater-ikonet og navnet under. Begge spør først
-med en vanlig bekreftelse – «Last på nytt» og «Hent på nytt» – fordi det
-som ikke er lagret, forsvinner. Ligger der «så lenge»: høyre tommelknapp
-er full på fire av sidene.
+**Innstillingene: hold inne høyre tommelknapp i tre sekunder** (7. november
+2026), på alle sidene. En blå ring (`--aksent` med gjennomsiktighet) vokser
+rundt knappen mens man holder; når man slipper, spør Neam «Åpne
+innstillinger?». Spørsmålet kommer ved slipp, aldri mens fingeren ligger
+på. Svarer man ja, åpner hjørnet seg med **bare innstillingene**:
+Husregisteret (opp), Reset (skrå – Myk og Hard reset i en stabel) og Logg
+ut (ved). Reset og Logg ut spør først med en vanlig bekreftelse («Last på
+nytt», «Hent på nytt», «Logg ut»), fordi det som ikke er lagret,
+forsvinner. Andre trykk på knappen lukker bare. Forsidens egen «System»
+er borte – den ligger her nå.
 
 **Tommelknappene synes alltid** (7. november 2026): Rommene og Neamow
 legger seg under dem (z-index 88), og spillsidene har dem også – uten
-samtalen, så andre trykk på NEAM bare lukker. Dialogene (120) ligger
-fortsatt øverst.
+samtalen, så andre trykk på NEAM bare lukker. Høyre knapp står også på
+sider uten egne handlinger; et vanlig trykk der sier at man kan holde inne
+for innstillinger. Dialogene (120) ligger fortsatt øverst.
+
+**Neams egne klasser har `neam-`-prefiks, også modifikatorene.** Høyre
+hjørne het `.side` til 7. november 2026, og fem spillsider og kalenderen
+har sin egen `.side` – på spillene ble knappen en lang smal oval. Nå
+`.neam-hoyre`.
 
 **Venstre firer: `ved` er Sikkerhet, ikke Dash** (fra 11. september 2026).
 Kjøkkendashen nås fra applista som alle andre sider; sikkerhet er det ene

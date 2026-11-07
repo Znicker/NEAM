@@ -1198,25 +1198,12 @@ window.neamSideHandlinger = function(){
   return [
     { plass:'opp', navn:'Husregisteret', merke:true,
       ikon:knappMerke('husregister'),
-      gjor: aapneHus },
+      gjor: aapneHus }
 
-    /* System rommer flere ting og gjoer ingenting selv. Oppdater og Logg
-       ut laa i footeren til 30. august 2026; de hoerer hjemme her fordi
-       ingen av dem tilhoerer noen app - de er huset, ikke innholdet.
-       To trykk for aa logge ut er dessuten riktig vekting: paa en iPad
-       flere deler, skal det ikke skje ved et uhell. */
-    { plass:'ved', navn:'System', behold:true, merke:true,
-      ikon: knappMerke('system'),
-      gjor: function(){
-        neamSideStabel('ved', [
-          { navn:'Oppdater',
-            merke:true, ikon:knappMerke('oppdater'),
-            gjor: function(){ location.reload(); } },
-          { navn:'Logg ut',
-            merke:true, ikon:knappMerke('logg-ut'),
-            gjor: loggUt }
-        ]);
-      } }
+    /* System (Oppdater og Logg ut) sto her til 7. november 2026. Det ligger
+       naa i innstillingene - hold inne hoeyre tommelknapp i tre sekunder,
+       paa alle sidene (felles-neam.js, neamSystemValg). Logg ut spoer der
+       foerst. */
   ];
 };
 
