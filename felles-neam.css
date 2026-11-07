@@ -1794,3 +1794,53 @@
 }
 .hsk-tom{ color:var(--ink-soft); font-size:var(--t-brod); line-height:1.5; margin:0 0 16px; }
 .hsk-feil{ color:var(--danger); font-size:var(--t-meta); margin:0 0 14px; }
+
+/* ============================================================
+   Pinkodene (8. november 2026) - tastaturet og listen for sys@.
+   Store taster etter Magnes ønske, seks prikker, papirflate.
+   Bakteppet er .dlg-bak (z-index 120), så det ligger over fireren.
+   ============================================================ */
+.neam-pin-kort{
+  background:var(--paper); border-radius:var(--radius);
+  box-shadow:0 20px 50px rgba(44,62,80,.34);
+  width:100%; max-width:360px; padding:24px 24px 18px;
+  font-family:'Archivo',sans-serif; color:var(--ink); text-align:center;
+}
+.neam-pin-tittel{ font-size:var(--t-stor); font-weight:700; margin:0 0 14px; }
+.neam-pin-prikker{ display:flex; gap:14px; justify-content:center; margin:0 0 20px; }
+.neam-pin-prikk{ width:18px; height:18px; border-radius:50%; border:2px solid var(--aksent); }
+.neam-pin-prikk.fylt{ background:var(--aksent); }
+.neam-pin-taster{ display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; }
+.neam-pin-taster button{
+  height:76px; border-radius:var(--radius); cursor:pointer; touch-action:manipulation;
+  background:var(--paper-soft); border:1px solid var(--boks-kant); color:var(--ink);
+  font-family:'Archivo',sans-serif; font-size:34px; font-weight:700;
+}
+.neam-pin-taster button:active{ transform:scale(.97); background:var(--boks-mild); }
+.neam-pin-taster button.neam-pin-liten{
+  background:transparent; border-color:transparent;
+  font-size:var(--t-brod); color:var(--ink-soft);
+}
+.neam-pin-feil{ min-height:22px; margin-top:12px; font-size:var(--t-meta); color:var(--danger); }
+@media(max-height:620px){
+  .neam-pin-taster button{ height:58px; font-size:28px; }
+}
+
+.neam-pin-liste{ text-align:left; max-width:420px; }
+.neam-pin-tekst{ color:var(--ink-soft); font-size:var(--t-meta); line-height:1.5; margin:0 0 14px; }
+.neam-pin-rader{ margin:0 0 18px; }
+.neam-pin-rad{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:12px 0; border-top:1px solid var(--line);
+}
+.neam-pin-rad:last-child{ border-bottom:1px solid var(--line); }
+.neam-pin-navn{ font-size:var(--t-brod); font-weight:700; }
+.neam-pin-status{ font-size:var(--t-meta); color:var(--ink-soft); }
+.neam-pin-valg{ display:flex; gap:8px; flex-shrink:0; }
+.neam-pin-knapp{
+  border:none; border-radius:999px; padding:10px 16px; cursor:pointer; color:#fff;
+  font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
+}
+.neam-pin-knapp.ny{ background:var(--handling-ny); }
+.neam-pin-knapp.endre{ background:var(--handling-endre); }
+.neam-pin-knapp.slett{ background:var(--danger); }

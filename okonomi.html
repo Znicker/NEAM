@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=6">
 <link rel="stylesheet" href="/felles-knapper.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=85">
+<link rel="stylesheet" href="/felles-neam.css?v=86">
 <style>
 /* ============================================================
    NEAM - oekonomi
@@ -875,13 +875,11 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         </div>
       </div>
     </section>
-    <div class="ok-mnd-to">
-    <section class="ok-kort ok-mnd-venstre">
+    <!-- Én spalte som Budsjett; kjøpene bak en post åpnes i en dialog (8. november 2026). -->
+    <section class="ok-kort">
       <div class="ok-kort-hode"><h2>Brukt per post</h2></div>
       <div id="ok-rg-tabell"><p class="ok-meta">Henter …</p></div>
     </section>
-    <section class="ok-kort ok-mnd-kjop" id="ok-rg-kjop" aria-label="Kjøpene bak posten" aria-live="polite"></section>
-    </div>
   </div>
 
   <!-- ===== RESULTAT ===== -->
@@ -911,8 +909,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         </div>
       </div>
     </section>
-    <div class="ok-mnd-to">
-    <section class="ok-kort ok-mnd-venstre">
+    <section class="ok-kort">
       <div class="ok-kort-hode">
         <h2>Budsjett mot faktisk</h2>
         <div class="ok-forklar-linje">
@@ -923,8 +920,6 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       </div>
       <div id="ok-mnd-tabell"><p class="ok-meta">Henter …</p></div>
     </section>
-    <section class="ok-kort ok-mnd-kjop" id="ok-mnd-kjop" aria-label="Kjøpene bak posten" aria-live="polite"></section>
-    </div>
   </div>
 
   <!-- ===== BUDSJETT ===== -->
@@ -1056,6 +1051,19 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
   </div>
 </div>
 
+<!-- Kjøpene bak en post i Regnskap og Resultat (8. november 2026: «Kjøpene
+     bak tror jeg får legge seg som en popup»). Står foran kvitteringen, så
+     en kvittering åpnet herfra legger seg over. -->
+<div class="dlg-bak" id="ok-kb-bak" hidden>
+  <div class="dlg-kort ok-kv-kort" role="dialog" aria-modal="true" aria-labelledby="ok-kb-tittel">
+    <div class="ok-kort-hode">
+      <div><span class="ok-etikett">Kjøpene bak</span><h2 id="ok-kb-tittel"></h2><p class="ok-meta" id="ok-kb-meta"></p></div>
+    </div>
+    <div class="ok-kv-total" id="ok-kb-total"></div>
+    <div id="ok-kb-liste"></div>
+    <div class="dlg-rad"><button type="button" class="dlg-knapp nei" id="ok-kb-lukk">Lukk</button></div>
+  </div>
+</div>
 <div class="dlg-bak" id="ok-kv-bak" hidden>
   <div class="dlg-kort ok-kv-kort" role="dialog" aria-modal="true" aria-labelledby="ok-kv-tittel">
     <div class="ok-kort-hode">
@@ -1075,7 +1083,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 <script src="/felles-lesalt.js?v=16"></script>
 <script src="/felles-skriv.js?v=12"></script>
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=81"></script>
+<script src="/felles-neam.js?v=82"></script>
 <script>
 (function(){
   'use strict';
@@ -4350,30 +4358,12 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         rad.appendChild(okEl('span', '', '<b>' + kr(uf + uff) + '</b> <span class="ok-meta">/ ' + okBuKr(ub) + '</span>' + ((snu ? -ua : ua) > 0.5 ? ' <span class="ok-avvik over">' + (ua > 0 ? '+' : '−') + okBuKr(Math.abs(ua)) + '</span>' : '')));
         rad.appendChild(okMndBar(uf, ub, null, Math.max(ub, uf + uff) * 1.05 || 1, uff, snu));
         if(uff){ var fm = okEl('span', 'ok-meta', 'Forfaller ' + okVask(kr(uff)) + ' (' + okVask(ffDatoer(k)) + ') – telles når trekket kommer fra banken'); fm.style.gridColumn = '1 / -1'; rad.appendChild(fm); }
-        if(uf || uff){
-          var nk = m + '|' + k, apen = !!okMnd.apneKjop[nk], kbId = 'ok-mnd-kb-' + okVask(k).replace(/[^\w]/g, '');
-          if(okPc.matches){
-            /* PC: kjoepene vises i spalten til hoeyre. */
-            if(!okMnd.valgtPost) okMnd.valgtPost = k;
-            if(okMnd.valgtPost === k) rad.classList.add('valgt');
-            var vb = okEl('button', 'ok-lenke', okMnd.valgtPost === k ? 'Vises til høyre' : 'Vis kjøpene ›'); vb.type = 'button'; vb.id = kbId;
-            vb.addEventListener('click', function(){ okMnd.valgtPost = k; okMndTegn(); var x = document.getElementById(kbId); if(x) x.focus(); });
-            rad.appendChild(vb);
-          } else {
-            var kb = okEl('button', 'ok-lenke', apen ? 'Skjul kjøpene' : 'Vis kjøpene ›'); kb.type = 'button'; kb.id = kbId;
-            kb.addEventListener('click', function(){ okMnd.apneKjop[nk] = !apen; okMndTegn(); var x = document.getElementById(kb.id); if(x) x.focus(); });
-            rad.appendChild(kb);
-            if(apen) rad.appendChild(okMndKjop(ms, k));
-          }
-        }
+        if(uf || uff) okMndKjopKnapp(c, k, rad, false);
         ur.appendChild(rad);
       });
       d.appendChild(ur);
       boks.appendChild(d);
     });
-    /* Valgt post som ikke finnes i maaneden: velg den foerste neste gang. */
-    if(okPc.matches && okMnd.valgtPost && !boks.querySelector('.ok-under-rad.valgt')){ okMnd.valgtPost = null; var f = boks.querySelector('.ok-under-rad .ok-lenke'); if(f){ f.click(); return; } }
-    okMndKjopPanel(ms);
   }
   /* Merkene paa tvers for perioden: brukt mot budsjett (6. november 2026).
      o (8. november 2026): { boks, fold, hva } - hva er 'brukt' (Regnskap),
@@ -4407,21 +4397,13 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     });
     boks.appendChild(tab);
   }
-  /* Knappen til kjoepene bak en post: spalten til hoeyre paa PC, under posten paa telefon. */
-  function okMndKjopKnapp(c, k, rad, pre){
-    var nk = c.m + '|' + k, apen = !!okMnd.apneKjop[nk], kbId = pre + okVask(k).replace(/[^\w]/g, '');
-    if(okPc.matches){
-      if(!okMnd.valgtPost) okMnd.valgtPost = k;
-      if(okMnd.valgtPost === k) rad.classList.add('valgt');
-      var vb = okEl('button', 'ok-lenke', okMnd.valgtPost === k ? 'Vises til høyre' : 'Vis kjøpene ›'); vb.type = 'button'; vb.id = kbId;
-      vb.addEventListener('click', function(){ okMnd.valgtPost = k; okMndTegn(); var x = document.getElementById(kbId); if(x) x.focus(); });
-      rad.appendChild(vb);
-    } else {
-      var kb = okEl('button', 'ok-lenke', apen ? 'Skjul kjøpene' : 'Vis kjøpene ›'); kb.type = 'button'; kb.id = kbId;
-      kb.addEventListener('click', function(){ okMnd.apneKjop[nk] = !apen; okMndTegn(); var x = document.getElementById(kbId); if(x) x.focus(); });
-      rad.appendChild(kb);
-      if(apen) rad.appendChild(okMndKjop(c.ms, k));
-    }
+  /* Knappen til kjoepene bak en post - aapner dialogen, paa PC og telefon
+     (8. november 2026; foer spalten til hoeyre paa PC og under posten paa
+     telefon). utenBudsjett: Regnskap viser ikke budsjettet. */
+  function okMndKjopKnapp(c, k, rad, utenBudsjett){
+    var kb = okEl('button', 'ok-lenke', 'Vis kjøpene ›'); kb.type = 'button';
+    kb.addEventListener('click', function(){ okVisKjopene(c.ms, k, kb, utenBudsjett); });
+    rad.appendChild(kb);
   }
   /* En gruppe som sammenleggbar linje, som i Resultat - her med ett tall. */
   function okMndGruppeLinje(g, tall, under){
@@ -4465,14 +4447,13 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         rad.appendChild(okEl('span', '', okVask(k.split(' · ')[1])));
         rad.appendChild(okEl('b', '', okVask(kr(uf + uff))));
         if(uff){ var fm = okEl('span', 'ok-meta', 'Forfaller ' + okVask(kr(uff)) + ' (' + okVask(c.ffDatoer(k)) + ') – telles når trekket kommer fra banken'); fm.style.gridColumn = '1 / -1'; rad.appendChild(fm); }
-        okMndKjopKnapp(c, k, rad, 'ok-rg-kb-');
+        okMndKjopKnapp(c, k, rad, true);
         ur.appendChild(rad);
       });
       d.appendChild(ur);
       boks.appendChild(d);
     });
     if(!noe) boks.appendChild(okEl('p', 'ok-meta', 'Ingenting er ført i perioden ennå.'));
-    okMndKjopPanel(c.ms, 'ok-rg-kjop', true);
   }
 
   /* ---------- Budsjett: lista for perioden (8. november 2026) ----------
@@ -4554,22 +4535,38 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     boks.innerHTML = okStolpeSvg(stolper, { aria:'Budsjetterte utgifter per måned i ' + aar, hva:'i budsjett' });
   }
 
-  /* PC-spalten: kjoepene bak posten som er valgt. */
-  function okMndKjopPanel(ms, boksId, utenBudsjett){
-    var boks = document.getElementById(boksId || 'ok-mnd-kjop'), k = okMnd.valgtPost;
-    boks.innerHTML = '';
-    if(!okPc.matches) return;
-    if(!k){ boks.appendChild(okEl('p', 'ok-meta', 'Velg en post for å se kjøpene bak.')); return; }
+  /* Dialogen med kjoepene bak en post i perioden. fra: knappen fokus gaar tilbake til. */
+  var okKbFra = null;
+  function okVisKjopene(ms, k, fra, utenBudsjett){
+    okKbFra = fra || null;
+    okMnd.valgtPost = k;
     var reg = okMndSum(ms, function(mm){ return okMnd.aar[mm]; }), mb = okMndSum(ms, function(mm){ return okBudFor(okBu, mm); });
     var faktisk = okBuLinjer(k).reduce(function(s, l){ return s + (reg[l] || 0); }, reg[k] || 0);
     var budsjett = okBuLinjer(k).reduce(function(s, l){ return s + (mb[l] || 0); }, mb[k] || 0);
-    boks.appendChild(okEl('span', 'ok-etikett', 'Kjøpene bak'));
     var ks = [k].concat(okBuLinjer(k));
     var ff = okMnd.forfall.filter(function(f){ return ms.indexOf(f.mnd) !== -1 && ks.indexOf(f.kategori) !== -1; }).reduce(function(s, f){ return s + f.belop; }, 0);
-    boks.appendChild(okEl('div', 'ok-detalj-hode', '<h2 style="margin:0;font-size:var(--t-stor)">' + okVask(k.split(' · ').join(' › ')) + '</h2><span class="ok-detalj-belop">' + okBuKr(faktisk + ff) + ' kr</span>'));
-    boks.appendChild(okEl('p', 'ok-meta', (utenBudsjett ? '' : 'Budsjett ' + okBuKr(budsjett) + ' kr. ') + (ff ? 'Herav forfaller ' + okBuKr(ff) + ' kr. ' : '') + 'Kjøp med kvittering kan åpnes.'));
-    boks.appendChild(okMndKjop(ms, k));
+    var periode = ms.length === 1 ? okMndNavn.format(new Date(ms[0] + '-01T12:00:00')) : ms.length + ' måneder';
+    document.getElementById('ok-kb-tittel').textContent = k.split(' · ').join(' › ');
+    document.getElementById('ok-kb-meta').textContent = periode + '. ' + (utenBudsjett ? '' : 'Budsjett ' + okBuKr(budsjett) + ' kr. ') + (ff ? 'Herav forfaller ' + okBuKr(ff) + ' kr. ' : '') + 'Kjøp med kvittering kan åpnes.';
+    document.getElementById('ok-kb-total').textContent = okBuKr(faktisk + ff) + ' kr';
+    var liste = document.getElementById('ok-kb-liste');
+    liste.innerHTML = '';
+    liste.appendChild(okMndKjop(ms, k));
+    document.getElementById('ok-kb-bak').hidden = false;
+    document.getElementById('ok-kb-lukk').focus();
   }
+  function okLukkKjopene(){
+    document.getElementById('ok-kb-bak').hidden = true;
+    if(okKbFra && document.body.contains(okKbFra)) okKbFra.focus();
+    okKbFra = null;
+  }
+  document.getElementById('ok-kb-lukk').addEventListener('click', okLukkKjopene);
+  document.getElementById('ok-kb-bak').addEventListener('click', function(e){ if(e.target === this) okLukkKjopene(); });
+  /* Escape lukker kvitteringen foerst naar den ligger over (fanges foer kvitteringens lytter). */
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Escape' || document.getElementById('ok-kb-bak').hidden || !document.getElementById('ok-kv-bak').hidden) return;
+    okLukkKjopene();
+  }, true);
   /* Kjoepene bak en post: foeringene i maaneden. Med kvittering kan de aapnes. */
   /* Kjoepene bak en post i perioden: foeringene maaned for maaned, slaatt sammen. */
   function okMndKjop(ms, k){

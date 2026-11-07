@@ -1590,12 +1590,23 @@ function neamSideGren(plass){ neamGrenPaa('neamSideFirer', plass); }
    forsiden; fra en annen side gaar de dit (?huset, ?loggut). */
 function neamPaaForsiden(){ return location.pathname === '/' || location.pathname === '/index.html'; }
 function neamSystemValg(){
+  const hus = function(){
+    if(neamPaaForsiden() && typeof aapneHus === 'function') aapneHus();
+    else location.href = '/?huset';
+  };
+  /* sys@ er administrator og faar Pinkoder under Husregisteret (Magne,
+     8. november 2026). Alle andre ser knappen som foer. */
+  const opp = neamErAdmin()
+    ? { plass:'opp', navn:'Husregisteret', behold:true, merke:true, ikon:knappMerke('husregister'),
+        gjor: function(){
+          neamSideStabel('opp', [
+            { navn:'Husregisteret', merke:true, ikon:knappMerke('husregister'), gjor: hus },
+            { navn:'Pinkoder', merke:true, ikon:knappMerke('laas'), gjor: neamPinkoder }
+          ]);
+        } }
+    : { plass:'opp', navn:'Husregisteret', merke:true, ikon:knappMerke('husregister'), gjor: hus };
   return [
-    { plass:'opp', navn:'Husregisteret', merke:true, ikon:knappMerke('husregister'),
-      gjor: function(){
-        if(neamPaaForsiden() && typeof aapneHus === 'function') aapneHus();
-        else location.href = '/?huset';
-      } },
+    opp,
     { plass:'skraa', navn:'Reset', behold:true, merke:true, ikon:knappMerke('oppdater'),
       gjor: function(){
         neamSideStabel('skraa', [
@@ -1704,6 +1715,167 @@ function neamSideKlikk(){
 function neamSpoer(tekst, ja){
   if(typeof bekreft === 'function') return bekreft(tekst, { jaTekst: ja });
   return Promise.resolve(window.confirm(tekst));
+}
+
+/* ============================================================
+   Pinkodene (8. november 2026)
+   ------------------------------------------------------------
+   Kjoekkenskjermen er alltid logget inn som kitchen@; den som staar
+   der, taster sin sekssifrede kode. Kodene ligger hashet paa
+   serveren (functions/api/pin.js), utenfor fh:. Her er tastaturet
+   og listen der sys@ legger dem inn. Tastaturet brukes ogsaa paa
+   kjoekkenet (neste runde).
+   ============================================================ */
+const NEAM_ADMIN = 'sys@neam.no';
+function neamErAdmin(){
+  return typeof skrivMeg !== 'undefined' && skrivMeg === NEAM_ADMIN;
+}
+async function neamPinKall(metode, kropp){
+  const t = (typeof gyldigToken === 'function') ? await gyldigToken() : null;
+  if(!t) return { ok:false, feil:'Ingen Microsoft-innlogging på denne skjermen.' };
+  try{
+    const r = await fetch('/api/pin', {
+      method: metode,
+      headers: { Authorization:'Bearer ' + t, 'Content-Type':'application/json' },
+      body: kropp ? JSON.stringify(kropp) : undefined
+    });
+    return await r.json();
+  }catch(e){ return { ok:false, feil:'Fikk ikke kontakt med serveren.' }; }
+}
+function neamPinMelding(tekst){
+  if(typeof varsle === 'function') return varsle(tekst);
+  window.alert(tekst);
+  return Promise.resolve();
+}
+
+let neamPinBak = null;
+function neamPinFlate(){
+  if(neamPinBak) return neamPinBak;
+  neamPinBak = document.createElement('div');
+  neamPinBak.className = 'dlg-bak neam-pin-bak';
+  neamPinBak.hidden = true;
+  document.body.appendChild(neamPinBak);
+  return neamPinBak;
+}
+function neamPinLukk(){ if(neamPinBak){ neamPinBak.hidden = true; neamPinBak.innerHTML = ''; } }
+
+/* Det store tastaturet. Gir de seks sifrene, eller null naar man
+   trykker den venstre knappen (Avbryt / Hopp over) eller Escape.
+   `feil` vises under tastene. */
+function neamPinTast(valg){
+  const v = valg || {};
+  const bak = neamPinFlate();
+  bak.innerHTML =
+      '<div class="neam-pin-kort" role="dialog" aria-modal="true">'
+    +   '<div class="neam-pin-tittel"></div>'
+    +   '<div class="neam-pin-prikker"></div>'
+    +   '<div class="neam-pin-taster"></div>'
+    +   '<div class="neam-pin-feil" aria-live="polite"></div>'
+    + '</div>';
+  bak.querySelector('.neam-pin-tittel').textContent = v.tittel || 'Tast koden din';
+  bak.querySelector('.neam-pin-feil').textContent = v.feil || '';
+  const prikker = bak.querySelector('.neam-pin-prikker');
+  const taster = bak.querySelector('.neam-pin-taster');
+  let kode = '';
+  let ferdig = null;
+  function tegn(){
+    prikker.innerHTML = '';
+    for(let i = 0; i < 6; i++){
+      const p = document.createElement('span');
+      p.className = 'neam-pin-prikk' + (i < kode.length ? ' fylt' : '');
+      prikker.appendChild(p);
+    }
+  }
+  function slutt(svar){
+    document.removeEventListener('keydown', tast, true);
+    if(ferdig){ const f = ferdig; ferdig = null; f(svar); }
+  }
+  function trykk(t){
+    if(!ferdig) return;
+    bak.querySelector('.neam-pin-feil').textContent = '';
+    if(t === 'slett'){ kode = kode.slice(0, -1); tegn(); return; }
+    if(t === 'venstre'){ slutt(null); return; }
+    if(kode.length >= 6) return;
+    kode += t; tegn();
+    if(kode.length === 6){ const k = kode; setTimeout(function(){ slutt(k); }, 150); }
+  }
+  function tast(ev){
+    if(/^[0-9]$/.test(ev.key)){ ev.preventDefault(); trykk(ev.key); }
+    else if(ev.key === 'Backspace'){ ev.preventDefault(); trykk('slett'); }
+    else if(ev.key === 'Escape'){ ev.preventDefault(); ev.stopPropagation(); trykk('venstre'); }
+  }
+  ['1','2','3','4','5','6','7','8','9','venstre','0','slett'].forEach(function(t){
+    const b = document.createElement('button');
+    b.type = 'button';
+    if(t === 'venstre'){ b.className = 'neam-pin-liten'; b.textContent = v.venstre || 'Avbryt'; }
+    else if(t === 'slett'){ b.className = 'neam-pin-liten'; b.textContent = 'Slett'; b.setAttribute('aria-label', 'Slett ett siffer'); }
+    else b.textContent = t;
+    b.onclick = function(){ trykk(t); };
+    taster.appendChild(b);
+  });
+  tegn();
+  bak.hidden = false;
+  document.addEventListener('keydown', tast, true);
+  return new Promise(function(ok){ ferdig = ok; });
+}
+
+/* Listen for sys@: de fire, med Sett kode / Endre og Fjern. */
+async function neamPinkoder(){
+  neamSideFirerNed();
+  const bak = neamPinFlate();
+  bak.innerHTML = '<div class="neam-pin-kort neam-pin-liste"><div class="neam-pin-tittel">Pinkoder</div>'
+                + '<p class="neam-pin-tekst">Henter …</p></div>';
+  bak.hidden = false;
+  const d = await neamPinKall('GET');
+  if(!d.ok){ neamPinLukk(); neamPinMelding(d.feil || 'Fikk ikke hentet pinkodene.'); return; }
+
+  const kort = bak.querySelector('.neam-pin-kort');
+  kort.innerHTML = '<div class="neam-pin-tittel">Pinkoder</div>'
+                 + '<p class="neam-pin-tekst">Seks sifre. Ikke samme siffer seks ganger, og ikke en rekke som 123456.</p>'
+                 + '<div class="neam-pin-rader"></div>'
+                 + '<div class="dlg-rad"><button type="button" class="dlg-knapp nei">Lukk</button></div>';
+  kort.querySelector('.nei').onclick = neamPinLukk;
+  bak.onclick = function(ev){ if(ev.target === bak && bak.querySelector('.neam-pin-liste')) neamPinLukk(); };
+  const rader = kort.querySelector('.neam-pin-rader');
+  d.personer.forEach(function(p){
+    const rad = document.createElement('div');
+    rad.className = 'neam-pin-rad';
+    rad.innerHTML = '<div><div class="neam-pin-navn"></div><div class="neam-pin-status"></div></div>'
+                  + '<div class="neam-pin-valg">'
+                  +   '<button type="button" class="neam-pin-knapp ' + (p.harKode ? 'endre' : 'ny') + '"></button>'
+                  +   (p.harKode ? '<button type="button" class="neam-pin-knapp slett">Fjern</button>' : '')
+                  + '</div>';
+    rad.querySelector('.neam-pin-navn').textContent = p.navn;
+    rad.querySelector('.neam-pin-status').textContent = p.harKode ? 'Har kode' : 'Ingen kode';
+    const sett = rad.querySelector('.neam-pin-knapp');
+    sett.textContent = p.harKode ? 'Endre' : 'Sett kode';
+    sett.onclick = function(){ neamPinSett(p); };
+    const fjern = rad.querySelector('.slett');
+    if(fjern) fjern.onclick = async function(){
+      neamPinLukk();
+      if(await neamSpoer('Fjerne pinkoden til ' + p.navn + '?', 'Fjern')){
+        const r = await neamPinKall('POST', { hva:'fjern', hvem:p.id });
+        if(!r.ok) await neamPinMelding(r.feil || 'Fikk ikke fjernet koden.');
+      }
+      neamPinkoder();
+    };
+    rader.appendChild(rad);
+  });
+}
+
+async function neamPinSett(p){
+  let feil = '';
+  for(;;){
+    const forste = await neamPinTast({ tittel:'Ny kode for ' + p.navn, feil:feil });
+    if(forste === null) break;
+    const andre = await neamPinTast({ tittel:'Tast koden en gang til' });
+    if(andre === null) break;
+    if(andre !== forste){ feil = 'Kodene var ikke like. Prøv igjen.'; continue; }
+    const r = await neamPinKall('POST', { hva:'sett', hvem:p.id, kode:forste });
+    if(r.ok) break;
+    feil = r.feil || 'Fikk ikke lagret koden.';
+  }
+  neamPinkoder();
 }
 async function neamMykReset(){
   neamFirerNed();
