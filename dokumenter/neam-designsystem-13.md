@@ -763,6 +763,9 @@ bruker den, er Økonomi.
 - **Oppbygning:** pil (›, dreies ned når linja er åpen), eventuelt en
   statusprikk, tittelen i fet `--t-brod`, og et **sammendrag** til høyre i
   `--t-meta` og `--ink-soft`. Klikk hvor som helst på linja åpner og lukker.
+  **Tittelen krymper ikke**; et langt sammendrag bryter over flere linjer
+  i stedet (7. november 2026: «Verdier» havnet under sammendraget på
+  telefon).
   Innholdet står under, rykket inn 26 px (ikke rykket inn på telefon).
 - **Sammendraget skal gjøre det unødvendig å åpne:** antall («3 poster»),
   sum («3 poster · 1 240 kr»), status («Hentet i dag 21:52») eller det som
@@ -1631,7 +1634,11 @@ godkjent 6. november 2026; Innboks ble Transaksjoner samme kveld):
   høyre. Poster med forbruk uten budsjett står der, ikke under «Mest foran
   skjema». **Stolpen har ingen strek** for det som var ventet i dag (fra
   7. november: «det har vi oversikt over selv») – den viser bare brukt av
-  budsjettet; dato og dager igjen står i teksten.
+  budsjettet; dato og dager igjen står i teksten. **Det som forfaller** i
+  måneden er med (fra 7. november 2026): «3 000 kr brukt av 11 000 kr
+  (herav forfaller 1 800 kr)», en lysere del i stolpen som i Regnskap
+  (opasitet .38), og «herav … forfaller» under «Brukt i …» i
+  tallboksene.
 - **Transaksjoner** (fra 6. november 2026, het Innboks) – to underfaner:
   - **Innboks** – det som venter på deg, i sammenleggbare linjer: Trenger
     et valg, Klare til godkjenning, Ført automatisk, Fakturaer som venter og

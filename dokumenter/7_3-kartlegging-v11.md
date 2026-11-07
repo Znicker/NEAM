@@ -494,7 +494,9 @@ innliming av kvitteringer – bilde, PDF eller tekst (`2c947dc`), en
 PDF-kopi i Dropbox av alt som legges inn på sida (`c66917a`) og ubetalte
 regninger som «forfaller» i Regnskap (`fa530bc`), også under kjøpene bak
 posten (`ce1aa39`) og i de store summene og diagrammet (`93ef3ec`), og
-til sist bufferen regningskontoen trenger, i Oppsett (`1c8754a`).
+bufferen regningskontoen trenger, i Oppsett (`1c8754a`), og til sist det
+som forfaller i «måned så langt» på Status, med overlappen i Oppsett på
+telefon (`27b3802`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -503,7 +505,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 68 commits, `0e0050a`–`1c8754a`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 69 commits, `0e0050a`–`27b3802`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4106,7 +4108,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 68 commits fra `0e0050a` til `1c8754a`.
+verdier. Bygget i 69 commits fra `0e0050a` til `27b3802`.
 
 ### Banken – Enable Banking
 
@@ -4302,6 +4304,13 @@ verdier. Bygget i 68 commits fra `0e0050a` til `1c8754a`.
     Regnskap åpnes (som før), så en regning lest inn etterpå kommer med
     neste gang sida lastes. Fra `fa530bc` til `93ef3ec` var det motsatt:
     det betalte stort, «+ forfaller» ved siden av.
+  - **Også på Status** (`27b3802`, Magne: «Forfallende må også inn i
+    november så langt»). Kortet «November så langt» regner det som
+    forfaller i måneden med i brukt, med «(herav forfaller …)» og en
+    lysere del i stolpen; tallboksene «Brukt i …» og «Igjen» øverst og
+    «under/over skjema» ved familiemålet tar det også med. «Mest foran
+    skjema» regner også med det, så en regning som forfaller sent i
+    måneden kan løfte en post tidlig i måneden.
   - **Kategori på fakturaen** (`faktura-kategori`): nedtrekk i «Fakturaer
     som venter». Uten kategori vises den ikke i Regnskap.
   - **Under kjøpene bak posten** (`ce1aa39`, Magne: «Jeg må kunne trykke
