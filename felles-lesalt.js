@@ -592,7 +592,19 @@ function lesAltOkMnd(m){
   return /^\d{4}-\d{2}$/.test(String(m || '')) ? m : new Date().toISOString().slice(0, 7);
 }
 /* Budsjettet for en maaned: maanedens egen kopi, ellers standarden. */
-function lesAltOkBudFor(b, m){ return (b.maaneder && b.maaneder[m]) || b.standard || {}; }
+/* Maanedens egen kopi, ellers standarden uten postene som ikke kommer den
+   maaneden (perioder: { kategori: [1, 4, 7, 10] }, 7. november 2026). */
+function lesAltOkPeriode(per, k){
+  if(per[k]) return per[k];
+  const d = String(k || '').split(' · ');
+  return d.length === 3 ? (per[d[0] + ' · ' + d[1]] || null) : null;
+}
+function lesAltOkBudFor(b, m){
+  if(b.maaneder && b.maaneder[m]) return b.maaneder[m];
+  const std = b.standard || {}, per = b.perioder || {}, nr = Number(String(m).slice(5, 7)), ut = {};
+  Object.keys(std).forEach(function(k){ const p = lesAltOkPeriode(per, k); if(!p || p.indexOf(nr) !== -1) ut[k] = std[k]; });
+  return ut;
+}
 
 const LESALT_OK_VERKTOY = [
   {
@@ -604,8 +616,8 @@ const LESALT_OK_VERKTOY = [
                + 'ligger vi an», «er vi over på mat» o.l. «pa_tvers» samler poster med samme merke på tvers '
                + 'av gruppene (forsikring, lån, abonnement … – lista står i «merker»; et undermerke har «under», '
                + 'f.eks. Studielån under Lån, og hovedmerket er summen av seg og undermerkene) - bruk den til «hvor mye '
-               + 'budsjetterer vi med forsikring» o.l. «fast_og_variabelt» deler utgiftene: med et fast merke er '
-               + 'fast, resten variabelt - til «hvor mye er faste kostnader».',
+               + 'budsjetterer vi med forsikring» o.l. En post som ikke kommer hver måned, har «maaneder» (1-12); '
+               + 'budsjettet for måneden har den bare i de månedene.',
     input_schema: { type:'object', properties:{
       mnd: { type:'string', description:'Måneden som ÅÅÅÅ-MM. Utelat for måneden som pågår.' }
     }, required:[] }
@@ -679,29 +691,24 @@ async function lesAltOkUtfor(navn, arg){
     rekke.forEach(function(g){ grupper[g].budsjett = kr(grupper[g].budsjett); grupper[g].faktisk = kr(grupper[g].faktisk); grupper[g].avvik = grupper[g].faktisk - grupper[g].budsjett; });
     /* Merkene paa tvers av gruppene - forsikring, laan … (6. november 2026).
        En linje uten eget merke arver postens. */
-    /* Merkene er egne fra 7. november 2026 ({ id, navn, fast }); et fast
-       merke gjoer utgiften fast, resten er variabelt. Et slettet merke teller ikke. */
+    /* Merkene er egne fra 7. november 2026 ({ id, navn, forelder }). Et slettet merke teller ikke. */
     const mk = b.merker || {}, merker = {}, liste = b.merkeliste || [];
     const merkeObj = function(id){ return liste.filter(function(x){ return x.id === id; })[0] || null; };
     const merkeAv = function(k){ const d = k.split(' · '); const m = mk[k] || (d.length === 3 ? mk[d[0] + ' · ' + d[1]] : '') || ''; return merkeObj(m) ? m : ''; };
-    /* Undermerker: «fast» staar paa hovedmerket (7. november 2026). */
     const hovedAv = function(id){ const x = merkeObj(id); return x && x.forelder ? merkeObj(x.forelder) : x; };
-    const erFast = function(id){ const h = hovedAv(id); return !!(h && h.fast); };
-    const fv = { fast:{ budsjett:0, faktisk:0 }, variabelt:{ budsjett:0, faktisk:0 } };
     kat.forEach(function(k){
-      const m = merkeAv(k), fb = bud[k] || 0, ff = reg[k] || 0, g = k.split(' · ')[0];
-      if(g !== 'Inntekter' && g !== 'Sparing' && g !== 'Utenfor budsjett'){
-        const del = m && erFast(m) ? fv.fast : fv.variabelt;
-        del.budsjett += fb; del.faktisk += ff;
-      }
+      const m = merkeAv(k), fb = bud[k] || 0, ff = reg[k] || 0;
       if(!m || (!fb && !ff)) return;
-      if(!merker[m]) merker[m] = { merke:m, navn:merkeObj(m).navn, under:merkeObj(m).forelder ? hovedAv(m).navn : undefined, fast:erFast(m), budsjett:0, faktisk:0, poster:[] };
+      if(!merker[m]) merker[m] = { merke:m, navn:merkeObj(m).navn, under:merkeObj(m).forelder ? hovedAv(m).navn : undefined, budsjett:0, faktisk:0, poster:[] };
       merker[m].budsjett += fb; merker[m].faktisk += ff;
       if(merker[m].poster.indexOf(k) === -1) merker[m].poster.push(k);
     });
     Object.keys(merker).forEach(function(m){ merker[m].budsjett = kr(merker[m].budsjett); merker[m].faktisk = kr(merker[m].faktisk); merker[m].avvik = merker[m].faktisk - merker[m].budsjett; });
-    ['fast', 'variabelt'].forEach(function(n){ fv[n].budsjett = kr(fv[n].budsjett); fv[n].faktisk = kr(fv[n].faktisk); fv[n].avvik = fv[n].faktisk - fv[n].budsjett; });
-    rekke.forEach(function(g){ grupper[g].poster.forEach(function(x){ if(merkeAv(x.post)) x.merke = merkeAv(x.post); }); });
+    const per = b.perioder || {};
+    rekke.forEach(function(g){ grupper[g].poster.forEach(function(x){
+      if(merkeAv(x.post)) x.merke = merkeAv(x.post);
+      if(lesAltOkPeriode(per, x.post)) x.maaneder = lesAltOkPeriode(per, x.post);
+    }); });
     const naa = new Date(), d = new Date(mnd + '-01T12:00:00');
     const dager = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
     lesAltOkSist.budsjett = { maal:mnd, verdier:Object.assign({}, bud) };
@@ -714,8 +721,7 @@ async function lesAltOkUtfor(navn, arg){
                budsjett_inntekter:kr(innB), budsjett_utgifter:kr(utB), budsjett_sparing:kr(sparB) },
       grupper:rekke.map(function(g){ return grupper[g]; }),
       pa_tvers:Object.keys(merker).map(function(m){ return merker[m]; }),
-      fast_og_variabelt:fv,
-      merker:liste.map(function(x){ return { id:x.id, navn:x.navn, under:x.forelder ? (merkeObj(x.forelder) || {}).navn : undefined, fast:erFast(x.id) }; })
+      merker:liste.map(function(x){ return { id:x.id, navn:x.navn, under:x.forelder ? (merkeObj(x.forelder) || {}).navn : undefined }; })
     };
   }
 

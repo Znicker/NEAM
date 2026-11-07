@@ -27,6 +27,7 @@
      POST /api/bank {hva:'koble-alle', utfor} - kvitteringer og transaksjoner som hoerer sammen, i ettertid
      POST /api/bank {hva:'faktura-innboks', id} - en faktura som venter, blir en post i innboksen
      POST /api/bank {hva:'kategori-merke', kategori, merke} - merket paa en post (forsikring, laan …); tomt fjerner
+     POST /api/bank {hva:'budsjett-perioder', kategori, maaneder} - hvilke maaneder posten kommer (tom = hver maaned)
      POST /api/bank {hva:'merke-ny', navn, fast, forelder} / {hva:'merke-endre', id, navn, fast, forelder} / {hva:'merke-slett', id} - merkene selv
      GET /api/bank?hva=varsler          - det som trenger noen (kortet paa forsiden)
      GET /api/bank?hva=laert / POST {hva:'laert', motpart, kategori} - «Neam husker» (tom kategori glemmer)
@@ -695,6 +696,8 @@ async function slettKategori(env, kropp){
   await env.FAMILIE_KV.put(EGNE_NOKKEL, JSON.stringify(egne));
   const merker = await lesMerker(env);
   if(merker[k]){ delete merker[k]; await env.FAMILIE_KV.put(MERKE_NOKKEL, JSON.stringify(merker)); }
+  const perioder = await lesPerioder(env);
+  if(perioder[k]){ delete perioder[k]; await env.FAMILIE_KV.put(PERIODE_NOKKEL, JSON.stringify(perioder)); }
   const b = await lesJson(env, BUDSJETT_NOKKEL, null);
   if(b){
     let bEndret = false;
@@ -751,6 +754,10 @@ async function nyttKategoriNavn(env, kropp){
   let mEndret = false;
   for(const k of Object.keys(merker)) if(bytt(k) !== k){ merker[bytt(k)] = merker[k]; delete merker[k]; mEndret = true; }
   if(mEndret) await env.FAMILIE_KV.put(MERKE_NOKKEL, JSON.stringify(merker));
+  const perioder = await lesPerioder(env);
+  let pEndret2 = false;
+  for(const k of Object.keys(perioder)) if(bytt(k) !== k){ perioder[bytt(k)] = perioder[k]; delete perioder[k]; pEndret2 = true; }
+  if(pEndret2) await env.FAMILIE_KV.put(PERIODE_NOKKEL, JSON.stringify(perioder));
   return svar({ ok:true, fra:fra, til:til, kategorier:flett(nyeEgne, omdopt).filter(x => x.indexOf('Utenfor budsjett') !== 0), egne:nyeEgne });
 }
 const POST_NOKKEL = 'auth:bank:poster';
@@ -1151,11 +1158,41 @@ async function kilder(env, okt){
    Fortegn: utgifter og sparing som positive beloep (det som gikk ut),
    inntekter som positive beloep (det som kom inn). */
 const BUDSJETT_NOKKEL = 'auth:bank:budsjett';
+/* Hvilke maaneder en post kommer i: { kategori: [1, 4, 7, 10] }. Uten
+   oppfoering kommer den hver maaned. Beloepet i standarden er det som
+   kommer hver gang; maaneder uten posten faar den ikke (Magne, 7. november
+   2026: «kommunale utgifter er hver tredje måned»). En linje uten egne
+   maaneder foelger posten. */
+const PERIODE_NOKKEL = 'auth:bank:budsjett-perioder';
+async function lesPerioder(env){ return await lesJson(env, PERIODE_NOKKEL, {}); }
+function periodeFor(perioder, k){
+  if(perioder[k]) return perioder[k];
+  const d = k.split(' · ');
+  return d.length === 3 ? (perioder[d[0] + ' · ' + d[1]] || null) : null;
+}
+/* Standarden slik den gjelder én maaned: postene som ikke kommer da, er borte. */
+function standardFor(standard, perioder, m){
+  const nr = Number(String(m).slice(5, 7)), ut = {};
+  for(const k of Object.keys(standard)){
+    const per = periodeFor(perioder, k);
+    if(!per || per.indexOf(nr) !== -1) ut[k] = standard[k];
+  }
+  return ut;
+}
+async function settPerioder(env, kropp){
+  const k = String(kropp.kategori || '');
+  if((await budsjettKategorier(env)).indexOf(k) === -1 || k.split(' · ').length < 2) return svar({ ok:false, feil:'Ukjent post: ' + k });
+  const mnd = [...new Set([].concat(kropp.maaneder || []).map(Number).filter(n => n >= 1 && n <= 12 && Math.floor(n) === n))].sort((a, b) => a - b);
+  const perioder = await lesPerioder(env);
+  if(!mnd.length || mnd.length === 12) delete perioder[k]; else perioder[k] = mnd;
+  await env.FAMILIE_KV.put(PERIODE_NOKKEL, JSON.stringify(perioder));
+  return budsjett(env);
+}
 
 async function budsjett(env){
   const b = await lesJson(env, BUDSJETT_NOKKEL, null);
   return svar({ ok:true, kategorier:await budsjettKategorier(env), egne:await lesEgne(env), standard:(b && b.standard) || {},
-    maaneder:(b && b.maaneder) || {}, merker:await lesMerker(env), merkeliste:await lesMerkeliste(env), fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', endret:b && b.endret, av:b && masker(b.av) });
+    maaneder:(b && b.maaneder) || {}, perioder:await lesPerioder(env), merker:await lesMerker(env), merkeliste:await lesMerkeliste(env), fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', endret:b && b.endret, av:b && masker(b.av) });
 }
 async function lagreBudsjett(env, kropp, epost){
   const kategorier = await budsjettKategorier(env);
@@ -1185,11 +1222,12 @@ async function lagreBudsjett(env, kropp, epost){
     if(r.feil) return svar({ ok:false, feil:r.feil });
     /* Maanedene som alt har startet, beholder budsjettet de hadde. */
     if(Object.keys(standard).length){
+      const perioder = await lesPerioder(env);
       const naa = new Date().toISOString().slice(0, 7);
       const d = new Date((((await env.FAMILIE_KV.get(FRA_NOKKEL)) || naa).slice(0, 7)) + '-01T12:00:00Z');
       while(d.toISOString().slice(0, 7) <= naa){
         const m = d.toISOString().slice(0, 7);
-        if(!maaneder[m]) maaneder[m] = Object.assign({}, standard);
+        if(!maaneder[m]) maaneder[m] = standardFor(standard, perioder, m);
         d.setUTCMonth(d.getUTCMonth() + 1);
       }
     }
@@ -2144,6 +2182,7 @@ export async function onRequestPost({ request, env }){
   if(kropp && kropp.hva === 'koble-alle') return await kobleAlle(env, kropp, request);
   if(kropp && kropp.hva === 'faktura-innboks') return await fakturaInnboks(env, kropp);
   if(kropp && kropp.hva === 'kategori-merke') return await settMerke(env, kropp);
+  if(kropp && kropp.hva === 'budsjett-perioder') return await settPerioder(env, kropp);
   if(kropp && (kropp.hva === 'merke-ny' || kropp.hva === 'merke-endre' || kropp.hva === 'merke-slett')) return await endreMerkeliste(env, kropp);
   if(kropp && kropp.hva === 'laert') return await lagreLaert(env, kropp);
   if(kropp && kropp.hva === 'dropbox-ferdig') return await dropboxFerdig(env, kropp);
