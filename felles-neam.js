@@ -1016,7 +1016,7 @@ function neamKnappInnhold(ikon, tekst, erMerke){
 window.neamMerkeFeilet = function(img){
   const k = img && img.parentElement;
   if(!k) return;
-  k.classList.remove('merke');
+  k.classList.remove('neam-merke');
   k.classList.add('merke-mangler');
   img.remove();
   console.warn('Knappemerket mangler:', img.getAttribute('src'));
@@ -1081,7 +1081,7 @@ function neamSideFirer(overstyr){
     const v = neamSideValg[p];
     k.classList.toggle('doed', !v);
     /* Et merke skal staa uten papirflate under seg - se .neam-knapp.merke. */
-    k.classList.toggle('merke', !!(v && v.merke));
+    k.classList.toggle('neam-merke', !!(v && v.merke));
     k.classList.toggle('neam-ny',    !!(v && v.farge === 'ny'));
     k.classList.toggle('neam-endre', !!(v && v.farge === 'endre'));
     k.classList.toggle('neam-slett', !!(v && v.farge === 'slett'));
@@ -1493,11 +1493,18 @@ function neamSideStabel(plass, liste){
 
      Da tegner CSS roerene sine, og JS skal ikke tegne sine oppaa: to
      kolonner er en annen figur enn én ledning med avstikkere. */
-  const bred = loddrett && liste.length > 3;
+  /* «ved» paa smal skjerm er ogsaa en kolonne, rett over «skraa» - og
+     fikk ikke to rader. Fem valg i «Legg til» paa Emma og Andrea dash ble
+     en stolpe fra bunnen til 107 px fra toppen av en telefon (Magne,
+     7. november 2026: «stegene blir alt for store på telefon»). Da
+     legges den som en tobradersstabel fra «skraa», som staar paa samme
+     sted. */
+  const vedBred = !loddrett && smal && liste.length > 3;
+  const bred = (loddrett && liste.length > 3) || vedBred;
   const kolonne = (loddrett || smal) && !bred;
   boks.className = 'neam-stabel neam-hoyre '
-                 + (loddrett
-                      ? ('fra-' + plass + (bred ? ' bred' : ''))
+                 + (loddrett || vedBred
+                      ? ('fra-' + (vedBred ? 'skraa via-skraa' : plass) + (bred ? ' bred' : ''))
                       : 'fra-ved rad')
                  /* medror: roeret tegnes av JS, saa CSS-ens eget
                     ledningsroer skal ligge unna. */
@@ -1506,7 +1513,7 @@ function neamSideStabel(plass, liste){
     /* Samme regel som i fireren: en strektegning baerer ikke betydningen
        alene og faar navnet under seg, et merke baerer sitt eget. Uten
        dette var undermenyen tre like runde skiver med hver sin strek. */
-    return '<button type="button" class="neam-enhet' + (v.merke ? ' merke' : '')
+    return '<button type="button" class="neam-enhet' + (v.merke ? ' neam-merke' : '')
          +   neamFargeKlasse(v.farge) + '" '
          +   'data-nr="' + i + '" title="' + v.navn + '" aria-label="' + v.navn + '">'
          +   neamKnappInnhold(v.ikon, v.tekst || v.navn, !!v.merke) + '</button>';
@@ -1753,7 +1760,7 @@ function neamVisEnheter(){
      knappene i fireren. Navnet foelger med skjult, og kommer fram om
      bildet ikke laster - se neamKnappInnhold(). */
   boks.innerHTML = liste.map(function(e, i){
-    return '<button type="button" class="neam-enhet' + (e.merke ? ' merke' : '') + '" data-nr="' + i + '" '
+    return '<button type="button" class="neam-enhet' + (e.merke ? ' neam-merke' : '') + '" data-nr="' + i + '" '
          +   'title="' + e.navn + '" aria-label="' + e.navn + '">'
          +   (e.merke ? neamKnappInnhold(e.ikon, e.navn, true) : (e.ikon || '')) + '</button>';
   }).join('');
@@ -1984,7 +1991,7 @@ function neamBygg(){
      papirskiva bort, og navnet staar under bildet. */
   const knapp = function(id, plass, tekst, ikon, kort, merke){
     return '<button type="button" class="neam-knapp ' + plass
-         + (merke ? ' merke' : '') + '" id="' + id + '"'
+         + (merke ? ' neam-merke' : '') + '" id="' + id + '"'
          + ' aria-label="' + tekst + '" title="' + tekst + '">'
          + neamKnappInnhold(ikon, kort || tekst, !!merke) + '</button>';
   };

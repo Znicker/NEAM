@@ -420,6 +420,12 @@
   width:auto;
 }
 .neam-stabel.neam-hoyre.bred{ flex-wrap:wrap-reverse; }
+/* En «ved»-meny med over tre valg paa telefon staar som en tobradersstabel
+   fra «skraa» (felles-neam.js, vedBred). Roeret fortsetter da forbi
+   «skraa» og ned i «ved», én knapp lenger - som kolonnen gjorde foer. */
+.neam-stabel.via-skraa::before{
+  bottom:calc(-1 * (var(--f-aapen) * 1.5 + var(--f-luft) + 16px));
+}
 
 /* Roeret ligger under kolonnen som staar over moderknappen - den foerste.
    `50%` var riktig da boksen var én knapp bred; med flere kolonner peker
@@ -589,7 +595,7 @@
     content:''; position:absolute; inset:0; z-index:0;
     border-radius:50%; background:var(--paper);
   }
-  .neam-stabel.rad .neam-enhet.merke.over::before{ content:none; }
+  .neam-stabel.rad .neam-enhet.neam-merke.over::before{ content:none; }
 }
 
 .neam-enhet{
@@ -614,8 +620,8 @@
   min-width:0; max-width:100%; flex:0 1 auto;
 }
 .neam-enhet:active{ transform:scale(.94); }
-.neam-enhet.merke{ background:none; box-shadow:none; overflow:visible; }
-.neam-enhet.merke img{ width:66%; height:auto; }
+.neam-enhet.neam-merke{ background:none; box-shadow:none; overflow:visible; }
+.neam-enhet.neam-merke img{ width:66%; height:auto; }
 
 /* ---------- Flip-klokka ----------
    Ei klapptavle som paa gamle flyplassur: to kort, timer og minutter,
@@ -787,13 +793,13 @@
    En papirskive som eget lag loeser det uten aa roere geometrien: ::after
    nederst, skiva over den, ikonet oeverst. Merkene holdes utenfor - de har
    eget omriss og skal ikke ha flate under seg. */
-.neam-knapp:not(.merke)::before{
+.neam-knapp:not(.neam-merke)::before{
   content:''; position:absolute; inset:0; z-index:0;
   border-radius:50%; background:var(--paper);
 }
 .neam-knapp svg, .neam-knapp .neam-knapp-tekst{ position:relative; z-index:1; }
 /* Stabelknappene har roeret sitt paa samme vis og trenger det samme. */
-.neam-enhet:not(.merke)::before{
+.neam-enhet:not(.neam-merke)::before{
   content:''; position:absolute; inset:0; z-index:0;
   border-radius:50%; background:var(--paper);
 }
@@ -806,13 +812,13 @@
    for det er skiva som ligger over roeret. Ikon og tekst blir hvite.
 
    Merker faar ingen flate og dermed ingen farge; de baerer sin egen. */
-.neam-knapp.neam-ny:not(.merke)::before,
-.neam-enhet.neam-ny:not(.merke)::before{ background:var(--handling-ny); }
-.neam-knapp.neam-endre:not(.merke)::before,
-.neam-enhet.neam-endre:not(.merke)::before{ background:var(--handling-endre); }
+.neam-knapp.neam-ny:not(.neam-merke)::before,
+.neam-enhet.neam-ny:not(.neam-merke)::before{ background:var(--handling-ny); }
+.neam-knapp.neam-endre:not(.neam-merke)::before,
+.neam-enhet.neam-endre:not(.neam-merke)::before{ background:var(--handling-endre); }
 /* Roedt betyr sletter, og ingenting annet - samme regel som .btn-slett. */
-.neam-knapp.neam-slett:not(.merke)::before,
-.neam-enhet.neam-slett:not(.merke)::before{ background:var(--danger); }
+.neam-knapp.neam-slett:not(.neam-merke)::before,
+.neam-enhet.neam-slett:not(.neam-merke)::before{ background:var(--danger); }
 .neam-knapp.neam-ny, .neam-knapp.neam-endre, .neam-knapp.neam-slett,
 .neam-enhet.neam-ny, .neam-enhet.neam-endre, .neam-enhet.neam-slett{ color:#FFFFFF; }
 .neam-knapp.neam-ny .neam-knapp-tekst,
@@ -829,20 +835,20 @@
    Knappen er 84px paa telefon og 120-128px ellers, saa teksten maa vaere
    kort - kallstedet sender et eget `tekst`-felt der `navn` er for langt.
    To linjer er taket; over det spiser teksten ikonet. */
-.neam-knapp:not(.merke),
-.neam-enhet:not(.merke){ flex-direction:column; gap:3px; padding:0 6px; }
-.neam-knapp:not(.merke) svg,
-.neam-enhet:not(.merke) svg{
+.neam-knapp:not(.neam-merke),
+.neam-enhet:not(.neam-merke){ flex-direction:column; gap:3px; padding:0 6px; }
+.neam-knapp:not(.neam-merke) svg,
+.neam-enhet:not(.neam-merke) svg{
   width:calc(var(--f-ikon) * .82); height:calc(var(--f-ikon) * .82);
 }
 /* Bildeknappene (ikonflisene) har navnet under bildet, i ikonstilen.
    Fram til 27. oktober 2026 baerte merkene navnet selv, og teksten var
    skjult her. Feiler bildet, tas `merke` av knappen og papirskiva kommer
    tilbake - se neamKnappInnhold(). */
-.neam-knapp.merke,
-.neam-enhet.merke{ flex-direction:column; gap:5px; }
-.neam-knapp.merke .neam-knapp-tekst,
-.neam-enhet.merke .neam-knapp-tekst{
+.neam-knapp.neam-merke,
+.neam-enhet.neam-merke{ flex-direction:column; gap:5px; }
+.neam-knapp.neam-merke .neam-knapp-tekst,
+.neam-enhet.neam-merke .neam-knapp-tekst{
   font-family:'Figtree','Archivo',sans-serif; font-weight:650;
   text-transform:none; letter-spacing:.002em; color:#142036;
   /* Roerene gaar til midten av knappen, og dermed forbi navnet.
@@ -887,10 +893,10 @@
 
 /* Merker uten flate: et merke har eget omriss og et baand som stikker
    ut, og en papirsirkel under det blir en ring rundt formen. */
-.neam-knapp.merke{
+.neam-knapp.neam-merke{
   background:none; box-shadow:none; overflow:visible;
 }
-.neam-knapp.merke img{ width:66%; height:auto; }
+.neam-knapp.neam-merke img{ width:66%; height:auto; }
 
 /* Applista - frie knapper paa rad over fireren, ikke et ark.
    Til 30. august 2026 laa appene i en samleboks med smaa ikoner og navn
@@ -1311,8 +1317,11 @@
    rulling og zoom - et trykk virker som foer. */
 .neam-handtak.neam-hoyre{ touch-action:none; }
 .neam-handtak.neam-hoyre img{ pointer-events:none; -webkit-user-drag:none; user-drag:none; }
+/* 36 px ut fra kanten - med 10 px skjulte tommelen hele ringen (Magne,
+   7. november 2026: «Ringen som vokser kan bli større slik jeg ser den
+   under tommelen»). */
 .neam-handtak.neam-hoyre.holdes{
-  box-shadow:0 0 0 10px rgba(74,127,168,.45), 0 4px 14px rgba(44,62,80,.28);
+  box-shadow:0 0 0 36px rgba(74,127,168,.35), 0 4px 14px rgba(44,62,80,.28);
   transition:box-shadow 3s linear, width .18s ease, height .18s ease;
 }
 .neam-firer.neam-hoyre{ left:auto; right:var(--f-marg-h, var(--f-marg-x)); }
