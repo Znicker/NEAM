@@ -450,6 +450,18 @@ function neamSystem(k, harVerktoy, bakgrunn){
 
   s += k ? ('\n\nHer staar brukeren akkurat naa:\n' + JSON.stringify(k, null, 1))
          : '\n\nDu vet ikke hvilken side brukeren staar paa.';
+
+  /* Kjoekkenskjermen: hvem som har tastet pinkoden sin (Magne,
+     8. november 2026: «la Neam vite hvem som står der»). */
+  if(typeof neamErKjokken === 'function' && neamErKjokken()){
+    const p = neamHvemStaar();
+    s += p
+      ? ('\n\nVED SKJERMEN: ' + p.navn + ' har tastet pinkoden sin paa kjoekkenskjermen, '
+         + 'og det er ' + p.navn + ' du snakker med. «Meg», «jeg» og «mine» er ' + p.navn
+         + '. Gjelder noe et av barna og det ikke er ' + p.navn + ' selv, spoer du som foer.')
+      : ('\n\nVED SKJERMEN: Dette er kjoekkenskjermen, og ingen har tastet pinkoden sin. '
+         + 'Du vet ikke hvem du snakker med.');
+  }
   return s;
 }
 
