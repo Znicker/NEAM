@@ -96,8 +96,15 @@ body{
    sammen bredere enn en telefonskjerm - derfor startet siden forskjovet. */
 @media(max-width:560px){
   .top{gap:10px;padding-bottom:14px;margin-bottom:18px}
-  .clock{min-width:0}
-  .clock-date{margin-top:3px;letter-spacing:.05em}
+  /* Merket til venstre og klokka til hoeyre (Magne, 7. november 2026:
+     «Rydde litt i toppen»). Med merket i midten var sidesporet bare
+     rundt 130px, klokka rundt 160 - den la seg over merket, og datoen
+     brakk i to. */
+  .top{grid-template-columns:auto 1fr}
+  .brand{grid-column:1;justify-content:flex-start}
+  .brand-icon{width:84px}
+  .clock{grid-column:2;min-width:0}
+  .clock-date{margin-top:3px;letter-spacing:.05em;white-space:nowrap}
   /* Vaerknappen legger seg paa egen linje under merket og klokka. */
   .app-name{letter-spacing:.02em}
   .app-icon{margin-bottom:9px}

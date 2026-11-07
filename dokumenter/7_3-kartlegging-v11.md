@@ -2,8 +2,9 @@
 
 *Ført à jour 7. november 2026, kveld: Rommene har fått fjernkontroll til
 Samsung-TV-ene, gjennom en Logic-variabel og HomeyScript i Homey, og
-enheter kan dras oppå hverandre til navngitte grupper med felles bryter
-(se toppblokka). Ført à jour 7. november 2026: ikonene er byttet til bronsestilen, og
+enheter kan dras oppå hverandre til navngitte grupper med felles bryter.
+Senere samme kveld: myk og hard reset under «Enheter og lys» på alle
+sidene, og tommelknappene over Rommene og i spillene (se toppblokka). Ført à jour 7. november 2026: ikonene er byttet til bronsestilen, og
 strektegningene i koden med dem der de står på lys flate (se toppblokka).
 Ført à jour 6. november 2026, natt: Økonomi-flisen på forsiden er vekket,
 og Designverktøy-flisen er ny (se toppblokka). Ført à jour 6. november
@@ -99,8 +100,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=77`, `felles-neam.css
-?v=81`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
+**Siste leverte versjoner:** `felles-neam.js ?v=78`, `felles-neam.css
+?v=82`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
@@ -120,8 +121,8 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–76; neam.css til og
-med 80; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–11,
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–77; neam.css til og
+med 81; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–11,
 hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -203,9 +204,10 @@ trykket, hører ikke hjemme på veggen. Sperren er `skrivSkoleTillatt()`.
 
 *Finnes ikke som verktøy noe sted:* husregisteret (bare skjemaet på
 forsiden – teksten går i systemteksten), spillene, vedlegg og bilder.
-**Og `kort.html` og spillsidene laster ikke Neam i det hele tatt** – der
-har han ingen stemme, ikke bare et smalere utvalg. `okonomi.html` gjør det
-fra 6. november.
+**Og `kort.html` og spillsidene har ikke samtalen** – der har han ingen
+stemme, ikke bare et smalere utvalg. `okonomi.html` har den fra
+6. november. Fra 7. november har spillsidene tommelknappene uten samtalen
+(`window.neamUtenSamtale`); `kort.html` laster ikke Neam i det hele tatt.
 
 **Hemmeligheter i Cloudflare:** `ANTHROPIC_API_KEY`, `MS_CLIENT_SECRET`,
 `HOMEY_CLIENT_SECRET`, `TURN_KEY_ID`, `TURN_KEY_API_TOKEN` (de to siste
@@ -741,6 +743,32 @@ venter med på tvers av rom.»
   toppen». Lukk er flyttet fra bunnen av kortet til toppen ved siden av
   Rediger, og toppen står fast når man ruller.
 
+**7. november, kveld: reset og tommelknappene overalt** (`e67e809`;
+neam.js `?v=78`, neam.css `?v=82`, på alle 18 sidene).
+- **Myk og hard reset** under «Enheter og lys» i venstre tommelknapp, på
+  alle sidene (Magne: «Legg den under enheter og lys så lenge» – høyre
+  tommelknapp er full på fire av sidene). Begge spør først («Man må få en
+  prompt før man gjennomfører»). Myk laster sida på nytt. Hard tømmer
+  nettleserens Cache Storage og eventuelle service workers, henter sida og
+  alle skript og stilark den bruker med `cache:'reload'` (høyst 8 s) og
+  laster så sida – Ctrl+Shift+R for iPad og telefon. Cloudflares lager
+  rekker den ikke; det er fortsatt `?v=` som styrer det. Funksjonene er
+  `neamSystemValg()`, `neamMykReset()` og `neamHardReset()` i
+  `felles-neam.js`, lagt til lista fra `window.neamEnheter`.
+- **Tommelknappene over Rommene og Neamow** («også i enhetsstyring»):
+  `.dlg-bak.hsk-bak` og `.dlg-bak.nmw-bak` har z-index 88, mellom duselaget
+  (85) og undermenyene (89). Sidenes egne lag over 88 er bare fullskjerm,
+  dialoger og meldinger som vises når de trengs. Rommene har fått 56 px
+  luft nederst, så det siste rommet kan rulles opp over knappene.
+- **Spillsidene** (`andrea-spill`, `-matte`, `-diktat`, `-klokke`,
+  `emma-grunnstoff`, `-naturfag`, `-spansk`, `-spill`) laster nå
+  `felles-dialog`, `felles-hus` og `felles-neam` med
+  `window.neamUtenSamtale = true`: apper, enheter og reset, men andre trykk
+  på NEAM lukker bare, og panelet står ikke fast på PC. Ingen navn i
+  spillene kolliderer med fellesfilene (sjekket med skript). Høyre
+  tommelknapp vises ikke der – spillene har ingen egne handlinger.
+  `kort.html` er ikke med.
+
 ### Åpne tråder
 
 **Besluttet, ikke bygget – fem systemer med begrunnelse i del 47–50 og 52:**
@@ -833,6 +861,9 @@ venter med på tvers av rom.»
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **Tommelknappen i spillene på telefon** (7. november): i Mattespillet
+  dekker NEAM venstre ende av Start-knappen, og i naturfag et par
+  avkrysningsvalg nederst (målt på 393 px bredde). Hard reset på iPad.
 - **Gruppene i Rommene med finger** (7. november): at det er lett å treffe
   midt på en rad for å gruppere, og mellom radene for bare å flytte.
 - **Økonomi på neam.no** (29. oktober). De nye fanene Innboks, Måned og

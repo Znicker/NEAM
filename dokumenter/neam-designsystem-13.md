@@ -894,6 +894,17 @@ boksen vises, og en skjult boks har ingen høyde å måle.
 er det lista som må filtreres på innlogget bruker — ikke skalaen som skal
 settes lavere.
 
+**Myk og hard reset står sist under «Enheter og lys»**, på alle sidene
+(7. november 2026), med oppdater-ikonet og navnet under. Begge spør først
+med en vanlig bekreftelse – «Last på nytt» og «Hent på nytt» – fordi det
+som ikke er lagret, forsvinner. Ligger der «så lenge»: høyre tommelknapp
+er full på fire av sidene.
+
+**Tommelknappene synes alltid** (7. november 2026): Rommene og Neamow
+legger seg under dem (z-index 88), og spillsidene har dem også – uten
+samtalen, så andre trykk på NEAM bare lukker. Dialogene (120) ligger
+fortsatt øverst.
+
 **Venstre firer: `ved` er Sikkerhet, ikke Dash** (fra 11. september 2026).
 Kjøkkendashen nås fra applista som alle andre sider; sikkerhet er det ene
 man vil nå uten å lete. Knappen har **ikke** merke — et «Dash»-merke ville
