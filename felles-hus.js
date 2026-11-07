@@ -1478,12 +1478,17 @@ function hskBygg(){
   hskBak.hidden = true;
   hskBak.innerHTML =
       '<div class="dlg-kort hsk-kort" role="dialog" aria-modal="true" aria-label="Rommene">'
+    /* Toppen med Rediger og Lukk blir staaende oeverst naar man ruller
+       (Magne, 7. november 2026: «Exit og redigerknappen kan flyte med på
+       toppen»). Lukk sto nederst foer, og er bare her naa. */
     +   '<div class="hsk-topp">'
     +     '<h2 class="hsk-tittel">Rommene</h2>'
-    +     '<button type="button" class="hsk-rediger" aria-pressed="false">Rediger</button>'
+    +     '<div class="hsk-topp-knapper">'
+    +       '<button type="button" class="hsk-rediger" aria-pressed="false">Rediger</button>'
+    +       '<button type="button" class="dlg-knapp nei hsk-lukk">Lukk</button>'
+    +     '</div>'
     +   '</div>'
     +   '<div class="hsk-innhold"></div>'
-    +   '<div class="dlg-rad"><button type="button" class="dlg-knapp nei hsk-lukk">Lukk</button></div>'
     + '</div>';
   document.body.appendChild(hskBak);
   hskBak.querySelector('.hsk-lukk').onclick = hskLukk;

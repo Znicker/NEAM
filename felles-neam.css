@@ -1447,7 +1447,17 @@
 }
 /* Tittelen og «Rediger» paa samme linje. Etasjefanene som sto under,
    er borte (1. november 2026) - rekkefoelgen velges under «Rediger». */
-.hsk-topp{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 14px; }
+/* Toppen staar fast oeverst i kortet naar man ruller, paa kortets egen
+   flate og ut til kantene (kortet har 24 px luft). top regnes fra
+   innsiden av lufta - med 0 ble det en glipe paa 24 px der rommene
+   skimtet gjennom. */
+.hsk-topp{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  position:sticky; top:-24px; z-index:5;
+  margin:-24px -24px 14px; padding:20px 24px 12px; background:var(--boks-mild);
+}
+.hsk-topp-knapper{ display:flex; align-items:center; gap:8px; }
+.hsk-topp .dlg-knapp{ width:auto; padding:8px 18px; font-size:var(--t-meta); }
 .hsk-tittel{
   margin:0; color:#000000;
   font-size:var(--t-meta); font-weight:700;

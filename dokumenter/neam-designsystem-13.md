@@ -1385,6 +1385,22 @@ regnbue – begge med mørk tekst, fordi hvit forsvinner på gult og mørk på
 sterk blå. Valgt av Magne 1. november 2026, vel vitende om at det avviker
 fra malen.
 
+**Rediger og Lukk står øverst og blir stående** når man ruller (7. november
+2026: «Exit og redigerknappen kan flyte med på toppen»), på kortets milde
+flate ut til kantene. Lukk er nøytral og bare der – ikke også nederst.
+
+**Grupper innad i rommet** (7. november 2026). Under «Rediger» dras en
+enhet oppå en annen i samme rom – raden den holdes over, lyses opp i
+«valgt»-blått (`--aksent-lys` med `--aksent`-kant), og sluppet der blir de
+en gruppe. Gruppa er da en mild ramme (`--boks-mild`, `--boks-kant`) med
+navnefeltet øverst og **Løs opp** (nøytral) til høyre; en enhet dras ut ved
+å slippe den utenfor rammen. Til vanlig er gruppa **én rad**: navnet, eller
+enhetsnavnene når den ikke har noe, «1 av 2 på», og én skyvebryter – er
+noen på, slås alle av, ellers alle på. «N enheter» (nøytral) viser hver
+enkelt innrykket under, med en kantlinje til venstre. Bare enheter med
+av/på kan grupperes – det er bryteren som er felles. Ikke på tvers av rom
+ennå (Magne: «Vi venter med på tvers av rom»).
+
 **Fjernkontrollen til TV-ene** (7. november 2026). «Fjernkontroll» står
 under TV-raden, en blå knapp over hele bredden som åpner fjernkontrollen
 under, med samme ring som «Fargevalg» når den er oppe. Bare én TV har den

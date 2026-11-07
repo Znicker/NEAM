@@ -1,8 +1,9 @@
 # 7.3 – kartlegging, revidert (v11)
 
 *Ført à jour 7. november 2026, kveld: Rommene har fått fjernkontroll til
-Samsung-TV-ene, gjennom en Logic-variabel og HomeyScript i Homey (se
-toppblokka). Ført à jour 7. november 2026: ikonene er byttet til bronsestilen, og
+Samsung-TV-ene, gjennom en Logic-variabel og HomeyScript i Homey, og
+enheter kan dras oppå hverandre til navngitte grupper med felles bryter
+(se toppblokka). Ført à jour 7. november 2026: ikonene er byttet til bronsestilen, og
 strektegningene i koden med dem der de står på lys flate (se toppblokka).
 Ført à jour 6. november 2026, natt: Økonomi-flisen på forsiden er vekket,
 og Designverktøy-flisen er ny (se toppblokka). Ført à jour 6. november
@@ -99,8 +100,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-tale.js` (tale ut og inn).
 
 **Siste leverte versjoner:** `felles-neam.js ?v=77`, `felles-neam.css
-?v=78`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
-?v=16`, `felles-hus.js ?v=25`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
+?v=81`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
+?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
@@ -120,8 +121,8 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–76; neam.css til og
-med 77; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–11,
-hus `?v=1–24`, ms `?v=1`, tale 1–4, graph 1–2**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+med 80; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–11,
+hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -714,6 +715,31 @@ i Rommene («Fungerte meget bra»).
 - **Neam ser hver TV én gang** – Samsung SmartTV-enhetene er tatt ut av
   lista både Rommene og Neam bruker, så Neam kan ikke sende taster.
 - **Ryddet:** testskriptet `neam-tv-test` i HomeyScript er slettet.
+- **Prøvd på alle fire TV-ene** av Magne: «Fungerer på alle tvene.
+  Fungerer meget bra». Fargetastene gjør ikke noe nyttig, men står der som
+  på originalen («så det er ok»).
+
+**7. november, kveld: grupper innad i rommet** (`43eca00`, `9da5b61`; hus
+`?v=26` og `?v=27`, neam.css `?v=79` og `?v=80`). Magne: «dra enheter oppå
+hverandre. Skjer dette i samme rom legges de under en felles knapp. Vi
+venter med på tvers av rom.»
+- **Under «Rediger»:** en enhet holdt midt oppå en annen (den midterste
+  halvdelen av raden) lyser den opp; sluppet der blir de en gruppe, eller
+  den legges i gruppa som er der. Sluppet utenfor gruppas ramme er den ute;
+  en gruppe med én igjen forsvinner. Rammen har navnefeltet («Navn på
+  gruppa») og «Løs opp». Bare enheter med av/på kan grupperes.
+- **Til vanlig:** gruppa er én rad med navnet (eller enhetsnavnene), «1 av
+  2 på»/«Alle på»/«Alle av», og én bryter – er noen på, slås alle av, ellers
+  alle på. «N enheter» viser hver enkelt innrykket, med egne knapper.
+- **Lagret per skjerm** i `neam-rommene:v1` som `grupper: { rom: [{ navn,
+  ider }] }`. De første fra samme kveld ble lagret som bare lister med
+  id-er, og leses fortsatt.
+- **Ikke prøvd med finger** på iPad eller telefon – bare med simulerte drag
+  i forhåndsvisningen.
+- **Rediger og Lukk øverst, faste** (hus `?v=28`, neam.css `?v=81`). Magne:
+  «Enhetstyring må ha en exit. Exit og redigerknappen kan flyte med på
+  toppen». Lukk er flyttet fra bunnen av kortet til toppen ved siden av
+  Rediger, og toppen står fast når man ruller.
 
 ### Åpne tråder
 
@@ -807,9 +833,8 @@ i Rommene («Fungerte meget bra»).
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
-- **Fjernkontrollen på de tre andre TV-ene** (7. november): bare volum opp
-  er prøvd på Kjellerstue, Emma og Andrea – av/på, appknappene, 123 og
-  fargetastene er bare prøvd på Stue TV eller ikke i det hele tatt.
+- **Gruppene i Rommene med finger** (7. november): at det er lett å treffe
+  midt på en rad for å gruppere, og mellom radene for bare å flytte.
 - **Økonomi på neam.no** (29. oktober). De nye fanene Innboks, Måned og
   Budsjett med ekte tall; at **DNB godtar PSU-headerne** (fersk henting
   ved åpning – ellers står feilen i Kilder); at **Trumf-cookien lever over
