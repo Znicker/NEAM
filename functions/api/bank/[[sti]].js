@@ -813,10 +813,14 @@ function erLik(bank, kv){
 /* Ligner kvitteringen en som alt er lagt inn? (Magne, 6. november 2026)
    Samme kjoep kan komme to ganger: fra Trumf og som bilde, eller samme
    bilde lest litt ulikt, saa id-en (butikk, dato, sum) blir en annen.
-   Ligner: beloepet innen 1 % (minst 1 kr), hoeyst tre dager mellom, og -
+   Ligner: beloepet innen 1 kr, hoeyst tre dager mellom, og -
    naar begge har varelinjer - minst halvparten av varene like. Da merkes
    den nye `lignerPaa`, foeres aldri av seg selv, og sida stryker den til
-   noen tar den med. Samme regel som mulDobbel mot banktrekket. */
+   noen tar den med. Samme regel som mulDobbel mot banktrekket.
+   Strammet inn (Magne, 7. november 2026 - to KIWI-kjoep paa 717,80 og
+   724,53 dagen etter ble stoppet): to Trumf-kvitteringer er aldri samme
+   kjoep, Trumf gir hvert kjoep sin egen id. Og beloepet maa matche paa
+   krona, pluss/minus 1 kr - foer var det 1 % av summen. */
 function varenavn(l){ return String(l && l.navn || '').toLowerCase().replace(/[^a-zæøå0-9]+/g, ' ').trim(); }
 function vareLikhet(a, b){
   if(!a.length || !b.length) return null;
@@ -830,7 +834,9 @@ async function finnLignende(env, poster, kv, linjer){
   for(const id of Object.keys(poster)){
     const a = poster[id];
     if(id === kv.id || !a.fra || a.status === 'stroket' || a.status === 'sammenslatt' || a.status === 'venter') continue;
-    if(Math.abs(Math.abs(a.belop) - sum) > Math.max(1, sum * 0.01) || dagerMellom(a.dato, kv.dato) > 3) continue;
+    if(a.fra === 'trumf' && kv.fra === 'trumf') continue;
+    const avvik = Math.abs(Math.abs(a.belop) - sum);
+    if(avvik > 1 || dagerMellom(a.dato, kv.dato) > 3) continue;
     const andre = ((await lesJson(env, kvitteringNokkel(a), null)) || {}).linjer || [];
     const lik = vareLikhet(linjer || [], andre);
     if(lik !== null && lik < 0.5) continue;
