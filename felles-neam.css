@@ -1606,6 +1606,22 @@
 .hsk-fk-vipp button{ background:transparent; font-size:20px; }
 .hsk-fk-apper{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
 .hsk-fk-apper button{ height:34px; border-radius:14px; font-size:var(--t-etikett); }
+/* Paa telefon (under 700 px) fyller fjernkontrollen skjermen, paa den
+   milde flaten Rommene staar paa, med TV-navnet og «Lukk» oeverst.
+   Lukk er noeytral, som Lukk nederst i Rommene. Bredere skjermer har
+   den under raden som foer. */
+.hsk-fk-flate{
+  position:fixed; inset:0; z-index:150; box-sizing:border-box; overflow:auto;
+  background:var(--boks-mild); display:flex; flex-direction:column; align-items:center; gap:12px;
+  padding:calc(12px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+}
+.hsk-fk-topp{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.hsk-fk-navn{
+  margin:0; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  color:var(--ink); font-size:var(--t-stor); font-weight:700;
+}
+.hsk-fk-topp .dlg-knapp{ width:auto; padding:10px 22px; flex:none; }
+.hsk-fk-flate .hsk-fk{ margin:auto 0; }
 
 
 /* Et rom med bare varslere i orden er bare baandet. */

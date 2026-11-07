@@ -1496,6 +1496,7 @@ function hskBygg(){
     /* Fjernkontrollen: aapne og lukke, talltastene og fargetastene, og
        tastene selv. Av/paa i fjernkontrollen er en vanlig data-kap-knapp
        og gaar videre ned. */
+    if(t.closest('button[data-fk-lukk]')){ hskFkLukk(); return; }
     const fk = t.closest('button[data-fk]');
     if(fk){
       hskApenFk = hskApenFk === fk.dataset.fk ? '' : fk.dataset.fk;
@@ -1881,7 +1882,16 @@ function hskFkHtml(e){
     return '<button type="button" class="hsk-fk-r' + (hskFkSide === navn ? ' aapen' : '') + '" data-fk-side="' + navn + '"'
          + ' aria-label="' + merke + '" aria-expanded="' + (hskFkSide === navn) + '">' + innhold + '</button>';
   };
-  h += '<div class="hsk-fk" data-fk-enhet="' + hskVask(e.fk) + '">'
+  /* Paa telefon fyller fjernkontrollen skjermen, med navnet og «Lukk»
+     oeverst (Magne, 7. november 2026: «fylle store deler av skjermen.
+     Men må ha en tydelig exit»). Den forstoerres etter plassen, saa
+     hele kontrollen faar plass uten aa rulle - med 123 aapen ruller den. */
+  const flate = window.innerWidth < 700;
+  const zoom = !flate ? 1 : Math.max(1, Math.min(1.7, (window.innerWidth - 32) / 220, (window.innerHeight - 100) / 560));
+  h += '<div class="hsk-fk-ramme' + (flate ? ' hsk-fk-flate' : '') + '">'
+     +   (flate ? '<div class="hsk-fk-topp"><h2 class="hsk-fk-navn">' + hskVask(e.kort) + '</h2>'
+                + '<button type="button" class="dlg-knapp nei hsk-fk-lukk" data-fk-lukk>Lukk</button></div>' : '')
+     + '<div class="hsk-fk" data-fk-enhet="' + hskVask(e.fk) + '"' + (zoom > 1 ? ' style="zoom:' + zoom.toFixed(2) + '"' : '') + '>'
      /* Av/paa er den gamle enhetens bryter - samme vei som skyvebryteren. */
      +   '<div class="hsk-fk-rad">'
      +     '<button type="button" class="hsk-fk-r hsk-fk-av" data-hsk="' + hskVask(e.id) + '" data-kap="onoff" aria-label="Av/på">'
@@ -1924,6 +1934,7 @@ function hskFkHtml(e){
      +   '<div class="hsk-fk-apper">'
      +     HSK_FK_APPER.map(function(a){ return hskFkTast('APP:' + a[0], a[1], a[0]); }).join('')
      +   '</div>'
+     + '</div>'
      + '</div>';
   return h;
 }
@@ -1932,6 +1943,18 @@ function hskFkHtml(e){
    sendte sist og sender det andre - foerste trykk er pause. Det er et
    minne, ikke lest fra TV-en: er den pauset fra den vanlige
    fjernkontrollen, maa man trykke to ganger. */
+function hskFkLukk(){
+  hskApenFk = '';
+  hskFkSide = '';
+  hskTegn();
+}
+/* Escape lukker fjernkontrollen foerst, ikke hele Rommene. */
+window.addEventListener('keydown', function(ev){
+  if(ev.key !== 'Escape' || !hskApenFk || !hskBak || hskBak.hidden) return;
+  ev.stopImmediatePropagation();
+  hskFkLukk();
+}, true);
+
 const hskFkPauset = {};
 let hskFkKo = Promise.resolve();
 function hskFkSend(enhet, tast){
