@@ -27,6 +27,7 @@
      POST /api/bank {hva:'koble-alle', utfor} - kvitteringer og transaksjoner som hoerer sammen, i ettertid
      POST /api/bank {hva:'faktura-innboks', id} - en faktura som venter, blir en post i innboksen
      POST /api/bank {hva:'faktura-kategori', id, kategori} - kategorien paa en faktura som venter
+     GET /api/bank?hva=regningskonto / POST {hva:'regningskonto', uid} - bufferen regningskontoen trenger
      POST /api/bank {hva:'kategori-merke', kategori, merke} - merket paa en post (forsikring, laan …); tomt fjerner
      POST /api/bank {hva:'budsjett-perioder', kategori, maaneder} - hvilke maaneder posten kommer (tom = hver maaned)
      POST /api/bank {hva:'merke-ny', navn, fast, forelder} / {hva:'merke-endre', id, navn, fast, forelder} / {hva:'merke-slett', id} - merkene selv
@@ -90,6 +91,7 @@
      auth:bank:sist-hentet     - naar vekkeren sist hentet
      auth:bank:trumf-feil      - siste Trumf-feil (slettes naar hentingen virker igjen)
      auth:bank:dropbox         - Dropbox: refresh-tokenet til appmappa, og naar den sist ble sjekket
+     auth:bank:regningskonto   - hvilken konto som er regningskontoen ({ uid })
      auth:bank:formue          - verdier, gjeld og familiemaal, fylt inn for haand
      auth:bank:kontonavn       - { <konto-uid>: eget navn } - DNB sender ikke nettbanknavnene
      auth:bank:kontonr         - { <konto-uid>: '1234.56.78901' } - hentet én gang fra /details
@@ -1441,6 +1443,61 @@ async function allePoster(env){
   return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', poster:ut });
 }
 
+/* ---------- Bufferen paa regningskontoen ----------
+   Loenna kommer midt i maaneden, regningene baade midt i og i slutten
+   (Magne, 7. november 2026). Med en buffer paa regningskontoen betales det
+   som kommer foer loenna, med det som staar der fra foer - og maanedene kan
+   vaere kalendermaaneder. Her regnes ut hvor stor bufferen maa vaere, fra
+   trekkene paa kontoen: for hver maaned, hvor langt ned saldoen gikk fra
+   den 1. til paafyllet (den stoerste innbetalingen i maaneden). Samme dag
+   regnes utbetalingene foer paafyllet - rekkefoelgen er ukjent. Alle
+   banktrekk teller, ogsaa stroekne (pengene gikk likevel); samme trekk to
+   ganger fra DNB (sammenslaatt inn i et annet banktrekk) telles én gang.
+   Bare kontoer med rollen Felles har trekk i Neam. */
+const REGNING_NOKKEL = 'auth:bank:regningskonto';
+async function regningskonto(env){
+  const valg = await lesJson(env, REGNING_NOKKEL, {});
+  const uid = String(valg.uid || '');
+  if(!uid) return svar({ ok:true, uid:'', maaneder:[], behov:0, anbefalt:0 });
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const per = {};
+  for(const id of Object.keys(poster)){
+    const p = poster[id];
+    if(p.fra || p.konto !== uid || p.status === 'venter') continue;
+    const inn = p.status === 'sammenslatt' && p.slaattInn && poster[p.slaattInn];
+    if(inn && !inn.fra) continue;
+    const m = String(p.dato).slice(0, 7);
+    (per[m] = per[m] || []).push(p);
+  }
+  const naa = new Date().toISOString().slice(0, 7);
+  const maaneder = Object.keys(per).sort().map(m => {
+    /* Samme dag: utbetalingene foerst. */
+    const liste = per[m].slice().sort((a, b) => String(a.dato).localeCompare(String(b.dato)) || a.belop - b.belop);
+    const pafyll = liste.filter(x => x.belop > 0).sort((a, b) => b.belop - a.belop)[0] || null;
+    let lop = 0, minst = 0, ut = 0;
+    for(const x of liste){
+      if(x === pafyll) break;
+      lop += x.belop;
+      if(lop < minst) minst = lop;
+      if(x.belop < 0) ut += -x.belop;
+    }
+    return { mnd:m, behov:Math.round(-minst), ut:Math.round(ut),
+      pafyll:pafyll ? { dato:pafyll.dato, belop:Math.round(pafyll.belop), tekst:pafyll.motpart || pafyll.tekst || '' } : null,
+      ferdig:m < naa || !!pafyll };
+  });
+  const hele = maaneder.filter(x => x.ferdig);
+  const storst = hele.reduce((s, x) => !s || x.behov > s.behov ? x : s, null);
+  const behov = storst ? storst.behov : 0;
+  /* Ti prosent til, rundet opp til hele tusen. */
+  return svar({ ok:true, uid:uid, maaneder:maaneder, behov:behov, storst:storst ? storst.mnd : '', anbefalt:behov ? Math.ceil(behov * 1.1 / 1000) * 1000 : 0 });
+}
+async function lagreRegningskonto(env, kropp){
+  const uid = String(kropp.uid || '').slice(0, 80);
+  if(uid) await env.FAMILIE_KV.put(REGNING_NOKKEL, JSON.stringify({ uid:uid }));
+  else await env.FAMILIE_KV.delete(REGNING_NOKKEL);
+  return regningskonto(env);
+}
+
 /* Hvor varelinjene til en kvitteringspost ligger. Trumf bufrer dem selv;
    en kvittering lest fra bilde lagres naar den kommer inn. */
 function kvitteringNokkel(p){
@@ -2218,6 +2275,7 @@ export async function onRequestGet({ request, env }){
     if(hva === 'regnskap') return await regnskap(env, url.searchParams.get('mnd') || '');
     if(hva === 'foringer') return await foringer(env, url.searchParams.get('mnd') || '', url.searchParams.get('kategori') || '', url.searchParams.get('eksakt') === '1');
     if(hva === 'regnskap-aar') return await regnskapAar(env);
+    if(hva === 'regningskonto') return await regningskonto(env);
     if(hva === 'alle-poster') return await allePoster(env);
     if(hva === 'formue') return await formue(env);
     if(!okt) return svar({ ok:false, feil:'Banken er ikke koblet. Åpne /api/bank/start.' });
@@ -2248,6 +2306,7 @@ export async function onRequestPost({ request, env }){
   if(kropp && kropp.hva === 'koble-alle') return await kobleAlle(env, kropp, request);
   if(kropp && kropp.hva === 'faktura-innboks') return await fakturaInnboks(env, kropp);
   if(kropp && kropp.hva === 'faktura-kategori') return await fakturaKategori(env, kropp);
+  if(kropp && kropp.hva === 'regningskonto') return await lagreRegningskonto(env, kropp);
   if(kropp && kropp.hva === 'kategori-merke') return await settMerke(env, kropp);
   if(kropp && kropp.hva === 'budsjett-perioder') return await settPerioder(env, kropp);
   if(kropp && (kropp.hva === 'merke-ny' || kropp.hva === 'merke-endre' || kropp.hva === 'merke-slett')) return await endreMerkeliste(env, kropp);

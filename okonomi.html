@@ -458,6 +458,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-ib-rad.ute .ok-sted b, .ok-ib-rad.ute .ok-belop{ text-decoration:line-through; opacity:.5; }
 .ok-ib-detalj, .ok-mnd-kjop{ flex-direction:column; gap:12px; }
 .ok-ib-detalj select{ width:100%; font-family:inherit; font-size:16px; padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
+#ok-rk select{ display:block; width:100%; max-width:360px; margin:4px 0 14px; font-family:inherit; font-size:16px; padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
 .ok-ib-detalj select:focus{ outline:none; border-color:var(--aksent); }
 .ok-ib-detalj .ok-detalj-hode{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; }
 .ok-ib-detalj .ok-detalj-hode h2{ margin:0; font-size:var(--t-stor); overflow-wrap:anywhere; }
@@ -950,6 +951,16 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       <div id="ok-fo"></div>
     </section>
     <section class="ok-kort ok-fold-gruppe">
+      <span class="ok-etikett">Regningskontoen</span>
+      <div class="ok-fold" data-fold="regning">
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Buffer på regningskontoen</span><span class="ok-fold-sum"></span></button>
+        <div class="ok-fold-innhold">
+          <p class="ok-meta">Lønna kommer midt i måneden. Med en buffer på regningskontoen betales regningene som kommer før lønna, med det som står der fra før – og lønna fyller den opp igjen. Neam ser på trekkene fra kontoen og finner hvor langt ned saldoen har gått før påfyllet hver måned (den største innbetalingen i måneden).</p>
+          <div id="ok-rk"><p class="ok-meta">Henter …</p></div>
+        </div>
+      </div>
+    </section>
+    <section class="ok-kort ok-fold-gruppe">
       <span class="ok-etikett">Budsjett</span>
       <div class="ok-fold" data-fold="merker">
         <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Merker på tvers</span><span class="ok-fold-sum"></span></button>
@@ -1092,6 +1103,58 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     return true;
   }
 
+  /* ---------- Bufferen paa regningskontoen (7. november 2026) ----------
+     Regnes i bank-funksjonen (regningskonto); her velges kontoen og
+     tallene vises. Bare kontoer med rollen Felles har trekk i Neam. */
+  var okRk = null;
+  function okRkLast(){
+    return okHent('/api/bank?hva=regningskonto').then(function(r){ okRk = r; okRkTegn(); return r; });
+  }
+  function okRkTegn(){
+    var boks = document.getElementById('ok-rk');
+    boks.innerHTML = '';
+    var r = okRk;
+    if(!r || !r.ok){ boks.appendChild(okEl('p', 'ok-melding feil', okVask((r && r.feil) || 'Fikk ikke regnet ut bufferen'))); okFoldSett('regning', ''); return; }
+    var felles = okKontoer.filter(function(k){ return k.rolle === 'felles'; });
+    var valgt = okKontoer.filter(function(k){ return k.uid === r.uid; })[0];
+    var kr = function(n){ return okBuKr(n) + ' kr'; };
+    var lab = okEl('label', 'ok-etikett', 'Regningskontoen'); lab.htmlFor = 'ok-rk-konto';
+    boks.appendChild(lab);
+    var s = document.createElement('select'); s.id = 'ok-rk-konto';
+    s.appendChild(new Option('Velg konto', ''));
+    felles.forEach(function(k){ s.appendChild(new Option(k.navn, k.uid)); });
+    if(r.uid && !felles.some(function(k){ return k.uid === r.uid; })) s.appendChild(new Option((valgt ? valgt.navn : 'Valgt konto') + ' (uten rollen Felles)', r.uid));
+    s.value = r.uid || '';
+    s.addEventListener('change', function(){
+      s.disabled = true;
+      okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'regningskonto', uid:s.value }) })
+        .then(function(x){ okRk = x; okRkTegn(); var f = document.getElementById('ok-rk-konto'); if(f) f.focus(); });
+    });
+    boks.appendChild(s);
+    if(!felles.length) boks.appendChild(okEl('p', 'ok-meta', 'Ingen kontoer har rollen Felles. Gi regningskontoen rollen Felles under Kontoer, så henter Neam trekkene.'));
+    if(!r.uid){ okFoldSett('regning', 'Velg kontoen'); return; }
+    if(valgt && valgt.rolle !== 'felles') boks.appendChild(okEl('p', 'ok-melding', 'Kontoen har ikke rollen Felles, så Neam henter ikke trekkene fra den. Gi den rollen Felles under Kontoer.'));
+    var saldo = valgt && typeof valgt.saldo === 'number' ? valgt.saldo : null;
+    if(!r.anbefalt){
+      boks.appendChild(okEl('p', 'ok-meta', r.maaneder.length ? 'Ingenting har gått ut før påfyllet ennå.' : 'Ingen trekk fra kontoen ennå.'));
+      okFoldSett('regning', saldo != null ? 'Står ' + kr(saldo) : '');
+      return;
+    }
+    var mndNavn = function(m){ return okMndNavn.format(new Date(m + '-01T12:00:00')); };
+    boks.appendChild(okEl('div', 'ok-stort', okVask(kr(r.anbefalt)) + ' <small>anbefalt buffer</small>'));
+    boks.appendChild(okEl('p', 'ok-meta', 'Mest i ' + okVask(mndNavn(r.storst)) + ': saldoen gikk ' + okVask(kr(r.behov)) + ' ned før påfyllet. Ti prosent til, rundet opp til hele tusen.'
+      + (saldo != null ? ' Står på kontoen nå: ' + okVask(kr(saldo)) + '.' : '')));
+    var liste = okEl('div', 'ok-kjop-liste');
+    r.maaneder.slice().reverse().forEach(function(x){
+      var meta = x.pafyll ? 'Påfyll ' + okKort.format(new Date(x.pafyll.dato)) + ' · ' + kr(x.pafyll.belop) + (x.pafyll.tekst ? ' · ' + x.pafyll.tekst : '') : 'Ikke noe påfyll ennå – hittil';
+      liste.appendChild(okEl('div', 'ok-kjop-rad',
+        '<span class="ok-dato">' + okVask(mndNavn(x.mnd)) + '</span>'
+        + '<span class="ok-sted"><b>' + okVask(kr(x.behov)) + ' ned før påfyllet</b><span class="ok-meta">' + okVask(meta) + '</span></span>'
+        + '<b></b><span class="ok-kjop-pil"></span>'));
+    });
+    boks.appendChild(liste);
+    okFoldSett('regning', 'Anbefalt ' + kr(r.anbefalt) + (saldo != null ? ' · står ' + kr(saldo) : ''));
+  }
   function okTegnKontoer(){
     var boks = document.getElementById('ok-kontoer');
     boks.innerHTML = '';
@@ -4466,6 +4529,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       document.getElementById('ok-hentet').textContent = 'Hentet kl. ' + okKlokke.format(new Date(r.hentet)) + (r.advarsel ? ' · ' + r.advarsel + ' – viser forrige henting' : '');
       okTegnKontoer();
       okFormueLast();
+      okRkLast();
       /* Kontofilteret i innboksen faar navnene og numrene naar kontoene er lest. */
       if(okPoster.length) okTegnFilter();
     });
@@ -4669,6 +4733,25 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         type: { type:'string', enum:['ut', 'inn', 'kvittering', 'fil', 'faktura', 'auto', 'ny', 'stroket', 'uten'] },
         maks: { type:'number', description:'Hvor mange rader, høyst 200. Standard 60.' }
       }, required:[] }
+    },
+    {
+      name: 'les_okonomi_regningskonto',
+      description: 'Bufferen regningskontoen trenger (Oppsett › Regningskontoen): hvilken konto som er regningskontoen, '
+                 + 'hvor langt ned saldoen har gått før påfyllet (den største innbetalingen) hver måned, anbefalt buffer '
+                 + '(største måned + 10 %, rundet opp til hele tusen) og saldoen nå. Bare på Økonomi-sida.',
+      input_schema: { type:'object', properties:{}, required:[] }
+    },
+    {
+      name: 'sett_okonomi_regningskonto',
+      description: 'Velger hvilken konto som er regningskontoen i Oppsett (bufferen regnes fra trekkene på den). '
+                 + 'Kontonavnet som i les_okonomi_kontoer; kontoen må ha rollen Felles for at Neam har trekkene. '
+                 + 'Tom tekst fjerner valget. Bare på Økonomi-sida.',
+      input_schema: { type:'object', properties:{ konto:{ type:'string', description:'Kontonavnet, eller tom tekst.' } }, required:['konto'] },
+      neamSkriver: true,
+      neamBeskriv: function(arg){
+        return String(arg.konto || '').trim() ? 'Gjøre ' + arg.konto + ' til regningskontoen i Oppsett – bufferen regnes fra trekkene på den.'
+          : 'Fjerne valget av regningskonto i Oppsett.';
+      }
     },
     {
       name: 'les_okonomi_husk',
@@ -4922,6 +5005,28 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
             kategori:x.kategori || null, status:x.status, kilde:kilde(x), fort_automatisk:x.auto || undefined,
             vedlegg:x.harFil ? (x.filType === 'application/pdf' ? 'pdf' : 'bilde') : x.harKvittering ? 'varelinjer' : undefined };
         }) };
+    }
+    if(navn === 'les_okonomi_regningskonto'){
+      var rk = await okRkLast();
+      if(!rk.ok) throw new Error(rk.feil);
+      var rkK = okKontoer.filter(function(k){ return k.uid === rk.uid; })[0];
+      /* Kontonavnet, aldri kontonummeret - og ikke teksten paa paafyllet, den kan ha et kontonummer. */
+      return { regningskonto:rkK ? rkK.navn : (rk.uid ? 'valgt konto som ikke finnes lenger' : 'ingen valgt'),
+        har_rollen_felles:!!(rkK && rkK.rolle === 'felles'), saldo_naa:rkK && typeof rkK.saldo === 'number' ? rkK.saldo : null,
+        anbefalt_buffer:rk.anbefalt, storste_maaned:rk.storst, ned_for_pafyll_storste:rk.behov,
+        maaneder:(rk.maaneder || []).map(function(x){ return { maaned:x.mnd, ned_for_pafyll:x.behov, ut_for_pafyll:x.ut,
+          pafyll:x.pafyll ? { dato:x.pafyll.dato, belop:x.pafyll.belop } : null, ferdig:x.ferdig }; }) };
+    }
+    if(navn === 'sett_okonomi_regningskonto'){
+      var rkNavn = String(arg.konto || '').trim(), rkKonto = null;
+      if(rkNavn){
+        rkKonto = okNeamKonto(rkNavn);
+        if(!rkKonto) throw new Error('Fant ikke én konto som heter «' + rkNavn + '». Kontoene: ' + okKontoer.map(function(x){ return x.navn; }).join(', '));
+      }
+      var rs = await okNeamPost2('', { hva:'regningskonto', uid:rkKonto ? rkKonto.uid : '' });
+      if(!rs.ok) throw new Error(rs.feil);
+      okRk = rs; okRkTegn();
+      return { regningskonto:rkKonto ? rkKonto.navn : 'ingen', har_rollen_felles:!!(rkKonto && rkKonto.rolle === 'felles'), anbefalt_buffer:rs.anbefalt };
     }
     if(navn === 'les_okonomi_husk'){
       var lh = await okNeamPost2('?hva=laert');
