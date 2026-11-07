@@ -494,9 +494,10 @@ innliming av kvitteringer – bilde, PDF eller tekst (`2c947dc`), en
 PDF-kopi i Dropbox av alt som legges inn på sida (`c66917a`) og ubetalte
 regninger som «forfaller» i Regnskap (`fa530bc`), også under kjøpene bak
 posten (`ce1aa39`) og i de store summene og diagrammet (`93ef3ec`), og
-bufferen regningskontoen trenger, i Oppsett (`1c8754a`), og til sist det
-som forfaller i «måned så langt» på Status, med overlappen i Oppsett på
-telefon (`27b3802`).
+bufferen regningskontoen trenger, i Oppsett (`1c8754a`), det som
+forfaller i «måned så langt» på Status, med overlappen i Oppsett på
+telefon (`27b3802`), og til sist Regnskap, Budsjett og Resultat med samme
+oppsett, og Oppdater og Oppsett på høyre tommelknapp (`9dbb2d5`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -505,7 +506,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 69 commits, `0e0050a`–`27b3802`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 70 commits, `0e0050a`–`9dbb2d5`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4108,7 +4109,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 69 commits fra `0e0050a` til `27b3802`.
+verdier. Bygget i 70 commits fra `0e0050a` til `9dbb2d5`.
 
 ### Banken – Enable Banking
 
@@ -4131,7 +4132,7 @@ verdier. Bygget i 69 commits fra `0e0050a` til `27b3802`.
   lagret.
 - **Fersk ved åpning og Oppdater** (`fc18f69`). Sida henter DNB og Trumf
   ferskt når den åpnes, og knappen **Oppdater** øverst ved fanene gjør det
-  samme. Mot DNB sendes PSU-headerne (`Psu-Ip-Address`, `Psu-User-Agent`
+  samme (fra 8. november på høyre tommelknapp). Mot DNB sendes PSU-headerne (`Psu-Ip-Address`, `Psu-User-Agent`
   med flere, `psuAv()`): da er brukeren til stede, og grensen på fire i
   døgnet gjelder ikke (PSD2). Bare IPv4 – på IPv6 brukes bufferen.
   Vekkeren sender dem ikke og holder seg til bufferen. Saldoene hentes fire
@@ -4463,7 +4464,8 @@ gjeldsgrad, rente, sparerate, buffer, faste kostnader) og familiemålet.
   aldri banken.
 - **Rød prikk på Oppsett-fanen** (6. november, Magne ba om den) når en
   automatisk kilde er gul eller rød. Skjermlesere får teksten «en kilde er
-  ikke oppdatert».
+  ikke oppdatert». Fra 8. november blir Oppsett-valget på høyre
+  tommelknapp gult i stedet (`farge:'endre'`) – fanen er borte.
 
 ### PC først (6. november, `aa5bbc8`)
 
@@ -4496,6 +4498,57 @@ til Oppsett med rød prikk på fanen, og Coop-meldingen bort.
   forsvant før Lagre. Nå sammenlignes skjemaet med det som sist ble lagret
   (`okFormueTekst()` mot `okFormueLagret`); er det ulikt, oppdateres bare
   visningen (`okTegnFormue()`), og skjemaet blir stående.
+
+### Regnskap, Budsjett og Resultat – samme oppsett (8. november, `9dbb2d5`)
+
+Magne: «Jeg lurer på om vi skal ha følgende struktur Regnskap budsjett og
+reslutatfaner. De bør være tilnærmet like i hvordan ting står plassert.
+resultat viser sammenligningen mellom budsjett og regnskapet». Skissen
+«Neam Økonomi – Regnskap, Budsjett, Resultat» (artifact) ble godkjent
+(«Ja, bygg det»), med Oppdater og Oppsett på høyre tommelknapp (Magne:
+«Oppdater kan man legge på høyre tommelknapp», «Oppsett kan også kanskje
+ligge under høyre tommelknapp»).
+
+- **Fanene:** Status, Transaksjoner, Regnskap, Budsjett, Resultat – fem,
+  og de får plass på telefon. Resultat er den gamle Regnskap-fanen,
+  internt fortsatt `maaned`; `#aar` og `#resultat` havner der, `#regnskap`
+  i den nye.
+- **Felles periodevelger** (`#ok-periode`) over de tre: ‹ måned › og
+  Måned / Hittil i år / Siste 12 mnd, samme valg i alle tre. I Budsjett
+  blar pilene i budsjettets måneder (et år fram), ellers til siste forfall
+  (`okMndListe`). Meta-linja under er egen per fane.
+- **Samme plassering:** sumboksene, et kort med sammenleggbare linjer
+  (diagrammet først, så «På tvers»), og postene gruppe for gruppe –
+  Inntekter først, utgiftsgruppene, Sparing sist (`okMndGrupper`).
+  `okMndTegn` regner én gang og tegner alle tre (`okRgTegn`,
+  `okBuListeTegn`, Resultat som før).
+- **Regnskap** (`#ok-vis-regnskap`): det som er brukt, uten budsjett, med
+  det som forfaller – sumboksene Regnskap hadde fra `93ef3ec`. Diagrammet
+  uten budsjettstrek og uten rødt; «På tvers» bare brukt. Kjøpene bak
+  posten som før (spalten til høyre på PC, under posten på telefon), uten
+  budsjettlinja.
+- **Budsjett:** lista for perioden, budsjett per måned gjennom året som
+  diagram, og «På tvers» bare budsjett. **Rediger** (bare for én måned)
+  åpner månedens skjema – det samme som før – og Lagre eller Avbryt går
+  tilbake til lista. «Standardbudsjett ›» viser standarden, med «‹ Tilbake
+  til budsjettet». «Bruk standardbudsjettet» står i lista når måneden har
+  eget budsjett. Bryteren Standardbudsjett/Månedsbudsjett er borte;
+  `okBuVis` er `liste`, `standard` eller `maaned`.
+- **Resultat:** sumboksene viser **avviket** (grønt bedre, rødt verre,
+  «X av Y kr» under) – det som er brukt, står i Regnskap. Inntekter og
+  Sparing er med i lista og blir ikke røde over budsjettet
+  (`okMndBar(…, snu)`). Null vises «0 kr», ikke «−0 kr».
+- **Høyre tommelknapp** (`neamSideHandlinger`): Oppdater på skrå som i
+  kalenderen, Oppsett ved siden av (ikonet `system`). Holde inne åpner
+  innstillingene som før. Oppsett har fått overskriften «Oppsett», siden
+  ingen fane er valgt der.
+- **Diagrammet** er trukket ut i `okStolpeSvg`, så de tre tegner likt.
+  Status-lenken heter «Hele måneden i Resultat ›».
+- **Ikke gjort / ikke testet:** Oppdater viser ikke lenger «Oppdaterer …»
+  på sida, bare i navnet i menyen. Den gule Oppsett-knappen er ikke sett i
+  testserveren (alle kildene var ferske). Neams leseverktøy
+  (`les_okonomi_*` i felles-lesalt.js) er uendret; Neam får visningen som
+  «Regnskap» eller «Resultat». Testet i testserveren på telefon og PC.
 
 ### Bufferen på regningskontoen (7. november, `1c8754a`)
 
