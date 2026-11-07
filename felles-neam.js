@@ -1863,6 +1863,95 @@ async function neamPinkoder(){
   });
 }
 
+/* ---- Kjoekkenskjermen: koden ved foerste trykk etter hvilen ----
+   Bare naar sida er logget inn som kitchen@ (Magne, 8. november 2026:
+   «Dette gjelder foreløpig bare kjøkkenbrukeren»). Foerste trykk etter
+   tre minutter uten trykk - eller foerste trykk etter at sida lastet -
+   svelges og gir tastaturet. Riktig kode gir «Hei Magne!», som trykkes
+   bort; personen gjelder til skjermen hviler igjen. «Hopp over» gir
+   ingen person: husmodus, som foer.
+
+   Hvem som staar der, leses med neamHvemStaar(). felles-skriv.js
+   aapner skolearbeidet for den personen (skrivSkoleTillatt). */
+const NEAM_KJOKKEN = 'kitchen@neam.no';
+const NEAM_PIN_HVILE_MS = 3 * 60 * 1000;
+let neamPinPerson = null;
+let neamPinSistTrykk = 0;
+let neamPinAapen = false;
+let neamPinSvelg = false;
+/* Personen og siste trykk foelger fanen fra side til side - ellers kom
+   tastaturet paa nytt hver gang kjoekkenskjermen byttet side. */
+const NEAM_PIN_LAGER = 'neam-pin';
+function neamPinLagre(){
+  try{ sessionStorage.setItem(NEAM_PIN_LAGER, JSON.stringify({ person:neamPinPerson, sist:neamPinSistTrykk })); }catch(e){}
+}
+(function(){
+  try{
+    const d = JSON.parse(sessionStorage.getItem(NEAM_PIN_LAGER) || 'null');
+    if(d){ neamPinPerson = d.person || null; neamPinSistTrykk = Number(d.sist) || 0; }
+  }catch(e){}
+})();
+function neamErKjokken(){
+  return typeof skrivMeg !== 'undefined' && skrivMeg === NEAM_KJOKKEN;
+}
+function neamHvemStaar(){
+  if(neamPinPerson && Date.now() - neamPinSistTrykk > NEAM_PIN_HVILE_MS) neamPinPerson = null;
+  return neamPinPerson;
+}
+window.addEventListener('pointerdown', function(ev){
+  const naa = Date.now();
+  const hvilt = !neamPinSistTrykk || naa - neamPinSistTrykk > NEAM_PIN_HVILE_MS;
+  neamPinSistTrykk = naa;
+  if(neamPinAapen || !hvilt || !neamErKjokken()){ neamPinLagre(); return; }
+  neamPinPerson = null;
+  neamPinLagre();
+  ev.preventDefault();
+  ev.stopPropagation();
+  neamPinSvelg = true;
+  setTimeout(function(){ neamPinSvelg = false; }, 600);
+  neamPinInngang();
+}, true);
+window.addEventListener('click', function(ev){
+  if(!neamPinSvelg) return;
+  if(ev.target.closest && ev.target.closest('.neam-pin-bak')) return;
+  neamPinSvelg = false;
+  ev.preventDefault();
+  ev.stopPropagation();
+}, true);
+
+async function neamPinInngang(){
+  neamPinAapen = true;
+  let feil = '';
+  for(;;){
+    const kode = await neamPinTast({ tittel:'Tast koden din', venstre:'Hopp over', feil:feil });
+    if(kode === null){ neamPinPerson = null; break; }
+    const r = await neamPinKall('POST', { hva:'sjekk', kode:kode });
+    if(r.ok){
+      neamPinPerson = { hvem:r.hvem, navn:r.navn };
+      await neamPinHei(r.navn);
+      break;
+    }
+    feil = r.laast ? 'For mange feil. Prøv igjen om ' + r.laast + ' sekunder.' : (r.feil || 'Feil kode');
+  }
+  neamPinLukk();
+  neamPinAapen = false;
+  neamPinSistTrykk = Date.now();
+  neamPinLagre();
+}
+
+/* «Hei Magne!» - trykkes bort med OK. */
+function neamPinHei(navn){
+  const bak = neamPinFlate();
+  bak.innerHTML = '<div class="neam-pin-kort neam-pin-hei" role="dialog" aria-modal="true">'
+                + '<div class="neam-pin-hilsen"></div>'
+                + '<button type="button" class="neam-pin-ok">OK</button></div>';
+  bak.querySelector('.neam-pin-hilsen').textContent = 'Hei ' + navn + '!';
+  bak.hidden = false;
+  const ok = bak.querySelector('.neam-pin-ok');
+  ok.focus();
+  return new Promise(function(ferdig){ ok.onclick = function(){ ferdig(); }; });
+}
+
 async function neamPinSett(p){
   let feil = '';
   for(;;){

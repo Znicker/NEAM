@@ -1844,3 +1844,12 @@
 .neam-pin-knapp.ny{ background:var(--handling-ny); }
 .neam-pin-knapp.endre{ background:var(--handling-endre); }
 .neam-pin-knapp.slett{ background:var(--danger); }
+/* «Hei Magne!» etter riktig kode på kjøkkenskjermen. */
+.neam-pin-hei{ padding:40px 28px 28px; }
+.neam-pin-hilsen{ font-family:'Figtree','Archivo',sans-serif; font-size:var(--t-display); font-weight:650; margin:0 0 28px; }
+.neam-pin-ok{
+  width:100%; height:64px; border:none; border-radius:999px; cursor:pointer;
+  background:var(--aksent); color:#fff;
+  font-family:'Archivo',sans-serif; font-size:var(--t-stor); font-weight:700;
+}
+.neam-pin-ok:active{ background:var(--aksent-moerk); }

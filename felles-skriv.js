@@ -359,7 +359,13 @@ async function skrivHentMeg(){
    verktoeylista bygges ved hver melding, og da maa svaret alt vaere her. */
 setTimeout(skrivHentMeg, 0);
 
-function skrivSkoleTillatt(){ return !!skrivMegPerson; }
+/* Fra 8. november 2026 ogsaa paa kjoekkenskjermen naar noen har tastet
+   pinkoden sin (neamHvemStaar i felles-neam.js) - med de samme
+   rettighetene som om de var logget inn som seg selv. */
+function skrivSkoleTillatt(){
+  if(skrivMegPerson) return true;
+  return typeof neamHvemStaar === 'function' && !!neamHvemStaar();
+}
 
 function skrivBarnNavn(b){
   const s = String(b || '').trim().toLowerCase();
@@ -2649,8 +2655,8 @@ async function skrivUtfor(navn, arg){
      igjen etterpaa - og da skal det si nei her ogsaa. */
   if(SKRIV_SKOLE.indexOf(navn) !== -1 && !skrivSkoleTillatt()){
     throw new Error('Skolearbeidet kan bare endres fra en skjerm der noen er logget '
-                  + 'inn som seg selv. Si at det må gjøres fra telefonen eller fra '
-                  + 'barnets egen dash.');
+                  + 'inn som seg selv, eller på kjøkkenskjermen etter at noen har tastet '
+                  + 'pinkoden sin. Ingen har tastet koden sin her nå.');
   }
 
   if(navn === 'legg_til_lekse'){
