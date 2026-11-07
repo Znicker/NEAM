@@ -1,6 +1,9 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 7. november 2026, kveld: Rommene har fått fjernkontroll til
+*Ført à jour 8. november 2026, natt: pinkoder på kjøkkenskjermen – den som
+står der, taster sin sekssifrede kode ved første trykk etter hvilen, får
+«Hei Magne!», og Neam vet hvem han snakker med og kan skrive lekser for
+dem. sys@ legger inn kodene (se toppblokka og del 52). Ført à jour 7. november 2026, kveld: Rommene har fått fjernkontroll til
 Samsung-TV-ene, gjennom en Logic-variabel og HomeyScript i Homey, og
 enheter kan dras oppå hverandre til navngitte grupper med felles bryter.
 Senere samme kveld: innstillingene (Husregisteret, myk og hard reset, Logg ut) ved å holde inne høyre tommelknapp på alle
@@ -102,15 +105,15 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=81`, `felles-neam.css
-?v=85`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=12`, `felles-lesalt.js
+**Siste leverte versjoner:** `felles-neam.js ?v=84`, `felles-neam.css
+?v=87`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=13`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
 `functions/api/` med `hent.js`, `sandnes.js`, `sjo.js`, `claude.js`,
-`data.js`, `ms.js`, `homey.js`, `roborock.js`, `turn.js` og
+`data.js`, `ms.js`, `homey.js`, `roborock.js`, `turn.js`, `pin.js` og
 `bank/[[sti]].js`.
 Bildeversjoner: **`IKON_V=2`** (i `felles-neam.js`) for ikonene i
 `bilder/ikoner/` og `bilder/ikoner/sikkerhet/` – sidene som lenker dem
@@ -123,8 +126,8 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–80; neam.css til og
-med 84; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–11,
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–83; neam.css til og
+med 86; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–12,
 hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -832,6 +835,43 @@ på telefon.
 - **Kjent, ikke rettet:** i mattespillet dekker NEAM-knappen venstre ende av
   Start på telefon, og i naturfag noen av avkrysningsboksene.
 
+**8. november, natt: pinkoder på kjøkkenskjermen** (`be1e0ca`, `e5e32fd`,
+`e70d615`; neam.js `?v=84`, neam.css `?v=87`, skriv `?v=13`). Magne ville
+begrense hva barna kan styre etter hvor de er; det ble droppet (Google mesh
+har ikke noe API som sier hvilket punkt en enhet er på, og ett punkt dekker
+flere rom). Spørsmålet gikk over i «hvem er dette?» på kjøkkenskjermen, som
+alltid er logget inn som kitchen@. Magne: «alle har sin egen … pinkode.
+taster man sin kode åpnes sin bruker», og «Dette gjelder foreløpig bare
+kjøkkenbrukeren».
+- **Når:** første trykk etter tre minutter uten trykk, eller første trykk
+  etter at sida lastet. Trykket svelges, og tastaturet kommer – store taster,
+  seks prikker, «Hopp over» (husmodus, som før). Riktig kode gir
+  «Hei Magne!», som trykkes bort med OK. Personen og siste trykk ligger i
+  fanens `sessionStorage` (`neam-pin`), ellers kom tastaturet på hver side.
+  Egen tidtaker i `felles-neam.js`, samme tre minutter som hvilen på Kjøkken
+  dash, men ikke koblet til den – fireren eier ikke dashens hvile.
+- **Kodene:** seks sifre, ikke samme siffer seks ganger, ikke en rekke opp
+  eller ned (123456, 654321). Kodene er ulike – koden er det som sier hvem
+  man er. Barna velger selv og gir dem til **sys@, som er administrator**
+  (Magne: «Sys@neam.no er administrator ikke jeg») og legger dem inn under
+  Husregisteret → Pinkoder i innstillingene. Magne: «kodene ikke er så
+  superhemmelige egentlig».
+- **Serveren:** `functions/api/pin.js`. Identitet fra Microsoft-tokenet
+  (Graph `/me`), ikke Access – Access-identiteten kan være en annen på samme
+  maskin. Hashet med salt i **`pin:koder`**, og gjettebremsen i **`pin:feil`**
+  (fem feil → låst ett minutt). **Utenfor `fh:` med vilje:** `/api/data` gir
+  alle innloggede alt under `fh:`, og seks sifre er bare en million
+  muligheter – en hash som kan leses der, er så godt som koden.
+- **Rettighetene:** `skrivSkoleTillatt()` i `felles-skriv.js` slipper nå også
+  den som har tastet koden sin (`neamHvemStaar()`), med samme rettigheter som
+  om de var logget inn som seg selv. **Sperren sitter i nettleseren**, som
+  før – den holder barna unna hverandres lekser, ikke noen som kan kode.
+- **Neam vet hvem som står der:** systemteksten får «VED SKJERMEN: Emma har
+  tastet pinkoden sin …», og «meg» er da Emma. Gjelder det et annet barn,
+  spør han som før. Uten kode får han vite at han ikke vet hvem det er.
+- **Ikke bygget:** personlige farger (del 52) – koden gir person og
+  rettigheter, ikke utseende ennå.
+
 ### Åpne tråder
 
 **Besluttet, ikke bygget – fem systemer med begrunnelse i del 47–50 og 52:**
@@ -851,7 +891,8 @@ på telefon.
 - **Personlige paletter og «hvem er du?»** (del 52). Farger og bilder per
   person, lik layout og oppførsel; veggskjermen spør ved oppvåkning, og
   grått husmodus når ingen svarer. Hører hjemme i skallet, ikke i åtte
-  sider.
+  sider. **«Hvem er du?» er bygget 8. november 2026** som pinkode på
+  kjøkkenskjermen (se over); palettene står igjen.
 
 **Åpne spørsmål – ikke avgjort (del 51 og 53):**
 - **Neam bruker fem til sju sekunder på enkle spørsmål.** Det er en
@@ -3652,6 +3693,17 @@ eneste spørsmålet som er verdt å stille i det øyeblikket.
 dagens middag, kalenderen, været. Grått sier at dette tilhører alle uten å
 velge side – og det er den ærlige standardtilstanden, siden det meste av
 tiden ikke står noen der i det hele tatt.
+
+**Endret 8. november 2026 – «hvem er dette?» er bygget, og trykket gir
+rettigheter.** Svaret er ikke ett trykk på et navn, men en sekssifret
+pinkode: man taster sin egen, og skjermen vet hvem det er (Magne: «vi ikke
+velger først, men alle har sin egen … pinkode»). Dermed bærer svaret også
+**rettigheter** – skolearbeidet åpnes for den personen – stikk imot «trykket
+styrer bare utseende» over. Grunnen er at koden er noe man vet, ikke bare
+et navn hvem som helst kan trykke på. «Ingen ny autentisering» holder
+fortsatt i den forstand at kontoen er kitchen@ hele tiden. Spørsmålet
+kommer ved første trykk etter tre minutter i ro, og «Hopp over» gir
+husmodus. Palettene er ikke bygget. Se toppblokka, 8. november.
 
 ---
 

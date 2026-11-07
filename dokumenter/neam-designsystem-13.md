@@ -23,7 +23,9 @@ Mye ligger nå i **fellesfiler** (`felles-rot.css`, `felles-skall.css`,
 `felles-skriv.js`, `felles-hus.js`, `felles-ms.js`, `felles-tale.js`). Det som ennå er kopiert per fil, holdes likt av dette
 dokumentet – det er fortsatt fasiten for hva som skal være likt på tvers.
 
-*Sist oppdatert 6. november 2026: **fargekatalogen** er nytt verktøy for
+*Sist oppdatert 8. november 2026: **pinkoden på kjøkkenskjermen** –
+tastaturet, «Hei Magne!» og Pinkoder for sys@ (se «Neam-assistenten»).
+Forrige oppdatering 6. november 2026: **fargekatalogen** er nytt verktøy for
 farger og bakgrunner (se «Farger → Fargekatalogen»), bildekatalogen kan
 bestille strektegningene i koden og dele store utvalg i flere ark (se
 «Bilder – ikoner og bestilling»), og fargetabellen har fått verdiene fra
@@ -924,6 +926,25 @@ legger seg under dem (z-index 88), og spillsidene har dem også – uten
 samtalen, så andre trykk på NEAM bare lukker. Høyre knapp står også på
 sider uten egne handlinger; et vanlig trykk der sier at man kan holde inne
 for innstillinger. Dialogene (120) ligger fortsatt øverst.
+
+**Pinkoden på kjøkkenskjermen** (8. november 2026). Bare når sida er logget
+inn som kitchen@. Første trykk etter tre minutter i ro – eller første trykk
+etter at sida lastet – svelges, og tastaturet kommer: tittelen «Tast koden
+din», **seks prikker** i `--aksent` (fylt for hvert siffer), og **store
+taster** i tre kolonner (76 px høye, 34 px tall, `--paper-soft` med
+`--boks-kant`; 58 px når skjermen er lav). Nederst «Hopp over» til venstre
+og «Slett» til høyre som lette tekstknapper. Det sjette sifferet sender
+koden – ingen OK-knapp, alle kodene har seks sifre. Feil står i `--danger`
+under tastene. Riktig kode gir **«Hei Magne!»** i displaystørrelse og en
+blå OK over hele bredden; den må trykkes bort. «Hopp over» gir husmodus.
+Tastaturet ligger på `.dlg-bak` (120) og lukkes ikke av bakteppet.
+
+**Pinkoder for sys@ ligger under Husregisteret** i innstillingene: for sys@
+åpner Husregisteret en liten stabel med Husregisteret og Pinkoder
+(låsikonet). Alle andre ser Husregisteret som før. Lista viser de fire med
+«Har kode» / «Ingen kode», og knappene følger betydningene: grønn «Sett
+kode», oker «Endre», rød «Fjern» (spør først). En ny kode tastes på det
+samme tastaturet, to ganger.
 
 **Neams egne klasser har `neam-`-prefiks, også modifikatorene.** Høyre
 hjørne het `.side` til 7. november 2026, og fem spillsider og kalenderen
