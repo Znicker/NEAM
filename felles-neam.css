@@ -1437,6 +1437,14 @@
    den - hvitt tilhoerer kortene, --boks-mild er flaten de grupperes paa
    (designsystemet, «Flater og tekst»). Med en mild boks paa et hvitt
    kort var skillet for svakt (Magne, 1. november 2026). */
+/* Rommene og Neamow ligger UNDER tommelknappene (Magne, 7. november 2026:
+   «tommelknappene alltid er synlige, også i enhetsstyring»): 88, mellom
+   duselaget (85) og undermenyene (89) - se toppen av fila. Dialogene
+   (120) legger seg fortsatt oppaa. Sidenes egne lag over 88 er bare
+   fullskjerm, dialoger og meldinger som vises naar de trengs. */
+.dlg-bak.hsk-bak, .dlg-bak.nmw-bak{ z-index:88; }
+/* Luft nederst, saa det siste rommet kan rulles opp over tommelknappene. */
+.hsk-innhold{ padding-bottom:56px; }
 .hsk-kort{
   max-width:460px; max-height:calc(100dvh - 40px); overflow:auto;
   background:var(--boks-mild);

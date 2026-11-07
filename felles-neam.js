@@ -1133,7 +1133,9 @@ function neamFirer(){
      Lukking skjer ved trykk utenfor, som lukker og svelger trykket saa
      man ikke samtidig treffer noe under. Hoeyre haandtak lukker derimot
      ved andre trykk: der finnes ingen «seg selv» aa aapne. */
-  if(f.classList.contains('oppe')){ neamFirerNed(); neamAapne(); return; }
+  /* Spillsidene har tommelknappene, men ikke samtalen
+     (window.neamUtenSamtale) - der lukker andre trykk bare. */
+  if(f.classList.contains('oppe')){ neamFirerNed(); if(!window.neamUtenSamtale) neamAapne(); return; }
   neamDuseOpp('neamSideHandtak');
   h.classList.add('oppe');
   f.hidden = false;
@@ -1552,6 +1554,59 @@ function neamGrenPaa(id, plass){
 function neamGren(plass){     neamGrenPaa('neamFirer', plass); }
 function neamSideGren(plass){ neamGrenPaa('neamSideFirer', plass); }
 
+/* ---------- Myk og hard reset ----------
+   Under «Enheter og lys» paa alle sidene (Magne, 7. november 2026: «en
+   hard og en soft resetknapp», «Legg den under enheter og lys så lenge»).
+   Begge spoer foerst.
+
+   Myk: laster sida paa nytt, som aa dra ned.
+   Hard: henter sida og alle filene den bruker paa nytt fra nett, forbi
+   nettleserens lager, og laster saa sida - det Ctrl+Shift+R gjoer paa PC,
+   og som ikke finnes paa iPad og telefon. Cloudflares eget lager rekker
+   den ikke; det styres av ?v= (se CLAUDE.md, «Versjonsregelen»). */
+function neamSystemValg(){
+  return [
+    { navn:'Myk reset', merke:true, ikon:knappMerke('oppdater'), gjor: neamMykReset },
+    { navn:'Hard reset', merke:true, ikon:knappMerke('oppdater'), gjor: neamHardReset }
+  ];
+}
+function neamSpoer(tekst, ja){
+  if(typeof bekreft === 'function') return bekreft(tekst, { jaTekst: ja });
+  return Promise.resolve(window.confirm(tekst));
+}
+async function neamMykReset(){
+  neamFirerNed();
+  if(!(await neamSpoer('Laste sida på nytt? Det som ikke er lagret, forsvinner.', 'Last på nytt'))) return;
+  location.reload();
+}
+async function neamHardReset(){
+  neamFirerNed();
+  if(!(await neamSpoer('Hente sida og alle filene på nytt fra nett? Det tar noen sekunder, '
+                     + 'og det som ikke er lagret, forsvinner.', 'Hent på nytt'))) return;
+  const her = location.origin;
+  const adresser = [location.href]
+    .concat(Array.prototype.map.call(document.querySelectorAll('script[src]'), function(s){ return s.src; }))
+    .concat(Array.prototype.map.call(document.querySelectorAll('link[rel="stylesheet"][href]'), function(l){ return l.href; }))
+    .filter(function(u, i, a){ return u.indexOf(her) === 0 && a.indexOf(u) === i; });
+  try{
+    if(window.caches){ const n = await caches.keys(); await Promise.all(n.map(function(k){ return caches.delete(k); })); }
+    if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
+      const r = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(r.map(function(x){ return x.unregister(); }));
+    }
+  }catch(e){}
+  /* Hver fil hentes med cache:'reload', som skriver det ferske svaret inn
+     i nettleserens lager - da bruker omlastingen det. Hoeyst 8 sekunder;
+     henger noe, lastes sida likevel. */
+  await Promise.race([
+    Promise.all(adresser.map(function(u){
+      return fetch(u, { cache:'reload', credentials:'same-origin' }).catch(function(){});
+    })),
+    new Promise(function(ok){ setTimeout(ok, 8000); })
+  ]);
+  location.reload();
+}
+
 function neamVisEnheter(){
   const boks = document.getElementById('neamEnheter');
   if(!boks) return;
@@ -1562,6 +1617,8 @@ function neamVisEnheter(){
     if(typeof window.neamEnheter === 'function') liste = window.neamEnheter() || [];
     else if(Array.isArray(window.neamEnheter))   liste = window.neamEnheter;
   }catch(e){ liste = []; }
+  /* Myk og hard reset staar sist, paa alle sidene - se neamMykReset(). */
+  liste = liste.concat(neamSystemValg());
 
   if(!liste.length){
     if(typeof varsle === 'function'){
@@ -2729,7 +2786,7 @@ else document.addEventListener('DOMContentLoaded', neamBygg);
 const NEAM_FAST_MQ = window.matchMedia('(min-width:1280px) and (pointer:fine)');
 function neamErFast(){ return !!document.body && document.body.classList.contains('neam-fast'); }
 async function neamFastSjekk(){
-  const skal = NEAM_FAST_MQ.matches && window.neamFast !== false;
+  const skal = NEAM_FAST_MQ.matches && window.neamFast !== false && !window.neamUtenSamtale;
   const foer = neamErFast();
   document.body.classList.toggle('neam-fast', skal);
   if(skal === foer) return;
