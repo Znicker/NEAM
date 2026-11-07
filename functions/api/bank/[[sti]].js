@@ -1280,7 +1280,8 @@ async function regnskapAar(env){
   for(const id of Object.keys(poster)){
     const p = poster[id];
     if(p.status === 'venter' && p.faktura && kategorier.indexOf(p.kategori) !== -1 && p.kategori.indexOf('Inntekter') !== 0){
-      forfaller.push({ id:p.id, mnd:String(p.dato).slice(0, 7), dato:p.dato, kategori:p.kategori, belop:Math.round(-p.belop * 100) / 100, motpart:p.motpart || p.tekst || '' });
+      forfaller.push({ id:p.id, mnd:String(p.dato).slice(0, 7), dato:p.dato, kategori:p.kategori, belop:Math.round(-p.belop * 100) / 100, motpart:p.motpart || p.tekst || '',
+        harFil:!!p.harFil, filType:p.filType || '' });
       continue;
     }
     if(p.status !== 'godkjent') continue;

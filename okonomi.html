@@ -4132,7 +4132,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
         rad.appendChild(okEl('span', '', '<b>' + kr(uf) + '</b> <span class="ok-meta">/ ' + okBuKr(ub) + '</span>' + (ua > 0.5 ? ' <span class="ok-avvik over">+' + okBuKr(ua) + '</span>' : '')));
         rad.appendChild(okMndBar(uf, ub, null, Math.max(ub, uf + uff) * 1.05 || 1, uff));
         if(uff){ var fm = okEl('span', 'ok-meta', 'Forfaller ' + okVask(kr(uff)) + ' (' + okVask(ffDatoer(k)) + ') – telles når trekket kommer fra banken'); fm.style.gridColumn = '1 / -1'; rad.appendChild(fm); }
-        if(uf){
+        if(uf || uff){
           var nk = m + '|' + k, apen = !!okMnd.apneKjop[nk], kbId = 'ok-mnd-kb-' + okVask(k).replace(/[^\w]/g, '');
           if(okPc.matches){
             /* PC: kjoepene vises i spalten til hoeyre. */
@@ -4192,7 +4192,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var budsjett = okBuLinjer(k).reduce(function(s, l){ return s + (mb[l] || 0); }, mb[k] || 0);
     boks.appendChild(okEl('span', 'ok-etikett', 'Kjøpene bak'));
     boks.appendChild(okEl('div', 'ok-detalj-hode', '<h2 style="margin:0;font-size:var(--t-stor)">' + okVask(k.split(' · ').join(' › ')) + '</h2><span class="ok-detalj-belop">' + okBuKr(faktisk) + ' kr</span>'));
-    boks.appendChild(okEl('p', 'ok-meta', 'Budsjett ' + okBuKr(budsjett) + ' kr. Kjøp med kvittering kan åpnes.'));
+    var ks = [k].concat(okBuLinjer(k));
+    var ff = okMnd.forfall.filter(function(f){ return ms.indexOf(f.mnd) !== -1 && ks.indexOf(f.kategori) !== -1; }).reduce(function(s, f){ return s + f.belop; }, 0);
+    boks.appendChild(okEl('p', 'ok-meta', 'Budsjett ' + okBuKr(budsjett) + ' kr.' + (ff ? ' Forfaller ' + okBuKr(ff) + ' kr i tillegg.' : '') + ' Kjøp med kvittering kan åpnes.'));
     boks.appendChild(okMndKjop(ms, k));
   }
   /* Kjoepene bak en post: foeringene i maaneden. Med kvittering kan de aapnes. */
@@ -4203,7 +4205,22 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var tegn = function(r){
       liste.innerHTML = '';
       if(!r.ok){ liste.appendChild(okEl('span', 'ok-meta', okVask(r.feil))); return; }
-      if(!r.foringer.length){ liste.appendChild(okEl('span', 'ok-meta', 'Ingen godkjente føringer.')); return; }
+      /* Regningene som forfaller (fakturaer som venter), etter det betalte -
+         med PDF-en (Magne, 7. november 2026: «trykke på posten under
+         regnskap og se den regningen som enda ikke er forfalt»). */
+      var ks = [k].concat(okBuLinjer(k));
+      var ffListe = okMnd.forfall.filter(function(f){ return ms.indexOf(f.mnd) !== -1 && ks.indexOf(f.kategori) !== -1; })
+        .sort(function(a, b){ return String(a.dato).localeCompare(String(b.dato)); });
+      if(!r.foringer.length && !ffListe.length){ liste.appendChild(okEl('span', 'ok-meta', 'Ingen godkjente føringer.')); return; }
+      ffListe.forEach(function(f){
+        var under = f.kategori !== k ? f.kategori.slice(k.length + 3) : '';
+        var rf = okEl('div', 'ok-kjop-rad',
+          '<span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>'
+          + '<span class="ok-sted"><b>' + okVask(f.motpart || 'Faktura') + '</b><span class="ok-meta">' + okVask(['Forfaller – ikke betalt ennå', under].filter(Boolean).join(' · ')) + '</span></span>'
+          + '<b>' + okKr0.format(f.belop) + '</b><span class="ok-kjop-pil"></span>');
+        if(f.harFil) rf.querySelector('.ok-sted').appendChild(okFilLenke(f));
+        liste.appendChild(rf);
+      });
       r.foringer.forEach(function(f){
         var under = f.kategori !== k ? f.kategori.slice(k.length + 3) : '';
         var meta = [f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''), under, f.del ? 'del av kvitteringen' : ''].filter(Boolean).join(' · ');
