@@ -1670,11 +1670,15 @@ først, Sparing sist. Bare tallene skiller dem:
 - **Regnskap** (fra 8. november 2026) – det som er brukt, uten budsjett,
   med det som forfaller: sumboksene som under, diagrammet uten
   budsjettstrek og uten rødt, «På tvers» med bare brukt, og kjøpene bak
-  posten.
+  posten. **Én spalte, som Budsjett** – også Resultat. **Kjøpene bak en
+  post åpnes i en dialog** («Vis kjøpene ›», `#ok-kb-bak`, samme
+  `dlg-bak`/`dlg-kort` som kvitteringen), på PC og telefon; en kvittering
+  åpnet derfra legger seg over.
 - **Resultat** (het Regnskap til 8. november 2026) – budsjett mot faktisk, med **periode**: én måned (med
   ‹ måned ›), hittil i år, eller siste 12 måneder. Budsjettet er da summen av
   månedsbudsjettene. Trenden og «Hvor det glir» står som linjer øverst, og
-  kjøpene bak den valgte posten til høyre. Erstatter Måned, År og budsjett
+  kjøpene bak en post i dialogen (til 8. november 2026 i spalten til
+  høyre). Erstatter Måned, År og budsjett
   mot regnskap. Linja «På tvers – forsikring, lån …» viser hovedmerkene
   med undermerkene rykket inn under (se Budsjett), med brukt, budsjett og
   avvik for perioden.

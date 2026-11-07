@@ -496,8 +496,9 @@ regninger som «forfaller» i Regnskap (`fa530bc`), også under kjøpene bak
 posten (`ce1aa39`) og i de store summene og diagrammet (`93ef3ec`), og
 bufferen regningskontoen trenger, i Oppsett (`1c8754a`), det som
 forfaller i «måned så langt» på Status, med overlappen i Oppsett på
-telefon (`27b3802`), og til sist Regnskap, Budsjett og Resultat med samme
-oppsett, og Oppdater og Oppsett på høyre tommelknapp (`9dbb2d5`).
+telefon (`27b3802`), Regnskap, Budsjett og Resultat med samme oppsett, og
+Oppdater og Oppsett på høyre tommelknapp (`9dbb2d5`), og til sist kjøpene
+bak en post i en dialog, med én spalte i alle tre (`be1e0ca`, `9339f30`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -506,7 +507,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 70 commits, `0e0050a`–`9dbb2d5`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 71 commits, `0e0050a`–`9339f30`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4109,7 +4110,8 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 70 commits fra `0e0050a` til `9dbb2d5`.
+verdier. Bygget i 71 commits fra `0e0050a` til `9339f30` (dialogen med
+kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
 
@@ -4479,7 +4481,8 @@ til Oppsett med rød prikk på fanen, og Coop-meldingen bort.
   posten til høyre, med kategori, Stryk og varelinjene som kan fordeles.
   Telefonen har kortene som før.
 - **Måned i to spalter fra 1100 px:** tabellen til venstre, kjøpene bak
-  den valgte posten til høyre.
+  den valgte posten til høyre. Fra 8. november én spalte, med kjøpene i en
+  dialog (se under).
 - **Toppen står fast** (`9e211c8`, Magne ba om det): «Økonomi», fanene og
   Oppdater er `position:sticky` med sidas bakgrunn, og kortene glir inn
   under. `scroll-padding-top` gjør at felt som får fokus, havner under
@@ -4525,8 +4528,7 @@ ligge under høyre tommelknapp»).
 - **Regnskap** (`#ok-vis-regnskap`): det som er brukt, uten budsjett, med
   det som forfaller – sumboksene Regnskap hadde fra `93ef3ec`. Diagrammet
   uten budsjettstrek og uten rødt; «På tvers» bare brukt. Kjøpene bak
-  posten som før (spalten til høyre på PC, under posten på telefon), uten
-  budsjettlinja.
+  posten uten budsjettlinja.
 - **Budsjett:** lista for perioden, budsjett per måned gjennom året som
   diagram, og «På tvers» bare budsjett. **Rediger** (bare for én måned)
   åpner månedens skjema – det samme som før – og Lagre eller Avbryt går
@@ -4542,6 +4544,16 @@ ligge under høyre tommelknapp»).
   kalenderen, Oppsett ved siden av (ikonet `system`). Holde inne åpner
   innstillingene som før. Oppsett har fått overskriften «Oppsett», siden
   ingen fane er valgt der.
+- **Kjøpene bak en post i en dialog** (`be1e0ca`, `9339f30`; Magne:
+  «Kjøpene bak tror jeg får legge seg som en popup heller … jeg ønsker at
+  regnskap er likt bygget opp som budsjettet»). Regnskap og Resultat er
+  én spalte som Budsjett – spalten til høyre på PC og kjøpene under posten
+  på telefon er borte. «Vis kjøpene ›» åpner dialogen `#ok-kb-bak`
+  (`okVisKjopene`), bygget som kvitteringsdialogen: posten, perioden,
+  totalen, budsjettet (bare fra Resultat), det som forfaller og kjøpene.
+  En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
+  først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
+  uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
 - **Diagrammet** er trukket ut i `okStolpeSvg`, så de tre tegner likt.
   Status-lenken heter «Hele måneden i Resultat ›».
 - **Ikke gjort / ikke testet:** Oppdater viser ikke lenger «Oppdaterer …»
