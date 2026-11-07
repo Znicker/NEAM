@@ -4546,6 +4546,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     var ks = [k].concat(okBuLinjer(k));
     var ff = okMnd.forfall.filter(function(f){ return ms.indexOf(f.mnd) !== -1 && ks.indexOf(f.kategori) !== -1; }).reduce(function(s, f){ return s + f.belop; }, 0);
     var periode = ms.length === 1 ? okMndNavn.format(new Date(ms[0] + '-01T12:00:00')) : ms.length + ' måneder';
+    periode = periode.charAt(0).toUpperCase() + periode.slice(1);
     document.getElementById('ok-kb-tittel').textContent = k.split(' · ').join(' › ');
     document.getElementById('ok-kb-meta').textContent = periode + '. ' + (utenBudsjett ? '' : 'Budsjett ' + okBuKr(budsjett) + ' kr. ') + (ff ? 'Herav forfaller ' + okBuKr(ff) + ' kr. ' : '') + 'Kjøp med kvittering kan åpnes.';
     document.getElementById('ok-kb-total').textContent = okBuKr(faktisk + ff) + ' kr';
