@@ -497,8 +497,10 @@ posten (`ce1aa39`) og i de store summene og diagrammet (`93ef3ec`), og
 bufferen regningskontoen trenger, i Oppsett (`1c8754a`), det som
 forfaller i «måned så langt» på Status, med overlappen i Oppsett på
 telefon (`27b3802`), Regnskap, Budsjett og Resultat med samme oppsett, og
-Oppdater og Oppsett på høyre tommelknapp (`9dbb2d5`), og til sist kjøpene
-bak en post i en dialog, med én spalte i alle tre (`be1e0ca`, `9339f30`).
+Oppdater og Oppsett på høyre tommelknapp (`9dbb2d5`), kjøpene bak en post
+i en dialog, med én spalte i alle tre (`be1e0ca`, `9339f30`), og til sist
+filene lagt ved postene i husets filviser i stedet for en ny fane
+(`106893c`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -507,7 +509,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 71 commits, `0e0050a`–`9339f30`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 72 commits, `0e0050a`–`106893c`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4110,7 +4112,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 71 commits fra `0e0050a` til `9339f30` (dialogen med
+verdier. Bygget i 72 commits fra `0e0050a` til `106893c` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4554,6 +4556,18 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Filene i husets filviser** (`106893c`; Magne: «går det an å åpne filer i
+  en popup, så tungvindt med egen fane»). «Åpne PDF-en ›» og «Åpne bildet ›»
+  overalt på sida (kjøpene bak, kvitteringen, fakturaene, innboksen) åpner
+  `felles-filviser` – den samme som dashbordet og kalenderen – med Last ned
+  og Lukk, i stedet for en ny fane. `okVisFil` henter fila
+  (`kvittering-fil`) som blob og gir den til `aapneViser`; et svar med
+  `{ feil }` vises i viseren. Økonomi definerer `$` (som dashbordet), fordi
+  filviseren slår opp med den. `#filviser{ z-index:130 }` i sida, så fila
+  legger seg over dialogene (120); Escape lukker fila først. Filviseren selv
+  er ikke endret (fortsatt `?v=2`). Ikke prøvd på iPhone. Pinkode-øktas
+  `?v=`-bumper på felles-neam og felles-skriv lå i `okonomi.html` samtidig og
+  ble holdt utenfor commiten.
 - **Diagrammet** er trukket ut i `okStolpeSvg`, så de tre tegner likt.
   Status-lenken heter «Hele måneden i Resultat ›».
 - **Ikke gjort / ikke testet:** Oppdater viser ikke lenger «Oppdaterer …»

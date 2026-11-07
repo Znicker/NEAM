@@ -393,7 +393,9 @@ Fire variabler settes fra JavaScript og hører ikke hjemme i noen stilfil:
 ### `felles-filviser.css` + `felles-filviser.js`
 
 *Tredje flytting i 7.3, gjennomført 27. august 2026. Gjelder dashboard og
-kalender – de to sidene som henter vedlegg fra Graph.*
+kalender – de to sidene som henter vedlegg fra Graph. Fra 8. november 2026
+også Økonomi: filene lagt ved postene åpnes her, ikke i en ny fane, og
+viseren ligger over sidas dialoger (`#filviser{ z-index:130 }`).*
 
 Første JS-flytting, og den første som er en **sammenslåing og ikke bare en
 flytting**. På CSS-siden var reglene så godt som like; på JS-siden var bare
