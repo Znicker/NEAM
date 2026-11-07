@@ -423,8 +423,11 @@ export async function onRequestPost({ request, env }){
     const tast = String(inn.tast || '');
     if(!/^[0-9a-f-]{36}$/i.test(id))      return svar({ ok:false, feil:'Ugyldig enhet' });
     if(!/^KEY_[A-Z0-9_]{1,40}$/.test(tast)) return svar({ ok:false, feil:'Ugyldig tast' });
+    /* Kroppen er { value } rett, ikke { variable:{ value } } som i
+       HomeyScript - den formen svarte 200 uten aa endre noe
+       (7. november). */
     const r = await motHomey(env, epost, '/api/manager/logic/variable/' + FJERNKONTROLL_VARIABEL,
-                             { method:'PUT', body:{ variable:{ value: id + '|' + tast + '|' + Date.now() } } });
+                             { method:'PUT', body:{ value: id + '|' + tast + '|' + Date.now() } });
     if(r.feil) return svar({ ok:false, feil:r.feil, maaGodkjenne: !!r.maaGodkjenne });
     return svar({ ok:true });
   }
