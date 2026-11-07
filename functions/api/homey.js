@@ -399,27 +399,32 @@ export async function onRequestPost({ request, env }){
      TV-ene fra Homeys egen SmartThings-kobling kan bare av/paa, volum
      og kanal. Appen Samsung SmartTV (com.samsung.smart, installert
      7. november 2026) gir i tillegg kortet «Send key» med 244 taster.
-     Det er et flytkort, ikke en kapabilitet, saa det kjoeres her.
+     Det er et flytkort, ikke en kapabilitet.
 
-     BARE det ene kortet, og bare taster som ser ut som taster - dette
-     er ikke en aapen doer til alle flytkort i huset. Tasten sendes som
-     { id }, slik appens egen liste gir den (proevd med HomeyScript
-     7. november: KEY_VOLUP paa Stue TV og Kjellerstue TV). */
+     NEAM KAN IKKE KJOERE KORTET SELV: det krever tillatelsen homey.flow,
+     som en Web API-app ikke kan faa (Homey svarte 403 «Missing Scopes»
+     7. november, ogsaa med homey.flow.start). Veien gaar derfor om
+     Homey selv:
+       1. Her skrives Logic-variabelen «Neam fjernkontroll» som
+          "enhets-id|KEY_X|tidspunkt" (krever homey.logic). Tidspunktet
+          gjoer samme tast to ganger til en endring.
+       2. Flyten «Neam fjernkontroll» i Homey reagerer paa endringen og
+          kjoerer HomeyScript-skriptet «neam-tast» med verdien.
+       3. Skriptet sjekker at enheten er en TV fra Samsung SmartTV og
+          sender tasten med «Send key».
+     Endres variabelen, flyten eller skriptet i Homey, slutter dette aa
+     virke uten at noe her merker det: svaret er ok saa snart variabelen
+     er skrevet.
+
+     Bare taster som ser ut som taster. Skriptet sjekker det samme. */
+  const FJERNKONTROLL_VARIABEL = '3382ebd4-cc78-4b1a-93ca-6bf6f491d4fb';
   if(hva === 'tast'){
     const id   = String(inn.enhet || '');
     const tast = String(inn.tast || '');
     if(!/^[0-9a-f-]{36}$/i.test(id))      return svar({ ok:false, feil:'Ugyldig enhet' });
     if(!/^KEY_[A-Z0-9_]{1,40}$/.test(tast)) return svar({ ok:false, feil:'Ugyldig tast' });
-    const uri = 'homey:device:' + id;
-    const kropp = { args: { key: { id: tast, name: tast } } };
-    /* Nyere Homey bruker hele kort-id-en (uri + ':send_key'), eldre
-       bare 'send_key'. Den andre proeves bare om den foerste ikke finnes. */
-    let r = await motHomey(env, epost, '/api/manager/flow/flowcardaction/' + encodeURIComponent(uri)
-                         + '/' + encodeURIComponent(uri + ':send_key') + '/run', { method:'POST', body:kropp });
-    if(r.feil && / 404/.test(r.feil)){
-      r = await motHomey(env, epost, '/api/manager/flow/flowcardaction/' + encodeURIComponent(uri)
-                       + '/send_key/run', { method:'POST', body:kropp });
-    }
+    const r = await motHomey(env, epost, '/api/manager/logic/variable/' + FJERNKONTROLL_VARIABEL,
+                             { method:'PUT', body:{ variable:{ value: id + '|' + tast + '|' + Date.now() } } });
     if(r.feil) return svar({ ok:false, feil:r.feil, maaGodkjenne: !!r.maaGodkjenne });
     return svar({ ok:true });
   }
