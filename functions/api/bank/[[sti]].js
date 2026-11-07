@@ -44,7 +44,7 @@
      GET /api/bank?hva=formue / POST {hva:'formue', verdier, gjeld, maal} - det banken ikke gir
      POST /api/bank {hva:'forslag', forslag:[{id, kategori, sikker}]}    - Neams kategoriforslag
      POST /api/bank {hva:'kontonavn', uid, navn}                         - eget navn paa en konto (tomt fjerner)
-     GET /api/bank?hva=hent             - vekker hentingen; ogsaa kitchen@, svarer ingenting om innholdet
+     GET /api/bank?hva=hent             - vekker hentingen; ogsaa felles@, svarer ingenting om innholdet
      GET /api/bank?hvem=1              - diagnose: hvilke identitetskilder finnes
      POST /api/bank {hva:'roller'}     - setter rollen paa kontoer
      GET /api/bank/start               - sender deg til DNB for samtykke (BankID)
@@ -114,11 +114,11 @@ const APP_ID = '429ce2c9-55e4-4183-a695-d9df8763a260';   // ikke hemmelig - staa
 const BANK = { name:'DNB', country:'NO' };
 const TILBAKE = 'https://neam.no/api/bank/tilbake';
 /* sys@, Magne og Nina - Neam skal kunne bruke økonomien fra alle sidene
-   for dem (Magne, 6. november 2026). Aldri kitchen@ eller barna. */
+   for dem (Magne, 6. november 2026). Aldri felles@ eller barna. */
 const TILGANG = ['sys@neam.no', 'magne@neam.no', 'nina@neam.no'];
 /* Kan vekke hentingen (?hva=hent), men faar ikke se noe. Se der. */
-/* felles@ er kitchen@ med nytt navn (8. november 2026); begge til kitchen@ er borte. */
-const HENT_TILGANG = TILGANG.concat(['kitchen@neam.no', 'felles@neam.no']);
+/* Fellesenhetene - felles@ het kitchen@ til 8. november 2026. */
+const HENT_TILGANG = TILGANG.concat(['felles@neam.no']);
 const SIST_HENTET_NOKKEL = 'auth:bank:sist-hentet';
 const TRUMF_FEIL_NOKKEL = 'auth:bank:trumf-feil';
 
@@ -2220,7 +2220,7 @@ export async function onRequestGet({ request, env }){
   /* «Hent naa» - vekkeren. Kjoekkendashbordet kaller den hver sjette time
      fordi skjermen staar paa hele dagen (Magne, 29. oktober). Den henter
      det innboksen henter, og svarer INGENTING om innholdet: ingen poster,
-     ingen saldo, ingen antall. Derfor kan kitchen@ faa bruke den uten aa
+     ingen saldo, ingen antall. Derfor kan felles@ faa bruke den uten aa
      faa se oekonomien. Bankens grense holdes av bufferen paa seks timer. */
   if(url.searchParams.get('hva') === 'hent'){
     const id = await verifisertEpost(request, env);

@@ -1658,11 +1658,11 @@ input,select,textarea{font-size:16px}
 <script src="/felles-hus.js?v=28"></script>
 <script src="/felles-data.js?v=5"></script>
 <script src="/felles-lesalt.js?v=16"></script>
-<script src="/felles-skriv.js?v=14"></script>
+<script src="/felles-skriv.js?v=15"></script>
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-filviser.js?v=2"></script>
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=85"></script>
+<script src="/felles-neam.js?v=86"></script>
 <script>
 /* ============================================================
    Konfigurasjon — Azure app-registrering
@@ -1703,7 +1703,7 @@ const HUSSTAND = [
   { epost:'emma@neam.no',    ini:'E' },
   { epost:'andrea@neam.no',  ini:'A' },
   { epost:'magne@neam.no',   ini:'M' },
-  { epost:'kitchen@neam.no', ini:'K' },
+  { epost:'felles@neam.no',  ini:'F' },
   { epost:'sys@neam.no',     ini:'S' }
 ];
 
@@ -1799,7 +1799,27 @@ async function hentTildeling(){
       d = (typeof d.value === 'string') ? JSON.parse(d.value) : d.value;
     }
     if(d && typeof d === 'object') tildeling = d;
+    tildelingFraKitchen();
   }catch(e){ console.warn('Kunne ikke hente tilgang:', e.message); }
+}
+/* Fellesenhetenes konto het kitchen@ til 8. november 2026. Matrisen i KV
+   sto paa det gamle navnet; den flyttes til felles@ foerste gang en side
+   leser den, og lagres. Kan fjernes naar ingen kalender har kitchen@ igjen. */
+function tildelingFraKitchen(){
+  const gml = 'kitchen@neam.no', ny = 'felles@neam.no';
+  let endret = false;
+  Object.keys(tildeling).forEach(function(n){
+    const t = tildeling[n];
+    if(!t || typeof t !== 'object') return;
+    ['tilgang', 'vis'].forEach(function(felt){
+      const l = t[felt];
+      if(!Array.isArray(l) || l.indexOf(gml) === -1) return;
+      t[felt] = l.filter(function(e){ return e !== gml; });
+      if(t[felt].indexOf(ny) === -1) t[felt].push(ny);
+      endret = true;
+    });
+  });
+  if(endret) lagreTildeling();
 }
 async function lagreTildeling(){
   try{
@@ -1820,22 +1840,17 @@ function tomTildeling(){
   for(const n in tildeling) if(Object.prototype.hasOwnProperty.call(tildeling, n)) return false;
   return true;
 }
-/* felles@ er kitchen@ med nytt navn (8. november 2026). Tildelingen i KV
-   staar fortsatt paa kitchen@, saa felles@ leser den til den er flyttet. */
-function tildelingEpost(){
-  return minEpost === 'felles@neam.no' ? 'kitchen@neam.no' : minEpost;
-}
 function harTilgang(navn){
   if(!minEpost || tomTildeling()) return true;
   const t = tildeling[navn];
-  return !!(t && t.tilgang && t.tilgang.indexOf(tildelingEpost()) !== -1);
+  return !!(t && t.tilgang && t.tilgang.indexOf(minEpost) !== -1);
 }
 function visVedStart(navn){
   if(!harTilgang(navn)) return false;
   if(!minEpost || tomTildeling()) return true;
   const t = tildeling[navn];
   if(!t || !t.vis) return true;
-  return t.vis.indexOf(tildelingEpost()) !== -1;
+  return t.vis.indexOf(minEpost) !== -1;
 }
 
 async function lagreFarger(){

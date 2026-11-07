@@ -5,7 +5,7 @@
    Gir endepunktet:      /api/pin
 
    HVORFOR DEN FINNES
-   Kjøkkenskjermen er alltid logget inn som kitchen@. Den som står
+   Kjøkkenskjermen er alltid logget inn som felles@. Den som står
    foran den, taster sin egen sekssifrede kode, og skjermen vet da
    hvem det er (Magne, 8. november 2026: «alle har sin egen ...
    pinkode. taster man sin kode åpnes sin bruker»). Kodene er ikke

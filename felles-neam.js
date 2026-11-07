@@ -1732,7 +1732,7 @@ function neamSpoer(tekst, ja){
 /* ============================================================
    Pinkodene (8. november 2026)
    ------------------------------------------------------------
-   Kjoekkenskjermen er alltid logget inn som kitchen@; den som staar
+   Kjoekkenskjermen er alltid logget inn som felles@; den som staar
    der, taster sin sekssifrede kode. Kodene ligger hashet paa
    serveren (functions/api/pin.js), utenfor fh:. Her er tastaturet
    og listen der sys@ legger dem inn. Tastaturet brukes ogsaa paa
@@ -1876,7 +1876,7 @@ async function neamPinkoder(){
 }
 
 /* ---- Kjoekkenskjermen: koden ved foerste trykk etter hvilen ----
-   Bare naar sida er logget inn som kitchen@ (Magne, 8. november 2026:
+   Bare naar sida er logget inn som felles@ (Magne, 8. november 2026:
    «Dette gjelder foreløpig bare kjøkkenbrukeren»). Foerste trykk etter
    tre minutter uten trykk - eller foerste trykk etter at sida lastet -
    svelges og gir tastaturet. Riktig kode gir «Hei Magne!», som trykkes
@@ -1885,10 +1885,9 @@ async function neamPinkoder(){
 
    Hvem som staar der, leses med neamHvemStaar(). felles-skriv.js
    aapner skolearbeidet for den personen (skrivSkoleTillatt). */
-/* Fellesenhetene. kitchen@ doepes om til felles@ (Magne, 8. november
-   2026: «dette oppsettet vil jo passe på alle fellesenhetene våre»);
-   begge staar her til kitchen@ er borte. */
-const NEAM_FELLES = ['kitchen@neam.no', 'felles@neam.no'];
+/* Fellesenhetene. Kontoen het kitchen@ til 8. november 2026 (Magne:
+   «dette oppsettet vil jo passe på alle fellesenhetene våre»). */
+const NEAM_FELLES = ['felles@neam.no'];
 const NEAM_PIN_HVILE_MS = 3 * 60 * 1000;
 let neamPinPerson = null;
 let neamPinSistTrykk = 0;
