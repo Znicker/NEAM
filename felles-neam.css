@@ -1665,7 +1665,15 @@
   display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0 4px;
   color:var(--ink-soft); font-size:var(--t-meta); font-weight:700;
 }
-.hsk-gruppe-topp .dlg-knapp{ width:auto; padding:6px 14px; font-size:var(--t-meta); }
+.hsk-gruppe-topp .dlg-knapp{ width:auto; padding:6px 14px; font-size:var(--t-meta); flex:none; }
+/* Navnet paa gruppa skrives rett i rammen. 16 px, ellers zoomer iPhone
+   inn naar feltet faar fokus. */
+.hsk-gruppe-navn{
+  flex:1 1 auto; min-width:0; box-sizing:border-box; padding:7px 10px;
+  border:1.5px solid var(--boks-kant); border-radius:10px; background:var(--bg-solid);
+  color:var(--ink); font-family:'Archivo',sans-serif; font-size:16px; font-weight:600;
+}
+.hsk-gruppe-navn::placeholder{ color:var(--ink-soft); font-weight:400; }
 .hsk-gruppe .hsk-enhet:first-of-type{ border-top:none; }
 /* Til vanlig: enhetene i en aapnet gruppe staar innrykket under raden. */
 .hsk-gruppe-innhold{ margin:0 0 6px 14px; padding-left:12px; border-left:2px solid var(--boks-kant); }

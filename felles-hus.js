@@ -1517,8 +1517,8 @@ function hskBygg(){
     const gLos = t.closest('button[data-gruppe-los]');
     if(gLos){
       const romN = gLos.dataset.gruppeRom;
-      hskOppsett.grupper[romN] = (hskOppsett.grupper[romN] || []).filter(function(g){
-        return g.indexOf(gLos.dataset.gruppeLos) === -1;
+      hskOppsett.grupper[romN] = hskLagredeGrupper(romN).filter(function(g){
+        return g.ider.indexOf(gLos.dataset.gruppeLos) === -1;
       });
       hskLagreOppsett();
       hskTegn();
@@ -1580,6 +1580,17 @@ function hskBygg(){
       hskLagreOppsett();
       const rad = el.closest('.hsk-enhet');
       if(rad) rad.classList.toggle('hsk-av', !el.checked);
+      return;
+    }
+    /* Navnet paa en gruppe: lagres naar feltet forlates eller Enter trykkes. */
+    if(el.dataset && el.dataset.gruppeNavn){
+      const romN = el.dataset.gruppeRom;
+      const grupper = hskLagredeGrupper(romN);
+      grupper.forEach(function(g){
+        if(g.ider.indexOf(el.dataset.gruppeNavn) !== -1) g.navn = el.value.trim().slice(0, 40);
+      });
+      hskOppsett.grupper[romN] = grupper;
+      hskLagreOppsett();
       return;
     }
     if(el.dataset && el.dataset.visRom){
@@ -1781,22 +1792,25 @@ function hskDraSlipp(){
     if(D.maal) D.maal.classList.remove('hsk-maal');
     let rekke = Array.prototype.map.call(
       D.rom.querySelectorAll('.hsk-enhet[data-enhet]'), function(x){ return x.dataset.enhet; });
-    let grupper = (hskOppsett.grupper[romN] || []).map(function(g){ return g.slice(); });
+    let grupper = hskLagredeGrupper(romN);
+    const utAv = function(){
+      grupper.forEach(function(g){ g.ider = g.ider.filter(function(x){ return x !== id; }); });
+    };
     if(maal){
       /* Oppaa en annen: inn i dens gruppe, eller en ny gruppe av de to,
          og rett etter gruppas siste i rekkefoelgen. */
-      grupper = grupper.map(function(g){ return g.filter(function(x){ return x !== id; }); });
-      const g = grupper.filter(function(g){ return g.indexOf(maal) !== -1; })[0];
-      if(g) g.push(id); else grupper.push([maal, id]);
+      utAv();
+      const g = grupper.filter(function(g){ return g.ider.indexOf(maal) !== -1; })[0];
+      if(g) g.ider.push(id); else grupper.push({ navn: '', ider: [maal, id] });
       rekke = rekke.filter(function(x){ return x !== id; });
-      const medl = (g || [maal]);
+      const medl = g ? g.ider : [maal];
       const siste = Math.max.apply(null, medl.map(function(x){ return rekke.indexOf(x); }));
       rekke.splice(siste + 1, 0, id);
     }else if(!D.el.closest('.hsk-gruppe')){
       /* Sluppet utenfor gruppas ramme: ut av gruppa. */
-      grupper = grupper.map(function(g){ return g.filter(function(x){ return x !== id; }); });
+      utAv();
     }
-    hskOppsett.grupper[romN] = grupper.filter(function(g){ return g.length >= 2; });
+    hskOppsett.grupper[romN] = grupper.filter(function(g){ return g.ider.length >= 2; });
     hskOppsett.rekke[romN] = rekke;
     hskLagreOppsett();
     hskTegn();
@@ -2179,25 +2193,36 @@ function hskKanGruppe(id){
   return !!d && hskKap(id, d).indexOf('onoff') !== -1;
 }
 
+/* Rommets lagrede grupper som { navn, ider }, nye kopier. De foerste
+   (7. november) ble lagret som bare en liste med id-er, uten navn. */
+function hskLagredeGrupper(romN){
+  return (hskOppsett.grupper[romN] || []).map(function(g){
+    return Array.isArray(g) ? { navn: '', ider: g.slice() }
+                            : { navn: String(g.navn || ''), ider: (g.ider || []).slice() };
+  });
+}
+
 /* Rommets grupper med bare enheter som finnes og kan grupperes. */
 function hskGrupper(r){
   const finnes = {};
   r.enheter.forEach(function(e){ finnes[e.id] = 1; });
-  return (hskOppsett.grupper[r.nokkel] || []).map(function(g){
-    return g.filter(function(id){ return finnes[id] && hskKanGruppe(id); });
-  }).filter(function(g){ return g.length >= 2; });
+  return hskLagredeGrupper(r.nokkel).map(function(g){
+    g.ider = g.ider.filter(function(id){ return finnes[id] && hskKanGruppe(id); });
+    return g;
+  }).filter(function(g){ return g.ider.length >= 2; });
 }
 
 function hskRaderHtml(r, rader){
+  const grupper = hskGrupper(r);
   const iGruppe = {};
-  hskGrupper(r).forEach(function(g, i){ g.forEach(function(id){ iGruppe[id] = i; }); });
+  grupper.forEach(function(g, i){ g.ider.forEach(function(id){ iGruppe[id] = i; }); });
   const vist = {};
   return rader.map(function(e){
     const gi = iGruppe[e.id];
     if(gi === undefined) return hskEnhetHtml(e);
     if(vist[gi]) return '';
     vist[gi] = 1;
-    return hskGruppeHtml(r, rader.filter(function(x){ return iGruppe[x.id] === gi; }));
+    return hskGruppeHtml(r, rader.filter(function(x){ return iGruppe[x.id] === gi; }), grupper[gi].navn);
   }).join('');
 }
 
@@ -2205,10 +2230,15 @@ function hskNavneliste(navn){
   return navn.length < 2 ? navn.join('') : navn.slice(0, -1).join(', ') + ' og ' + navn[navn.length - 1];
 }
 
-function hskGruppeHtml(r, medl){
+/* Navnet gis i rammen under «Rediger» (Magne, 7. november 2026: «kunne
+   navngi gruppen»). Uten navn staar enhetsnavnene paa raden. */
+function hskGruppeHtml(r, medl, gNavn){
   if(hskRediger){
     return '<div class="hsk-gruppe">'
-         +   '<div class="hsk-gruppe-topp"><span>Gruppe</span>'
+         +   '<div class="hsk-gruppe-topp">'
+         +     '<input type="text" class="hsk-gruppe-navn" maxlength="40" placeholder="Navn på gruppa"'
+         +     ' aria-label="Navn på gruppa" value="' + hskVask(gNavn) + '"'
+         +     ' data-gruppe-navn="' + hskVask(medl[0].id) + '" data-gruppe-rom="' + hskVask(r.nokkel) + '">'
          +     '<button type="button" class="dlg-knapp nei hsk-knapp" data-gruppe-los="' + hskVask(medl[0].id) + '"'
          +     ' data-gruppe-rom="' + hskVask(r.nokkel) + '">Løs opp</button></div>'
          +   medl.map(hskEnhetHtml).join('')
@@ -2219,7 +2249,7 @@ function hskGruppeHtml(r, medl){
   const paa = medl.filter(function(e){ return !!(e.d.capabilitiesObj.onoff || {}).value; }).length;
   const art = HSK_ART[medl[0].art] || HSK_ART.annet;
   const aapen = !!hskApneGrupper[medl[0].id];
-  const navn = hskNavneliste(medl.map(function(e){ return e.kort; }));
+  const navn = gNavn || hskNavneliste(medl.map(function(e){ return e.kort; }));
   return '<div class="hsk-enhet hsk-med-bryter hsk-gruppe-rad">'
        +   '<span class="hsk-ikon" title="' + art.navn + '">' + hskSymbol(medl[0].art) + '</span>'
        +   '<div class="hsk-kropp">'
