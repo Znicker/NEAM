@@ -1650,6 +1650,26 @@
   box-shadow:0 10px 26px rgba(44,62,80,.28); box-sizing:border-box;
 }
 .hsk-plass.hsk-plass-enhet{ margin:0; border-radius:10px; }
+/* Grupper innad i rommet - se «Grupper innad i rommet» i felles-hus.js.
+   Raden en enhet holdes oppaa, lyses opp i «valgt»-blaatt: slippes den
+   der, blir de en gruppe. */
+.hsk-enhet.hsk-maal{
+  background:var(--aksent-lys); box-shadow:0 0 0 2px var(--aksent); border-radius:10px;
+}
+/* Under «Rediger»: gruppa er en mild ramme rundt enhetene, med «Løs opp». */
+.hsk-gruppe{
+  margin:6px 0; padding:2px 10px 4px; border:1.5px solid var(--boks-kant); border-radius:12px;
+  background:var(--boks-mild);
+}
+.hsk-gruppe-topp{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0 4px;
+  color:var(--ink-soft); font-size:var(--t-meta); font-weight:700;
+}
+.hsk-gruppe-topp .dlg-knapp{ width:auto; padding:6px 14px; font-size:var(--t-meta); }
+.hsk-gruppe .hsk-enhet:first-of-type{ border-top:none; }
+/* Til vanlig: enhetene i en aapnet gruppe staar innrykket under raden. */
+.hsk-gruppe-innhold{ margin:0 0 6px 14px; padding-left:12px; border-left:2px solid var(--boks-kant); }
+.hsk-gruppe-innhold > .hsk-enhet:first-child{ border-top:none; }
 .hsk-velg input{ width:20px; height:20px; margin:0; accent-color:var(--aksent); }
 .hsk-velg.hsk-av .hsk-ikon, .hsk-velg.hsk-av .hsk-navn{ opacity:.4; }
 /* Baandet er grepet. touch-action:none, ellers ruller iPaden i stedet

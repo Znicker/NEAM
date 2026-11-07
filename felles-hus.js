@@ -1216,14 +1216,17 @@ function hskRomNivaa(r){
              ha hvert sitt. sist er det som ble lagret sist, og gir
              rekkefoelgen naar et antall ikke har noe eget ennaa.
    skjul:    { romnoekkel: true } - rom som ikke vises utenfor «Rediger»
-             (Magne, 2. november 2026). */
+             (Magne, 2. november 2026).
+   grupper:  { romnoekkel: [[enhets-id, ...], ...] } - enheter dratt oppaa
+             hverandre i samme rom, med én felles bryter (7. november
+             2026). En gruppe har minst to. */
 const HSK_LAGER = 'neam-rommene:v1';
 function hskLesOppsett(){
   try{
     const d = JSON.parse(localStorage.getItem(HSK_LAGER) || '{}') || {};
     return { vis: d.vis || {}, kolonner: d.kolonner || {}, sist: d.sist || 0, hvit: d.hvit || {},
-             rekke: d.rekke || {}, skjul: d.skjul || {} };
-  }catch(e){ return { vis:{}, kolonner:{}, sist:0, hvit:{}, rekke:{}, skjul:{} }; }
+             rekke: d.rekke || {}, skjul: d.skjul || {}, grupper: d.grupper || {} };
+  }catch(e){ return { vis:{}, kolonner:{}, sist:0, hvit:{}, rekke:{}, skjul:{}, grupper:{} }; }
 }
 function hskLagreOppsett(){
   try{ localStorage.setItem(HSK_LAGER, JSON.stringify(hskOppsett)); }catch(e){}
@@ -1496,6 +1499,32 @@ function hskBygg(){
     /* Fjernkontrollen: aapne og lukke, talltastene og fargetastene, og
        tastene selv. Av/paa i fjernkontrollen er en vanlig data-kap-knapp
        og gaar videre ned. */
+    /* Gruppene: felles bryter, vise enhetene, og løse opp under «Rediger».
+       Felles bryter: er noen paa, slaas alle av - ellers alle paa. */
+    const gAv = t.closest('button[data-gruppe-av]');
+    if(gAv){
+      const ids = gAv.dataset.gruppeAv.split(',');
+      const noenPaa = ids.some(function(id){ return enheter[id] && (enheter[id].capabilitiesObj.onoff || {}).value; });
+      ids.forEach(function(id){ if(hskKanGruppe(id)) hskSett(id, [['onoff', !noenPaa]]); });
+      return;
+    }
+    const gVis = t.closest('button[data-gruppe-vis]');
+    if(gVis){
+      hskApneGrupper[gVis.dataset.gruppeVis] = !hskApneGrupper[gVis.dataset.gruppeVis];
+      hskTegn();
+      return;
+    }
+    const gLos = t.closest('button[data-gruppe-los]');
+    if(gLos){
+      const romN = gLos.dataset.gruppeRom;
+      hskOppsett.grupper[romN] = (hskOppsett.grupper[romN] || []).filter(function(g){
+        return g.indexOf(gLos.dataset.gruppeLos) === -1;
+      });
+      hskLagreOppsett();
+      hskTegn();
+      return;
+    }
+
     if(t.closest('button[data-fk-lukk]')){ hskFkLukk(); return; }
     const fk = t.closest('button[data-fk]');
     if(fk){
@@ -1642,7 +1671,9 @@ function hskDraStart(grep, ev, slag){
   const plass = document.createElement('div');
   plass.className = 'hsk-plass' + (slag === 'enhet' ? ' hsk-plass-enhet' : '');
   plass.style.height = r.height + 'px';
-  const rom = slag === 'enhet' ? el.parentNode : null;
+  /* En enhet i en gruppe ligger inne i gruppas ramme - rommet er
+     seksjonen rundt, ikke forelderen. */
+  const rom = slag === 'enhet' ? el.closest('.hsk-rom') : null;
   el.parentNode.insertBefore(plass, el);
   el.classList.add('hsk-drar');
   el.style.width = r.width + 'px';
@@ -1668,16 +1699,36 @@ function hskDraPlasser(){
   D.el.style.top  = (D.y - D.dy - D.by) + 'px';
 
   /* En enhet: bare blant radene i sitt eget rom. Baandet staar foerst
-     og flyttes ikke - plassen havner alltid etter det. */
+     og flyttes ikke - plassen havner alltid etter det.
+
+     Holdes den midt oppaa en annen rad (den midterste halvdelen), blir
+     det en gruppe naar man slipper (Magne, 7. november 2026: «dra
+     enheter oppå hverandre»). Raden lyses opp, og plassen blir staaende.
+     Bare enheter med av/paa kan grupperes - det er bryteren som er felles. */
   if(D.slag === 'enhet'){
-    const rader = Array.prototype.filter.call(D.rom.children, function(c){
-      return c !== D.el && c !== D.plass && c.classList.contains('hsk-enhet');
+    let maal = null;
+    if(hskKanGruppe(D.el.dataset.enhet)){
+      Array.prototype.forEach.call(D.rom.querySelectorAll('.hsk-enhet[data-enhet]'), function(c){
+        if(maal || c === D.el || !hskKanGruppe(c.dataset.enhet)) return;
+        const r = c.getBoundingClientRect();
+        if(D.x >= r.left && D.x <= r.right && D.y > r.top + r.height / 4 && D.y < r.bottom - r.height / 4) maal = c;
+      });
+    }
+    if(D.maal && D.maal !== maal) D.maal.classList.remove('hsk-maal');
+    D.maal = maal;
+    if(maal){ maal.classList.add('hsk-maal'); return; }
+
+    /* Ellers flyttes plassen blant blokkene i rommet: enkeltrader og
+       hele grupper. */
+    const blokker = Array.prototype.filter.call(D.rom.children, function(c){
+      return c !== D.el && c !== D.plass
+          && (c.classList.contains('hsk-enhet') || c.classList.contains('hsk-gruppe'));
     });
-    const foran = rader.filter(function(c){
+    const foran = blokker.filter(function(c){
       const r = c.getBoundingClientRect();
       return r.top + r.height / 2 > D.y;
     })[0] || null;
-    if(D.plass.nextSibling !== foran) D.rom.insertBefore(D.plass, foran);
+    if(D.plass.parentNode !== D.rom || D.plass.nextSibling !== foran) D.rom.insertBefore(D.plass, foran);
     return;
   }
 
@@ -1724,9 +1775,31 @@ function hskDraSlipp(){
   D.el.style.width = D.el.style.left = D.el.style.top = '';
   hskRor = false;
   if(D.slag === 'enhet'){
-    hskOppsett.rekke[D.rom.dataset.rom] = Array.prototype.map.call(
+    const id = D.el.dataset.enhet;
+    const romN = D.rom.dataset.rom;
+    const maal = D.maal ? D.maal.dataset.enhet : '';
+    if(D.maal) D.maal.classList.remove('hsk-maal');
+    let rekke = Array.prototype.map.call(
       D.rom.querySelectorAll('.hsk-enhet[data-enhet]'), function(x){ return x.dataset.enhet; });
+    let grupper = (hskOppsett.grupper[romN] || []).map(function(g){ return g.slice(); });
+    if(maal){
+      /* Oppaa en annen: inn i dens gruppe, eller en ny gruppe av de to,
+         og rett etter gruppas siste i rekkefoelgen. */
+      grupper = grupper.map(function(g){ return g.filter(function(x){ return x !== id; }); });
+      const g = grupper.filter(function(g){ return g.indexOf(maal) !== -1; })[0];
+      if(g) g.push(id); else grupper.push([maal, id]);
+      rekke = rekke.filter(function(x){ return x !== id; });
+      const medl = (g || [maal]);
+      const siste = Math.max.apply(null, medl.map(function(x){ return rekke.indexOf(x); }));
+      rekke.splice(siste + 1, 0, id);
+    }else if(!D.el.closest('.hsk-gruppe')){
+      /* Sluppet utenfor gruppas ramme: ut av gruppa. */
+      grupper = grupper.map(function(g){ return g.filter(function(x){ return x !== id; }); });
+    }
+    hskOppsett.grupper[romN] = grupper.filter(function(g){ return g.length >= 2; });
+    hskOppsett.rekke[romN] = rekke;
     hskLagreOppsett();
+    hskTegn();
     return;
   }
   const kol = Array.prototype.slice.call(hskBak.querySelectorAll('.hsk-kolonne'));
@@ -2089,7 +2162,79 @@ function hskRomHtml(r){
   return '<section class="hsk-rom' + (nivaa && nivaa !== 'ok' ? ' hsk-' + nivaa : '')
        + (hskRediger && !romPaa ? ' hsk-rom-av' : '')
        + (rader.length ? '' : ' hsk-bare-baand') + '" data-rom="' + hskVask(r.nokkel) + '">'
-       + tittel + rader.map(hskEnhetHtml).join('') + '</section>';
+       + tittel + hskRaderHtml(r, rader) + '</section>';
+}
+
+/* ---------- Grupper innad i rommet ----------
+   Enheter dratt oppaa hverandre under «Rediger» (se hskDraPlasser) blir
+   én rad med én felles bryter. Gruppa staar der dens foerste enhet staar
+   i rekkefoelgen. «3 enheter» under raden viser hver enkelt, med sine
+   egne knapper. Under «Rediger» er gruppa en ramme rundt enhetene, med
+   «Løs opp»; en enhet dras ut ved aa slippe den utenfor rammen.
+   Lagres per skjerm i oppsettet (grupper). */
+let hskApneGrupper = {};   /* foerste enhets id -> gruppa er aapnet */
+
+function hskKanGruppe(id){
+  const d = enheter[id];
+  return !!d && hskKap(id, d).indexOf('onoff') !== -1;
+}
+
+/* Rommets grupper med bare enheter som finnes og kan grupperes. */
+function hskGrupper(r){
+  const finnes = {};
+  r.enheter.forEach(function(e){ finnes[e.id] = 1; });
+  return (hskOppsett.grupper[r.nokkel] || []).map(function(g){
+    return g.filter(function(id){ return finnes[id] && hskKanGruppe(id); });
+  }).filter(function(g){ return g.length >= 2; });
+}
+
+function hskRaderHtml(r, rader){
+  const iGruppe = {};
+  hskGrupper(r).forEach(function(g, i){ g.forEach(function(id){ iGruppe[id] = i; }); });
+  const vist = {};
+  return rader.map(function(e){
+    const gi = iGruppe[e.id];
+    if(gi === undefined) return hskEnhetHtml(e);
+    if(vist[gi]) return '';
+    vist[gi] = 1;
+    return hskGruppeHtml(r, rader.filter(function(x){ return iGruppe[x.id] === gi; }));
+  }).join('');
+}
+
+function hskNavneliste(navn){
+  return navn.length < 2 ? navn.join('') : navn.slice(0, -1).join(', ') + ' og ' + navn[navn.length - 1];
+}
+
+function hskGruppeHtml(r, medl){
+  if(hskRediger){
+    return '<div class="hsk-gruppe">'
+         +   '<div class="hsk-gruppe-topp"><span>Gruppe</span>'
+         +     '<button type="button" class="dlg-knapp nei hsk-knapp" data-gruppe-los="' + hskVask(medl[0].id) + '"'
+         +     ' data-gruppe-rom="' + hskVask(r.nokkel) + '">Løs opp</button></div>'
+         +   medl.map(hskEnhetHtml).join('')
+         + '</div>';
+  }
+  /* Er bare én av dem vist, er det ingen gruppe aa vise. */
+  if(medl.length < 2) return hskEnhetHtml(medl[0]);
+  const paa = medl.filter(function(e){ return !!(e.d.capabilitiesObj.onoff || {}).value; }).length;
+  const art = HSK_ART[medl[0].art] || HSK_ART.annet;
+  const aapen = !!hskApneGrupper[medl[0].id];
+  const navn = hskNavneliste(medl.map(function(e){ return e.kort; }));
+  return '<div class="hsk-enhet hsk-med-bryter hsk-gruppe-rad">'
+       +   '<span class="hsk-ikon" title="' + art.navn + '">' + hskSymbol(medl[0].art) + '</span>'
+       +   '<div class="hsk-kropp">'
+       +     '<div class="hsk-navn">' + hskVask(navn) + '</div>'
+       +     '<div class="hsk-tilstand">' + (paa === medl.length ? 'Alle på' : paa ? paa + ' av ' + medl.length + ' på' : 'Alle av') + '</div>'
+       +   '</div>'
+       +   '<div class="hsk-hoyre"><button type="button" role="switch" class="hsk-bryter"'
+       +     ' data-gruppe-av="' + hskVask(medl.map(function(e){ return e.id; }).join(',')) + '"'
+       +     ' aria-checked="' + (paa > 0) + '" aria-label="' + hskVask(navn) + '"><span></span></button></div>'
+       +   '<div class="hsk-under"><div class="hsk-styr">'
+       +     '<button type="button" class="dlg-knapp nei hsk-knapp hsk-gruppe-vis" data-gruppe-vis="' + hskVask(medl[0].id) + '"'
+       +     ' aria-expanded="' + aapen + '">' + (aapen ? 'Skjul enhetene' : medl.length + ' enheter') + '</button>'
+       +   '</div></div>'
+       + '</div>'
+       + (aapen ? '<div class="hsk-gruppe-innhold">' + medl.map(hskEnhetHtml).join('') + '</div>' : '');
 }
 
 const HSK_GREP = '<img src="/bilder/ikoner/flytt.png?v=2" alt="" width="277" height="426">';
@@ -2110,7 +2255,7 @@ function hskTegn(){
     return hskRediger ? l : l.filter(hskRomVises);
   });
   const ingen = !hskRediger && kolonner.every(function(l){ return !l.length; });
-  hskInnhold((hskRediger ? '<p class="hsk-hjelp">Huk av det som skal vises, både rom og enheter. Ta tak i et bånd for å flytte rommet, eller i grepet til høyre på en rad for å flytte enheten.</p>' : '')
+  hskInnhold((hskRediger ? '<p class="hsk-hjelp">Huk av det som skal vises, både rom og enheter. Ta tak i et bånd for å flytte rommet, eller i grepet til høyre på en rad for å flytte enheten. Slipp en enhet oppå en annen for å lage en gruppe med felles bryter.</p>' : '')
     + (hskFeil ? '<p class="hsk-feil">' + hskVask(hskFeil) + '</p>' : '')
     + (ingen ? '<p class="hsk-tom">Alle rommene er skjult. Trykk Rediger for å vise dem igjen.</p>' : '')
     + '<div class="hsk-romliste">'
