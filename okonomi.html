@@ -444,9 +444,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-ib-detalj, .ok-mnd-kjop{ display:none; }
 @media (min-width:1100px){
   .ok-ib{ max-width:none; }
-  .ok-ib-to{ display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:20px; align-items:start; }
   .ok-mnd-to{ display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:20px; align-items:start; }
-  .ok-ib-detalj, .ok-mnd-kjop{ display:flex; position:sticky; top:16px; max-height:calc(100vh - 32px); overflow-y:auto; }
+  .ok-mnd-kjop{ display:flex; position:sticky; top:16px; max-height:calc(100vh - 32px); overflow-y:auto; }
   .ok-ib-liste, .ok-mnd-venstre{ display:flex; flex-direction:column; gap:18px; min-width:0; }
 }
 .ok-ib-rad{ display:grid; grid-template-columns:64px minmax(0,1fr) auto; gap:14px; align-items:center; width:100%; text-align:left; font:inherit; color:var(--ink);
@@ -629,6 +628,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-mt-hode{ font-size:var(--t-etikett); font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); padding:0 0 8px; border-bottom:2px solid var(--ink); }
 .ok-mt-sum{ font-weight:700; border-bottom:0; }
 @media (max-width:560px){ .ok-mt-rad{ grid-template-columns:minmax(0,1fr) auto auto; } .ok-mt-rad > :nth-child(4){ display:none; } }
+/* Status: differansen er det som teller - paa telefon vises den i stedet for budsjettet (8. november 2026). */
+@media (max-width:560px){ .ok-mt-rad.ok-mt-diff > :nth-child(3){ display:none; } .ok-mt-rad.ok-mt-diff > :nth-child(4){ display:block; } }
 /* Rød prikk paa Oppsett naar en kilde ikke er oppdatert. */
 /* Periodevelgeren over Regnskap, Budsjett og Resultat - felles for de tre (8. november 2026). */
 .ok-periode{ display:flex; flex-direction:column; gap:10px; }
@@ -696,10 +697,11 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
     <div class="ok-topp-hoyre">
     <nav class="ok-faner" role="tablist" aria-label="Visning">
       <button type="button" class="ok-fane" role="tab" id="ok-fane-status" data-vis="status">Status</button>
-      <button type="button" class="ok-fane" role="tab" id="ok-fane-innboks" data-vis="innboks">Transaksjoner<span class="ok-fane-tall" id="ok-fane-tall"></span></button>
+      <button type="button" class="ok-fane" role="tab" id="ok-fane-maaned" data-vis="maaned">Resultat</button>
       <button type="button" class="ok-fane" role="tab" id="ok-fane-regnskap" data-vis="regnskap">Regnskap</button>
       <button type="button" class="ok-fane" role="tab" id="ok-fane-budsjett" data-vis="budsjett">Budsjett</button>
-      <button type="button" class="ok-fane" role="tab" id="ok-fane-maaned" data-vis="maaned">Resultat</button>
+      <!-- Transaksjoner og Resultat byttet plass 8. november 2026. -->
+      <button type="button" class="ok-fane" role="tab" id="ok-fane-innboks" data-vis="innboks">Transaksjoner<span class="ok-fane-tall" id="ok-fane-tall"></span></button>
     </nav>
     <!-- Oppsett og Oppdater ligger på høyre tommelknapp (8. november 2026). -->
     </div>
@@ -1480,7 +1482,11 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       return;
     }
     var tvil = synlige.filter(function(p){ return p.gruppe === 'tvil'; }), sikre = synlige.filter(function(p){ return p.gruppe !== 'tvil'; });
-    var pc = okPc.matches, rader = tvil.concat(sikre);
+    /* Én linje per post ogsaa paa PC - postraden har navn, kategori, beloep
+       og stryk (Magne, 8. november 2026: «dropp de to kolonnene og ha alt
+       på en transaksjon på en linje»). Til da sto den valgte posten i et
+       panel ved siden av (okPostRadPc og okTegnDetalj, ikke lenger i bruk). */
+    var pc = false, rader = tvil.concat(sikre);
     if(pc && !rader.some(function(p){ return p.id === okIbValgt; })) okIbValgt = rader[0].id;
     tvil.forEach(function(p){ tk.appendChild(pc ? okPostRadPc(p) : okPostRad(p)); });
     sikre.forEach(function(p){ sk.appendChild(pc ? okPostRadPc(p) : okPostRad(p)); });
@@ -3565,8 +3571,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       boks.innerHTML = '';
       okTegnMaal(); okTegnNokler(); okTegnKpi();
       /* Kortet på Status er bare oversikt (skissen, 6. november 2026): én
-         stolpe for måneden og postene som ligger mest foran skjema. Hele
-         tabellen står i Regnskap.
+         stolpe for måneden og de tre postene med minst igjen (differansen,
+         fra 8. november 2026). Hele tabellen står i Resultat.
          Maaneden vises ogsaa naar budsjettet ikke er fylt inn, eller bare
          delvis - det som mangler, staar tydelig (Magne, 6. november 2026:
          «så trenger jeg ikke fylle inn alt i budsjett før måned så langt
@@ -3622,11 +3628,18 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
       }
       var tab = okEl('div', 'ok-mt');
       if(bud){
-        tab.appendChild(okEl('div', 'ok-mt-rad ok-mt-hode', '<span>Mest foran skjema</span><span>Brukt</span><span>Budsjett</span><span>Foran</span>'));
-        foran.slice(0, 3).forEach(function(x){
-          tab.appendChild(okEl('div', 'ok-mt-rad', '<span>' + okVask(x.k.split(' · ').join(' › ')) + '</span><b>' + kr(x.pr) + '</b><span class="ok-meta">' + kr(x.pb) + '</span><span class="ok-avvik over">+' + kr(x.f) + '</span>'));
+        /* Differansen mot maanedens budsjett, ikke «foran skjema» (Magne, 8.
+           november 2026: «Misvisende … bør heller stå differanse»).
+           Overforbruk er roede minustall, underforbruk og lik bruk groenne.
+           De tre postene med minst igjen. */
+        var diff = alle.filter(function(x){ return x.pb > 0; }).map(function(x){ return { k:x.k, pr:x.pr, pb:x.pb, d:x.pb - x.pr }; })
+          .sort(function(a, b){ return a.d - b.d; });
+        tab.appendChild(okEl('div', 'ok-mt-rad ok-mt-diff ok-mt-hode', '<span>Minst igjen</span><span>Brukt</span><span>Budsjett</span><span>Differanse</span>'));
+        diff.slice(0, 3).forEach(function(x){
+          tab.appendChild(okEl('div', 'ok-mt-rad ok-mt-diff', '<span>' + okVask(x.k.split(' · ').join(' › ')) + '</span><b>' + kr(x.pr) + '</b><span class="ok-meta">' + kr(x.pb) + '</span>'
+            + '<span class="ok-avvik ' + (x.d < 0 ? 'over' : 'under') + '">' + kr(Math.round(x.d)) + '</span>'));
         });
-        if(!foran.length) tab.appendChild(okEl('p', 'ok-meta', 'Ingen poster ligger foran skjema.'));
+        if(!diff.length) tab.appendChild(okEl('p', 'ok-meta', 'Ingen poster med budsjett er brukt ennå.'));
       } else {
         /* Uten budsjett: det det er brukt mest paa. */
         tab.appendChild(okEl('div', 'ok-mt-rad ok-mt-hode', '<span>Mest brukt</span><span>Brukt</span><span>Budsjett</span><span></span>'));
