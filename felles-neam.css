@@ -1305,6 +1305,12 @@
    holder, og staar fullt ute naar man kan slippe. Ingen lang-trykk-meny
    eller markering fra telefonen. */
 .neam-handtak.neam-hoyre{ -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
+/* Holdt inne lot telefonen fingeren dra bildet ut av knappen (Magne,
+   7. november 2026: «Hold inne funksjoner gjør at jeg kan dra knappen»).
+   Bildet tar ikke imot trykk og kan ikke dras, og knappen sier fra seg
+   rulling og zoom - et trykk virker som foer. */
+.neam-handtak.neam-hoyre{ touch-action:none; }
+.neam-handtak.neam-hoyre img{ pointer-events:none; -webkit-user-drag:none; user-drag:none; }
 .neam-handtak.neam-hoyre.holdes{
   box-shadow:0 0 0 10px rgba(74,127,168,.45), 0 4px 14px rgba(44,62,80,.28);
   transition:box-shadow 3s linear, width .18s ease, height .18s ease;

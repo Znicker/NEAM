@@ -1099,10 +1099,13 @@ function neamSideFirer(overstyr){
   document.addEventListener('pointerdown', neamSideUtenfor, true);
 }
 
-function neamSideFirerNed(){
+/* `beholdIkon`: innstillingsikonet blir staaende - spoersmaalet om
+   innstillingene er paa vei. Ellers faar haandtaket sidas ikon igjen. */
+function neamSideFirerNed(beholdIkon){
   const f = document.getElementById('neamSideFirer');
   const h = document.getElementById('neamSideHandtak');
   if(!f || !h) return;
+  if(beholdIkon !== true) neamSideIkonTilbake();
   f.classList.remove('oppe');
   h.classList.remove('oppe');
   neamDuseNed();
@@ -1614,14 +1617,28 @@ const NEAM_HOLD_MS = 3000;
 let neamHoldTimer = null;
 let neamHoldKlar = false;
 let neamHoldSvelg = false;
+/* Naar tiden er ute, blir knappen innstillingsikonet og det kommer et
+   kort rykk (Magne, 7. november 2026: «Når tiden er ute bør knappen endre
+   seg til innstilling. På telefon og ipad kan det komme en kort
+   vibrasjon»). Sidas eget ikon kommer tilbake naar svaret er nei, eller
+   naar innstillingene lukkes (neamSideFirerNed). */
+let neamHoldIkon = null;
 function neamSideHoldStart(ev){
   if(ev.button !== undefined && ev.button !== 0) return;
   neamSideHoldStopp();
   const h = document.getElementById('neamSideHandtak');
-  if(h) h.classList.add('holdes');
+  if(!h) return;
+  /* Fingeren skal ikke kunne dra knappen eller bildet i den, og et
+     drag utenfor skal ikke avbryte - se touch-action i CSS-en. */
+  try{ h.setPointerCapture(ev.pointerId); }catch(e){}
+  h.classList.add('holdes');
   neamHoldTimer = setTimeout(function(){
     neamHoldTimer = null;
     neamHoldKlar = true;
+    h.classList.remove('holdes');
+    if(neamHoldIkon === null) neamHoldIkon = h.innerHTML;
+    h.innerHTML = neamIkonImg('innstillinger');
+    neamRykk();
   }, NEAM_HOLD_MS);
 }
 function neamSideHoldStopp(){
@@ -1632,10 +1649,35 @@ function neamSideHoldStopp(){
   neamHoldKlar = false;
   neamHoldSvelg = true;
   setTimeout(function(){ neamHoldSvelg = false; }, 600);
-  neamSideFirerNed();
+  neamSideFirerNed(true);
   setTimeout(async function(){
     if(await neamSpoer('Åpne innstillinger?', 'Åpne')) neamSideFirer(neamSystemValg());
+    else neamSideIkonTilbake();
   }, 60);
+}
+function neamSideIkonTilbake(){
+  const h = document.getElementById('neamSideHandtak');
+  if(h && neamHoldIkon !== null) h.innerHTML = neamHoldIkon;
+  neamHoldIkon = null;
+}
+/* Et kort rykk. navigator.vibrate finnes paa Android, ikke i Safari paa
+   iPhone. Der er en avkrysning med `switch` den eneste veien til et rykk
+   (iOS 18 og nyere), og den virker ikke alltid utenfor et trykk. iPad har
+   ingen vibrasjon i det hele tatt. */
+function neamRykk(){
+  try{ if(navigator.vibrate){ navigator.vibrate(35); return; } }catch(e){}
+  try{
+    let l = document.getElementById('neamRykk');
+    if(!l){
+      l = document.createElement('label');
+      l.id = 'neamRykk';
+      l.setAttribute('aria-hidden', 'true');
+      l.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden';
+      l.innerHTML = '<input type="checkbox" switch tabindex="-1">';
+      document.body.appendChild(l);
+    }
+    l.click();
+  }catch(e){}
 }
 window.addEventListener('click', function(ev){
   if(!neamHoldSvelg || !ev.target.closest || !ev.target.closest('#neamSideHandtak')) return;
@@ -1991,6 +2033,7 @@ function neamBygg(){
     sHandtak.addEventListener(t, neamSideHoldStopp);
   });
   sHandtak.addEventListener('contextmenu', function(ev){ ev.preventDefault(); });
+  sHandtak.addEventListener('dragstart', function(ev){ ev.preventDefault(); });
   document.body.appendChild(sHandtak);
 
   /* Sidas egen stabel. Hvilken plass den henger under settes naar den
