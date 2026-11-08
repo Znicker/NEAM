@@ -1282,6 +1282,14 @@ async function lagreBudsjett(env, kropp, epost){
 async function regnskapAar(env){
   const poster = await lesJson(env, POST_NOKKEL, {});
   const kategorier = await budsjettKategorier(env);
+  /* Summene per merke (8. november 2026): foeringens eget merke gaar foran
+     kategoriens, og en linje uten merke arver postens - som i budsjettet. */
+  const merker = await lesMerker(env), merkeUt = {};
+  const merkeFor = (p, kat) => {
+    if(p.merke) return p.merke;
+    const d = String(kat).split(' · ');
+    return merker[kat] || (d.length === 3 ? merker[d[0] + ' · ' + d[1]] : '') || '';
+  };
   const ut = {}, forfaller = [];
   for(const id of Object.keys(poster)){
     const p = poster[id];
@@ -1298,9 +1306,11 @@ async function regnskapAar(env){
       if(!ut[m]) ut[m] = {};
       const v = d.kategori.indexOf('Inntekter') === 0 ? d.belop : -d.belop;
       ut[m][d.kategori] = Math.round(((ut[m][d.kategori] || 0) + v) * 100) / 100;
+      const mk = merkeFor(p, d.kategori);
+      if(mk){ if(!merkeUt[m]) merkeUt[m] = {}; merkeUt[m][mk] = Math.round(((merkeUt[m][mk] || 0) + v) * 100) / 100; }
     }
   }
-  return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', maaneder:ut, forfaller:forfaller });
+  return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', maaneder:ut, merker:merkeUt, forfaller:forfaller });
 }
 
 /* ---------- Verdier, gjeld og familiemaal ----------

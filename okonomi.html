@@ -4380,6 +4380,7 @@ button.ok-dr-rad{ cursor:pointer; }
       var r = s[0], boks = document.getElementById('ok-rs-drill');
       if(!r.ok){ boks.innerHTML = '<p class="ok-melding feil">' + okVask(r.feil) + '</p>'; return; }
       okMnd.aar = r.maaneder || {};
+      okMnd.merkeAar = r.merker || {};
       okMnd.forfall = r.forfaller || [];
       /* Maanedene fram til i dag - og videre til siste forfall, saa en regning
          fram i tid kan sees i sin maaned. */
@@ -4475,7 +4476,9 @@ button.ok-dr-rad{ cursor:pointer; }
     var innB = 0, utB = 0, sparB = 0;
     poster.forEach(function(k){ var g = gruppe(k), v = budsjett(k); if(g === 'Inntekter') innB += v; else if(g === 'Sparing') sparB += v; else if(g !== 'Utenfor budsjett') utB += v; });
     var restB = innB - utB - sparB;
-    var c = { m:m, ms:ms, enMnd:enMnd, paagaar:paagaar, fram:fram, kr:kr, poster:poster, gruppe:gruppe, faktisk:faktisk, budsjett:budsjett,
+    /* Brukt per merke i perioden, fra regnskapet - foeringens eget merke gaar foran kategoriens. */
+    var mreg = okMndSum(ms, function(mm){ return (okMnd.merkeAar || {})[mm]; });
+    var c = { m:m, ms:ms, enMnd:enMnd, paagaar:paagaar, fram:fram, kr:kr, poster:poster, gruppe:gruppe, faktisk:faktisk, budsjett:budsjett, mreg:mreg,
       forfaller:forfaller, ffDatoer:ffDatoer, reg:reg, mb:mb, inn:inn, ut:ut, spar:spar, ffUt:ffUt, ffSpar:ffSpar, rest:rest, restFf:restFf };
     okRgTegn(c);
     okBuListeTegn(c);
@@ -4489,7 +4492,7 @@ button.ok-dr-rad{ cursor:pointer; }
       dif('Utgifter', utB - ut - ffUt, okBuKr(ut + ffUt) + ' av ' + kr(utB) + (ffUt ? ' · herav ' + kr(ffUt) + ' forfaller' : '')),
       dif('Sparing', spar + ffSpar - sparB, okBuKr(spar + ffSpar) + ' av ' + kr(sparB)),
       dif(paagaar || fram || !enMnd ? 'Overskudd hittil' : 'Overskudd', restFf - restB, (restFf >= restB ? 'bedre' : 'dårligere') + ' enn budsjettert')]);
-    okMndMerker(reg, mb);
+    okMndMerker(reg, mb, { mreg:mreg });
     okRsDrill(c);
   }
 
@@ -4637,14 +4640,20 @@ button.ok-dr-rad{ cursor:pointer; }
     o = o || {};
     var hva = o.hva || 'begge', boks = document.getElementById(o.boks || 'ok-mnd-merker');
     if(!boks) return;
-    var r = okMerkeSummer(function(k){ return reg[k] || 0; }), b = okMerkeSummer(function(k){ return mb[k] || 0; });
-    var liste = okHovedmerker().filter(function(x){ return hva === 'brukt' ? okMerkeSamlet(r, x.id) : hva === 'budsjett' ? okMerkeSamlet(b, x.id) : okMerkeSamlet(r, x.id) || okMerkeSamlet(b, x.id); });
+    /* Brukt fra regnskapets summer per merke (o.mreg), saa et merke satt paa
+       en enkelt foering teller. Samme liste i Regnskap, Budsjett og Resultat:
+       merkene med budsjett eller regnskap i perioden (8. november 2026,
+       Magne: «Merkesystemet bør også være i regnskapet. det bør være samme
+       liste»). */
+    var r = o.mreg || okMerkeSummer(function(k){ return reg[k] || 0; }), b = okMerkeSummer(function(k){ return mb[k] || 0; });
+    var liste = okHovedmerker().filter(function(x){ return okMerkeSamlet(r, x.id) || okMerkeSamlet(b, x.id); });
     boks.innerHTML = '';
     okFoldSett(o.fold || 'rs-merker', liste.length ? liste.length + (liste.length === 1 ? ' merke' : ' merker') : 'Ingen poster har merke');
     var tab = okEl('div', 'ok-mt');
     var rad = function(navn, brukt, bud, kl){
       if(hva !== 'begge'){
-        tab.appendChild(okEl('div', 'ok-mt-rad ok-mt-to' + (kl ? ' ' + kl : ''), '<span>' + navn + '</span><b>' + okBuKr(hva === 'brukt' ? brukt : bud) + ' kr</b>'));
+        var vv = hva === 'brukt' ? brukt : bud;
+        tab.appendChild(okEl('div', 'ok-mt-rad ok-mt-to' + (kl ? ' ' + kl : ''), '<span>' + navn + '</span><b>' + (vv ? okBuKr(vv) + ' kr' : '<span class="ok-bl-tom">–</span>') + '</b>'));
         return;
       }
       var a = brukt - bud;
@@ -4695,7 +4704,7 @@ button.ok-dr-rad{ cursor:pointer; }
       ['Sparing', kr(c.spar + c.ffSpar), '', c.ffSpar ? 'herav ' + kr(c.ffSpar) + ' forfaller' : ''],
       [c.paagaar || c.fram || !c.enMnd ? 'Overskudd hittil' : 'Overskudd', (c.restFf >= 0 ? '+' : '−') + kr(Math.abs(c.restFf)), c.restFf >= 0 ? 'pluss' : 'minus',
         c.ffUt + c.ffSpar ? 'betalt så langt ' + (c.rest >= 0 ? '+' : '−') + kr(Math.abs(c.rest)) : '']]);
-    okMndMerker(c.reg, c.mb, { boks:'ok-rg-merker', fold:'rg-merker', hva:'brukt' });
+    okMndMerker(c.reg, c.mb, { boks:'ok-rg-merker', fold:'rg-merker', hva:'brukt', mreg:c.mreg });
     /* Samme liste som Budsjett (Magne, 8. november 2026: «samme
        kategorier og underkategorier på regnskap og budsjett»): gruppene kan
        aapnes, en post viser linjene og foeringene, en linje sine foeringer.
@@ -4729,6 +4738,9 @@ button.ok-dr-rad{ cursor:pointer; }
     var rad = okEl('div', 'ok-under-rad ok-bl-rad'); rad.dataset.k = k;
     rad.appendChild(okEl('span', '', '<span class="ok-bl-pil" aria-hidden="true">›</span>' + okVask(k.split(' · ').slice(1).pop())));
     rad.appendChild(okEl('b', '', sum ? okVask(c.kr(sum)) : '<span class="ok-bl-tom">–</span>'));
+    /* Merket under, som i budsjettlista. */
+    var mk = okBuMerke(k);
+    if(mk){ var me = okEl('span', 'ok-meta', okVask(okMerkeFullNavn(mk))); me.style.gridColumn = '1 / -1'; rad.appendChild(me); }
     rad.setAttribute('role', 'button'); rad.tabIndex = 0; rad.setAttribute('aria-expanded', String(!!okRgApen[k]));
     var veksle = function(){
       okRgApen[k] = !okRgApen[k];
@@ -4785,7 +4797,7 @@ button.ok-dr-rad{ cursor:pointer; }
   var okRgForAv = {};
   function okRgForRad(f){
     okRgForAv[f.id] = f;
-    var meta = [f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''), f.del ? 'del av kvitteringen' : '', f.mer].filter(Boolean).join(' · ');
+    var meta = [f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''), f.del ? 'del av kvitteringen' : '', f.mer, f.merke && okMerkeAv(f.merke) ? 'merke ' + okMerkeFullNavn(f.merke) : ''].filter(Boolean).join(' · ');
     var rad = okEl('div', 'ok-under-rad ok-rg-for',
       '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.tekst || 'Uten tekst') + '<span class="ok-meta">' + okVask(meta) + '</span></span><b>' + (f.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret – ikke den banken viser">!</span>' : '') + okKr0.format(f.belop) + '</b>');
     rad.dataset.f = f.id; rad.tabIndex = 0; rad.setAttribute('role', 'button');
@@ -5219,7 +5231,7 @@ button.ok-dr-rad{ cursor:pointer; }
     if(!boks) return;
     var kr = c.kr;
     okBsTegn();
-    okMndMerker(c.reg, c.mb, { boks:'ok-bud-merker', fold:'bu-merker', hva:'budsjett' });
+    okMndMerker(c.reg, c.mb, { boks:'ok-bud-merker', fold:'bu-merker', hva:'budsjett', mreg:c.mreg });
     okBuDiagramTegn(c);
     /* Alt som endrer budsjettet, ligger i menyen paa raden: hoeyreklikk,
        eller hold fingeren paa telefon (Magne, 8. november 2026: «ønsker man
