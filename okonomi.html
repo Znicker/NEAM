@@ -63,7 +63,7 @@ body::before{ display:none; }
 /* Toppen med fanene foelger med naar man ruller (Magne, 6. november 2026).
    Samme bakgrunn som sida, saa kortene glir inn under den. Felt som faar
    fokus, rulles fram under den, ikke bak den. */
-.ok-topp{ position:sticky; top:0; z-index:30; background:var(--bg-1); padding:10px 0; margin:-10px 0; }
+.ok-topp{ position:sticky; top:var(--ntp-h, 0px); z-index:30;   /* under den felles topplinja */ background:var(--bg-1); padding:10px 0; margin:-10px 0; }
 html{ scroll-padding-top:90px; }
 .ok-topp h1{ margin:0; font-size:var(--t-stor); font-weight:700; }
 .ok-topp-hoyre{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; max-width:100%; }
@@ -644,6 +644,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-dr-navn{ display:flex; gap:6px; }
 .ok-dr-navn span{ flex:1; min-width:0; text-align:center; font-size:var(--t-etikett); font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ok-dr-navn span.valgt{ color:var(--ink); }
+/* Maanedsvisningen: tretten soeyler - tettere og maanedsnavnet uten sperring, saa «jan» faar plass paa telefon. */
+.ok-dr.mnd, .ok-dr-navn.mnd{ gap:2px; }
+.ok-dr-navn.mnd span{ text-transform:none; letter-spacing:0; text-overflow:clip; }
 .ok-dr-rad{ display:grid; grid-template-columns:minmax(0,1fr) 76px 76px 76px; gap:8px; align-items:center; width:100%; padding:9px 0; border:0; border-bottom:1px solid var(--line); background:none; font:inherit; color:var(--ink); text-align:left; }
 button.ok-dr-rad{ cursor:pointer; }
 .ok-dr-rad > :not(:first-child){ text-align:right; white-space:nowrap; }
@@ -4381,7 +4384,7 @@ button.ok-dr-rad{ cursor:pointer; }
     document.getElementById('ok-mndf-meta').textContent = okAktiv === 'regnskap'
       ? (enMnd ? (fram ? 'Fram i tid' : paagaar ? 'Pågår' : 'Avsluttet') : antMnd)
       : okAktiv === 'budsjett'
-      ? (enMnd ? (fram ? 'Kommer' : paagaar ? 'Pågår' : 'Avsluttet') + ' · ' + (okBu.maaneder[m] ? 'eget budsjett for måneden' : 'følger standardbudsjettet') : antMnd + ' · summen av månedsbudsjettene')
+      ? (enMnd ? (fram ? 'Kommer' : paagaar ? 'Pågår' : 'Avsluttet') + ' · ' + (okBu.maaneder[m] ? 'eget budsjett for måneden' : 'ikke startet – følger standardbudsjettet') : antMnd + ' · summen av månedsbudsjettene')
       : enMnd
       ? (fram ? 'Fram i tid' : paagaar ? 'Pågår' : 'Avsluttet') + ' · ' + (okBu.maaneder[m] ? 'månedens eget budsjett' : 'budsjett fra standardbudsjettet')
       : antMnd + ' · budsjettet er summen av månedsbudsjettene';
@@ -4446,41 +4449,57 @@ button.ok-dr-rad{ cursor:pointer; }
     var kr = function(n){ return c.kr(Math.round(n)); };
     var aar = function(mm, k){ return (okMnd.aar[mm] || {})[k] || 0; };
     var ffK = function(mm, k){ return okMnd.forfall.reduce(function(s, f){ return s + (f.mnd === mm && f.kategori === k ? f.belop : 0); }, 0); };
-    var bK = function(mm, k){ return okBudFor(okBu, mm)[k] || 0; };
+    /* Budsjettet i diagrammet: bare maaneder som er startet (eget budsjett) -
+       en maaned som foelger standarden, staar tom her (Magne, 8. november
+       2026). Sumboksene og resten av sida bruker standarden som foer. */
+    var bK = function(mm, k){ var mb = okBu.maaneder[mm]; return mb ? (mb[k] || 0) : 0; };
     var sum = function(fn, liste, ks){ return liste.reduce(function(s, mm){ return s + ks.reduce(function(t, k){ return t + fn(mm, k); }, 0); }, 0); };
     var utgK = okBu.kategorier.filter(okRsUtgift);
     var sti = okEl('div', 'ok-dr-sti');
     var tilbake = function(tekst, ved){ var b = okEl('button', 'ok-lenke', '‹ ' + okVask(tekst)); b.type = 'button'; b.addEventListener('click', ved); sti.appendChild(b); sti.appendChild(okEl('span', 'ok-meta', '/')); };
     var forklar = okEl('div', 'ok-forklar-linje');
-    var dia = okEl('div', 'ok-dr'), navn = okEl('div', 'ok-dr-navn');
+    var dia = okEl('div', 'ok-dr' + (okRs.niva ? '' : ' mnd')), navn = okEl('div', 'ok-dr-navn' + (okRs.niva ? '' : ' mnd'));
     boks.appendChild(sti); boks.appendChild(forklar); boks.appendChild(dia); boks.appendChild(navn);
     var mndNavn = function(mm){ var s = okMndNavn.format(new Date(mm + '-01T12:00:00')); return s.charAt(0).toUpperCase() + s.slice(1); };
 
     if(!okRs.niva){
-      /* Maanedene: utgiftene (med det som forfaller lysere) mot budsjettet. */
-      var mnder = okMnd.liste.slice();
-      var v = mnder.map(function(mm){ return { mm:mm, a:sum(aar, [mm], utgK), ff:sum(ffK, [mm], utgK), b:sum(bK, [mm], utgK) }; });
-      var maks = Math.max.apply(null, v.map(function(x){ return Math.max(x.a + x.ff, x.b); }).concat([1])) * 1.1;
+      /* Hele aaret til den valgte maaneden, som budsjettdiagrammet: utgiftene
+         (det som forfaller lysere) mot maanedens budsjett, og
+         standardbudsjettet helt til hoeyre (8. november 2026). */
+      var aarstall = c.m.slice(0, 4), mnder = [];
+      for(var nr = 1; nr <= 12; nr++) mnder.push(aarstall + '-' + (nr < 10 ? '0' : '') + nr);
+      var v = mnder.map(function(mm){ return { mm:mm, a:sum(aar, [mm], utgK), ff:sum(ffK, [mm], utgK), b:sum(bK, [mm], utgK), startet:!!okBu.maaneder[mm] }; });
+      var stdUt = okBsTotaler('standard').ut;
+      var maks = Math.max.apply(null, v.map(function(x){ return Math.max(x.a + x.ff, x.b); }).concat([stdUt, 1])) * 1.1;
       var pst = function(x){ return (x / maks * 100).toFixed(1) + '%'; };
       sti.appendChild(okEl('b', '', 'Måned for måned'));
       forklar.innerHTML = '<span><i style="width:12px;height:12px;border-radius:2px;background:var(--aksent)"></i>Brukt</span>'
         + '<span><i style="width:12px;height:12px;border-radius:2px;background:var(--danger)"></i>Over budsjett</span>'
         + '<span><i style="width:12px;height:12px;border-radius:2px;background:var(--aksent);opacity:.38"></i>Forfaller</span>'
-        + '<span><i style="width:14px;height:3px;background:var(--ink)"></i>Budsjett</span>';
-      var over = 0;
+        + '<span><i style="width:14px;height:3px;background:var(--ink)"></i>Budsjett</span>'
+        + '<span><i style="width:12px;height:12px;border-radius:2px;background:var(--boks-kant);border:1px solid var(--ink-soft);box-sizing:border-box"></i>Standardbudsjettet</span>';
+      var over = 0, medBud = 0;
       v.forEach(function(x){
-        var o = x.b > 0 && x.a + x.ff > x.b * 1.02; if(o) over++;
-        var k = okEl('button', 'ok-dr-kol ok-dr-mnd'); k.type = 'button';
-        k.setAttribute('aria-label', mndNavn(x.mm) + ': ' + okBuKr(x.a + x.ff) + ' av ' + okBuKr(x.b) + ' kr. Trykk for kategoriene.');
+        var o = x.startet && x.a + x.ff > x.b * 1.02; if(o) over++;
+        if(x.startet) medBud++;
+        /* Bare maaneder med regnskap kan aapnes. */
+        var kan = okMnd.liste.indexOf(x.mm) !== -1;
+        var k = okEl(kan ? 'button' : 'div', 'ok-dr-kol ok-dr-mnd'); if(kan) k.type = 'button'; else k.style.cursor = 'default';
+        k.setAttribute('aria-label', mndNavn(x.mm) + ': ' + okBuKr(x.a + x.ff) + ' kr' + (x.startet ? ' av ' + okBuKr(x.b) + ' kr' : ', ikke startet') + (kan ? '. Trykk for kategoriene.' : ''));
         var s = okEl('div', 'ok-dr-s' + (o ? ' over' : '')); s.style.height = pst(x.a); k.appendChild(s);
         if(x.ff > 0){ var f = okEl('div', 'ok-dr-s forfaller' + (o ? ' over' : '')); f.style.bottom = pst(x.a); f.style.height = pst(x.ff); k.appendChild(f); }
-        if(x.b > 0){ var tk = okEl('div', 'ok-dr-tick'); tk.style.bottom = pst(x.b); k.appendChild(tk); }
-        k.addEventListener('click', function(){ okMnd.valgt = x.mm; okMnd.periode = 'mnd'; okRs = { niva:1, gruppe:'', post:'' }; okMndTegn(); });
+        if(x.startet){ var tk = okEl('div', 'ok-dr-tick'); tk.style.bottom = pst(x.b); k.appendChild(tk); }
+        if(kan) k.addEventListener('click', function(){ okMnd.valgt = x.mm; okMnd.periode = 'mnd'; okRs = { niva:1, gruppe:'', post:'' }; okMndTegn(); });
         dia.appendChild(k);
         navn.appendChild(okEl('span', x.mm === c.m ? 'valgt' : '', OK_MND_KORT[Number(x.mm.slice(5, 7)) - 1]));
       });
-      boks.appendChild(okEl('p', 'ok-meta', 'Trykk en måned for kategoriene.'));
-      okFoldSett('rs-drill', 'Over i ' + over + ' av ' + v.length);
+      var stdK = okEl('div', 'ok-dr-kol ok-dr-mnd'); stdK.style.cursor = 'default';
+      stdK.setAttribute('aria-label', 'Standardbudsjettet: ' + okBuKr(stdUt) + ' kr per måned');
+      var stdS = okEl('div', 'ok-dr-s bud'); stdS.style.height = pst(stdUt); stdK.appendChild(stdS);
+      dia.appendChild(stdK);
+      navn.appendChild(okEl('span', '', 'Std'));
+      boks.appendChild(okEl('p', 'ok-meta', 'Trykk en måned for kategoriene. Måneder uten budsjettstrek er ikke startet i Budsjett.'));
+      okFoldSett('rs-drill', medBud ? 'Over i ' + over + ' av ' + medBud : 'Ingen måneder startet');
       return;
     }
 
@@ -4515,6 +4534,7 @@ button.ok-dr-rad{ cursor:pointer; }
       + '<span><i style="width:12px;height:12px;border-radius:2px;background:var(--danger)"></i>over budsjett</span>'
       + '<span><i style="width:12px;height:12px;border-radius:2px;background:var(--boks-kant);border:1px solid var(--ink-soft);box-sizing:border-box"></i>Budsjett</span>'
       + '<span><i style="width:12px;height:12px;border-radius:2px;background:var(--paper);border:1.5px dashed var(--ink-soft);box-sizing:border-box"></i>Snitt 6 mnd</span>';
+    var harBud = c.ms.some(function(mm){ return !!okBu.maaneder[mm]; });
     noder = noder.map(function(n){
       n.r = sum(aar, c.ms, n.ks) + sum(ffK, c.ms, n.ks);
       n.b = sum(bK, c.ms, n.ks);
@@ -4527,7 +4547,7 @@ button.ok-dr-rad{ cursor:pointer; }
     var tab = okEl('div', '');
     tab.appendChild(okEl('div', 'ok-dr-rad hode', '<span>' + (okRs.niva === 1 ? 'Kategori' : okRs.niva === 2 ? 'Post' : 'Linje') + '</span><span>Regnskap</span><span>Budsjett</span><span>Snitt</span>'));
     noder.forEach(function(n){
-      var o = n.b > 0 && n.r > n.b * 1.02, d = n.b - n.r;
+      var o = harBud && n.r > n.b * 1.02, d = n.b - n.r;
       var trykk = function(fra){ if(n.videre) n.videre(); else okVisKjopene(c.ms, n.kat, fra, false); };
       var k = okEl('button', 'ok-dr-kol ok-dr-tre'); k.type = 'button';
       k.setAttribute('aria-label', n.navn + ': regnskap ' + okBuKr(n.r) + ', budsjett ' + okBuKr(n.b) + (n.s != null ? ', snitt ' + okBuKr(n.s) : '') + ' kr. ' + (n.videre ? 'Trykk for det som ligger under.' : 'Trykk for kjøpene.'));
@@ -4536,8 +4556,9 @@ button.ok-dr-rad{ cursor:pointer; }
       dia.appendChild(k);
       navn.appendChild(okEl('span', '', okVask(n.navn)));
       var rad = okEl('button', 'ok-dr-rad'); rad.type = 'button';
-      rad.innerHTML = '<span><b>' + okVask(n.navn) + '</b>' + (n.videre ? ' ›' : '') + '<span class="ok-avvik ' + (d < -0.5 ? 'over' : 'under') + '">' + (d < -0.5 ? '−' : '') + okVask(kr(Math.abs(d))) + '</span></span>'
-        + '<span>' + okVask(okBuKr(Math.round(n.r))) + '</span><span class="ok-meta">' + okVask(okBuKr(Math.round(n.b))) + '</span><span class="ok-meta">' + (n.s != null ? okVask(okBuKr(Math.round(n.s))) : '–') + '</span>';
+      rad.innerHTML = '<span><b>' + okVask(n.navn) + '</b>' + (n.videre ? ' ›' : '')
+        + (harBud ? '<span class="ok-avvik ' + (d < -0.5 ? 'over' : 'under') + '">' + (d < -0.5 ? '−' : '') + okVask(kr(Math.abs(d))) + '</span>' : '<span class="ok-meta" style="display:block">ikke startet</span>') + '</span>'
+        + '<span>' + okVask(okBuKr(Math.round(n.r))) + '</span><span class="ok-meta">' + (harBud ? okVask(okBuKr(Math.round(n.b))) : '–') + '</span><span class="ok-meta">' + (n.s != null ? okVask(okBuKr(Math.round(n.s))) : '–') + '</span>';
       rad.addEventListener('click', function(){ trykk(rad); });
       tab.appendChild(rad);
     });
@@ -4648,7 +4669,26 @@ button.ok-dr-rad{ cursor:pointer; }
     okMndMerker(c.reg, c.mb, { boks:'ok-bud-merker', fold:'bu-merker', hva:'budsjett' });
     okBuDiagramTegn(c);
     var knapper = document.getElementById('ok-bu-liste-knapper'); knapper.innerHTML = '';
-    if(c.enMnd){
+    /* En maaned faar eget budsjett med «Start budsjett» - tomt; standarden
+       kopieres inn bare naar man ber om det, og spoer foerst naar maaneden
+       alt har tall (Magne, 8. november 2026). Til da foelger maaneden
+       standardbudsjettet overalt unntatt i diagrammene, der den staar uten
+       budsjett. «Bruk standardbudsjettet» (som fjernet maanedens eget) er
+       tatt ut. */
+    var lagreMnd = function(maaned, knapp){
+      if(knapp) knapp.disabled = true;
+      return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'budsjett', mnd:c.m, maaned:maaned }) })
+        .then(function(s){
+          if(knapp) knapp.disabled = false;
+          if(!s.ok){ document.getElementById('ok-mndf-meta').textContent = 'Ble ikke lagret: ' + s.feil; return; }
+          okBuSett(s); okBuAlleTegn(); okStatusLast(); okMndLast();
+        });
+    };
+    if(c.enMnd && !okBu.maaneder[c.m]){
+      var start = okEl('button', 'btn btn-ny', 'Start budsjett'); start.type = 'button'; start.disabled = !!okBu.redigerer;
+      start.addEventListener('click', function(){ lagreMnd({}, start); });
+      knapper.appendChild(start);
+    } else if(c.enMnd){
       var red = okEl('button', 'btn btn-endre', 'Rediger'); red.type = 'button'; red.disabled = !!okBu.redigerer;
       red.addEventListener('click', function(){
         okBuVis = 'maaned'; okBu.mbValgt = c.m; okBu.redigerer = c.m; okBu.utkast = {}; okBu.ny = null;
@@ -4656,13 +4696,16 @@ button.ok-dr-rad{ cursor:pointer; }
         var f = document.querySelector('#ok-mb input'); if(f) f.focus();
       });
       knapper.appendChild(red);
-      if(okBu.maaneder[c.m] && !okBu.redigerer){
-        var tilStd = okEl('button', 'ok-lenke', 'Bruk standardbudsjettet'); tilStd.type = 'button';
-        tilStd.addEventListener('click', function(){
-          okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'budsjett', mnd:c.m, tilbake:true }) })
-            .then(function(s){ if(!s.ok){ document.getElementById('ok-mndf-meta').textContent = 'Ble ikke lagret: ' + s.feil; return; } okBuSett(s); okBuAlleTegn(); okStatusLast(); okMndLast(); });
+      if(!okBu.redigerer){
+        var kopi = okEl('button', 'ok-lenke', 'Kopier standardbudsjettet'); kopi.type = 'button';
+        kopi.addEventListener('click', function(){
+          /* Standarden for maaneden - uten postene som ikke kommer den maaneden. */
+          var std = okBudFor({ standard:okBu.standard, perioder:okBu.perioder }, c.m);
+          var harTall = Object.keys(okBu.maaneder[c.m] || {}).some(function(k){ return okBu.maaneder[c.m][k]; });
+          var spor = harTall ? bekreft('Måneden har alt tall. Erstatte dem med standardbudsjettet?', { jaTekst:'Erstatt', fare:true }) : Promise.resolve(true);
+          Promise.resolve(spor).then(function(ja){ if(ja) lagreMnd(std, kopi); });
         });
-        knapper.appendChild(tilStd);
+        knapper.appendChild(kopi);
       }
     }
     var std = okEl('button', 'ok-lenke', 'Standardbudsjett ›'); std.type = 'button';
@@ -4706,14 +4749,18 @@ button.ok-dr-rad{ cursor:pointer; }
     if(!boks) return;
     var aar = c.m.slice(0, 4);
     var kats = okBu.kategorier.filter(function(k){ var g = k.split(' · ')[0]; return g !== 'Inntekter' && g !== 'Sparing'; });
-    var stolper = [];
+    /* Bare maaneder som er startet (eget budsjett) faar soeyle; standarden
+       staar helt til hoeyre (Magne, 8. november 2026). */
+    var stolper = [], startet = 0, sumStartet = 0;
     for(var n = 1; n <= 12; n++){
-      var mm = aar + '-' + (n < 10 ? '0' : '') + n, mb = okBudFor(okBu, mm);
-      stolper.push({ m:mm, v:kats.reduce(function(s, k){ return s + (mb[k] || 0); }, 0) });
+      var mm = aar + '-' + (n < 10 ? '0' : '') + n, mb = okBu.maaneder[mm];
+      var v = mb ? kats.reduce(function(s, k){ return s + (mb[k] || 0); }, 0) : 0;
+      if(mb){ startet++; sumStartet += v; }
+      stolper.push({ m:mm, v:v });
     }
-    var snitt = stolper.reduce(function(s, x){ return s + x.v; }, 0) / 12;
-    document.getElementById('ok-bu-diagram-meta').textContent = aar + (snitt ? ' · snitt ' + okBuKr(snitt) + ' kr' : '');
-    boks.innerHTML = okStolpeSvg(stolper, { aria:'Budsjetterte utgifter per måned i ' + aar, hva:'i budsjett' });
+    stolper.push({ m:'', v:okBsTotaler('standard').ut, std:true, navn:'Standardbudsjettet (snitt per måned)', etikett:'Std' });
+    document.getElementById('ok-bu-diagram-meta').textContent = aar + ' · ' + startet + (startet === 1 ? ' måned startet' : ' måneder startet') + (startet ? ' · snitt ' + okBuKr(sumStartet / startet) + ' kr' : '');
+    boks.innerHTML = okStolpeSvg(stolper, { aria:'Budsjetterte utgifter per måned i ' + aar + ', og standardbudsjettet', hva:'i budsjett' });
   }
 
   /* Dialogen med kjoepene bak en post i perioden. fra: knappen fokus gaar tilbake til. */
@@ -4858,10 +4905,11 @@ button.ok-dr-rad{ cursor:pointer; }
     for(var t = 0; t <= maks; t += tikk) svg += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y(t) + '" y2="' + y(t) + '" stroke="var(--line)"/><text x="' + (pl - 6) + '" y="' + (y(t) + 4) + '" text-anchor="end" font-size="11" fill="var(--ink-soft)">' + Math.round(t / 1000) + ' k</text>';
     stolper.forEach(function(s, i){
       var v = s.v, ff = s.ff || 0, x = pl + i * bw + bw * 0.18, w = bw * 0.64, over = o.farge && s.bud && v + ff > s.bud * 1.02;
-      var navnM = okMndNavn.format(new Date(s.m + '-01T12:00:00'));
-      svg += '<rect x="' + x + '" y="' + y(v) + '" width="' + w + '" height="' + (y(0) - y(v)) + '" rx="4" fill="' + (over ? 'var(--danger)' : 'var(--aksent)') + '"><title>' + navnM + ': ' + okKr0.format(v) + ' kr ' + hva + '</title></rect>';
+      /* s.navn og s.std (8. november 2026): soeylen for standardbudsjettet helt til hoeyre. */
+      var navnM = s.navn || okMndNavn.format(new Date(s.m + '-01T12:00:00'));
+      svg += '<rect x="' + x + '" y="' + y(v) + '" width="' + w + '" height="' + (y(0) - y(v)) + '" rx="4" fill="' + (s.std ? 'var(--boks-kant)' : over ? 'var(--danger)' : 'var(--aksent)') + '"' + (s.std ? ' stroke="var(--ink-soft)" stroke-width="1"' : '') + '><title>' + navnM + ': ' + okKr0.format(v) + ' kr ' + hva + '</title></rect>';
       if(ff > 0) svg += '<rect x="' + x + '" y="' + y(v + ff) + '" width="' + w + '" height="' + (y(v) - y(v + ff)) + '" rx="4" fill="' + (over ? 'var(--danger)' : 'var(--aksent)') + '" opacity=".38"><title>' + navnM + ': ' + okKr0.format(ff) + ' kr forfaller</title></rect>';
-      svg += '<text x="' + (x + w / 2) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="11" fill="var(--ink-soft)">' + new Intl.DateTimeFormat('nb-NO', { month:'short' }).format(new Date(s.m + '-01T12:00:00')) + '</text>';
+      svg += '<text x="' + (x + w / 2) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="11" fill="var(--ink-soft)">' + (s.etikett || new Intl.DateTimeFormat('nb-NO', { month:'short' }).format(new Date(s.m + '-01T12:00:00'))) + '</text>';
     });
     if(linje) svg += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y(linje) + '" y2="' + y(linje) + '" stroke="var(--ink-soft)" stroke-width="2" stroke-dasharray="6 5"/>';
     return svg + '</svg>';
