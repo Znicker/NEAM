@@ -270,6 +270,9 @@ input.ok-regnefeil{ border-color:var(--danger) !important; }
 .ok-rg-for:hover, .ok-rg-for:focus-visible{ background:var(--boks-mild); box-shadow:0 0 0 6px var(--boks-mild); outline:none; }
 .ok-rg-for .ok-dato{ display:inline-block; min-width:52px; color:var(--ink-soft); font-size:var(--t-meta); }
 .ok-rg-for .ok-meta{ display:block; }
+/* Loggen: samme rad, ogsaa naar linja ikke gjelder en foering. */
+.ok-logg-rad .ok-dato{ display:inline-block; min-width:52px; color:var(--ink-soft); font-size:var(--t-meta); }
+.ok-logg-rad .ok-meta{ display:block; }
 #ok-fr-innhold{ display:flex; flex-direction:column; gap:10px; }
 #ok-fr-innhold select{ width:100%; font-family:inherit; font-size:16px; padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
 /* Foeringsvinduet: stort, med alt om foeringen og Rediger (8. november 2026). */
@@ -517,6 +520,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-al-hoved{ font-weight:700; }
 /* Forfalt og ikke betalt (8. november 2026): roedt utropstegn, --danger. */
 .ok-fr-utrop.forfalt{ background:var(--danger); }
+/* En regning med forfall fram i tid: groenn stjerne paa transaksjonen (8. november 2026). */
+.ok-fr-utrop.kommer{ background:var(--handling-ny); }
+.ok-fr-utrop.kommer svg{ display:block; }
 .ok-bl-rad .ok-fr-utrop.forfalt{ margin:0 0 0 6px; }
 .ok-al-under{ padding-left:30px; }
 .ok-al-datoer{ display:flex; gap:10px; align-items:center; flex:1 1 300px; max-width:420px; min-width:0; }
@@ -894,6 +900,7 @@ button.ok-dr-rad{ cursor:pointer; }
     <div class="ok-faner ok-tr-valg" role="group" aria-label="Transaksjoner" id="ok-tr-valg">
       <button type="button" class="ok-fane" data-tr="innboks" aria-pressed="true">Innboks<span class="ok-fane-prikk" id="ok-tr-tall" hidden><span class="ok-skjult">Noe venter i innboksen</span></span></button>
       <button type="button" class="ok-fane" data-tr="alle" aria-pressed="false">Kontoutskrift</button>
+      <button type="button" class="ok-fane" data-tr="logg" aria-pressed="false">Logg</button>
     </div>
     <div class="ok-tr-del" id="ok-tr-alle" hidden>
       <div class="ok-kort-hode">
@@ -922,6 +929,11 @@ button.ok-dr-rad{ cursor:pointer; }
       <p class="ok-meta" id="ok-al-meta" aria-live="polite"></p>
       <!-- Radene er de samme som foeringene i Regnskap (okRgForRad), 8. november 2026. -->
       <section class="ok-kort ok-liste-kort"><div class="ok-al-liste" id="ok-al-liste"><span class="ok-meta">Henter …</span></div></section>
+    </div>
+    <!-- Loggen (8. november 2026): alle endringer, og det som skjer av seg selv. -->
+    <div class="ok-tr-del" id="ok-tr-logg" hidden>
+      <p class="ok-meta">Alt som endres – av deg, av Neam og det som skjer av seg selv når banken, Trumf og Dropbox hentes. Nyeste øverst. Trykk en linje for føringen.</p>
+      <section class="ok-kort ok-liste-kort"><div class="ok-al-liste" id="ok-logg-liste"><span class="ok-meta">Henter …</span></div></section>
     </div>
     <div class="ok-tr-del" id="ok-tr-innboks">
     <div class="ok-stripe" id="ok-stripe" hidden>
@@ -1562,6 +1574,7 @@ button.ok-dr-rad{ cursor:pointer; }
       okTegnInnboks();
       okTegnFakturaer();
       if(okAl.poster) okAlLast();
+      if(okAl.del === 'logg') okLoggLast();
       /* Innboksen kan ha foert poster automatisk - varslene og Status
          hentes paa nytt, ellers viser de tall fra foer foeringen. */
       okVarslerLast(); okStatusLast(); okKilderLast(); okHuskLast();
@@ -1629,6 +1642,10 @@ button.ok-dr-rad{ cursor:pointer; }
   var okForfalte = [];
   function okIDag(){ var d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
   function okForfalt(dato){ return !!dato && String(dato).slice(0, 10) < okIDag(); }
+  /* Forfall fram i tid (Magne, 8. november 2026: «dersom deler av summen er en
+     regning med forfall frem i tid kan man ha en grøn asterix på selve
+     transaksjonen»). */
+  function okStjerneKommer(){ return '<span class="ok-fr-utrop kommer" title="Forfaller – ikke betalt ennå" role="img" aria-label="Forfaller – ikke betalt ennå"><svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><path d="M6 1.4v9.2M2 3.7l8 4.6M2 8.3l8-4.6" stroke="#fff" stroke-width="1.9" stroke-linecap="round" fill="none"/></svg></span>'; }
   function okUtropForfalt(){ return '<span class="ok-fr-utrop forfalt" title="Forfalt – ikke funnet på regningskontoen">!</span>'; }
   /* Har en kategori (post eller linje) en forfalt regning i perioden? */
   function okForfaltI(c, k){
@@ -3449,14 +3466,52 @@ button.ok-dr-rad{ cursor:pointer; }
      treffer. Alt hentes én gang (alle-poster) og filtreres her. */
   var okAl = { poster:null, fra:'', mnd:new Date().toISOString().slice(0, 7), apen:{}, del:'innboks' };
   function okTrVis(del){
-    okAl.del = del === 'alle' ? 'alle' : 'innboks';
+    okAl.del = del === 'alle' || del === 'logg' ? del : 'innboks';
     try{ localStorage.setItem('ok-tr', okAl.del); }catch(e){}
     document.getElementById('ok-tr-innboks').hidden = okAl.del !== 'innboks';
     document.getElementById('ok-tr-alle').hidden = okAl.del !== 'alle';
+    document.getElementById('ok-tr-logg').hidden = okAl.del !== 'logg';
     document.querySelectorAll('#ok-tr-valg .ok-fane').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.tr === okAl.del)); });
     if(okAl.del === 'alle' && !okAl.poster) okAlLast();
+    if(okAl.del === 'logg') okLoggLast();
   }
   document.querySelectorAll('#ok-tr-valg .ok-fane').forEach(function(b){ b.addEventListener('click', function(){ okTrVis(b.dataset.tr); }); });
+  /* ---------- Transaksjoner › Logg (8. november 2026) ----------
+     Magne: «Jeg ønsker en logg ved siden av kontoutskrift. en som viser alle
+     endringer som blir gjort og hva som beveger seg under panseret».
+     Serveren skriver den (loggDiff og loggAnnet); her vises den per dag. */
+  var okLogg = { linjer:[], vis:200 };
+  function okLoggLast(){
+    return okHent('/api/bank?hva=logg').then(function(r){
+      var boks = document.getElementById('ok-logg-liste');
+      if(!r.ok){ boks.innerHTML = '<p class="ok-melding feil">' + okVask(r.feil) + '</p>'; return; }
+      okLogg.linjer = r.logg || [];
+      okLoggTegn();
+    });
+  }
+  function okLoggTegn(){
+    var boks = document.getElementById('ok-logg-liste'), sist = '';
+    boks.innerHTML = '';
+    if(!okLogg.linjer.length){ boks.appendChild(okEl('p', 'ok-meta', 'Ingenting er logget ennå – loggen fylles fra nå av.')); return; }
+    okLogg.linjer.slice(0, okLogg.vis).forEach(function(l){
+      var d = new Date(l.t), dag = okDato.format(d);
+      if(dag !== sist){ boks.appendChild(okEl('span', 'ok-etikett', okVask(dag))); sist = dag; }
+      var rad = okEl('div', 'ok-under-rad ok-logg-rad' + (l.id ? ' ok-rg-for' : ''),
+        '<span><span class="ok-dato">' + okVask(okKlokke.format(d)) + '</span>' + okVask(l.tekst) + '<span class="ok-meta">' + okVask(l.kilde || '') + '</span></span>');
+      if(l.id){
+        rad.tabIndex = 0; rad.setAttribute('role', 'button');
+        var aapne = function(){ okForVindu({ id:l.id, tekst:'' }, rad); };
+        rad.addEventListener('click', aapne);
+        rad.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); aapne(); } });
+      }
+      boks.appendChild(rad);
+    });
+    if(okLogg.linjer.length > okLogg.vis){
+      var mer = okEl('button', 'ok-lenke', 'Vis flere (' + (okLogg.linjer.length - okLogg.vis) + ' til)'); mer.type = 'button'; mer.style.alignSelf = 'flex-start';
+      mer.addEventListener('click', function(){ okLogg.vis += 200; okLoggTegn(); });
+      boks.appendChild(mer);
+    }
+  }
   function okAlLast(){
     return okHent('/api/bank?hva=alle-poster').then(function(r){
       if(!r.ok){ document.getElementById('ok-al-liste').innerHTML = '<p class="ok-melding feil" style="margin:8px 12px">' + okVask(r.feil) + '</p>'; return; }
@@ -3597,9 +3652,9 @@ button.ok-dr-rad{ cursor:pointer; }
   function okPostTilFor(p){
     return { id:p.id, dato:p.dato, belop:p.belop, kategori:p.kategori,
       tekst:p.motpart || p.tekst || '', mer:p.motpart && p.tekst && p.tekst !== p.motpart ? p.tekst : '',
-      kilde:p.status === 'venter' ? 'Faktura' : p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? 'Lagt inn for hånd' : 'Kvittering fra bilde') : (p.kontoNavn || ''),
-      betaltFra:p.betaltFra, merke:p.merke, overstyrt:p.overstyrt, harKvittering:p.status !== 'venter' && p.harKvittering, harFil:p.harFil, filType:p.filType,
-      status:p.status, venter:p.status === 'venter', deler:p.deler };
+      kilde:p.status === 'venter' || p.avsluttet ? 'Faktura' : p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? 'Lagt inn for hånd' : 'Kvittering fra bilde') : (p.kontoNavn || ''),
+      betaltFra:p.betaltFra, merke:p.merke, overstyrt:p.overstyrt, harKvittering:p.status !== 'venter' && !p.avsluttet && p.harKvittering, harFil:p.harFil, filType:p.filType,
+      status:p.status, venter:p.status === 'venter', deler:p.deler, avsluttet:p.avsluttet };
   }
   ['ok-al-konto', 'ok-al-kat', 'ok-al-merke', 'ok-al-type'].forEach(function(id){
     var d = document.getElementById(id);
@@ -4868,8 +4923,10 @@ button.ok-dr-rad{ cursor:pointer; }
     var vv = okRsVerdier(c, k);
     if(modus === 'rs') rad.insertAdjacentHTML('beforeend', okRsTall(c, vv.b, vv.r, vv.snu));
     else rad.appendChild(okEl('b', '', sum ? okVask(c.kr(sum)) : '<span class="ok-bl-tom">–</span>'));
-    /* Stolpen: brukt av budsjettet - roed over (ikke for inntekter og sparing). */
-    if(vv.b > 0) rad.appendChild(okRadBar(vv.r / vv.b, !vv.snu && vv.r > vv.b * 1.02));
+    /* Stolpen: brukt av budsjettet - roed over (ikke for inntekter og sparing).
+       Bare i Resultat - fjernet i Regnskap (Magne, 8. november 2026: «I regnskap
+       kan du fjerne disse progressbarene under kategorier»). */
+    if(modus === 'rs' && vv.b > 0) rad.appendChild(okRadBar(vv.r / vv.b, !vv.snu && vv.r > vv.b * 1.02));
     /* Merket under, som i budsjettlista. */
     var mk = okBuMerke(k);
     if(mk){ var me = okEl('span', 'ok-meta', okVask(okMerkeFullNavn(mk))); me.style.gridColumn = '1 / -1'; rad.appendChild(me); }
@@ -4958,7 +5015,7 @@ button.ok-dr-rad{ cursor:pointer; }
       okRgForAv[f.id] = ff;
       var ffo = okForfalt(f.dato);
       var rf = okEl('div', 'ok-under-rad ok-rg-for forfaller',
-        '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.motpart || 'Faktura') + '<span class="ok-meta">' + (ffo ? 'Forfalt – ikke funnet på regningskontoen' : 'Forfaller – ikke betalt ennå') + (f.harFil ? ' · PDF vedlagt' : '') + '</span></span><b>' + (ffo ? okUtropForfalt() : '') + okKr0.format(f.belop) + '</b>');
+        '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.motpart || 'Faktura') + '<span class="ok-meta">' + (ffo ? 'Forfalt – ikke funnet på regningskontoen' : 'Forfaller – ikke betalt ennå') + (f.harFil ? ' · PDF vedlagt' : '') + '</span></span><b>' + (ffo ? okUtropForfalt() : okStjerneKommer()) + okKr0.format(f.belop) + '</b>');
       rf.dataset.f = f.id; rf.tabIndex = 0; rf.setAttribute('role', 'button');
       rf.setAttribute('aria-label', (f.motpart || 'Faktura') + ', forfaller ' + okKort.format(new Date(f.dato)) + ', ' + okKr0.format(f.belop) + ' kr. Trykk for detaljene.');
       rf.addEventListener('click', function(){ okForVindu(ff, rf); });
@@ -4989,10 +5046,10 @@ button.ok-dr-rad{ cursor:pointer; }
   function okRgForRad(f, medKat){
     okRgForAv[f.id] = f;
     var forfalt = f.venter && okForfalt(f.dato);
-    var status = f.status === 'ny' ? 'venter i innboksen' : f.status === 'stroket' ? 'strøket' : forfalt ? 'forfalt – ikke funnet på regningskontoen' : f.venter ? 'forfaller – ikke betalt ennå' : '';
+    var status = f.status === 'ny' ? 'venter i innboksen' : f.status === 'stroket' ? (OK_AVSLUTTET[f.avsluttet] || 'strøket').toLowerCase() : forfalt ? 'forfalt – ikke funnet på regningskontoen' : f.venter ? 'forfaller – ikke betalt ennå' : '';
     var meta = [medKat ? f.kategori || 'Uten kategori' : '', f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''), f.del ? 'del av kvitteringen' : '', f.deler ? 'fordelt på ' + f.deler : '', f.mer, f.merke && okMerkeAv(f.merke) ? 'merke ' + okMerkeFullNavn(f.merke) : '', status].filter(Boolean).join(' · ');
     var rad = okEl('div', 'ok-under-rad ok-rg-for' + (f.status === 'stroket' ? ' ute' : '') + (f.venter ? ' forfaller' : ''),
-      '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.tekst || 'Uten tekst') + '<span class="ok-meta">' + okVask(meta) + '</span></span><b>' + (forfalt ? okUtropForfalt() : '') + (f.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret – ikke den banken viser">!</span>' : '') + okKr0.format(f.belop) + '</b>');
+      '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.tekst || 'Uten tekst') + '<span class="ok-meta">' + okVask(meta) + '</span></span><b>' + (forfalt ? okUtropForfalt() : f.venter ? okStjerneKommer() : '') + (f.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret – ikke den banken viser">!</span>' : '') + okKr0.format(f.belop) + '</b>');
     rad.dataset.f = f.id; rad.tabIndex = 0; rad.setAttribute('role', 'button');
     rad.setAttribute('aria-label', (f.tekst || 'Føring') + (forfalt ? ', forfalt og ikke betalt' : '') + ', ' + okKort.format(new Date(f.dato)) + ', ' + okKr0.format(f.belop) + ' kr. Trykk for detaljene.');
     rad.addEventListener('click', function(){ okForVindu(f, rad); });
@@ -5019,6 +5076,8 @@ button.ok-dr-rad{ cursor:pointer; }
      osv. dette kan godt være skjult under en redigeringsknapp»). Alt hentes
      med ?hva=post; Rediger viser skjemaet. */
   var okFrFra = null, okFrPost = null, okFrEndret = null;
+  /* Grunnen naar en regning er avsluttet uten trekk (faktura-avslutt). */
+  var OK_AVSLUTTET = { 'slettet':'Regningen er slettet', 'betalt-utenfor':'Betalt utenfor regnskapet' };
   var OK_FR_STATUS = { godkjent:'Ført', ny:'I innboksen', stroket:'Strøket – telles ikke', venter:'Venter på trekket', sammenslatt:'Slått sammen med en annen post' };
   function okForVindu(f, fra){
     if(fra) okFrFra = fra;
@@ -5053,7 +5112,7 @@ button.ok-dr-rad{ cursor:pointer; }
        sammen med den andre informasjonen»). */
     var to = okEl('div', 'ok-fr-to'), venstre = okEl('div', ''), hoyre = okEl('div', '');
     to.appendChild(venstre); to.appendChild(hoyre); inn.appendChild(to);
-    if(frForfalt) venstre.appendChild(okEl('p', 'ok-melding feil', '<b>Forfalt ' + okVask(okDato.format(new Date(p.dato))) + ' – ikke funnet på regningskontoen.</b> Er den betalt fra en annen konto, trykk «Legg i innboksen».'));
+    if(frForfalt) venstre.appendChild(okEl('p', 'ok-melding feil', '<b>Forfalt ' + okVask(okDato.format(new Date(p.dato))) + ' – ikke funnet på regningskontoen.</b> Trykk Rediger for å utsette betalingen, slette regningen eller merke den som betalt utenfor regnskapet.'));
     if(p.overstyrt && p.bankBelop != null) venstre.appendChild(okEl('p', 'ok-mangler', '<span><b>Summen er endret.</b> ' + (p.konto ? 'Banken viser ' : 'Opprinnelig ') + okVask(okFrKr(p.bankBelop)) + '.</span>'));
     var dl = document.createElement('dl'); dl.className = 'ok-fr-info';
     var rad = function(navn, verdi){ if(!verdi) return; dl.appendChild(okEl('dt', '', okVask(navn))); dl.appendChild(okEl('dd', '', okVask(verdi))); };
@@ -5068,7 +5127,7 @@ button.ok-dr-rad{ cursor:pointer; }
     else rad('Kategori', p.kategori ? okNeamKat(p.kategori) : 'Uten kategori');
     rad('Merke', p.merke ? okMerkeFullNavn(p.merke) : arv ? okMerkeFullNavn(arv) + ' (fra kategorien)' : 'Uten merke');
     rad('Notat', p.notat);
-    rad('Status', (OK_FR_STATUS[p.status] || p.status) + (p.auto ? ' · ført automatisk' : ''));
+    rad('Status', (p.avsluttet && OK_AVSLUTTET[p.avsluttet] ? OK_AVSLUTTET[p.avsluttet] + ' – telles ikke' : OK_FR_STATUS[p.status] || p.status) + (p.auto ? ' · ført automatisk' : ''));
     rad('Ført', p.behandlet ? okDato.format(new Date(p.behandlet)) + (p.av ? ' av ' + p.av : '') : '');
     venstre.appendChild(dl);
     /* Varelinjene fra kvitteringen, rett i vinduet. */
@@ -5099,11 +5158,16 @@ button.ok-dr-rad{ cursor:pointer; }
       stryk.addEventListener('click', function(){ stryk.disabled = true; okForEndre({ hva:'godkjenn', godkjenn:[], strok:[p.id] }, feil).then(function(r){ if(r.ok) okLukkFor(true); else stryk.disabled = false; }); });
       knapper.appendChild(stryk);
     }
-    if(p.status === 'venter'){
-      /* Betalt fra en konto Neam ikke henter: fakturaen blir en post i innboksen. */
+    if(p.status === 'venter' && !frForfalt){
+      /* Betalt fra en konto Neam ikke henter: fakturaen blir en post i innboksen.
+         Ikke for en forfalt regning - den har valgene sine under Rediger. */
       var tilInn = okEl('button', 'btn btn-ghost ok-smal', 'Legg i innboksen'); tilInn.type = 'button';
       tilInn.addEventListener('click', function(){ tilInn.disabled = true; okForEndre({ hva:'faktura-innboks', id:p.id }, feil).then(function(r){ if(r.ok) okLukkFor(true); else tilInn.disabled = false; }); });
       knapper.appendChild(tilInn);
+    } else if(p.status === 'stroket' && p.avsluttet){
+      var omg = okEl('button', 'btn btn-ghost ok-smal', 'Gjør om – regningen venter igjen'); omg.type = 'button';
+      omg.addEventListener('click', function(){ omg.disabled = true; okForEndre({ hva:'faktura-avslutt', id:p.id, grunn:'' }, feil).then(function(r){ if(r.ok) okLukkFor(true); else omg.disabled = false; }); });
+      knapper.appendChild(omg);
     } else if(p.status === 'stroket'){
       /* Bare en stroeket post kan sendes tilbake - en foert endres direkte (8. november 2026). */
       var tilbake = okEl('button', 'btn btn-ghost ok-smal', 'Send tilbake til innboksen'); tilbake.type = 'button';
@@ -5272,6 +5336,19 @@ button.ok-dr-rad{ cursor:pointer; }
     var dato = document.createElement('input'); dato.type = 'date'; dato.value = String(p.dato).slice(0, 10);
     felt('Dato', dato);
     if(p.datoBank) inn.appendChild(okEl('p', 'ok-meta', okVask('Opprinnelig dato ' + okDato.format(new Date(p.datoBank)) + '. Velg den igjen for å fjerne endringen.')));
+    /* En regning som venter: hva som skjer med den (8. november 2026). Utsett
+       flytter forfallsdatoen; slettet og betalt utenfor regnskapet stryker den. */
+    var regning = null, utsett = null;
+    if(p.status === 'venter' && p.faktura){
+      regning = document.createElement('select');
+      [['', 'Venter på trekket fra regningskontoen'], ['utsett', 'Utsett betaling til …'], ['slettet', 'Slettet'], ['betalt-utenfor', 'Betalt utenfor regnskapet']]
+        .forEach(function(o){ regning.appendChild(new Option(o[1], o[0])); });
+      felt('Regningen', regning);
+      utsett = document.createElement('input'); utsett.type = 'date'; utsett.min = okIDag();
+      var uw = okEl('div', 'ok-fr-felt'), ul = okEl('label', 'ok-etikett', 'Ny forfallsdato'); utsett.id = 'ok-fr-utsett'; ul.htmlFor = utsett.id;
+      uw.appendChild(ul); uw.appendChild(utsett); uw.hidden = true; inn.appendChild(uw);
+      regning.addEventListener('change', function(){ uw.hidden = regning.value !== 'utsett'; if(!uw.hidden) utsett.focus(); });
+    }
     if(delt) inn.appendChild(okEl('p', 'ok-meta', 'Kvitteringen er delt på flere kategorier – summen og kategorien endres i kvitteringen.'));
     else if(p.overstyrt && p.bankBelop != null) inn.appendChild(okEl('p', 'ok-meta', okVask((p.konto ? 'Banken viser ' : 'Opprinnelig ') + okFrKr(p.bankBelop) + '. Skriv den inn igjen for å fjerne endringen.')));
     var nyKat = okFrKatVelger(inn, p.kategori, delt);
@@ -5311,7 +5388,7 @@ button.ok-dr-rad{ cursor:pointer; }
     inn.appendChild(filInn); inn.appendChild(legg);
     /* Hva som er endret - Avbryt spoer bare da (Avbryt-regelen). */
     var start = { navn:navn.value, sum:sum.value, dato:dato.value, kat:nyKat(), merke:sm.value, notat:notat.value };
-    okFrEndret = function(){ return navn.value !== start.navn || sum.value !== start.sum || dato.value !== start.dato || nyKat() !== start.kat || sm.value !== start.merke || notat.value !== start.notat; };
+    okFrEndret = function(){ return navn.value !== start.navn || sum.value !== start.sum || dato.value !== start.dato || nyKat() !== start.kat || sm.value !== start.merke || notat.value !== start.notat || !!(regning && regning.value); };
     var knapper = okEl('div', 'ok-rad-knapper');
     var lagre = okEl('button', 'btn btn-ny', 'Lagre'); lagre.type = 'button';
     var avbryt = okEl('button', 'btn btn-ghost ok-smal', 'Avbryt'); avbryt.type = 'button';
@@ -5332,12 +5409,22 @@ button.ok-dr-rad{ cursor:pointer; }
         if(!/^\d{4}-\d{2}-\d{2}$/.test(dato.value)){ feil.textContent = 'Velg en dato.'; feil.hidden = false; dato.focus(); return; }
         endre.dato = dato.value; noe = true;
       }
+      var valg = regning ? regning.value : '';
+      if(valg === 'utsett'){
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(utsett.value)){ feil.textContent = 'Velg datoen betalingen er utsatt til.'; feil.hidden = false; utsett.focus(); return; }
+        endre.dato = utsett.value; noe = true;
+      }
       if(sm.value !== start.merke){ endre.merke = sm.value; noe = true; }
       if(notat.value !== start.notat){ endre.notat = notat.value; noe = true; }
       var kat = nyKat(), katEndret = !delt && kat && kat !== start.kat;
-      if(!noe && !katEndret){ okFrVis(okFrPost || p); return; }
+      var avslutt = valg === 'slettet' || valg === 'betalt-utenfor';
+      if(!noe && !katEndret && !avslutt){ okFrVis(okFrPost || p); return; }
       lagre.disabled = true;
-      var kjede = noe ? okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(endre) }) : Promise.resolve({ ok:true });
+      /* Slettet spoer foerst (bekreftelsesregelen); betalt utenfor er ikke farlig og kan gjoeres om. */
+      var spurt = valg === 'slettet'
+        ? bekreft('Slette regningen fra ' + (p.motpart || 'fakturaen') + '? Den telles ikke lenger. Det kan gjøres om.', { jaTekst:'Slett', fare:true })
+        : Promise.resolve(true);
+      var kjede = spurt.then(function(ja){ if(!ja) return { ok:false, avbrutt:true }; return noe ? okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(endre) }) : { ok:true }; });
       kjede.then(function(r){
         if(!r.ok) return r;
         if(!katEndret) return r;
@@ -5345,7 +5432,11 @@ button.ok-dr-rad{ cursor:pointer; }
         var kKropp = p.status === 'venter' ? { hva:'faktura-kategori', id:p.id, kategori:kat } : { hva:'godkjenn', godkjenn:[{ id:p.id, kategori:kat }], strok:[] };
         return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(kKropp) });
       }).then(function(r){
+        if(!r.ok || !avslutt) return r;
+        return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'faktura-avslutt', id:p.id, grunn:valg }) });
+      }).then(function(r){
         lagre.disabled = false;
+        if(r.avbrutt) return;
         if(!r.ok){ feil.textContent = 'Ble ikke lagret: ' + r.feil; feil.hidden = false; return; }
         okRgFor = {}; okMnd.kjop = {};
         window.okonomiEtterSkriv();
@@ -5491,7 +5582,8 @@ button.ok-dr-rad{ cursor:pointer; }
     });
     if(f.harKvittering) punkt('Se kvittering', function(){ okBuMenyLukk(); okVisKvittering({ id:f.id, tittel:f.tekst, dato:f.dato, kilde:f.kilde, belop:-f.belop, harFil:f.harFil, filType:f.filType }); });
     if(f.harFil) punkt(f.filType === 'application/pdf' ? 'Åpne PDF-en' : 'Åpne bildet', function(){ okBuMenyLukk(); okVisFil(f); });
-    if(f.venter) punkt('Legg i innboksen', function(){ okForEndre({ hva:'faktura-innboks', id:f.id }, info).then(ferdig); });
+    if(f.venter){ if(!okForfalt(f.dato)) punkt('Legg i innboksen', function(){ okForEndre({ hva:'faktura-innboks', id:f.id }, info).then(ferdig); }); }
+    else if(f.status === 'stroket' && f.avsluttet) punkt('Gjør om – regningen venter igjen', function(){ okForEndre({ hva:'faktura-avslutt', id:f.id, grunn:'' }, info).then(ferdig); });
     else if(f.status === 'stroket') punkt('Send tilbake til innboksen', function(){ okForEndre({ hva:'angre', ider:[f.id] }, info).then(ferdig); });
     else punkt('Stryk – føres ikke', function(){ okForEndre({ hva:'godkjenn', godkjenn:[], strok:[f.id] }, info).then(ferdig); });
     meny.appendChild(info);
@@ -5573,8 +5665,7 @@ button.ok-dr-rad{ cursor:pointer; }
         var rad = okEl('div', 'ok-under-rad ok-bl-rad'); rad.dataset.k = k;
         rad.appendChild(okEl('span', '', (lin.length ? '<span class="ok-bl-pil" aria-hidden="true">›</span>' : '') + okVask(k.split(' · ')[1])));
         rad.appendChild(okEl('b', '', belop(ub)));
-        /* Stolpen: postens del av gruppen. */
-        if(ub && b) rad.appendChild(okRadBar(ub / b, false));
+        /* Ingen stolpe i Budsjett (Magne, 8. november 2026: «Gjelder budsjett også, trenger ikke progressbars»). */
         /* Under posten: merket, maanedene i standarden, og i en maaned med eget budsjett standarden naar den er en annen. */
         var meta = [], mk = okBuMerke(k);
         if(mk) meta.push(okMerkeFullNavn(mk));
@@ -6716,6 +6807,7 @@ button.ok-dr-rad{ cursor:pointer; }
      endret budsjettet. Et budsjett under redigering roeres ikke. */
   window.okonomiEtterSkriv = function(){
     okLastInnboks();
+    if(okAl.del === 'logg') okLoggLast();
     if(okFormueLastet) okFormueLast();
     if(!okBu.redigerer) okBuLast();
     if(okMnd.lastet) okMndLast();

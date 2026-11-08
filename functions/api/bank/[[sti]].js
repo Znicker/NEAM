@@ -407,6 +407,125 @@ async function tilbake(env, url, epost){
 async function lesRoller(env){
   try{ return JSON.parse(await env.FAMILIE_KV.get(ROLLE_NOKKEL) || '{}') || {}; }catch(e){ return {}; }
 }
+/* ---------- Loggen ----------
+   Magne, 8. november 2026: «Jeg ønsker en logg ved siden av kontoutskrift.
+   en som viser alle endringer som blir gjort og hva som beveger seg under
+   panseret av endringer. dvs. at neam hentet pdf fra dropboxs la den dit og
+   der». De nyeste foerst, hoeyst LOGG_MAKS. Hver linje: t (tid), kilde
+   (Banken, Trumf, Dropbox, Neam eller den som gjorde det), tekst, og id naar
+   den gjelder en foering. Det som skjer med foeringene finnes ved aa
+   sammenligne foer og etter (loggDiff) - etter hver endring fra sida og
+   etter innhentingen - saa ingenting maa huske aa logge selv. To samtidige
+   skrivinger kan miste en linje: loggen er til aa se hva som skjer, ikke et
+   regnskap. */
+const LOGG_NOKKEL = 'auth:bank:logg';
+const LOGG_MAKS = 2000;
+async function logg(env, linjer){
+  linjer = (linjer || []).filter(Boolean);
+  if(!linjer.length) return;
+  const l = await lesJson(env, LOGG_NOKKEL, []);
+  const t = new Date().toISOString();
+  const nye = linjer.map(x => Object.assign({ t:t }, x)).reverse();
+  await env.FAMILIE_KV.put(LOGG_NOKKEL, JSON.stringify(nye.concat(Array.isArray(l) ? l : []).slice(0, LOGG_MAKS)));
+}
+function loggNavn(epost){ const n = String(epost || '').split('@')[0]; return n ? n.charAt(0).toUpperCase() + n.slice(1) : ''; }
+function loggKr(b){
+  const v = Math.abs(Number(b) || 0).toFixed(2).split('.');
+  return v[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',' + v[1] + ' kr';
+}
+const LOGG_MND = ['jan.', 'feb.', 'mars', 'apr.', 'mai', 'juni', 'juli', 'aug.', 'sep.', 'okt.', 'nov.', 'des.'];
+function loggDato(d){ const x = String(d || '').slice(0, 10).split('-'); return x.length === 3 ? Number(x[2]) + '. ' + LOGG_MND[Number(x[1]) - 1] : String(d || ''); }
+function loggKat(k){ return k ? String(k).replace(/ · /g, ' › ') : 'uten kategori'; }
+function loggPostNavn(p){ return '«' + (p.motpart || p.tekst || 'Uten tekst') + '»'; }
+function loggAntVed(p){ return (p.harFil ? 1 : 0) + (p.vedlegg || []).length; }
+/* Det som er endret paa foeringene mellom foer og etter. kilde: den som gjorde
+   det; noe er alltid Banken, Trumf eller Neam (det som skjer av seg selv). */
+function loggDiff(foer, etter, kilde){
+  const ut = [];
+  const linje = (k, tekst, id) => ut.push({ kilde:k || kilde, tekst:tekst, id:id });
+  for(const id of Object.keys(etter || {})){
+    const p = etter[id], f = foer && foer[id], n = loggPostNavn(p);
+    if(!f){
+      if(p.fra === 'trumf') linje('Trumf', 'Ny Trumf-kvittering ' + n + ', ' + loggKr(p.belop) + (p.status === 'godkjent' ? ' – ført automatisk på ' + loggKat(p.kategori) : ' – lagt i innboksen'), id);
+      else if(p.faktura && p.status === 'venter') linje(null, 'Regning fra ' + n + ' lagt inn: ' + loggKr(p.belop) + ', forfaller ' + loggDato(p.dato) + ' – venter på trekket fra regningskontoen', id);
+      else if(p.forHand) linje(null, 'Førte inn ' + n + ' for hånd: ' + loggKr(p.belop), id);
+      else if(p.fra) linje(null, 'Kvittering fra ' + n + ' lagt inn: ' + loggKr(p.belop) + (p.bankId ? ' – koblet til trekket' : ' – i innboksen'), id);
+      else linje('Banken', (p.belop > 0 ? 'Penger inn ' + n + ', +' : 'Nytt trekk ' + n + ', ') + loggKr(p.belop) + ' (' + loggDato(p.dato) + ')' + (p.kontoNavn ? ' fra ' + p.kontoNavn : '')
+        + (p.dekketAv ? ' – koblet til kvitteringen som alt lå der' : p.lignerPaa || p.mulDobbel ? ' – kan være dobbelt, står strøket i innboksen' : ''), id);
+      continue;
+    }
+    /* Status */
+    if(p.status !== f.status){
+      if(p.status === 'godkjent') linje(p.auto && !f.auto ? 'Neam' : null, (p.auto && !f.auto ? 'Førte ' + n + ' automatisk på ' : 'Førte ' + n + ' på ') + loggKat(p.kategori) + (p.kilde === 'faktura' ? ' (kategorien fra regningen)' : ''), id);
+      else if(p.status === 'stroket') linje(null, p.avsluttet === 'slettet' ? 'Slettet regningen fra ' + n : p.avsluttet === 'betalt-utenfor' ? 'Merket regningen fra ' + n + ' som betalt utenfor regnskapet' : 'Strøk ' + n + ' – føres ikke', id);
+      else if(p.status === 'ny') linje(null, f.status === 'venter' ? 'La regningen fra ' + n + ' i innboksen' : 'Sendte ' + n + ' tilbake til innboksen', id);
+      else if(p.status === 'venter') linje(null, 'Gjorde om: regningen fra ' + n + ' venter igjen', id);
+      else if(p.status === 'sammenslatt') linje('Neam', (f.status === 'venter' ? 'Regningen fra ' + n + ' er betalt – lagt ved trekket' : 'Slo sammen ' + n + ' med en annen post'), id);
+    } else if((p.kategori || '') !== (f.kategori || '')){
+      /* I innboksen er kategorien et forslag til noen godkjenner. */
+      if(p.status === 'ny') linje(null, f.kategori ? 'Endret forslaget for ' + n + ': ' + loggKat(f.kategori) + ' → ' + loggKat(p.kategori) : 'Foreslo ' + loggKat(p.kategori) + ' for ' + n, id);
+      else linje(null, (p.status === 'venter' ? 'Satte kategori på regningen fra ' + n + ': ' : 'Endret kategori på ' + n + ': ' + loggKat(f.kategori) + ' → ') + loggKat(p.kategori), id);
+    }
+    if(p.belop !== f.belop) linje(null, 'Endret summen på ' + n + ' fra ' + loggKr(f.belop) + ' til ' + loggKr(p.belop), id);
+    if((p.motpart || p.tekst || '') !== (f.motpart || f.tekst || '')) linje(null, 'Endret navnet ' + loggPostNavn(f) + ' til ' + n, id);
+    if(String(p.dato).slice(0, 10) !== String(f.dato).slice(0, 10)) linje(null, (p.status === 'venter' ? 'Utsatte betalingen av ' + n + ' fra ' : 'Endret datoen på ' + n + ' fra ') + loggDato(f.dato) + ' til ' + loggDato(p.dato), id);
+    if((p.merke || '') !== (f.merke || '')) linje(null, p.merke ? 'Satte merke på ' + n : 'Fjernet merket på ' + n, id);
+    if((p.notat || '') !== (f.notat || '')) linje(null, p.notat ? 'Endret notatet på ' + n : 'Fjernet notatet på ' + n, id);
+    const va = loggAntVed(f), vb = loggAntVed(p);
+    if(vb > va) linje(p.faktura && !f.faktura ? 'Neam' : null, p.faktura && !f.faktura ? 'La regningen (PDF) ved trekket ' + n + ' – fra Dropbox' : 'La ved ' + (vb - va === 1 ? 'et vedlegg' : (vb - va) + ' vedlegg') + ' på ' + n, id);
+    else if(vb < va) linje(null, 'Fjernet ' + (va - vb === 1 ? 'et vedlegg' : (va - vb) + ' vedlegg') + ' fra ' + n, id);
+    if(p.dekketAv && !f.dekketAv) linje('Neam', 'Koblet trekket ' + n + ' til kvitteringen' + (etter[p.dekketAv] ? ' ' + loggPostNavn(etter[p.dekketAv]) : ''), id);
+    if((p.lignerPaa || p.mulDobbel) && !(f.lignerPaa || f.mulDobbel)) linje('Neam', n + ' kan være dobbelt – står strøket i innboksen', id);
+  }
+  return ut;
+}
+/* Det som ikke gjelder foeringene - en linje per handling. */
+function loggAnnet(kropp, s, kilde){
+  const k = kropp || {}, h = k.hva, L = (tekst, kk) => [{ kilde:kk || kilde, tekst:tekst }];
+  if(h === 'dropbox-ferdig') return L(k.mappe === 'Ikke lest' ? '«' + k.navn + '» kunne ikke leses – flyttet til mappa Ikke lest i Dropbox' : 'Hentet «' + k.navn + '» fra Dropbox, Neam leste den, og fila er flyttet til mappa Importert', 'Dropbox');
+  if(h === 'dropbox-lagre') return L('Lagret «' + ((s && s.navn) || k.navn) + '» i Dropbox, mappa Importert', 'Dropbox');
+  if(h === 'dropbox-koble-fra') return L('Koblet fra Dropbox');
+  if(h === 'trumf-innlogging') return L('Logget inn på Trumf');
+  if(h === 'trumf-koble-fra') return L('Koblet fra Trumf');
+  if(h === 'budsjett') return L(k.mnd ? 'Lagret budsjettet for ' + k.mnd : 'Lagret budsjettet');
+  if(h === 'budsjett-perioder') return L('Endret periodene for ' + loggKat(k.kategori));
+  if(h === 'kategori-ny') return L('La til ' + [].concat(k.nye || []).length + ' kategori' + ([].concat(k.nye || []).length === 1 ? '' : 'er'));
+  if(h === 'kategori-slett') return L('Slettet kategorien ' + loggKat(k.kategori));
+  if(h === 'kategori-navn') return L('Ga ' + loggKat(k.fra) + ' nytt navn: ' + k.navn);
+  if(h === 'kategori-merke') return L('Endret merket på ' + loggKat(k.kategori));
+  if(h === 'merke-ny') return L('La til merket «' + k.navn + '»');
+  if(h === 'merke-endre') return L('Endret merket «' + k.navn + '»');
+  if(h === 'merke-slett') return L('Slettet et merke');
+  if(h === 'laert') return L(k.kategori ? 'Neam husker nå at «' + k.motpart + '» er ' + loggKat(k.kategori) : 'Neam glemte «' + k.motpart + '»');
+  if(h === 'regningskonto') return L('Valgte regningskonto');
+  if(h === 'kontonavn') return L(k.navn ? 'Ga en konto navnet «' + k.navn + '»' : 'Fjernet navnet på en konto');
+  if(h === 'formue') return L('Lagret verdier og gjeld');
+  if(h === 'roller') return L('Endret rollene på kontoene');
+  return [];
+}
+/* Handlingene som kan endre foeringene - da leses de foer, og forskjellen logges. */
+const LOGG_POST = ['godkjenn', 'angre', 'koble-alle', 'faktura-innboks', 'faktura-kategori', 'faktura-avslutt', 'post-endre', 'post-vedlegg', 'post-vedlegg-slett', 'kvittering-ny', 'forslag'];
+/* Bare felleskontoene i husholdningens regnskap (Magne, 8. november 2026:
+   «Det er kun kontoer som er lagt inn som felles som skal inn i dissse
+   fanene» og «Magne sine transaksjoner er fremdeles å se i transasksjonene
+   i regnskapet»). Innhentingen tar bare trekk fra kontoer med rollen
+   Felles, men trekk hentet foer rollene var satt - eller foer en konto
+   byttet rolle - ligger igjen. De leses forbi der noe VISES; postene
+   ligger urørt i KV, og funksjonene som skriver, leser fortsatt alt (ellers
+   ville de blitt slettet ved neste lagring). Kvitteringer, Trumf, fakturaer
+   og det som er lagt inn for haand har ingen bankkonto og vises som foer.
+   Har ingen konto rollen Felles, vises alt. */
+async function bareFelles(env, poster){
+  const roller = await lesRoller(env);
+  const harFelles = Object.keys(roller).some(u => roller[u] === 'felles');
+  if(!harFelles) return poster;
+  const ut = {};
+  for(const id of Object.keys(poster)){
+    const p = poster[id];
+    if(p.fra || !p.konto || p.konto === 'trumf' || roller[p.konto] === 'felles') ut[id] = p;
+  }
+  return ut;
+}
 
 async function kontoer(env, okt, fersk, psu){
   const roller = await lesRoller(env);
@@ -936,6 +1055,29 @@ async function fakturaKategori(env, kropp){
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
   return svar({ ok:true, post:p });
 }
+/* En regning som ikke betales fra regningskontoen (Magne, 8. november
+   2026: «når en forfalt regning overstiger man ikke legge den tilbake i
+   innboksen, den kan redigeres og der kan man ha egne valg som utsett
+   betaling til, slettet, betalt utenfor regnskap»). Slettet og betalt
+   utenfor regnskapet strykes - de telles ikke - med grunnen i `avsluttet`.
+   Tom grunn gjoer det om: fakturaen venter igjen. Utsett er datoen
+   (post-endre), saa den opprinnelige forfallsdatoen huskes i datoBank. */
+async function fakturaAvslutt(env, kropp){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const p = poster[String(kropp.id || '')];
+  if(!p || !p.faktura) return svar({ ok:false, feil:'Fant ikke fakturaen' });
+  const g = String(kropp.grunn || '');
+  if(g){
+    if(g !== 'slettet' && g !== 'betalt-utenfor') return svar({ ok:false, feil:'Ukjent valg' });
+    if(p.status !== 'venter') return svar({ ok:false, feil:'Fakturaen venter ikke' });
+    p.status = 'stroket'; p.avsluttet = g; p.behandlet = new Date().toISOString();
+  } else {
+    if(p.status !== 'stroket' || !p.avsluttet) return svar({ ok:false, feil:'Fakturaen er ikke avsluttet' });
+    p.status = 'venter'; delete p.avsluttet;
+  }
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  return svar({ ok:true });
+}
 async function fakturaInnboks(env, kropp){
   const poster = await lesJson(env, POST_NOKKEL, {});
   const p = poster[String(kropp.id || '')];
@@ -1079,7 +1221,8 @@ async function innboks(env, okt, fersk, psu){
     endret = true;
   }
   if(endret) await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
-  const alle = Object.keys(poster).map(id => poster[id]);
+  const synlige = await bareFelles(env, poster);
+  const alle = Object.keys(synlige).map(id => synlige[id]);
   /* Et banktrekk som er slaatt sammen med en kvittering, vises ikke for seg. */
   const venter = alle.filter(p => p.status === 'ny' && !p.dekketAv).sort((a, b) => b.dato.localeCompare(a.dato));
   for(const p of venter){
@@ -1151,7 +1294,7 @@ async function lagreForslag(env, kropp){
    ingen kall til banken her, saa kortet kan spoerre hver gang forsiden
    aapnes. Tom liste betyr at ingenting trenger noen. */
 async function varsler(env, okt){
-  const poster = await lesJson(env, POST_NOKKEL, {});
+  const poster = await bareFelles(env, await lesJson(env, POST_NOKKEL, {}));
   const venter = Object.keys(poster).map(id => poster[id]).filter(p => p.status === 'ny' && !p.dekketAv);
   const uten = venter.filter(p => !p.kategori).length;
   /* En faktura fra Dropbox uten kategori maa velges i innboksen - ellers
@@ -1317,7 +1460,7 @@ async function lagreBudsjett(env, kropp, epost){
    kommer, legges fakturaen ved det (synkFakturaer) og er ikke lenger
    `venter` - da forsvinner den herfra, og trekket teller naar det er godkjent. */
 async function regnskapAar(env){
-  const poster = await lesJson(env, POST_NOKKEL, {});
+  const poster = await bareFelles(env, await lesJson(env, POST_NOKKEL, {}));
   const kategorier = await budsjettKategorier(env);
   /* Summene per merke (8. november 2026): foeringens eget merke gaar foran
      kategoriens, og en linje uten merke arver postens - som i budsjettet. */
@@ -1426,7 +1569,7 @@ async function lagreFormue(env, kropp, epost){
 
 async function regnskap(env, mnd){
   if(!/^\d{4}-\d{2}$/.test(mnd || '')) mnd = new Date().toISOString().slice(0, 7);
-  const poster = await lesJson(env, POST_NOKKEL, {});
+  const poster = await bareFelles(env, await lesJson(env, POST_NOKKEL, {}));
   const kategorier = await budsjettKategorier(env);
   const sum = {};
   let antall = 0;
@@ -1449,7 +1592,7 @@ async function regnskap(env, mnd){
    Fortegnet er det samme som i regnskapet, saa summen stemmer med tabellen. */
 async function foringer(env, mnd, kat, eksakt){
   if(!/^\d{4}-\d{2}$/.test(mnd || '') || !kat) return svar({ ok:false, feil:'Mangler måned eller kategori' });
-  const poster = await lesJson(env, POST_NOKKEL, {});
+  const poster = await bareFelles(env, await lesJson(env, POST_NOKKEL, {}));
   const kn = await lesJson(env, KONTONAVN_NOKKEL, {});
   const treff = k => k === kat || (!eksakt && String(k).indexOf(kat + ' · ') === 0);
   const ut = [];
@@ -1494,7 +1637,7 @@ async function postDetaljer(env, id){
   const bank = p.bankId && poster[p.bankId];
   return svar({ ok:true, post:{ id:p.id, dato:p.dato, datoBank:p.datoBank || '', belop:p.belop, bankBelop:p.bankBelop != null ? p.bankBelop : null, overstyrt:!!p.overstyrt,
     motpart:p.motpart || '', tekst:p.tekst || '', motpartBank:p.motpartBank || '', notat:p.notat || '', kategori:p.kategori || '', merke:p.merke || '',
-    status:p.status || '', auto:!!p.auto, kilde:p.kilde || '', fra:p.fra || '', forHand:!!p.forHand, faktura:!!p.faktura,
+    status:p.status || '', auto:!!p.auto, kilde:p.kilde || '', fra:p.fra || '', forHand:!!p.forHand, faktura:!!p.faktura, avsluttet:p.avsluttet || '',
     konto:p.konto ? (kn[p.konto] || p.kontoNavn || '') : '', betaltFra:bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
     behandlet:p.behandlet || '', av:p.av ? masker(p.av) : '', deler:(p.deler || []).map(d => ({ kategori:d.kategori, belop:d.belop })),
     harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, vedlegg:vedleggListe(p) } });
@@ -1590,7 +1733,7 @@ async function postVedleggSlett(env, kropp){
    vises som den posten: et banktrekk dekket av en kvittering, og en
    kvittering eller faktura lagt ved et trekk. Sida soeker og filtrerer selv. */
 async function allePoster(env){
-  const poster = await lesJson(env, POST_NOKKEL, {});
+  const poster = await bareFelles(env, await lesJson(env, POST_NOKKEL, {}));
   const kn = await lesJson(env, KONTONAVN_NOKKEL, {});
   const ut = [];
   for(const id of Object.keys(poster)){
@@ -1602,7 +1745,7 @@ async function allePoster(env){
       konto:p.konto || '', kontoNavn:kn[p.konto] || p.kontoNavn || '', betaltFra:bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
       deler:p.deler && p.deler.length > 1 ? p.deler.length : 0,
       harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, harFil:!!p.harFil, filType:p.filType || '',
-      overstyrt:!!p.overstyrt, merke:p.merke || '' });
+      overstyrt:!!p.overstyrt, merke:p.merke || '', avsluttet:p.avsluttet || '' });
   }
   ut.sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
   return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', poster:ut });
@@ -2447,11 +2590,18 @@ export async function onRequestGet({ request, env }){
     if(hva === 'regnskap-aar') return await regnskapAar(env);
     if(hva === 'regningskonto') return await regningskonto(env);
     if(hva === 'alle-poster') return await allePoster(env);
+    if(hva === 'logg'){ const l = await lesJson(env, LOGG_NOKKEL, []); return svar({ ok:true, logg:Array.isArray(l) ? l : [] }); }
     if(hva === 'formue') return await formue(env);
     if(!okt) return svar({ ok:false, feil:'Banken er ikke koblet. Åpne /api/bank/start.' });
     if(hva === 'kontoer') return await kontoer(env, okt, fersk, psu);
     if(hva === 'transaksjoner') return await transaksjoner(env, okt, url.searchParams.get('konto') || '', url.searchParams.get('fra'), fersk, psu);
-    if(hva === 'innboks') return await innboks(env, okt, fersk, psu);
+    if(hva === 'innboks'){
+      /* Det innhentingen gjorde - nye trekk, automatisk foert, koblet, regninger lagt ved - logges. */
+      const foer = await lesJson(env, POST_NOKKEL, {});
+      const res = await innboks(env, okt, fersk, psu);
+      try{ await logg(env, loggDiff(foer, await lesJson(env, POST_NOKKEL, {}), 'Neam')); }catch(e){}
+      return res;
+    }
     return svar({ ok:false, feil:'Ukjent hva: ' + hva });
   }catch(e){
     /* Meldingen, aldri stakken - den kan baere biter av noekkelen. */
@@ -2471,11 +2621,23 @@ export async function onRequestPost({ request, env }){
   if(!v.ok) return svar(v);
   let kropp = null;
   try{ kropp = await request.json(); }catch(e){ return svar({ ok:false, feil:'Ugyldig JSON' }); }
+  /* Loggen: foeringene leses foer og etter det som kan endre dem; resten faar en egen linje. */
+  const kilde = kropp && kropp.hva === 'forslag' ? 'Neam' : loggNavn(v.epost);
+  const foer = kropp && LOGG_POST.indexOf(kropp.hva) !== -1 ? await lesJson(env, POST_NOKKEL, {}) : null;
+  const res = await postHandling(request, env, v, kropp);
+  try{
+    const s = await res.clone().json();
+    if(s && s.ok) await logg(env, foer ? loggDiff(foer, await lesJson(env, POST_NOKKEL, {}), kilde) : loggAnnet(kropp, s, kilde));
+  }catch(e){}
+  return res;
+}
+async function postHandling(request, env, v, kropp){
   if(kropp && kropp.hva === 'godkjenn') return await godkjenn(env, kropp, v.epost);
   if(kropp && kropp.hva === 'angre') return await angre(env, kropp);
   if(kropp && kropp.hva === 'koble-alle') return await kobleAlle(env, kropp, request);
   if(kropp && kropp.hva === 'faktura-innboks') return await fakturaInnboks(env, kropp);
   if(kropp && kropp.hva === 'faktura-kategori') return await fakturaKategori(env, kropp);
+  if(kropp && kropp.hva === 'faktura-avslutt') return await fakturaAvslutt(env, kropp);
   if(kropp && kropp.hva === 'post-endre') return await postEndre(env, kropp);
   if(kropp && kropp.hva === 'post-vedlegg') return await postVedlegg(env, kropp);
   if(kropp && kropp.hva === 'post-vedlegg-slett') return await postVedleggSlett(env, kropp);
