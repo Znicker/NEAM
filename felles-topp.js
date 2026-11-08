@@ -91,6 +91,8 @@ function ntpTegn(){
     /* Matlagingen som gaar: til venstre for klokka, med en ring som gaar
        rundt (Magne, 8. november 2026). Fylles av ntpMatIkon(). */
     + '<div class="ntp-matrad" id="ntpMat" hidden></div>'
+    /* Oekonomien: ikonet med roed prikk naar noe venter i innboksen. Fylles av ntpOkTegn(). */
+    + '<div class="ntp-matrad ntp-okrad" id="ntpOk" hidden></div>'
     /* Timerne til venstre for klokka, ikke under den - under gjorde de
        toppen for hoey (Magne, 8. november 2026). */
     + '<div class="ntp-timere" id="ntpTimere" role="button" tabindex="0" hidden'
@@ -125,6 +127,7 @@ function ntpTegn(){
   setInterval(ntpKlokke, 10000);
   ntpVaerStart();
   ntpTmStart();
+  ntpOkStart();
 }
 
 /* Ikonet oppe til venstre (Magne, 8. november 2026): et kort trykk er
@@ -511,6 +514,55 @@ async function ntpTmFjern(t){
   ntpTmDelt = ntpTmDelt.filter(function(x){ return x.id !== t.id; });
   ntpTmTegn();
   await ntpTmEndreDelt(function(l){ return l.filter(function(x){ return x.id !== t.id; }); });
+}
+
+/* ---------- Oekonomien ----------
+   Naar noe venter i innboksen i Oekonomi (okonomi.html), staar
+   Oekonomi-ikonet ved klokka med en roed prikk, i samme form som
+   matlagingen; trykk gaar til innboksen (Magne, 8. november 2026: «Dersom
+   det er innhold i innboksen kan det dukke opp et ikon likt
+   matlagingssymbolet ved klokken med en rød prikk»). /api/bank svarer bare
+   den som har tilgang - alle andre faar ok:false, og da spoer sida ikke
+   igjen paa en time. Svaret huskes i localStorage («neam-okonomi»), saa
+   ikonet staar med en gang paa neste side; okonomi.html skriver det
+   ogsaa naar innboksen endres. */
+const NTP_OK = 'neam-okonomi';
+const NTP_OK_NEI_MS = 3600e3, NTP_OK_FERSK_MS = 120e3;
+function ntpOkLes(){ try{ return JSON.parse(localStorage.getItem(NTP_OK) || 'null'); }catch(e){ return null; } }
+function ntpOkTegn(s){
+  const rad = document.getElementById('ntpOk');
+  if(!rad) return;
+  /* Paa Oekonomi-sida selv baerer fanene prikken - der staar ikke ikonet. */
+  const vis = !!(s && s.venter) && !/^\/okonomi(\.html)?$/.test(location.pathname);
+  rad.hidden = !vis;
+  if(!vis){ rad.innerHTML = ''; return; }
+  if(rad.firstChild) return;
+  const url = (typeof neamIkonUrl === 'function') ? neamIkonUrl('okonomi') : '/bilder/ikoner/okonomi.png';
+  const navn = 'Økonomi: noe venter i innboksen – trykk for å gå dit';
+  rad.innerHTML = '<a class="ntp-mat ntp-ok" href="/okonomi.html#innboks" title="' + ntpEsc(navn) + '" aria-label="' + ntpEsc(navn) + '">'
+    + '<span class="ntp-mat-ikon"><img src="' + ntpEsc(url) + '" alt="" width="579" height="604"><span class="ntp-ok-prikk"></span></span>'
+    + '<span class="ntp-mat-navn">Innboks</span></a>';
+}
+function ntpOkHent(){
+  const s = ntpOkLes();
+  if(s && Date.now() - s.t < (s.nei ? NTP_OK_NEI_MS : NTP_OK_FERSK_MS)) return;
+  fetch('/api/bank?hva=varsler', { credentials:'same-origin', cache:'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(v){
+      const ny = v && v.ok
+        ? { venter:(v.varsler || []).some(function(x){ return x.type === 'innboks'; }), t:Date.now() }
+        : { nei:true, t:Date.now() };
+      try{ localStorage.setItem(NTP_OK, JSON.stringify(ny)); }catch(e){}
+      ntpOkTegn(ny);
+    })
+    .catch(function(){});
+}
+function ntpOkStart(){
+  ntpOkTegn(ntpOkLes());
+  ntpOkHent();
+  setInterval(ntpOkHent, 300e3);
+  /* En annen fane (okonomi.html) kan ha endret innboksen. */
+  window.addEventListener('storage', function(e){ if(e.key === NTP_OK) ntpOkTegn(ntpOkLes()); });
 }
 
 /* ---------- Matlagingen ----------

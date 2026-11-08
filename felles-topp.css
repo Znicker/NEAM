@@ -107,6 +107,11 @@
 .ntp-matrad.flere .ntp-mat-navn{ max-width:76px; }
 @media (prefers-reduced-motion:reduce){ .ntp-mat-ikon::before{ animation:none; } }
 .ntp-matrad:not([hidden]) ~ .ntp-klokke{ margin-left:14px; }
+/* Oekonomien ved klokka: samme form som matlagingen, uten ringen, med en
+   roed prikk naar noe venter i innboksen (8. november 2026). */
+.ntp-ok .ntp-mat-ikon::before{ display:none; }
+.ntp-ok-prikk{ position:absolute; top:3px; right:3px; width:16px; height:16px; border-radius:50%; background:var(--danger); box-shadow:0 0 0 3px var(--paper); }
+.ntp-matrad:not([hidden]) ~ .ntp-okrad{ margin-left:10px; }
 
 /* Uten vaer staar klokka likevel helt til hoeyre. Trykk paa den aapner
    alarmene og timerne. */
@@ -243,5 +248,7 @@
   .ntp-dato{ font-size:var(--t-meta); margin-top:2px; }
   .ntp-timere{ margin-left:auto; grid-template-rows:repeat(3, auto); gap:2px 8px; }
   .ntp-matrad:not([hidden]) ~ .ntp-timere{ margin-left:10px; }
+  .ntp-matrad:not([hidden]) ~ .ntp-okrad{ margin-left:6px; }
+  .ntp-ok-prikk{ width:12px; height:12px; top:1px; right:1px; }
   .ntp-timere:not([hidden]) ~ .ntp-klokke{ margin-left:10px !important; }
 }

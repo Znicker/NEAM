@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="/felles-knapper.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <link rel="stylesheet" href="/felles-neam.css?v=88">
-<link rel="stylesheet" href="/felles-topp.css?v=9">
+<link rel="stylesheet" href="/felles-topp.css?v=10">
 <!-- Datalaget baerer husregisteret og lastes foer sidens eget skript.
      felles-skjema.js gir avbryt-regelen paa husskjemaet og krever
      felles-dialog.js, som ligger nederst - derfor staar begge to der,
@@ -1257,6 +1257,13 @@ window.neamUtfor = async function(navn, arg){
     .then(function(v){
       if(!v || !v.ok) return;
       document.getElementById('ixokFlis').hidden = false;
+      /* Roed prikk paa flisen naar noe venter i innboksen (8. november 2026). */
+      if((v.varsler || []).some(function(x){ return x.type === 'innboks'; })){
+        var ikon = document.querySelector('#ixokFlis .app-icon');
+        ikon.style.position = 'relative';
+        ikon.insertAdjacentHTML('beforeend', '<span class="ixok-prikk" style="position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:var(--danger);box-shadow:0 0 0 3px var(--paper)"></span>');
+        document.getElementById('ixokFlis').setAttribute('aria-label', 'Økonomi – noe venter i innboksen');
+      }
       if(!v.varsler || !v.varsler.length) return;
       var k = document.getElementById('ixok-kort');
       k.innerHTML = '<span style="font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)">Økonomi</span>'
@@ -1277,6 +1284,6 @@ window.neamUtfor = async function(navn, arg){
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=89"></script>
-<script src="/felles-topp.js?v=9"></script>
+<script src="/felles-topp.js?v=10"></script>
 </body>
 </html>

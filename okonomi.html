@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-neam.css?v=88">
-<link rel="stylesheet" href="/felles-topp.css?v=9">
+<link rel="stylesheet" href="/felles-topp.css?v=10">
 <style>
 /* ============================================================
    NEAM - oekonomi
@@ -831,7 +831,7 @@ button.ok-dr-rad{ cursor:pointer; }
       <button type="button" class="ok-fane" role="tab" id="ok-fane-regnskap" data-vis="regnskap">Regnskap</button>
       <button type="button" class="ok-fane" role="tab" id="ok-fane-budsjett" data-vis="budsjett">Budsjett</button>
       <!-- Transaksjoner og Resultat byttet plass 8. november 2026. -->
-      <button type="button" class="ok-fane" role="tab" id="ok-fane-innboks" data-vis="innboks">Transaksjoner<span class="ok-fane-tall" id="ok-fane-tall"></span></button>
+      <button type="button" class="ok-fane" role="tab" id="ok-fane-innboks" data-vis="innboks">Transaksjoner<span class="ok-fane-prikk" id="ok-fane-tall" hidden><span class="ok-skjult">Noe venter i innboksen</span></span></button>
     </nav>
     <!-- Oppsett og Oppdater ligger på høyre tommelknapp (8. november 2026). -->
     </div>
@@ -844,6 +844,16 @@ button.ok-dr-rad{ cursor:pointer; }
       <section class="ok-kort" id="ok-mnd-kort">
         <div class="ok-kort-hode"><h2 id="ok-mnd-tittel">Denne måneden</h2><span id="ok-mnd-meta"></span></div>
         <div id="ok-mnd"><p class="ok-meta">Henter …</p></div>
+      </section>
+      <!-- «Neam trenger» flyttet hit fra innboksen 8. november 2026 - tallene brukes her. -->
+      <section class="ok-kort ok-fold-gruppe">
+      <div class="ok-fold" data-fold="ib-trenger" id="ok-trenger-kort" hidden>
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Neam trenger</span><span class="ok-fold-sum" id="ok-trenger-sum"></span></button>
+        <div class="ok-fold-innhold">
+          <p class="ok-meta">Til nøkkeltallene på Status. Det som fylles inn her, lagres som i Oppsett og Budsjett, og kan endres der. <span id="ok-trenger-meta" aria-live="polite"></span></p>
+          <div id="ok-trenger"></div>
+        </div>
+      </div>
       </section>
       <section class="ok-kort" id="ok-nokler-kort" hidden>
         <div class="ok-kort-hode"><h2>Nøkkeltall</h2><span class="ok-meta">Målene er eksempler</span></div>
@@ -860,13 +870,14 @@ button.ok-dr-rad{ cursor:pointer; }
     </div>
   </div>
 
-  <!-- ===== TRANSAKSJONER: Innboks og Alle =====
-       Innboksen er det som venter paa deg; Alle er kontoutskriften fra
-       nullpunktet (Magne, 6. november 2026). Internt heter fanen 'innboks'. -->
+  <!-- ===== TRANSAKSJONER: Innboks og Kontoutskrift =====
+       Innboksen er bare nye foeringer som maa kontrolleres; Kontoutskrift
+       (het Alle til 8. november 2026) er alt fra nullpunktet. Foerte poster
+       endres direkte og sendes ikke tilbake. Internt heter fanen 'innboks'. -->
   <div class="ok-vis ok-ib" id="ok-vis-innboks" role="tabpanel" aria-labelledby="ok-fane-innboks" hidden>
     <div class="ok-faner ok-tr-valg" role="group" aria-label="Transaksjoner" id="ok-tr-valg">
-      <button type="button" class="ok-fane" data-tr="innboks" aria-pressed="true">Innboks<span class="ok-fane-tall" id="ok-tr-tall"></span></button>
-      <button type="button" class="ok-fane" data-tr="alle" aria-pressed="false">Alle</button>
+      <button type="button" class="ok-fane" data-tr="innboks" aria-pressed="true">Innboks<span class="ok-fane-prikk" id="ok-tr-tall" hidden><span class="ok-skjult">Noe venter i innboksen</span></span></button>
+      <button type="button" class="ok-fane" data-tr="alle" aria-pressed="false">Kontoutskrift</button>
     </div>
     <div class="ok-tr-del" id="ok-tr-alle" hidden>
       <div class="ok-kort-hode">
@@ -925,8 +936,7 @@ button.ok-dr-rad{ cursor:pointer; }
     <div id="ok-innboks"></div>
     <div class="ok-ib-to">
       <div class="ok-ib-liste">
-      <!-- Postene foerst, gruppert i sammenleggbare linjer; «Neam trenger»
-           nederst (skissen, 6. november 2026). -->
+      <!-- Bare nye foeringer som maa kontrolleres (8. november 2026). -->
       <section class="ok-kort ok-fold-gruppe">
       <div class="ok-fold" data-fold="ib-tvil" data-apen="ja" id="ok-ib-tvil-kort" hidden>
         <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Trenger et valg</span><span class="ok-fold-sum" id="ok-ib-tvil-meta"></span></button>
@@ -938,27 +948,6 @@ button.ok-dr-rad{ cursor:pointer; }
         <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Klare til godkjenning</span><span class="ok-fold-sum" id="ok-ib-sikre-meta"></span></button>
         <div class="ok-fold-innhold">
           <div id="ok-ib-sikre"></div>
-        </div>
-      </div>
-      <div class="ok-fold" data-fold="ib-auto" id="ok-auto-kort" hidden>
-        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Ført automatisk</span><span class="ok-fold-sum" id="ok-auto-meta"></span></button>
-        <div class="ok-fold-innhold">
-          <p class="ok-meta">Disse kjente Neam, og de er ført uten å spørre. Er noe feil, trykk Angre – da havner posten i innboksen, og Neam fører den aldri automatisk igjen.</p>
-          <div id="ok-auto"></div>
-        </div>
-      </div>
-      <div class="ok-fold" data-fold="ib-faktura" id="ok-faktura-kort" hidden>
-        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Fakturaer som venter</span><span class="ok-fold-sum" id="ok-faktura-meta"></span></button>
-        <div class="ok-fold-innhold">
-          <p class="ok-meta">Vises i Regnskap som «forfaller» på kategorien sin, i forfallsmåneden. Når trekket kommer fra banken, legges PDF-en ved det og trekket føres på samme kategori. Betalte du fra en konto Neam ikke henter, trykk «Legg i innboksen».</p>
-          <div id="ok-faktura"></div>
-        </div>
-      </div>
-      <div class="ok-fold" data-fold="ib-trenger" id="ok-trenger-kort" hidden>
-        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Neam trenger</span><span class="ok-fold-sum" id="ok-trenger-sum"></span></button>
-        <div class="ok-fold-innhold">
-          <p class="ok-meta">Til nøkkeltallene på Status. Det som fylles inn her, lagres som i Oppsett og Budsjett, og kan endres der. <span id="ok-trenger-meta" aria-live="polite"></span></p>
-          <div id="ok-trenger"></div>
         </div>
       </div>
       </section>
@@ -1256,7 +1245,7 @@ button.ok-dr-rad{ cursor:pointer; }
 <script src="/felles-skriv.js?v=16"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=89"></script>
-<script src="/felles-topp.js?v=9"></script>
+<script src="/felles-topp.js?v=10"></script>
 <script>
 (function(){
   'use strict';
@@ -1543,8 +1532,6 @@ button.ok-dr-rad{ cursor:pointer; }
       document.getElementById('ok-innboks-meta').textContent = 'Fra ' + okKort.format(new Date(r.fra)) + ' · hentet kl. '
         + okKlokke.format(new Date(r.hentet)) + (r.advarsel ? ' · ' + r.advarsel + ' – viser forrige henting' : '');
       okTegnInnboks();
-      okTegnAuto(r.auto || []);
-      okTegnFakturaer(r.fakturaer || []);
       if(okAl.poster) okAlLast();
       /* Innboksen kan ha foert poster automatisk - varslene og Status
          hentes paa nytt, ellers viser de tall fra foer foeringen. */
@@ -3362,9 +3349,16 @@ button.ok-dr-rad{ cursor:pointer; }
     if(OK_VISNINGER.indexOf(start) === -1){ try{ start = localStorage.getItem('ok-fane') || 'status'; }catch(e){ start = 'status'; } }
     okVis(start);
   })();
+  /* Roed prikk paa Transaksjoner og Innboks naar noe venter (Magne, 8.
+     november 2026: «ved innhold i innboks er det rød prikk på innboks, på
+     transaksjoner og på økonomisymbolet») - forsiden har sin egen. */
   function okFaneTall(n){
-    document.getElementById('ok-fane-tall').textContent = n ? String(n) : '';
-    document.getElementById('ok-tr-tall').textContent = n ? String(n) : '';
+    document.getElementById('ok-fane-tall').hidden = !n;
+    document.getElementById('ok-tr-tall').hidden = !n;
+    /* Ikonet ved klokka (felles-topp.js) foelger innboksen med en gang. */
+    var s = { venter:!!n, t:Date.now() };
+    try{ localStorage.setItem('neam-okonomi', JSON.stringify(s)); }catch(e){}
+    if(typeof ntpOkTegn === 'function') ntpOkTegn(s);
   }
 
   /* ---------- Transaksjoner › Alle ----------
@@ -3525,8 +3519,8 @@ button.ok-dr-rad{ cursor:pointer; }
       knapper.appendChild(vk);
     }
     if(p.harFil) knapper.appendChild(okFilLenke(p));
-    /* Godkjent eller stroeket kan sendes tilbake til innboksen (angre), som i «Ført automatisk». */
-    if(p.status === 'godkjent' || p.status === 'stroket'){
+    /* Bare en stroeket post kan sendes tilbake til innboksen - en foert endres direkte (8. november 2026). */
+    if(p.status === 'stroket'){
       var tb = okEl('button', 'ok-lenke', 'Send tilbake til innboksen'); tb.type = 'button';
       tb.addEventListener('click', function(){
         tb.disabled = true;
@@ -5042,7 +5036,8 @@ button.ok-dr-rad{ cursor:pointer; }
       var tilInn = okEl('button', 'btn btn-ghost ok-smal', 'Legg i innboksen'); tilInn.type = 'button';
       tilInn.addEventListener('click', function(){ tilInn.disabled = true; okForEndre({ hva:'faktura-innboks', id:p.id }, feil).then(function(r){ if(r.ok) okLukkFor(true); else tilInn.disabled = false; }); });
       knapper.appendChild(tilInn);
-    } else if(p.status !== 'ny'){
+    } else if(p.status === 'stroket'){
+      /* Bare en stroeket post kan sendes tilbake - en foert endres direkte (8. november 2026). */
       var tilbake = okEl('button', 'btn btn-ghost ok-smal', 'Send tilbake til innboksen'); tilbake.type = 'button';
       tilbake.addEventListener('click', function(){ tilbake.disabled = true; okForEndre({ hva:'angre', ider:[p.id] }, feil).then(function(r){ if(r.ok) okLukkFor(true); else tilbake.disabled = false; }); });
       knapper.appendChild(tilbake);
@@ -5431,7 +5426,6 @@ button.ok-dr-rad{ cursor:pointer; }
     if(f.venter) punkt('Legg i innboksen', function(){ okForEndre({ hva:'faktura-innboks', id:f.id }, info).then(ferdig); });
     else{
       punkt('Stryk – føres ikke', function(){ okForEndre({ hva:'godkjenn', godkjenn:[], strok:[f.id] }, info).then(ferdig); });
-      punkt('Send tilbake til innboksen', function(){ okForEndre({ hva:'angre', ider:[f.id] }, info).then(ferdig); });
     }
     meny.appendChild(info);
     meny.appendChild(okEl('span', 'ok-meny-hint', 'Shift + høyreklikk: vanlig meny'));
@@ -5928,66 +5922,6 @@ button.ok-dr-rad{ cursor:pointer; }
         h += '</tr>';
       });
       document.getElementById('ok-aar-varme').innerHTML = h + '</tbody>';
-    });
-  }
-
-  /* ---------- Innboks: foert automatisk ---------- */
-  function okTegnAuto(liste){
-    var kort = document.getElementById('ok-auto-kort'), boks = document.getElementById('ok-auto');
-    kort.hidden = !liste.length;
-    okFaneTall(okPoster.length);
-    if(!liste.length) return;
-    document.getElementById('ok-auto-meta').textContent = liste.length + ' siste 14 dager';
-    boks.innerHTML = '';
-    var kilde = { laert:'samme som sist', ord:'kjent navn', ai:'Neam', faktura:'betalt faktura' };
-    liste.forEach(function(p){
-      var rad = okEl('div', 'ok-kjop',
-        '<span class="ok-meta">' + okVask(okKort.format(new Date(p.dato))) + '</span>'
-        + '<span><span class="ok-navn">' + okVask(p.motpart || p.tekst || '') + '</span><br><span class="ok-meta">' + okVask(p.kategori) + ' · ' + okVask(kilde[p.kilde] || '') + '</span></span>'
-        + '<b>' + okKr0.format(p.belop) + '</b>');
-      var angre = okEl('button', 'ok-lenke', 'Angre'); angre.type = 'button';
-      angre.addEventListener('click', function(){
-        angre.disabled = true;
-        okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'angre', ider:[p.id] }) })
-          .then(function(){ okLastInnboks(); okStatusLast(); okVarslerLast(); if(okMnd.lastet) okMndLast(); });
-      });
-      rad.appendChild(angre);
-      if(p.harFil) rad.appendChild(okFilLenke(p));
-      boks.appendChild(rad);
-    });
-  }
-
-  /* Fakturaer som venter paa trekket fra banken (6. november 2026). */
-  function okTegnFakturaer(liste){
-    var kort = document.getElementById('ok-faktura-kort'), boks = document.getElementById('ok-faktura');
-    kort.hidden = !liste.length;
-    if(!liste.length) return;
-    document.getElementById('ok-faktura-meta').textContent = liste.length + (liste.length === 1 ? ' faktura · ' : ' fakturaer · ')
-      + okKr0.format(liste.reduce(function(s, p){ return s + Math.abs(p.belop); }, 0)) + ' kr';
-    boks.innerHTML = '';
-    liste.forEach(function(p){
-      var rad = okEl('div', 'ok-kjop',
-        '<span class="ok-meta">' + okVask(okKort.format(new Date(p.dato))) + '</span>'
-        + '<span><span class="ok-navn">' + okVask(p.motpart || '') + '</span><br><span class="ok-meta">Forfall' + (p.kategori ? '' : ' · velg kategori, så vises den i Regnskap') + '</span></span>'
-        + '<b>' + okKr0.format(p.belop) + '</b>');
-      /* Kategorien bestemmer linja den forfaller paa i Regnskap, og foelger
-         med til trekket naar det kommer (7. november 2026). */
-      var ks = okKatVelg('ok-faktura-kat-' + okVask(p.id).replace(/[^\w]/g, ''), p.kategori, p.kategori ? null : 'Velg kategori', 'Kategori for fakturaen fra ' + (p.motpart || ''));
-      ks.addEventListener('change', function(){
-        ks.disabled = true;
-        okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'faktura-kategori', id:p.id, kategori:ks.value }) })
-          .then(function(r){ ks.disabled = false; if(r.ok){ p.kategori = ks.value; if(okMnd.lastet) okMndLast(); } });
-      });
-      rad.appendChild(ks);
-      var inn = okEl('button', 'ok-lenke', 'Legg i innboksen'); inn.type = 'button';
-      inn.addEventListener('click', function(){
-        inn.disabled = true;
-        okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'faktura-innboks', id:p.id }) })
-          .then(function(){ okLastInnboks(); });
-      });
-      rad.appendChild(inn);
-      if(p.harFil) rad.appendChild(okFilLenke(p));
-      boks.appendChild(rad);
     });
   }
 
@@ -6685,7 +6619,7 @@ button.ok-dr-rad{ cursor:pointer; }
     if(vis === 'innboks' && okIbValgt) k.valgtPostId = okIbValgt;
     if((vis === 'maaned' || vis === 'regnskap') && okMnd.valgt){ k.maaned = okMnd.valgt; if(okMnd.valgtPost) k.valgtKategori = okMnd.valgtPost; }
     if(vis === 'budsjett' && okBu.mbValgt) k.budsjettMaaned = okBu.mbValgt;
-    /* Hva nøkkeltallene mangler («Neam trenger» i innboksen) - ingen beløp. */
+    /* Hva nøkkeltallene mangler («Neam trenger» på Status) - ingen beløp. */
     var mangler = document.getElementById('ok-trenger-kort').hidden ? [] : Array.prototype.map.call(document.querySelectorAll('#ok-trenger .ok-trenger-tekst b'), function(b){ return b.textContent; });
     if(mangler.length) k.manglerForNokkeltall = mangler;
     return k;
