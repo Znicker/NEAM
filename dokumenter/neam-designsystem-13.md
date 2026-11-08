@@ -1754,8 +1754,10 @@ først, Sparing sist. Bare tallene skiller dem:
   **Fra 8. november 2026 (skissen «Resultat – måneder og kategorier»):**
   sumboksene viser differansen (Status' regel: røde minustall over, grønt
   ellers); så én sammenleggbar linje, «Utgifter mot budsjett», med **ett
-  stolpediagram** (`.ok-dr`): først utgiftene per måned (blå, rød over
-  budsjettet, forfaller lysere, budsjettet som mørk strek). Trykk en måned:
+  stolpediagram** (`.ok-dr`): først utgiftene per måned, jan–des (blå, rød
+  over budsjettet, forfaller lysere, budsjettet som mørk strek – bare for
+  måneder som er startet i Budsjett), og **standardbudsjettet** som en
+  beige søyle med kant helt til høyre («Std»). Trykk en måned:
   utgiftsgruppene med **tre stolper** side om side – **regnskap** (`--aksent`,
   `--danger` over budsjettet), **budsjett** (`--boks-kant` med 1 px
   `--ink-soft`-kant) og **snitt** (`--paper` med 1,5 px stiplet
@@ -1786,7 +1788,11 @@ først, Sparing sist. Bare tallene skiller dem:
   kjøpene bak posten står regningen først, som en vanlig rad med
   «Forfaller – ikke betalt ennå» i meta-linja og «Åpne PDF-en ›».
 - **Budsjett** – lista for perioden (fra 8. november 2026), med budsjett
-  per måned gjennom året som diagram. **Rediger** åpner månedens skjema, og
+  per måned gjennom året som diagram – bare startede måneder, og
+  standardbudsjettet helt til høyre. En måned uten eget budsjett har
+  **«Start budsjett»** (`.btn-ny`); en startet måned har Rediger og
+  «Kopier standardbudsjettet», som spør med `bekreft()` («Erstatt», fare)
+  når måneden alt har tall. **Rediger** åpner månedens skjema, og
   Lagre eller Avbryt går tilbake til lista; «Standardbudsjett ›» viser
   standarden med «‹ Tilbake til budsjettet». Skjemaene er som før:
   standardbudsjettet eller ett månedsbudsjett om gangen. Fra 6. november 2026 (Magne: «er veldig

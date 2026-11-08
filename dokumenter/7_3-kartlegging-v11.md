@@ -513,8 +513,9 @@ i en dialog, med én spalte i alle tre (`be1e0ca`, `9339f30`), filene lagt
 ved postene i husets filviser i stedet for en ny fane (`106893c`),
 differansen i «måned så langt», Resultat før Transaksjoner og innboksen på
 én linje også på PC (`44395ab`), Resultat med grafer per kategori
-(`ed22845`, tatt ut igjen), og til sist Resultat med måned › kategori ›
-post i ett stolpediagram (`a6b79e2`).
+(`ed22845`, tatt ut igjen), Resultat med måned › kategori › post i ett
+stolpediagram (`a6b79e2`), og til sist «Start budsjett» per måned og hele
+året med standarden i diagrammene (`4cb70d8`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -523,7 +524,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 75 commits, `0e0050a`–`a6b79e2`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 76 commits, `0e0050a`–`4cb70d8`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4279,7 +4280,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 75 commits fra `0e0050a` til `a6b79e2` (dialogen med
+verdier. Bygget i 76 commits fra `0e0050a` til `4cb70d8` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4724,6 +4725,36 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Start budsjett, og hele året med standarden** (`4cb70d8`). Magne: «det
+  er uoversiktelig. vi får ta det fra en kant. budsjett søylene kan være
+  tunge [tomme] for måneder der budsjettet ikke er fylt inn. Det vil si at
+  vi må ha en start budsjett knapp for hver måned inne i budsjettfanene.
+  Jeg ønsker også en søyle helt til høyre som viser standardbudsjettet.
+  søylene i utgifter kan også vises med hver måned slik som budsjettet
+  gjør». Avklart med spørsmål: tomme søyler, bare i diagrammene; begge
+  diagrammene; og «Start budsjett akviverer måneden. så kan man kopiere
+  inn standardbudsjett om man vil det. dersom det allerede er fylt inn
+  summer når man velger standardbudsjett må man promtes om dette».
+  - **Startet måned** = måneden har eget budsjett (`okBu.maaneder[m]`,
+    også tomt `{}`). **«Start budsjett»** (`.btn-ny`) lagrer et tomt eget
+    budsjett (`budsjett` POST med `mnd` og `maaned:{}`). En startet måned har
+    **Rediger** og **«Kopier standardbudsjettet»** – standarden for
+    måneden (uten poster som ikke kommer den måneden); har måneden alt tall,
+    spør `bekreft()` først («Erstatt», fare). «Bruk standardbudsjettet» (som
+    fjernet månedens eget) er tatt ut. Merk: når standarden lagres, gir
+    bank-funksjonen fortsatt alle måneder fra nullpunktet til i dag uten
+    eget budsjett en kopi av standarden – de er da startet.
+  - **Diagrammene** (Resultat «Utgifter mot budsjett» og Budsjett «Budsjett
+    per måned») viser jan–des for året til den valgte måneden, budsjettet
+    bare for startede måneder, og **standardbudsjettet** (snitt per måned,
+    `okBsTotaler('standard')`) som søyle helt til høyre («Std», beige med
+    kant). I Resultat kan bare måneder med regnskap trykkes; kategoriene i en
+    måned som ikke er startet, viser «–» og «ikke startet» for budsjettet.
+  - **Ellers som før:** sumboksene, Status og lista i Budsjett bruker
+    standarden når måneden ikke er startet.
+  - Månedsnavnene står uten sperring og tettere, så tretten søyler får
+    plass på telefon. Testet i testserveren (start, kopier, spørsmålet,
+    streken i Resultat).
 - **Resultat: måned › kategori › post i ett stolpediagram** (`a6b79e2`).
   Grafene fra `ed22845` (under) var ikke det Magne så for seg: «Dette ble
   ikke sånn jeg tenkte. jeg tenke rat det er et stolpediagram øverst …
