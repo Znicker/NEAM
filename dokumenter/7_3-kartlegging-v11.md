@@ -1156,6 +1156,9 @@ long press 2 sekunder tar deg til index».
   porsjonsvelgeren står i raden under navnet og er borte mens retten
   lages. `topp ?v=10` er en annen økts (Økonomi-prikken ved klokka,
   `e3ce2a2`).
+- **Til slutt** (`0a4241b`, ingen `?v=`): Start matlaging er flyttet fra
+  foran navnet til først i raden under, til venstre for porsjonene, og
+  gryteikonet foran porsjonene er tatt bort (Magne).
 
 **8. november, natt: Økonomi med pinkoden på fellesenheten** (neam.js
 `?v=90`, ingen andre numre brukt). Magne: «Det er kun nina og magne som

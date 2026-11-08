@@ -1750,8 +1750,9 @@ viser ingrediensene for porsjonene som er valgt, og der ligger knappen til
 handlelista; på telefonen står den knappen nederst i Ingredienser-fanen,
 så det ikke blir to faner med samme navn.
 
-**«Start matlaging» står foran rettens navn**, og **porsjonsvelgeren**
-(− 4 +) i raden under navnet, der antallet sto. Før start står lista
+**Raden under rettens navn begynner med «Start matlaging»**, og så
+**porsjonsvelgeren** (− 4 +, uten symbol foran), tiden og vurderingen.
+Navnet står alene øverst med Rediger til høyre. Før start står lista
 gruppert som i handlelista.
 
 **Start er grønn og Stans er rød** (Magne, 8. november 2026) – et unntak
