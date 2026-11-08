@@ -852,6 +852,23 @@ select.hu-felt{
 .av-serie{font-size:var(--t-meta);color:var(--ink-soft);font-weight:600}
 .av-feil{color:#B4443A;font-size:var(--t-meta);font-weight:600}
 .av-feil[hidden],.av-serie[hidden]{display:none}
+
+/* ---------- Julestjernene ----------
+   Ett ikon til venstre for vaeret i toppen (Magne, 8. november 2026),
+   samme form som laaseikonet: ikonet, og tilstanden under («På», «Av»,
+   «1 av 2»). Vaeret staar ellers midt i toppen med auto paa begge sider;
+   med stjerna foran tar stjerna den venstre auto-en. */
+.jst-knapp{
+  display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;
+  background:none;border:none;padding:0;margin-left:auto;cursor:pointer;
+  color:var(--ink);font:inherit;touch-action:manipulation;
+}
+.jst-knapp[hidden]{display:none}
+.jst-ikon{width:64px;height:64px;display:block}
+.jst-ikon img{width:100%;height:100%;object-fit:contain;display:block}
+.jst-knapp .jst-navn{white-space:nowrap;font-variant-numeric:tabular-nums}
+.jst-knapp:active .jst-ikon{transform:scale(.96)}
+.jst-knapp:not([hidden]) + .ntp-vaer{margin-left:24px}
 </style>
 </head>
 <body>
@@ -3671,6 +3688,120 @@ async function oppdaterAlt(manuelt){
 }
 
 /* ============================================================
+   Julestjernene i stua
+   ------------------------------------------------------------
+   Én knapp til venstre for vaeret som slaar gruppa «Julestjerner» av og
+   paa (Magne, 8. november 2026). Gruppa er laget i Rommene paa DENNE
+   skjermen, og ligger i oppsettet der (hskLesOppsett() i felles-hus.js,
+   grupper: { romnoekkel: [{ navn, ider }] }). Den leses paa nytt hver
+   gang, saa endres gruppa i Rommene, foelger knappen etter. Finnes den
+   ikke paa skjermen, vises ingen knapp.
+
+   Samme regel som gruppebryteren i Rommene: er noen paa, slaas alle av -
+   ellers alle paa. Tilstanden leses fra Homey hvert minutt mens skjermen
+   er synlig, og rett etter et trykk.
+   ============================================================ */
+const JST_NAVN = /julestjern/i;
+const JST_OPPDATER = 60 * 1000;
+let jstTilstand = {};       /* enhets-id -> true/false, fra Homey */
+let jstMeldt = false;
+
+function jstIder(){
+  let funnet = null;
+  try{
+    const grupper = hskLesOppsett().grupper || {};
+    /* Gruppa i stua foerst, hvis det skulle finnes flere med navnet. */
+    const rommene = Object.keys(grupper).sort(function(a, b){
+      return (/stue/i.test(b) ? 1 : 0) - (/stue/i.test(a) ? 1 : 0);
+    });
+    rommene.forEach(function(rom){
+      (grupper[rom] || []).forEach(function(g){
+        if(funnet || Array.isArray(g) || !JST_NAVN.test(String(g.navn || ''))) return;
+        funnet = (g.ider || []).slice();
+      });
+    });
+  }catch(e){}
+  return funnet && funnet.length ? funnet : null;
+}
+
+function jstKnapp(){
+  let b = $('jstKnapp');
+  if(b) return b;
+  const vaer = $('ntpVaer');
+  if(!vaer) return null;
+  b = document.createElement('button');
+  b.type = 'button';
+  b.id = 'jstKnapp';
+  b.className = 'jst-knapp';
+  b.hidden = true;
+  /* Ikonene er Magnes egne (8. november 2026), i bilder/ikoner/ som de
+     andre: julestjerne (tent) og julestjerne-av (slukket). Begge hentes
+     med en gang, saa bildet ikke blinker tomt foerste gang det byttes. */
+  b.innerHTML = '<span class="jst-ikon">' + neamIkonImg('julestjerne-av', ' width="511" height="512"') + '</span>'
+              + '<span class="ikon-navn jst-navn"></span>';
+  new Image().src = neamIkonUrl('julestjerne');
+  b.addEventListener('click', jstTrykk);
+  vaer.parentNode.insertBefore(b, vaer);
+  return b;
+}
+
+function jstTegn(){
+  const b = jstKnapp();
+  if(!b) return;
+  const ider = jstIder();
+  b.hidden = !ider;
+  if(!ider) return;
+  const kjent = ider.filter(function(id){ return id in jstTilstand; });
+  const paa = kjent.filter(function(id){ return jstTilstand[id]; }).length;
+  const tekst = !kjent.length ? '…'
+              : paa === 0 ? 'Av'
+              : paa === kjent.length ? 'På'
+              : paa + ' av ' + kjent.length;
+  b.classList.toggle('paa', paa > 0);
+  /* Tent stjerne naar noen lyser, slukket naar alle er av eller tilstanden
+     ikke er kjent ennaa (Magnes to bilder, 8. november 2026). */
+  const img = b.querySelector('.jst-ikon img');
+  const src = neamIkonUrl(paa > 0 ? 'julestjerne' : 'julestjerne-av');
+  if(img && img.getAttribute('src') !== src) img.setAttribute('src', src);
+  b.querySelector('.jst-navn').textContent = tekst;
+  b.setAttribute('aria-label', 'Julestjernene: ' + (tekst === '…' ? 'henter' : tekst) + '. Trykk for å slå ' + (paa > 0 ? 'av' : 'på'));
+}
+
+async function jstHent(){
+  if(document.hidden || !jstIder()){ jstTegn(); return; }
+  let e;
+  try{ e = await api('?hva=enheter'); }catch(err){ e = null; }
+  if(!e || !e.ok){
+    if(!jstMeldt) console.warn('Julestjernene: fikk ikke kontakt med Homey:', e && e.feil);
+    jstMeldt = true;
+    jstTegn();
+    return;
+  }
+  jstMeldt = false;
+  const alle = e.enheter || {};
+  jstTilstand = {};
+  jstIder().forEach(function(id){
+    const o = alle[id] && alle[id].capabilitiesObj && alle[id].capabilitiesObj.onoff;
+    if(o) jstTilstand[id] = !!o.value;
+  });
+  jstTegn();
+}
+
+async function jstTrykk(){
+  const ider = (jstIder() || []).filter(function(id){ return id in jstTilstand; });
+  if(!ider.length){ jstHent(); return; }
+  const nytt = !ider.some(function(id){ return jstTilstand[id]; });
+  ider.forEach(function(id){ jstTilstand[id] = nytt; });
+  jstTegn();
+  const svar = await Promise.all(ider.map(function(id){
+    return post({ hva:'sett', enhet:id, kapabilitet:'onoff', verdi:nytt }).catch(function(){ return { ok:false }; });
+  }));
+  const feil = svar.filter(function(r){ return !r || !r.ok; });
+  if(feil.length) console.warn('Julestjernene: fikk ikke slått alle ' + (nytt ? 'på' : 'av') + ':', feil);
+  setTimeout(jstHent, 1500);
+}
+
+/* ============================================================
    Bilvakt – bil paa tunet
    ------------------------------------------------------------
    Tapo-kameraet kjenner igjen biler, men det gjoer det i TP-Links
@@ -3959,6 +4090,10 @@ function bvLukk(){
   /* Bil paa tunet - se «Bilvakt» over. */
   setInterval(bvSjekk, BV_SJEKK_MS);
   bvSjekk();
+
+  /* Julestjernene ved vaeret - se «Julestjernene i stua» over. */
+  jstHent();
+  setInterval(jstHent, JST_OPPDATER);
 })();
 
 document.addEventListener('keydown', function(e){
@@ -3973,7 +4108,7 @@ document.addEventListener('keydown', function(e){
 });
 
 document.addEventListener('visibilitychange', function(){
-  if(!document.hidden){ tegnKlokke(); oppdaterAlt(false); speilHuske(); speilBarnFag(); lastSjo(); }
+  if(!document.hidden){ tegnKlokke(); oppdaterAlt(false); speilHuske(); speilBarnFag(); lastSjo(); jstHent(); }
 });
 </script>
 </body>
