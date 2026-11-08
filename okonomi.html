@@ -331,6 +331,27 @@ input.ok-regnefeil{ border-color:var(--danger) !important; }
 .ok-rad-bar{ height:5px; margin-top:2px; }
 .ok-rad-bar .ok-bar-fyll{ border-radius:999px; }
 @media (min-width:700px){ .ok-liste-kort .ok-rs-liste .ok-under-rader > .ok-under-rad, .ok-liste-kort .ok-rs-liste .ok-mnd-kat summary, .ok-liste-kort .ok-rs-hode{ grid-template-columns:minmax(0,1fr) 120px 120px 120px; } }
+/* Vedleggene i foeringsvinduet: én side om gangen, med piler (8. november 2026). */
+.ok-fr-blad{ display:flex; flex-direction:column; gap:6px; }
+.ok-fr-scene{ position:relative; background:var(--boks-mild); border-radius:10px; min-height:260px; display:flex; align-items:center; justify-content:center; overflow:hidden; touch-action:pan-y; }
+.ok-fr-side{ width:100%; }
+.ok-fr-side{ display:flex; justify-content:center; }
+.ok-fr-side img, .ok-fr-side canvas{ display:block; max-width:100%; width:auto; height:auto; max-height:72vh; background:#fff; cursor:zoom-in; box-shadow:var(--shadow); }
+/* PC: vinduet blir bredt naar foeringen har vedlegg, og siden vises i full hoeyde ved siden av infoen
+   (Magne: «På pc er det plass til vedlegsvisning i full størrelse ved siden av info om føringen»). */
+@media (min-width:1100px){
+  .dlg-kort.ok-fr-stor:has(.ok-fr-blad){ width:min(1500px, 96vw); max-width:none; max-height:96vh; }
+  /* Knappene opp i venstre spalte, saa vedlegget faar hele hoeyden til hoeyre. */
+  #ok-fr-innhold:has(.ok-fr-blad){ display:grid; grid-template-columns:minmax(360px,440px) minmax(0,1fr); gap:16px 24px; align-items:start; }
+  #ok-fr-innhold:has(.ok-fr-blad) > .ok-fr-to{ display:contents; }
+  #ok-fr-innhold:has(.ok-fr-blad) > .ok-fr-to > div:last-child{ grid-column:2; grid-row:1 / span 3; }
+  .ok-fr-side img, .ok-fr-side canvas{ max-height:calc(96vh - 320px); }
+}
+.ok-fr-pil{ position:absolute; top:50%; transform:translateY(-50%); z-index:1; width:48px; height:48px; border-radius:50%; border:1px solid var(--line); background:var(--paper); color:var(--ink); font:inherit; font-size:28px; font-weight:700; line-height:1; box-shadow:var(--shadow); cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0 0 3px; }
+.ok-fr-pil.venstre{ left:8px; }
+.ok-fr-pil.hoyre{ right:8px; }
+.ok-fr-pil:disabled{ opacity:.3; cursor:default; }
+.ok-fr-sidetall{ text-align:center; }
 .ok-meny-hint{ padding:6px 10px 2px; font-size:var(--t-etikett); color:var(--ink-soft); border-top:1px solid var(--line); margin-top:4px; }
 .ok-std-utvid{ font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; display:inline-flex; align-items:baseline; gap:6px; text-align:left; }
 .ok-std-utvid:hover{ color:var(--aksent); }
@@ -5006,7 +5027,7 @@ button.ok-dr-rad{ cursor:pointer; }
       });
     }
     hoyre.appendChild(okEl('span', 'ok-etikett', 'Vedlegg'));
-    hoyre.appendChild(okFrVedlegg(p, false, null, true));
+    hoyre.appendChild(p.vedlegg.length ? okFrBlad(p) : okEl('p', 'ok-meta', 'Ingen vedlegg.'));
     var knapper = okEl('div', 'ok-rad-knapper');
     var red = okEl('button', 'btn btn-endre', 'Rediger'); red.type = 'button';
     red.addEventListener('click', function(){ okFrRediger(p); });
@@ -5270,6 +5291,105 @@ button.ok-dr-rad{ cursor:pointer; }
     });
     navn.focus();
   }
+  /* ---------- Vedleggene som sider, med piler (8. november 2026) ----------
+     Magne: «alle vedlegg også åpnes automatisk når jeg trykker på
+     føringene. dersom det er flere sider kan det vises klarer piler til
+     hver side … denne vedlegsvisningen er på siden av resten av
+     informasjonen». Bildene er én side hver; en PDF tegnes side for side
+     med pdf.js (lastes fra cdnjs bare naar en PDF skal vises - Neam har
+     ellers ingen bibliotek utenfra). Trykk paa siden aapner filviseren.
+     Piltastene og sveip blar. Laster ikke pdf.js, blir PDF-en et kort. */
+  var OK_PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  var okPdfJsLast = null, okFrAktivBlad = null;
+  function okPdfJs(){
+    if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if(okPdfJsLast) return okPdfJsLast;
+    okPdfJsLast = new Promise(function(ok, nei){
+      var s = document.createElement('script'); s.src = OK_PDFJS + 'pdf.min.js';
+      s.onload = function(){
+        if(!window.pdfjsLib){ okPdfJsLast = null; nei(new Error('PDF-leseren lastet ikke')); return; }
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = OK_PDFJS + 'pdf.worker.min.js';
+        ok(window.pdfjsLib);
+      };
+      s.onerror = function(){ okPdfJsLast = null; nei(new Error('PDF-leseren lastet ikke')); };
+      document.head.appendChild(s);
+    });
+    return okPdfJsLast;
+  }
+  function okFrBlad(p){
+    var w = okEl('div', 'ok-fr-blad'), scene = okEl('div', 'ok-fr-scene'), side = okEl('div', 'ok-fr-side'), tall = okEl('div', 'ok-fr-sidetall ok-meta', 'Henter vedlegget …');
+    var forr = okEl('button', 'ok-fr-pil venstre', '‹'), neste = okEl('button', 'ok-fr-pil hoyre', '›');
+    forr.type = 'button'; neste.type = 'button';
+    forr.setAttribute('aria-label', 'Forrige side'); neste.setAttribute('aria-label', 'Neste side');
+    forr.hidden = true; neste.hidden = true;
+    scene.appendChild(forr); scene.appendChild(side); scene.appendChild(neste);
+    w.appendChild(scene); w.appendChild(tall);
+    var sider = [], i = 0, tegnet = -1;
+    var url = function(v){ return '/api/bank?hva=kvittering-fil&id=' + encodeURIComponent(p.id) + (v.n ? '&n=' + v.n : ''); };
+    var tegn = function(){
+      forr.hidden = neste.hidden = sider.length < 2;
+      forr.disabled = i <= 0; neste.disabled = i >= sider.length - 1;
+      var s = sider[i];
+      if(!s) return;
+      var navn = s.v.navn || (s.v.type === 'application/pdf' ? 'PDF' : 'Bilde');
+      tall.textContent = (sider.length > 1 ? 'Side ' + (i + 1) + ' av ' + sider.length + ' · ' : '') + navn + (s.doc && s.doc.numPages > 1 ? ' (side ' + s.nr + ' av ' + s.doc.numPages + ')' : '');
+      if(tegnet === i) return;
+      tegnet = i;
+      side.innerHTML = '';
+      var apne = function(){ okVisFil({ id:p.id, n:s.v.n, filType:s.v.type, dato:p.dato, motpart:p.motpart || p.tekst }, side); };
+      if(s.bilde){
+        var img = document.createElement('img'); img.width = 420; img.height = 560; img.alt = navn; img.src = url(s.v);
+        img.addEventListener('click', apne); side.appendChild(img);
+      } else if(s.doc){
+        var hvilken = i;
+        s.doc.getPage(s.nr).then(function(pg){
+          if(tegnet !== hvilken) return;
+          /* Tegnet skarpt for plassen: bredden paa kolonnen, hoeyden paa skjermen. */
+          var bredde = side.clientWidth || scene.clientWidth || 420, hoyde = window.innerHeight * 0.96, vp0 = pg.getViewport({ scale:1 });
+          var vp = pg.getViewport({ scale:Math.min(bredde / vp0.width, hoyde / vp0.height) * (window.devicePixelRatio || 1) });
+          var c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+          c.setAttribute('role', 'img'); c.setAttribute('aria-label', navn + ', side ' + s.nr);
+          c.addEventListener('click', apne);
+          side.innerHTML = ''; side.appendChild(c);
+          return pg.render({ canvasContext:c.getContext('2d'), viewport:vp }).promise;
+        });
+      } else {
+        /* pdf.js lastet ikke: kortet, som foer. */
+        var k = okEl('button', 'ok-fr-ved', '<span class="pdf"><b>PDF</b></span><span>' + okVask(navn) + '</span>'); k.type = 'button';
+        k.addEventListener('click', apne); side.appendChild(k);
+      }
+    };
+    var bla = function(d){ var j = i + d; if(j >= 0 && j < sider.length){ i = j; tegn(); } };
+    w.bla = bla;
+    forr.addEventListener('click', function(){ bla(-1); });
+    neste.addEventListener('click', function(){ bla(1); });
+    /* Sveip paa telefon. */
+    var x0 = null;
+    scene.addEventListener('touchstart', function(e){ x0 = e.touches.length === 1 ? e.touches[0].clientX : null; }, { passive:true });
+    scene.addEventListener('touchend', function(e){ if(x0 == null) return; var dx = e.changedTouches[0].clientX - x0; x0 = null; if(Math.abs(dx) > 50) bla(dx < 0 ? 1 : -1); });
+    /* Sidene i rekkefoelge: bildene med en gang, PDF-ene naar de er lest. */
+    p.vedlegg.reduce(function(kjede, v){
+      return kjede.then(function(){
+        if(v.type !== 'application/pdf'){ sider.push({ v:v, bilde:true }); return; }
+        return okPdfJs()
+          .then(function(lib){ return fetch(url(v), { credentials:'same-origin' }).then(function(rs){ return rs.arrayBuffer(); }).then(function(b){ return lib.getDocument({ data:b }).promise; }); })
+          .then(function(doc){ for(var k = 1; k <= doc.numPages; k++) sider.push({ v:v, doc:doc, nr:k }); })
+          .catch(function(){ sider.push({ v:v, feil:true }); });
+      }).then(tegn);
+    }, Promise.resolve());
+    okFrAktivBlad = w;
+    return w;
+  }
+  /* Piltastene blar i vedleggene naar vinduet er aapent - ikke i et felt, og ikke naar kvitteringen eller filviseren ligger over. */
+  document.addEventListener('keydown', function(e){
+    if((e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') || document.getElementById('ok-fr-bak').hidden) return;
+    if(!document.getElementById('ok-kv-bak').hidden || !document.getElementById('filviser').hidden) return;
+    var mal = e.target;
+    if(mal && (mal.tagName === 'INPUT' || mal.tagName === 'TEXTAREA' || mal.tagName === 'SELECT' || mal.isContentEditable)) return;
+    if(!okFrAktivBlad || !document.body.contains(okFrAktivBlad)) return;
+    e.preventDefault();
+    okFrAktivBlad.bla(e.key === 'ArrowLeft' ? -1 : 1);
+  });
   function okLukkFor(uten){
     /* Under redigering spoer Lukk (og Escape) foerst naar noe er endret. */
     if(!uten && okFrEndret && okFrEndret()){
