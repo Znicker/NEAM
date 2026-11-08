@@ -271,8 +271,8 @@ input.ok-regnefeil{ border-color:var(--danger) !important; }
 .ok-rg-for .ok-dato{ display:inline-block; min-width:52px; color:var(--ink-soft); font-size:var(--t-meta); }
 .ok-rg-for .ok-meta{ display:block; }
 /* Loggen: samme rad, ogsaa naar linja ikke gjelder en foering. */
-.ok-logg-rad .ok-dato{ display:inline-block; min-width:52px; color:var(--ink-soft); font-size:var(--t-meta); }
-.ok-logg-rad .ok-meta{ display:block; }
+.ok-logg-rad .ok-dato, .ok-pe-rad .ok-dato{ display:inline-block; min-width:52px; color:var(--ink-soft); font-size:var(--t-meta); }
+.ok-logg-rad .ok-meta, .ok-pe-rad .ok-meta{ display:block; }
 #ok-fr-innhold{ display:flex; flex-direction:column; gap:10px; }
 #ok-fr-innhold select{ width:100%; font-family:inherit; font-size:16px; padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
 /* Foeringsvinduet: stort, med alt om foeringen og Rediger (8. november 2026). */
@@ -1141,6 +1141,37 @@ button.ok-dr-rad{ cursor:pointer; }
     </section>
   </div>
 
+  <!-- ===== DEN ENKELTES DEL (8. november 2026) =====
+       Én fane per person, lagt inn av okPeFaner fra ?hva=privat: sys ser
+       alle, Magne og Nina sin egen. Trekkene ligger for seg og telles ikke i
+       felles før de er sendt til innboksen og godkjent der. -->
+  <div class="ok-vis ok-person" id="ok-vis-person" role="tabpanel" hidden>
+    <div class="ok-spalte">
+      <p class="ok-melding" id="ok-pe-melding" hidden></p>
+      <section class="ok-kort">
+        <div class="ok-kort-hode"><h2>Kontoene</h2><span class="ok-meta" id="ok-pe-meta"></span></div>
+        <div class="ok-al-liste" id="ok-pe-kontoer"><span class="ok-meta">Henter …</span></div>
+      </section>
+      <section class="ok-kort ok-liste-kort">
+        <div class="ok-kort-hode">
+          <div class="ok-mnd-nav">
+            <button type="button" class="ok-pil" id="ok-pe-forrige" aria-label="Forrige måned">‹</button>
+            <span class="ok-mnd-navn" id="ok-pe-navn"></span>
+            <button type="button" class="ok-pil" id="ok-pe-neste" aria-label="Neste måned">›</button>
+          </div>
+        </div>
+        <p class="ok-meta">Trykk et kjøp for å sende det til innboksen i felles og få pengene tilbake. Ingenting telles i felles før det er godkjent der.</p>
+        <div class="ok-al-liste" id="ok-pe-liste"></div>
+      </section>
+      <section class="ok-kort" id="ok-pe-skylder-kort" hidden>
+        <span class="ok-etikett">Felles skylder deg</span>
+        <div class="ok-stort" id="ok-pe-skylder"></div>
+        <span class="ok-meta" id="ok-pe-skylder-meta"></span>
+      </section>
+      <div class="ok-spalte" id="ok-pe-maal"></div>
+    </div>
+  </div>
+
   <!-- ===== OPPSETT ===== -->
   <div class="ok-vis" id="ok-vis-oppsett" role="tabpanel" aria-label="Oppsett" hidden>
     <h2 style="margin:0;font-size:var(--t-stor)">Oppsett</h2>
@@ -1608,7 +1639,7 @@ button.ok-dr-rad{ cursor:pointer; }
   function okKilde(p){ return p.fra ? 'fra:' + p.fra : 'konto:' + p.konto; }
   /* Kontoene vises overalt med navnet fra Oppsett og hele kontonummeret (Magne, 6. november 2026). */
   function okKildeNavn(p){
-    if(p.fra) return p.fra === 'trumf' ? 'Trumf' : p.forHand ? 'Lagt inn for hånd' : 'Kvittering fra bilde';
+    if(p.fra) return p.fra === 'trumf' ? 'Trumf' : p.forHand ? (p.utlegg || 'Lagt inn for hånd') : 'Kvittering fra bilde';
     var k = okKontoer.filter(function(x){ return x.uid === p.konto; })[0];
     return k ? okKontoValg(k) : (p.kontoNavn || 'Ukjent konto');
   }
@@ -1793,7 +1824,7 @@ button.ok-dr-rad{ cursor:pointer; }
   }
   function okKontoTekst(p){
     return p.fra
-      ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? 'Lagt inn for hånd' : 'Kvittering fra bilde')
+      ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? (p.utlegg || 'Lagt inn for hånd') : 'Kvittering fra bilde')
         + (p.bankId ? ' · betalt fra ' + (p.bankKonto || 'banken') + ', slått sammen med banktrekket' : '')
       : (p.kontoNavn || '');
   }
@@ -3555,17 +3586,24 @@ button.ok-dr-rad{ cursor:pointer; }
      (budsjett mot regnskap - internt 'maaned') med samme plassering, og
      Oppsett paa hoeyre tommelknapp i stedet for en fane. */
   var OK_VISNINGER = ['status', 'innboks', 'regnskap', 'maaned', 'budsjett', 'oppsett'];
+  /* Personfanene (8. november 2026) kommer fra ?hva=privat etter lasting;
+     okPeOnske er fanen lenken eller forrige besoek ba om. */
+  var okPersoner = [], okPeOnske = '';
   var okAarLastet = false, okAktiv = 'status';
   function okVis(navn){
     if(navn === 'aar' || navn === 'resultat') navn = 'maaned';
     if(navn === 'transaksjoner') navn = 'innboks';
-    if(OK_VISNINGER.indexOf(navn) === -1) navn = 'status';
+    if(OK_VISNINGER.indexOf(navn) === -1 && okPersoner.indexOf(navn) === -1) navn = 'status';
     okAktiv = navn;
     OK_VISNINGER.forEach(function(v){
       document.getElementById('ok-vis-' + v).hidden = v !== navn;
       var f = document.getElementById('ok-fane-' + v);
       if(f) f.setAttribute('aria-selected', String(v === navn));
     });
+    var erPerson = okPersoner.indexOf(navn) !== -1;
+    document.getElementById('ok-vis-person').hidden = !erPerson;
+    okPersoner.forEach(function(p){ document.getElementById('ok-fane-p-' + p).setAttribute('aria-selected', String(p === navn)); });
+    if(erPerson) okPeLast(navn);
     try{ localStorage.setItem('ok-fane', navn); }catch(e){}
     var periode = navn === 'regnskap' || navn === 'maaned' || navn === 'budsjett';
     if((navn === 'regnskap' || navn === 'maaned') && !okAarLastet){ okAarLastet = true; okAarLast(); }
@@ -3583,6 +3621,8 @@ button.ok-dr-rad{ cursor:pointer; }
   window.addEventListener('hashchange', function(){ okVis(location.hash.slice(1)); });
   (function(){
     var start = location.hash.slice(1);
+    okPeOnske = start;
+    if(!okPeOnske){ try{ okPeOnske = localStorage.getItem('ok-fane') || ''; }catch(e){} }
     if(start === 'aar' || start === 'resultat') start = 'maaned';
     if(start === 'transaksjoner') start = 'innboks';
     if(OK_VISNINGER.indexOf(start) === -1){ try{ start = localStorage.getItem('ok-fane') || 'status'; }catch(e){ start = 'status'; } }
@@ -3616,6 +3656,211 @@ button.ok-dr-rad{ cursor:pointer; }
     if(okAl.del === 'logg') okLoggLast();
   }
   document.querySelectorAll('#ok-tr-valg .ok-fane').forEach(function(b){ b.addEventListener('click', function(){ okTrVis(b.dataset.tr); }); });
+  /* ---------- Den enkeltes del (8. november 2026) ----------
+     Magne: «Jeg ønsker ikke å slette de fra Neam. Den enkeltes kontoer bør
+     fremdeles være tilgjengelig for dem … Tanken er at den enkelte kan legge
+     inn noen sine transaksjoner i innboksen til økonomi og få pengene
+     "refundert" der. Før dette er gjort skal ingenting inn i
+     fellesregnskap». Fanen heter navnet og viser det felles skylder,
+     kontoene med saldo, sparemaalene og en kontoutskrift per maaned. Et
+     kjoep sendes til felles (privat-send) og merkes refundert av seg selv
+     naar en overfoering med samme beloep kommer inn, eller for haand. */
+  var okPe = { hvem:'', data:null, mnd:'', lastet:{}, redigerer:false, utkast:null, start:'' };
+  var OK_PE_STATUS = { innboks:'sendt til felles – venter i innboksen', fort:'ført i felles – felles skylder deg', avvist:'avvist i felles – kan sendes igjen' };
+  function okPeMelding(tekst, feil){
+    var m = document.getElementById('ok-pe-melding');
+    m.textContent = tekst || ''; m.hidden = !tekst; m.className = 'ok-melding' + (feil ? ' feil' : '');
+  }
+  function okPeFaner(){
+    okHent('/api/bank?hva=privat').then(function(r){
+      if(!r.ok || !r.personer || !r.personer.length) return;
+      var etter = document.getElementById('ok-fane-innboks');
+      r.personer.forEach(function(p){
+        var f = okEl('button', 'ok-fane', okVask(p.navn)); f.type = 'button';
+        f.setAttribute('role', 'tab'); f.id = 'ok-fane-p-' + p.hvem; f.dataset.vis = p.hvem;
+        f.setAttribute('aria-controls', 'ok-vis-person'); f.setAttribute('aria-selected', 'false');
+        f.addEventListener('click', function(){ okVis(p.hvem); });
+        etter.after(f); etter = f;
+        okPersoner.push(p.hvem);
+      });
+      if(okPersoner.indexOf(okPeOnske) !== -1) okVis(okPeOnske);
+    });
+  }
+  function okPeLast(hvem, fersk){
+    var ny = okPe.hvem !== hvem, forste = !okPe.lastet[hvem];
+    okPe.lastet[hvem] = true;
+    if(ny){
+      okPe.hvem = hvem; okPe.data = null; okPe.mnd = ''; okPe.redigerer = false; okPe.utkast = null;
+      okPeMelding('');
+      document.getElementById('ok-pe-skylder-kort').hidden = true;
+      document.getElementById('ok-pe-kontoer').innerHTML = '<span class="ok-meta">Henter …</span>';
+      document.getElementById('ok-pe-maal').innerHTML = '';
+      document.getElementById('ok-pe-liste').innerHTML = '';
+      document.getElementById('ok-pe-meta').textContent = '';
+    }
+    return okHent('/api/bank?hva=privat&hvem=' + encodeURIComponent(hvem) + (fersk || forste ? '&fersk=1' : '')).then(function(r){
+      if(okPe.hvem !== hvem) return;
+      if(!r.ok){ okPeMelding(r.feil, true); document.getElementById('ok-pe-kontoer').innerHTML = ''; return; }
+      okPe.data = r;
+      okPeTegn();
+    });
+  }
+  function okPeTegn(){
+    var r = okPe.data;
+    var sk = r.skylder || { sum:0, antall:0 };
+    document.getElementById('ok-pe-skylder-kort').hidden = !sk.antall;
+    document.getElementById('ok-pe-skylder').textContent = okKrHel(sk.sum) + ' kr';
+    document.getElementById('ok-pe-skylder-meta').textContent = sk.antall + ' utlegg ført i felles og ikke betalt tilbake ennå. Neam merker det selv når en overføring med samme beløp kommer inn.';
+    document.getElementById('ok-pe-meta').textContent = r.advarsel ? 'Fikk ikke hentet alt: ' + r.advarsel : '';
+    var kb = document.getElementById('ok-pe-kontoer');
+    kb.innerHTML = '';
+    if(!r.kontoer.length) kb.appendChild(okEl('p', 'ok-meta', 'Ingen konto har rollen ' + okVask(r.navn) + ' ennå – det velges under Oppsett › Kontoene.'));
+    r.kontoer.forEach(function(k){
+      kb.appendChild(okEl('div', 'ok-under-rad', '<span>' + okVask(k.navn) + '</span><b>' + (typeof k.saldo === 'number' ? okKr0.format(k.saldo) + ' kr' : '–') + '</b>'));
+    });
+    if(r.flyttet) okPeMelding(r.flyttet + ' trekk fra ' + r.navn + 's kontoer lå blant fellespostene og er flyttet hit. Ingenting er slettet.');
+    okPeTegnMaal();
+    okPeTegnListe();
+  }
+  function okPeRad(p){
+    var st = p.status === 'refundert'
+      ? 'refundert' + (p.refundertDato ? ' ' + okKort.format(new Date(p.refundertDato)) : '') + (p.refundertHand ? ' (merket for hånd)' : '')
+      : OK_PE_STATUS[p.status] || '';
+    var meta = [p.konto, p.refusjon ? 'tilbakebetaling fra felles' : '', st].filter(Boolean).join(' · ');
+    var kan = p.belop < 0 && p.status !== 'innboks';
+    var rad = okEl('div', 'ok-under-rad ok-pe-rad' + (kan ? ' ok-rg-for' : ''),
+      '<span><span class="ok-dato">' + okVask(okKort.format(new Date(p.dato))) + '</span>' + okVask(p.motpart || p.tekst || 'Uten tekst')
+      + '<span class="ok-meta">' + okVask(meta) + '</span></span><b>' + okKr0.format(p.belop) + '</b>');
+    if(kan){
+      rad.tabIndex = 0; rad.setAttribute('role', 'button');
+      rad.addEventListener('click', function(){ okPeValg(p); });
+      rad.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); okPeValg(p); } });
+    }
+    return rad;
+  }
+  function okPeTegnListe(){
+    var r = okPe.data, naa = new Date().toISOString().slice(0, 7);
+    var forste = r.poster.length ? String(r.poster[r.poster.length - 1].dato).slice(0, 7) : naa;
+    if(!okPe.mnd) okPe.mnd = naa;
+    var navn = okMndNavn.format(new Date(okPe.mnd + '-01T12:00:00'));
+    document.getElementById('ok-pe-navn').textContent = navn.charAt(0).toUpperCase() + navn.slice(1);
+    document.getElementById('ok-pe-forrige').disabled = okPe.mnd <= forste;
+    document.getElementById('ok-pe-neste').disabled = okPe.mnd >= naa;
+    var boks = document.getElementById('ok-pe-liste');
+    boks.innerHTML = '';
+    var liste = r.poster.filter(function(p){ return String(p.dato).slice(0, 7) === okPe.mnd; });
+    if(!liste.length){ boks.appendChild(okEl('p', 'ok-meta', 'Ingen trekk i ' + okVask(navn) + '.')); return; }
+    liste.forEach(function(p){ boks.appendChild(okPeRad(p)); });
+  }
+  function okPeFlytt(n){
+    if(!okPe.data) return;
+    var d = new Date(okPe.mnd + '-01T12:00:00'); d.setMonth(d.getMonth() + n);
+    okPe.mnd = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    okPeTegnListe();
+  }
+  async function okPeValg(p){
+    var navn = '«' + (p.motpart || p.tekst || 'Uten tekst') + '», ' + okKr0.format(Math.abs(p.belop)) + ' kr (' + okKort.format(new Date(p.dato)) + ')';
+    var kropp;
+    if(!p.status || p.status === 'avvist'){
+      if(!(await bekreft('Sende ' + navn + ' til innboksen i felles økonomi? Når det er godkjent der, skylder felles deg beløpet.', { jaTekst:'Send til felles' }))) return;
+      kropp = { hva:'privat-send', hvem:okPe.hvem, ider:[p.id] };
+    } else if(p.status === 'fort'){
+      if(!(await bekreft('Har felles betalt tilbake ' + navn + '? Neam merker det selv når en overføring med samme beløp kommer inn på kontoen din.', { jaTekst:'Merk som refundert' }))) return;
+      kropp = { hva:'privat-refundert', hvem:okPe.hvem, id:p.id, refundert:true };
+    } else if(p.status === 'refundert'){
+      if(!(await bekreft('Angre at ' + navn + ' er betalt tilbake? Felles skylder deg da beløpet igjen.', { jaTekst:'Ikke refundert' }))) return;
+      kropp = { hva:'privat-refundert', hvem:okPe.hvem, id:p.id, refundert:false };
+    } else return;
+    var s = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(kropp) });
+    if(!s.ok){ okPeMelding(s.feil, true); return; }
+    okPeMelding(kropp.hva === 'privat-send' ? navn + ' ligger nå i innboksen i felles.' : kropp.refundert ? navn + ' er merket som betalt tilbake.' : 'Felles skylder deg ' + navn + ' igjen.');
+    if(kropp.hva === 'privat-send') window.okonomiEtterSkriv();
+    okPeLast(okPe.hvem);
+  }
+  /* Sparemaalene - som familiemaalet: navn, maal og en av egne kontoer eller et tall. */
+  function okPeTegnMaal(){
+    var r = okPe.data, boks = document.getElementById('ok-pe-maal');
+    boks.innerHTML = '';
+    (r.maal || []).forEach(function(m){
+      var konto = r.kontoer.filter(function(k){ return k.uid === m.konto; })[0];
+      var spart = konto && typeof konto.saldo === 'number' ? konto.saldo : m.spart || 0;
+      var kort = okEl('section', 'ok-kort ok-maal', '<span class="ok-etikett">Sparemål</span>');
+      var inn = okEl('div', '', '<h2 style="font-size:var(--t-stor)">' + okVask(m.navn) + '</h2>'
+        + '<div class="ok-stort" style="font-size:30px">' + okKrHel(spart) + ' kr av ' + okKrHel(m.belop) + ' kr</div>');
+      inn.style.display = 'flex'; inn.style.flexDirection = 'column'; inn.style.gap = '14px';
+      inn.appendChild(okFram(m.belop ? spart / m.belop : 0));
+      inn.appendChild(okEl('p', 'ok-meta', okVask(konto ? 'Fra kontoen «' + konto.navn + '».' : 'Fylt inn for hånd.')));
+      kort.appendChild(inn);
+      boks.appendChild(kort);
+    });
+    var sk = okEl('section', 'ok-kort', '');
+    boks.appendChild(sk);
+    if(!okPe.redigerer){
+      var e = okEl('button', 'ok-lenke', (r.maal || []).length ? 'Endre sparemålene' : '+ Legg til et sparemål'); e.type = 'button'; e.style.alignSelf = 'flex-start';
+      e.addEventListener('click', function(){
+        okPe.redigerer = true;
+        okPe.start = JSON.stringify(r.maal || []);
+        okPe.utkast = JSON.parse(okPe.start);
+        if(!okPe.utkast.length) okPe.utkast.push({ navn:'', belop:'', konto:'', spart:'' });
+        okPeTegnMaal();
+      });
+      sk.appendChild(e);
+      return;
+    }
+    var fs = okEl('div', 'ok-fo-seksjon', '<span class="ok-etikett">Sparemål</span><p class="ok-meta">Tøm navnet for å ta bort et mål.</p>');
+    okPe.utkast.forEach(function(m){
+      var rad = okEl('div', 'ok-fo-maal', '');
+      var felt = function(nokkel, etikett, plass){
+        var inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = plass; inp.value = m[nokkel] || ''; inp.setAttribute('aria-label', etikett);
+        if(nokkel !== 'navn') inp.inputMode = 'decimal';
+        inp.addEventListener('input', function(){ m[nokkel] = nokkel === 'navn' ? inp.value : inp.value.replace(/\s/g, '').replace(',', '.'); });
+        return inp;
+      };
+      rad.appendChild(felt('navn', 'Navn på sparemålet', 'F.eks. Ny sykkel'));
+      rad.appendChild(felt('belop', 'Mål i kroner', 'Mål, kr'));
+      var velg = document.createElement('select'); velg.className = 'ok-mnd'; velg.setAttribute('aria-label', 'Hvor spart beløp kommer fra');
+      velg.appendChild(new Option('Spart: fyll inn selv', ''));
+      r.kontoer.forEach(function(k){ velg.appendChild(new Option('Saldo på ' + k.navn, k.uid)); });
+      velg.value = m.konto || '';
+      velg.addEventListener('change', function(){ m.konto = velg.value; okPeTegnMaal(); });
+      rad.appendChild(velg);
+      fs.appendChild(rad);
+      if(!m.konto){ var r2 = okEl('div', 'ok-fo-maal', ''); r2.appendChild(felt('spart', 'Spart så langt', 'Spart så langt, kr')); fs.appendChild(r2); }
+    });
+    var flere = okEl('button', 'ok-lenke', '+ Ett sparemål til'); flere.type = 'button'; flere.style.alignSelf = 'flex-start';
+    flere.addEventListener('click', function(){ okPe.utkast.push({ navn:'', belop:'', konto:'', spart:'' }); okPeTegnMaal(); });
+    fs.appendChild(flere);
+    sk.appendChild(fs);
+    var knapper = okEl('div', 'ok-rad-knapper', ''); knapper.style.marginTop = '8px';
+    var lagre = okEl('button', 'btn btn-ny', 'Lagre'); lagre.type = 'button';
+    var avbryt = okEl('button', 'btn btn-ghost ok-smal', 'Avbryt'); avbryt.type = 'button';
+    var feil = okEl('p', 'ok-melding feil', ''); feil.hidden = true;
+    lagre.addEventListener('click', function(){
+      lagre.disabled = true;
+      var maal = okPe.utkast.map(function(m){ return { id:m.id || '', navn:String(m.navn || '').trim(), belop:Number(m.belop) || 0, konto:m.konto || '', spart:Number(m.spart) || 0 }; });
+      okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'privat-maal', hvem:okPe.hvem, maal:maal }) }).then(function(s){
+        lagre.disabled = false;
+        if(!s.ok){ feil.textContent = 'Ble ikke lagret: ' + s.feil; feil.hidden = false; return; }
+        okPe.data.maal = s.maal; okPe.redigerer = false; okPe.utkast = null;
+        okPeTegnMaal();
+      });
+    });
+    /* Avbryt spoer bare naar noe er skrevet inn (designsystemet, Avbryt-regelen). */
+    avbryt.addEventListener('click', async function(){
+      var tom = function(l){ return JSON.stringify(l.filter(function(m){ return m.navn || m.belop || m.spart; })); };
+      if(tom(okPe.utkast) !== tom(JSON.parse(okPe.start)) && !(await bekreft('Forkaste endringene i sparemålene?', { jaTekst:'Forkast', fare:true }))) return;
+      okPe.redigerer = false; okPe.utkast = null;
+      okPeTegnMaal();
+    });
+    knapper.appendChild(lagre); knapper.appendChild(avbryt);
+    sk.appendChild(knapper); sk.appendChild(feil);
+  }
+  (function(){
+    document.getElementById('ok-pe-forrige').addEventListener('click', function(){ okPeFlytt(-1); });
+    document.getElementById('ok-pe-neste').addEventListener('click', function(){ okPeFlytt(1); });
+    okPeFaner();
+  })();
+
   /* ---------- Transaksjoner › Logg (8. november 2026) ----------
      Magne: «Jeg ønsker en logg ved siden av kontoutskrift. en som viser alle
      endringer som blir gjort og hva som beveger seg under panseret».
@@ -3792,7 +4037,7 @@ button.ok-dr-rad{ cursor:pointer; }
   function okPostTilFor(p){
     return { id:p.id, dato:p.dato, belop:p.belop, kategori:p.kategori,
       tekst:p.motpart || p.tekst || '', mer:p.motpart && p.tekst && p.tekst !== p.motpart ? p.tekst : '',
-      kilde:p.status === 'venter' || p.avsluttet ? 'Faktura' : p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? 'Lagt inn for hånd' : 'Kvittering fra bilde') : (p.kontoNavn || ''),
+      kilde:p.status === 'venter' || p.avsluttet ? 'Faktura' : p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? (p.utlegg || 'Lagt inn for hånd') : 'Kvittering fra bilde') : (p.kontoNavn || ''),
       betaltFra:p.betaltFra, merke:p.merke, overstyrt:p.overstyrt, harKvittering:p.status !== 'venter' && !p.avsluttet && p.harKvittering, harFil:p.harFil, filType:p.filType,
       status:p.status, venter:p.status === 'venter', deler:p.deler, avsluttet:p.avsluttet };
   }
@@ -5235,7 +5480,7 @@ button.ok-dr-rad{ cursor:pointer; }
       okFrPost = r.post; okFrVis(r.post);
     });
   }
-  function okFrKilde(p){ return p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? 'Lagt inn for hånd' : p.faktura ? 'Faktura' : 'Kvittering fra bilde') : (p.konto || 'Føring'); }
+  function okFrKilde(p){ return p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? (p.utlegg || 'Lagt inn for hånd') : p.faktura ? 'Faktura' : 'Kvittering fra bilde') : (p.konto || 'Føring'); }
   function okFrKr(b){ return (b > 0 ? '+' : '') + okKr0.format(b < 0 ? -b : b) + ' kr'; }
   /* Visningen: alt om foeringen, vedleggene og valgene. */
   function okFrVis(p){
@@ -6289,6 +6534,7 @@ button.ok-dr-rad{ cursor:pointer; }
     var arbeid = okDnbKoblet
       ? [okLastInnboks(true).then(function(){ return okTrumfStatus(false); }), okKontoerLast(true)]
       : [okTrumfStatus(true)];
+    if(okPersoner.indexOf(okAktiv) !== -1) arbeid.push(okPeLast(okAktiv, true));
     return Promise.all(arbeid).then(function(){ return okDbStatus(); }).then(function(){ return okDbImport(); }).then(function(){
       okOppdaterer = false;
       okVarslerLast(); okKilderLast();
