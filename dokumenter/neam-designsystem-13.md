@@ -928,6 +928,13 @@ samtalen, så andre trykk på NEAM bare lukker. Høyre knapp står også på
 sider uten egne handlinger; et vanlig trykk der sier at man kan holde inne
 for innstillinger. Dialogene (120) ligger fortsatt øverst.
 
+**Ingenting man skal trykke på, får ligge under tommelknappene.** De står
+fast nederst, så en side som ruller, må ha plass til dem i bunnen
+(`calc(var(--f-handtak) + var(--f-marg-y) + 16px)`), og en side som ikke
+ruller – som runden i mattespillet – må krympe noe annet enn knappene
+når skjermen er lav (8. november 2026: robotfeltet i mattespillet).
+Sjekk på 390×660, som er omtrent det en iPhone viser i Safari.
+
 **Pinkoden på kjøkkenskjermen** (8. november 2026). Bare når sida er logget
 inn som felles@ (fellesenhetene – het kitchen@ til 8. november 2026).
 Første trykk etter tre minutter i ro – eller første trykk

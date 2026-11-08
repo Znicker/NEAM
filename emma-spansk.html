@@ -67,6 +67,10 @@ body{
 }
 .sp-side{ max-width:980px; margin:0 auto; padding:10px 12px calc(28px + env(safe-area-inset-bottom)); }
 @media(min-width:700px){ .sp-side{ padding:18px 20px 36px; } }
+/* Neams tommelknapper ligger fast nederst og dekket det nederste paa sida
+   (8. november 2026). Bunnen faar plass til dem, saa alt kan rulles opp
+   over knappene. Maalene er Neams egne (felles-neam.css). */
+.sp-side{ padding-bottom:calc(var(--f-handtak, 54px) + var(--f-marg-y, 24px) + 16px + env(safe-area-inset-bottom)); }
 
 /* ---------- Topplinja ---------- */
 .sp-topp{ display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap; }

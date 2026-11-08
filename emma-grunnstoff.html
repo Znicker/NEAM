@@ -115,6 +115,10 @@ body{
 
 .gs-side{ max-width:1180px; margin:0 auto; padding:10px 12px 28px; }
 @media(min-width:700px){ .gs-side{ padding:18px 20px 36px; } }
+/* Neams tommelknapper ligger fast nederst og dekket det nederste paa sida
+   (8. november 2026). Bunnen faar plass til dem, saa alt kan rulles opp
+   over knappene. Maalene er Neams egne (felles-neam.css). */
+.gs-side{ padding-bottom:calc(var(--f-handtak, 54px) + var(--f-marg-y, 24px) + 16px + env(safe-area-inset-bottom)); }
 
 /* Gradientene og skyggene til atomtegningene bor i ett eneste skjult
    SVG, og begge tegningene peker hit med url(#...). Ett sted aa endre

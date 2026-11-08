@@ -6,7 +6,8 @@ står der, taster sin sekssifrede kode ved første trykk etter hvilen, får
 dem. sys@ legger inn kodene (se toppblokka og del 52). Senere samme natt:
 kjøkkenkontoen heter nå **felles@neam.no** – den skal brukes av alle
 fellesenhetene (se toppblokka). Til slutt: låseikon med valgt tid og varsel
-med pling før skjermen sovner (se toppblokka). Ført à jour 7. november 2026, kveld: Rommene har fått fjernkontroll til
+med pling før skjermen sovner, og rydding: spillene er fri for
+tommelknappene på lave telefoner (se toppblokka). Ført à jour 7. november 2026, kveld: Rommene har fått fjernkontroll til
 Samsung-TV-ene, gjennom en Logic-variabel og HomeyScript i Homey, og
 enheter kan dras oppå hverandre til navngitte grupper med felles bryter.
 Senere samme kveld: innstillingene (Husregisteret, myk og hard reset, Logg ut) ved å holde inne høyre tommelknapp på alle
@@ -108,7 +109,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=88`, `felles-neam.css
+**Siste leverte versjoner:** `felles-neam.js ?v=89`, `felles-neam.css
 ?v=88`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
@@ -129,7 +130,7 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–87; neam.css til og
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–88; neam.css til og
 med 87; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
 hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
@@ -839,7 +840,8 @@ på telefon.
   280 px brede, og spillene har `.merke` på 64 px, som krympet dem. 21 steder
   i `felles-neam.css`, fem i `felles-neam.js`, ingen sider.
 - **Kjent, ikke rettet:** i mattespillet dekker NEAM-knappen venstre ende av
-  Start på telefon, og i naturfag noen av avkrysningsboksene.
+  Start på telefon, og i naturfag noen av avkrysningsboksene. **Rettet
+  8. november** – se «Rydding» under.
 
 **8. november, natt: pinkoder på kjøkkenskjermen** (`be1e0ca`, `e5e32fd`,
 `e70d615`; neam.js `?v=84`, neam.css `?v=87`, skriv `?v=13`). Magne ville
@@ -896,7 +898,8 @@ uten tilgang: begge navnene i koden → kontoen døpt om → `kitchen@` fjernet.
   `kalender.html` (bokstaven **F** i stedet for K).
 - **Kalenderens tilgangsmatrise i KV** sto på `kitchen@`. Den flyttes
   til `felles@` første gang en side leser den (`tildelingFraKitchen()` i
-  `kalender.html`) og lagres én gang. **Kan fjernes** når den har gått.
+  `kalender.html`) og lagres én gang. **Fjernet 8. november** (`2f18403`)
+  etter at Magne så F slått på der K hadde vært.
 - **`kitchen@` lagt tilbake samme natt** (`8ea4374`; neam.js `?v=87`, skriv
   `?v=16`). Etter steg 3 fikk kjøkkenskjermen «Denne kontoen har ikke
   tilgang» – Microsoft oppga ikke `felles@` for kontoen selv om den var
@@ -935,6 +938,21 @@ og skriving i Neam holde den våken».
 - **Venstre tommelknapp er urørt:** Magne vurderte hold-inne til
   forsiden, men angret – «longpress venstre tommelknapp blir etterhvert
   push to tallk». Knappen oppe til venstre virker som før.
+
+**8. november, natt: rydding** (`ec8b224` og neste; neam.js `?v=89`).
+Magne: «rydd i vei».
+- **Spillene og tommelknappene på lave telefoner.** Sjekket på 390×660
+  (iPhone i Safari). I **mattespillet** dekket knappene ⌫ og Svar under
+  selve runden, og sida ruller ikke der. Magne valgte «Mindre robotfelt på
+  lave skjermer»: under 700 px bredde og 760 px høyde krymper roboten,
+  laderen og bobleplassen; tastene beholder størrelsen. **Naturfag,
+  spansk og grunnstoff** ruller, men den nederste knappen («Start
+  quizen», «¡Vamos! Start», «Neste stoff») kunne ikke rulles fri – de
+  har fått plass nederst: `var(--f-handtak) + var(--f-marg-y) + 16px`.
+  **Diktat og klokke** hadde ikke problemet. Start i mattespillet er bred,
+  så endene ligger under knappene til man ruller litt; midten er fri.
+- **Rykket på iPhone er tatt bort.** Den skjulte `switch`-avkrysningen ga
+  ingen vibrasjon; `neamRykk()` bruker bare `navigator.vibrate` (Android).
 
 ### Åpne tråder
 
