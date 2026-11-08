@@ -627,6 +627,14 @@ variant.
   Stedet faller bort under 780 px, vinden under 900 px.
 - **Kalender skjuler toppen** i fullskjerm og på liggende telefon, der
   høyden trengs til kalenderen.
+- **Låst ved rulling** (8. november 2026, Magne). Toppen står øverst hele
+  tiden og får bakgrunn og en svak skygge når sida er rullet – samme
+  oppskrift som skallets `.topbar`. En side med en egen låst rad under
+  (fanene i Økonomi) bruker `top:var(--ntp-h)`, som `felles-topp.js` setter.
+  På Handleliste og Matlaging står toppen i skallets `.topbar`, som er den
+  som låses – og som vises på alle visningene, også i en oppskrift.
+- **`overflow-x:hidden` på `html` eller `body` stopper låsingen** – bruk
+  `clip` (se «Praktiske feller»).
 
 Dashene har fortsatt sin egen kopi av toppen (se under). Avvik fra den
 felles toppen på en side er et nytt valg – spør.
