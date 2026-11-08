@@ -526,7 +526,8 @@ knapper i Budsjett (`2f63779`), Regnskap med samme liste, føringene
 under og et vindu per føring (`16bb99f`), det store vinduet for en føring
 med Rediger, flere vedlegg og «!» ved endret sum (`8ab7e7e`), og til sist
 vedlegg og kvitteringslinjer samtidig i vinduet og «Før inn ny utgift»
-(`67ef6b5`).
+(`67ef6b5`), og til sist merkesystemet i Regnskap med samme merkeliste i
+alle tre fanene (`8159134`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -535,7 +536,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 80 commits, `0e0050a`–`67ef6b5`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 81 commits, `0e0050a`–`8159134`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4386,7 +4387,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 80 commits fra `0e0050a` til `67ef6b5` (dialogen med
+verdier. Bygget i 81 commits fra `0e0050a` til `8159134` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4831,6 +4832,20 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Merkesystemet i Regnskap, samme liste** (`8159134`). Magne:
+  «Merkesystemet bør også være i regnskapet. det bør være samme liste».
+  - **Bank-funksjonen:** `regnskap-aar` gir også `merker` – brukt per merke
+    og måned. Føringens eget merke (`p.merke`, fra `8ab7e7e`) går foran
+    kategoriens, og en linje uten merke arver postens, som i budsjettet.
+  - **Samme liste i alle tre fanene:** «På tvers» i Regnskap, Budsjett og
+    Resultat viser merkene med budsjett *eller* regnskap i perioden – før
+    viste Regnskap bare de med brukt og Budsjett bare de med budsjett.
+    Tallet som mangler, står som «–». Brukt kommer fra summene per merke
+    (`okMndMerker(…, { mreg })`), budsjettet som før fra kategoriene.
+  - **Regnskap-lista** viser merket under postene og linjene, som
+    budsjettlista, og en føring med eget merke viser «merke …» i raden.
+  - Testet i testserveren: et merke på én føring ble talt under det
+    merket, ikke kategoriens.
 - **Alt samtidig i vinduet, og «Før inn ny utgift»** (`67ef6b5`). Magne:
   «Jeg ønsker å se vedlegg og kvitteringsdetaljer, sammen med den andre
   informasjonen når jeg trykker på en føring. når jeg høyreklikker en

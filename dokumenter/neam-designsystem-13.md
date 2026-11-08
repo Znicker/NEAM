@@ -1808,7 +1808,11 @@ først, Sparing sist. Bare tallene skiller dem:
   Valgt ut uten skisse (Magne: «bare kjør det ut på neam»).
 - **Regnskap** (fra 8. november 2026) – det som er brukt, uten budsjett,
   med det som forfaller: sumboksene som under, diagrammet uten
-  budsjettstrek og uten rødt, «På tvers» med bare brukt. **Samme liste som
+  budsjettstrek og uten rødt, «På tvers» med bare brukt. **Merkene** er de
+  samme som i Budsjett: postene viser merket under navnet, og «På tvers»
+  har samme liste i Regnskap, Budsjett og Resultat – merkene med budsjett
+  eller regnskap i perioden, «–» der tallet mangler (fra 8. november 2026).
+  Et merke satt på en enkelt føring teller under det merket. **Samme liste som
   Budsjett:** grupper som åpnes, postene under; trykk en post for linjene
   og **føringene** (dato, sted, kilde, beløp – innrykket med en strek til
   venstre, `.ok-rg-inn`). **Trykk en føring:** et stort vindu
