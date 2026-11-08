@@ -647,7 +647,9 @@ variant.
 - **Til venstre for klokka:** små ikoner med tallet under – alarmen
   `--aksent`, nedtellingen `--handling-endre`, stoppeklokka
   `--handling-ny` – i høyst to rader. **Ikke under klokka:** det gjorde
-  toppen for høy. **Høyst ti** på en skjerm.
+  toppen for høy. **Høyst ti** på en skjerm. En nedtelling laget fra en
+  koketid i en oppskrift har en **liten gryte** (matlagingsikonet) i
+  stedet for timeglasset – ved klokka, i lista og når den ringer.
 - **Gjelder for:** «Bare denne enheten», eller Kjøkkenet og/eller Magne,
   Nina, Emma og Andrea. Det delte ringer der en mottaker har Neam åpen, og
   der det ble laget – ikke på en låst telefon (det krever push).
@@ -1733,10 +1735,10 @@ det er også det man ser før noe er trykket.
 
 **Start matlaging spør om antallet porsjoner og låser det.** Så står
 ingrediensene i oppskriftens rekkefølge, og matlagingsikonet står til
-venstre for klokka i topplinja, på alle sidene – med en ring i
-`--aksent` som går rundt så man ser at den er i gang, og tiden under.
-Trykk leder tilbake til retten. Ringen står stille ved redusert bevegelse.
-Den valgte ingrediensen sentreres i lista.
+venstre for klokka i topplinja, på alle sidene – **større enn timerne**
+(78 px, 54 px når toppen er kompakt), med en ring i `--aksent` som går
+rundt så man ser at den er i gang, og tiden under. Trykk leder tilbake til
+retten. Ringen står stille ved redusert bevegelse.
 Mens retten lages, bytter Finn-knappen mellom de to rekkefølgene.
 
 **Ord i stegene kan trykkes:** et ingrediensnavn lyser opp raden sin i
@@ -1744,6 +1746,19 @@ lista (aksentkant og mild flate, som en valgt rad ellers); en koketid,
 merket med timeglass, åpner nedtellingen i klokka ferdig utfylt – man
 velger hvem og lagrer selv. Begge er prikkunderstreket: de viser noe eller
 foreslår noe, de utfører ingenting alene.
+- **Ingrediensen kjennes igjen** i bøyd form («tomatene»), i sammensatte
+  ord («risen» – Basmatiris) og via fellesord: «kjøtt», «fisk»,
+  «grønnsaker» og «krydder» treffer alle ingrediensene av den varetypen
+  («ta ut kjøttet» – Mørbrad). Ett ord kan lyse opp flere rader.
+  Småord og kjøkkenord («pannen», «vannet») treffer ingenting.
+- **Den valgte raden legges midt i kolonnen**, uten myk rulling – den ble
+  stående i kolonnen som ruller selv. Første og siste rad kan ikke komme
+  helt til midten.
+- **Nedtellingen får navnet fra steget:** leddet tiden står i, uten tiden
+  og småordene foran – «Kok basmatirisen i 10 minutter» blir «Kok
+  basmatirisen».
+- **Nedtellingene fra retten står under knappene** med tiden og **Slett**
+  (rød). Det er de samme som ved klokka; Avslutt matlaging sletter dem.
 
 **Neam husker hvor man var** mens retten lages, og sida åpner seg der
 igjen.

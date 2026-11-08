@@ -122,7 +122,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 ?v=88`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
-`felles-topp.js ?v=5`, `felles-topp.css ?v=5`;
+`felles-topp.js ?v=7`, `felles-topp.css ?v=7`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
@@ -142,7 +142,7 @@ gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–88; neam.css til og
 med 87; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
-hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–4**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–6**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -1083,6 +1083,23 @@ plassen, og koketider som kan bli alarm.
   lista. Underveis: en funksjon `ntpMatTegn` het det samme som kroken
   `window.ntpMatTegn` og kalte seg selv i det uendelige – den heter
   `ntpMatIkon` nå (en funksjonsdeklarasjon og `window.navn` er samme navn).
+- **Så** (`9babe6b`, topp `?v=6`): Magne – «de ingrediensene som trykkes
+  på, legger seg ikke midt på», «der det står ta ut kjøtt … finne
+  mørbrad», og «slette nedtellinger laget i matlaging». Ord i stegene
+  prøves mot ingrediensene i bøyd form, sammensatte ord og fellesord
+  (`matIngTreff`, `MAT_KATEGORI` mot varetypen); ett ord kan lyse opp
+  flere. Sentreringen regnes ut og settes uten myk rulling – `scrollTo` med
+  `smooth` ble stående i kolonnen som ruller selv. Nedtellinger fra en
+  koketid får `mat:<oppskrifts-id>`; de står under knappene med Slett
+  (`window.ntpTimereFor`, `ntpTimerSlett`, `ntpTimereEndret` i
+  `felles-topp.js`), og Avslutt matlaging sletter dem.
+- **Til slutt** (`1258e07`, topp `?v=7`): nedtellinger fra matlagingen
+  viser en liten gryte i stedet for timeglasset, og matlagingsikonet er
+  78 px med ringen.
+- **Andre økter samtidig:** to ganger lå `okonomi.html` med en annen økts
+  arbeid oppe mens versjonsbumpen skulle med. Commiten ble bygget av
+  `HEAD` + bumpen (`git hash-object` + `update-index`), så arbeidet deres
+  ble stående.
 
 ### Åpne tråder
 
