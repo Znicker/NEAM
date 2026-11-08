@@ -507,8 +507,9 @@ Oppdater og Oppsett på høyre tommelknapp (`9dbb2d5`), kjøpene bak en post
 i en dialog, med én spalte i alle tre (`be1e0ca`, `9339f30`), filene lagt
 ved postene i husets filviser i stedet for en ny fane (`106893c`),
 differansen i «måned så langt», Resultat før Transaksjoner og innboksen på
-én linje også på PC (`44395ab`), og til sist Resultat med grafer per
-kategori, dag for dag, prognose og største avvik (`ed22845`).
+én linje også på PC (`44395ab`), Resultat med grafer per kategori
+(`ed22845`, tatt ut igjen), og til sist Resultat med måned › kategori ›
+post i ett stolpediagram (`a6b79e2`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -517,7 +518,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 74 commits, `0e0050a`–`ed22845`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 75 commits, `0e0050a`–`a6b79e2`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4227,7 +4228,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 74 commits fra `0e0050a` til `ed22845` (dialogen med
+verdier. Bygget i 75 commits fra `0e0050a` til `a6b79e2` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4672,7 +4673,35 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
-- **Resultat med grafer per kategori** (`ed22845`). Magne: «Tenk over
+- **Resultat: måned › kategori › post i ett stolpediagram** (`a6b79e2`).
+  Grafene fra `ed22845` (under) var ikke det Magne så for seg: «Dette ble
+  ikke sånn jeg tenkte. jeg tenke rat det er et stolpediagram øverst …
+  trenger ikke andre grafer foreløpit», og så, med et bilde av «Utgifter
+  mot budsjett» fra den første skissen: «Det kan egentlig se sånn ut, med
+  månedsoversikt. dersom man trykker på en måned kommer hovedkategorier
+  frem med tre underkategorier i stolpe form, som man igjen kan trykke for
+  å se underkategorier på samme måte». Skissen «Resultat – måneder og
+  kategorier» ble godkjent («Ja, bygg det»), med fargene på budsjett og
+  snitt.
+  - **Én sammenleggbar linje,** «Utgifter mot budsjett» (`rs-drill`, åpen),
+    under sumboksene; så «På tvers» og «Hvor det glir» som før.
+  - **Måned for måned:** utgiftene per måned (alle i `okMnd.liste`), rød
+    over budsjettet, det som forfaller lysere, budsjettet som mørk strek.
+  - **Trykk en måned:** den blir valgt (perioden blir Måned, sumboksene
+    følger), og utgiftsgruppene vises med **tre stolper** – regnskap (blå,
+    rød over budsjettet), budsjett (`--boks-kant` med `--ink-soft`-kant) og
+    snitt (papir med stiplet kant): regnskapet i snitt de seks månedene før
+    som har føringer. Tallene i en tabell under, med differansen i rødt
+    eller grønt. Trykk en gruppe: postene; en post med linjer: linjene (og
+    «Uten linje» når posten har eget tall). En post eller linje uten noe
+    under åpner kjøpene. «‹» går ett nivå tilbake; ‹ › øverst blar måned
+    på samme nivå (`okRs = { niva, gruppe, post }`, `okRsDrill`).
+  - Inntekter og sparing er ikke med i diagrammet – bare i sumboksene.
+  - Tatt ut: «Gjennom måneden», «Prognose», «Største avvik», grafene per
+    kategori og diagrammet «Utgifter per måned» i Resultat (Regnskap har
+    sitt). Testet i testserveren med oktober og november.
+- **Resultat med grafer per kategori** (`ed22845`, **erstattet av
+  `a6b79e2`** – står som historikk). Magne: «Tenk over
   fornuftige funksjoner i resultetfanen. grafer og oversikter(som må kunne
   skjules)», og så «grafer for hver kategori og sammenligner regnskapet med
   budsjettet, og snittet. at man kan trykke på disse grafene og se

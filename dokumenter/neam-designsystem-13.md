@@ -1712,16 +1712,18 @@ først, Sparing sist. Bare tallene skiller dem:
   `dlg-bak`/`dlg-kort` som kvitteringen), på PC og telefon; en kvittering
   åpnet derfra legger seg over.
 - **Resultat** (het Regnskap til 8. november 2026) – budsjett mot faktisk.
-  **Fra 8. november 2026 (skissen «Resultat – grafer per kategori»):**
+  **Fra 8. november 2026 (skissen «Resultat – måneder og kategorier»):**
   sumboksene viser differansen (Status' regel: røde minustall over, grønt
-  ellers); så tre sammenleggbare linjer – «Gjennom måneden» (kurve dag for
-  dag mot budsjettet, i dag som strek, prognosen stiplet), «Prognose» og
-  «Største avvik» (stolper til hver side av en midtstrek, rødt til
-  venstre); så **én graf per gruppe** (`.ok-graf`): stolper per måned,
-  budsjettet som mørk strek over hver stolpe, snittet stiplet over hele,
-  den valgte måneden uthevet under. Trykk åpner postene og linjene med
-  samme graf, rykket inn med en strek til venstre (`.ok-gbarn`). Nederst
-  «Utgifter per måned», «På tvers» og «Hvor det glir». Med **periode**: én måned (med
+  ellers); så én sammenleggbar linje, «Utgifter mot budsjett», med **ett
+  stolpediagram** (`.ok-dr`): først utgiftene per måned (blå, rød over
+  budsjettet, forfaller lysere, budsjettet som mørk strek). Trykk en måned:
+  utgiftsgruppene med **tre stolper** side om side – **regnskap** (`--aksent`,
+  `--danger` over budsjettet), **budsjett** (`--boks-kant` med 1 px
+  `--ink-soft`-kant) og **snitt** (`--paper` med 1,5 px stiplet
+  `--ink-soft`-kant; stiplet betyr snitt som ellers på sida). Tallene i en
+  tabell under (`.ok-dr-rad`), differansen i rødt eller grønt under navnet.
+  Trykk en gruppe for postene, en post for linjene; «‹ …» øverst går ett
+  nivå tilbake. Under: «På tvers» og «Hvor det glir». Med **periode**: én måned (med
   ‹ måned ›), hittil i år, eller siste 12 måneder. Budsjettet er da summen av
   månedsbudsjettene. Trenden og «Hvor det glir» står som linjer øverst, og
   kjøpene bak en post i dialogen (til 8. november 2026 i spalten til
