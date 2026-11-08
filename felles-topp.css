@@ -42,6 +42,11 @@
   margin-left:auto; margin-right:auto;
 }
 .ntp-vaer[hidden]{ display:none; }
+.ntp-vaer-naa{
+  display:flex; align-items:center; gap:12px; border:0; background:none; padding:0;
+  font:inherit; color:inherit; text-align:left; cursor:pointer; border-radius:12px;
+}
+.ntp-vaer-naa:active{ transform:scale(.98); }
 .ntp-vaer-ikon{ font-size:var(--t-ikon); line-height:1; }
 .ntp-vaer-tall{ display:flex; flex-direction:column; line-height:1.15; }
 .ntp-grad{ font-size:var(--t-stor); font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
@@ -54,23 +59,117 @@
 .ntp-sjo-grad{ font-size:var(--t-stor); font-weight:700; line-height:1; }
 .ntp-sjo.gammel .ntp-sjo-grad{ color:var(--ink-soft); }
 
-/* Stedsnavnet hoerer til vaeret, ikke til klokka. */
+/* Stedsnavnet hoerer til vaeret, ikke til klokka - og staar inntil det
+   (Magne, 8. november 2026), saa det blir plass til timerne under klokka. */
 .ntp-sted{
-  font-size:var(--t-stor); font-weight:700; color:var(--ink-soft); flex-shrink:0;
-  letter-spacing:.01em; display:flex; align-items:center; gap:6px;
+  font-size:var(--t-brod); font-weight:700; color:var(--ink-soft); flex-shrink:0;
+  letter-spacing:.01em; display:flex; align-items:center; gap:5px;
 }
-.ntp-sted[hidden]{ display:none; }
 .ntp-sted-ikon{ width:.8em; height:.8em; flex-shrink:0; opacity:.75; }
 
-/* Uten vaer staar klokka likevel helt til hoeyre. */
-.ntp-klokke{ margin-left:auto; text-align:right; line-height:1; flex-shrink:0; }
-.ntp-vaer:not([hidden]) ~ .ntp-sted ~ .ntp-klokke{ margin-left:18px; }
+/* Uten vaer staar klokka likevel helt til hoeyre. Trykk paa den aapner
+   alarmene og timerne. */
+.ntp-klokke{ margin-left:auto; text-align:right; line-height:1; flex-shrink:0; cursor:pointer; border-radius:12px; }
+.ntp-klokke:focus-visible{ outline:3px solid var(--aksent); outline-offset:4px; }
+.ntp-vaer:not([hidden]) ~ .ntp-klokke{ margin-left:18px; }
 /* Font-size er alt klapptavla trenger - se .fk i felles-neam.css. */
 .ntp-tid{ font-size:var(--t-display); }
 .ntp-dato{
   font-size:var(--t-brod); color:var(--ink-soft); font-weight:600;
   text-transform:capitalize; margin-top:4px;
 }
+
+/* ---------- Timerne under klokka ----------
+   Smaa klokkeikoner med tallet under (Magne, 8. november 2026). */
+.ntp-timere{ display:flex; justify-content:flex-end; gap:8px; margin-top:6px; flex-wrap:wrap; max-width:260px; margin-left:auto; }
+.ntp-timere[hidden]{ display:none; }
+.ntp-tm{ display:flex; flex-direction:column; align-items:center; gap:1px; min-width:34px; color:var(--ink-soft); }
+.ntp-tm svg{ width:20px; height:20px; }
+.ntp-tm b{ font-size:var(--t-etikett); font-weight:700; font-variant-numeric:tabular-nums; color:var(--ink); }
+.ntp-tm-alarm{ color:var(--aksent); }
+.ntp-tm-nedtelling{ color:var(--handling-endre); }
+.ntp-tm-stoppeklokke{ color:var(--handling-ny); }
+.ntp-tm.ringer{ animation:ntp-tm-blink 1s steps(2, start) infinite; }
+@keyframes ntp-tm-blink{ to{ visibility:hidden; } }
+
+/* ---------- Panelet ----------
+   Bygger paa dialogene i felles-dialog.css (.dlg-bak, .dlg-kort, .dlg-knapp).
+   Knappene har betydningsfargene fra designsystemet. */
+/* Over Neam (til 92), under sidenes dialoger (.dlg-bak 120), saa en
+   bekreftelse fra skjemaet havner oppaa. */
+.ntp-tm-bak{ z-index:110; }
+.ntp-tm-kort{ width:min(520px, calc(100vw - 24px)); max-height:min(86dvh, 760px); overflow-y:auto; text-align:left; }
+.ntp-tm-tittel{ font-size:var(--t-stor); font-weight:700; margin-bottom:12px; }
+.ntp-tm-liste{ display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+.ntp-tm-rad{ display:flex; align-items:center; gap:12px; padding:10px 12px; border:1px solid var(--line); border-radius:14px; background:var(--paper); flex-wrap:wrap; }
+.ntp-tm-radikon svg{ width:26px; height:26px; display:block; }
+.ntp-tm-radtekst{ display:flex; flex-direction:column; min-width:0; flex:1 1 160px; }
+.ntp-tm-radtekst b{ font-size:var(--t-brod); }
+.ntp-tm-radtekst span{ font-size:var(--t-meta); color:var(--ink); font-variant-numeric:tabular-nums; }
+.ntp-tm-radtekst .ntp-tm-hvem{ color:var(--ink-soft); font-size:var(--t-etikett); }
+.ntp-tm-valg{ display:flex; gap:6px; flex-wrap:wrap; }
+.ntp-tm-knapp{ border:0; border-radius:999px; padding:7px 13px; font:700 var(--t-meta) 'Archivo',sans-serif; color:#fff; cursor:pointer; }
+.ntp-tm-knapp:active{ transform:scale(.96); }
+.ntp-tm-knapp.endre, .dlg-knapp.ntp-tm-lagre.endre{ background:var(--handling-endre); color:#fff; }
+.ntp-tm-knapp.slett{ background:var(--danger); }
+.ntp-tm-knapp.blaa{ background:var(--aksent); }
+.dlg-knapp.ntp-tm-ny, .dlg-knapp.ntp-tm-lagre.ny{ background:var(--handling-ny); color:#fff; }
+.ntp-tm-tom{ color:var(--ink-soft); margin:0 0 14px; }
+
+.ntp-tm-typer{ display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+.ntp-tm-type{ display:flex; align-items:center; gap:6px; border:1.5px solid var(--line); background:var(--paper); color:var(--ink);
+  border-radius:999px; padding:7px 12px; font:700 var(--t-meta) 'Archivo',sans-serif; cursor:pointer; }
+.ntp-tm-type svg{ width:18px; height:18px; }
+.ntp-tm-type.valgt{ border-color:var(--aksent); background:var(--aksent); color:#fff; }
+.ntp-tm-type:disabled:not(.valgt){ opacity:.4; cursor:default; }
+.ntp-tm-felt{ display:flex; flex-direction:column; gap:5px; font-size:var(--t-etikett); font-weight:700; text-transform:uppercase;
+  letter-spacing:.06em; color:var(--ink-soft); margin-bottom:12px; }
+.ntp-tm-felt input[type=text], .ntp-tm-felt input[type=time], .ntp-tm-hms input{
+  font:16px 'Archivo',sans-serif; color:var(--ink); background:#fff; border:1.5px solid var(--line); border-radius:10px; padding:8px 10px;
+  text-transform:none; letter-spacing:0;
+}
+.ntp-tm-del[hidden]{ display:none; }
+.ntp-tm-hms{ display:flex; gap:10px; flex-wrap:wrap; }
+.ntp-tm-hms label{ display:flex; align-items:center; gap:5px; text-transform:none; letter-spacing:0; font-size:var(--t-meta); color:var(--ink); }
+.ntp-tm-hms input{ width:4.2em; }
+.ntp-tm-raske{ display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+.ntp-tm-rask{ border:1px solid var(--line); background:var(--boks-mild); color:var(--ink); border-radius:999px; padding:5px 10px;
+  font:700 var(--t-etikett) 'Archivo',sans-serif; cursor:pointer; text-transform:none; letter-spacing:0; }
+.ntp-tm-folk{ display:flex; gap:6px 14px; flex-wrap:wrap; }
+.ntp-tm-hake{ display:flex; align-items:center; gap:6px; text-transform:none; letter-spacing:0; font-size:var(--t-brod); font-weight:600; color:var(--ink); }
+.ntp-tm-hake input{ width:20px; height:20px; accent-color:var(--aksent); margin:0; }
+.ntp-tm-hint{ font-size:var(--t-meta); color:var(--ink-soft); margin:0 0 12px; }
+.ntp-tm-feil{ color:var(--danger); font-weight:600; font-size:var(--t-meta); margin:0 0 10px; }
+.ntp-tm-feil[hidden]{ display:none; }
+
+/* ---------- Naar den ringer ---------- */
+/* Over alt, ogsaa laaseskjermen paa kjoekkenet (150). */
+.ntp-tm-ringbak{ z-index:160; }
+.ntp-tm-ringkort{ text-align:center; width:min(420px, calc(100vw - 24px)); }
+.ntp-tm-ringikon svg{ width:64px; height:64px; animation:ntp-tm-rist .5s ease-in-out infinite alternate; }
+@keyframes ntp-tm-rist{ from{ transform:rotate(-8deg); } to{ transform:rotate(8deg); } }
+.ntp-tm-ringnavn{ font-size:var(--t-stor); font-weight:700; margin-top:8px; }
+.ntp-tm-ringtekst{ color:var(--ink-soft); margin:4px 0 16px; }
+.ntp-tm-ringkort .dlg-rad{ justify-content:center; }
+@media (prefers-reduced-motion:reduce){ .ntp-tm-ringikon svg, .ntp-tm.ringer{ animation:none; } }
+
+/* ---------- Vaerboblen ---------- */
+.ntp-vb-bak{ position:fixed; inset:0; z-index:105; background:rgba(20,32,54,.18); display:flex; align-items:flex-start; justify-content:center; padding:90px 12px 12px; }
+.ntp-vb-bak[hidden]{ display:none; }
+.ntp-vb{ position:relative; width:min(460px, 100%); max-height:calc(100dvh - 110px); overflow-y:auto; background:var(--paper);
+  border-radius:var(--radius); box-shadow:0 12px 40px rgba(20,32,54,.22); padding:18px 18px 14px; }
+.ntp-vb-lukk{ position:absolute; top:8px; right:10px; border:0; background:none; font-size:26px; line-height:1; color:var(--ink-soft); cursor:pointer; }
+.ntp-vb-tittel{ font-size:var(--t-stor); font-weight:700; text-transform:capitalize; padding-right:28px; }
+.ntp-vb-sammendrag{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; margin-top:4px; }
+.ntp-vb-bolk{ font-size:var(--t-etikett); font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); margin:14px 0 6px; }
+.ntp-vb-tabell{ width:100%; border-collapse:collapse; font-size:var(--t-meta); font-variant-numeric:tabular-nums; }
+.ntp-vb-tabell td{ padding:4px 6px; border-bottom:1px solid var(--line); }
+.ntp-vb-tabell tr.na td{ background:var(--boks-mild); font-weight:700; }
+.ntp-vb-kl, .ntp-vb-dagnavn{ color:var(--ink-soft); white-space:nowrap; }
+.ntp-vb-gr{ font-weight:700; white-space:nowrap; }
+.ntp-vb-regn{ color:var(--aksent); white-space:nowrap; }
+.ntp-vb-vind{ color:var(--ink-soft); white-space:nowrap; text-align:right; }
+.ntp-vb-tom{ color:var(--ink-soft); font-size:var(--t-meta); }
 
 @container (max-width:900px){ .ntp-vind{ display:none; } }
 @container (max-width:780px){ .ntp-sted{ display:none !important; } }
@@ -81,4 +180,5 @@
   .ntp-klokke{ margin-left:auto !important; }   /* vaeret skjoeves ikke lenger mot hoeyre */
   .ntp-tid{ font-size:var(--t-stor); }
   .ntp-dato{ font-size:var(--t-meta); margin-top:2px; }
+  .ntp-timere{ max-width:180px; }
 }
