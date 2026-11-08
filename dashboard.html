@@ -855,8 +855,9 @@ select.hu-felt{
 
 /* ---------- Julestjernene ----------
    Ett ikon til venstre for vaeret i toppen (Magne, 8. november 2026),
-   samme form som laaseikonet: ikonet, og tilstanden under («På», «Av»,
-   «1 av 2»). Vaeret staar ellers midt i toppen med auto paa begge sider;
+   64 px som laaseikonet. Bare ikonet - tent eller slukket stjerne sier
+   om de lyser, saa «På»/«Av» under ble tatt bort samme dag (Magne).
+   Vaeret staar ellers midt i toppen med auto paa begge sider;
    med stjerna foran tar stjerna den venstre auto-en. */
 .jst-knapp{
   display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;
@@ -866,7 +867,6 @@ select.hu-felt{
 .jst-knapp[hidden]{display:none}
 .jst-ikon{width:64px;height:64px;display:block}
 .jst-ikon img{width:100%;height:100%;object-fit:contain;display:block}
-.jst-knapp .jst-navn{white-space:nowrap;font-variant-numeric:tabular-nums}
 .jst-knapp:active .jst-ikon{transform:scale(.96)}
 .jst-knapp:not([hidden]) + .ntp-vaer{margin-left:24px}
 </style>
@@ -3737,8 +3737,7 @@ function jstKnapp(){
   /* Ikonene er Magnes egne (8. november 2026), i bilder/ikoner/ som de
      andre: julestjerne (tent) og julestjerne-av (slukket). Begge hentes
      med en gang, saa bildet ikke blinker tomt foerste gang det byttes. */
-  b.innerHTML = '<span class="jst-ikon">' + neamIkonImg('julestjerne-av', ' width="511" height="512"') + '</span>'
-              + '<span class="ikon-navn jst-navn"></span>';
+  b.innerHTML = '<span class="jst-ikon">' + neamIkonImg('julestjerne-av', ' width="511" height="512"') + '</span>';
   new Image().src = neamIkonUrl('julestjerne');
   b.addEventListener('click', jstTrykk);
   vaer.parentNode.insertBefore(b, vaer);
@@ -3763,7 +3762,6 @@ function jstTegn(){
   const img = b.querySelector('.jst-ikon img');
   const src = neamIkonUrl(paa > 0 ? 'julestjerne' : 'julestjerne-av');
   if(img && img.getAttribute('src') !== src) img.setAttribute('src', src);
-  b.querySelector('.jst-navn').textContent = tekst;
   b.setAttribute('aria-label', 'Julestjernene: ' + (tekst === '…' ? 'henter' : tekst) + '. Trykk for å slå ' + (paa > 0 ? 'av' : 'på'));
 }
 

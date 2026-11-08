@@ -1,6 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 8. november 2026, natt: på fellesenheten kommer Magne og Nina
+*Ført à jour 8. november 2026, ettermiddag: Kjøkken dash har en
+julestjerneknapp til venstre for været, som slår gruppa «Julestjerner» i
+stua av og på (se toppblokka). Ført à jour 8. november 2026, natt: på fellesenheten kommer Magne og Nina
 inn på Økonomi med pinkoden sin, og sperra sitter på serveren (se
 toppblokka). Ført à jour 8. november 2026, sent: ikonet oppe til venstre går til
 sidas startvisning, og holdt inne i to sekunder til forsiden (se
@@ -1196,6 +1198,28 @@ fellesenheten**; magne@, nina@ og sys@ kommer inn som før uten kode.
   holder, uten valgt tid går den ut, `glem` sletter, Emmas kode slipper
   ikke inn, og en ny kode sletter den gamle økta. Ikke prøvd på
   kjøkkenskjermen.
+
+**8. november, ettermiddag: julestjernene på Kjøkken dash** (`2a4f1bc`,
+bare `dashboard.html` og to nye ikoner – ingen fellesfil, ingen nye `?v=`).
+Magne: «en julestjerne som blir enknapp på kjøkken dash», som et ikon
+**til venstre for været**.
+- **Gruppa er Neams egen**, laget i Rommene på kjøkkenskjermen og lagret
+  der (`neam-rommene:v1`, `grupper`). Knappen finner den ved navnet
+  («julestjern», stua først) og leser oppsettet på nytt hver gang, så en
+  endring i Rommene følges. Finnes den ikke på skjermen, vises ingen knapp.
+  En Homey-gruppe ville vært synlig overalt; denne er bare der den ble laget.
+- **Trykket** følger gruppebryteren i Rommene: er noen på, slås alle av,
+  ellers alle på. Tilstanden leses fra Homey hvert minutt mens skjermen er
+  synlig, og rett etter et trykk.
+- **Bare ikonet**, 64 px som låseikonet – «På»/«Av» under ble tatt bort
+  samme dag (Magne); tilstanden står i `aria-label`. **To bilder fra Magne:** `bilder/ikoner/julestjerne.png` (tent, når noen
+  lyser) og `julestjerne-av.png` (slukket, også før Homey har svart), 511 ×
+  512, på `IKON_V=2`.
+- **Topplinja er felles** (`felles-topp.js`), men den ble ikke rørt:
+  `dashboard.html` setter knappen inn foran `#ntpVaer` selv. Været står med
+  auto-marg på begge sider; stjerna tar den venstre (`.jst-knapp`).
+- **Testet** lokalt med to oppdiktede lamper (av → på, én av to på, kallene
+  til `/api/homey`). Ikke prøvd mot Homey eller på kjøkkenskjermen.
 
 ### Åpne tråder
 
