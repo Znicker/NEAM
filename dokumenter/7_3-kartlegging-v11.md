@@ -517,8 +517,10 @@ ved postene i husets filviser i stedet for en ny fane (`106893c`),
 differansen i «måned så langt», Resultat før Transaksjoner og innboksen på
 én linje også på PC (`44395ab`), Resultat med grafer per kategori
 (`ed22845`, tatt ut igjen), Resultat med måned › kategori › post i ett
-stolpediagram (`a6b79e2`), og til sist «Start budsjett» per måned og hele
-året med standarden i diagrammene (`4cb70d8`).
+stolpediagram (`a6b79e2`), «Start budsjett» per måned og hele året med
+standarden i diagrammene (`4cb70d8`), og til sist høyreklikk i stedet for
+knapper i Budsjett (`2f63779`) og Regnskap med samme liste, føringene
+under og et vindu per føring (`16bb99f`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -527,7 +529,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 76 commits, `0e0050a`–`4cb70d8`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 78 commits, `0e0050a`–`16bb99f`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4340,7 +4342,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 76 commits fra `0e0050a` til `4cb70d8` (dialogen med
+verdier. Bygget i 78 commits fra `0e0050a` til `16bb99f` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4785,6 +4787,44 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Samme liste i Budsjett og Regnskap, endring med høyreklikk**
+  (`2f63779`, `16bb99f`). Magne: «Det er fremdeles rotete totalt sett.
+  Spesielt dette med kategorier og underkategorier. Jeg mener at vi skal ha
+  samme kategorier og underkategorier på regnskap og budsjett … når man
+  trykker på en føring kommer det opp en egen popup med evt detaljer,
+  kategori og valg. Jeg tenker at andre museknapp tjener en rolle her», og
+  med et bilde av budsjettlista: «slik som dette er oversiktelig.
+  hovedkategorier men kan åpne. ønsker man å endre trykker man andre
+  museknapp på kategorien eller linjen man ønsker endring på. ingen andre
+  knapper for dette».
+  - **Budsjett** (`2f63779`): lista som før – grupper som kan åpnes,
+    postene under, og nå linjene under en post (trykk posten). Poster uten
+    budsjett er skjult; «Vis poster uten budsjett» i menyen på gruppen.
+    **Ingen knapper for å endre** – Rediger, Start budsjett og Kopier
+    standardbudsjettet er borte fra lista (bare «Standardbudsjett ›» står).
+    **Høyreklikk** (eller hold fingeren 0,55 s) på en gruppe, post eller
+    linje åpner `okBlMeny`, og alt lagres med en gang: beløp i måneden
+    (regnestykker går, `okRegn`) og i standarden, navn (`kategori-navn`),
+    merke (`kategori-merke`), måneder (`budsjett-perioder`), ny linje/post
+    (`kategori-ny`), slett egne (`kategori-slett`, «Trykk igjen»), og
+    nederst Start budsjett / Kopier standardbudsjettet hit (med
+    `bekreft()`). En måned som ikke er startet, må startes før beløpet i
+    måneden kan endres. Skjemaet bak «Standardbudsjett ›» står igjen med
+    Rediger og Lagre.
+  - **Regnskap** (`16bb99f`): samme liste. Trykk en post for linjene og
+    føringene (`foringer`, eksakt når posten har linjer), en linje for
+    sine; regninger som forfaller står med. **Trykk en føring:** vinduet
+    `#ok-fr-bak` med sted, dato, beløp, kilde, kategori (lagres med en
+    gang via `godkjenn`), kvittering eller fil, «Stryk – føres ikke» og
+    «Send tilbake til innboksen» (`angre`) – de samme endringene som
+    Neams `endre_okonomi_foringer`. En delt kvittering endres i
+    kvitteringen. **Høyreklikk på en føring:** `okForMeny` med det samme i
+    kortform; på en kategori budsjettlistas meny uten månedens
+    budsjettvalg. Spalten med kjøpene og «Vis kjøpene ›» er borte fra
+    Regnskap (dialogen med kjøpene brukes fortsatt i Resultat).
+  - Testet i testserveren (beløp med regnestykke, ny linje og sletting,
+    gruppemenyen, kategori fra vinduet og menyen begge veier). «Send
+    tilbake til innboksen» ikke prøvd helt til innboksen.
 - **Start budsjett, og hele året med standarden** (`4cb70d8`). Magne: «det
   er uoversiktelig. vi får ta det fra en kant. budsjett søylene kan være
   tunge [tomme] for måneder der budsjettet ikke er fylt inn. Det vil si at

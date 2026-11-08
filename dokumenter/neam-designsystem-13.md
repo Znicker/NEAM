@@ -1772,11 +1772,16 @@ først, Sparing sist. Bare tallene skiller dem:
   Valgt ut uten skisse (Magne: «bare kjør det ut på neam»).
 - **Regnskap** (fra 8. november 2026) – det som er brukt, uten budsjett,
   med det som forfaller: sumboksene som under, diagrammet uten
-  budsjettstrek og uten rødt, «På tvers» med bare brukt, og kjøpene bak
-  posten. **Én spalte, som Budsjett** – også Resultat. **Kjøpene bak en
-  post åpnes i en dialog** («Vis kjøpene ›», `#ok-kb-bak`, samme
-  `dlg-bak`/`dlg-kort` som kvitteringen), på PC og telefon; en kvittering
-  åpnet derfra legger seg over.
+  budsjettstrek og uten rødt, «På tvers» med bare brukt. **Samme liste som
+  Budsjett:** grupper som åpnes, postene under; trykk en post for linjene
+  og **føringene** (dato, sted, kilde, beløp – innrykket med en strek til
+  venstre, `.ok-rg-inn`). **Trykk en føring:** et vindu (`dlg-kort`) med
+  detaljene, kategorien som nedtrekk (lagres med en gang) og valgene –
+  «Se kvittering ›»/fil, «Stryk – føres ikke», «Send tilbake til
+  innboksen» (`.btn-ghost`). **Høyreklikk** (hold fingeren på telefon) på
+  en føring eller kategori åpner menyen (`.ok-meny`). **Én spalte, som
+  Budsjett** – også Resultat, der kjøpene bak en post åpnes i en dialog
+  («Vis kjøpene ›», `#ok-kb-bak`).
 - **Resultat** (het Regnskap til 8. november 2026) – budsjett mot faktisk.
   **Fra 8. november 2026 (skissen «Resultat – måneder og kategorier»):**
   sumboksene viser differansen (Status' regel: røde minustall over, grønt
@@ -1816,12 +1821,18 @@ først, Sparing sist. Bare tallene skiller dem:
   «Forfaller – ikke betalt ennå» i meta-linja og «Åpne PDF-en ›».
 - **Budsjett** – lista for perioden (fra 8. november 2026), med budsjett
   per måned gjennom året som diagram – bare startede måneder, og
-  standardbudsjettet helt til høyre. En måned uten eget budsjett har
-  **«Start budsjett»** (`.btn-ny`); en startet måned har Rediger og
-  «Kopier standardbudsjettet», som spør med `bekreft()` («Erstatt», fare)
-  når måneden alt har tall. **Rediger** åpner månedens skjema, og
-  Lagre eller Avbryt går tilbake til lista; «Standardbudsjett ›» viser
-  standarden med «‹ Tilbake til budsjettet». Skjemaene er som før:
+  standardbudsjettet helt til høyre. **Ingen knapper for å endre** (fra
+  8. november 2026, Magne: «ønsker man å endre trykker man andre
+  museknapp på kategorien eller linjen man ønsker endring på. ingen andre
+  knapper for dette»): **høyreklikk** – eller hold fingeren på telefon – på
+  en gruppe, post eller linje åpner menyen (`.ok-meny`), og alt lagres med
+  en gang: beløp i måneden og i standarden, navn, merke, måneder, ny
+  linje/post, slett, og Start budsjett / Kopier standardbudsjettet hit
+  (spør med `bekreft()` når måneden alt har tall). Poster med linjer
+  åpnes med › som gruppene; poster uten budsjett vises fra menyen på
+  gruppen. En linje under overskriften sier at man høyreklikker.
+  «Standardbudsjett ›» viser standarden med «‹ Tilbake til budsjettet».
+  Skjemaene er som før:
   standardbudsjettet eller ett månedsbudsjett om gangen. Fra 6. november 2026 (Magne: «er veldig
   generisk nå»):
   - **Hver gruppe i sitt eget kort** (`.ok-bu-gruppe`, papir, skygge,
