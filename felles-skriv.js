@@ -334,7 +334,7 @@ const SKRIV_SKOLE = ['legg_til_lekse', 'endre_lekse', 'slett_lekse',
                      'legg_til_fag', 'endre_fag', 'sett_diktatord'];
 
 /* Kontoene som ikke er en person: veggskjermen og systemkontoen. */
-const SKRIV_UPERSONLIG = ['felles@neam.no', 'sys@neam.no'];
+const SKRIV_UPERSONLIG = ['felles@neam.no', 'kitchen@neam.no', 'sys@neam.no'];
 
 let skrivMeg = null;
 let skrivMegPerson = false;

@@ -1887,7 +1887,8 @@ async function neamPinkoder(){
    aapner skolearbeidet for den personen (skrivSkoleTillatt). */
 /* Fellesenhetene. Kontoen het kitchen@ til 8. november 2026 (Magne:
    «dette oppsettet vil jo passe på alle fellesenhetene våre»). */
-const NEAM_FELLES = ['felles@neam.no'];
+/* kitchen@ er tilbake: Microsoft oppga fortsatt det gamle navnet etter byttet. */
+const NEAM_FELLES = ['felles@neam.no', 'kitchen@neam.no'];
 const NEAM_PIN_HVILE_MS = 3 * 60 * 1000;
 let neamPinPerson = null;
 let neamPinSistTrykk = 0;

@@ -22,7 +22,7 @@
 <script src="/felles-ms.js?v=2"></script>
 <script src="/felles-data.js?v=5"></script>
 <script src="/felles-lesalt.js?v=16"></script>
-<script src="/felles-skriv.js?v=15"></script>
+<script src="/felles-skriv.js?v=16"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -539,6 +539,7 @@ const SLIPP_INN = [
   'emma@neam.no',
   'andrea@neam.no',
   'felles@neam.no',   // fellesenhetene - het kitchen@ til 8. november 2026
+  'kitchen@neam.no',  // tilbake: Microsoft oppga fortsatt det gamle navnet etter byttet
   'sys@neam.no'
 ];
 
@@ -820,7 +821,9 @@ async function sjekkTilgang(){
     if(await sjekkTilgang()){
       slippInn();
     } else {
-      loggUt2('Denne kontoen har ikke tilgang.');
+      /* Navnet Microsoft oppga, saa en avvisning kan feilsoekes uten konsoll. */
+      const navn = A.me ? (A.me.userPrincipalName || A.me.mail || '') : '';
+      loggUt2('Denne kontoen har ikke tilgang' + (navn ? ' (' + navn + ').' : '.'));
     }
   }catch(err){
     loggUt2('Kunne ikke bekrefte pålogging. Logg inn på nytt.');
@@ -895,7 +898,7 @@ document.addEventListener('visibilitychange', () => {
 /* Hvem som ser dashboard-flisen. Samme liste som i dashboard.html.
    Sys staar igjen ved siden av kitchen: uten den ville en feil paa
    kitchen-kontoen gjort veggskjermen utilgjengelig uten vei inn. */
-const DASH_TILGANG = ['felles@neam.no', 'sys@neam.no'];
+const DASH_TILGANG = ['felles@neam.no', 'kitchen@neam.no', 'sys@neam.no'];
 
 /* Emma dash har med vilje INGEN liste her. Flisen staar aapen for alle
    inntil videre - tilgangsstyringen kommer senere.
@@ -1272,6 +1275,6 @@ window.neamUtfor = async function(navn, arg){
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=86"></script>
+<script src="/felles-neam.js?v=87"></script>
 </body>
 </html>

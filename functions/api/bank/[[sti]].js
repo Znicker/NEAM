@@ -118,7 +118,7 @@ const TILBAKE = 'https://neam.no/api/bank/tilbake';
 const TILGANG = ['sys@neam.no', 'magne@neam.no', 'nina@neam.no'];
 /* Kan vekke hentingen (?hva=hent), men faar ikke se noe. Se der. */
 /* Fellesenhetene - felles@ het kitchen@ til 8. november 2026. */
-const HENT_TILGANG = TILGANG.concat(['felles@neam.no']);
+const HENT_TILGANG = TILGANG.concat(['felles@neam.no', 'kitchen@neam.no']);
 const SIST_HENTET_NOKKEL = 'auth:bank:sist-hentet';
 const TRUMF_FEIL_NOKKEL = 'auth:bank:trumf-feil';
 
