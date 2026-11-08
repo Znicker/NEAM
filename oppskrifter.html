@@ -14,7 +14,7 @@
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
 <link rel="stylesheet" href="/felles-neam.css?v=88">
-<link rel="stylesheet" href="/felles-topp.css?v=7">
+<link rel="stylesheet" href="/felles-topp.css?v=8">
 <!-- ?v=: bump tallet naar en fellesfil endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -2427,7 +2427,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=89"></script>
-<script src="/felles-topp.js?v=7"></script>
+<script src="/felles-topp.js?v=8"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB-basert erstatning for window.storage.
@@ -5558,7 +5558,8 @@ async function openRecipe(id){
 
   currentServings = r.baseServings || 1;
   /* Lages denne retten naa, staar porsjonene og lista som da den startet. */
-  const lages = !!(matlaging && matlaging.id === id);
+  matlaging = matAlle[id] || null;
+  const lages = !!matlaging;
   if(lages) currentServings = matlaging.porsjoner || currentServings;
   matVenstre = lages ? (matlaging.venstre || 'rekkefolge') : 'gruppert';
   matLys = null;
@@ -5594,6 +5595,7 @@ async function openRecipe(id){
   lukkRedigerMeny();
   switchTab('list');
   showView('view-detail');
+  matNullstillRulling();
   matApner = false;
   matTegnStyring();
   matGjenopprettPlass();
@@ -6484,10 +6486,30 @@ function renderCommentsList(){
      etter et besoek paa en annen side.
    - Avslutt matlaging: spoer om vurdering, tips eller kokkens kommentar
      foer den lukkes.
+   - Flere retter kan lages samtidig, og hver husker sin egen plass
+     (Magne, 8. november 2026): «neam-matlaging» er et oppslag
+     {<oppskrifts-id>: {...}}, og `matlaging` er den for retten som er aapen.
    ============================================================ */
 const MAT_NOKKEL = 'neam-matlaging';
+/* Alle rettene som lages, etter id. Det gamle formatet (én rett) gjoeres om. */
+let matAlle = {};
+try{
+  const lest = JSON.parse(localStorage.getItem(MAT_NOKKEL) || 'null');
+  if(lest && lest.id && lest.start) matAlle[lest.id] = lest;
+  else if(lest && typeof lest === 'object') matAlle = lest;
+}catch(e){ matAlle = {}; }
+/* Matlagingen for retten som staar aapen - eller null. */
 let matlaging = null;
-try{ matlaging = JSON.parse(localStorage.getItem(MAT_NOKKEL) || 'null'); }catch(e){ matlaging = null; }
+function matLagre(){
+  try{
+    if(Object.keys(matAlle).length) localStorage.setItem(MAT_NOKKEL, JSON.stringify(matAlle));
+    else localStorage.removeItem(MAT_NOKKEL);
+  }catch(e){}
+}
+/* Den sist brukte - den sida aapner seg paa ved oppstart. */
+function matSist(){
+  return Object.values(matAlle).sort((a, b) => (b.sist || b.start) - (a.sist || a.start))[0] || null;
+}
 let matVenstre = 'gruppert';
 let matApner = false;
 let matLys = null;
@@ -6506,7 +6528,9 @@ function matHusk(){
     const e = $(id);
     if(e && e.scrollTop) matlaging.rull[id] = e.scrollTop;
   });
-  try{ localStorage.setItem(MAT_NOKKEL, JSON.stringify(matlaging)); }catch(e){}
+  matlaging.sist = Date.now();
+  matAlle[matlaging.id] = matlaging;
+  matLagre();
 }
 let matRullVent = null;
 /* Kolonnene ruller selv i landskap, saa det lyttes paa hele dokumentet. */
@@ -6518,19 +6542,32 @@ document.addEventListener('scroll', () => {
 
 function matGjenopprettPlass(){
   if(!matAktivHer()) return;
+  /* Plassen leses FOER noe flyttes: fanebyttet under ville ellers lagret
+     rullingen fra retten man kom fra over den man skal tilbake til. */
+  const r = Object.assign({}, matlaging.rull || {});
+  const fane = matlaging.fane;
+  matApner = true;
   matLys = (matlaging.lys != null) ? matlaging.lys : null;
-  if(matlaging.fane) switchTab(matlaging.fane);
+  if(fane) switchTab(fane);
   matLysIgjen(false);
-  const r = matlaging.rull || {};
   setTimeout(() => {
     Object.keys(r).forEach(k => {
       if(k === 'vindu') window.scrollTo(0, r[k]);
       else if($(k)) $(k).scrollTop = r[k];
     });
+    matApner = false;
   }, 80);
 }
+/* En annen rett starter oeverst - kolonnene er de samme elementene for alle
+   rettene, og ville ellers staatt der forrige rett slapp. */
+function matNullstillRulling(){
+  ['tab-list', 'tab-steps', 'tab-tips', 'tab-handle', 'tab-rating'].forEach(id => { const e = $(id); if(e) e.scrollTop = 0; });
+}
 /* Det lille ikonet ved klokka: paa denne sida aapnes retten uten ny lasting. */
-window.ntpMatGaaTil = function(){ if(matlaging) openRecipe(matlaging.id); };
+window.ntpMatGaaTil = function(id){
+  const m = (id && matAlle[id]) || matSist();
+  if(m) openRecipe(m.id);
+};
 
 function matTegnStyring(){
   const aktiv = matAktivHer();
@@ -6562,11 +6599,10 @@ async function matStartEllerSlutt(){
   const r = recipeCache[currentRecipeId];
   if(!r) return;
   const n = formatAmt(currentServings) + (currentServings === 1 ? ' porsjon' : ' porsjoner');
-  const tekst = (matlaging && matlaging.id !== currentRecipeId)
-    ? 'Du lager «' + (matlaging.tittel || 'en annen rett') + '». Avslutte den og starte «' + (r.title || 'denne') + '» for ' + n + '?'
-    : 'Start matlaging for ' + n + '?';
-  if(!(await bekreft(tekst, { jaTekst:'Start' }))) return;
+  /* Andre retter som lages, gaar videre - hver har sin egen plass. */
+  if(!(await bekreft('Start matlaging for ' + n + '?', { jaTekst:'Start' }))) return;
   matlaging = { id: currentRecipeId, tittel: r.title || '', porsjoner: currentServings, start: Date.now() };
+  matAlle[matlaging.id] = matlaging;
   matVenstre = 'rekkefolge';
   matLys = null;
   renderIngredientViews();
@@ -6612,10 +6648,11 @@ function matSlutt(){
   if(matlaging && typeof window.ntpTimereFor === 'function'){
     window.ntpTimereFor(matlaging.id).forEach(t => { matNedSlett(t.id); });
   }
+  if(matlaging) delete matAlle[matlaging.id];
   matlaging = null;
   matVenstre = 'gruppert';
   matLys = null;
-  try{ localStorage.removeItem(MAT_NOKKEL); }catch(e){}
+  matLagre();
   renderIngredientViews();
   matTegnStyring();
   if(typeof window.ntpMatTegn === 'function') window.ntpMatTegn();
@@ -8959,8 +8996,10 @@ function settBusy(på){
   }catch(e){ console.warn('Kunne ikke aapne oppskrift fra lenke:', e); }
 
   /* Matlaging som var i gang: rett tilbake dit man var (8. november 2026). */
-  if(matlaging && matlaging.id && currentRecipeId !== matlaging.id){
-    try{ await openRecipe(matlaging.id); }catch(e){ console.warn('Fant ikke retten som ble laget:', e); }
+  /* Med flere: den som ble brukt sist. */
+  const sist = matSist();
+  if(sist && !currentRecipeId){
+    try{ await openRecipe(sist.id); }catch(e){ console.warn('Fant ikke retten som ble laget:', e); }
   }
 })();
 

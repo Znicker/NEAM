@@ -23,9 +23,9 @@
    husket etterpaa. Uten svar staar Arendal.
 
    Matlagingen (oppskrifter.html) legger «neam-matlaging» i localStorage
-   mens en rett lages. Da staar matlagingsikonet til venstre for klokka,
-   med en ring som gaar rundt og tiden som har gaatt, og det leder
-   tilbake dit.
+   mens retter lages - et oppslag {<oppskrifts-id>: {...}}, flere samtidig.
+   Da staar et matlagingsikon per rett til venstre for klokka, med en ring
+   som gaar rundt og tiden som har gaatt, og hvert leder tilbake til sin rett.
    ============================================================ */
 
 const NTP_STED = { lat: 58.4614, lon: 8.7724, navn: 'Arendal' };  /* som STED paa dashene */
@@ -90,9 +90,7 @@ function ntpTegn(){
     + '<div class="ntp-vaer" id="ntpVaer" hidden></div>'
     /* Matlagingen som gaar: til venstre for klokka, med en ring som gaar
        rundt (Magne, 8. november 2026). Fylles av ntpMatIkon(). */
-    + '<a class="ntp-mat" id="ntpMat" href="/oppskrifter.html" hidden>'
-    +   '<span class="ntp-mat-ikon"></span><b id="ntpMatTid"></b>'
-    + '</a>'
+    + '<div class="ntp-matrad" id="ntpMat" hidden></div>'
     /* Timerne til venstre for klokka, ikke under den - under gjorde de
        toppen for hoey (Magne, 8. november 2026). */
     + '<div class="ntp-timere" id="ntpTimere" role="button" tabindex="0" hidden'
@@ -115,7 +113,8 @@ function ntpTegn(){
   hoyde();
   document.getElementById('ntpMat').addEventListener('click', function(e){
     /* Paa matlagingssida selv aapnes retten uten ny lasting. */
-    if(typeof window.ntpMatGaaTil === 'function'){ e.preventDefault(); window.ntpMatGaaTil(); }
+    const a = e.target.closest('[data-mat-id]');
+    if(a && typeof window.ntpMatGaaTil === 'function'){ e.preventDefault(); window.ntpMatGaaTil(a.dataset.matId); }
   });
   ['ntpKlokke', 'ntpTimere'].forEach(function(id){
     const kl = document.getElementById(id);
@@ -517,29 +516,40 @@ async function ntpTmFjern(t){
 /* ---------- Matlagingen ----------
    Settes av oppskrifter.html: {id, tittel, porsjoner, start, ...}. */
 const NTP_MAT = 'neam-matlaging';
-function ntpMat(){
+/* Rettene som lages, eldste foerst. Det gamle formatet var én rett. */
+function ntpMatAlle(){
   try{
     const m = JSON.parse(localStorage.getItem(NTP_MAT) || 'null');
-    return (m && m.id && m.start) ? m : null;
-  }catch(e){ return null; }
+    if(!m || typeof m !== 'object') return [];
+    const liste = (m.id && m.start) ? [m] : Object.keys(m).map(function(k){ return m[k]; });
+    return liste.filter(function(x){ return x && x.id && x.start; })
+      .sort(function(a, b){ return a.start - b.start; });
+  }catch(e){ return []; }
 }
 
-/* Ikonet til venstre for klokka. Gir matlagingen tilbake, eller null. */
+/* Ikonene til venstre for klokka, ett per rett. Gir rettene tilbake. */
 function ntpMatIkon(){
-  const a = document.getElementById('ntpMat');
-  const mat = ntpMat();
-  if(!a) return mat;
-  a.hidden = !mat;
-  if(!mat) return null;
-  const ikon = a.querySelector('.ntp-mat-ikon');
-  if(!ikon.firstChild){
-    const url = (typeof neamIkonUrl === 'function') ? neamIkonUrl('matlaging') : '/bilder/ikoner/matlaging.png';
-    ikon.innerHTML = '<img src="' + ntpEsc(url) + '" alt="" width="512" height="511">';
-  }
-  a.title = 'Matlaging: ' + (mat.tittel || '') + ' – trykk for å gå tilbake';
-  a.setAttribute('aria-label', a.title);
-  document.getElementById('ntpMatTid').textContent = ntpTmVarighet(Date.now() - mat.start);
-  return mat;
+  const rad = document.getElementById('ntpMat');
+  const alle = ntpMatAlle();
+  if(!rad) return alle;
+  rad.hidden = !alle.length;
+  rad.classList.toggle('flere', alle.length > 1);
+  /* Samme retter som sist: bare tiden oppdateres (ntpTmTikk), ellers
+     ville ringen startet paa nytt med et rykk ved hver henting. */
+  const nokkel = alle.map(function(m){ return m.id + ':' + m.start; }).join('|');
+  if(rad.dataset.nokkel === nokkel) return alle;
+  rad.dataset.nokkel = nokkel;
+  const url = (typeof neamIkonUrl === 'function') ? neamIkonUrl('matlaging') : '/bilder/ikoner/matlaging.png';
+  rad.innerHTML = alle.map(function(m){
+    const navn = 'Matlaging: ' + (m.tittel || '') + ' – trykk for å gå tilbake';
+    return '<a class="ntp-mat" href="/oppskrifter.html?rett=' + encodeURIComponent(m.id) + '" data-mat-id="' + ntpEsc(m.id) + '"'
+      + ' title="' + ntpEsc(navn) + '" aria-label="' + ntpEsc(navn) + '">'
+      + '<span class="ntp-mat-ikon"><img src="' + ntpEsc(url) + '" alt="" width="512" height="511"></span>'
+      /* Rettens navn under symbolet (Magne, 8. november 2026), tiden under det. */
+      + '<span class="ntp-mat-navn">' + ntpEsc(m.tittel || 'Matlaging') + '</span>'
+      + '<b data-start="' + m.start + '">' + ntpTmVarighet(Date.now() - m.start) + '</b></a>';
+  }).join('');
+  return alle;
 }
 
 /* Symbolet for en timer. Nedtellinger fra en oppskrift faar et lite
@@ -585,7 +595,7 @@ function ntpTmTegn(){
   if(panel && !panel.hidden && panel.dataset.vis === 'liste') ntpTmListe();
   /* Sekundene teller bare naar noe gaar - ogsaa en alarm langt fram,
      ellers ville ingen sett at tiden kom. */
-  const trenger = alle.length > 0 || !!mat;
+  const trenger = alle.length > 0 || mat.length > 0;
   if(trenger && !ntpTmTikker) ntpTmTikker = setInterval(ntpTmTikk, 1000);
   if(!trenger && ntpTmTikker){ clearInterval(ntpTmTikker); ntpTmTikker = null; }
 }
@@ -600,8 +610,9 @@ function ntpTmTikk(){
     const t = alle.filter(function(x){ return x.id === s.dataset.id; })[0];
     if(t) s.querySelector('b').textContent = ntpTmKort(t);
   });
-  const mat = ntpMat(), mb = document.getElementById('ntpMatTid');
-  if(mat && mb) mb.textContent = ntpTmVarighet(naa - mat.start);
+  document.querySelectorAll('#ntpMat b[data-start]').forEach(function(b){
+    b.textContent = ntpTmVarighet(naa - Number(b.dataset.start));
+  });
   const panel = document.getElementById('ntpTmBak');
   if(panel && !panel.hidden && panel.dataset.vis === 'liste'){
     panel.querySelectorAll('[data-tm-tid]').forEach(function(s){

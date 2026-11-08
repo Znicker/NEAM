@@ -74,11 +74,15 @@
    Til venstre for klokka, med en ring som gaar rundt saa man ser at den
    er i gang, og tiden under (Magne, 8. november 2026). Ringen er
    aksentfargen paa et spor i --line, som en framdrift som aldri blir ferdig. */
+.ntp-matrad{ display:flex; gap:10px; flex-shrink:0; margin-left:18px; }
+.ntp-matrad[hidden]{ display:none; }
 .ntp-mat{
   display:flex; flex-direction:column; align-items:center; gap:3px; flex-shrink:0;
-  margin-left:18px; text-decoration:none; color:var(--ink);
+  text-decoration:none; color:var(--ink);
 }
-.ntp-mat[hidden]{ display:none; }
+/* Flere retter samtidig: litt mindre, saa raden ikke tar toppen. */
+.ntp-matrad.flere .ntp-mat-ikon{ width:58px; height:58px; }
+.ntp-matrad.flere .ntp-mat-ikon img{ width:42px; height:42px; }
 .ntp-mat-ikon{
   position:relative; width:78px; height:78px; border-radius:50%;
   display:grid; place-items:center; box-shadow:inset 0 0 0 4px var(--line);
@@ -93,9 +97,16 @@
 @keyframes ntp-mat-snurr{ to{ transform:rotate(360deg); } }
 /* Stoerre enn timerne, med ringen rundt (Magne, 8. november 2026). */
 .ntp-mat-ikon img{ width:58px; height:58px; object-fit:contain; display:block; }
-.ntp-mat b{ font-size:var(--t-etikett); font-weight:700; font-variant-numeric:tabular-nums; }
+.ntp-mat b{ font-size:var(--t-etikett); font-weight:700; font-variant-numeric:tabular-nums; line-height:1.1; }
+/* Rettens navn, kort: et langt navn kuttes med … i stedet for aa gjoere
+   toppen bredere. Hele navnet staar i title. */
+.ntp-mat-navn{
+  max-width:96px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-size:var(--t-etikett); font-weight:600; color:var(--ink-soft); line-height:1.1;
+}
+.ntp-matrad.flere .ntp-mat-navn{ max-width:76px; }
 @media (prefers-reduced-motion:reduce){ .ntp-mat-ikon::before{ animation:none; } }
-.ntp-mat:not([hidden]) ~ .ntp-klokke{ margin-left:14px; }
+.ntp-matrad:not([hidden]) ~ .ntp-klokke{ margin-left:14px; }
 
 /* Uten vaer staar klokka likevel helt til hoeyre. Trykk paa den aapner
    alarmene og timerne. */
@@ -218,13 +229,16 @@
   .ntp-vaer, .ntp-sted{ display:none !important; }
   .ntp-klokke{ margin-left:auto !important; }   /* vaeret skjoeves ikke lenger mot hoeyre */
   /* Matlagingen legger seg inntil klokka ogsaa her. */
-  .ntp-mat{ margin-left:auto; }
-  .ntp-mat:not([hidden]) ~ .ntp-klokke{ margin-left:10px !important; }
+  .ntp-matrad{ margin-left:auto; gap:6px; }
+  .ntp-matrad:not([hidden]) ~ .ntp-klokke{ margin-left:10px !important; }
+  .ntp-matrad.flere .ntp-mat-ikon{ width:44px; height:44px; }
+  .ntp-mat-navn, .ntp-matrad.flere .ntp-mat-navn{ max-width:58px; }
+  .ntp-matrad.flere .ntp-mat-ikon img{ width:32px; height:32px; }
   .ntp-mat-ikon{ width:54px; height:54px; }
   .ntp-mat-ikon img{ width:40px; height:40px; }
   .ntp-tid{ font-size:var(--t-stor); }
   .ntp-dato{ font-size:var(--t-meta); margin-top:2px; }
   .ntp-timere{ margin-left:auto; max-width:126px; gap:4px 6px; }
-  .ntp-mat:not([hidden]) ~ .ntp-timere{ margin-left:10px; }
+  .ntp-matrad:not([hidden]) ~ .ntp-timere{ margin-left:10px; }
   .ntp-timere:not([hidden]) ~ .ntp-klokke{ margin-left:10px !important; }
 }
