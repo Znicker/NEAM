@@ -648,9 +648,10 @@ variant.
   **Slett** (rød) og Pause/Fortsett på stoppeklokka, og **Ny** (grønn).
   Det som fjerner heter Slett – «Avbryt» er nøytral og bare for å gå ut av
   skjemaet (Avbryt-regelen).
-- **Til venstre for klokka:** små ikoner med tallet under – alarmen
-  `--aksent`, nedtellingen `--handling-endre`, stoppeklokka
-  `--handling-ny` – i høyst to rader. **Ikke under klokka:** det gjorde
+- **Til venstre for klokka:** små ikoner med tiden på samme linje –
+  alarmen `--aksent`, nedtellingen `--handling-endre`, stoppeklokka
+  `--handling-ny` – **stablet fire i høyden** (tre når toppen er
+  kompakt), nye kolonner ved siden av. **Ikke under klokka:** det gjorde
   toppen for høy. **Høyst ti** på en skjerm. En nedtelling laget fra en
   koketid i en oppskrift har en **liten gryte** (matlagingsikonet) i
   stedet for timeglasset – ved klokka, i lista og når den ringer.
@@ -1728,22 +1729,31 @@ knapp: den utfører ingenting, den viser noe.
 
 *Fra 8. november 2026 (Magne).*
 
-**Fanene er Ingredienser og Steg (telefon) eller Oppskrift (landskap),
-Tips, Handleliste og Vurdering.** Tips og Kokken er én fane: tipsene
-først, kokkens kommentarer under. Handleliste viser ingrediensene for
-porsjonene som er valgt, og der ligger knappen til handlelista.
+**Fanene er Oppskrift, Tips, Ingredienser og Vurdering (landskap), eller
+Ingredienser, Steg, Tips og Vurdering (telefon).** Tips og Kokken er én
+fane: tipsene først, kokkens kommentarer under. Ingredienser (landskap)
+viser ingrediensene for porsjonene som er valgt, og der ligger knappen til
+handlelista; på telefonen står den knappen nederst i Ingredienser-fanen,
+så det ikke blir to faner med samme navn.
 
-**Under fanene står porsjonene, «Finn ingredienser» og «Start
-matlaging».** Finn ingredienser gir lista gruppert som i handlelista –
-det er også det man ser før noe er trykket.
+**«Start matlaging» står foran rettens navn**, og **porsjonsvelgeren**
+(− 4 +) i raden under navnet, der antallet sto. Før start står lista
+gruppert som i handlelista.
 
-**Start matlaging spør om antallet porsjoner og låser det.** Så står
-ingrediensene i oppskriftens rekkefølge, og matlagingsikonet står til
+**Start er grønn og Stans er rød** (Magne, 8. november 2026) – et unntak
+fra regelen om at rødt betyr slett: knappen bytter mellom de to, og rødt
+sier at noe pågår som kan stanses.
+
+**Start matlaging spør om antallet porsjoner, og velgeren forsvinner.**
+I raden står da antallet og tiden siden start. Ingrediensene står i
+oppskriftens rekkefølge, og matlagingsikonet står til
 venstre for klokka i topplinja, på alle sidene – **større enn timerne**
 (78 px, 54 px når toppen er kompakt), med en ring i `--aksent` som går
-rundt så man ser at den er i gang, og tiden under. Trykk leder tilbake til
-retten. Ringen står stille ved redusert bevegelse.
-Mens retten lages, bytter Finn-knappen mellom de to rekkefølgene.
+rundt så man ser at den er i gang, og **rettens navn** og tiden under
+(navnet kuttes med … i stedet for å gjøre toppen bredere). Trykk leder
+tilbake til retten. Ringen står stille ved redusert bevegelse.
+**Flere retter kan lages samtidig:** ett ikon per rett, litt mindre når
+det er flere.
 
 **Ord i stegene kan trykkes:** et ingrediensnavn lyser opp raden sin i
 lista (aksentkant og mild flate, som en valgt rad ellers); en koketid,
@@ -1755,6 +1765,9 @@ foreslår noe, de utfører ingenting alene.
   «grønnsaker» og «krydder» treffer alle ingrediensene av den varetypen
   («ta ut kjøttet» – Mørbrad). Ett ord kan lyse opp flere rader.
   Småord og kjøkkenord («pannen», «vannet») treffer ingenting.
+  **Bare det ingrediensen er, teller:** ord etter «til», «for», «på» og
+  «i» i navnet regnes ikke med – «Salt til kjøtt» er salt. Kjøtt og fisk
+  kjennes også på navnet når varetypen mangler.
 - **Den valgte raden legges midt i kolonnen**, uten myk rulling – den ble
   stående i kolonnen som ruller selv. Første og siste rad kan ikke komme
   helt til midten.
@@ -1764,10 +1777,13 @@ foreslår noe, de utfører ingenting alene.
 - **Nedtellingene fra retten står under knappene** med tiden og **Slett**
   (rød). Det er de samme som ved klokka; Avslutt matlaging sletter dem.
 
-**Neam husker hvor man var** mens retten lages, og sida åpner seg der
-igjen.
+**Neam husker hvor man var** mens retten lages – **hver rett for seg**:
+fane, liste, markert ingrediens og rulling. Man kan åpne andre oppskrifter
+og rulle der uten at det rører plassen i den som lages; en rett som ikke
+lages, åpner øverst. Sida åpner seg på den som ble brukt sist. Avslutt
+matlaging gjelder bare retten man står i.
 
-**Avslutt matlaging spør før den lukkes:** Vurder retten, Skriv et tips og
+**Stans matlaging spør før den lukkes:** Vurder retten, Skriv et tips og
 Kokkens kommentar (grønne – de legger til), Bare avslutt (blå) og Avbryt
 (nøytral).
 

@@ -124,7 +124,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 ?v=88`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
-`felles-topp.js ?v=7`, `felles-topp.css ?v=7`;
+`felles-topp.js ?v=10`, `felles-topp.css ?v=10`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
@@ -144,7 +144,7 @@ gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–88; neam.css til og
 med 87; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
-hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–6**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–9**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -1124,6 +1124,34 @@ long press 2 sekunder tar deg til index».
   bare til toppen. Sikkerhet, Neamow og forsiden har ingen visninger og
   ruller bare.
 - **Må prøves** på iPad og telefon: kort trykk og to sekunders hold.
+
+**8. november, natt: flere matlaginger, hver med sin plass** (`3c8d45a`,
+`7b1d1dd`, topp `?v=8`).
+- **«Kjøttet» fant «Salt til kjøtt»**, ikke mørbraden i argentinsk bowl.
+  Ord etter «til», «for», «på» og «i» i et ingrediensnavn teller ikke
+  lenger, fellesordene tar alltid med hele varetypen, og kjøtt og fisk
+  kjennes på navnet når varetypen mangler (`MAT_KATEGORI_ORD`; «filet» er
+  utelatt, ellers ble laksefilet kjøtt).
+- **Flere retter samtidig, hver låst for seg** (Magne). `neam-matlaging`
+  er nå et oppslag `{<oppskrifts-id>: {...}}`; det gamle formatet (én
+  rett) leses fortsatt. `matlaging` er den for retten som er åpen, og
+  oppstarten åpner den som ble brukt sist (`sist`). To feil underveis: en
+  ny rett arvet rullingen fra forrige (kolonnene er de samme elementene –
+  nullstilles nå), og fanebyttet ved retur lagret den gamle rullingen over
+  den husket før den ble satt tilbake (plassen leses nå først).
+- **Ved klokka:** ett ikon per rett med ring, **navnet** under (kuttet med
+  …) og tiden; trykk går til den retten (`?rett=<id>` fra andre sider).
+  Ikonene tegnes bare på nytt når rettene endrer seg, ellers ville ringen
+  rykket ved hver henting.
+- **Testet lokalt** med tre retter; ikke prøvd på neam.no.
+- **Så** (`c77c712`, topp `?v=9`), Magne: timerikonene stables fire i
+  høyden (ikon og tid på én linje); «Finn ingredienser» er fjernet;
+  fanen Handleliste heter Ingredienser (på telefonen er den skjult, og
+  knappen til handlelista står i Ingredienser-fanen); **Start matlaging
+  står foran navnet**, grønn, og blir **rød «Stans matlaging»**;
+  porsjonsvelgeren står i raden under navnet og er borte mens retten
+  lages. `topp ?v=10` er en annen økts (Økonomi-prikken ved klokka,
+  `e3ce2a2`).
 
 ### Åpne tråder
 
