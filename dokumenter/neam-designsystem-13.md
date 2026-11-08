@@ -1775,10 +1775,17 @@ først, Sparing sist. Bare tallene skiller dem:
   budsjettstrek og uten rødt, «På tvers» med bare brukt. **Samme liste som
   Budsjett:** grupper som åpnes, postene under; trykk en post for linjene
   og **føringene** (dato, sted, kilde, beløp – innrykket med en strek til
-  venstre, `.ok-rg-inn`). **Trykk en føring:** et vindu (`dlg-kort`) med
-  detaljene, kategorien som nedtrekk (lagres med en gang) og valgene –
-  «Se kvittering ›»/fil, «Stryk – føres ikke», «Send tilbake til
-  innboksen» (`.btn-ghost`). **Høyreklikk** (hold fingeren på telefon) på
+  venstre, `.ok-rg-inn`). **Trykk en føring:** et stort vindu
+  (`.dlg-kort.ok-fr-stor`, 760 px) med alt om føringen som en liste
+  (`.ok-fr-info`, navn til venstre i `--ink-soft`), vedleggene som kort
+  (`.ok-fr-ved`) og valgene – **Rediger** (`.btn-endre`), «Se kvittering ›»,
+  «Stryk – føres ikke» og «Send tilbake til innboksen» (`.btn-ghost`).
+  Rediger viser feltene: navn, sum, kategori i tre nedtrekk side om side
+  (gruppe › post › linje; under hverandre på telefon), merke, notat og
+  vedleggene med «Fjern» og «+ Legg til vedlegg»; Lagre (`.btn-ny`) og
+  Avbryt. **En endret sum** får et utropstegn (`.ok-fr-utrop`: rund, hvit
+  «!» på `--handling-endre`) overalt der føringen vises, og i vinduet en
+  gul boks (`.ok-mangler`) med bankens sum. **Høyreklikk** (hold fingeren på telefon) på
   en føring eller kategori åpner menyen (`.ok-meny`). **Én spalte, som
   Budsjett** – også Resultat, der kjøpene bak en post åpnes i en dialog
   («Vis kjøpene ›», `#ok-kb-bak`).

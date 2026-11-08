@@ -519,8 +519,9 @@ differansen i «måned så langt», Resultat før Transaksjoner og innboksen på
 (`ed22845`, tatt ut igjen), Resultat med måned › kategori › post i ett
 stolpediagram (`a6b79e2`), «Start budsjett» per måned og hele året med
 standarden i diagrammene (`4cb70d8`), og til sist høyreklikk i stedet for
-knapper i Budsjett (`2f63779`) og Regnskap med samme liste, føringene
-under og et vindu per føring (`16bb99f`).
+knapper i Budsjett (`2f63779`), Regnskap med samme liste, føringene
+under og et vindu per føring (`16bb99f`), og til sist det store vinduet for
+en føring med Rediger, flere vedlegg og «!» ved endret sum (`8ab7e7e`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -529,7 +530,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 78 commits, `0e0050a`–`16bb99f`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 79 commits, `0e0050a`–`8ab7e7e`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4342,7 +4343,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 78 commits fra `0e0050a` til `16bb99f` (dialogen med
+verdier. Bygget i 79 commits fra `0e0050a` til `8ab7e7e` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4787,6 +4788,39 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Det store vinduet for en føring** (`8ab7e7e`). Magne: «Når jeg trykker
+  på en føring ønsker jeg et større vindu som viser meg all info om den.
+  gjerne vise vedlegg og all annen info. gjerne vise flere rullgardinmenyer
+  med valg av kategori, underkategori og merke. Endre vedlegg, endre sum,
+  endre navn osv. dette kan godt være skjult under en redigeringsknapp».
+  Avklart: merke på føringen; summen kan overstyres, men bankens sum vises
+  («si dette med et utropstegn i alle føringer»); flere vedlegg.
+  - **Vinduet** (`#ok-fr-bak`, `.dlg-kort.ok-fr-stor` – 760 px; felles-dialog
+    gir ellers 400) henter alt med `?hva=post`: sum, dato, konto, betalt
+    fra, tekst fra banken, opprinnelig navn, kategori eller fordelingen,
+    merke (eget eller «fra kategorien»), notat, status, når og hvem, og
+    vedleggene som kort (bilde eller «PDF») som åpner filviseren. Knappene:
+    Rediger, Se kvittering, Stryk, Send tilbake til innboksen.
+  - **Rediger:** navn, sum (regnestykker går), kategori i tre nedtrekk
+    (gruppe › post › linje), merke (tomt arver kategoriens), notat – lagres
+    samlet med Lagre (`post-endre`, og `godkjenn` når kategorien er ny).
+    Vedleggene lagres med en gang: «+ Legg til vedlegg» (flere, bilde
+    krympes, PDF som den er) og «Fjern» («Trykk igjen»). Avbryt, Lukk og
+    Escape spør bare når noe er endret (`bekreft`).
+  - **Bank-funksjonen:** `?hva=post`; `post-endre` {motpart, belop, notat,
+    merke}; `post-vedlegg` / `post-vedlegg-slett`; `kvittering-fil` med `n`.
+    Første vedlegg ligger som før i `fil:<id>` (`harFil`), de neste i
+    `fil:<id>:<n>` og `p.vedlegg`. **Endret sum:** den opprinnelige i
+    `bankBelop`, `overstyrt` settes; skrives bankens sum inn igjen, er
+    endringen borte. Endret navn: det opprinnelige i `motpartBank`. En ny
+    henting fra banken hopper over poster som finnes, så endringen står.
+    En delt kvittering kan ikke få ny sum (endres i kvitteringen).
+  - **«!»** (`.ok-fr-utrop`, `--handling-endre`) ved summen der den er
+    endret: Regnskap, kjøpene i Resultat, Transaksjoner › Alle og vinduet.
+  - **Ikke gjort:** «På tvers» regner fortsatt med kategoriens merke, ikke
+    føringens; bare første vedlegg følger med når et trekk og en kvittering
+    slås sammen; innboksen viser ikke «!». Testet i testserveren (lagre
+    alt, legge til PDF, fjerne vedlegg, sum tilbake).
 - **Samme liste i Budsjett og Regnskap, endring med høyreklikk**
   (`2f63779`, `16bb99f`). Magne: «Det er fremdeles rotete totalt sett.
   Spesielt dette med kategorier og underkategorier. Jeg mener at vi skal ha
