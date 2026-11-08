@@ -1956,12 +1956,27 @@ function neamPinVaaken(){
   if(neamPinPerson && Date.now() - neamPinPinget > 60000) neamPinPing();
 }
 window.addEventListener('keydown', function(){ if(!neamPinAapen) neamPinVaaken(); }, true);
+/* Det som kan brukes uten kode (Magne, 8. november 2026: «kalender/uke,
+   været, klokken og julestjernen uten å oppgi kode»). Et trykk her mens
+   skjermen sover, gaar rett gjennom: ingen tastatur, og skjermen vekkes
+   ikke - neste trykk et annet sted ber om koden som foer. Vaeret og
+   klokka er i felles-topp.js, med boblene og dialogene de aapner (ogsaa
+   alarmen som ringer). Sidene merker sitt eget med data-uten-kode, og
+   data-med-kode paa det inni som likevel skal be om koden (en
+   endre-knapp som aapner et skjema - ellers kom tastaturet midt i
+   skjemaet i stedet). */
+const NEAM_PIN_FRI = '[data-uten-kode], #ntpVaer, .ntp-vb-bak, #ntpKlokke, #ntpTimere, .ntp-tm-bak, .ntp-tm-ringbak';
+function neamPinFri(el){
+  if(!el || !el.closest || el.closest('[data-med-kode]')) return false;
+  return !!el.closest(NEAM_PIN_FRI);
+}
 window.addEventListener('pointerdown', function(ev){
   const kjokken = neamErKjokken();
   if(kjokken) neamPinLyd();
   const naa = Date.now();
   const sover = neamPinSover(naa);
   if(sover && neamPinPerson) neamPinSovn();
+  if(sover && kjokken && !neamPinAapen && neamPinFri(ev.target)) return;
   neamPinSistTrykk = naa;
   if(neamPinAapen || !sover || !kjokken){
     neamPinLagre();

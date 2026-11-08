@@ -1017,7 +1017,9 @@ select.hu-felt{
 
   <div class="rutenett" id="rutenett">
 
-    <div class="kort">
+    <!-- data-uten-kode: kalenderen, dag og uke, kan brukes paa
+         kjoekkenskjermen uten kode (felles-neam.js, NEAM_PIN_FRI). -->
+    <div class="kort" data-uten-kode>
       <div class="kort-tittel">
         <span class="dag-navn" id="dagLabel">I dag</span>
         <span class="vis-bytt" id="visBytt" role="group" aria-label="Visning">
@@ -1045,10 +1047,10 @@ select.hu-felt{
 
     <div class="hoyre">
 
-      <div class="kort detaljkort" id="detalj" hidden>
+      <div class="kort detaljkort" id="detalj" data-uten-kode hidden>
         <div class="kort-tittel">
           <span class="detalj-ini" id="detaljMerke"></span>
-          <button class="knapp-endre" onclick="redigerAvtale()">Endre</button>
+          <button class="knapp-endre" data-med-kode onclick="redigerAvtale()">Endre</button>
           <button class="detalj-lukk" onclick="lukkDetalj()" aria-label="Lukk">×</button>
         </div>
         <div class="kort-kropp" id="detaljInn"></div>
@@ -1092,7 +1094,7 @@ select.hu-felt{
 <!-- Neam: femmeren for navigering. Veggskjermen baerer ingen samtale -
      tilbakeTilStandard() legger femmeren ned naar skjermen hviler. -->
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=90"></script>
+<script src="/felles-neam.js?v=91"></script>
 <script src="/felles-topp.js?v=10"></script>
 <script>
 /* ============================================================
@@ -3733,6 +3735,7 @@ function jstKnapp(){
   b.type = 'button';
   b.id = 'jstKnapp';
   b.className = 'jst-knapp';
+  b.setAttribute('data-uten-kode', '');   /* ingen kode paa kjoekkenskjermen */
   b.hidden = true;
   /* Ikonene er Magnes egne (8. november 2026), i bilder/ikoner/ som de
      andre: julestjerne (tent) og julestjerne-av (slukket). Begge hentes
