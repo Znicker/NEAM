@@ -1867,7 +1867,7 @@ først, Sparing sist. Bare tallene skiller dem:
     rad som føringene; en linje som gjelder en føring, åpner vinduet.
   Valgt ut uten skisse (Magne: «bare kjør det ut på neam»).
   **Bare felleskontoene:** trekk fra kontoer uten rollen Felles vises ikke
-  i fanene (de hører til den enkeltes egne sider).
+  i fellesfanene (de står i den enkeltes egen fane, se under).
 - **Regnskap** (fra 8. november 2026) – det som er brukt, uten budsjett,
   med det som forfaller: sumboksene som under, diagrammet uten
   budsjettstrek og uten rødt, «På tvers» med bare brukt. **Merkene** er de
@@ -2042,10 +2042,35 @@ først, Sparing sist. Bare tallene skiller dem:
   2026: kontoen i et nedtrekk, «anbefalt buffer» som `.ok-stort`, og
   månedene som rader – hvor langt ned saldoen gikk før påfyllet) og «Neam
   husker». Under **Neam** øverst **«Rydd opp i en måned»** (8. november
-  2026): måned og «Finn forslag», så tre deler – trekk fra andres kontoer,
-  ført to ganger, kategorier – med kryss på hver rad og kategorivalget med
-  forslaget ferdig utfylt. Ingenting endres før «Rydd opp (N)»; å fjerne
-  trekk spør først med rød knapp.
+  2026): måned og «Finn forslag», så to deler – ført to ganger og
+  kategorier – med kryss på hver rad og kategorivalget med forslaget ferdig
+  utfylt. Ingenting endres før «Rydd opp (N)». (Delen «Trekk fra andres
+  kontoer» slettet dem; tatt ut samme dag – de flyttes nå til eierens fane.)
+- **Egne faner** (fra 8. november 2026, uten skisse, etter Magnes svar) –
+  én per person, med personens navn, etter Transaksjoner: sys@ ser alle,
+  Magne og Nina bare sin egen (kartleggingen, del 57). Samme panel for alle
+  (`#ok-vis-person`), én spalte: **Kontoene** med saldo; **Kontoutskrift**
+  med ‹ måned › og en hjelpetekst, radene som i Logg (`.ok-pe-rad`: dato
+  foran, kontoen, kvitteringen og statusen i meta-linja, beløp med fortegn);
+  **alle radene kan trykkes** og åpner føringsvinduet (se under); **«Felles
+  skylder deg»** som `.ok-stort`, bare når noe er ført; og **sparemålene**
+  som familiemålet (`.ok-kort.ok-maal` med stolpen), med «Endre
+  sparemålene» / «+ Legg til et sparemål» som `.ok-lenke` og skjemaet med
+  Lagre (`.btn-ny`) og Avbryt etter Avbryt-regelen. Trekk og kvitteringer
+  som er flyttet hit, meldes øverst (`.ok-melding`).
+  **Føringsvinduet for et eget trekk** (fra 8. november 2026, `a786fd2`):
+  samme vindu som i Regnskap (`.ok-fr-stor`, to spalter) – infoen,
+  kvitteringen og varene til venstre, vedleggene side for side til høyre.
+  Valgene under: **«Send til felles»** (`.btn-ny`, først – det er det
+  vinduet er til), **Rediger** (`.btn-endre`), og etter status «Merk som
+  refundert» / «Ikke refundert» / «Kvitteringen hører til felles»
+  (`.btn-ghost ok-smal`). Valgene spør ikke – vinduet er bekreftelsen, som
+  Stryk i Regnskap; bare «Kvitteringen hører til felles» spør med
+  `bekreft()`. Rediger viser bare vedleggene (Fjern og «+ Legg til
+  vedlegg», lagres med en gang) og **«Ferdig»** (`.btn-ghost ok-smal`) i
+  stedet for Lagre og Avbryt, siden ingenting venter på å lagres.
+  Kvitteringens filer er låst – uten Fjern, med en linje som sier det.
+  (Valgt uten skisse; Magne har ikke sett vinduet ennå.)
 
 **Regler:**
 
@@ -2057,7 +2082,9 @@ først, Sparing sist. Bare tallene skiller dem:
   (`.ok-fane` med `aria-pressed`), men er knapper i en gruppe, ikke faner.
 - **Toppfanene må få plass på 375 px.** Med «Transaksjoner» er de tettere
   på telefon (3 px sidepolstring, litt tettere bokstaver). Et lengre
-  fanenavn må måles der før det tas i bruk.
+  fanenavn må måles der før det tas i bruk. **Unntaket er personfanene for
+  sys@**, som ser alle: da rulles raden sidelengs på telefon (Magne: «det
+  blir dårlig plass på mobil for sys, men det er ikke noe problem»).
 - **Toppen står fast** når man ruller, og sida har plass nederst så det
   siste kan rulles fram over NEAM-knappen (se lærdommene i kartleggingen,
   del 57).

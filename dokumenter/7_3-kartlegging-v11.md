@@ -546,7 +546,10 @@ flervalg i filteret (`b403e73`), forfalte regninger med rødt utropstegn og
 fakturaer uten kategori i innboksen (`024707b`), og til sist loggen,
 regningsvalgene, bare felleskontoer, ingen stolper og grønn stjerne
 (`e9a2850`), og «Rydd opp i en måned» under Oppsett › Neam og forsiden
-uten innboksen i Økonomi-kortet (`53bc10e`).
+uten innboksen i Økonomi-kortet (`53bc10e`), «Rydd opp» uten sletting
+(`db642f4`), og egne faner for den enkelte – kontoer, «Send til felles»,
+refusjon og sparemål (`5851452`), og egne trekk i føringsvinduet med
+vedlegg og kvitteringene koblet til (`a786fd2`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -555,7 +558,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 92 commits, `0e0050a`–`53bc10e`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 95 commits, `0e0050a`–`a786fd2`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1315,6 +1318,11 @@ oppgi kode.»
   PDF i Dropbox-mappa. Kontofilteret i innboksen vises bare ved minst to
   kilder – å alltid vise alle felleskontoene og Trumf er foreslått, ikke
   gjort.
+- **Hvem ser den enkeltes kontoer** (8. november, del 57). De egne fanene
+  viser bare ens egne, men Oppsett › Kontoene og `?hva=kontoer`/
+  `?hva=transaksjoner` viser fortsatt alle kontoer og saldo til alle
+  voksne – Nina kan se Magnes. Magne avgjør om det skal strammes inn.
+  Barnas faner venter («Ikke ennå»).
 - **Interaktiv plantegning av huset.** Magne lager en plantegning, og den
   skal bli den egentlige flaten for enhetene – Rommene-kortet er
   mellomstasjonen. Styringen i `felles-hus.js` kan brukes som den er;
@@ -1334,6 +1342,12 @@ oppgi kode.»
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **De egne fanene på neam.no** (8. november): at de rundt 80 trekkene fra
+  Forbrukskonto flyttes til Magnes fane første gang den åpnes, at
+  kvitteringene som hører til dem kobles riktig (og ingen som hører til
+  felles), at «Send til felles» havner i innboksen med vedleggene, og at
+  refusjonen gjenkjennes med ekte DNB.
+  Som Nina og med pinkoden er bare tilgangsregelen prøvd, i node.
 - **Økonomi med pinkoden på kjøkkenskjermen** (8. november): Magnes kode
   gir flisen og sida, Emmas ikke; sida går til forsiden når skjermen
   sovner, og «Lås nå» stenger den med en gang.
@@ -4546,7 +4560,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 92 commits fra `0e0050a` til `53bc10e` (dialogen med
+verdier. Bygget i 95 commits fra `0e0050a` til `a786fd2` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4991,6 +5005,110 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Egne trekk i føringsvinduet, og kvitteringene koblet til** (`a786fd2`).
+  Magne: «jeg ønsker at transaksjonene også linkes til vedlegg på samme
+  måte som i regnskapet. det er i denne menyen man kan sende det over for
+  "refusjon"» – og ja til at kvitteringene kobles av seg selv.
+  - **Vinduet:** et trykk på et trekk i den egne fanen åpner samme vindu
+    som en føring i Regnskap (`#ok-fr-bak`, `okPeVindu`/`okPeVis`): dato,
+    konto, tekst fra banken, kvitteringen, status og varene til venstre,
+    vedleggene side for side til høyre. Valgene ligger der: «Send til
+    felles», Rediger, «Merk som refundert» / «Ikke refundert», og
+    «Kvitteringen hører til felles». Dialogen foran hvert valg (fra
+    `5851452`) er tatt ut – vinduet er bekreftelsen, som Stryk i Regnskap;
+    bare «Kvitteringen hører til felles» spør.
+  - **Rediger** viser bare vedleggene (`privat-vedlegg`,
+    `privat-vedlegg-slett`, lagres med en gang) og en nøytral «Ferdig».
+    Filene lagres som i felles, i `fil:<trekket>`.
+  - **Kvitteringene kobles av seg selv** når fanen åpnes: en kvittering i
+    felles (Trumf, Dropbox, bilde) som er samme kjøp som et eget trekk
+    (`erLik` – samme beløp, høyst tre dager), legges på trekket (`p.kv`) og
+    tas ut av felles. Først den som dekket et flyttet trekk (`dekketAv`) –
+    det retter at slike kvitteringer ble stående og telt i felles. Ikke
+    en som er koblet til et felles trekk, strøket, slått sammen, en
+    faktura, lagt inn for hånd eller sendt tilbake (`ikkeKv`). Kvitteringens
+    filer blir liggende under sin egen id og vises låst (`laast`); varene
+    hentes med `?hva=privat-kvittering`. Loggen: «Koblet N kvitteringer …
+    – de telles ikke i felles».
+  - **«Kvitteringen hører til felles»** (`privat-kv-tilbake`) legger den
+    tilbake slik den var, og den kobles aldri til trekket igjen. Ikke når
+    kjøpet er sendt til felles.
+  - **Send til felles** tar med vedleggene (kopiert til `fil:ut-<id>`),
+    varene (`kv:ut-<id>`) og kvitteringens kategori.
+  - `okFrVedlegg` og `okFrBlad` bruker vedleggets egen id når det har en
+    (`v.id || p.id`), og Fjern vises ikke på et låst vedlegg – felles er
+    uendret.
+  - **Står åpent:** koblingen bruker samme regel som felles, så en
+    kvittering for et felleskjøp med nøyaktig samme beløp de samme dagene
+    kan bli tatt – den sendes tilbake fra vinduet. Vedlegg lagt til etter
+    sending følger ikke med.
+  - Testet i testserveren: to kvitteringer koblet (via `dekketAv` og på
+    beløp), en tredje sto igjen; varer og vedlegg i vinduet, egne vedlegg
+    lagt til og fjernet, utlegget med vedlegg, varer og kategori, sendt
+    tilbake og ikke koblet igjen, nektet når kjøpet var sendt; PC og 375 px.
+- **Egne faner for den enkelte** (`5851452`). Magne: «Jeg ønsker ikke å
+  slette de fra Neam. Den enkeltes kontoer bør fremdeles være tilgjengelig
+  for dem … den enkelte kan legge inn noen sine transaksjoner i innboksen
+  til økonomi og få pengene "refundert" der. Før dette er gjort skal
+  ingenting inn i fellesregnskap».
+  - **Hvem ser hva** – bestemt av innloggingen (Magne: «Sys ser alle …
+    Jeg og nina ser våres egen fane og felles fanene. Barna ser sine egne
+    faner»). `personerFor(epost)`: sys@ får alle, ellers delen før @ når
+    den er i `PERSONER` (magne, nina, emma, andrea) og e-posten er i
+    `TILGANG`. Med pinkoden på kjøkkenskjermen er det den som tastet koden.
+    En fane vises bare når minst én konto har personens rolle. **Barna:
+    ikke ennå** – emma@ og andrea@ er ikke i `TILGANG`.
+  - **Fanen** heter som personen og står etter Transaksjoner (`#magne`
+    åpner den). Ovenfra: Kontoene med saldo, Kontoutskrift per måned,
+    «Felles skylder deg» og sparemålene (Magne: «som først punkt Kan også
+    ha sparemål»).
+  - **Lagret for seg:** `auth:bank:privat:<hvem>` med `{poster, maal,
+    ikke}`. `?hva=privat` uten `hvem` gir personene innloggingen kan se;
+    med `hvem` hentes trekkene fra kontoene med den rollen fra samme
+    nullpunkt som innboksen (`innboks-fra`), bare bokførte, med samme vern
+    mot doble trekk (`lagdId`/`sammeTrekk`). Saldoen deler buffer med
+    Oppsett.
+  - **Gamle trekk flyttes, ingenting slettes:** når fanen åpnes, flyttes
+    bank-trekk i fellespostene fra kontoer med personens rolle over i den
+    private delen – lagret der først, så tatt ut av felles. En kvittering i
+    felles som pekte på et slikt trekk, mister bare koblingen og blir
+    stående (og telles) – fra `a786fd2` kobles den til trekket i stedet. Loggen får én linje (kilde Neam): «Flyttet N trekk
+    … – de telles ikke i felles». Gjelder bare når minst én konto har
+    rollen Felles. De rundt 80 trekkene fra Forbrukskonto flyttes første
+    gang Magne åpner fanen på neam.no.
+  - **Send til felles** (`privat-send`): trykk et kjøp, `bekreft()` med
+    «Send til felles» (fra `a786fd2` i føringsvinduet, uten dialog). Det blir en post i felles, `ut-<id>`, med `utlegg`
+    («Utlegg fra Magne») som kilde og konto, `manuell`, så den **aldri
+    føres av seg selv**, og kategorien Neam foreslår. Bare trekk (minus)
+    som ikke er sendt, eller som er strøket i felles. Loggen: «Utlegg fra
+    Magne: …, beløp (dato) – lagt i innboksen».
+  - **Statusen** leses av felles hver gang: sendt – venter i innboksen;
+    ført (godkjent eller slått sammen) – felles skylder deg; strøket – kan
+    sendes igjen; forsvinner posten fra felles, regnes den som ikke sendt.
+  - **Refusjon – «Føres, og følges opp».** En innbetaling på en av
+    personens kontoer, ikke brukt før, som er lik ett ført utlegg eller
+    summen av alle førte utlegg datert før den, merker dem refundert.
+    «Merk som refundert» gjør det for hånd; «Ikke refundert» angrer og
+    husker at innbetalingen ikke var en refusjon (`ikke`, de siste 500).
+    Tilbakebetalingen fra felleskontoen føres som «Utenfor budsjett» i
+    felles.
+  - **Sparemål** (`privat-maal`): opptil ti, som familiemålet – navn, mål
+    og enten en av personens egne kontoer (saldoen er det spart) eller et
+    tall fylt inn for hånd.
+  - Utover de to logglinjene over går ingenting fra den private delen til
+    loggen, og Neam har ingen verktøy for den.
+  - **Står åpent:** Oppsett › Kontoene og `?hva=kontoer`/
+    `?hva=transaksjoner` viser fortsatt alle kontoer og saldo til alle
+    voksne. Refusjonen gjenkjennes bare på beløpet.
+  - Testet i testserveren ende til ende: flytting, sending, ingen
+    automatisk føring, refusjon av seg selv og for hånd, angring,
+    sparemål, avvist ukjent person, PC og 375 px. Ikke prøvd med ekte DNB,
+    som Nina eller på neam.no.
+- **Rydd opp sletter ikke lenger** (`db642f4`). Magne så 80 trekk fra
+  Forbrukskonto under «Trekk fra andres kontoer» og ville ikke ha dem
+  slettet. `rydd-fjern` og delen er tatt ut, og `ryddForslag` hopper over
+  trekk fra kontoer uten rollen Felles. Trekkene flyttes i stedet til
+  eierens fane (over).
 - **Rydd opp i en måned, og forsiden uten innboksen** (`53bc10e`).
   - **«Rydd opp i en måned»** – øverst under Oppsett › Neam, over «Koble
     kvitteringer og transaksjoner». Magne: «Jeg må få en knapp for å rydde
@@ -4998,7 +5116,8 @@ ligge under høyre tommelknapp»).
     kategorier … vil jeg ha forslag til utbedring som jeg kan godkjenne evt
     endre og gokjenne». Velg måned, «Finn forslag», og ingenting endres før
     «Rydd opp (N)». Tre deler med kryss på hver rad:
-    - **Trekk fra andres kontoer** (kontoer uten rollen Felles) –
+    - **Trekk fra andres kontoer** (kontoer uten rollen Felles; **tatt
+      ut i `db642f4`**, se over) –
       `rydd-fjern` sletter dem for godt med vedleggene og kobler fra en
       kvittering som pekte på dem. Bare slike trekk; spør først med rød
       Fjern. Loggen sier «Fjernet … for godt».
