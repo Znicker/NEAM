@@ -1847,7 +1847,11 @@ først, Sparing sist. Bare tallene skiller dem:
   `--ink-soft`-kant; stiplet betyr snitt som ellers på sida). Tallene i en
   tabell under (`.ok-dr-rad`), differansen i rødt eller grønt under navnet.
   Trykk en gruppe for postene, en post for linjene; «‹ …» øverst går ett
-  nivå tilbake. Under: «På tvers» og «Hvor det glir». Med **periode**: én måned (med
+  nivå tilbake. Under: «På tvers» og «Hvor det glir». **Så samme liste som
+  Regnskap og Budsjett** («Budsjett mot regnskap», fra 8. november 2026),
+  med summene i tre kolonner – budsjett (`--ink-soft`), regnskap (fet),
+  avvik (rødt/grønt) – og overskriftene over i `--t-etikett`; trykk og
+  høyreklikk som i Regnskap. Med **periode**: én måned (med
   ‹ måned ›), hittil i år, eller siste 12 måneder. Budsjettet er da summen av
   månedsbudsjettene. Trenden og «Hvor det glir» står som linjer øverst, og
   kjøpene bak en post i dialogen (til 8. november 2026 i spalten til

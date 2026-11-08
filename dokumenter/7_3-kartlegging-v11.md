@@ -526,8 +526,9 @@ knapper i Budsjett (`2f63779`), Regnskap med samme liste, føringene
 under og et vindu per føring (`16bb99f`), det store vinduet for en føring
 med Rediger, flere vedlegg og «!» ved endret sum (`8ab7e7e`), og til sist
 vedlegg og kvitteringslinjer samtidig i vinduet og «Før inn ny utgift»
-(`67ef6b5`), og til sist merkesystemet i Regnskap med samme merkeliste i
-alle tre fanene (`8159134`).
+(`67ef6b5`), merkesystemet i Regnskap med samme merkeliste i alle tre
+fanene (`8159134`), og til sist Resultat med samme liste i tre kolonner
+(`ebc7a33`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -536,7 +537,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 81 commits, `0e0050a`–`8159134`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 82 commits, `0e0050a`–`ebc7a33`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4387,7 +4388,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 81 commits fra `0e0050a` til `8159134` (dialogen med
+verdier. Bygget i 82 commits fra `0e0050a` til `ebc7a33` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4832,6 +4833,21 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Resultat med samme liste, i tre kolonner** (`ebc7a33`). Magne, med et
+  bilde av lista i Regnskap: «Gjør resultat lik som de to andre, men her
+  blir det tre kolonner ved summene, først budsjett, så regnskap så avvik».
+  - **«Budsjett mot regnskap»** (`#ok-rs-liste`, `okRsListe`) under kortet
+    med diagrammet: grupper › poster › linjer › føringer, bygget med de
+    samme funksjonene som Regnskap (`okRgRad`/`okRgFyll` med modus `rs`).
+    Tre kolonner: budsjett (`--ink-soft`), regnskap (fet) og avvik
+    (Status' regel: rødt minus når det er brukt mer – eller kommet inn og
+    spart mindre – ellers grønt). Føringene har beløpet i regnskapskolonnen.
+  - **Trykk og høyreklikk** som i Regnskap: vinduet for en føring, og
+    menyene (på en kategori også månedens budsjett og «Før inn ny utgift»).
+    Valget på gruppen heter nå «Vis alle poster» / «Skjul poster uten tall»
+    – også i Regnskap.
+  - **Telefon:** kolonnene 62 px; lange navn brytes i ordet, pilen holder
+    seg ved navnet. Testet i testserveren på PC og telefon.
 - **Merkesystemet i Regnskap, samme liste** (`8159134`). Magne:
   «Merkesystemet bør også være i regnskapet. det bør være samme liste».
   - **Bank-funksjonen:** `regnskap-aar` gir også `merker` – brukt per merke
