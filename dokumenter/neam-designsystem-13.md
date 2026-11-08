@@ -1840,7 +1840,8 @@ først, Sparing sist. Bare tallene skiller dem:
     2026), i sammenleggbare linjer: Trenger et valg og Klare til
     godkjenning. «Neam trenger» står på Status. Én linje per post også på
     PC. Når noe venter, står en **rød prikk** (`.ok-fane-prikk`) på fanen og
-    underfanen, på Økonomi-flisen på forsiden og som Økonomi-ikonet ved
+    underfanen, på Økonomi-flisen på forsiden (kortet over appene nevner
+    ikke innboksen) og som Økonomi-ikonet ved
     klokka på de andre sidene (se Topplinja). Øverst i innboksen
     **«Forfalte regninger»** (rød statusprikk) og under de andre
     **«Fakturaer uten kategori»** med kategorivalg. Øverst «Legg til
@@ -2040,7 +2041,11 @@ først, Sparing sist. Bare tallene skiller dem:
   gjeld, bruttoinntekt, buffer, familiemål), **Regningskontoen** (7. november
   2026: kontoen i et nedtrekk, «anbefalt buffer» som `.ok-stort`, og
   månedene som rader – hvor langt ned saldoen gikk før påfyllet) og «Neam
-  husker».
+  husker». Under **Neam** øverst **«Rydd opp i en måned»** (8. november
+  2026): måned og «Finn forslag», så tre deler – trekk fra andres kontoer,
+  ført to ganger, kategorier – med kryss på hver rad og kategorivalget med
+  forslaget ferdig utfylt. Ingenting endres før «Rydd opp (N)»; å fjerne
+  trekk spør først med rød knapp.
 
 **Regler:**
 

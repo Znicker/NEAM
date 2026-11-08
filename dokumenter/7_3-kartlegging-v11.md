@@ -541,7 +541,8 @@ Kontoutskrift med samme rader, trykk og meny som Regnskap (`bc66f5b`),
 flervalg i filteret (`b403e73`), forfalte regninger med rødt utropstegn og
 fakturaer uten kategori i innboksen (`024707b`), og til sist loggen,
 regningsvalgene, bare felleskontoer, ingen stolper og grønn stjerne
-(`e9a2850`).
+(`e9a2850`), og «Rydd opp i en måned» under Oppsett › Neam og forsiden
+uten innboksen i Økonomi-kortet (`53bc10e`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -550,7 +551,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 91 commits, `0e0050a`–`e9a2850`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 92 commits, `0e0050a`–`53bc10e`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4503,7 +4504,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 91 commits fra `0e0050a` til `e9a2850` (dialogen med
+verdier. Bygget i 92 commits fra `0e0050a` til `53bc10e` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4948,6 +4949,36 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Rydd opp i en måned, og forsiden uten innboksen** (`53bc10e`).
+  - **«Rydd opp i en måned»** – øverst under Oppsett › Neam, over «Koble
+    kvitteringer og transaksjoner». Magne: «Jeg må få en knapp for å rydde
+    opp i transaksjoner og kategorier etter måned» – og: «Det er mye rot i
+    kategorier … vil jeg ha forslag til utbedring som jeg kan godkjenne evt
+    endre og gokjenne». Velg måned, «Finn forslag», og ingenting endres før
+    «Rydd opp (N)». Tre deler med kryss på hver rad:
+    - **Trekk fra andres kontoer** (kontoer uten rollen Felles) –
+      `rydd-fjern` sletter dem for godt med vedleggene og kobler fra en
+      kvittering som pekte på dem. Bare slike trekk; spør først med rød
+      Fjern. Loggen sier «Fjernet … for godt».
+    - **Ført to ganger** – `koble-alle` med `mnd` (én måned) og `valgt`
+      (bare de krysset av, nøkkel `kvittering|trekk`). Uten dem gjør
+      `koble-alle` alt som før, så Neams verktøy er uendret.
+    - **Kategorier** – `?hva=rydd&mnd=` (`ryddForslag`): førte poster med en
+      kategori som ikke finnes, uten kategori, eller som Neam husker eller
+      kjenner som noe annet. Resten går til Neam på sida (`okRyddNeam`), som
+      foreslår bare der kategorien åpenbart er feil, med en kort grunn; feiler
+      Neam, vises resten uten. Hver rad har kategorivalget med forslaget
+      ferdig, og godkjenningen går som `godkjenn`, så Neam lærer det.
+      Hopper over sammenslåtte, dekkede og delte poster.
+    - Til Neam: mottaker, tekst, beløp, dato og kategori – aldri kontonummer.
+    - Testet i testserveren ende til ende (kjørt på nytt: ingenting igjen).
+      Neams egen gjennomgang er bare prøvd mot den falske Neam der.
+  - **Forsiden:** Økonomi-kortet over appene viser ikke lenger innboksen
+    (forfalte regninger, fakturaer og poster som venter) – Magne: «Fjern
+    meldingen på index om status på faktura». Den røde prikken på flisen
+    sier det. Trumf, banken og DNB-samtykket står fortsatt i kortet. Bare
+    `index.html`, ingen `?v=`. Ikke sett på skjermen (forsiden sender til
+    innlogging lokalt); filteret er prøvd i node.
 - **Logg, regningsvalg, bare felleskontoer, grønn stjerne** (`e9a2850`).
   - **Logg** – tredje underfane i Transaksjoner. Magne: «Jeg ønsker en logg
     ved siden av kontoutskrift. en som viser alle endringer som blir gjort
@@ -5818,9 +5849,11 @@ spør om han skal ta deg dit og gjøre det.
   dagen. Svaret sier **ingenting** om innholdet, så kitchen@ kan få bruke
   den (`HENT_TILGANG`) uten å se økonomien. Bare `dashboard.html` – ikke
   Emma og Andrea dash.
-- **Forsiden** viser et kort over appene når noe trenger noen: poster som
-  venter, Trumf som trenger ny innlogging, DNB-samtykke som snart går ut
-  (`?hva=varsler`). Alle utenfor `TILGANG` får `{ok:false}` og ser
+- **Forsiden** viser et kort over appene når noe trenger noen: Trumf som
+  trenger ny innlogging, banken som ikke er koblet, DNB-samtykke som snart
+  går ut (`?hva=varsler`). Innboksen (poster som venter, forfalte regninger,
+  fakturaer uten kategori) stod der også til 8. november 2026 (`53bc10e`);
+  nå sier bare den røde prikken på flisen det. Alle utenfor `TILGANG` får `{ok:false}` og ser
   ingenting. **Fra 6. november ser magne@ og nina@ kortet også** – det
   fulgte med da de fikk tilgang.
 
