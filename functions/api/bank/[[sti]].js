@@ -509,7 +509,7 @@ function loggAnnet(kropp, s, kilde){
   return [];
 }
 /* Handlingene som kan endre foeringene - da leses de foer, og forskjellen logges. */
-const LOGG_POST = ['rydd-fjern', 'godkjenn', 'angre', 'koble-alle', 'faktura-innboks', 'faktura-kategori', 'faktura-avslutt', 'post-endre', 'post-vedlegg', 'post-vedlegg-slett', 'kvittering-ny', 'forslag'];
+const LOGG_POST = ['godkjenn', 'angre', 'koble-alle', 'faktura-innboks', 'faktura-kategori', 'faktura-avslutt', 'post-endre', 'post-vedlegg', 'post-vedlegg-slett', 'kvittering-ny', 'forslag'];
 /* Bare felleskontoene i husholdningens regnskap (Magne, 8. november 2026:
    «Det er kun kontoer som er lagt inn som felles som skal inn i dissse
    fanene» og «Magne sine transaksjoner er fremdeles å se i transasksjonene
@@ -2127,7 +2127,9 @@ async function kobleAlle(env, kropp, request){
    knappen vil jeg ha forslag til utbedring som jeg kan godkjenne evt endre
    og gokjenne». Her: trekk fra kontoer uten rollen Felles, og foerte poster
    med en kategori som ikke finnes, uten kategori, eller som Neam husker
-   annerledes. Resten (forte) gaar til Neam paa sida, som ser etter det som
+   annerledes. Trekk fra kontoer uten rollen Felles hoppes over og roeres
+   ikke - Magne, 8. november 2026: «Jeg ønsker ikke å slette de fra Neam.
+   Den enkeltes kontoer bør fremdeles være tilgjengelig for dem». Resten (forte) gaar til Neam paa sida, som ser etter det som
    aapenbart er feil. Doble er koble-alle med mnd. Ingenting endres her. */
 async function ryddForslag(env, mnd){
   if(!/^\d{4}-\d{2}$/.test(mnd)) return svar({ ok:false, feil:'Velg en måned' });
@@ -2139,12 +2141,12 @@ async function ryddForslag(env, mnd){
   const laert = await lesJson(env, LAERT_NOKKEL, {}), omdopt = await lesOmdopt(env);
   const kort = p => ({ id:p.id, sted:p.motpart || p.tekst || '', tekst:p.motpart && p.tekst && p.tekst !== p.motpart ? p.tekst : '',
     dato:p.dato, belop:p.belop, kategori:p.kategori || '', konto:kn[p.konto] || p.kontoNavn || '' });
-  const andres = [], kat = [], forte = [];
+  const kat = [], forte = [];
   for(const id of Object.keys(poster)){
     const p = poster[id];
     if(String(p.dato).slice(0, 7) !== mnd || p.status === 'sammenslatt' || p.dekketAv) continue;
     const bank = !p.fra && p.konto && p.konto !== 'trumf';
-    if(harFelles && bank && roller[p.konto] !== 'felles'){ andres.push(kort(p)); continue; }
+    if(harFelles && bank && roller[p.konto] !== 'felles') continue;
     if(p.status !== 'godkjent' || (p.deler && p.deler.length > 1)) continue;
     const gyldig = p.kategori && kategorier.indexOf(p.kategori) !== -1;
     const f = foreslaa(p, laert, omdopt), fOk = f.kategori && kategorier.indexOf(f.kategori) !== -1;
@@ -2154,29 +2156,8 @@ async function ryddForslag(env, mnd){
     else forte.push(kort(p));
   }
   const sorter = l => l.sort((a, b) => String(a.dato).localeCompare(String(b.dato)));
-  return svar({ ok:true, mnd:mnd, andres:sorter(andres), kategorier:sorter(kat), forte:sorter(forte) });
+  return svar({ ok:true, mnd:mnd, kategorier:sorter(kat), forte:sorter(forte) });
 }
-/* Trekk fra kontoer uten rollen Felles fjernes for godt (med vedleggene).
-   Bare slike trekk - alt annet hoppes over. Innhentingen henter dem ikke igjen. */
-async function ryddFjern(env, kropp){
-  const poster = await lesJson(env, POST_NOKKEL, {});
-  const roller = await lesRoller(env);
-  if(!Object.keys(roller).some(u => roller[u] === 'felles')) return svar({ ok:false, feil:'Ingen konto har rollen Felles' });
-  let n = 0;
-  for(const id of [].concat(kropp.ider || []).slice(0, 2000)){
-    const p = poster[String(id)];
-    if(!p || p.fra || !p.konto || p.konto === 'trumf' || roller[p.konto] === 'felles') continue;
-    const kv = p.dekketAv && poster[p.dekketAv];
-    if(kv){ delete kv.bankId; delete kv.bankKonto; }
-    if(p.harFil) await env.FAMILIE_KV.delete(filNokkel(p.id));
-    for(const v of (p.vedlegg || [])) await env.FAMILIE_KV.delete(vedleggNokkel(p.id, v.n));
-    delete poster[p.id];
-    n++;
-  }
-  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
-  return svar({ ok:true, fjernet:n });
-}
-
 async function angre(env, kropp){
   const poster = await lesJson(env, POST_NOKKEL, {});
   let n = 0;
@@ -2706,7 +2687,6 @@ async function postHandling(request, env, v, kropp){
   if(kropp && kropp.hva === 'faktura-innboks') return await fakturaInnboks(env, kropp);
   if(kropp && kropp.hva === 'faktura-kategori') return await fakturaKategori(env, kropp);
   if(kropp && kropp.hva === 'faktura-avslutt') return await fakturaAvslutt(env, kropp);
-  if(kropp && kropp.hva === 'rydd-fjern') return await ryddFjern(env, kropp);
   if(kropp && kropp.hva === 'post-endre') return await postEndre(env, kropp);
   if(kropp && kropp.hva === 'post-vedlegg') return await postVedlegg(env, kropp);
   if(kropp && kropp.hva === 'post-vedlegg-slett') return await postVedleggSlett(env, kropp);

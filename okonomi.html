@@ -1205,9 +1205,9 @@ button.ok-dr-rad{ cursor:pointer; }
       <span class="ok-etikett">Neam</span>
       <!-- Rydd opp i en maaned (8. november 2026). -->
       <div class="ok-fold" data-fold="rydd">
-        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Rydd opp i en måned</span><span class="ok-fold-sum" id="ok-rydd-sum">Andres trekk, doble og kategorier</span></button>
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Rydd opp i en måned</span><span class="ok-fold-sum" id="ok-rydd-sum">Doble og kategorier</span></button>
         <div class="ok-fold-innhold">
-          <p class="ok-meta">Neam ser gjennom måneden og foreslår hva som bør ryddes: trekk fra kontoer uten rollen Felles, kjøp som er ført to ganger, og kategorier som ser feil ut. Kryss av, endre kategorien om forslaget ikke stemmer, og trykk Rydd opp. Ingenting endres før det, og alt havner i loggen.</p>
+          <p class="ok-meta">Neam ser gjennom måneden og foreslår hva som bør ryddes: kjøp som er ført to ganger, og kategorier som ser feil ut. Trekk fra kontoer uten rollen Felles røres ikke. Kryss av, endre kategorien om forslaget ikke stemmer, og trykk Rydd opp. Ingenting endres før det, og alt havner i loggen.</p>
           <div class="ok-rad-knapper ok-rydd-valg"><label class="ok-al-dato">Måned <input type="month" class="ok-mnd" id="ok-rydd-mnd"></label><button type="button" class="btn btn-blaa" id="ok-rydd-se">Finn forslag</button></div>
           <div class="ok-rydd" id="ok-rydd" aria-live="polite"></div>
         </div>
@@ -1947,11 +1947,12 @@ button.ok-dr-rad{ cursor:pointer; }
   /* ---------- Rydd opp i en maaned (8. november 2026) ----------
      Magne: «Jeg må få en knapp for å rydde opp i transaksjoner og
      kategorier etter måned» - «forslag til utbedring som jeg kan godkjenne
-     evt endre og gokjenne». Tre slags forslag: andres trekk (fjernes for
-     godt, rydd-fjern), foert to ganger (koble-alle med mnd og valgt) og
-     kategorier (godkjenn - Neam husker rettingen). Kategoriforslagene kommer
+     evt endre og gokjenne». To slags forslag: foert to ganger (koble-alle
+     med mnd og valgt) og kategorier (godkjenn - Neam husker rettingen). Kategoriforslagene kommer
      fra serveren (ugyldig, uten, Neam husker annerledes) og fra Neam, som
-     ser over resten og bare tar med det som aapenbart er feil. Til Neam
+     ser over resten og bare tar med det som aapenbart er feil. Trekk fra
+     andres kontoer slettes ikke (tatt ut samme dag - Magne: «Jeg ønsker
+     ikke å slette de fra Neam»). Til Neam
      sendes mottaker, tekst, beloep og kategori - aldri kontonummer. */
   var okRydd = null;
   var OK_KOBLE_HVA = { 'legg-ved':'Kvitteringen legges ved banktrekket', 'slaa-sammen':'Slås sammen – kvitteringen blir posten', 'kvittering':'Slås sammen – fila legges ved den som beholdes',
@@ -1992,7 +1993,7 @@ button.ok-dr-rad{ cursor:pointer; }
       var d = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'koble-alle', utfor:false, mnd:mnd }) });
       boks.innerHTML = '<p class="ok-meta">Neam ser over kategoriene i ' + okVask(navn) + ' …</p>';
       var neam = await okRyddNeam(r.forte || []);
-      okRydd = { mnd:mnd, navn:navn, andres:r.andres || [], doble:d.ok ? d.forslag || [] : [], kat:(r.kategorier || []).concat(neam || []),
+      okRydd = { mnd:mnd, navn:navn, doble:d.ok ? d.forslag || [] : [], kat:(r.kategorier || []).concat(neam || []),
         merknad:[d.ok ? (d.advarsel ? 'Fikk ikke sjekket mot banken (' + d.advarsel + ') – trekk ført to ganger er ikke med.' : '') : 'Fant ikke doble: ' + d.feil,
           neam === null ? 'Neam svarte ikke – bare forslagene uten Neam er med.' : ''].filter(Boolean) };
       okRyddTegn();
@@ -2002,7 +2003,7 @@ button.ok-dr-rad{ cursor:pointer; }
   function okRyddTegn(){
     var R = okRydd, boks = document.getElementById('ok-rydd');
     boks.innerHTML = '';
-    var tot = R.andres.length + R.doble.length + R.kat.length;
+    var tot = R.doble.length + R.kat.length;
     okFoldSett('rydd', tot ? tot + ' forslag for ' + R.navn : 'Ingenting å rydde i ' + R.navn, tot ? 'gammel' : null, tot ? 'varsel' : '');
     R.merknad.forEach(function(m){ boks.appendChild(okEl('p', 'ok-meta', okVask(m))); });
     if(!tot){ boks.appendChild(okEl('p', 'ok-meta', 'Ingenting å rydde i ' + okVask(R.navn) + '.')); return; }
@@ -2015,10 +2016,6 @@ button.ok-dr-rad{ cursor:pointer; }
       return { w:w, c:c };
     };
     var del = function(tittel, tekst){ boks.appendChild(okEl('span', 'ok-etikett', okVask(tittel))); if(tekst) boks.appendChild(okEl('p', 'ok-meta', okVask(tekst))); };
-    if(R.andres.length){
-      del('Trekk fra andres kontoer (' + R.andres.length + ')', 'Fjernes for godt – de hører ikke til felles økonomi.');
-      R.andres.forEach(function(x){ var o = rad('<b>' + okRyddLinje(x) + '</b><span class="ok-meta">' + okVask(x.konto || 'Ukjent konto') + '</span>'); R.valg.push({ type:'fjern', id:x.id, c:o.c }); });
-    }
     if(R.doble.length){
       del('Ført to ganger (' + R.doble.length + ')', 'Slås sammen, som under «Koble kvitteringer og transaksjoner».');
       R.doble.forEach(function(x){
@@ -2049,15 +2046,12 @@ button.ok-dr-rad{ cursor:pointer; }
   async function okRyddUtfor(knapp){
     var R = okRydd, boks = document.getElementById('ok-rydd');
     var v = R.valg.filter(function(x){ return x.c.checked; });
-    var fjern = v.filter(function(x){ return x.type === 'fjern'; }).map(function(x){ return x.id; });
     var doble = v.filter(function(x){ return x.type === 'dobbel'; }).map(function(x){ return x.nokkel; });
     var kat = v.filter(function(x){ return x.type === 'kat' && x.s.value; }).map(function(x){ return { id:x.id, kategori:x.s.value }; });
-    if(!fjern.length && !doble.length && !kat.length) return;
-    if(fjern.length && !(await bekreft('Fjerne ' + fjern.length + ' trekk fra andres kontoer for godt? Det kan ikke angres.', { jaTekst:'Fjern', fare:true }))) return;
+    if(!doble.length && !kat.length) return;
     knapp.disabled = true; knapp.textContent = 'Rydder …';
     var post = function(b){ return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(b) }); };
     var gjort = [], feil = [];
-    if(fjern.length){ var a = await post({ hva:'rydd-fjern', ider:fjern }); if(a.ok) gjort.push(a.fjernet + ' fjernet'); else feil.push(a.feil); }
     if(doble.length){ var d = await post({ hva:'koble-alle', utfor:true, mnd:R.mnd, valgt:doble }); if(d.ok) gjort.push(d.gjort + ' slått sammen'); else feil.push(d.feil); }
     if(kat.length){ var g = await post({ hva:'godkjenn', godkjenn:kat, strok:[] }); if(g.ok) gjort.push(kat.length + (kat.length === 1 ? ' kategori rettet' : ' kategorier rettet')); else feil.push(g.feil); }
     boks.innerHTML = '';
