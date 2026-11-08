@@ -1853,3 +1853,28 @@
   font-family:'Archivo',sans-serif; font-size:var(--t-stor); font-weight:700;
 }
 .neam-pin-ok:active{ background:var(--aksent-moerk); }
+
+/* Låseikonet på fellesenhetene (8. november 2026) - til høyre for ikonet
+   oppe til venstre, «relativt stort». Navnet under, som i ikonstilen:
+   «Låst», personen, eller minuttene som er igjen. */
+.neam-laas{
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  background:none; border:none; padding:0; margin:0 0 0 8px; cursor:pointer;
+  color:var(--ink); font:inherit; touch-action:manipulation; flex-shrink:0;
+}
+.neam-laas[hidden]{ display:none; }
+.neam-laas-ikon{ width:64px; height:64px; display:block; }
+.neam-laas-ikon img{ width:100%; height:100%; object-fit:contain; display:block; }
+.neam-laas-navn{ white-space:nowrap; font-variant-numeric:tabular-nums; }
+.neam-laas:active .neam-laas-ikon{ transform:scale(.96); }
+
+/* Valget om tid og varselet før skjermen sovner. */
+.neam-laas-tider{ display:grid; gap:12px; margin:0 0 18px; }
+.neam-laas-tid{
+  height:64px; border-radius:var(--radius); cursor:pointer; touch-action:manipulation;
+  background:var(--paper-soft); border:1px solid var(--boks-kant); color:var(--ink);
+  font-family:'Archivo',sans-serif; font-size:var(--t-stor); font-weight:700;
+}
+.neam-laas-tid:active{ transform:scale(.98); background:var(--boks-mild); }
+.neam-laas-kort .dlg-rad, .neam-pin-varsel .dlg-rad{ justify-content:center; }
+.neam-pin-varsel .neam-pin-tittel{ margin:8px 0 22px; }

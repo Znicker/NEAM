@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=6">
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=87">
+<link rel="stylesheet" href="/felles-neam.css?v=88">
 <style>
   /* Sidespesifikke variabler. Palett og typeskala ligger i
      felles-rot.css. */
@@ -888,6 +888,8 @@ select.hu-felt{
     <a class="merke" href="./index.html" aria-label="Til forsiden">
       <span class="merke-ikon"><img class="ikon-flis" src="/bilder/ikoner/kjokken-dash.png?v=2" alt="" width="509" height="512"></span><span class="ikon-navn merke-navn">Kjøkken dash</span>
     </a>
+    <!-- Låseikonet på fellesenhetene - fylles og vises av felles-neam.js. -->
+    <button type="button" class="neam-laas" id="neamLaas" hidden></button>
     <div class="vaer-stripe" id="vaerStripe" hidden></div>
     <div class="vaer-sted">
       <svg class="sted-ikon" id="stedIkon" viewBox="0 0 24 24" fill="none"
@@ -1091,7 +1093,7 @@ select.hu-felt{
 <!-- Neam: femmeren for navigering. Veggskjermen baerer ingen samtale -
      tilbakeTilStandard() legger femmeren ned naar skjermen hviler. -->
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=87"></script>
+<script src="/felles-neam.js?v=88"></script>
 <script>
 /* ============================================================
    NEAM – Kjøkken dash (pilot)

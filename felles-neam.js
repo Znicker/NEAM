@@ -1892,39 +1892,76 @@ const NEAM_FELLES = ['felles@neam.no', 'kitchen@neam.no'];
 const NEAM_PIN_HVILE_MS = 3 * 60 * 1000;
 let neamPinPerson = null;
 let neamPinSistTrykk = 0;
+/* Valgt aapningstid fra laaseikonet (Magne, 8. november 2026: «trykker
+   man får man valget om tid»). 0 = vanlig hvile, tre minutter uten trykk. */
+let neamPinAapenTil = 0;
+let neamPinVarslet = 0;        /* 5 eller 2: siste varsel vist for denne aapningen */
 let neamPinAapen = false;
 let neamPinSvelg = false;
-/* Personen og siste trykk foelger fanen fra side til side - ellers kom
+/* Personen og tidene foelger fanen fra side til side - ellers kom
    tastaturet paa nytt hver gang kjoekkenskjermen byttet side. */
 const NEAM_PIN_LAGER = 'neam-pin';
 function neamPinLagre(){
-  try{ sessionStorage.setItem(NEAM_PIN_LAGER, JSON.stringify({ person:neamPinPerson, sist:neamPinSistTrykk })); }catch(e){}
+  try{ sessionStorage.setItem(NEAM_PIN_LAGER, JSON.stringify({ person:neamPinPerson, sist:neamPinSistTrykk,
+                                                             til:neamPinAapenTil, varslet:neamPinVarslet })); }catch(e){}
 }
 (function(){
   try{
     const d = JSON.parse(sessionStorage.getItem(NEAM_PIN_LAGER) || 'null');
-    if(d){ neamPinPerson = d.person || null; neamPinSistTrykk = Number(d.sist) || 0; }
+    if(d){
+      neamPinPerson = d.person || null; neamPinSistTrykk = Number(d.sist) || 0;
+      neamPinAapenTil = Number(d.til) || 0; neamPinVarslet = Number(d.varslet) || 0;
+    }
   }catch(e){}
 })();
 function neamErKjokken(){
   return typeof skrivMeg !== 'undefined' && NEAM_FELLES.indexOf(skrivMeg) !== -1;
 }
+/* Sover skjermen? Med valgt tid: naar tiden er ute. Ellers: tre minutter
+   uten trykk, skriving eller tale. */
+function neamPinSover(naa){
+  if(neamPinAapenTil) return naa >= neamPinAapenTil;
+  return !neamPinSistTrykk || naa - neamPinSistTrykk > NEAM_PIN_HVILE_MS;
+}
+function neamPinSovn(){
+  neamPinPerson = null;
+  neamPinAapenTil = 0;
+  neamPinVarslet = 0;
+  neamPinSistTrykk = 0;
+  neamPinLagre();
+  neamPinVarselLukk();
+  neamLaasTegn();
+}
 function neamHvemStaar(){
-  if(neamPinPerson && Date.now() - neamPinSistTrykk > NEAM_PIN_HVILE_MS) neamPinPerson = null;
+  if(neamPinPerson && neamPinSover(Date.now())) neamPinSovn();
   return neamPinPerson;
 }
+/* Tale og skriving i Neam holder skjermen vaaken (Magne, 8. november
+   2026). Kalles fra neamSend og fra tastetrykk. */
+function neamPinVaaken(){
+  if(!neamErKjokken() || neamPinSover(Date.now())) return;
+  neamPinSistTrykk = Date.now();
+  neamPinLagre();
+}
+window.addEventListener('keydown', function(){ if(!neamPinAapen) neamPinVaaken(); }, true);
 window.addEventListener('pointerdown', function(ev){
+  const kjokken = neamErKjokken();
+  if(kjokken) neamPinLyd();
   const naa = Date.now();
-  const hvilt = !neamPinSistTrykk || naa - neamPinSistTrykk > NEAM_PIN_HVILE_MS;
+  const sover = neamPinSover(naa);
+  if(sover && neamPinPerson) neamPinSovn();
   neamPinSistTrykk = naa;
-  if(neamPinAapen || !hvilt || !neamErKjokken()){ neamPinLagre(); return; }
+  if(neamPinAapen || !sover || !kjokken){ neamPinLagre(); return; }
   neamPinPerson = null;
+  neamPinAapenTil = 0;
   neamPinLagre();
   ev.preventDefault();
   ev.stopPropagation();
   neamPinSvelg = true;
   setTimeout(function(){ neamPinSvelg = false; }, 600);
-  neamPinInngang();
+  /* Var det laaseikonet som ble trykket, kommer valget om tid etter koden. */
+  const fraLaas = !!(ev.target.closest && ev.target.closest('#neamLaas'));
+  neamPinInngang(fraLaas);
 }, true);
 window.addEventListener('click', function(ev){
   if(!neamPinSvelg) return;
@@ -1934,7 +1971,7 @@ window.addEventListener('click', function(ev){
   ev.stopPropagation();
 }, true);
 
-async function neamPinInngang(){
+async function neamPinInngang(medTid){
   neamPinAapen = true;
   let feil = '';
   for(;;){
@@ -1943,6 +1980,8 @@ async function neamPinInngang(){
     const r = await neamPinKall('POST', { hva:'sjekk', kode:kode });
     if(r.ok){
       neamPinPerson = { hvem:r.hvem, navn:r.navn };
+      neamPinAapenTil = 0;
+      neamPinVarslet = 0;
       await neamPinHei(r.navn);
       break;
     }
@@ -1952,6 +1991,133 @@ async function neamPinInngang(){
   neamPinAapen = false;
   neamPinSistTrykk = Date.now();
   neamPinLagre();
+  neamLaasTegn();
+  if(medTid && neamPinPerson) neamLaasVelg();
+}
+
+/* ---- Laaseikonet: aapen i valgt tid, varsel 5 og 2 minutter foer ----
+   Ligger til hoeyre for ikonet oppe til venstre paa sidene som har en
+   plass til det (<button id="neamLaas">), og vises bare paa
+   fellesenhetene. Under ikonet: «Låst», navnet (vanlig hvile) eller hvor
+   mange minutter som er igjen. */
+const NEAM_LAAS_TIDER = [ { navn:'15 minutter', min:15 }, { navn:'30 minutter', min:30 }, { navn:'1 time', min:60 } ];
+function neamLaasTegn(){
+  const b = document.getElementById('neamLaas');
+  if(!b) return;
+  const vis = neamErKjokken();
+  b.hidden = !vis;
+  if(!vis) return;
+  if(!b.dataset.klar){
+    b.dataset.klar = '1';
+    b.innerHTML = '<span class="neam-laas-ikon">' + neamIkonImg('laas', ' width="506" height="512"') + '</span>'
+                + '<span class="ikon-navn neam-laas-navn"></span>';
+    b.addEventListener('click', neamLaasTrykk);
+  }
+  const p = neamHvemStaar();
+  let tekst = 'Låst';
+  if(p) tekst = neamPinAapenTil ? (Math.max(1, Math.ceil((neamPinAapenTil - Date.now()) / 60000)) + ' min') : p.navn;
+  b.querySelector('.neam-laas-navn').textContent = tekst;
+  b.classList.toggle('aapen', !!p);
+  b.setAttribute('aria-label', p ? ('Åpen for ' + p.navn + '. Velg hvor lenge') : 'Lås opp');
+}
+function neamLaasTrykk(){
+  if(neamPinAapen) return;
+  if(!neamHvemStaar()){ neamPinInngang(true); return; }
+  neamLaasVelg();
+}
+function neamLaasVelg(){
+  const p = neamHvemStaar();
+  if(!p) return;
+  neamPinAapen = true;
+  const bak = neamPinFlate();
+  bak.innerHTML = '<div class="neam-pin-kort neam-laas-kort" role="dialog" aria-modal="true">'
+                + '<div class="neam-pin-tittel">Hvor lenge skal skjermen være åpen?</div>'
+                + '<div class="neam-laas-tider"></div>'
+                + '<div class="dlg-rad"><button type="button" class="dlg-knapp nei" data-laas="naa">Lås nå</button>'
+                + '<button type="button" class="dlg-knapp nei" data-laas="avbryt">Avbryt</button></div></div>';
+  const tider = bak.querySelector('.neam-laas-tider');
+  NEAM_LAAS_TIDER.forEach(function(t){
+    const k = document.createElement('button');
+    k.type = 'button';
+    k.className = 'neam-laas-tid';
+    k.textContent = t.navn;
+    k.onclick = function(){
+      neamPinAapenTil = Date.now() + t.min * 60000;
+      neamPinVarslet = 0;
+      ferdig();
+    };
+    tider.appendChild(k);
+  });
+  bak.querySelector('[data-laas="naa"]').onclick = function(){ ferdig(); neamPinSovn(); };
+  bak.querySelector('[data-laas="avbryt"]').onclick = function(){ ferdig(); };
+  bak.hidden = false;
+  function ferdig(){
+    neamPinLukk();
+    neamPinAapen = false;
+    neamPinLagre();
+    neamLaasTegn();
+  }
+}
+
+/* Varselet 5 og 2 minutter foer skjermen sovner, med et lite pling. */
+function neamPinVarsle(min){
+  if(neamPinAapen) return;
+  const bak = neamPinFlate();
+  bak.innerHTML = '<div class="neam-pin-kort neam-pin-varsel" role="alertdialog" aria-modal="true">'
+                + '<div class="neam-pin-tittel"></div>'
+                + '<div class="dlg-rad"><button type="button" class="dlg-knapp nei" data-v="ok">OK</button>'
+                + '<button type="button" class="dlg-knapp ja" data-v="mer">Forleng</button></div></div>';
+  bak.querySelector('.neam-pin-tittel').textContent = 'Skjermen låses om ' + min + ' minutter.';
+  bak.querySelector('[data-v="ok"]').onclick = neamPinLukk;
+  bak.querySelector('[data-v="mer"]').onclick = function(){ neamPinLukk(); neamLaasVelg(); };
+  bak.hidden = false;
+  neamPling();
+}
+function neamPinVarselLukk(){
+  if(neamPinBak && neamPinBak.querySelector('.neam-pin-varsel')) neamPinLukk();
+}
+function neamPinTikk(){
+  if(neamErKjokken() && neamPinPerson && neamPinAapenTil){
+    const igjen = neamPinAapenTil - Date.now();
+    if(igjen <= 0) neamPinSovn();
+    else if(igjen <= 2 * 60000 && neamPinVarslet !== 2){ neamPinVarslet = 2; neamPinLagre(); neamPinVarsle(2); }
+    else if(igjen <= 5 * 60000 && igjen > 2 * 60000 && neamPinVarslet !== 5){ neamPinVarslet = 5; neamPinLagre(); neamPinVarsle(5); }
+  }
+  neamLaasTegn();
+}
+setInterval(neamPinTikk, 10000);
+setTimeout(neamPinTikk, 1500);
+setTimeout(neamPinTikk, 5000);
+
+/* Plinget lages i nettleseren (ingen lydfil). Lyden maa vekkes av et
+   trykk foer den kan spille, saa den vekkes ved hvert trykk paa
+   fellesenhetene. */
+let neamPinLydKtx = null;
+function neamPinLyd(){
+  try{
+    if(!neamPinLydKtx){
+      const K = window.AudioContext || window.webkitAudioContext;
+      if(K) neamPinLydKtx = new K();
+    }
+    if(neamPinLydKtx && neamPinLydKtx.state === 'suspended') neamPinLydKtx.resume();
+  }catch(e){}
+}
+function neamPling(){
+  const k = neamPinLydKtx;
+  if(!k) return;
+  try{
+    [[880, 0], [1320, 0.13]].forEach(function(t){
+      const o = k.createOscillator(), g = k.createGain();
+      const s = k.currentTime + t[1];
+      o.type = 'sine';
+      o.frequency.value = t[0];
+      g.gain.setValueAtTime(0.0001, s);
+      g.gain.exponentialRampToValueAtTime(0.25, s + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, s + 0.35);
+      o.connect(g); g.connect(k.destination);
+      o.start(s); o.stop(s + 0.4);
+    });
+  }catch(e){}
 }
 
 /* «Hei Magne!» - trykkes bort med OK. */
@@ -2936,8 +3102,11 @@ async function neamSend(){
   felt.value = '';
   neamVoks();
 
+  /* Tale og skriving holder fellesenhetene vaakne - ogsaa mens han svarer. */
+  if(typeof neamPinVaaken === 'function') neamPinVaaken();
   neamPoster.push({ api:{ role:'user', content:tekst } });
   await neamTur();
+  if(typeof neamPinVaaken === 'function') neamPinVaaken();
 }
 
 /* Én runde: send det som staar, kjoer verktoeyene Neam ber om, gjenta til
