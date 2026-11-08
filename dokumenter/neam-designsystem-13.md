@@ -23,8 +23,9 @@ Mye ligger nå i **fellesfiler** (`felles-rot.css`, `felles-skall.css`,
 `felles-skriv.js`, `felles-hus.js`, `felles-ms.js`, `felles-tale.js`). Det som ennå er kopiert per fil, holdes likt av dette
 dokumentet – det er fortsatt fasiten for hva som skal være likt på tvers.
 
-*Sist oppdatert 8. november 2026: **topplinja er felles** på alle sidene
-utenom dashene (se «Topplinja»). Samme dag: **pinkoden på kjøkkenskjermen** –
+*Sist oppdatert 8. november 2026: **topplinja er felles** på alle sidene,
+også dashene, og **klokka har alarm, nedtelling og stoppeklokke** (se
+«Topplinja»). Samme dag: **pinkoden på kjøkkenskjermen** –
 tastaturet, «Hei Magne!», Pinkoder for sys@, og låseikonet med valgt tid
 og pling (se «Neam-assistenten»).
 Forrige oppdatering 6. november 2026: **fargekatalogen** er nytt verktøy for
@@ -604,9 +605,9 @@ PC er utviklingsflate, ikke bruksflate.
 
 *Fra 8. november 2026.*
 
-**Alle sidene har samme topp som dashene:** sidas ikon på 84 px med navnet
-ved siden av (lenke til forsiden), låseikonet på fellesenhetene, været nå,
-stedet og klapptavla med dato til høyre. Den ligger i `felles-topp.js` og
+**Alle sidene har samme topp:** sidas ikon på 84 px med navnet ved siden
+av (lenke til forsiden), låseikonet på fellesenhetene, været med stedet
+inntil, og klapptavla med dato til høyre – med alarmene og timerne under. Den ligger i `felles-topp.js` og
 `felles-topp.css`; en side får den med
 `<header class="ntp" id="neamTopp" data-ikon="…" data-navn="…">` og fila
 lastet etter `felles-neam.js`. **En ny side skal ha den** – ikke en egen
@@ -620,7 +621,8 @@ variant.
 - **Navnet på den innloggede står ikke i toppen**, verken her eller på
   dashene.
 - **Været er alltid nå** utenfor dashene. På dashene følger det dagen man
-  ser på.
+  ser på (`window.ntpVaerDag`). **Trykk på været** åpner værboblen: døgnet
+  hver tredje time og langtidsvarselet.
 - **Kompakt under 700 px:** ikon på 56 px, navn og liten klokke; været og
   stedet vises ikke. Bredden som måles er **toppens egen** (container
   query), ikke skjermens – en side i smal spalte på PC blir også kompakt.
@@ -636,8 +638,24 @@ variant.
 - **`overflow-x:hidden` på `html` eller `body` stopper låsingen** – bruk
   `clip` (se «Praktiske feller»).
 
-Dashene har fortsatt sin egen kopi av toppen (se under). Avvik fra den
-felles toppen på en side er et nytt valg – spør.
+**Klokka: alarm, nedtelling og stoppeklokke** (8. november 2026, Magne).
+- **Trykk på klokka** gir lista: navn, tid og hvem, med **Endre** (oker),
+  **Slett** (rød) og Pause/Fortsett på stoppeklokka, og **Ny** (grønn).
+  Det som fjerner heter Slett – «Avbryt» er nøytral og bare for å gå ut av
+  skjemaet (Avbryt-regelen).
+- **Under klokka:** små ikoner med tallet under – alarmen `--aksent`,
+  nedtellingen `--handling-endre`, stoppeklokka `--handling-ny`.
+  **Høyst ti** på en skjerm.
+- **Gjelder for:** «Bare denne enheten», eller Kjøkkenet og/eller Magne,
+  Nina, Emma og Andrea. Det delte ringer der en mottaker har Neam åpen, og
+  der det ble laget – ikke på en låst telefon (det krever push).
+- **Når den ringer:** kort midt på skjermen med navnet og et pip som
+  gjentas, **Stopp** og **Slumre 5 min**. Kortet ligger over alt, også
+  låseskjermen på kjøkkenet.
+- Panelene bygger på `felles-dialog.css` og ligger mellom Neam (til 92) og
+  sidenes dialoger (120), så en bekreftelse fra skjemaet havner oppå.
+
+Avvik fra den felles toppen på en side er et nytt valg – spør.
 
 ## Kjøkken dash
 
@@ -649,7 +667,8 @@ siden av (`.merke-navn`, i ikonstilen). Fram til 27. oktober 2026 sto bare
 merkelappen der, med navnet malt inn. Navnet på den innloggede står ikke
 der – sidenavnet forteller hvem dashet tilhører når hver får sitt. Ikonet
 er det samme som flisen på forsiden, så man kjenner igjen sida man
-trykket seg inn på. Samme topp på Emma dash og Andrea dash.
+trykket seg inn på. Samme topp på Emma dash og Andrea dash. **Fra
+8. november 2026 er det den felles toppen** (se «Topplinja»).
 
 **Døgnet skifter klokka 20.** Etter det viser skjermen morgendagen, og
 etiketten sier «I morgen» – ikke «I dag», som ville vært en løgn. Alt som

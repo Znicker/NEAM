@@ -1,6 +1,9 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 8. november 2026: topplinja er felles på alle sidene –
+*Ført à jour 8. november 2026, kveld: klokka i topplinja har fått alarm,
+nedtelling og stoppeklokke – for denne enheten, Kjøkkenet eller personene
+– og dashene bruker den felles toppen (se toppblokka). Ført à jour
+8. november 2026: topplinja er felles på alle sidene –
 `felles-topp.js` og `felles-topp.css` gir ikon og navn, låseikonet, været,
 stedet og klapptavla som på dashene (se toppblokka). Ført à jour
 8. november 2026, natt: pinkoder på kjøkkenskjermen – den som
@@ -116,7 +119,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 ?v=88`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
-`felles-topp.js ?v=2`, `felles-topp.css ?v=2`;
+`felles-topp.js ?v=3`, `felles-topp.css ?v=3`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
@@ -136,7 +139,7 @@ gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–88; neam.css til og
 med 87; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
-hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–2**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -998,6 +1001,40 @@ sidene, også forsiden, og kompakt på smal skjerm.
   nå, som i Handleliste. `ok-topp`-linja i Økonomi kom med i en annen økts
   commit (`4cb70d8`) før `?v=2` var ute – uten `--ntp-h` faller den tilbake
   til `0px`, så ingenting ble feil.
+
+**8. november, kveld: alarm, nedtelling og stoppeklokke i klokka**
+(`c2878b2`, topp `?v=3`). Magne: timere, alarm og stoppeklokke ved klokka,
+opptil ti, opprettet ved å trykke på klokka, og for «kun denne enheten,
+eller andre brukere». Valgt: steg 1 og 2 sammen (denne enheten og deling),
+ikke push.
+- **Trykk på klokka:** lista med navn, tid og hvem – Endre (oker), Slett
+  (rød), Pause/Fortsett på stoppeklokka – og Ny (grønn). Skjemaet: type,
+  navn, klokkeslett eller timer/min/sek (hurtigknapper 1 min–1 t), og
+  «Gjelder for». Knappen som fjerner heter **Slett**, ikke «Avbryt»:
+  Avbryt er nøytral i designsystemet.
+- **Under klokka:** små ikoner med tallet under (Magne) – alarmen blå,
+  nedtellingen oker, stoppeklokka grønn. Stedet står nå inntil været for
+  å gi plass.
+- **Ringing:** kort midt på skjermen med navnet, pip som gjentas i inntil
+  ti minutter, Stopp og Slumre 5 min (Magne). Lyden må vekkes av et trykk
+  etter at sida er åpnet (Safari).
+- **Hvem:** «Bare denne enheten» lagres i `localStorage`
+  (`neam-timere`). Kjøkkenet og personene lagres i **KV `timere:v1`**
+  (`{liste:[…]}`), lest–endret–skrevet rett før lagring og hentet hvert
+  15. sekund. Den ringer der en mottaker har Neam åpen, og der den ble
+  laget (`neam-enhet` i `localStorage`). Stopp ett sted fjerner den
+  overalt innen neste henting. **En låst telefon ringer ikke** – det
+  krever push (del 49). Hvem skjermen er: Kjøkkenet på fellesenhetene
+  (pluss den som har tastet pinkoden), ellers den innloggede fra
+  `skrivMeg` – som bare finnes der `felles-skriv.js` lastes, så spill- og
+  øvingssidene ser bare sine egne.
+- **Værboblen** fra Kjøkken dash åpnes nå fra været på alle sidene.
+- **Dashene bruker den felles toppen.** Været følger dagen dashet viser
+  (også skiftet kl. 20) gjennom `window.ntpVaerDag`; `tegnVaerStripe()`
+  tegner nå den felles toppen. Dashets egen vær- og klokkekode står igjen
+  med vakter, men tegner ingenting (`hentVaer`, `vekslVaerBoble` m.fl.).
+- **Ikke prøvd:** delingen mellom enheter og dashene i drift – bare testet
+  lokalt (Cloudflare Access).
 
 ### Åpne tråder
 
