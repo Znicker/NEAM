@@ -14,7 +14,7 @@
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
 <link rel="stylesheet" href="/felles-neam.css?v=88">
-<link rel="stylesheet" href="/felles-topp.css?v=1">
+<link rel="stylesheet" href="/felles-topp.css?v=2">
 <!-- ?v=: bump tallet naar en fellesfil endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -639,6 +639,10 @@ input,select,textarea{font-size:16px}
 <body>
 
 <div class="topbar" id="topbar">
+  <!-- Topplinja er felles fra 8. november 2026 - se felles-topp.js. Den
+       staar i skallets laaste topplinje, saa den foelger med paa alle
+       visningene. -->
+  <header class="ntp" id="neamTopp" data-ikon="handleliste" data-navn="Handleliste"></header>
   <div class="topbar-brand" id="topbar-brand"></div>
   <div class="topbar-home-actions" id="topbar-home-actions">
     <!-- Import ligger som egen knapp i panelet under -->
@@ -649,12 +653,6 @@ input,select,textarea{font-size:16px}
 
   <!-- HOME -->
   <section class="view active" id="view-home">
-    <div class="home-hero">
-      <!-- Topplinja er felles fra 8. november 2026 - se felles-topp.js.
-           Navnet paa den innloggede staar ikke her, like lite som paa dashene. -->
-      <header class="ntp" id="neamTopp" data-ikon="handleliste" data-navn="Handleliste"></header>
-    </div>
-
     <div class="week-nav">
       <button type="button" onclick="stepOkt(-1)" title="Forrige handletur">‹</button>
       <span class="week-label" id="week-label" onclick="openOmdop()">Ingen handletur valgt</span>
@@ -1096,7 +1094,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=89"></script>
-<script src="/felles-topp.js?v=1"></script>
+<script src="/felles-topp.js?v=2"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB (delt database 'familiehub', store 'kv').

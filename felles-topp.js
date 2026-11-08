@@ -82,6 +82,14 @@ function ntpTegn(){
     + '</div>'
     + '</div>';
   if(typeof neamLaasTegn === 'function') neamLaasTegn();
+  /* Laast ved rulling: bakgrunn naar sida er rullet, og hoeyden som
+     --ntp-h til sider med en egen laast rad under. */
+  const rull = function(){ t.classList.toggle('ntp-rullet', window.scrollY > 4); };
+  window.addEventListener('scroll', rull, { passive:true });
+  rull();
+  const hoyde = function(){ document.documentElement.style.setProperty('--ntp-h', t.offsetHeight + 'px'); };
+  if(window.ResizeObserver) new ResizeObserver(hoyde).observe(t);
+  hoyde();
   ntpKlokke();
   setInterval(ntpKlokke, 10000);
   ntpVaerStart();

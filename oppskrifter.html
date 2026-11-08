@@ -14,7 +14,7 @@
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
 <link rel="stylesheet" href="/felles-neam.css?v=88">
-<link rel="stylesheet" href="/felles-topp.css?v=1">
+<link rel="stylesheet" href="/felles-topp.css?v=2">
 <!-- ?v=: bump tallet naar en fellesfil endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -1706,6 +1706,10 @@ input,select,textarea{font-size:16px}
 <body>
 
 <div class="topbar" id="topbar">
+  <!-- Topplinja er felles fra 8. november 2026 - se felles-topp.js. Den
+       staar i skallets laaste topplinje, saa den foelger med paa alle
+       visningene - ogsaa i en oppskrift. -->
+  <header class="ntp" id="neamTopp" data-ikon="matlaging" data-navn="Matlaging"></header>
   <div class="topbar-brand">
   </div>
 </div>
@@ -1714,11 +1718,6 @@ input,select,textarea{font-size:16px}
 
   <!-- HOME -->
   <section class="view active" id="view-home">
-    <div class="home-hero">
-      <!-- Topplinja er felles fra 8. november 2026 - se felles-topp.js.
-           Navnet paa den innloggede staar ikke her, like lite som paa dashene. -->
-      <header class="ntp" id="neamTopp" data-ikon="matlaging" data-navn="Matlaging"></header>
-    </div>
     <!-- Venstrespalten i landskap: filtre og knapper hoerer sammen og skal
          staa i ro mens oppskriftene ruller. I portrett er dette bare en
          vanlig div - knapperaden er fixed der og bryr seg ikke om den. -->
@@ -2366,7 +2365,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=89"></script>
-<script src="/felles-topp.js?v=1"></script>
+<script src="/felles-topp.js?v=2"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB-basert erstatning for window.storage.

@@ -16,6 +16,19 @@
   font-family:'Archivo',system-ui,-apple-system,sans-serif; color:var(--ink);
 }
 .ntp-rad{ display:flex; align-items:center; gap:16px; }
+
+/* Laast ved rulling (Magne, 8. november 2026). Bakgrunn og skygge bare
+   naar sida er rullet - samme oppskrift som .topbar i felles-skall.css.
+   --ntp-h (satt av felles-topp.js) er hoeyden, for sider som har en egen
+   laast rad under (fanene i Oekonomi). */
+.ntp{ position:sticky; top:0; z-index:25; padding:8px 0; transition:background .15s, box-shadow .15s; }
+.ntp.ntp-rullet{
+  background:linear-gradient(180deg, var(--bg-1) 88%, transparent);
+  box-shadow:0 1px 3px rgba(0,0,0,.05);
+}
+/* Inne i skallets egen topplinje (Handleliste, Matlaging) er det den som
+   er laast, saa toppen selv staar stille i den. */
+.topbar .ntp{ position:static; padding:0; background:none; box-shadow:none; flex:1; min-width:0; }
 .ntp-merke{ display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit; min-width:0; }
 .ntp-ikon{
   width:84px; height:84px; flex-shrink:0;

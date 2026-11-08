@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="/felles-knapper.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <link rel="stylesheet" href="/felles-neam.css?v=88">
-<link rel="stylesheet" href="/felles-topp.css?v=1">
+<link rel="stylesheet" href="/felles-topp.css?v=2">
 <!-- Datalaget baerer husregisteret og lastes foer sidens eget skript.
      felles-skjema.js gir avbryt-regelen paa husskjemaet og krever
      felles-dialog.js, som ligger nederst - derfor staar begge to der,
@@ -390,7 +390,9 @@ footer{
    det som faktisk virker er touch-action mot dobbelttrykk, og 16px i
    skjemafelt saa iOS ikke zoomer inn naar man trykker i dem. */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
-html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
+/* clip, ikke hidden: hidden gjoer dokumentroten til en rullebeholder, og da
+   slutter den felles topplinja aa vaere laast (samme felle som i handleliste). */
+html,body{max-width:100%;overflow-x:clip;overscroll-behavior-x:none}
 body{touch-action:manipulation}
 input,select,textarea{font-size:16px}
 </style>
@@ -1275,6 +1277,6 @@ window.neamUtfor = async function(navn, arg){
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=89"></script>
-<script src="/felles-topp.js?v=1"></script>
+<script src="/felles-topp.js?v=2"></script>
 </body>
 </html>
