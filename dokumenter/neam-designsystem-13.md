@@ -1848,7 +1848,14 @@ først, Sparing sist. Bare tallene skiller dem:
   vedleggene med «Fjern» og «+ Legg til vedlegg»; Lagre (`.btn-ny`) og
   Avbryt. **En endret sum** får et utropstegn (`.ok-fr-utrop`: rund, hvit
   «!» på `--handling-endre`) overalt der føringen vises, og i vinduet en
-  gul boks (`.ok-mangler`) med bankens sum. **Høyreklikk** (hold fingeren på telefon) på
+  gul boks (`.ok-mangler`) med bankens sum. Rediger har også **dato**, og
+  en endret dato vises som «Opprinnelig dato». **Regninger som forfaller**
+  åpnes likt, med «Legg i innboksen» i stedet for Stryk og Send tilbake.
+  **Listene** (fra 8. november 2026, til Magne har sett dem på neam.no):
+  høyst 900 px brede, grupper i `--t-stor` med et ikon foran, poster i
+  `--t-stor` fra 700 px, en tynn stolpe (`.ok-rad-bar`) under hver post,
+  raden lyser når man peker, og annenhver gruppe har `--bg-1`.
+  **Høyreklikk** (hold fingeren på telefon) på
   en føring eller kategori åpner menyen (`.ok-meny`). **Én spalte, som
   Budsjett** – også Resultat, der kjøpene bak en post åpnes i en dialog
   («Vis kjøpene ›», `#ok-kb-bak`).

@@ -529,8 +529,10 @@ under og et vindu per føring (`16bb99f`), det store vinduet for en føring
 med Rediger, flere vedlegg og «!» ved endret sum (`8ab7e7e`), og til sist
 vedlegg og kvitteringslinjer samtidig i vinduet og «Før inn ny utgift»
 (`67ef6b5`), merkesystemet i Regnskap med samme merkeliste i alle tre
-fanene (`8159134`), og til sist Resultat med samme liste i tre kolonner
-(`ebc7a33`).
+fanene (`8159134`), Resultat med samme liste i tre kolonner (`ebc7a33`),
+listene lettere å lese – smalere, større skrift, stolper og ikoner
+(`e9432b6`) – og til sist fakturaer som forfaller i vinduet og dato under
+Rediger (`6e593ff`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -539,7 +541,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 82 commits, `0e0050a`–`ebc7a33`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 84 commits, `0e0050a`–`6e593ff`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4426,7 +4428,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 82 commits fra `0e0050a` til `ebc7a33` (dialogen med
+verdier. Bygget i 84 commits fra `0e0050a` til `6e593ff` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4871,6 +4873,38 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Fakturaer som forfaller åpnes, og dato under Rediger** (`6e593ff`).
+  Magne: «jeg ønsker at alle transaksjoner åpner seg slik som kvitteringer
+  gjør i dag» – Autosync AS under Bil (en faktura som forfaller) kunne ikke
+  trykkes – og «jeg ønsker å endre dato på alle føringer også om jeg vil
+  det under rediger».
+  - **Regninger som forfaller** i Regnskap og Resultat kan trykkes og
+    høyreklikkes som de andre føringene. Status «Venter på trekket»;
+    kategorien lagres som fakturaens (`faktura-kategori` – ikke
+    `godkjenn`, som ville ført den), og «Legg i innboksen»
+    (`faktura-innboks`) står i stedet for Stryk og Send tilbake.
+  - **Dato** under Rediger for alle føringer: `post-endre` tar `dato`, den
+    opprinnelige ligger i `datoBank` og vises som «Opprinnelig dato»;
+    velges den igjen, er endringen borte. Føringen flytter til måneden.
+  - Kvitteringsdelen i vinduet vises bare når det finnes varelinjer.
+  - Testet i testserveren.
+- **Listene lettere å lese** (`e9432b6`). Magne: «Jeg tro vi skal vurdere å
+  ha større skrift i alle føringer. det blir smått nå. finnes det andre
+  møter å gjøre dette mer visuelt enkelt og intuitivt. det er lang avstand
+  mellom beskrivelsen og summene» – så, om forslagene: «kjør på med alle
+  sammen på neam så ser vi». I Regnskap, Budsjett og Resultat
+  (`.ok-liste-kort`):
+  - listekortet høyst 900 px bredt på PC;
+  - grupper i `--t-stor`, poster i `--t-stor` fra 700 px, linjer og
+    føringer i `--t-brod`;
+  - en tynn stolpe under hver post (`.ok-rad-bar`, 5 px): brukt av
+    budsjettet i Regnskap og Resultat (rød over, ikke for inntekter og
+    sparing), postens del av gruppen i Budsjett;
+  - raden lyser svakt når man peker, og annenhver gruppe har `--bg-1`;
+  - et ikon foran gruppene (`OK_GR_IKON`: Inntekter okonomi, Bolig hjem,
+    Bil bil, Mat handleliste, Barna familie, Felles fritid spill, Andre
+    utgifter kvitteringer, Sparing laas).
+  Ikke ført inn i designsystemet som regel før Magne har sett det.
 - **Resultat med samme liste, i tre kolonner** (`ebc7a33`). Magne, med et
   bilde av lista i Regnskap: «Gjør resultat lik som de to andre, men her
   blir det tre kolonner ved summene, først budsjett, så regnskap så avvik».
