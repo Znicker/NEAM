@@ -276,12 +276,20 @@ input.ok-regnefeil{ border-color:var(--danger) !important; }
 #ok-fr-innhold select{ width:100%; font-family:inherit; font-size:16px; padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
 /* Foeringsvinduet: stort, med alt om foeringen og Rediger (8. november 2026). */
 /* felles-dialog.css gir .dlg-kort max-width:400px - vinduet for en foering skal vaere stort. */
-.dlg-kort.ok-fr-stor{ width:min(760px, 100%); max-width:760px; max-height:92vh; }
+.dlg-kort.ok-fr-stor{ width:min(960px, 100%); max-width:960px; max-height:92vh; }
+/* Infoen og kvitteringen til venstre, vedleggene til hoeyre - under hverandre paa smal skjerm. */
+.ok-fr-to{ display:grid; grid-template-columns:minmax(0,1fr); gap:16px; }
+.ok-fr-to > div{ display:flex; flex-direction:column; gap:10px; min-width:0; }
+@media (min-width:820px){ .ok-fr-to{ grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px; } }
+.ok-fr-stort-bilde{ display:block; width:100%; padding:0; border:1px solid var(--line); border-radius:10px; background:#fff; cursor:zoom-in; }
+.ok-fr-stort-bilde img{ display:block; width:100%; height:auto; max-height:460px; object-fit:contain; border-radius:10px; }
+.ok-fr-linjer{ display:flex; flex-direction:column; }
 .ok-fr-utrop{ display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; background:var(--handling-endre); color:#fff; font-size:12px; font-weight:700; line-height:1; vertical-align:2px; margin-right:6px; }
 .ok-fr-info{ display:grid; grid-template-columns:150px minmax(0,1fr); gap:6px 14px; margin:0; font-size:var(--t-meta); }
 .ok-fr-info dt{ color:var(--ink-soft); font-weight:700; }
 .ok-fr-info dd{ margin:0; overflow-wrap:anywhere; }
 .ok-fr-vedlegg{ display:flex; flex-wrap:wrap; gap:10px; }
+.ok-fr-to .ok-fr-vedlegg{ flex-direction:column; flex-wrap:nowrap; }
 .ok-fr-ved{ width:122px; display:flex; flex-direction:column; gap:4px; padding:6px; border:1px solid var(--line); border-radius:10px; background:#fff; font:inherit; font-size:var(--t-etikett); color:var(--ink-soft); text-align:left; cursor:pointer; }
 .ok-fr-ved img{ width:108px; height:140px; object-fit:cover; border-radius:6px; background:var(--boks-mild); display:block; }
 .ok-fr-ved .pdf{ width:108px; height:140px; border-radius:6px; background:var(--boks-mild); display:flex; align-items:center; justify-content:center; }
@@ -4834,12 +4842,17 @@ button.ok-dr-rad{ cursor:pointer; }
     document.getElementById('ok-fr-meta').textContent = okDato.format(new Date(p.dato));
     document.getElementById('ok-fr-belop').innerHTML = (p.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret">!</span>' : '') + okVask(okFrKr(p.belop));
     var inn = document.getElementById('ok-fr-innhold'); inn.innerHTML = '';
-    if(p.overstyrt && p.bankBelop != null) inn.appendChild(okEl('p', 'ok-mangler', '<span><b>Summen er endret.</b> ' + (p.konto ? 'Banken viser ' : 'Opprinnelig ') + okVask(okFrKr(p.bankBelop)) + '.</span>'));
+    /* Infoen og kvitteringen til venstre, vedleggene til hoeyre (Magne, 8.
+       november 2026: «Jeg ønsker å se vedlegg og kvitteringsdetaljer,
+       sammen med den andre informasjonen»). */
+    var to = okEl('div', 'ok-fr-to'), venstre = okEl('div', ''), hoyre = okEl('div', '');
+    to.appendChild(venstre); to.appendChild(hoyre); inn.appendChild(to);
+    if(p.overstyrt && p.bankBelop != null) venstre.appendChild(okEl('p', 'ok-mangler', '<span><b>Summen er endret.</b> ' + (p.konto ? 'Banken viser ' : 'Opprinnelig ') + okVask(okFrKr(p.bankBelop)) + '.</span>'));
     var dl = document.createElement('dl'); dl.className = 'ok-fr-info';
     var rad = function(navn, verdi){ if(!verdi) return; dl.appendChild(okEl('dt', '', okVask(navn))); dl.appendChild(okEl('dd', '', okVask(verdi))); };
     var arv = okBuMerke(p.kategori);
     rad('Dato', okDato.format(new Date(p.dato)));
-    rad('Konto', p.konto);
+    rad('Konto', p.fra ? '' : p.konto);   /* kvittering og for haand: kilden staar oeverst */
     rad('Betalt fra', p.betaltFra);
     rad('Tekst fra banken', p.tekst && p.tekst !== p.motpart ? p.tekst : '');
     rad('Opprinnelig navn', p.motpartBank);
@@ -4849,18 +4862,29 @@ button.ok-dr-rad{ cursor:pointer; }
     rad('Notat', p.notat);
     rad('Status', (OK_FR_STATUS[p.status] || p.status) + (p.auto ? ' · ført automatisk' : ''));
     rad('Ført', p.behandlet ? okDato.format(new Date(p.behandlet)) + (p.av ? ' av ' + p.av : '') : '');
-    inn.appendChild(dl);
-    inn.appendChild(okEl('span', 'ok-etikett', 'Vedlegg'));
-    inn.appendChild(okFrVedlegg(p, false));
+    venstre.appendChild(dl);
+    /* Varelinjene fra kvitteringen, rett i vinduet. */
+    if(p.harKvittering){
+      venstre.appendChild(okEl('span', 'ok-etikett', 'Kvitteringen'));
+      var lb = okEl('div', 'ok-fr-linjer', '<p class="ok-meta">Henter varene …</p>');
+      venstre.appendChild(lb);
+      okHent('/api/bank?hva=kvittering&id=' + encodeURIComponent(p.id)).then(function(kv){
+        lb.innerHTML = '';
+        if(!kv.ok){ lb.appendChild(okEl('p', 'ok-meta', okVask(kv.feil))); return; }
+        if(!(kv.linjer || []).length){ lb.appendChild(okEl('p', 'ok-meta', 'Kvitteringen har ingen varelinjer.')); return; }
+        kv.linjer.forEach(function(l){
+          lb.appendChild(okEl('div', 'ok-kv-linje', '<span>' + okVask(l.navn) + (l.antall !== 1 ? ' <span class="ok-meta">× ' + okVask(Number(l.antall).toLocaleString('nb-NO')) + '</span>' : '')
+            + (l.rabatt ? '<br><span class="ok-meta">Rabatt ' + okKr0.format(l.rabatt) + '</span>' : '') + '</span><b>' + okKr0.format(l.belop + (l.rabatt || 0)) + '</b>'));
+        });
+        lb.appendChild(okEl('p', 'ok-meta', kv.linjer.length + (kv.linjer.length === 1 ? ' vare' : ' varer')));
+      });
+    }
+    hoyre.appendChild(okEl('span', 'ok-etikett', 'Vedlegg'));
+    hoyre.appendChild(okFrVedlegg(p, false, null, true));
     var knapper = okEl('div', 'ok-rad-knapper');
     var red = okEl('button', 'btn btn-endre', 'Rediger'); red.type = 'button';
     red.addEventListener('click', function(){ okFrRediger(p); });
     knapper.appendChild(red);
-    if(p.harKvittering){
-      var kv = okEl('button', 'ok-lenke', 'Se kvittering ›'); kv.type = 'button';
-      kv.addEventListener('click', function(){ okVisKvittering({ id:p.id, tittel:p.motpart || p.tekst, dato:p.dato, kilde:okFrKilde(p), belop:p.belop, harFil:false }, kv); });
-      knapper.appendChild(kv);
-    }
     if(p.status === 'godkjent'){
       var stryk = okEl('button', 'btn btn-ghost ok-smal', 'Stryk – føres ikke'); stryk.type = 'button';
       stryk.addEventListener('click', function(){ stryk.disabled = true; okForEndre({ hva:'godkjenn', godkjenn:[], strok:[p.id] }, feil).then(function(r){ if(r.ok) okLukkFor(true); else stryk.disabled = false; }); });
@@ -4874,11 +4898,22 @@ button.ok-dr-rad{ cursor:pointer; }
     inn.appendChild(knapper);
   }
   /* Vedleggene som smaa kort; trykk aapner filviseren. I redigering kan de fjernes. */
-  function okFrVedlegg(p, red, ved){
+  function okFrVedlegg(p, red, ved, stor){
     var boks = okEl('div', 'ok-fr-vedlegg');
     if(!p.vedlegg.length) boks.appendChild(okEl('p', 'ok-meta', 'Ingen vedlegg.'));
     p.vedlegg.forEach(function(v){
       var pdf = v.type === 'application/pdf';
+      /* I visningen: bildet i full bredde, trykk aapner filviseren. En PDF er et kort (se felles-filviser). */
+      if(stor && !pdf){
+        var sb = okEl('button', 'ok-fr-stort-bilde'); sb.type = 'button';
+        sb.setAttribute('aria-label', 'Åpne ' + (v.navn || 'bildet') + ' i full størrelse');
+        var bi = document.createElement('img'); bi.width = 420; bi.height = 560; bi.alt = v.navn || 'Vedlegg';
+        bi.src = '/api/bank?hva=kvittering-fil&id=' + encodeURIComponent(p.id) + (v.n ? '&n=' + v.n : '');
+        sb.appendChild(bi);
+        sb.addEventListener('click', function(){ okVisFil({ id:p.id, n:v.n, filType:v.type, dato:p.dato, motpart:p.motpart || p.tekst }, sb); });
+        boks.appendChild(sb);
+        return;
+      }
       var k = okEl('button', 'ok-fr-ved'); k.type = 'button';
       k.setAttribute('aria-label', 'Åpne ' + (v.navn || (pdf ? 'PDF-en' : 'bildet')));
       if(pdf) k.appendChild(okEl('span', 'pdf', '<b>PDF</b>'));
@@ -4899,6 +4934,113 @@ button.ok-dr-rad{ cursor:pointer; }
     });
     return boks;
   }
+  /* Kategorien i tre ledd: gruppe, post og linje. Gir en funksjon som leser valget. */
+  function okFrKatVelger(inn, kategori, delt){
+    var kats = (okKategorier && okKategorier.length ? okKategorier : okBu.kategorier).slice();
+    var d0 = String(kategori || '').split(' · ');
+    var kw = okEl('div', 'ok-fr-felt'); kw.appendChild(okEl('span', 'ok-etikett', 'Kategori'));
+    var kr3 = okEl('div', 'ok-fr-kat'); kw.appendChild(kr3); inn.appendChild(kw);
+    var sg = document.createElement('select'), sp = document.createElement('select'), sl = document.createElement('select');
+    sg.setAttribute('aria-label', 'Gruppe'); sp.setAttribute('aria-label', 'Post'); sl.setAttribute('aria-label', 'Linje');
+    [sg, sp, sl].forEach(function(s){ s.disabled = !!delt; kr3.appendChild(s); });
+    var grupper = [];
+    kats.forEach(function(k){ var g = k.split(' · ')[0]; if(grupper.indexOf(g) === -1) grupper.push(g); });
+    grupper.forEach(function(g){ sg.appendChild(new Option(g, g)); });
+    var fyllPoster = function(post){
+      sp.innerHTML = '';
+      kats.filter(function(k){ var d = k.split(' · '); return d.length === 2 && d[0] === sg.value; }).forEach(function(k){ sp.appendChild(new Option(k.split(' · ')[1], k)); });
+      if(post) sp.value = post;
+    };
+    var fyllLinjer = function(linje){
+      sl.innerHTML = ''; sl.appendChild(new Option('Ingen linje', ''));
+      kats.filter(function(k){ return k.indexOf(sp.value + ' · ') === 0; }).forEach(function(k){ sl.appendChild(new Option(k.split(' · ')[2], k)); });
+      sl.value = linje || ''; sl.disabled = !!delt || sl.options.length < 2;
+    };
+    sg.value = d0[0] || grupper[0] || '';
+    fyllPoster(d0.length >= 2 ? d0[0] + ' · ' + d0[1] : '');
+    fyllLinjer(d0.length === 3 ? kategori : '');
+    sg.addEventListener('change', function(){ fyllPoster(''); fyllLinjer(''); });
+    sp.addEventListener('change', function(){ fyllLinjer(''); });
+    return function(){ return sl.value || sp.value || ''; };
+  }
+  /* ---------- Foer inn ny utgift (8. november 2026) ----------
+     Fra menyen paa en post eller linje i Regnskap (Magne: «når jeg
+     høyreklikker en underpost ønsker jeg at ny linje under byttes ut med Før
+     inn ny utgift»). Samme vei som Neams legg_til_okonomi_foring:
+     kvittering-ny for haand, saa godkjenn paa kategorien. Vedleggene og
+     notatet legges til etterpaa. */
+  function okForNy(kategori){
+    okFrFra = null; okFrEndret = null;
+    var feil = document.getElementById('ok-fr-feil'); feil.hidden = true; feil.style.color = '';
+    document.getElementById('ok-fr-kilde').textContent = 'Ny utgift';
+    document.getElementById('ok-fr-tittel').textContent = okNeamKat(kategori);
+    document.getElementById('ok-fr-meta').textContent = 'Føres med en gang på kategorien du velger.';
+    document.getElementById('ok-fr-belop').textContent = '';
+    var inn = document.getElementById('ok-fr-innhold'); inn.innerHTML = '';
+    var nr = 0;
+    var felt = function(etikett, el){ el.id = 'ok-fn-' + (nr++); var w = okEl('div', 'ok-fr-felt'); var l = okEl('label', 'ok-etikett', okVask(etikett)); l.htmlFor = el.id; w.appendChild(l); w.appendChild(el); inn.appendChild(w); return el; };
+    var navn = document.createElement('input'); navn.type = 'text'; navn.maxLength = 120; navn.placeholder = 'Butikk eller hvem det ble betalt til';
+    felt('Navn', navn);
+    /* Datoen: i dag naar den valgte maaneden er denne, ellers den siste i maaneden. */
+    var naa = new Date(), m = okMnd.valgt || naa.toISOString().slice(0, 7);
+    var dag = m === naa.toISOString().slice(0, 7) ? naa.toISOString().slice(0, 10) : m + '-' + String(new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)), 0).getDate()).padStart(2, '0');
+    var dato = document.createElement('input'); dato.type = 'date'; dato.value = dag;
+    felt('Dato', dato);
+    var sum = document.createElement('input'); sum.type = 'text'; sum.inputMode = 'decimal'; sum.autocomplete = 'off'; sum.placeholder = 'Beløp eller regnestykke';
+    felt('Sum i kroner', sum);
+    var nyKat = okFrKatVelger(inn, kategori, false);
+    var notat = document.createElement('textarea'); notat.maxLength = 1000;
+    felt('Notat', notat);
+    var filInn = document.createElement('input'); filInn.type = 'file'; filInn.accept = 'image/*,application/pdf'; filInn.multiple = true;
+    felt('Vedlegg', filInn);
+    var knapper = okEl('div', 'ok-rad-knapper');
+    var lagre = okEl('button', 'btn btn-ny', 'Før inn'); lagre.type = 'button';
+    var avbryt = okEl('button', 'btn btn-ghost ok-smal', 'Avbryt'); avbryt.type = 'button';
+    knapper.appendChild(lagre); knapper.appendChild(avbryt); inn.appendChild(knapper);
+    okFrEndret = function(){ return !!(navn.value.trim() || sum.value.trim() || notat.value.trim() || (filInn.files && filInn.files.length)); };
+    avbryt.addEventListener('click', function(){ okLukkFor(); });
+    var post = function(kropp){ return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(kropp) }); };
+    var vis = function(tekst){ feil.textContent = tekst; feil.style.color = ''; feil.hidden = false; };
+    lagre.addEventListener('click', function(){
+      var v = okRegn(sum.value), kat = nyKat();
+      if(!navn.value.trim()){ vis('Skriv hvem det ble betalt til.'); navn.focus(); return; }
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(dato.value)){ vis('Velg en dato.'); dato.focus(); return; }
+      if(isNaN(v) || !(v > 0)){ vis('Skriv summen som et tall.'); sum.focus(); return; }
+      if(!kat){ vis('Velg en kategori.'); return; }
+      lagre.disabled = true; lagre.textContent = 'Fører inn …';
+      var filer = Array.prototype.slice.call(filInn.files || []), id = null;
+      post({ hva:'kvittering-ny', forHand:true, kvittering:{ butikk:navn.value.trim(), dato:dato.value, belop:Math.round(v * 100) / 100, linjer:[] } })
+        .then(function(ny){
+          if(!ny.ok) throw new Error(ny.feil);
+          id = ny.post.id;
+          return post({ hva:'godkjenn', godkjenn:[{ id:id, kategori:kat }], strok:[] });
+        })
+        .then(function(g){
+          if(!g.ok) throw new Error('Lagt i innboksen, men ikke ført: ' + g.feil);
+          return notat.value.trim() ? post({ hva:'post-endre', id:id, notat:notat.value.trim() }) : { ok:true };
+        })
+        .then(function(){
+          return filer.reduce(function(kjede, fil){
+            return kjede.then(function(){
+              var pdf = fil.type === 'application/pdf';
+              return (pdf ? okSomBase64(fil) : okKrympBilde(fil)).then(function(data){
+                return post({ hva:'post-vedlegg', id:id, type:pdf ? 'application/pdf' : 'image/jpeg', data:data, navn:fil.name });
+              });
+            });
+          }, Promise.resolve());
+        })
+        .then(function(){
+          okRgFor = {}; okMnd.kjop = {};
+          window.okonomiEtterSkriv();
+          okFrEndret = null;
+          okForVindu({ id:id });
+        })
+        .catch(function(e){ lagre.disabled = false; lagre.textContent = 'Før inn'; vis(e.message || 'Ble ikke ført inn'); });
+    });
+    feil.hidden = true;
+    document.getElementById('ok-fr-bak').hidden = false;
+    navn.focus();
+  }
   /* Rediger: navn, sum, kategori i tre ledd, merke, notat og vedleggene. Lagre lagrer alt unntatt vedleggene, som lagres med en gang. */
   function okFrRediger(p){
     var feil = document.getElementById('ok-fr-feil'); feil.hidden = true; feil.style.color = '';
@@ -4914,33 +5056,7 @@ button.ok-dr-rad{ cursor:pointer; }
     felt('Sum i kroner' + (p.belop > 0 ? ' (inn)' : ''), sum);
     if(delt) inn.appendChild(okEl('p', 'ok-meta', 'Kvitteringen er delt på flere kategorier – summen og kategorien endres i kvitteringen.'));
     else if(p.overstyrt && p.bankBelop != null) inn.appendChild(okEl('p', 'ok-meta', okVask((p.konto ? 'Banken viser ' : 'Opprinnelig ') + okFrKr(p.bankBelop) + '. Skriv den inn igjen for å fjerne endringen.')));
-    /* Kategorien i tre ledd: gruppe, post og linje. */
-    var kats = (okKategorier && okKategorier.length ? okKategorier : okBu.kategorier).slice();
-    var d0 = String(p.kategori || '').split(' · ');
-    var kw = okEl('div', 'ok-fr-felt'); kw.appendChild(okEl('span', 'ok-etikett', 'Kategori'));
-    var kr3 = okEl('div', 'ok-fr-kat'); kw.appendChild(kr3); inn.appendChild(kw);
-    var sg = document.createElement('select'), sp = document.createElement('select'), sl = document.createElement('select');
-    sg.setAttribute('aria-label', 'Gruppe'); sp.setAttribute('aria-label', 'Post'); sl.setAttribute('aria-label', 'Linje');
-    [sg, sp, sl].forEach(function(s){ s.disabled = delt; kr3.appendChild(s); });
-    var grupper = [];
-    kats.forEach(function(k){ var g = k.split(' · ')[0]; if(grupper.indexOf(g) === -1) grupper.push(g); });
-    grupper.forEach(function(g){ sg.appendChild(new Option(g, g)); });
-    var fyllPoster = function(post){
-      sp.innerHTML = '';
-      kats.filter(function(k){ var d = k.split(' · '); return d.length === 2 && d[0] === sg.value; }).forEach(function(k){ sp.appendChild(new Option(k.split(' · ')[1], k)); });
-      if(post) sp.value = post;
-    };
-    var fyllLinjer = function(linje){
-      sl.innerHTML = ''; sl.appendChild(new Option('Ingen linje', ''));
-      kats.filter(function(k){ return k.indexOf(sp.value + ' · ') === 0; }).forEach(function(k){ sl.appendChild(new Option(k.split(' · ')[2], k)); });
-      sl.value = linje || ''; sl.disabled = delt || sl.options.length < 2;
-    };
-    sg.value = d0[0] || grupper[0] || '';
-    fyllPoster(d0.length >= 2 ? d0[0] + ' · ' + d0[1] : '');
-    fyllLinjer(d0.length === 3 ? p.kategori : '');
-    sg.addEventListener('change', function(){ fyllPoster(''); fyllLinjer(''); });
-    sp.addEventListener('change', function(){ fyllLinjer(''); });
-    var nyKat = function(){ return sl.value || sp.value || ''; };
+    var nyKat = okFrKatVelger(inn, p.kategori, delt);
     /* Merket paa foeringen; tomt arver kategoriens. */
     var sm = document.createElement('select');
     var arvNavn = function(){ var a = okBuMerke(nyKat()); return a ? okMerkeFullNavn(a) : ''; };
@@ -5265,7 +5381,9 @@ button.ok-dr-rad{ cursor:pointer; }
         b.replaceWith(rad);
         var f0 = rad.querySelector('button'); if(f0) f0.focus();
       });
-      if(d.length === 2) punkt('Ny linje under …', function(b){
+      /* I Regnskap: foer inn en utgift her, i stedet for ny linje (8. november 2026). */
+      if(hvor === 'regnskap') punkt('Før inn ny utgift …', function(){ okBuMenyLukk(); okForNy(k); });
+      else if(d.length === 2) punkt('Ny linje under …', function(b){
         felt(b, 'Navn på linjen', '', function(s){ var v = String(s || '').trim(); if(!v) return; post({ hva:'kategori-ny', nye:[{ forelder:k, navn:v }] }).then(function(r){ if(r.ok){ okBlApen[k] = true; okBlAlle[k.split(' · ')[0]] = true; } ferdig(r); }); });
       });
       if(egen && !harLinjer) punkt('Slett «' + d[d.length - 1] + '»', function(b){
