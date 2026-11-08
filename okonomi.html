@@ -264,6 +264,16 @@ input.ok-regnefeil{ border-color:var(--danger) !important; }
 .ok-meny-mnder button[aria-pressed="true"]{ background:var(--aksent); border-color:var(--aksent); color:#fff; }
 .ok-meny select{ margin:4px 6px; font-family:inherit; font-size:16px; padding:6px 8px; border:1.5px solid var(--aksent); border-radius:8px; background:#fff; color:var(--ink); }
 .ok-meny-info{ padding:4px 10px; font-size:var(--t-meta); color:var(--danger); }
+/* Regnskap: foeringene under posten (8. november 2026). */
+.ok-rg-inn{ display:flex; flex-direction:column; gap:8px; padding-left:18px; border-left:2px solid var(--line); margin-left:4px; }
+.ok-rg-for{ cursor:pointer; border-radius:8px; }
+.ok-rg-for:hover, .ok-rg-for:focus-visible{ background:var(--boks-mild); box-shadow:0 0 0 6px var(--boks-mild); outline:none; }
+.ok-rg-for .ok-dato{ display:inline-block; min-width:52px; color:var(--ink-soft); font-size:var(--t-meta); }
+.ok-rg-for .ok-meta{ display:block; }
+.ok-rg-for.forfaller{ cursor:default; }
+.ok-rg-for.forfaller:hover{ background:none; box-shadow:none; }
+#ok-fr-innhold{ display:flex; flex-direction:column; gap:10px; }
+#ok-fr-innhold select{ width:100%; font-family:inherit; font-size:16px; padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
 .ok-meny-hint{ padding:6px 10px 2px; font-size:var(--t-etikett); color:var(--ink-soft); border-top:1px solid var(--line); margin-top:4px; }
 .ok-std-utvid{ font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; display:inline-flex; align-items:baseline; gap:6px; text-align:left; }
 .ok-std-utvid:hover{ color:var(--aksent); }
@@ -926,6 +936,7 @@ button.ok-dr-rad{ cursor:pointer; }
     <!-- Én spalte som Budsjett; kjøpene bak en post åpnes i en dialog (8. november 2026). -->
     <section class="ok-kort">
       <div class="ok-kort-hode"><h2>Brukt per post</h2></div>
+      <p class="ok-meta">Trykk en post for linjene og føringene, og en føring for detaljene. Høyreklikk – eller hold fingeren – for å endre.</p>
       <div id="ok-rg-tabell"><p class="ok-meta">Henter …</p></div>
     </section>
   </div>
@@ -1102,6 +1113,20 @@ button.ok-dr-rad{ cursor:pointer; }
     <div class="ok-kv-total" id="ok-kb-total"></div>
     <div id="ok-kb-liste"></div>
     <div class="dlg-rad"><button type="button" class="dlg-knapp nei" id="ok-kb-lukk">Lukk</button></div>
+  </div>
+</div>
+<!-- Én føring i Regnskap: detaljene, kategorien og valgene (8. november
+     2026). Står foran kvitteringen, så en kvittering åpnet herfra legger
+     seg over. -->
+<div class="dlg-bak" id="ok-fr-bak" hidden>
+  <div class="dlg-kort ok-kv-kort" role="dialog" aria-modal="true" aria-labelledby="ok-fr-tittel">
+    <div class="ok-kort-hode">
+      <div><span class="ok-etikett" id="ok-fr-kilde"></span><h2 id="ok-fr-tittel"></h2><p class="ok-meta" id="ok-fr-meta"></p></div>
+    </div>
+    <div class="ok-kv-total" id="ok-fr-belop"></div>
+    <div id="ok-fr-innhold"></div>
+    <p class="ok-meny-info" id="ok-fr-feil" hidden></p>
+    <div class="dlg-rad"><button type="button" class="dlg-knapp nei" id="ok-fr-lukk">Lukk</button></div>
   </div>
 </div>
 <div class="dlg-bak" id="ok-kv-bak" hidden>
@@ -4644,32 +4669,235 @@ button.ok-dr-rad{ cursor:pointer; }
       [c.paagaar || c.fram || !c.enMnd ? 'Overskudd hittil' : 'Overskudd', (c.restFf >= 0 ? '+' : '−') + kr(Math.abs(c.restFf)), c.restFf >= 0 ? 'pluss' : 'minus',
         c.ffUt + c.ffSpar ? 'betalt så langt ' + (c.rest >= 0 ? '+' : '−') + kr(Math.abs(c.rest)) : '']]);
     okMndMerker(c.reg, c.mb, { boks:'ok-rg-merker', fold:'rg-merker', hva:'brukt' });
+    /* Samme liste som Budsjett (Magne, 8. november 2026: «samme
+       kategorier og underkategorier på regnskap og budsjett»): gruppene kan
+       aapnes, en post viser linjene og foeringene, en linje sine foeringer.
+       Trykk en foering for detaljene; hoeyreklikk (eller hold fingeren) paa
+       en kategori eller foering for aa endre. */
     var boks = document.getElementById('ok-rg-tabell'); boks.innerHTML = '';
     var noe = false;
+    okRgC = c;
     okMndGrupper(c.poster).forEach(function(g){
       var gp = c.poster.filter(function(k){ return c.gruppe(k) === g; });
       var f = gp.reduce(function(s, k){ return s + c.faktisk(k); }, 0), ff = gp.reduce(function(s, k){ return s + c.forfaller(k); }, 0);
-      if(!f && !ff) return;
+      if(!f && !ff && !okRgAlle[g]) return;
       noe = true;
       var d = okMndGruppeLinje(g, kr(f + ff), ff ? 'Herav forfaller ' + kr(ff) : '');
+      d.querySelector('summary').dataset.k = g;
       var ur = okEl('div', 'ok-under-rader');
       gp.forEach(function(k){
         var uf = c.faktisk(k), uff = c.forfaller(k);
-        if(!uf && !uff) return;
-        var rad = okEl('div', 'ok-under-rad');
-        rad.appendChild(okEl('span', '', okVask(k.split(' · ')[1])));
-        rad.appendChild(okEl('b', '', okVask(kr(uf + uff))));
-        if(uff){ var fm = okEl('span', 'ok-meta', 'Forfaller ' + okVask(kr(uff)) + ' (' + okVask(c.ffDatoer(k)) + ') – telles når trekket kommer fra banken'); fm.style.gridColumn = '1 / -1'; rad.appendChild(fm); }
-        okMndKjopKnapp(c, k, rad, true);
-        ur.appendChild(rad);
+        if(!uf && !uff && !okRgAlle[g]) return;
+        ur.appendChild(okRgRad(c, k, uf + uff));
+        ur.appendChild(okRgInnBoks(c, k));
       });
       d.appendChild(ur);
       boks.appendChild(d);
     });
     if(!noe) boks.appendChild(okEl('p', 'ok-meta', 'Ingenting er ført i perioden ennå.'));
   }
+  var okRgC = null, okRgApen = {}, okRgAlle = {}, okRgFor = {};
+  /* En post eller linje: navn, sum og pil. Trykk aapner det som ligger under. */
+  function okRgRad(c, k, sum){
+    var rad = okEl('div', 'ok-under-rad ok-bl-rad'); rad.dataset.k = k;
+    rad.appendChild(okEl('span', '', '<span class="ok-bl-pil" aria-hidden="true">›</span>' + okVask(k.split(' · ').slice(1).pop())));
+    rad.appendChild(okEl('b', '', sum ? okVask(c.kr(sum)) : '<span class="ok-bl-tom">–</span>'));
+    rad.setAttribute('role', 'button'); rad.tabIndex = 0; rad.setAttribute('aria-expanded', String(!!okRgApen[k]));
+    var veksle = function(){
+      okRgApen[k] = !okRgApen[k];
+      rad.setAttribute('aria-expanded', String(!!okRgApen[k]));
+      var inn = rad.nextElementSibling;
+      if(inn && inn.classList.contains('ok-rg-inn')){ inn.hidden = !okRgApen[k]; if(okRgApen[k] && !inn.dataset.fylt) okRgFyll(c, k, inn); }
+    };
+    rad.addEventListener('click', veksle);
+    rad.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); veksle(); } });
+    return rad;
+  }
+  function okRgInnBoks(c, k){
+    var inn = okEl('div', 'ok-rg-inn'); inn.hidden = !okRgApen[k];
+    if(okRgApen[k]) okRgFyll(c, k, inn);
+    return inn;
+  }
+  /* Det som ligger under en post: linjene (med sine foeringer), saa
+     foeringene paa posten selv og regningene som forfaller. */
+  function okRgFyll(c, k, inn){
+    inn.dataset.fylt = '1'; inn.innerHTML = '';
+    var post = k.split(' · ').length === 2, lin = post ? okBuLinjer(k) : [];
+    lin.forEach(function(l){
+      var s = (c.reg[l] || 0) + okMnd.forfall.reduce(function(t, f){ return t + (c.ms.indexOf(f.mnd) !== -1 && f.kategori === l ? f.belop : 0); }, 0);
+      if(!s && !okRgAlle[k.split(' · ')[0]]) return;
+      inn.appendChild(okRgRad(c, l, s));
+      inn.appendChild(okRgInnBoks(c, l));
+    });
+    var ffListe = okMnd.forfall.filter(function(f){ return c.ms.indexOf(f.mnd) !== -1 && f.kategori === k; });
+    ffListe.forEach(function(f){
+      var rf = okEl('div', 'ok-under-rad ok-rg-for forfaller',
+        '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.motpart || 'Faktura') + '<span class="ok-meta">Forfaller – ikke betalt ennå</span></span><b>' + okKr0.format(f.belop) + '</b>');
+      if(f.harFil) rf.firstChild.appendChild(okFilLenke(f));
+      inn.appendChild(rf);
+    });
+    var vent = okEl('p', 'ok-meta', 'Henter føringene …'); inn.appendChild(vent);
+    okRgForinger(c.ms, k, lin.length > 0).then(function(r){
+      vent.remove();
+      if(!r.ok){ inn.appendChild(okEl('p', 'ok-melding feil', okVask(r.feil))); return; }
+      if(!r.foringer.length && !ffListe.length && !lin.length) inn.appendChild(okEl('p', 'ok-meta', 'Ingen føringer i perioden.'));
+      r.foringer.forEach(function(f){ inn.appendChild(okRgForRad(f)); });
+    });
+  }
+  function okRgForinger(ms, k, eksakt){
+    var nk = ms.join(',') + '|' + k + '|' + (eksakt ? 1 : 0);
+    if(okRgFor[nk]) return Promise.resolve(okRgFor[nk]);
+    return Promise.all(ms.map(function(mm){ return okHent('/api/bank?hva=foringer&mnd=' + encodeURIComponent(mm) + '&kategori=' + encodeURIComponent(k) + (eksakt ? '&eksakt=1' : '')); })).then(function(svar){
+      var feil = svar.filter(function(x){ return !x.ok; })[0];
+      var r = feil || { ok:true, foringer:[].concat.apply([], svar.map(function(x){ return x.foringer || []; })).sort(function(a, b){ return String(b.dato).localeCompare(String(a.dato)); }) };
+      if(r.ok) okRgFor[nk] = r;
+      return r;
+    });
+  }
+  /* En foering: dato, sted og kilde, beloep. Trykk aapner vinduet. */
+  var okRgForAv = {};
+  function okRgForRad(f){
+    okRgForAv[f.id] = f;
+    var meta = [f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''), f.del ? 'del av kvitteringen' : '', f.mer].filter(Boolean).join(' · ');
+    var rad = okEl('div', 'ok-under-rad ok-rg-for',
+      '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.tekst || 'Uten tekst') + '<span class="ok-meta">' + okVask(meta) + '</span></span><b>' + okKr0.format(f.belop) + '</b>');
+    rad.dataset.f = f.id; rad.tabIndex = 0; rad.setAttribute('role', 'button');
+    rad.setAttribute('aria-label', (f.tekst || 'Føring') + ', ' + okKort.format(new Date(f.dato)) + ', ' + okKr0.format(f.belop) + ' kr. Trykk for detaljene.');
+    rad.addEventListener('click', function(){ okForVindu(f, rad); });
+    rad.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); okForVindu(f, rad); } });
+    return rad;
+  }
 
-  /* ---------- Budsjett: lista for perioden (8. november 2026) ----------
+  /* ---------- Én foering: vinduet og menyen (8. november 2026) ----------
+     Magne: «når man trykker på en føring kommer det opp en egen popup med
+     evt detaljer, kategori og valg». Endringene er de samme som Neam kan
+     gjoere (endre_okonomi_foringer): ny kategori (godkjenn), stryk, eller
+     tilbake til innboksen (angre). En delt kvittering endres i kvitteringen. */
+  function okForEndre(kropp, feilBoks){
+    return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(kropp) }).then(function(s){
+      if(!s.ok){ if(feilBoks){ feilBoks.textContent = 'Ble ikke lagret: ' + s.feil; feilBoks.hidden = false; } return s; }
+      okRgFor = {}; okMnd.kjop = {};
+      window.okonomiEtterSkriv();
+      return s;
+    });
+  }
+  var okFrFra = null;
+  function okForVindu(f, fra){
+    okFrFra = fra || null;
+    var feil = document.getElementById('ok-fr-feil'); feil.hidden = true;
+    document.getElementById('ok-fr-kilde').textContent = f.kilde || 'Føring';
+    document.getElementById('ok-fr-tittel').textContent = f.tekst || 'Uten tekst';
+    document.getElementById('ok-fr-meta').textContent = [okDato.format(new Date(f.dato)), f.mer, f.betaltFra ? 'betalt fra ' + f.betaltFra : ''].filter(Boolean).join(' · ');
+    document.getElementById('ok-fr-belop').textContent = okKr0.format(f.belop) + ' kr';
+    var inn = document.getElementById('ok-fr-innhold'); inn.innerHTML = '';
+    var lab = okEl('label', 'ok-etikett', 'Kategori'); lab.htmlFor = 'ok-fr-kat';
+    inn.appendChild(lab);
+    if(f.del){
+      inn.appendChild(okEl('p', 'ok-meta', okVask(okNeamKat(f.kategori)) + ' – kvitteringen er delt på flere kategorier. Endre fordelingen i kvitteringen.'));
+    } else {
+      var s = okKatVelg('ok-fr-kat', f.kategori, null, 'Kategori for ' + (f.tekst || 'føringen'));
+      s.addEventListener('change', function(){
+        s.disabled = true;
+        okForEndre({ hva:'godkjenn', godkjenn:[{ id:f.id, kategori:s.value }], strok:[] }, feil).then(function(r){
+          s.disabled = false;
+          if(r.ok){ f.kategori = s.value; feil.textContent = 'Flyttet til ' + okNeamKat(s.value) + '.'; feil.style.color = 'var(--handling-ny)'; feil.hidden = false; }
+        });
+      });
+      inn.appendChild(s);
+    }
+    var knapper = okEl('div', 'ok-rad-knapper');
+    if(f.harKvittering){
+      var kv = okEl('button', 'ok-lenke', 'Se kvittering ›'); kv.type = 'button';
+      kv.addEventListener('click', function(){ okVisKvittering({ id:f.id, tittel:f.tekst, dato:f.dato, kilde:f.kilde, belop:-f.belop, harFil:f.harFil, filType:f.filType }, kv); });
+      knapper.appendChild(kv);
+    } else if(f.harFil) knapper.appendChild(okFilLenke(f));
+    var stryk = okEl('button', 'btn btn-ghost ok-smal', 'Stryk – føres ikke'); stryk.type = 'button';
+    stryk.addEventListener('click', function(){ stryk.disabled = true; okForEndre({ hva:'godkjenn', godkjenn:[], strok:[f.id] }, feil).then(function(r){ if(r.ok) okLukkFor(); else stryk.disabled = false; }); });
+    knapper.appendChild(stryk);
+    var tilbake = okEl('button', 'btn btn-ghost ok-smal', 'Send tilbake til innboksen'); tilbake.type = 'button';
+    tilbake.addEventListener('click', function(){ tilbake.disabled = true; okForEndre({ hva:'angre', ider:[f.id] }, feil).then(function(r){ if(r.ok) okLukkFor(); else tilbake.disabled = false; }); });
+    knapper.appendChild(tilbake);
+    inn.appendChild(knapper);
+    feil.style.color = '';
+    document.getElementById('ok-fr-bak').hidden = false;
+    document.getElementById('ok-fr-lukk').focus();
+  }
+  function okLukkFor(){
+    document.getElementById('ok-fr-bak').hidden = true;
+    if(okFrFra && document.body.contains(okFrFra)) okFrFra.focus();
+    okFrFra = null;
+  }
+  document.getElementById('ok-fr-lukk').addEventListener('click', okLukkFor);
+  document.getElementById('ok-fr-bak').addEventListener('click', function(e){ if(e.target === this) okLukkFor(); });
+  /* Escape: kvitteringen foerst naar den ligger over (filviseren fanges for seg). */
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Escape' || document.getElementById('ok-fr-bak').hidden || !document.getElementById('ok-kv-bak').hidden) return;
+    okLukkFor();
+  }, true);
+  /* Menyen paa en foering: det samme som vinduet, i kortform. */
+  function okForMeny(f, x, y){
+    okBuMenyLukk();
+    var meny = okEl('div', 'ok-meny'); meny.setAttribute('role', 'menu'); meny.setAttribute('aria-label', 'Valg for ' + (f.tekst || 'føringen'));
+    meny.appendChild(okEl('span', 'ok-etikett', okVask((f.tekst || 'Føring') + ' · ' + okKr0.format(f.belop) + ' kr')));
+    var info = okEl('p', 'ok-meny-info', ''); info.hidden = true;
+    var punkt = function(tekst, gjor, kl){
+      var b = okEl('button', 'ok-meny-valg' + (kl ? ' ' + kl : ''), okVask(tekst)); b.type = 'button'; b.setAttribute('role', 'menuitem');
+      b.addEventListener('click', function(e){ e.stopPropagation(); gjor(b); });
+      meny.appendChild(b); return b;
+    };
+    var ferdig = function(r){ if(r && r.ok) okBuMenyLukk(); };
+    punkt('Åpne', function(){ okBuMenyLukk(); okForVindu(f); });
+    if(!f.del) punkt('Endre kategori …', function(b){
+      var s = okKatVelg('ok-fm-kat', f.kategori, null, 'Ny kategori for ' + (f.tekst || 'føringen'));
+      b.replaceWith(s); s.focus();
+      s.addEventListener('change', function(){ okForEndre({ hva:'godkjenn', godkjenn:[{ id:f.id, kategori:s.value }], strok:[] }, info).then(ferdig); });
+    });
+    if(f.harKvittering) punkt('Se kvittering', function(){ okBuMenyLukk(); okVisKvittering({ id:f.id, tittel:f.tekst, dato:f.dato, kilde:f.kilde, belop:-f.belop, harFil:f.harFil, filType:f.filType }); });
+    if(f.harFil) punkt(f.filType === 'application/pdf' ? 'Åpne PDF-en' : 'Åpne bildet', function(){ okBuMenyLukk(); okVisFil(f); });
+    punkt('Stryk – føres ikke', function(){ okForEndre({ hva:'godkjenn', godkjenn:[], strok:[f.id] }, info).then(ferdig); });
+    punkt('Send tilbake til innboksen', function(){ okForEndre({ hva:'angre', ider:[f.id] }, info).then(ferdig); });
+    meny.appendChild(info);
+    meny.appendChild(okEl('span', 'ok-meny-hint', 'Shift + høyreklikk: vanlig meny'));
+    document.body.appendChild(meny);
+    var w = meny.offsetWidth, h = meny.offsetHeight;
+    meny.style.left = Math.max(8, Math.min(x, innerWidth - w - 8)) + 'px';
+    meny.style.top = Math.max(8, Math.min(y, innerHeight - h - 8)) + 'px';
+    okBuMenyBoks = meny;
+    var f0 = meny.querySelector('.ok-meny-valg'); if(f0) f0.focus();
+  }
+  /* Hoeyreklikk i Regnskap-lista: en kategori faar budsjettlistas meny, en foering sin egen. Hold fingeren paa telefon. */
+  (function(){
+    var boks = document.getElementById('ok-rg-tabell');
+    if(!boks) return;
+    var aapne = function(el, x, y){
+      if(el.dataset.f){ var f = okRgForAv[el.dataset.f]; if(f) okForMeny(f, x, y); }
+      else okBlMeny(el.dataset.k, x, y, 'regnskap');
+    };
+    boks.addEventListener('contextmenu', function(e){
+      if(e.shiftKey) return;
+      var el = e.target.closest('[data-f], [data-k]');
+      if(!el) return;
+      e.preventDefault();
+      var x = e.clientX, y = e.clientY;
+      if(!x && !y){ var b = el.getBoundingClientRect(); x = b.left + 40; y = b.bottom; }
+      aapne(el, x, y);
+    });
+    var tid = null, start = null, aapnet = false;
+    boks.addEventListener('touchstart', function(e){
+      var el = e.target.closest('[data-f], [data-k]');
+      if(!el || e.touches.length !== 1) return;
+      start = { x:e.touches[0].clientX, y:e.touches[0].clientY }; aapnet = false;
+      tid = setTimeout(function(){ aapnet = true; aapne(el, start.x, start.y); }, 550);
+    }, { passive:true });
+    boks.addEventListener('touchmove', function(e){
+      if(!tid || !start) return;
+      var t0 = e.touches[0];
+      if(Math.abs(t0.clientX - start.x) > 10 || Math.abs(t0.clientY - start.y) > 10){ clearTimeout(tid); tid = null; }
+    }, { passive:true });
+    boks.addEventListener('touchend', function(e){ clearTimeout(tid); tid = null; if(aapnet){ e.preventDefault(); aapnet = false; } });
+  })();
+
+  /* ---------- Budsjett: lista for perioden (8. november 2026) ----------  /* ---------- Budsjett: lista for perioden (8. november 2026) ----------
      Samme plassering som Regnskap og Resultat. Rediger aapner maanedens
      skjema (det samme som foer); Lagre eller Avbryt gaar tilbake hit. */
   function okBuListeTegn(c){
@@ -4751,7 +4979,7 @@ button.ok-dr-rad{ cursor:pointer; }
      telefon. Alt lagres med en gang. Beloepet i en maaned endres i
      maanedens budsjett (og maaneden maa vaere startet); standarden kan
      endres fra samme meny. */
-  function okBlMeny(k, x, y){
+  function okBlMeny(k, x, y, hvor){
     okBuMenyLukk();
     var m = okMnd.valgt, enMnd = okMnd.periode === 'mnd', startet = !!okBu.maaneder[m];
     var d = k.split(' · '), gruppe = d.length === 1, navn = gruppe ? k : d.slice(1).join(' › ');
@@ -4849,12 +5077,14 @@ button.ok-dr-rad{ cursor:pointer; }
       }, 'fare');
     } else {
       skille('Gruppen');
-      punkt(okBlAlle[k] ? 'Skjul poster uten budsjett' : 'Vis poster uten budsjett', function(){ okBlAlle[k] = !okBlAlle[k]; okBuMenyLukk(); okMndTegn(); });
+      if(hvor === 'regnskap') punkt(okRgAlle[k] ? 'Skjul poster uten føringer' : 'Vis poster uten føringer', function(){ okRgAlle[k] = !okRgAlle[k]; okBuMenyLukk(); okMndTegn(); });
+      else punkt(okBlAlle[k] ? 'Skjul poster uten budsjett' : 'Vis poster uten budsjett', function(){ okBlAlle[k] = !okBlAlle[k]; okBuMenyLukk(); okMndTegn(); });
       punkt('Ny post i ' + k + ' …', function(b){
         felt(b, 'Navn på posten', '', function(s){ var v = String(s || '').trim(); if(!v) return; post({ hva:'kategori-ny', nye:[{ forelder:k, navn:v }] }).then(function(r){ if(r.ok) okBlAlle[k] = true; ferdig(r); }); });
       });
     }
-    if(enMnd){
+    /* Maanedens budsjett hoerer til Budsjett - ikke i menyen i Regnskap. */
+    if(enMnd && hvor !== 'regnskap'){
       skille(mndOrd.charAt(0).toUpperCase() + mndOrd.slice(1));
       if(!startet && gruppe) punkt('Start budsjett for ' + mndOrd, function(){ lagreMnd({}); });
       if(startet) punkt('Kopier standardbudsjettet hit', function(){
