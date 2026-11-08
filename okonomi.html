@@ -515,6 +515,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-al-valg .ok-flervalg > summary{ padding-left:10px; }
 .ok-al-valg .ok-flervalg-liste{ right:auto; min-width:max(100%, 240px); }
 .ok-al-hoved{ font-weight:700; }
+/* Forfalt og ikke betalt (8. november 2026): roedt utropstegn, --danger. */
+.ok-fr-utrop.forfalt{ background:var(--danger); }
+.ok-bl-rad .ok-fr-utrop.forfalt{ margin:0 0 0 6px; }
 .ok-al-under{ padding-left:30px; }
 .ok-al-datoer{ display:flex; gap:10px; align-items:center; flex:1 1 300px; max-width:420px; min-width:0; }
 .ok-al-datoer .ok-al-dato{ flex:1 1 0; min-width:0; }
@@ -944,6 +947,14 @@ button.ok-dr-rad{ cursor:pointer; }
       <div class="ok-ib-liste">
       <!-- Bare nye foeringer som maa kontrolleres (8. november 2026). -->
       <section class="ok-kort ok-fold-gruppe">
+      <!-- Forfalte regninger som ikke er funnet paa regningskontoen (8. november 2026). -->
+      <div class="ok-fold" data-fold="ib-forfalt" data-apen="ja" id="ok-forfalt-kort" hidden>
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Forfalte regninger</span><span class="ok-fold-sum" id="ok-forfalt-meta"></span></button>
+        <div class="ok-fold-innhold">
+          <p class="ok-meta">Forfallsdatoen er passert, og trekket er ikke funnet på regningskontoen. Trykk for detaljene. Er den betalt fra en annen konto, velg «Legg i innboksen».</p>
+          <div class="ok-al-liste" id="ok-forfalt"></div>
+        </div>
+      </div>
       <div class="ok-fold" data-fold="ib-tvil" data-apen="ja" id="ok-ib-tvil-kort" hidden>
         <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Trenger et valg</span><span class="ok-fold-sum" id="ok-ib-tvil-meta"></span></button>
         <div class="ok-fold-innhold">
@@ -954,6 +965,15 @@ button.ok-dr-rad{ cursor:pointer; }
         <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Klare til godkjenning</span><span class="ok-fold-sum" id="ok-ib-sikre-meta"></span></button>
         <div class="ok-fold-innhold">
           <div id="ok-ib-sikre"></div>
+        </div>
+      </div>
+      <!-- Fakturaer fra Dropbox uten kategori (8. november 2026): kategorien
+           velges her, saa staar fakturaen i Regnskap som «forfaller». -->
+      <div class="ok-fold" data-fold="ib-faktura" data-apen="ja" id="ok-faktura-kort" hidden>
+        <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Fakturaer uten kategori</span><span class="ok-fold-sum" id="ok-faktura-meta"></span></button>
+        <div class="ok-fold-innhold">
+          <p class="ok-meta">Velg kategori, så står fakturaen i Regnskap som «forfaller» til trekket kommer fra banken. Da legges PDF-en ved trekket, og trekket føres på samme kategori.</p>
+          <div id="ok-faktura"></div>
         </div>
       </div>
       </section>
@@ -1537,7 +1557,10 @@ button.ok-dr-rad{ cursor:pointer; }
       });
       document.getElementById('ok-innboks-meta').textContent = 'Fra ' + okKort.format(new Date(r.fra)) + ' · hentet kl. '
         + okKlokke.format(new Date(r.hentet)) + (r.advarsel ? ' · ' + r.advarsel + ' – viser forrige henting' : '');
+      okForfalte = (r.fakturaer || []).filter(function(p){ return okForfalt(p.dato); });
+      okFakUten = (r.fakturaer || []).filter(function(p){ return !p.kategori && !okForfalt(p.dato); });
       okTegnInnboks();
+      okTegnFakturaer();
       if(okAl.poster) okAlLast();
       /* Innboksen kan ha foert poster automatisk - varslene og Status
          hentes paa nytt, ellers viser de tall fra foer foeringen. */
@@ -1594,8 +1617,61 @@ button.ok-dr-rad{ cursor:pointer; }
     boks.appendChild(alle);
   }
 
+  /* Fakturaer fra Dropbox uten kategori: i innboksen til kategorien er valgt (8. november 2026). */
+  var okFakUten = [];
+  /* Forfalt og ikke betalt (Magne, 8. november 2026: «Dette er en regning
+     som har forfalt men ikke blitt betalt. dette kan sjekkes ved å se på
+     regningskontoen. kan man lage en kryssreferanse og også her sette på et
+     rødt utropstegn der føringen har en linje. samt legge en advarsel på
+     innboks»). Krysskontrollen gjoer synkFakturaer paa serveren hver gang
+     banken hentes: finnes trekket paa regningskontoen, flyttes fakturaen
+     dit. Venter den fortsatt etter forfallsdatoen, er den ikke betalt derfra. */
+  var okForfalte = [];
+  function okIDag(){ var d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+  function okForfalt(dato){ return !!dato && String(dato).slice(0, 10) < okIDag(); }
+  function okUtropForfalt(){ return '<span class="ok-fr-utrop forfalt" title="Forfalt – ikke funnet på regningskontoen">!</span>'; }
+  /* Har en kategori (post eller linje) en forfalt regning i perioden? */
+  function okForfaltI(c, k){
+    return okMnd.forfall.some(function(f){ return c.ms.indexOf(f.mnd) !== -1 && okForfalt(f.dato) && (f.kategori === k || String(f.kategori).indexOf(k + ' · ') === 0); });
+  }
+  function okInnboksAntall(){ return okPoster.length + (okFakUten ? okFakUten.length : 0) + (okForfalte ? okForfalte.length : 0); }
+  function okTegnForfalte(){
+    var kort = document.getElementById('ok-forfalt-kort'), boks = document.getElementById('ok-forfalt');
+    kort.hidden = !okForfalte.length;
+    boks.innerHTML = '';
+    if(!okForfalte.length) return;
+    okFoldSett(kort, okForfalte.length + (okForfalte.length === 1 ? ' regning · ' : ' regninger · ')
+      + okKr0.format(okForfalte.reduce(function(s, p){ return s + Math.abs(p.belop); }, 0)) + ' kr', 'stopp', '');
+    okForfalte.forEach(function(p){ boks.appendChild(okRgForRad(okPostTilFor(p), true)); });
+  }
+  function okTegnFakturaer(){
+    var kort = document.getElementById('ok-faktura-kort'), boks = document.getElementById('ok-faktura');
+    okTegnForfalte();
+    okFaneTall(okInnboksAntall());
+    kort.hidden = !okFakUten.length;
+    boks.innerHTML = '';
+    if(!okFakUten.length) return;
+    document.getElementById('ok-faktura-meta').textContent = okFakUten.length + (okFakUten.length === 1 ? ' faktura · ' : ' fakturaer · ')
+      + okKr0.format(okFakUten.reduce(function(s, p){ return s + Math.abs(p.belop); }, 0)) + ' kr';
+    okFakUten.forEach(function(p){
+      var rad = okEl('div', 'ok-kjop',
+        '<span class="ok-meta">' + okVask(okKort.format(new Date(p.dato))) + '</span>'
+        + '<span><span class="ok-navn">' + okVask(p.motpart || p.tekst || 'Faktura') + '</span><br><span class="ok-meta">Forfaller ' + okVask(okDato.format(new Date(p.dato))) + '</span></span>'
+        + '<b>' + okKr0.format(p.belop) + '</b>');
+      var ks = okKatVelg('ok-faktura-kat-' + String(p.id).replace(/[^\w]/g, ''), '', 'Velg kategori', 'Kategori for fakturaen fra ' + (p.motpart || ''));
+      ks.addEventListener('change', function(){
+        if(!ks.value) return;
+        ks.disabled = true;
+        okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'faktura-kategori', id:p.id, kategori:ks.value }) })
+          .then(function(s){ if(s.ok) window.okonomiEtterSkriv(); else ks.disabled = false; });
+      });
+      rad.appendChild(ks);
+      if(p.harFil) rad.appendChild(okFilLenke(p));
+      boks.appendChild(rad);
+    });
+  }
   function okTegnInnboks(beholdDetalj){
-    okFaneTall(okPoster.length);
+    okFaneTall(okInnboksAntall());
     var boks = document.getElementById('ok-innboks'), tk = document.getElementById('ok-ib-tvil'), sk = document.getElementById('ok-ib-sikre');
     boks.innerHTML = ''; tk.innerHTML = ''; sk.innerHTML = '';
     document.getElementById('ok-ib-tittel').innerHTML = okPoster.length + ' <small>' + (okPoster.length === 1 ? 'post venter' : 'poster venter') + '</small>';
@@ -3517,13 +3593,13 @@ button.ok-dr-rad{ cursor:pointer; }
      innhold og funksjonalitet»). Posten gjoeres om til foeringens form
      (som ?hva=foringer gir den), og kategorien og statusen staar i
      meta-linja - her er det ingen kategori over raden. */
-  function okAlRad(p){
-    var f = { id:p.id, dato:p.dato, belop:p.belop, kategori:p.kategori,
+  function okAlRad(p){ return okRgForRad(okPostTilFor(p), true); }
+  function okPostTilFor(p){
+    return { id:p.id, dato:p.dato, belop:p.belop, kategori:p.kategori,
       tekst:p.motpart || p.tekst || '', mer:p.motpart && p.tekst && p.tekst !== p.motpart ? p.tekst : '',
       kilde:p.status === 'venter' ? 'Faktura' : p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? 'Lagt inn for hånd' : 'Kvittering fra bilde') : (p.kontoNavn || ''),
       betaltFra:p.betaltFra, merke:p.merke, overstyrt:p.overstyrt, harKvittering:p.status !== 'venter' && p.harKvittering, harFil:p.harFil, filType:p.filType,
       status:p.status, venter:p.status === 'venter', deler:p.deler };
-    return okRgForRad(f, true);
   }
   ['ok-al-konto', 'ok-al-kat', 'ok-al-merke', 'ok-al-type'].forEach(function(id){
     var d = document.getElementById(id);
@@ -4788,7 +4864,7 @@ button.ok-dr-rad{ cursor:pointer; }
   /* modus 'rs' (Resultat): tre kolonner - budsjett, regnskap og avvik. */
   function okRgRad(c, k, sum, modus){
     var rad = okEl('div', 'ok-under-rad ok-bl-rad'); rad.dataset.k = k;
-    rad.appendChild(okEl('span', '', '<span class="ok-bl-pil" aria-hidden="true">›</span>' + okVask(k.split(' · ').slice(1).pop())));
+    rad.appendChild(okEl('span', '', '<span class="ok-bl-pil" aria-hidden="true">›</span>' + okVask(k.split(' · ').slice(1).pop()) + (okForfaltI(c, k) ? okUtropForfalt() : '')));
     var vv = okRsVerdier(c, k);
     if(modus === 'rs') rad.insertAdjacentHTML('beforeend', okRsTall(c, vv.b, vv.r, vv.snu));
     else rad.appendChild(okEl('b', '', sum ? okVask(c.kr(sum)) : '<span class="ok-bl-tom">–</span>'));
@@ -4880,8 +4956,9 @@ button.ok-dr-rad{ cursor:pointer; }
          ønsker at alle transaksjoner åpner seg slik som kvitteringer gjør»). */
       var ff = { id:f.id, dato:f.dato, tekst:f.motpart || 'Faktura', belop:f.belop, kategori:f.kategori, harFil:f.harFil, filType:f.filType, kilde:'Faktura', venter:true };
       okRgForAv[f.id] = ff;
+      var ffo = okForfalt(f.dato);
       var rf = okEl('div', 'ok-under-rad ok-rg-for forfaller',
-        '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.motpart || 'Faktura') + '<span class="ok-meta">Forfaller – ikke betalt ennå' + (f.harFil ? ' · PDF vedlagt' : '') + '</span></span><b>' + okKr0.format(f.belop) + '</b>');
+        '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.motpart || 'Faktura') + '<span class="ok-meta">' + (ffo ? 'Forfalt – ikke funnet på regningskontoen' : 'Forfaller – ikke betalt ennå') + (f.harFil ? ' · PDF vedlagt' : '') + '</span></span><b>' + (ffo ? okUtropForfalt() : '') + okKr0.format(f.belop) + '</b>');
       rf.dataset.f = f.id; rf.tabIndex = 0; rf.setAttribute('role', 'button');
       rf.setAttribute('aria-label', (f.motpart || 'Faktura') + ', forfaller ' + okKort.format(new Date(f.dato)) + ', ' + okKr0.format(f.belop) + ' kr. Trykk for detaljene.');
       rf.addEventListener('click', function(){ okForVindu(ff, rf); });
@@ -4911,12 +4988,13 @@ button.ok-dr-rad{ cursor:pointer; }
   /* medKat: kontoutskriften - kategorien og statusen staar i meta-linja. */
   function okRgForRad(f, medKat){
     okRgForAv[f.id] = f;
-    var status = f.status === 'ny' ? 'venter i innboksen' : f.status === 'stroket' ? 'strøket' : f.venter ? 'forfaller – ikke betalt ennå' : '';
+    var forfalt = f.venter && okForfalt(f.dato);
+    var status = f.status === 'ny' ? 'venter i innboksen' : f.status === 'stroket' ? 'strøket' : forfalt ? 'forfalt – ikke funnet på regningskontoen' : f.venter ? 'forfaller – ikke betalt ennå' : '';
     var meta = [medKat ? f.kategori || 'Uten kategori' : '', f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''), f.del ? 'del av kvitteringen' : '', f.deler ? 'fordelt på ' + f.deler : '', f.mer, f.merke && okMerkeAv(f.merke) ? 'merke ' + okMerkeFullNavn(f.merke) : '', status].filter(Boolean).join(' · ');
     var rad = okEl('div', 'ok-under-rad ok-rg-for' + (f.status === 'stroket' ? ' ute' : '') + (f.venter ? ' forfaller' : ''),
-      '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.tekst || 'Uten tekst') + '<span class="ok-meta">' + okVask(meta) + '</span></span><b>' + (f.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret – ikke den banken viser">!</span>' : '') + okKr0.format(f.belop) + '</b>');
+      '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.tekst || 'Uten tekst') + '<span class="ok-meta">' + okVask(meta) + '</span></span><b>' + (forfalt ? okUtropForfalt() : '') + (f.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret – ikke den banken viser">!</span>' : '') + okKr0.format(f.belop) + '</b>');
     rad.dataset.f = f.id; rad.tabIndex = 0; rad.setAttribute('role', 'button');
-    rad.setAttribute('aria-label', (f.tekst || 'Føring') + ', ' + okKort.format(new Date(f.dato)) + ', ' + okKr0.format(f.belop) + ' kr. Trykk for detaljene.');
+    rad.setAttribute('aria-label', (f.tekst || 'Føring') + (forfalt ? ', forfalt og ikke betalt' : '') + ', ' + okKort.format(new Date(f.dato)) + ', ' + okKr0.format(f.belop) + ' kr. Trykk for detaljene.');
     rad.addEventListener('click', function(){ okForVindu(f, rad); });
     rad.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); okForVindu(f, rad); } });
     return rad;
@@ -4967,13 +5045,15 @@ button.ok-dr-rad{ cursor:pointer; }
     document.getElementById('ok-fr-kilde').textContent = okFrKilde(p);
     document.getElementById('ok-fr-tittel').textContent = p.motpart || p.tekst || 'Uten tekst';
     document.getElementById('ok-fr-meta').textContent = okDato.format(new Date(p.dato));
-    document.getElementById('ok-fr-belop').innerHTML = (p.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret">!</span>' : '') + okVask(okFrKr(p.belop));
+    var frForfalt = p.status === 'venter' && okForfalt(p.dato);
+    document.getElementById('ok-fr-belop').innerHTML = (frForfalt ? okUtropForfalt() : '') + (p.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret">!</span>' : '') + okVask(okFrKr(p.belop));
     var inn = document.getElementById('ok-fr-innhold'); inn.innerHTML = '';
     /* Infoen og kvitteringen til venstre, vedleggene til hoeyre (Magne, 8.
        november 2026: «Jeg ønsker å se vedlegg og kvitteringsdetaljer,
        sammen med den andre informasjonen»). */
     var to = okEl('div', 'ok-fr-to'), venstre = okEl('div', ''), hoyre = okEl('div', '');
     to.appendChild(venstre); to.appendChild(hoyre); inn.appendChild(to);
+    if(frForfalt) venstre.appendChild(okEl('p', 'ok-melding feil', '<b>Forfalt ' + okVask(okDato.format(new Date(p.dato))) + ' – ikke funnet på regningskontoen.</b> Er den betalt fra en annen konto, trykk «Legg i innboksen».'));
     if(p.overstyrt && p.bankBelop != null) venstre.appendChild(okEl('p', 'ok-mangler', '<span><b>Summen er endret.</b> ' + (p.konto ? 'Banken viser ' : 'Opprinnelig ') + okVask(okFrKr(p.bankBelop)) + '.</span>'));
     var dl = document.createElement('dl'); dl.className = 'ok-fr-info';
     var rad = function(navn, verdi){ if(!verdi) return; dl.appendChild(okEl('dt', '', okVask(navn))); dl.appendChild(okEl('dd', '', okVask(verdi))); };
@@ -5424,7 +5504,7 @@ button.ok-dr-rad{ cursor:pointer; }
     var f0 = meny.querySelector('.ok-meny-valg'); if(f0) f0.focus();
   }
   /* Hoeyreklikk i Regnskap-lista (og Resultat og Kontoutskrift): en kategori faar budsjettlistas meny, en foering sin egen. Hold fingeren paa telefon. */
-  [['ok-rg-tabell', 'regnskap'], ['ok-rs-liste', 'resultat'], ['ok-al-liste', 'kontoutskrift']].forEach(function(par){
+  [['ok-rg-tabell', 'regnskap'], ['ok-rs-liste', 'resultat'], ['ok-al-liste', 'kontoutskrift'], ['ok-forfalt', 'innboks']].forEach(function(par){
     var boks = document.getElementById(par[0]);
     if(!boks) return;
     var aapne = function(el, x, y){

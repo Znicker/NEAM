@@ -1154,11 +1154,23 @@ async function varsler(env, okt){
   const poster = await lesJson(env, POST_NOKKEL, {});
   const venter = Object.keys(poster).map(id => poster[id]).filter(p => p.status === 'ny' && !p.dekketAv);
   const uten = venter.filter(p => !p.kategori).length;
+  /* En faktura fra Dropbox uten kategori maa velges i innboksen - ellers
+     staar den ingen steder (Magne, 8. november 2026: «Jeg la til en regning
+     i dropbox. denne ble lagt direkte in uten godkjenning og nå ligger den
+     inne uten kategori»). */
+  /* Forfalt og ikke betalt: fakturaen venter fortsatt etter forfallsdatoen,
+     altsaa er trekket ikke funnet paa regningskontoen (synkFakturaer). */
+  const iDag = new Date().toISOString().slice(0, 10);
+  const ventende = Object.keys(poster).map(id => poster[id]).filter(p => p.status === 'venter' && p.faktura && !p.dekketAv);
+  const forfalt = ventende.filter(p => String(p.dato) < iDag).length;
+  const fakUten = ventende.filter(p => !p.kategori && String(p.dato) >= iDag).length;
   const tf = await lesJson(env, TRUMF_FEIL_NOKKEL, null);
   const sist = await lesJson(env, SIST_HENTET_NOKKEL, null);
   const ut = [];
-  if(venter.length) ut.push({ type:'innboks', tekst:venter.length + (venter.length === 1 ? ' post venter' : ' poster venter') + ' på godkjenning'
-    + (uten ? ', ' + uten + ' uten kategori' : '') });
+  if(venter.length || fakUten || forfalt) ut.push({ type:'innboks', tekst:[
+    forfalt ? forfalt + (forfalt === 1 ? ' regning har forfalt' : ' regninger har forfalt') + ' uten å være betalt' : '',
+    venter.length ? venter.length + (venter.length === 1 ? ' post venter' : ' poster venter') + ' på godkjenning' + (uten ? ', ' + uten + ' uten kategori' : '') : '',
+    fakUten ? fakUten + (fakUten === 1 ? ' faktura' : ' fakturaer') + ' uten kategori' : ''].filter(Boolean).join(' · ') });
   /* Til Status-kortet «Til godkjenning»: hvor sikker Neam er paa det som venter. */
   const innboks = {
     forslag: venter.filter(p => p.kategori && p.kilde !== 'ai-usikker' && !p.mulDobbel && !p.lignerPaa).length,
