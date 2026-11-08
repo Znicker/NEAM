@@ -94,6 +94,13 @@
 @media(max-height:640px){
   :root{ --tast-h:52px; --boble-plass:58px; --stykke:42px; }
 }
+/* Telefon med lite hoeyde (iPhone i Safari, ca. 660 px synlig): Neams
+   tommelknapper ligger fast nederst og dekket ⌫ og Svar. Robotfeltet
+   krymper, saa tastaturet ender over dem (Magne, 8. november 2026:
+   «Mindre robotfelt på lave skjermer»). Tastene beholder stoerrelsen. */
+@media(max-width:699px) and (max-height:760px){
+  :root{ --robot-h:62px; --lader-h:48px; --ror-h:12px; --lampe:10px; --boble-plass:50px; }
+}
 
 *{ box-sizing:border-box; }
 [hidden]{ display:none !important; }
@@ -1565,6 +1572,6 @@ sjekkRedaktor();
      apper, enheter og reset, men ingen stemme i spillet. -->
 <script>window.neamUtenSamtale = true;</script>
 <script src="/felles-hus.js?v=28"></script>
-<script src="/felles-neam.js?v=88"></script>
+<script src="/felles-neam.js?v=89"></script>
 </body>
 </html>

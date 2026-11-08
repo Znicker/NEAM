@@ -1691,23 +1691,11 @@ function neamSideIkonTilbake(){
   neamHoldIkon = null;
 }
 /* Et kort rykk. navigator.vibrate finnes paa Android, ikke i Safari paa
-   iPhone. Der er en avkrysning med `switch` den eneste veien til et rykk
-   (iOS 18 og nyere), og den virker ikke alltid utenfor et trykk. iPad har
-   ingen vibrasjon i det hele tatt. */
+   iPhone eller iPad. Forsoeket med en skjult `switch`-avkrysning for iOS
+   ga ingen rykk (Magne, 7. november 2026: «Ikke vibrasjon») og er tatt
+   bort 8. november. */
 function neamRykk(){
-  try{ if(navigator.vibrate){ navigator.vibrate(35); return; } }catch(e){}
-  try{
-    let l = document.getElementById('neamRykk');
-    if(!l){
-      l = document.createElement('label');
-      l.id = 'neamRykk';
-      l.setAttribute('aria-hidden', 'true');
-      l.style.cssText = 'position:fixed;left:-9999px;top:0;width:1px;height:1px;overflow:hidden';
-      l.innerHTML = '<input type="checkbox" switch tabindex="-1">';
-      document.body.appendChild(l);
-    }
-    l.click();
-  }catch(e){}
+  try{ if(navigator.vibrate) navigator.vibrate(35); }catch(e){}
 }
 window.addEventListener('click', function(ev){
   if(!neamHoldSvelg || !ev.target.closest || !ev.target.closest('#neamSideHandtak')) return;
