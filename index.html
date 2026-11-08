@@ -1264,10 +1264,15 @@ window.neamUtfor = async function(navn, arg){
         ikon.insertAdjacentHTML('beforeend', '<span class="ixok-prikk" style="position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:var(--danger);box-shadow:0 0 0 3px var(--paper)"></span>');
         document.getElementById('ixokFlis').setAttribute('aria-label', 'Økonomi – noe venter i innboksen');
       }
-      if(!v.varsler || !v.varsler.length) return;
+      /* Innboksen (forfalte regninger, fakturaer og poster som venter) staar
+         ikke i kortet lenger - den roede prikken paa flisen sier det
+         (Magne, 8. november 2026: «Fjern meldingen på index om status på
+         faktura»). Trumf, banken og DNB-samtykket staar fortsatt her. */
+      var vs = (v.varsler || []).filter(function(x){ return x.type !== 'innboks'; });
+      if(!vs.length) return;
       var k = document.getElementById('ixok-kort');
       k.innerHTML = '<span style="font-size:var(--t-etikett);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)">Økonomi</span>'
-        + v.varsler.map(function(x){ return '<div style="font-size:var(--t-brod);font-weight:600;margin-top:2px">' + vask(x.tekst) + '</div>'; }).join('');
+        + vs.map(function(x){ return '<div style="font-size:var(--t-brod);font-weight:600;margin-top:2px">' + vask(x.tekst) + '</div>'; }).join('');
       /* display settes her, ikke i style-attributtet - ellers slaar den hidden. */
       k.style.display = 'block';
       k.hidden = false;

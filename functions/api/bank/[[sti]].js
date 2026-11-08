@@ -443,6 +443,11 @@ function loggAntVed(p){ return (p.harFil ? 1 : 0) + (p.vedlegg || []).length; }
 function loggDiff(foer, etter, kilde){
   const ut = [];
   const linje = (k, tekst, id) => ut.push({ kilde:k || kilde, tekst:tekst, id:id });
+  /* Fjernet for godt (Rydd opp: andres trekk). */
+  for(const id of Object.keys(foer || {})){
+    const f = foer[id];
+    if(etter && !etter[id]) linje(null, 'Fjernet ' + loggPostNavn(f) + ', ' + loggKr(f.belop) + ' (' + loggDato(f.dato) + ')' + (f.kontoNavn ? ' fra ' + f.kontoNavn : '') + ' for godt');
+  }
   for(const id of Object.keys(etter || {})){
     const p = etter[id], f = foer && foer[id], n = loggPostNavn(p);
     if(!f){
@@ -460,7 +465,7 @@ function loggDiff(foer, etter, kilde){
       else if(p.status === 'stroket') linje(null, p.avsluttet === 'slettet' ? 'Slettet regningen fra ' + n : p.avsluttet === 'betalt-utenfor' ? 'Merket regningen fra ' + n + ' som betalt utenfor regnskapet' : 'Strøk ' + n + ' – føres ikke', id);
       else if(p.status === 'ny') linje(null, f.status === 'venter' ? 'La regningen fra ' + n + ' i innboksen' : 'Sendte ' + n + ' tilbake til innboksen', id);
       else if(p.status === 'venter') linje(null, 'Gjorde om: regningen fra ' + n + ' venter igjen', id);
-      else if(p.status === 'sammenslatt') linje('Neam', (f.status === 'venter' ? 'Regningen fra ' + n + ' er betalt – lagt ved trekket' : 'Slo sammen ' + n + ' med en annen post'), id);
+      else if(p.status === 'sammenslatt') linje(null, (f.status === 'venter' ? 'Regningen fra ' + n + ' er betalt – lagt ved trekket' : 'Slo sammen ' + n + ' med en annen post'), id);
     } else if((p.kategori || '') !== (f.kategori || '')){
       /* I innboksen er kategorien et forslag til noen godkjenner. */
       if(p.status === 'ny') linje(null, f.kategori ? 'Endret forslaget for ' + n + ': ' + loggKat(f.kategori) + ' → ' + loggKat(p.kategori) : 'Foreslo ' + loggKat(p.kategori) + ' for ' + n, id);
@@ -474,7 +479,7 @@ function loggDiff(foer, etter, kilde){
     const va = loggAntVed(f), vb = loggAntVed(p);
     if(vb > va) linje(p.faktura && !f.faktura ? 'Neam' : null, p.faktura && !f.faktura ? 'La regningen (PDF) ved trekket ' + n + ' – fra Dropbox' : 'La ved ' + (vb - va === 1 ? 'et vedlegg' : (vb - va) + ' vedlegg') + ' på ' + n, id);
     else if(vb < va) linje(null, 'Fjernet ' + (va - vb === 1 ? 'et vedlegg' : (va - vb) + ' vedlegg') + ' fra ' + n, id);
-    if(p.dekketAv && !f.dekketAv) linje('Neam', 'Koblet trekket ' + n + ' til kvitteringen' + (etter[p.dekketAv] ? ' ' + loggPostNavn(etter[p.dekketAv]) : ''), id);
+    if(p.dekketAv && !f.dekketAv) linje(null, 'Koblet trekket ' + n + ' til kvitteringen' + (etter[p.dekketAv] ? ' ' + loggPostNavn(etter[p.dekketAv]) : ''), id);
     if((p.lignerPaa || p.mulDobbel) && !(f.lignerPaa || f.mulDobbel)) linje('Neam', n + ' kan være dobbelt – står strøket i innboksen', id);
   }
   return ut;
@@ -504,7 +509,7 @@ function loggAnnet(kropp, s, kilde){
   return [];
 }
 /* Handlingene som kan endre foeringene - da leses de foer, og forskjellen logges. */
-const LOGG_POST = ['godkjenn', 'angre', 'koble-alle', 'faktura-innboks', 'faktura-kategori', 'faktura-avslutt', 'post-endre', 'post-vedlegg', 'post-vedlegg-slett', 'kvittering-ny', 'forslag'];
+const LOGG_POST = ['rydd-fjern', 'godkjenn', 'angre', 'koble-alle', 'faktura-innboks', 'faktura-kategori', 'faktura-avslutt', 'post-endre', 'post-vedlegg', 'post-vedlegg-slett', 'kvittering-ny', 'forslag'];
 /* Bare felleskontoene i husholdningens regnskap (Magne, 8. november 2026:
    «Det er kun kontoer som er lagt inn som felles som skal inn i dissse
    fanene» og «Magne sine transaksjoner er fremdeles å se i transasksjonene
@@ -2070,7 +2075,12 @@ async function kobleAlle(env, kropp, request){
       break;
     }
   }
-  if(!kropp.utfor) return svar({ ok:true, advarsel:bankFeil || undefined, forslag:forslag.map(f => ({ hva:f.hva, kvittering:f.kvittering, transaksjon:f.transaksjon, dobbelt:f.dobbelt })) });
+  /* Rydd opp (8. november 2026): én maaned, og bare de som er krysset av. Uten
+     mnd og valgt er det som foer - alt. */
+  const iMnd = p => !kropp.mnd || String(p.dato).slice(0, 7) === kropp.mnd;
+  let utvalg = forslag.filter(f => iMnd(f._r) || iMnd(f._b));
+  if(Array.isArray(kropp.valgt)) utvalg = utvalg.filter(f => kropp.valgt.indexOf(f._r.id + '|' + f._b.id) !== -1);
+  if(!kropp.utfor) return svar({ ok:true, advarsel:bankFeil || undefined, forslag:utvalg.map(f => ({ nokkel:f._r.id + '|' + f._b.id, hva:f.hva, kvittering:f.kvittering, transaksjon:f.transaksjon, dobbelt:f.dobbelt })) });
 
   const naa = new Date().toISOString();
   const kopierFil = async (fra, til) => {
@@ -2081,7 +2091,7 @@ async function kobleAlle(env, kropp, request){
     til.harFil = true; til.filType = fra.filType;
   };
   let gjort = 0;
-  for(const f of forslag){
+  for(const f of utvalg){
     const r = f._r, b = f._b;
     if(f.hva === 'legg-ved'){
       await kopierFil(r, b);
@@ -2108,6 +2118,63 @@ async function kobleAlle(env, kropp, request){
   }
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
   return svar({ ok:true, gjort:gjort });
+}
+
+/* ---------- Rydd opp i en maaned ----------
+   Magne, 8. november 2026: «Jeg må få en knapp for å rydde opp i
+   transaksjoner og kategorier etter måned» - og: «Det er mye rot i
+   kategorier på transasksjoner som ligger inne nå. når jeg trykker på denne
+   knappen vil jeg ha forslag til utbedring som jeg kan godkjenne evt endre
+   og gokjenne». Her: trekk fra kontoer uten rollen Felles, og foerte poster
+   med en kategori som ikke finnes, uten kategori, eller som Neam husker
+   annerledes. Resten (forte) gaar til Neam paa sida, som ser etter det som
+   aapenbart er feil. Doble er koble-alle med mnd. Ingenting endres her. */
+async function ryddForslag(env, mnd){
+  if(!/^\d{4}-\d{2}$/.test(mnd)) return svar({ ok:false, feil:'Velg en måned' });
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const roller = await lesRoller(env);
+  const harFelles = Object.keys(roller).some(u => roller[u] === 'felles');
+  const kn = await lesJson(env, KONTONAVN_NOKKEL, {});
+  const kategorier = await alleKategorier(env);
+  const laert = await lesJson(env, LAERT_NOKKEL, {}), omdopt = await lesOmdopt(env);
+  const kort = p => ({ id:p.id, sted:p.motpart || p.tekst || '', tekst:p.motpart && p.tekst && p.tekst !== p.motpart ? p.tekst : '',
+    dato:p.dato, belop:p.belop, kategori:p.kategori || '', konto:kn[p.konto] || p.kontoNavn || '' });
+  const andres = [], kat = [], forte = [];
+  for(const id of Object.keys(poster)){
+    const p = poster[id];
+    if(String(p.dato).slice(0, 7) !== mnd || p.status === 'sammenslatt' || p.dekketAv) continue;
+    const bank = !p.fra && p.konto && p.konto !== 'trumf';
+    if(harFelles && bank && roller[p.konto] !== 'felles'){ andres.push(kort(p)); continue; }
+    if(p.status !== 'godkjent' || (p.deler && p.deler.length > 1)) continue;
+    const gyldig = p.kategori && kategorier.indexOf(p.kategori) !== -1;
+    const f = foreslaa(p, laert, omdopt), fOk = f.kategori && kategorier.indexOf(f.kategori) !== -1;
+    if(!gyldig) kat.push(Object.assign(kort(p), { forslag:fOk ? f.kategori : '', grunn:p.kategori ? 'Kategorien finnes ikke lenger' : 'Uten kategori' }));
+    else if(fOk && f.kategori !== p.kategori && (f.kilde === 'laert' || f.kilde === 'ord'))
+      kat.push(Object.assign(kort(p), { forslag:f.kategori, grunn:f.kilde === 'laert' ? 'Neam husker navnet som ' + f.kategori.replace(/ · /g, ' › ') : 'Kjent navn' }));
+    else forte.push(kort(p));
+  }
+  const sorter = l => l.sort((a, b) => String(a.dato).localeCompare(String(b.dato)));
+  return svar({ ok:true, mnd:mnd, andres:sorter(andres), kategorier:sorter(kat), forte:sorter(forte) });
+}
+/* Trekk fra kontoer uten rollen Felles fjernes for godt (med vedleggene).
+   Bare slike trekk - alt annet hoppes over. Innhentingen henter dem ikke igjen. */
+async function ryddFjern(env, kropp){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const roller = await lesRoller(env);
+  if(!Object.keys(roller).some(u => roller[u] === 'felles')) return svar({ ok:false, feil:'Ingen konto har rollen Felles' });
+  let n = 0;
+  for(const id of [].concat(kropp.ider || []).slice(0, 2000)){
+    const p = poster[String(id)];
+    if(!p || p.fra || !p.konto || p.konto === 'trumf' || roller[p.konto] === 'felles') continue;
+    const kv = p.dekketAv && poster[p.dekketAv];
+    if(kv){ delete kv.bankId; delete kv.bankKonto; }
+    if(p.harFil) await env.FAMILIE_KV.delete(filNokkel(p.id));
+    for(const v of (p.vedlegg || [])) await env.FAMILIE_KV.delete(vedleggNokkel(p.id, v.n));
+    delete poster[p.id];
+    n++;
+  }
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  return svar({ ok:true, fjernet:n });
 }
 
 async function angre(env, kropp){
@@ -2590,6 +2657,7 @@ export async function onRequestGet({ request, env }){
     if(hva === 'regnskap-aar') return await regnskapAar(env);
     if(hva === 'regningskonto') return await regningskonto(env);
     if(hva === 'alle-poster') return await allePoster(env);
+    if(hva === 'rydd') return await ryddForslag(env, url.searchParams.get('mnd') || '');
     if(hva === 'logg'){ const l = await lesJson(env, LOGG_NOKKEL, []); return svar({ ok:true, logg:Array.isArray(l) ? l : [] }); }
     if(hva === 'formue') return await formue(env);
     if(!okt) return svar({ ok:false, feil:'Banken er ikke koblet. Åpne /api/bank/start.' });
@@ -2638,6 +2706,7 @@ async function postHandling(request, env, v, kropp){
   if(kropp && kropp.hva === 'faktura-innboks') return await fakturaInnboks(env, kropp);
   if(kropp && kropp.hva === 'faktura-kategori') return await fakturaKategori(env, kropp);
   if(kropp && kropp.hva === 'faktura-avslutt') return await fakturaAvslutt(env, kropp);
+  if(kropp && kropp.hva === 'rydd-fjern') return await ryddFjern(env, kropp);
   if(kropp && kropp.hva === 'post-endre') return await postEndre(env, kropp);
   if(kropp && kropp.hva === 'post-vedlegg') return await postVedlegg(env, kropp);
   if(kropp && kropp.hva === 'post-vedlegg-slett') return await postVedleggSlett(env, kropp);
