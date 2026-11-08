@@ -531,6 +531,7 @@ function ntpTmTegn(){
   if(!el) return;
   const alle = ntpTmAlle();
   const mat = ntpMatIkon();
+  if(typeof window.ntpTimereEndret === 'function'){ try{ window.ntpTimereEndret(); }catch(e){} }
   el.hidden = !alle.length;
   el.innerHTML = alle.map(function(t){
     return '<span class="ntp-tm ntp-tm-' + t.type + (ntpTmRinger === t.id ? ' ringer' : '') + '" data-id="' + ntpEsc(t.id) + '" title="' + ntpEsc(t.navn || NTP_TM_TYPER[t.type]) + '">'
@@ -730,6 +731,9 @@ function ntpTmSkjema(t, forslag){
       id: 'tm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       laget: Date.now(), enhet: ntpTmEnhet(), av: ntpTmMeg()[0] || null
     }, { type: valgtType, navn: navn, for: hvem });
+    /* Laget fra en koketid i en oppskrift: retten huskes, saa matlagingen
+       kan vise og slette sine egne nedtellinger. */
+    if(!t && forslag && forslag.mat) nyT.mat = forslag.mat;
     if(valgtType === 'alarm'){
       const v = kort.querySelector('#ntpTmAlarm').value;
       if(!/^\d{2}:\d{2}$/.test(v)){ visFeil('Velg et klokkeslett.'); return; }
@@ -839,6 +843,16 @@ function ntpTmNyForslag(forslag){
 }
 /* Matlagingen har startet eller sluttet paa denne sida. */
 window.ntpMatTegn = function(){ ntpTmTegn(); };
+/* For matlagingen: nedtellingene som er laget fra en rett, og sletting.
+   Sletting her er det samme som Slett i lista ved klokka. */
+window.ntpTimereFor = function(matId){
+  return ntpTmAlle().filter(function(t){ return t.mat && t.mat === matId; });
+};
+window.ntpTimerSlett = async function(id){
+  const t = ntpTmAlle().filter(function(x){ return x.id === id; })[0];
+  if(t) await ntpTmFjern(t);
+};
+window.ntpTimerKort = function(t){ return ntpTmKort(t); };
 
 function ntpTmStart(){
   ntpTmLesLokal();

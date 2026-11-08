@@ -14,7 +14,7 @@
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
 <link rel="stylesheet" href="/felles-neam.css?v=88">
-<link rel="stylesheet" href="/felles-topp.css?v=5">
+<link rel="stylesheet" href="/felles-topp.css?v=6">
 <!-- ?v=: bump tallet naar en fellesfil endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -1729,6 +1729,20 @@ input,select,textarea{font-size:16px}
 .steg-tid{ border-bottom-color:var(--handling-endre); font-weight:700; white-space:nowrap; }
 .steg-tid svg{ width:.95em; height:.95em; vertical-align:-.12em; margin-right:2px; color:var(--handling-endre); }
 .mat-slutt-valg{ display:flex; flex-direction:column; gap:8px; margin:0 0 16px; }
+/* Nedtellingene som er laget fra denne retten, med Slett (8. november 2026). */
+.mat-nedtellinger{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:8px 0 0; }
+.mat-nedtellinger[hidden]{ display:none; }
+.mat-ned{
+  display:inline-flex; align-items:center; gap:8px; padding:4px 5px 4px 10px;
+  border:1px solid var(--line); background:var(--paper); border-radius:999px;
+  font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700; color:var(--ink);
+}
+.mat-ned svg{ width:1em; height:1em; color:var(--handling-endre); }
+.mat-ned-tid{ font-variant-numeric:tabular-nums; color:var(--ink-soft); }
+.mat-ned-slett{
+  border:0; border-radius:999px; padding:4px 10px; background:var(--danger); color:#fff; cursor:pointer;
+  font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
+}
 .mat-slutt-valg .mat-knapp{ width:100%; padding:12px 16px; font-size:var(--t-brod); }
 </style>
 </head>
@@ -1945,6 +1959,7 @@ input,select,textarea{font-size:16px}
         <button type="button" class="mat-knapp" id="mat-start" onclick="matStartEllerSlutt()">Start matlaging</button>
         <span class="mat-tid" id="mat-tid" hidden></span>
       </div>
+      <div class="mat-nedtellinger" id="mat-nedtellinger" hidden></div>
     </div>
     </div>
 
@@ -2412,7 +2427,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=89"></script>
-<script src="/felles-topp.js?v=5"></script>
+<script src="/felles-topp.js?v=6"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB-basert erstatning for window.storage.
@@ -5582,6 +5597,7 @@ async function openRecipe(id){
   matApner = false;
   matTegnStyring();
   matGjenopprettPlass();
+  matNedTegn();
 }
 
 function scaledAmountLabel(i, factor){
@@ -6592,6 +6608,10 @@ function matAvslutt(){
   bak.hidden = false;
 }
 function matSlutt(){
+  /* Nedtellingene fra retten hoerer til matlagingen og slettes med den. */
+  if(matlaging && typeof window.ntpTimereFor === 'function'){
+    window.ntpTimereFor(matlaging.id).forEach(t => { matNedSlett(t.id); });
+  }
   matlaging = null;
   matVenstre = 'gruppert';
   matLys = null;
@@ -6604,33 +6624,128 @@ function matSlutt(){
 /* Ingrediensen fra et steg lyser opp i lista. Staar lista i en annen fane
    (telefon), kommer mengden som en melding i stedet. */
 function lysIngrediens(idx){
-  matLys = idx;
+  /* Ett ord kan treffe flere ingredienser («kjøtt»), saa det er en liste. */
+  matLys = Array.isArray(idx) ? idx : [idx];
   matLysIgjen(true);
   if(!LANDSKAP.matches){
     const r = recipeCache[currentRecipeId];
-    const i = r && r.ingredients[idx];
-    if(i){
-      const faktor = (r.baseServings > 0) ? (currentServings / r.baseServings) : 1;
-      showToast(i.name + ': ' + scaledAmountLabel(i, faktor));
-    }
+    const faktor = (r && r.baseServings > 0) ? (currentServings / r.baseServings) : 1;
+    const tekst = matLys.map(n => r && r.ingredients[n]).filter(Boolean)
+      .map(i => i.name + ': ' + scaledAmountLabel(i, faktor)).join(' · ');
+    if(tekst) showToast(tekst);
   }
   matHusk();
 }
 function matLysIgjen(rull){
   document.querySelectorAll('#d-shopping-body tr.lyser').forEach(t => t.classList.remove('lyser'));
   if(matLys == null) return;
-  const rad = $('shop-' + matLys);
-  if(!rad) return;
-  rad.classList.add('lyser');
-  /* Midt i lista, ikke i kanten (Magne, 8. november 2026). */
-  if(rull) rad.scrollIntoView({ block:'center', behavior:'smooth' });
+  const rader = [].concat(matLys).map(n => $('shop-' + n)).filter(Boolean);
+  rader.forEach(rad => rad.classList.add('lyser'));
+  if(rull && rader.length) matSentrer(rader[0]);
+}
+/* Midt i kolonnen (Magne, 8. november 2026). Regnet ut for haand, og
+   uten myk rulling: scrollIntoView traff kanten, og myk rulling i
+   kolonnen som ruller selv ble staaende - da sto raden i topp eller bunn. */
+function matSentrer(rad){
+  const boks = rad.closest('.tabpane');
+  const ruller = boks && boks.scrollHeight > boks.clientHeight + 2
+    && /(auto|scroll)/.test(getComputedStyle(boks).overflowY);
+  const r = rad.getBoundingClientRect();
+  if(ruller){
+    const b = boks.getBoundingClientRect();
+    boks.scrollTop = boks.scrollTop + (r.top - b.top) - (boks.clientHeight - r.height) / 2;
+  }else{
+    window.scrollTo(0, window.scrollY + r.top - (window.innerHeight - r.height) / 2);
+  }
 }
 
 /* En koketid i et steg: nedtellingen i klokka, ferdig utfylt. Man velger
    hvem den gjelder for og trykker Lagre selv. */
 function tidTilAlarm(ms, navn){
-  if(typeof ntpTmNyForslag === 'function') ntpTmNyForslag({ type:'nedtelling', ms: ms, navn: navn });
+  if(typeof ntpTmNyForslag === 'function') ntpTmNyForslag({ type:'nedtelling', ms: ms, navn: navn, mat: currentRecipeId });
   else showToast('Klokka er ikke lastet på denne sida.', true);
+}
+
+/* Nedtellingene som er laget fra denne retten, under knappene - hver med
+   Slett (Magne, 8. november 2026). Det er de samme som i lista ved klokka;
+   felles-topp.js sier fra naar de endrer seg (ntpTimereEndret). */
+function matNedTegn(){
+  const el = $('mat-nedtellinger');
+  if(!el) return;
+  const liste = (typeof window.ntpTimereFor === 'function' && currentRecipeId) ? window.ntpTimereFor(currentRecipeId) : [];
+  el.hidden = !liste.length;
+  el.innerHTML = liste.map(t =>
+    `<span class="mat-ned">${MAT_KLOKKE}<span>${escapeHtml(t.navn || 'Nedtelling')}</span>`
+    + `<span class="mat-ned-tid" data-tm="${escapeAttr(t.id)}">${escapeHtml(window.ntpTimerKort(t))}</span>`
+    + `<button type="button" class="mat-ned-slett" onclick="matNedSlett('${jsStr(t.id)}')">Slett</button></span>`
+  ).join('');
+}
+window.ntpTimereEndret = matNedTegn;
+setInterval(() => {
+  const el = $('mat-nedtellinger');
+  if(!el || el.hidden || typeof window.ntpTimereFor !== 'function') return;
+  const liste = window.ntpTimereFor(currentRecipeId);
+  el.querySelectorAll('[data-tm]').forEach(s => {
+    const t = liste.filter(x => x.id === s.dataset.tm)[0];
+    if(t) s.textContent = window.ntpTimerKort(t);
+  });
+}, 1000);
+async function matNedSlett(id){
+  try{ if(typeof window.ntpTimerSlett === 'function') await window.ntpTimerSlett(id); }
+  catch(e){ showToast('Fikk ikke slettet nedtellingen: ' + e.message, true); }
+  matNedTegn();
+}
+
+/* Hvilke ingredienser et ord i et steg kan bety (Magne, 8. november 2026).
+   - Boeyninger: «løken», «tomatene», «kjøttet» - endelsen skrelles av.
+   - Sammensatte ord: «risen» treffer «Basmatiris», «olje» «Olivenolje» -
+     norske sammensetninger har hovedordet sist.
+   - Lengre ord i steget: «mørbradbitene» treffer «Mørbrad».
+   - Fellesord: «kjøtt», «fisk», «grønnsaker», «krydder» treffer alle
+     ingrediensene av den varetypen, ogsaa «Mørbrad» for «ta ut kjøttet».
+   Smaaord og kjoekkenord treffer ingenting. */
+const MAT_STOPP = new Set(['og', 'med', 'til', 'som', 'den', 'det', 'der', 'når', 'etter', 'over', 'under',
+  'inn', 'opp', 'ned', 'litt', 'mer', 'alle', 'alt', 'hver', 'eller', 'ikke', 'også', 'fra', 'for', 'før',
+  'skal', 'kan', 'blir', 'bli', 'godt', 'gode', 'varme', 'varm', 'middels', 'høy', 'lav', 'stor', 'store',
+  'liten', 'små', 'minutter', 'minutt', 'time', 'timer', 'sekunder', 'grader', 'ovnen', 'ovn', 'panne',
+  'pannen', 'stekepanne', 'stekepannen', 'kjele', 'kjelen', 'gryte', 'gryten', 'bolle', 'bollen', 'vann',
+  'vannet', 'resten', 'halvparten', 'side', 'sidene', 'bit', 'biter', 'bitene', 'stykke', 'stykker',
+  'ferdig', 'klar', 'imens', 'mellomtiden', 'samtidig', 'deretter', 'så', 'til', 'ca', 'cirka']);
+const MAT_KATEGORI = {
+  'kjøtt': ['Kjøtt'], 'fisk': ['Fisk og sjømat'], 'sjømat': ['Fisk og sjømat'], 'skalldyr': ['Fisk og sjømat'],
+  'grønnsak': ['Grønnsaker'], 'grønnsaker': ['Grønnsaker'], 'grønt': ['Grønnsaker', 'Frukt'],
+  'frukt': ['Frukt'], 'krydder': ['Krydder og saus'], 'krydderne': ['Krydder og saus']
+};
+function matStammer(ord){
+  const s = [ord];
+  ['ene', 'ane', 'en', 'et', 'er', 'a', 'e'].forEach(e => {
+    if(ord.length - e.length >= 3 && ord.endsWith(e)) s.push(ord.slice(0, -e.length));
+  });
+  return s;
+}
+function matIngTreff(ord, r){
+  const w = ord.toLowerCase();
+  if(w.length < 3 || MAT_STOPP.has(w)) return [];
+  const st = matStammer(w);
+  const ut = [];
+  r.ingredients.forEach((ing, idx) => {
+    const navnOrd = String(ing.name || '').toLowerCase().split(/[^\p{L}]+/u)
+      .filter(x => x.length >= 3 && !MAT_STOPP.has(x));
+    const passer = navnOrd.some(nw => {
+      const ns = matStammer(nw);
+      return st.some(s => ns.indexOf(s) !== -1 || (s.length >= 3 && nw.endsWith(s)))
+          || (nw.length >= 4 && w.startsWith(nw));
+    });
+    if(passer) ut.push(idx);
+  });
+  if(!ut.length){
+    const kat = st.map(s => MAT_KATEGORI[s]).filter(Boolean)[0];
+    if(kat) r.ingredients.forEach((ing, idx) => {
+      const type = ing.type || slaaOppVare(ing.name).type;
+      if(kat.indexOf(type) !== -1) ut.push(idx);
+    });
+  }
+  return ut;
 }
 
 /* Navnet paa nedtellingen: leddet tiden staar i, uten tiden selv og
@@ -6669,15 +6784,17 @@ function stegMedLenker(tekst, nr){
     const ms = Math.round(tall * (e.charAt(0) === 't' ? 3600000 : e.indexOf('sek') === 0 ? 1000 : 60000));
     if(ms > 0 && ms <= 24 * 3600000) treff.push({ fra: m.index, til: m.index + m[0].length, tid: ms });
   }
-  /* Ingrediensene kjennes paa navnet foer komma eller parentes, ogsaa med
-     endelse: «løk» treffer «løken». */
-  ((r && r.ingredients) || []).forEach((ing, idx) => {
-    const hode = String(ing.name || '').split(/[,(]/)[0].trim();
-    if(hode.length < 3) return;
-    const re = new RegExp('(?<![\\p{L}])' + hode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[\\p{L}]*', 'giu');
-    let k;
-    while((k = re.exec(t))) treff.push({ fra: k.index, til: k.index + k[0].length, ing: idx });
-  });
+  /* Hvert ord i steget proeves mot ingrediensene (matIngTreff), men ikke
+     ord inne i en koketid. */
+  const tider = treff.slice();
+  const ORD = /[\p{L}]+/gu;
+  let k;
+  while((k = ORD.exec(t))){
+    const fra = k.index, til = fra + k[0].length;
+    if(tider.some(x => fra < x.til && til > x.fra)) continue;
+    const idx = r ? matIngTreff(k[0], r) : [];
+    if(idx.length) treff.push({ fra: fra, til: til, ing: idx });
+  }
   treff.sort((a, b) => a.fra - b.fra || (b.til - b.fra) - (a.til - a.fra));
   const reserve = ((r && r.title) || 'Matlaging') + ' – steg ' + nr;
   let ut = '', pos = 0;
@@ -6687,7 +6804,7 @@ function stegMedLenker(tekst, nr){
     const bit = escapeHtml(t.slice(x.fra, x.til));
     ut += (x.tid != null)
       ? `<button type="button" class="steg-tid" onclick="tidTilAlarm(${x.tid}, '${jsStr(matAlarmNavn(t, x.fra, x.til) || reserve)}')" title="Lag en nedtelling">${MAT_KLOKKE}${bit}</button>`
-      : `<button type="button" class="steg-ing" onclick="lysIngrediens(${x.ing})">${bit}</button>`;
+      : `<button type="button" class="steg-ing" onclick="lysIngrediens([${x.ing.join(',')}])">${bit}</button>`;
     pos = x.til;
   });
   return ut + escapeHtml(t.slice(pos));
