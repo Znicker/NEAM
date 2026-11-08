@@ -1,6 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 8. november 2026, sent: Matlaging har fått Tips og Kokken i
+*Ført à jour 8. november 2026, sent: ikonet oppe til venstre går til
+sidas startvisning, og holdt inne i to sekunder til forsiden (se
+toppblokka). Ført à jour 8. november 2026, sent: Matlaging har fått Tips og Kokken i
 én fane, en Handleliste-fane, og «Start matlaging» med låste porsjoner,
 trykkbare ingredienser og koketider, og en plass som huskes (se
 toppblokka). Ført à jour 8. november 2026, kveld: klokka i topplinja har fått alarm,
@@ -1100,6 +1102,25 @@ plassen, og koketider som kan bli alarm.
   arbeid oppe mens versjonsbumpen skulle med. Commiten ble bygget av
   `HEAD` + bumpen (`git hash-object` + `update-index`), så arbeidet deres
   ble stående.
+
+**8. november, sent: ikonet oppe til venstre** (kom med i `1258e07`
+sammen med matlagingssymbolet, topp `?v=7` – ingen egne numre brukt).
+Magne: «et trykk på opp venstre ikon er tilbake til den sidens hovedmeny.
+long press 2 sekunder tar deg til index».
+- **Kort trykk** kaller `window.neamSideAndreTrykk` – den samme kroken
+  som andre trykk på sidehåndtaket – og ruller til toppen
+  (`ntpMerkeTrykk` i `felles-topp.js`). Valgt: startvisningen, ikke bare
+  rulling. Undersidene med `data-hjem` lenker til dashet sitt som før.
+- **Hold inne i to sekunder** går til forsiden uten å slippe. Lenkemenyen
+  på langt trykk er slått av (`contextmenu` og `-webkit-touch-callout`).
+- **Kroken fantes** på Emma, Andrea, Kalender og Matlaging. **Ny:**
+  Kjøkken dash (`tilbakeTilStandard`) og Handleliste (`goHome` + Mat-fanen)
+  – andre trykk på håndtaket gjør nå det samme der.
+- **Ikke gjort:** Økonomi har ingen krok – `okVis` ligger inni sidas
+  lukning, og fila var under arbeid i en annen økt. Der ruller trykket
+  bare til toppen. Sikkerhet, Neamow og forsiden har ingen visninger og
+  ruller bare.
+- **Må prøves** på iPad og telefon: kort trykk og to sekunders hold.
 
 ### Åpne tråder
 
