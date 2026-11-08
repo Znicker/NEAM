@@ -510,6 +510,16 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-al-valg{ display:flex; flex-wrap:wrap; gap:8px 10px; align-items:center; }
 .ok-al-valg select{ max-width:100%; }
 .ok-al-dato{ display:inline-flex; align-items:center; gap:6px; font-size:var(--t-meta); color:var(--ink-soft); }
+/* Kontoutskrift (8. november 2026): flervalg i filteret, og Fra og Til alltid paa samme linje. */
+.ok-al-valg .ok-flervalg{ width:auto; flex:1 1 180px; max-width:280px; }
+.ok-al-valg .ok-flervalg > summary{ padding-left:10px; }
+.ok-al-valg .ok-flervalg-liste{ right:auto; min-width:max(100%, 240px); }
+.ok-al-hoved{ font-weight:700; }
+.ok-al-under{ padding-left:30px; }
+.ok-al-datoer{ display:flex; gap:10px; align-items:center; flex:1 1 300px; max-width:420px; min-width:0; }
+.ok-al-datoer .ok-al-dato{ flex:1 1 0; min-width:0; }
+.ok-al-datoer input{ flex:1 1 auto; min-width:0; width:100%; }
+@media (max-width:440px){ .ok-al-datoer{ gap:8px; } .ok-al-datoer .ok-al-dato{ gap:4px; } .ok-al-datoer input{ padding:6px 4px; } }
 /* Kontoutskrift: samme rader som foeringene i Regnskap (8. november 2026). */
 .ok-al-liste{ display:flex; flex-direction:column; gap:10px; }
 .ok-al-liste .ok-etikett{ padding-top:10px; }
@@ -894,23 +904,15 @@ button.ok-dr-rad{ cursor:pointer; }
       <section class="ok-kort ok-al-filter" aria-label="Søk og filter">
         <input type="search" id="ok-al-sok" placeholder="Søk i navn, tekst, kategori eller beløp" aria-label="Søk i transaksjonene">
         <div class="ok-al-valg">
-          <select class="ok-mnd" id="ok-al-konto" aria-label="Konto"><option value="">Alle kontoer</option></select>
-          <select class="ok-mnd" id="ok-al-kat" aria-label="Kategori"><option value="">Alle kategorier</option></select>
-          <select class="ok-mnd" id="ok-al-merke" aria-label="Merke"><option value="">Alle merker</option></select>
-          <select class="ok-mnd" id="ok-al-type" aria-label="Type">
-            <option value="">Alle typer</option>
-            <option value="ut">Penger ut</option>
-            <option value="inn">Penger inn</option>
-            <option value="kvittering">Med varelinjer</option>
-            <option value="fil">Med bilde eller PDF</option>
-            <option value="faktura">Faktura</option>
-            <option value="auto">Ført automatisk</option>
-            <option value="ny">Venter i innboksen</option>
-            <option value="stroket">Strøket</option>
-            <option value="uten">Uten kategori</option>
-          </select>
-          <label class="ok-al-dato">Fra <input type="date" class="ok-mnd" id="ok-al-fra"></label>
-          <label class="ok-al-dato">Til <input type="date" class="ok-mnd" id="ok-al-til"></label>
+          <!-- Flervalg (8. november 2026): flere kan krysses av i hver. -->
+          <details class="ok-flervalg" id="ok-al-konto" data-alle="Alle kontoer"><summary>Alle kontoer</summary><div class="ok-flervalg-liste" role="group" aria-label="Konto"></div></details>
+          <details class="ok-flervalg" id="ok-al-kat" data-alle="Alle kategorier"><summary>Alle kategorier</summary><div class="ok-flervalg-liste" role="group" aria-label="Kategori"></div></details>
+          <details class="ok-flervalg" id="ok-al-merke" data-alle="Alle merker"><summary>Alle merker</summary><div class="ok-flervalg-liste" role="group" aria-label="Merke"></div></details>
+          <details class="ok-flervalg" id="ok-al-type" data-alle="Alle typer"><summary>Alle typer</summary><div class="ok-flervalg-liste" role="group" aria-label="Type"></div></details>
+          <div class="ok-al-datoer">
+            <label class="ok-al-dato">Fra <input type="date" class="ok-mnd" id="ok-al-fra"></label>
+            <label class="ok-al-dato">Til <input type="date" class="ok-mnd" id="ok-al-til"></label>
+          </div>
           <button type="button" class="ok-lenke" id="ok-al-nullstill" hidden>Nullstill</button>
         </div>
       </section>
@@ -3391,57 +3393,74 @@ button.ok-dr-rad{ cursor:pointer; }
   function okAlKilde(p){ return p.fra && p.faktura ? 'fra:faktura' : okKilde(p); }
   function okAlKildeNavn(p){ return p.fra && p.faktura ? 'Faktura' : okKildeNavn(p); }
   /* Valgene i konto- og kategorilista bygges av det som finnes. */
+  /* Flervalg i filteret (Magne, 8. november 2026: «jeg ønsker at man har
+     flervalg på rullgardinmenyene»). Samme nedtrekk med avkrysning som i
+     Neam trenger (.ok-flervalg). Innen ett nedtrekk er det «eller», mellom
+     nedtrekkene «og». Det som er krysset av, overlever at lista bygges paa nytt. */
+  function okAlValgte(id){ return Array.prototype.filter.call(document.querySelectorAll('#' + id + ' input'), function(c){ return c.checked; }).map(function(c){ return c.value; }); }
+  function okAlSum(id){
+    var d = document.getElementById(id), v = Array.prototype.filter.call(d.querySelectorAll('input'), function(c){ return c.checked; });
+    d.querySelector('summary').textContent = !v.length ? d.dataset.alle : v.length === 1 ? v[0].dataset.navn : v.length + ' valgt: ' + v.map(function(c){ return c.dataset.navn; }).join(', ');
+  }
+  /* valg: [{ v, navn (i nedtrekket), tekst (i lista, ellers navn), hoved, under }] */
+  function okAlFyll(id, valg){
+    var liste = document.querySelector('#' + id + ' .ok-flervalg-liste'), foer = okAlValgte(id);
+    liste.innerHTML = '';
+    valg.forEach(function(o){
+      var lab = okEl('label', 'ok-trenger-kryss' + (o.hoved ? ' ok-al-hoved' : '') + (o.under ? ' ok-al-under' : ''));
+      var c = document.createElement('input'); c.type = 'checkbox'; c.value = o.v; c.dataset.navn = o.navn;
+      c.checked = foer.indexOf(o.v) !== -1;
+      lab.appendChild(c); lab.appendChild(document.createTextNode(o.tekst || o.navn));
+      liste.appendChild(lab);
+    });
+    okAlSum(id);
+  }
   function okAlValg(){
-    var konto = document.getElementById('ok-al-konto'), kat = document.getElementById('ok-al-kat');
-    var kv = konto.value, katv = kat.value;
     var kilder = {}, kats = {};
     okAl.poster.forEach(function(p){ kilder[okAlKilde(p)] = okAlKildeNavn(p); if(p.kategori) kats[p.kategori] = true; });
-    konto.length = 1;
-    Object.keys(kilder).sort(function(a, b){ return kilder[a].localeCompare(kilder[b], 'nb'); }).forEach(function(k){ konto.appendChild(new Option(kilder[k], k)); });
-    kat.length = 1;
-    var grupper = {};
+    okAlFyll('ok-al-konto', Object.keys(kilder).sort(function(a, b){ return kilder[a].localeCompare(kilder[b], 'nb'); }).map(function(k){ return { v:k, navn:kilder[k] }; }));
+    var grupper = {}, kv = [];
     Object.keys(kats).sort(function(a, b){ return a.localeCompare(b, 'nb'); }).forEach(function(k){ var g = k.split(' · ')[0]; (grupper[g] = grupper[g] || []).push(k); });
     Object.keys(grupper).forEach(function(g){
-      var og = document.createElement('optgroup'); og.label = g;
-      og.appendChild(new Option('Alt i ' + g, 'g:' + g));
-      grupper[g].forEach(function(k){ if(k !== g) og.appendChild(new Option(k.split(' · ').slice(1).join(' · ') || k, k)); });
-      kat.appendChild(og);
+      kv.push({ v:'g:' + g, navn:g, tekst:'Alt i ' + g, hoved:true });
+      grupper[g].forEach(function(k){ if(k !== g) kv.push({ v:k, navn:k.split(' · ').slice(1).join(' › '), under:true }); });
     });
-    konto.value = kv; kat.value = katv;
-    if(konto.value !== kv) konto.value = '';
-    if(kat.value !== katv) kat.value = '';
-    /* Merkene: fast, variabelt og hvert merke (fra budsjettet). */
-    var mv = document.getElementById('ok-al-merke'), mvv = mv.value;
-    mv.length = 1;
-    okMerkeValg(mv);
-    mv.value = mvv; if(mv.value !== mvv) mv.value = '';
+    okAlFyll('ok-al-kat', kv);
+    /* Merkene: hvert hovedmerke (med undermerkene) og hvert undermerke. */
+    var mv = [];
+    okHovedmerker().forEach(function(h){
+      mv.push({ v:h.id, navn:h.navn, hoved:true });
+      okUndermerker(h.id).forEach(function(u){ mv.push({ v:u.id, navn:h.navn + ' › ' + u.navn, tekst:u.navn, under:true }); });
+    });
+    okAlFyll('ok-al-merke', mv);
+  }
+  var OK_AL_TYPER = [
+    { v:'ut', navn:'Penger ut' }, { v:'inn', navn:'Penger inn' }, { v:'kvittering', navn:'Med varelinjer' },
+    { v:'fil', navn:'Med bilde eller PDF' }, { v:'faktura', navn:'Faktura' }, { v:'auto', navn:'Ført automatisk' },
+    { v:'ny', navn:'Venter i innboksen' }, { v:'stroket', navn:'Strøket' }, { v:'uten', navn:'Uten kategori' }
+  ];
+  function okAlType(p, t){
+    return t === 'ut' ? p.belop < 0 : t === 'inn' ? p.belop > 0 : t === 'kvittering' ? !!p.harKvittering : t === 'fil' ? !!p.harFil
+      : t === 'faktura' ? !!p.faktura : t === 'auto' ? !!p.auto : t === 'ny' ? p.status === 'ny' : t === 'stroket' ? p.status === 'stroket' : t === 'uten' ? !p.kategori : true;
   }
   function okAlFilter(){
     var v = function(id){ return document.getElementById(id).value; };
-    return { sok:v('ok-al-sok').trim().toLowerCase(), konto:v('ok-al-konto'), kat:v('ok-al-kat'), merke:v('ok-al-merke'), type:v('ok-al-type'), fra:v('ok-al-fra'), til:v('ok-al-til') };
+    return { sok:v('ok-al-sok').trim().toLowerCase(), konto:okAlValgte('ok-al-konto'), kat:okAlValgte('ok-al-kat'), merke:okAlValgte('ok-al-merke'), type:okAlValgte('ok-al-type'), fra:v('ok-al-fra'), til:v('ok-al-til') };
   }
   function okAlTreff(p, f){
-    if(f.konto && okAlKilde(p) !== f.konto) return false;
-    if(f.kat){
-      if(f.kat.indexOf('g:') === 0){ var g = f.kat.slice(2); if(p.kategori !== g && String(p.kategori).indexOf(g + ' · ') !== 0) return false; }
-      else if(p.kategori !== f.kat) return false;
-    }
-    if(f.merke){
-      var pm = okBuMerke(p.kategori);
-      if(pm !== f.merke && !(okMerkeAv(pm) && okMerkeAv(pm).forelder === f.merke)) return false;
+    if(f.konto.length && f.konto.indexOf(okAlKilde(p)) === -1) return false;
+    if(f.kat.length && !f.kat.some(function(k){
+      if(k.indexOf('g:') === 0){ var g = k.slice(2); return p.kategori === g || String(p.kategori).indexOf(g + ' · ') === 0; }
+      return p.kategori === k;
+    })) return false;
+    if(f.merke.length){
+      /* Postens eget merke, ellers kategoriens - som i Regnskap. */
+      var pm = p.merke && okMerkeAv(p.merke) ? p.merke : okBuMerke(p.kategori);
+      if(!f.merke.some(function(m){ return pm === m || (okMerkeAv(pm) && okMerkeAv(pm).forelder === m); })) return false;
     }
     if(f.fra && p.dato < f.fra) return false;
     if(f.til && p.dato > f.til) return false;
-    var t = f.type;
-    if(t === 'ut' && !(p.belop < 0)) return false;
-    if(t === 'inn' && !(p.belop > 0)) return false;
-    if(t === 'kvittering' && !p.harKvittering) return false;
-    if(t === 'fil' && !p.harFil) return false;
-    if(t === 'faktura' && !p.faktura) return false;
-    if(t === 'auto' && !p.auto) return false;
-    if(t === 'ny' && p.status !== 'ny') return false;
-    if(t === 'stroket' && p.status !== 'stroket') return false;
-    if(t === 'uten' && p.kategori) return false;
+    if(f.type.length && !f.type.some(function(ty){ return okAlType(p, ty); })) return false;
     if(f.sok){
       var hay = [p.motpart, p.tekst, p.kategori, okAlKildeNavn(p), p.betaltFra].join(' ').toLowerCase();
       var tall = f.sok.replace(/[\s.]/g, '').replace(',', '.');
@@ -3461,7 +3480,7 @@ button.ok-dr-rad{ cursor:pointer; }
   }
   function okAlTegn(){
     if(!okAl.poster) return;
-    var f = okAlFilter(), filtrert = !!(f.sok || f.konto || f.kat || f.merke || f.type || f.fra || f.til);
+    var f = okAlFilter(), filtrert = !!(f.sok || f.konto.length || f.kat.length || f.merke.length || f.type.length || f.fra || f.til);
     var mnder = okAlMnder();
     if(mnder.indexOf(okAl.mnd) === -1) okAl.mnd = mnder[mnder.length - 1];
     var i = mnder.indexOf(okAl.mnd);
@@ -3506,10 +3525,17 @@ button.ok-dr-rad{ cursor:pointer; }
       status:p.status, venter:p.status === 'venter', deler:p.deler };
     return okRgForRad(f, true);
   }
-  ['ok-al-konto', 'ok-al-kat', 'ok-al-merke', 'ok-al-type', 'ok-al-fra', 'ok-al-til'].forEach(function(id){ document.getElementById(id).addEventListener('change', okAlTegn); });
+  ['ok-al-konto', 'ok-al-kat', 'ok-al-merke', 'ok-al-type'].forEach(function(id){
+    var d = document.getElementById(id);
+    d.addEventListener('change', function(){ okAlSum(id); okAlTegn(); });
+    d.addEventListener('keydown', function(e){ if(e.key === 'Escape' && d.open){ e.stopPropagation(); d.open = false; d.querySelector('summary').focus(); } });
+  });
+  okAlFyll('ok-al-type', OK_AL_TYPER);
+  ['ok-al-fra', 'ok-al-til'].forEach(function(id){ document.getElementById(id).addEventListener('change', okAlTegn); });
   document.getElementById('ok-al-sok').addEventListener('input', okAlTegn);
   document.getElementById('ok-al-nullstill').addEventListener('click', function(){
-    ['ok-al-sok', 'ok-al-konto', 'ok-al-kat', 'ok-al-merke', 'ok-al-type', 'ok-al-fra', 'ok-al-til'].forEach(function(id){ document.getElementById(id).value = ''; });
+    ['ok-al-sok', 'ok-al-fra', 'ok-al-til'].forEach(function(id){ document.getElementById(id).value = ''; });
+    ['ok-al-konto', 'ok-al-kat', 'ok-al-merke', 'ok-al-type'].forEach(function(id){ document.querySelectorAll('#' + id + ' input').forEach(function(c){ c.checked = false; }); okAlSum(id); });
     okAlTegn();
   });
   document.getElementById('ok-al-forrige').addEventListener('click', function(){ var m = okAlMnder(), i = m.indexOf(okAl.mnd); if(i > 0){ okAl.mnd = m[i - 1]; okAlTegn(); } });
