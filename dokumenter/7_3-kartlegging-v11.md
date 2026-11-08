@@ -537,7 +537,11 @@ listene lettere å lese – smalere, større skrift, stolper og ikoner
 (`6e593ff`), vedleggene i vinduet, én side om gangen med piler
 (`d4fdbbd`), og til sist innboksen bare for nye føringer, Kontoutskrift og
 rød prikk ved klokka (`e3ce2a2`, `felles-topp ?v=10`), og til sist
-Kontoutskrift med samme rader, trykk og meny som Regnskap (`bc66f5b`).
+Kontoutskrift med samme rader, trykk og meny som Regnskap (`bc66f5b`),
+flervalg i filteret (`b403e73`), forfalte regninger med rødt utropstegn og
+fakturaer uten kategori i innboksen (`024707b`), og til sist loggen,
+regningsvalgene, bare felleskontoer, ingen stolper og grønn stjerne
+(`e9a2850`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -546,7 +550,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 88 commits, `0e0050a`–`bc66f5b`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 91 commits, `0e0050a`–`e9a2850`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4499,7 +4503,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 88 commits fra `0e0050a` til `bc66f5b` (dialogen med
+verdier. Bygget i 91 commits fra `0e0050a` til `e9a2850` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4944,6 +4948,55 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Logg, regningsvalg, bare felleskontoer, grønn stjerne** (`e9a2850`).
+  - **Logg** – tredje underfane i Transaksjoner. Magne: «Jeg ønsker en logg
+    ved siden av kontoutskrift. en som viser alle endringer som blir gjort
+    og hva som beveger seg under panseret … dvs. at neam hentet pdf fra
+    dropboxs la den dit og der». Serveren skriver den: `loggDiff`
+    sammenligner postene før og etter hver POST som kan endre føringer
+    (`LOGG_POST`) og etter hver `?hva=innboks` (nye trekk, automatisk ført,
+    forslag, koblet, regning lagt ved trekket, mulig dobbel); `loggAnnet`
+    gir én linje for resten (Dropbox-filer flyttet til Importert/Ikke lest,
+    budsjett, kategorier, merker, kontonavn, roller, Trumf). Kilde: Banken,
+    Trumf, Dropbox, Neam eller den innloggede (`loggNavn`). KV
+    `auth:bank:logg`, de 2000 nyeste; `?hva=logg`. Linjer med id åpner
+    føringsvinduet. To samtidige skrivinger kan miste en linje. Starter tom
+    ved deploy.
+  - **Regningsvalg** under Rediger for en faktura som venter (feltet
+    «Regningen»): utsett betaling til (`post-endre` dato, den opprinnelige i
+    `datoBank`), slettet og betalt utenfor regnskapet (`faktura-avslutt`:
+    strøket med `avsluttet`, telles ikke; tom grunn gjør om). Slettet spør
+    først. En forfalt regning har ikke «Legg i innboksen» – Magne: «når en
+    forfalt regning overstiger man ikke legge den tilbake i innboksen».
+  - **Bare felleskontoer** (`bareFelles`): trekk fra kontoer uten rollen
+    Felles leses forbi i innboks, varsler, regnskap, føringer og
+    alle-poster – postene ligger urørt, og funksjonene som skriver, leser
+    alt. Magne: «Magne sine transaksjoner er fremdeles å se … dette var ikke
+    planen». Kvitteringer, Trumf, fakturaer og for hånd vises som før.
+  - **Ingen stolper** under kategoriene i Regnskap og Budsjett (står i
+    Resultat), og **grønn stjerne** (SVG på `--handling-ny`) på en regning
+    med forfall fram i tid – Magne: «grøn asterix på selve transaksjonen».
+  - Testet i testserveren.
+- **Forfalte regninger og fakturaer uten kategori** (`024707b`). Magne:
+  «Jeg la til en regning i dropbox. denne ble lagt direkte in uten
+  godkjenning og nå ligger den inne uten kategori» (KLP) – og så: «Dette er
+  en regning som har forfalt men ikke blitt betalt … kan man lage en
+  kryssreferanse og også her sette på et rødt utropstegn … samt legge en
+  advarsel på innboks».
+  - **Fakturaer uten kategori** står i innboksen med kategorivalg
+    (`faktura-kategori`) – `e3ce2a2` hadde tatt ut «Fakturaer som venter»,
+    og uten kategori stod regningen ingen steder.
+  - **Forfalt** = venter fortsatt etter forfallsdatoen; krysskontrollen mot
+    regningskontoen er `synkFakturaer` ved hver innhenting. Rødt «!»
+    (`.ok-fr-utrop.forfalt`, `--danger`) på føringen, på kategorilinja i
+    Regnskap og Resultat og i vinduet; egen del «Forfalte regninger» øverst
+    i innboksen; med i varselet og den røde prikken.
+  - Kjent: betalt på forfallsdagen kan stå som forfalt en dag eller to til
+    trekket er bokført.
+- **Flervalg i filteret i Kontoutskrift** (`b403e73`). Magne: «kan du sette
+  begge fra og til på samme linje. jeg ønsker at man har flervalg på
+  rullgardinmenyene». Konto, kategori, merke og type som `.ok-flervalg`
+  («eller» innen ett, «og» mellom); Fra og Til alltid på én linje.
 - **Kontoutskrift med samme rader som Regnskap** (`bc66f5b`). Magne: «Jeg
   ønsker at linjene under kontoutskrift er lik dem i regnskap og kan
   trykkes og endres på samme måte. De skal speile hverandre både i innhold

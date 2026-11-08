@@ -1841,12 +1841,16 @@ først, Sparing sist. Bare tallene skiller dem:
     godkjenning. «Neam trenger» står på Status. Én linje per post også på
     PC. Når noe venter, står en **rød prikk** (`.ok-fane-prikk`) på fanen og
     underfanen, på Økonomi-flisen på forsiden og som Økonomi-ikonet ved
-    klokka på de andre sidene (se Topplinja). Øverst «Legg til
+    klokka på de andre sidene (se Topplinja). Øverst i innboksen
+    **«Forfalte regninger»** (rød statusprikk) og under de andre
+    **«Fakturaer uten kategori»** med kategorivalg. Øverst «Legg til
     kvittering» (`.btn-ny`) og «Lim inn» (`.btn-blaa`, 7. november 2026):
     bilde, PDF eller tekst fra utklippstavla – eller Ctrl+V på sida, når
     markøren ikke står i et felt.
   - **Kontoutskrift** (het Alle) – alt fra nullpunktet. Øverst ‹ måned ›, så et
-    kort med søk, konto, kategori, type og fra–til, så en meta-linje med
+    kort med søk og **flervalg** (`.ok-flervalg`) for konto, kategori, merke
+    og type – «eller» innen ett, «og» mellom – og Fra og Til på én linje,
+    så en meta-linje med
     antall og inn/ut, og **de samme radene som føringene i Regnskap** (fra
     8. november 2026, i et listekort): dato, navn, kilde og merke, beløp
     med fortegn. Kategorien står først og statusen sist i meta-linja.
@@ -1856,7 +1860,13 @@ først, Sparing sist. Bare tallene skiller dem:
     gjennomstreket. **Uten filter** vises én måned; **med søk, filter
     eller periode** vises alt som treffer, med måneden som overskrift
     (`.ok-etikett`), og ‹ måned › byttes mot «Søk og filter» og Nullstill.
+  - **Logg** (fra 8. november 2026) – alt som endres og det som skjer av
+    seg selv, nyeste øverst, per dag: klokkeslett, teksten og kilden
+    (Banken, Trumf, Dropbox, Neam eller den som gjorde det) under. Samme
+    rad som føringene; en linje som gjelder en føring, åpner vinduet.
   Valgt ut uten skisse (Magne: «bare kjør det ut på neam»).
+  **Bare felleskontoene:** trekk fra kontoer uten rollen Felles vises ikke
+  i fanene (de hører til den enkeltes egne sider).
 - **Regnskap** (fra 8. november 2026) – det som er brukt, uten budsjett,
   med det som forfaller: sumboksene som under, diagrammet uten
   budsjettstrek og uten rødt, «På tvers» med bare brukt. **Merkene** er de
@@ -1883,7 +1893,14 @@ først, Sparing sist. Bare tallene skiller dem:
   «!» på `--handling-endre`) overalt der føringen vises, og i vinduet en
   gul boks (`.ok-mangler`) med bankens sum. Rediger har også **dato**, og
   en endret dato vises som «Opprinnelig dato». **Regninger som forfaller**
-  åpnes likt, med «Legg i innboksen» i stedet for Stryk og Send tilbake.
+  åpnes likt, med «Legg i innboksen» i stedet for Stryk og Send tilbake –
+  men ikke når den er **forfalt**: da står en rød melding i vinduet, og
+  valgene er under Rediger («Regningen»: utsett betaling til, slettet,
+  betalt utenfor regnskapet; slettet spør først, begge kan gjøres om).
+  **Tegnene foran beløpet:** rødt «!» (`--danger`) = forfalt og ikke funnet
+  på regningskontoen (også på kategorilinja); grønn stjerne
+  (`--handling-ny`) = forfaller fram i tid; gult «!» (`--handling-endre`) =
+  summen er endret.
   **Vedleggene** vises av seg selv i høyre spalte, én side om gangen
   (bilde = én side, PDF side for side), med runde piler ‹ › når det er
   flere sider, piltaster og sveip, og «Side X av N · navn» under. På PC
@@ -1891,7 +1908,8 @@ først, Sparing sist. Bare tallene skiller dem:
   infoen. PDF tegnes med pdf.js fra cdnjs, lastet bare ved behov – det
   eneste biblioteket utenfra i Neam. **Listene** (fra 8. november 2026, til Magne har sett dem på neam.no):
   høyst 900 px brede, grupper i `--t-stor` med et ikon foran, poster i
-  `--t-stor` fra 700 px, en tynn stolpe (`.ok-rad-bar`) under hver post,
+  `--t-stor` fra 700 px, en tynn stolpe (`.ok-rad-bar`) under hver post
+  bare i Resultat (tatt ut i Regnskap og Budsjett 8. november 2026),
   raden lyser når man peker, og annenhver gruppe har `--bg-1`.
   **Høyreklikk** (hold fingeren på telefon) på
   en føring eller kategori åpner menyen (`.ok-meny`). **Én spalte, som
