@@ -504,9 +504,10 @@ forfaller i «måned så langt» på Status, med overlappen i Oppsett på
 telefon (`27b3802`), Regnskap, Budsjett og Resultat med samme oppsett, og
 Oppdater og Oppsett på høyre tommelknapp (`9dbb2d5`), kjøpene bak en post
 i en dialog, med én spalte i alle tre (`be1e0ca`, `9339f30`), filene lagt
-ved postene i husets filviser i stedet for en ny fane (`106893c`), og til
-sist differansen i «måned så langt», Resultat før Transaksjoner og
-innboksen på én linje også på PC (`44395ab`).
+ved postene i husets filviser i stedet for en ny fane (`106893c`),
+differansen i «måned så langt», Resultat før Transaksjoner og innboksen på
+én linje også på PC (`44395ab`), og til sist Resultat med grafer per
+kategori, dag for dag, prognose og største avvik (`ed22845`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -515,7 +516,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 73 commits, `0e0050a`–`44395ab`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 74 commits, `0e0050a`–`ed22845`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4189,7 +4190,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 73 commits fra `0e0050a` til `44395ab` (dialogen med
+verdier. Bygget i 74 commits fra `0e0050a` til `ed22845` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4634,6 +4635,38 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Resultat med grafer per kategori** (`ed22845`). Magne: «Tenk over
+  fornuftige funksjoner i resultetfanen. grafer og oversikter(som må kunne
+  skjules)», og så «grafer for hver kategori og sammenligner regnskapet med
+  budsjettet, og snittet. at man kan trykke på disse grafene og se
+  underpunktene på samme måte». Skissen «Resultat – grafer per kategori»
+  (samme artifact) ble godkjent («Ja, bygg det»).
+  - **Sumboksene** viser differansen med Status' regel: røde minustall når
+    det er brukt mer (eller kommet inn og spart mindre) enn budsjettet,
+    grønne ellers – også likt. Fra `9dbb2d5` til nå var det fortegnet på
+    avviket (grønt «−200 kr» for under).
+  - **Tre sammenleggbare linjer øverst:** «Gjennom måneden» (åpen) –
+    utgiftene summert dag for dag mot budsjettet (Bolig den 1., resten
+    jevnt, som stolpen på Status), strek for i dag og stiplet prognose;
+    dagene fra `alle-poster`, skalert så kurven ender på utgiftene i
+    regnskapet (en delt kvittering ligger der under hovedkategorien).
+    «Prognose» – brukt + det som forfaller resten av måneden + snittet per
+    dag så langt uten Bolig; avsluttet måned sier hvordan den endte.
+    «Største avvik» – de fem utgiftspostene med minst igjen, stolper til
+    hver side av en midtstrek. Bare for én måned (dag for dag og prognose).
+  - **«Budsjett mot faktisk»** er én graf per gruppe (`okRsGrafer`):
+    brukt per måned (forfaller lysere, rød over budsjettet), budsjettet som
+    strek og snittet stiplet, differansen i hjørnet og «X av Y kr» og
+    snittet under. Med én måned de seks siste fram til den, ellers
+    månedene i perioden. Snittet er månedene før med føringer (som før),
+    for en periode snittet i perioden. Trykk åpner postene, så linjene,
+    med samme graf (`okRsApen` husker hva som er åpent til sida lastes);
+    poster og linjer har «Vis kjøpene ›». Den gamle lista med stolper i
+    Resultat er borte (`okMndBar` ligger igjen ubrukt).
+  - **Nederst** «Utgifter per måned», «På tvers» og «Hvor det glir», nå
+    lukket i utgangspunktet.
+  - Testet i testserveren på telefon og PC med to måneder data (oktober og
+    november); ikke med ekte data.
 - **Differanse, fanerekkefølge og innboksen på én linje** (`44395ab`).
   Magne: «Misvisende å skrive roan [foran] på november så lang. bør heller
   stå differanse, overforbruk står som røde minustall, underorbruk eller

@@ -1701,7 +1701,17 @@ først, Sparing sist. Bare tallene skiller dem:
   post åpnes i en dialog** («Vis kjøpene ›», `#ok-kb-bak`, samme
   `dlg-bak`/`dlg-kort` som kvitteringen), på PC og telefon; en kvittering
   åpnet derfra legger seg over.
-- **Resultat** (het Regnskap til 8. november 2026) – budsjett mot faktisk, med **periode**: én måned (med
+- **Resultat** (het Regnskap til 8. november 2026) – budsjett mot faktisk.
+  **Fra 8. november 2026 (skissen «Resultat – grafer per kategori»):**
+  sumboksene viser differansen (Status' regel: røde minustall over, grønt
+  ellers); så tre sammenleggbare linjer – «Gjennom måneden» (kurve dag for
+  dag mot budsjettet, i dag som strek, prognosen stiplet), «Prognose» og
+  «Største avvik» (stolper til hver side av en midtstrek, rødt til
+  venstre); så **én graf per gruppe** (`.ok-graf`): stolper per måned,
+  budsjettet som mørk strek over hver stolpe, snittet stiplet over hele,
+  den valgte måneden uthevet under. Trykk åpner postene og linjene med
+  samme graf, rykket inn med en strek til venstre (`.ok-gbarn`). Nederst
+  «Utgifter per måned», «På tvers» og «Hvor det glir». Med **periode**: én måned (med
   ‹ måned ›), hittil i år, eller siste 12 måneder. Budsjettet er da summen av
   månedsbudsjettene. Trenden og «Hvor det glir» står som linjer øverst, og
   kjøpene bak en post i dialogen (til 8. november 2026 i spalten til
@@ -1716,9 +1726,9 @@ først, Sparing sist. Bare tallene skiller dem:
   (herav forfaller 1 800 kr)», og summen på posten og i spalten til høyre.
   I Regnskap viser sumboksene Utgifter og Sparing med det som forfaller,
   «herav … forfaller» under, og Overskudd med «betalt så langt …» under, i
-  `--t-meta`. I Resultat viser de avviket – grønt bedre, rødt verre,
-  «23 300 av 23 500 kr» under – og inntekter og sparing over budsjettet er
-  ikke røde. I diagrammet «Utgifter per måned» ligger det oppå det
+  `--t-meta`. I Resultat viser de differansen – røde minustall over, grønt
+  ellers, «23 300 av 23 500 kr» under – og inntekter og sparing over
+  budsjettet er ikke røde. I diagrammet «Utgifter per måned» ligger det oppå det
   betalte med samme opasitet. På posten står «Forfaller … (20. nov.) –
   telles når trekket kommer fra banken». En måned fram i tid heter «Fram i
   tid». Under
