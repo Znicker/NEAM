@@ -510,9 +510,12 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-al-valg{ display:flex; flex-wrap:wrap; gap:8px 10px; align-items:center; }
 .ok-al-valg select{ max-width:100%; }
 .ok-al-dato{ display:inline-flex; align-items:center; gap:6px; font-size:var(--t-meta); color:var(--ink-soft); }
-.ok-al-liste .ok-etikett{ padding:12px 12px 4px; }
-.ok-al-liste .ok-etikett:first-child{ padding-top:6px; }
-.ok-al-liste .ok-al-detalj + .ok-kjop-rad{ border-top:1px solid var(--line); }
+/* Kontoutskrift: samme rader som foeringene i Regnskap (8. november 2026). */
+.ok-al-liste{ display:flex; flex-direction:column; gap:10px; }
+.ok-al-liste .ok-etikett{ padding-top:10px; }
+.ok-al-liste .ok-etikett:first-child{ padding-top:0; }
+.ok-rg-for.ute > *{ opacity:.45; }
+.ok-rg-for.ute > span:first-child{ text-decoration:line-through; }
 .ok-kjop-rad.ute > *{ opacity:.45; }
 .ok-kjop-rad.ute .ok-sted b{ text-decoration:line-through; }
 .ok-kjop-rad[aria-expanded="true"] .ok-kjop-pil{ transform:rotate(90deg); }
@@ -912,7 +915,8 @@ button.ok-dr-rad{ cursor:pointer; }
         </div>
       </section>
       <p class="ok-meta" id="ok-al-meta" aria-live="polite"></p>
-      <div class="ok-kjop-liste ok-al-liste" id="ok-al-liste"><span class="ok-meta" style="padding:8px 12px">Henter …</span></div>
+      <!-- Radene er de samme som foeringene i Regnskap (okRgForRad), 8. november 2026. -->
+      <section class="ok-kort ok-liste-kort"><div class="ok-al-liste" id="ok-al-liste"><span class="ok-meta">Henter …</span></div></section>
     </div>
     <div class="ok-tr-del" id="ok-tr-innboks">
     <div class="ok-stripe" id="ok-stripe" hidden>
@@ -3479,72 +3483,28 @@ button.ok-dr-rad{ cursor:pointer; }
       + (filtrert ? '' : okAl.fra && i === 0 ? ' · Neam har transaksjonene fra ' + okKort.format(new Date(okAl.fra)) : '');
     var boks = document.getElementById('ok-al-liste');
     boks.innerHTML = '';
-    if(!liste.length){ boks.appendChild(okEl('span', 'ok-meta', filtrert ? 'Ingen transaksjoner treffer.' : 'Ingen transaksjoner denne måneden.')).style.padding = '8px 12px'; return; }
+    if(!liste.length){ boks.appendChild(okEl('span', 'ok-meta', filtrert ? 'Ingen transaksjoner treffer.' : 'Ingen transaksjoner denne måneden.')); return; }
     var MAKS = 400, sist = '';
     liste.slice(0, MAKS).forEach(function(p){
       var m = String(p.dato).slice(0, 7);
       if(filtrert && m !== sist){ var mn = okMndNavn.format(new Date(m + '-01T12:00:00')); boks.appendChild(okEl('span', 'ok-etikett', okVask(mn))); sist = m; }
       boks.appendChild(okAlRad(p));
     });
-    if(liste.length > MAKS) boks.appendChild(okEl('span', 'ok-meta', 'Viser de ' + MAKS + ' nyeste av ' + liste.length + ' – snevre inn søket for å se resten.')).style.padding = '8px 12px';
+    if(liste.length > MAKS) boks.appendChild(okEl('span', 'ok-meta', 'Viser de ' + MAKS + ' nyeste av ' + liste.length + ' – snevre inn søket for å se resten.'));
   }
+  /* En rad i kontoutskriften er den samme som foeringen i Regnskap (Magne,
+     8. november 2026: «linjene under kontoutskrift er lik dem i regnskap og
+     kan trykkes og endres på samme måte. De skal speile hverandre både i
+     innhold og funksjonalitet»). Posten gjoeres om til foeringens form
+     (som ?hva=foringer gir den), og kategorien og statusen staar i
+     meta-linja - her er det ingen kategori over raden. */
   function okAlRad(p){
-    var merker = [p.kategori || 'Uten kategori', okAlKildeNavn(p) + (p.betaltFra ? ', betalt fra ' + p.betaltFra : '')];
-    if(okBuMerke(p.kategori)) merker.splice(1, 0, okMerkeFullNavn(okBuMerke(p.kategori)));
-    if(p.status === 'ny') merker.push('venter i innboksen');
-    if(p.status === 'stroket') merker.push('strøket');
-    if(p.status === 'venter') merker.push('faktura som venter på trekket');
-    else if(p.faktura) merker.push('med faktura');
-    if(p.auto) merker.push('ført automatisk');
-    if(p.deler) merker.push('fordelt på ' + p.deler);
-    /* Vedlegget synes paa raden, ikke bare naar den er aapnet (6. november 2026). */
-    if(p.harFil) merker.push(p.filType === 'application/pdf' ? 'PDF vedlagt' : 'bilde vedlagt');
-    else if(p.harKvittering) merker.push('varelinjer');
-    var rad = okEl('button', 'ok-kjop-rad' + (p.status === 'stroket' ? ' ute' : ''),
-      '<span class="ok-dato">' + okVask(okKort.format(new Date(p.dato))) + '</span>'
-      + '<span class="ok-sted"><b>' + okVask(p.motpart || p.tekst || 'Uten tekst') + '</b><span class="ok-meta">' + okVask(merker.join(' · ')) + '</span></span>'
-      + '<b>' + (p.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret – ikke den banken viser">!</span>' : '') + okKr0.format(p.belop) + '</b><span class="ok-kjop-pil" aria-hidden="true">›</span>');
-    rad.type = 'button';
-    rad.setAttribute('aria-expanded', String(!!okAl.apen[p.id]));
-    var holder = document.createDocumentFragment();
-    holder.appendChild(rad);
-    var detalj = okEl('div', 'ok-al-detalj', '');
-    detalj.hidden = !okAl.apen[p.id];
-    if(p.tekst && p.motpart && p.tekst !== p.motpart) detalj.appendChild(okEl('span', 'ok-meta', okVask(p.tekst)));
-    detalj.appendChild(okEl('span', 'ok-meta', okVask(okDato.format(new Date(p.dato)) + ' · ' + okAlKildeNavn(p))));
-    var knapper = okEl('div', 'ok-rad-knapper', '');
-    if(p.harKvittering){
-      var vk = okEl('button', 'ok-lenke', 'Se varene ›'); vk.type = 'button';
-      vk.addEventListener('click', function(){ okVisKvittering({ id:p.id, tittel:p.motpart || p.tekst, dato:p.dato, kilde:okAlKildeNavn(p), belop:p.belop, harFil:p.harFil, filType:p.filType }, vk); });
-      knapper.appendChild(vk);
-    }
-    if(p.harFil) knapper.appendChild(okFilLenke(p));
-    /* Bare en stroeket post kan sendes tilbake til innboksen - en foert endres direkte (8. november 2026). */
-    if(p.status === 'stroket'){
-      var tb = okEl('button', 'ok-lenke', 'Send tilbake til innboksen'); tb.type = 'button';
-      tb.addEventListener('click', function(){
-        tb.disabled = true;
-        okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'angre', ider:[p.id] }) })
-          .then(function(){ okLastInnboks(); okStatusLast(); okVarslerLast(); if(okMnd.lastet) okMndLast(); });
-      });
-      knapper.appendChild(tb);
-    }
-    if(p.status === 'venter'){
-      var lb = okEl('button', 'ok-lenke', 'Legg i innboksen'); lb.type = 'button';
-      lb.addEventListener('click', function(){
-        lb.disabled = true;
-        okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'faktura-innboks', id:p.id }) }).then(function(){ okLastInnboks(); });
-      });
-      knapper.appendChild(lb);
-    }
-    if(knapper.children.length) detalj.appendChild(knapper);
-    rad.addEventListener('click', function(){
-      okAl.apen[p.id] = !okAl.apen[p.id];
-      rad.setAttribute('aria-expanded', String(!!okAl.apen[p.id]));
-      detalj.hidden = !okAl.apen[p.id];
-    });
-    holder.appendChild(detalj);
-    return holder;
+    var f = { id:p.id, dato:p.dato, belop:p.belop, kategori:p.kategori,
+      tekst:p.motpart || p.tekst || '', mer:p.motpart && p.tekst && p.tekst !== p.motpart ? p.tekst : '',
+      kilde:p.status === 'venter' ? 'Faktura' : p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? 'Lagt inn for hånd' : 'Kvittering fra bilde') : (p.kontoNavn || ''),
+      betaltFra:p.betaltFra, merke:p.merke, overstyrt:p.overstyrt, harKvittering:p.status !== 'venter' && p.harKvittering, harFil:p.harFil, filType:p.filType,
+      status:p.status, venter:p.status === 'venter', deler:p.deler };
+    return okRgForRad(f, true);
   }
   ['ok-al-konto', 'ok-al-kat', 'ok-al-merke', 'ok-al-type', 'ok-al-fra', 'ok-al-til'].forEach(function(id){ document.getElementById(id).addEventListener('change', okAlTegn); });
   document.getElementById('ok-al-sok').addEventListener('input', okAlTegn);
@@ -4922,10 +4882,12 @@ button.ok-dr-rad{ cursor:pointer; }
   }
   /* En foering: dato, sted og kilde, beloep. Trykk aapner vinduet. */
   var okRgForAv = {};
-  function okRgForRad(f){
+  /* medKat: kontoutskriften - kategorien og statusen staar i meta-linja. */
+  function okRgForRad(f, medKat){
     okRgForAv[f.id] = f;
-    var meta = [f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''), f.del ? 'del av kvitteringen' : '', f.mer, f.merke && okMerkeAv(f.merke) ? 'merke ' + okMerkeFullNavn(f.merke) : ''].filter(Boolean).join(' · ');
-    var rad = okEl('div', 'ok-under-rad ok-rg-for',
+    var status = f.status === 'ny' ? 'venter i innboksen' : f.status === 'stroket' ? 'strøket' : f.venter ? 'forfaller – ikke betalt ennå' : '';
+    var meta = [medKat ? f.kategori || 'Uten kategori' : '', f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''), f.del ? 'del av kvitteringen' : '', f.deler ? 'fordelt på ' + f.deler : '', f.mer, f.merke && okMerkeAv(f.merke) ? 'merke ' + okMerkeFullNavn(f.merke) : '', status].filter(Boolean).join(' · ');
+    var rad = okEl('div', 'ok-under-rad ok-rg-for' + (f.status === 'stroket' ? ' ute' : '') + (f.venter ? ' forfaller' : ''),
       '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.tekst || 'Uten tekst') + '<span class="ok-meta">' + okVask(meta) + '</span></span><b>' + (f.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret – ikke den banken viser">!</span>' : '') + okKr0.format(f.belop) + '</b>');
     rad.dataset.f = f.id; rad.tabIndex = 0; rad.setAttribute('role', 'button');
     rad.setAttribute('aria-label', (f.tekst || 'Føring') + ', ' + okKort.format(new Date(f.dato)) + ', ' + okKr0.format(f.belop) + ' kr. Trykk for detaljene.');
@@ -5424,9 +5386,8 @@ button.ok-dr-rad{ cursor:pointer; }
     if(f.harKvittering) punkt('Se kvittering', function(){ okBuMenyLukk(); okVisKvittering({ id:f.id, tittel:f.tekst, dato:f.dato, kilde:f.kilde, belop:-f.belop, harFil:f.harFil, filType:f.filType }); });
     if(f.harFil) punkt(f.filType === 'application/pdf' ? 'Åpne PDF-en' : 'Åpne bildet', function(){ okBuMenyLukk(); okVisFil(f); });
     if(f.venter) punkt('Legg i innboksen', function(){ okForEndre({ hva:'faktura-innboks', id:f.id }, info).then(ferdig); });
-    else{
-      punkt('Stryk – føres ikke', function(){ okForEndre({ hva:'godkjenn', godkjenn:[], strok:[f.id] }, info).then(ferdig); });
-    }
+    else if(f.status === 'stroket') punkt('Send tilbake til innboksen', function(){ okForEndre({ hva:'angre', ider:[f.id] }, info).then(ferdig); });
+    else punkt('Stryk – føres ikke', function(){ okForEndre({ hva:'godkjenn', godkjenn:[], strok:[f.id] }, info).then(ferdig); });
     meny.appendChild(info);
     meny.appendChild(okEl('span', 'ok-meny-hint', 'Shift + høyreklikk: vanlig meny'));
     document.body.appendChild(meny);
@@ -5436,8 +5397,8 @@ button.ok-dr-rad{ cursor:pointer; }
     okBuMenyBoks = meny;
     var f0 = meny.querySelector('.ok-meny-valg'); if(f0) f0.focus();
   }
-  /* Hoeyreklikk i Regnskap-lista: en kategori faar budsjettlistas meny, en foering sin egen. Hold fingeren paa telefon. */
-  [['ok-rg-tabell', 'regnskap'], ['ok-rs-liste', 'resultat']].forEach(function(par){
+  /* Hoeyreklikk i Regnskap-lista (og Resultat og Kontoutskrift): en kategori faar budsjettlistas meny, en foering sin egen. Hold fingeren paa telefon. */
+  [['ok-rg-tabell', 'regnskap'], ['ok-rs-liste', 'resultat'], ['ok-al-liste', 'kontoutskrift']].forEach(function(par){
     var boks = document.getElementById(par[0]);
     if(!boks) return;
     var aapne = function(el, x, y){

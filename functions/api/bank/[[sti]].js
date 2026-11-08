@@ -1590,7 +1590,7 @@ async function allePoster(env){
       konto:p.konto || '', kontoNavn:kn[p.konto] || p.kontoNavn || '', betaltFra:bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
       deler:p.deler && p.deler.length > 1 ? p.deler.length : 0,
       harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, harFil:!!p.harFil, filType:p.filType || '',
-      overstyrt:!!p.overstyrt });
+      overstyrt:!!p.overstyrt, merke:p.merke || '' });
   }
   ut.sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
   return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', poster:ut });
