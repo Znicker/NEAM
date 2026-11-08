@@ -3719,23 +3719,27 @@ button.ok-dr-rad{ cursor:pointer; }
       kb.appendChild(okEl('div', 'ok-under-rad', '<span>' + okVask(k.navn) + '</span><b>' + (typeof k.saldo === 'number' ? okKr0.format(k.saldo) + ' kr' : '–') + '</b>'));
     });
     if(r.flyttet) okPeMelding(r.flyttet + ' trekk fra ' + r.navn + 's kontoer lå blant fellespostene og er flyttet hit. Ingenting er slettet.');
+    if(r.kvFlyttet) okPeMelding(r.kvFlyttet + (r.kvFlyttet === 1 ? ' kvittering' : ' kvitteringer') + ' i felles var betalt fra ' + r.navn + 's kontoer og er koblet til trekket her. De telles ikke lenger i felles.');
     okPeTegnMaal();
     okPeTegnListe();
   }
-  function okPeRad(p){
-    var st = p.status === 'refundert'
+  function okPeStatus(p){
+    return p.status === 'refundert'
       ? 'refundert' + (p.refundertDato ? ' ' + okKort.format(new Date(p.refundertDato)) : '') + (p.refundertHand ? ' (merket for hånd)' : '')
       : OK_PE_STATUS[p.status] || '';
-    var meta = [p.konto, p.refusjon ? 'tilbakebetaling fra felles' : '', st].filter(Boolean).join(' · ');
-    var kan = p.belop < 0 && p.status !== 'innboks';
-    var rad = okEl('div', 'ok-under-rad ok-pe-rad' + (kan ? ' ok-rg-for' : ''),
+  }
+  function okPeRad(p){
+    var meta = [p.konto, p.kvittering ? p.kvittering.kilde : '', p.refusjon ? 'tilbakebetaling fra felles' : '', okPeStatus(p)].filter(Boolean).join(' · ');
+    /* Trykk aapner samme vindu som en foering i Regnskap (Magne, 8. november
+       2026: «jeg ønsker at transaksjonene også linkes til vedlegg på samme
+       måte som i regnskapet. det er i denne menyen man kan sende det over
+       for "refusjon"»). */
+    var rad = okEl('div', 'ok-under-rad ok-pe-rad ok-rg-for',
       '<span><span class="ok-dato">' + okVask(okKort.format(new Date(p.dato))) + '</span>' + okVask(p.motpart || p.tekst || 'Uten tekst')
       + '<span class="ok-meta">' + okVask(meta) + '</span></span><b>' + okKr0.format(p.belop) + '</b>');
-    if(kan){
-      rad.tabIndex = 0; rad.setAttribute('role', 'button');
-      rad.addEventListener('click', function(){ okPeValg(p); });
-      rad.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); okPeValg(p); } });
-    }
+    rad.tabIndex = 0; rad.setAttribute('role', 'button');
+    rad.addEventListener('click', function(){ okPeVindu(p, rad); });
+    rad.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); okPeVindu(p, rad); } });
     return rad;
   }
   function okPeTegnListe(){
@@ -3758,24 +3762,125 @@ button.ok-dr-rad{ cursor:pointer; }
     okPe.mnd = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     okPeTegnListe();
   }
-  async function okPeValg(p){
-    var navn = '«' + (p.motpart || p.tekst || 'Uten tekst') + '», ' + okKr0.format(Math.abs(p.belop)) + ' kr (' + okKort.format(new Date(p.dato)) + ')';
-    var kropp;
-    if(!p.status || p.status === 'avvist'){
-      if(!(await bekreft('Sende ' + navn + ' til innboksen i felles økonomi? Når det er godkjent der, skylder felles deg beløpet.', { jaTekst:'Send til felles' }))) return;
-      kropp = { hva:'privat-send', hvem:okPe.hvem, ider:[p.id] };
-    } else if(p.status === 'fort'){
-      if(!(await bekreft('Har felles betalt tilbake ' + navn + '? Neam merker det selv når en overføring med samme beløp kommer inn på kontoen din.', { jaTekst:'Merk som refundert' }))) return;
-      kropp = { hva:'privat-refundert', hvem:okPe.hvem, id:p.id, refundert:true };
-    } else if(p.status === 'refundert'){
-      if(!(await bekreft('Angre at ' + navn + ' er betalt tilbake? Felles skylder deg da beløpet igjen.', { jaTekst:'Ikke refundert' }))) return;
-      kropp = { hva:'privat-refundert', hvem:okPe.hvem, id:p.id, refundert:false };
-    } else return;
-    var s = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(kropp) });
-    if(!s.ok){ okPeMelding(s.feil, true); return; }
-    okPeMelding(kropp.hva === 'privat-send' ? navn + ' ligger nå i innboksen i felles.' : kropp.refundert ? navn + ' er merket som betalt tilbake.' : 'Felles skylder deg ' + navn + ' igjen.');
-    if(kropp.hva === 'privat-send') window.okonomiEtterSkriv();
-    okPeLast(okPe.hvem);
+  /* Vinduet for et eget trekk - det samme som for en foering i Regnskap:
+     alt om trekket og kvitteringens varer til venstre, vedleggene til
+     hoeyre, og valgene under. */
+  function okPeVindu(p, fra){
+    if(fra) okFrFra = fra;
+    okFrPost = null;
+    document.getElementById('ok-fr-kilde').textContent = p.konto || 'Trekk';
+    document.getElementById('ok-fr-tittel').textContent = p.motpart || p.tekst || 'Uten tekst';
+    document.getElementById('ok-fr-meta').textContent = okDato.format(new Date(p.dato));
+    document.getElementById('ok-fr-belop').textContent = okFrKr(p.belop);
+    okPeVis(p);
+    document.getElementById('ok-fr-bak').hidden = false;
+    document.getElementById('ok-fr-lukk').focus();
+  }
+  function okPeNavn(p){ return '«' + (p.motpart || p.tekst || 'Uten tekst') + '», ' + okKr0.format(Math.abs(p.belop)) + ' kr (' + okKort.format(new Date(p.dato)) + ')'; }
+  function okPeSkriv(kropp, melding){
+    var feil = document.getElementById('ok-fr-feil');
+    return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(kropp) }).then(function(s){
+      if(!s.ok){ feil.textContent = 'Ble ikke lagret: ' + s.feil; feil.style.color = ''; feil.hidden = false; return false; }
+      okLukkFor(true);
+      okPeMelding(melding);
+      if(kropp.hva === 'privat-send' || kropp.hva === 'privat-kv-tilbake') window.okonomiEtterSkriv();
+      okPeLast(okPe.hvem);
+      return true;
+    });
+  }
+  function okPeVis(p){
+    okFrEndret = null;
+    var feil = document.getElementById('ok-fr-feil'); feil.hidden = true; feil.style.color = '';
+    var inn = document.getElementById('ok-fr-innhold'); inn.innerHTML = '';
+    var to = okEl('div', 'ok-fr-to'), venstre = okEl('div', ''), hoyre = okEl('div', '');
+    to.appendChild(venstre); to.appendChild(hoyre); inn.appendChild(to);
+    var dl = document.createElement('dl'); dl.className = 'ok-fr-info';
+    var rad = function(navn, verdi){ if(!verdi) return; dl.appendChild(okEl('dt', '', okVask(navn))); dl.appendChild(okEl('dd', '', okVask(verdi))); };
+    rad('Dato', okDato.format(new Date(p.dato)));
+    rad('Konto', p.konto);
+    rad('Tekst fra banken', p.tekst && p.tekst !== p.motpart ? p.tekst : '');
+    rad('Kvittering', p.kvittering ? p.kvittering.kilde + (p.kvittering.navn ? ' – ' + p.kvittering.navn : '') : '');
+    rad('Status', okPeStatus(p) || (p.refusjon ? 'Tilbakebetaling fra felles' : p.belop < 0 ? 'Ikke sendt til felles' : ''));
+    venstre.appendChild(dl);
+    /* Varelinjene fra kvitteringen som er koblet til trekket. */
+    if(p.kvittering){
+      var kvEt = okEl('span', 'ok-etikett', 'Kvitteringen');
+      venstre.appendChild(kvEt);
+      var lb = okEl('div', 'ok-fr-linjer', '<p class="ok-meta">Henter varene …</p>');
+      venstre.appendChild(lb);
+      okHent('/api/bank?hva=privat-kvittering&hvem=' + encodeURIComponent(okPe.hvem) + '&id=' + encodeURIComponent(p.id)).then(function(kv){
+        lb.innerHTML = '';
+        if(!kv.ok || !(kv.linjer || []).length){ kvEt.remove(); lb.remove(); return; }
+        kv.linjer.forEach(function(l){
+          lb.appendChild(okEl('div', 'ok-kv-linje', '<span>' + okVask(l.navn) + (l.antall !== 1 ? ' <span class="ok-meta">× ' + okVask(Number(l.antall).toLocaleString('nb-NO')) + '</span>' : '')
+            + (l.rabatt ? '<br><span class="ok-meta">Rabatt ' + okKr0.format(l.rabatt) + '</span>' : '') + '</span><b>' + okKr0.format(l.belop + (l.rabatt || 0)) + '</b>'));
+        });
+        lb.appendChild(okEl('p', 'ok-meta', kv.linjer.length + (kv.linjer.length === 1 ? ' vare' : ' varer')));
+      });
+    }
+    hoyre.appendChild(okEl('span', 'ok-etikett', 'Vedlegg'));
+    hoyre.appendChild(p.vedlegg.length ? okFrBlad(p) : okEl('p', 'ok-meta', 'Ingen vedlegg.'));
+    var knapper = okEl('div', 'ok-rad-knapper');
+    var knapp = function(tekst, kl, gjor){
+      var b = okEl('button', 'btn ' + kl, tekst); b.type = 'button';
+      b.addEventListener('click', function(){ b.disabled = true; Promise.resolve(gjor()).then(function(ok){ if(!ok) b.disabled = false; }); });
+      knapper.appendChild(b);
+    };
+    var navn = okPeNavn(p), apen = !p.status || p.status === 'avvist';
+    if(p.belop < 0 && apen) knapp('Send til felles', 'btn-ny', function(){
+      return okPeSkriv({ hva:'privat-send', hvem:okPe.hvem, ider:[p.id] }, navn + ' ligger nå i innboksen i felles. Når det er godkjent der, skylder felles deg beløpet.');
+    });
+    knapp('Rediger', 'btn-endre', function(){ okPeRediger(p); return true; });
+    if(p.status === 'fort') knapp('Merk som refundert', 'btn-ghost ok-smal', function(){
+      return okPeSkriv({ hva:'privat-refundert', hvem:okPe.hvem, id:p.id, refundert:true }, navn + ' er merket som betalt tilbake.');
+    });
+    if(p.status === 'refundert') knapp('Ikke refundert', 'btn-ghost ok-smal', function(){
+      return okPeSkriv({ hva:'privat-refundert', hvem:okPe.hvem, id:p.id, refundert:false }, 'Felles skylder deg ' + navn + ' igjen.');
+    });
+    if(p.kvittering && apen) knapp('Kvitteringen hører til felles', 'btn-ghost ok-smal', function(){
+      return bekreft('Flytte kvitteringen tilbake til felles? Den kobles ikke til dette trekket igjen.', { jaTekst:'Flytt tilbake' }).then(function(ja){
+        return ja ? okPeSkriv({ hva:'privat-kv-tilbake', hvem:okPe.hvem, id:p.id }, 'Kvitteringen til ' + navn + ' er tilbake i felles.') : false;
+      });
+    });
+    inn.appendChild(knapper);
+  }
+  /* Rediger: vedleggene, som i Regnskap - lagres med en gang. Kvitteringens
+     egne filer kan ikke fjernes her (de hoerer til kvitteringen). */
+  function okPeRediger(p){
+    var feil = document.getElementById('ok-fr-feil'); feil.hidden = true; feil.style.color = '';
+    var inn = document.getElementById('ok-fr-innhold'); inn.innerHTML = '';
+    inn.appendChild(okEl('span', 'ok-etikett', 'Vedlegg'));
+    var vedBoks = okEl('div', '');
+    inn.appendChild(vedBoks);
+    var endret = false;
+    var oppdater = function(r){
+      if(!r.ok){ feil.textContent = 'Vedlegget ble ikke lagret: ' + r.feil; feil.hidden = false; return; }
+      p.vedlegg = r.vedlegg; endret = true; tegnVed();
+    };
+    var slett = function(v){ return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'privat-vedlegg-slett', hvem:okPe.hvem, id:p.id, n:v.n }) }); };
+    var tegnVed = function(){ vedBoks.innerHTML = ''; vedBoks.appendChild(okFrVedlegg(p, true, oppdater, false, slett)); };
+    tegnVed();
+    if(p.vedlegg.some(function(v){ return v.laast; })) inn.appendChild(okEl('p', 'ok-meta', 'Filene fra kvitteringen hører til den og kan ikke fjernes her.'));
+    var filInn = document.createElement('input'); filInn.type = 'file'; filInn.accept = 'image/*,application/pdf'; filInn.multiple = true; filInn.hidden = true;
+    var legg = okEl('button', 'ok-lenke', '+ Legg til vedlegg'); legg.type = 'button'; legg.style.alignSelf = 'flex-start';
+    legg.addEventListener('click', function(){ filInn.click(); });
+    filInn.addEventListener('change', function(){
+      var filer = Array.prototype.slice.call(filInn.files || []); filInn.value = '';
+      legg.disabled = true; legg.textContent = 'Lagrer …';
+      filer.reduce(function(kjede, fil){
+        return kjede.then(function(){
+          var pdf = fil.type === 'application/pdf';
+          return (pdf ? okSomBase64(fil) : okKrympBilde(fil)).then(function(data){
+            return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'privat-vedlegg', hvem:okPe.hvem, id:p.id, type:pdf ? 'application/pdf' : 'image/jpeg', data:data, navn:fil.name }) });
+          }).then(oppdater);
+        });
+      }, Promise.resolve()).catch(function(e){ feil.textContent = 'Vedlegget ble ikke lagret: ' + e.message; feil.hidden = false; }).then(function(){ legg.disabled = false; legg.textContent = '+ Legg til vedlegg'; });
+    });
+    inn.appendChild(filInn); inn.appendChild(legg);
+    var knapper = okEl('div', 'ok-rad-knapper');
+    var ferdig = okEl('button', 'btn btn-ghost ok-smal', 'Ferdig'); ferdig.type = 'button';
+    ferdig.addEventListener('click', function(){ okPeVis(p); if(endret) okPeLast(okPe.hvem); });
+    knapper.appendChild(ferdig); inn.appendChild(knapper);
   }
   /* Sparemaalene - som familiemaalet: navn, maal og en av egne kontoer eller et tall. */
   function okPeTegnMaal(){
@@ -5562,7 +5667,7 @@ button.ok-dr-rad{ cursor:pointer; }
     inn.appendChild(knapper);
   }
   /* Vedleggene som smaa kort; trykk aapner filviseren. I redigering kan de fjernes. */
-  function okFrVedlegg(p, red, ved, stor){
+  function okFrVedlegg(p, red, ved, stor, slett){
     var boks = okEl('div', 'ok-fr-vedlegg');
     if(!p.vedlegg.length) boks.appendChild(okEl('p', 'ok-meta', 'Ingen vedlegg.'));
     p.vedlegg.forEach(function(v){
@@ -5572,25 +5677,25 @@ button.ok-dr-rad{ cursor:pointer; }
         var sb = okEl('button', 'ok-fr-stort-bilde'); sb.type = 'button';
         sb.setAttribute('aria-label', 'Åpne ' + (v.navn || 'bildet') + ' i full størrelse');
         var bi = document.createElement('img'); bi.width = 420; bi.height = 560; bi.alt = v.navn || 'Vedlegg';
-        bi.src = '/api/bank?hva=kvittering-fil&id=' + encodeURIComponent(p.id) + (v.n ? '&n=' + v.n : '');
+        bi.src = '/api/bank?hva=kvittering-fil&id=' + encodeURIComponent(v.id || p.id) + (v.n ? '&n=' + v.n : '');
         sb.appendChild(bi);
-        sb.addEventListener('click', function(){ okVisFil({ id:p.id, n:v.n, filType:v.type, dato:p.dato, motpart:p.motpart || p.tekst }, sb); });
+        sb.addEventListener('click', function(){ okVisFil({ id:v.id || p.id, n:v.n, filType:v.type, dato:p.dato, motpart:p.motpart || p.tekst }, sb); });
         boks.appendChild(sb);
         return;
       }
       var k = okEl('button', 'ok-fr-ved'); k.type = 'button';
       k.setAttribute('aria-label', 'Åpne ' + (v.navn || (pdf ? 'PDF-en' : 'bildet')));
       if(pdf) k.appendChild(okEl('span', 'pdf', '<b>PDF</b>'));
-      else{ var img = document.createElement('img'); img.width = 108; img.height = 140; img.alt = ''; img.loading = 'lazy'; img.src = '/api/bank?hva=kvittering-fil&id=' + encodeURIComponent(p.id) + (v.n ? '&n=' + v.n : ''); k.appendChild(img); }
+      else{ var img = document.createElement('img'); img.width = 108; img.height = 140; img.alt = ''; img.loading = 'lazy'; img.src = '/api/bank?hva=kvittering-fil&id=' + encodeURIComponent(v.id || p.id) + (v.n ? '&n=' + v.n : ''); k.appendChild(img); }
       k.appendChild(okEl('span', '', okVask(v.navn || (pdf ? 'PDF' : 'Bilde'))));
-      k.addEventListener('click', function(){ okVisFil({ id:p.id, n:v.n, filType:v.type, dato:p.dato, motpart:p.motpart || p.tekst }, k); });
+      k.addEventListener('click', function(){ okVisFil({ id:v.id || p.id, n:v.n, filType:v.type, dato:p.dato, motpart:p.motpart || p.tekst }, k); });
       var w = okEl('div', ''); w.appendChild(k);
-      if(red){
+      if(red && !v.laast){
         var fj = okEl('button', 'ok-lenke', 'Fjern'); fj.type = 'button'; fj.style.color = 'var(--danger)';
         fj.addEventListener('click', function(){
           if(!fj.dataset.sikker){ fj.dataset.sikker = '1'; fj.textContent = 'Fjerne? Trykk igjen'; return; }
           fj.disabled = true;
-          okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'post-vedlegg-slett', id:p.id, n:v.n }) }).then(function(r){ if(ved) ved(r); });
+          (slett ? slett(v) : okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'post-vedlegg-slett', id:p.id, n:v.n }) })).then(function(r){ if(ved) ved(r); });
         });
         w.appendChild(fj);
       }
@@ -5864,7 +5969,7 @@ button.ok-dr-rad{ cursor:pointer; }
     scene.appendChild(forr); scene.appendChild(side); scene.appendChild(neste);
     w.appendChild(scene); w.appendChild(tall);
     var sider = [], i = 0, tegnet = -1;
-    var url = function(v){ return '/api/bank?hva=kvittering-fil&id=' + encodeURIComponent(p.id) + (v.n ? '&n=' + v.n : ''); };
+    var url = function(v){ return '/api/bank?hva=kvittering-fil&id=' + encodeURIComponent(v.id || p.id) + (v.n ? '&n=' + v.n : ''); };
     var tegn = function(){
       forr.hidden = neste.hidden = sider.length < 2;
       forr.disabled = i <= 0; neste.disabled = i >= sider.length - 1;
@@ -5875,7 +5980,7 @@ button.ok-dr-rad{ cursor:pointer; }
       if(tegnet === i) return;
       tegnet = i;
       side.innerHTML = '';
-      var apne = function(){ okVisFil({ id:p.id, n:s.v.n, filType:s.v.type, dato:p.dato, motpart:p.motpart || p.tekst }, side); };
+      var apne = function(){ okVisFil({ id:s.v.id || p.id, n:s.v.n, filType:s.v.type, dato:p.dato, motpart:p.motpart || p.tekst }, side); };
       if(s.bilde){
         var img = document.createElement('img'); img.width = 420; img.height = 560; img.alt = navn; img.src = url(s.v);
         img.addEventListener('click', apne); side.appendChild(img);

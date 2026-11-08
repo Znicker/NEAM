@@ -37,6 +37,8 @@
      GET /api/bank?hva=varsler          - det som trenger noen (kortet paa forsiden)
      GET /api/bank?hva=privat[&hvem=<navn>] - den enkeltes egen del (personene man ser, eller én persons kontoer og trekk)
      POST {hva:'privat-send', hvem, ider} / {hva:'privat-refundert', hvem, id, refundert} / {hva:'privat-maal', hvem, maal}
+     GET /api/bank?hva=privat-kvittering&hvem=&id= - varelinjene i kvitteringen som er koblet til et eget trekk
+     POST {hva:'privat-vedlegg', hvem, id, type, data, navn} / {hva:'privat-vedlegg-slett', hvem, id, n} / {hva:'privat-kv-tilbake', hvem, id}
      GET /api/bank?hva=laert / POST {hva:'laert', motpart, kategori} - «Neam husker» (tom kategori glemmer)
      GET /api/bank/dropbox-start / dropbox-tilbake - kobler Dropbox (appmappa) med OAuth
      GET /api/bank?hva=dropbox          - er Dropbox koblet
@@ -2264,6 +2266,33 @@ async function privat(env, okt, epost, hvem, fersk, psu){
       }
     }
   }
+  /* 2b. Kvitteringene (Magne, 8. november 2026: «jeg ønsker at transaksjonene
+     også linkes til vedlegg på samme måte som i regnskapet»). En kvittering
+     i felles - Trumf, Dropbox eller bilde - som er samme kjoep som et trekk
+     her (erLik: samme beloep, hoeyst tre dager mellom), er betalt fra
+     personens konto: den kobles til trekket og tas ut av felles. Foerst
+     kvitteringen som dekket et flyttet trekk (dekketAv), saa resten. Ikke
+     en som er koblet til et felles trekk, stroeket, slaatt sammen, en
+     faktura, et kjoep lagt inn for haand, eller en som er sendt tilbake
+     herfra (ikkeKv). Privat lagres foerst, som flyttingen over. */
+  const ledigKv = k => !!k && !!k.fra && k.fra !== 'utlegg' && !k.forHand && !k.faktura && !k.bankId && !k.mulDobbel && !k.lignerPaa && !k.slaattInn
+    && (k.status === 'ny' || k.status === 'godkjent');
+  let kvFlyttet = 0;
+  const idag = new Date().toISOString().slice(0, 10);
+  for(const p of Object.keys(d.poster).map(id => d.poster[id]).filter(x => x.belop < 0 && !x.kv).sort((a, b) => String(a.dato).localeCompare(String(b.dato)))){
+    let k = p.dekketAv && ledigKv(felles[p.dekketAv]) ? felles[p.dekketAv] : null;
+    if(!k) k = Object.keys(felles).map(id => felles[id]).filter(x => ledigKv(x) && (p.ikkeKv || []).indexOf(x.id) === -1 && erLik(p, x))[0] || null;
+    if(!k) continue;
+    p.kv = Object.assign({}, k, { flyttet:idag });
+    delete p.dekketAv;
+    delete felles[k.id];
+    kvFlyttet++;
+  }
+  if(kvFlyttet){
+    await lagrePrivat(env, hvem, d);
+    await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(felles));
+    try{ await logg(env, [{ kilde:'Neam', tekst:'Koblet ' + kvFlyttet + (kvFlyttet === 1 ? ' kvittering' : ' kvitteringer') + ' til trekk fra ' + PERSONER[hvem] + 's kontoer og flyttet ' + (kvFlyttet === 1 ? 'den' : 'dem') + ' til ' + PERSONER[hvem] + 's egen del – de telles ikke i felles' }]); }catch(e){}
+  }
   /* 3. Refusjon: en overfoering inn som er like stor som ett utlegg felles
      har foert - eller alle til sammen. Eldste foerst. */
   const brukt = {};
@@ -2292,12 +2321,37 @@ async function privat(env, okt, epost, hvem, fersk, psu){
     return { uid:k.uid, navn:kn[k.uid] || k.navn, saldo:s ? Number(s.balance_amount.amount) : null };
   });
   const poster = alle().map(p => ({ id:p.id, konto:kn[p.konto] || p.kontoNavn || '', dato:p.dato, belop:p.belop, tekst:p.tekst || '', motpart:p.motpart || '',
-    status:privatStatus(p, felles), refundertDato:p.refundert ? p.refundert.dato || '' : '', refundertHand:!!(p.refundert && p.refundert.hand), refusjon:!!brukt[p.id] && p.belop > 0 && d.ikke.indexOf(p.id) === -1 }))
+    status:privatStatus(p, felles), refundertDato:p.refundert ? p.refundert.dato || '' : '', refundertHand:!!(p.refundert && p.refundert.hand), refusjon:!!brukt[p.id] && p.belop > 0 && d.ikke.indexOf(p.id) === -1,
+    vedlegg:privatVedleggListe(p), kvittering:p.kv ? { kilde:privatKvKilde(p.kv), navn:p.kv.motpart || p.kv.tekst || '' } : null }))
     .sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
   const skylder = poster.filter(p => p.status === 'fort');
   return svar({ ok:true, hvem:hvem, navn:PERSONER[hvem], kontoer:kontoer, poster:poster, maal:d.maal,
     skylder:{ sum:skylder.reduce((s, p) => s + Math.abs(p.belop), 0), antall:skylder.length },
-    fra:await env.FAMILIE_KV.get(FRA_NOKKEL) || '', flyttet:flyttet || undefined, advarsel:advarsel || undefined });
+    fra:await env.FAMILIE_KV.get(FRA_NOKKEL) || '', flyttet:flyttet || undefined, kvFlyttet:kvFlyttet || undefined, advarsel:advarsel || undefined });
+}
+/* Vedleggene paa et eget trekk: de som er lagt ved her (fil:<trekket>), og
+   kvitteringens (fil:<kvitteringen>, laast - de hoerer til kvitteringen).
+   Hvert har sin id, saa sida henter fila med riktig id. */
+function privatVedleggListe(p){
+  const egne = vedleggListe(p).map(v => Object.assign({ id:p.id }, v));
+  return p.kv ? egne.concat(vedleggListe(p.kv).map(v => Object.assign({ id:p.kv.id, laast:true }, v))) : egne;
+}
+function privatKvKilde(k){ return k.fra === 'trumf' ? 'Trumf-kvittering' : 'Kvittering fra bilde'; }
+/* Kopierer filene i lista over til en post (som postVedlegg: foerste i fil:<id>, resten i fil:<id>:<n>). */
+async function kopierVedleggTil(env, liste, til){
+  for(const v of liste){
+    const f = await lesJson(env, vedleggNokkel(v.id, v.n), null);
+    if(!f || !f.data) continue;
+    if(!til.harFil){
+      await env.FAMILIE_KV.put(filNokkel(til.id), JSON.stringify(f));
+      til.harFil = true; til.filType = f.type; if(v.navn) til.filNavn = v.navn;
+    } else {
+      const n = (til.vedlegg || []).reduce((s, x) => Math.max(s, x.n), 0) + 1;
+      if(n > 20) break;
+      await env.FAMILIE_KV.put(vedleggNokkel(til.id, n), JSON.stringify(f));
+      (til.vedlegg = til.vedlegg || []).push({ n:n, type:f.type, navn:v.navn || '' });
+    }
+  }
 }
 /* Trekk til innboksen i felles. Bare penger ut; et som venter eller er
    foert der, sendes ikke igjen - et avvist kan sendes paa nytt. */
@@ -2313,9 +2367,19 @@ async function privatSend(env, epost, kropp){
     const st = privatStatus(p, felles);
     if(st && st !== 'avvist') continue;
     const fid = 'ut-' + p.id, f = foreslaa(p, laert, omdopt);
+    const kvKat = p.kv && p.kv.kategori;
     felles[fid] = { id:fid, fra:'utlegg', forHand:true, harKvittering:false, manuell:true, eier:hvem, utlegg:'Utlegg fra ' + PERSONER[hvem],
       konto:'utlegg', kontoNavn:'Utlegg fra ' + PERSONER[hvem], dato:p.dato, belop:p.belop, tekst:p.tekst || '', motpart:p.motpart || '',
-      status:'ny', kategori:f.kategori, kilde:f.kilde, lagtInnAv:epost, lagtInn:new Date().toISOString() };
+      status:'ny', kategori:kvKat || f.kategori, kilde:kvKat ? (p.kv.kilde || f.kilde) : f.kilde, lagtInnAv:epost, lagtInn:new Date().toISOString() };
+    /* Vedleggene og kvitteringens varer foelger med, saa felles ser hva det var. */
+    await kopierVedleggTil(env, privatVedleggListe(p), felles[fid]);
+    if(p.kv){
+      const kvl = await lesJson(env, kvitteringNokkel(p.kv), null);
+      if(kvl && (kvl.linjer || []).length){
+        await env.FAMILIE_KV.put('auth:bank:kv:' + fid, JSON.stringify(Object.assign({}, kvl, { id:fid })));
+        felles[fid].harLinjer = true; delete felles[fid].harKvittering;
+      }
+    }
     p.sendt = fid;
     sendt.push(fid);
   }
@@ -2350,6 +2414,80 @@ async function privatMaal(env, epost, kropp){
   })).filter(m => m.navn && m.belop > 0);
   await lagrePrivat(env, hvem, d);
   return svar({ ok:true, maal:d.maal });
+}
+
+/* Vedlegg paa et eget trekk - som postVedlegg, men i den private delen. */
+async function privatVedleggNy(env, epost, kropp){
+  const hvem = String(kropp.hvem || '');
+  if(personerFor(epost).indexOf(hvem) === -1) return svar({ ok:false, feil:'Ingen tilgang til denne delen' });
+  const d = await lesPrivat(env, hvem), p = d.poster[String(kropp.id || '')];
+  if(!p) return svar({ ok:false, feil:'Fant ikke trekket' });
+  const type = String(kropp.type || '');
+  if(!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(type)) return svar({ ok:false, feil:'Bare bilde eller PDF' });
+  const data = String(kropp.data || '');
+  if(!data || data.length > 14e6) return svar({ ok:false, feil:'Fila er for stor' });
+  const navn = String(kropp.navn || '').slice(0, 120);
+  if(!p.harFil){
+    await env.FAMILIE_KV.put(filNokkel(p.id), JSON.stringify({ type:type, data:data }));
+    p.harFil = true; p.filType = type; if(navn) p.filNavn = navn; else delete p.filNavn;
+  } else {
+    const n = (p.vedlegg || []).reduce((s, v) => Math.max(s, v.n), 0) + 1;
+    if(n > 20) return svar({ ok:false, feil:'For mange vedlegg' });
+    await env.FAMILIE_KV.put(vedleggNokkel(p.id, n), JSON.stringify({ type:type, data:data }));
+    (p.vedlegg = p.vedlegg || []).push({ n:n, type:type, navn:navn });
+  }
+  await lagrePrivat(env, hvem, d);
+  return svar({ ok:true, vedlegg:privatVedleggListe(p) });
+}
+async function privatVedleggSlett(env, epost, kropp){
+  const hvem = String(kropp.hvem || '');
+  if(personerFor(epost).indexOf(hvem) === -1) return svar({ ok:false, feil:'Ingen tilgang til denne delen' });
+  const d = await lesPrivat(env, hvem), p = d.poster[String(kropp.id || '')];
+  if(!p) return svar({ ok:false, feil:'Fant ikke trekket' });
+  const n = Number(kropp.n);
+  if(n === 0){
+    if(!p.harFil) return svar({ ok:false, feil:'Fant ikke vedlegget' });
+    await env.FAMILIE_KV.delete(filNokkel(p.id));
+    p.harFil = false; delete p.filType; delete p.filNavn;
+  } else {
+    const i = (p.vedlegg || []).findIndex(v => v.n === n);
+    if(i === -1) return svar({ ok:false, feil:'Fant ikke vedlegget' });
+    await env.FAMILIE_KV.delete(vedleggNokkel(p.id, n));
+    p.vedlegg.splice(i, 1);
+    if(!p.vedlegg.length) delete p.vedlegg;
+  }
+  await lagrePrivat(env, hvem, d);
+  return svar({ ok:true, vedlegg:privatVedleggListe(p) });
+}
+/* Varelinjene i kvitteringen som er koblet til et eget trekk. */
+async function privatKvittering(env, epost, hvem, id){
+  if(personerFor(epost).indexOf(hvem) === -1) return svar({ ok:false, feil:'Ingen tilgang til denne delen' });
+  const d = await lesPrivat(env, hvem), p = d.poster[String(id || '')];
+  if(!p || !p.kv) return svar({ ok:false, feil:'Trekket har ingen kvittering' });
+  if(p.kv.fra === 'trumf') return trumfKvittering(env, p.kv.trumfId);
+  const kv = await lesJson(env, kvitteringNokkel(p.kv), null);
+  return svar(Object.assign({ ok:true, linjer:[] }, kv || {}));
+}
+/* Kvitteringen hoerer til felles likevel: tilbake slik den var, og den kobles
+   aldri til dette trekket igjen. Ikke naar kjoepet er sendt til felles. */
+async function privatKvTilbake(env, epost, kropp){
+  const hvem = String(kropp.hvem || '');
+  if(personerFor(epost).indexOf(hvem) === -1) return svar({ ok:false, feil:'Ingen tilgang til denne delen' });
+  const d = await lesPrivat(env, hvem), p = d.poster[String(kropp.id || '')];
+  if(!p || !p.kv) return svar({ ok:false, feil:'Trekket har ingen kvittering' });
+  const felles = await lesJson(env, POST_NOKKEL, {});
+  const st = privatStatus(p, felles);
+  if(st && st !== 'avvist') return svar({ ok:false, feil:'Kjøpet er sendt til felles – kvitteringen følger med der' });
+  const k = Object.assign({}, p.kv);
+  delete k.flyttet;
+  if(felles[k.id]) return svar({ ok:false, feil:'Kvitteringen finnes alt i felles' });
+  felles[k.id] = k;
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(felles));
+  (p.ikkeKv = p.ikkeKv || []).push(k.id);
+  delete p.kv;
+  await lagrePrivat(env, hvem, d);
+  try{ await logg(env, [{ kilde:'Neam', tekst:'En kvittering ble sendt tilbake fra ' + PERSONER[hvem] + 's egen del til felles' }]); }catch(e){}
+  return svar({ ok:true });
 }
 
 async function angre(env, kropp){
@@ -2836,6 +2974,7 @@ export async function onRequestGet({ request, env }){
     if(hva === 'logg'){ const l = await lesJson(env, LOGG_NOKKEL, []); return svar({ ok:true, logg:Array.isArray(l) ? l : [] }); }
     if(hva === 'formue') return await formue(env);
     if(hva === 'privat') return await privat(env, okt, v.epost, url.searchParams.get('hvem') || '', fersk, psu);
+    if(hva === 'privat-kvittering') return await privatKvittering(env, v.epost, url.searchParams.get('hvem') || '', url.searchParams.get('id') || '');
     if(!okt) return svar({ ok:false, feil:'Banken er ikke koblet. Åpne /api/bank/start.' });
     if(hva === 'kontoer') return await kontoer(env, okt, fersk, psu);
     if(hva === 'transaksjoner') return await transaksjoner(env, okt, url.searchParams.get('konto') || '', url.searchParams.get('fra'), fersk, psu);
@@ -2885,6 +3024,9 @@ async function postHandling(request, env, v, kropp){
   if(kropp && kropp.hva === 'privat-send') return await privatSend(env, v.epost, kropp);
   if(kropp && kropp.hva === 'privat-refundert') return await privatRefundert(env, v.epost, kropp);
   if(kropp && kropp.hva === 'privat-maal') return await privatMaal(env, v.epost, kropp);
+  if(kropp && kropp.hva === 'privat-vedlegg') return await privatVedleggNy(env, v.epost, kropp);
+  if(kropp && kropp.hva === 'privat-vedlegg-slett') return await privatVedleggSlett(env, v.epost, kropp);
+  if(kropp && kropp.hva === 'privat-kv-tilbake') return await privatKvTilbake(env, v.epost, kropp);
   if(kropp && kropp.hva === 'post-endre') return await postEndre(env, kropp);
   if(kropp && kropp.hva === 'post-vedlegg') return await postVedlegg(env, kropp);
   if(kropp && kropp.hva === 'post-vedlegg-slett') return await postVedleggSlett(env, kropp);
