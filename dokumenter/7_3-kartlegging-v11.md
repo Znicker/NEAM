@@ -3,7 +3,9 @@
 *Ført à jour 8. november 2026, natt: pinkoder på kjøkkenskjermen – den som
 står der, taster sin sekssifrede kode ved første trykk etter hvilen, får
 «Hei Magne!», og Neam vet hvem han snakker med og kan skrive lekser for
-dem. sys@ legger inn kodene (se toppblokka og del 52). Ført à jour 7. november 2026, kveld: Rommene har fått fjernkontroll til
+dem. sys@ legger inn kodene (se toppblokka og del 52). Senere samme natt:
+kjøkkenkontoen heter nå **felles@neam.no** – den skal brukes av alle
+fellesenhetene (se toppblokka). Ført à jour 7. november 2026, kveld: Rommene har fått fjernkontroll til
 Samsung-TV-ene, gjennom en Logic-variabel og HomeyScript i Homey, og
 enheter kan dras oppå hverandre til navngitte grupper med felles bryter.
 Senere samme kveld: innstillingene (Husregisteret, myk og hard reset, Logg ut) ved å holde inne høyre tommelknapp på alle
@@ -105,8 +107,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=84`, `felles-neam.css
-?v=87`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=13`, `felles-lesalt.js
+**Siste leverte versjoner:** `felles-neam.js ?v=86`, `felles-neam.css
+?v=87`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=15`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
@@ -126,8 +128,8 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–83; neam.css til og
-med 86; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–12,
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–85; neam.css til og
+med 86; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–14,
 hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -841,7 +843,8 @@ på telefon.
 begrense hva barna kan styre etter hvor de er; det ble droppet (Google mesh
 har ikke noe API som sier hvilket punkt en enhet er på, og ett punkt dekker
 flere rom). Spørsmålet gikk over i «hvem er dette?» på kjøkkenskjermen, som
-alltid er logget inn som kitchen@. Magne: «alle har sin egen … pinkode.
+alltid er logget inn som kitchen@ (felles@ fra samme natt, se under).
+Magne: «alle har sin egen … pinkode.
 taster man sin kode åpnes sin bruker», og «Dette gjelder foreløpig bare
 kjøkkenbrukeren».
 - **Når:** første trykk etter tre minutter uten trykk, eller første trykk
@@ -872,6 +875,27 @@ kjøkkenbrukeren».
   spør han som før. Uten kode får han vite at han ikke vet hvem det er.
 - **Ikke bygget:** personlige farger (del 52) – koden gir person og
   rettigheter, ikke utseende ennå.
+
+**8. november, natt: kitchen@ heter nå felles@neam.no** (`0f6ff2d`,
+`2eccfe7`; neam.js `?v=86`, skriv `?v=15`). Magne: «Kanskje jeg heller
+skulle kalt brukeren felles@neam.no dette oppsettet vil jo passe på alle
+fellesenhetene våre etterhvert». Gjort i tre steg, så skjermen aldri sto
+uten tilgang: begge navnene i koden → kontoen døpt om → `kitchen@` fjernet.
+- **Kontoen er en personlig Microsoft-konto** (account.live.com), ikke
+  Microsoft 365. `felles@neam.no` ble lagt til som e-post og gjort til
+  hovedalias; `kitchen@neam.no` og `kitchenneam@outlook.com` står igjen som
+  ekstra brukernavn. Første forsøk på «Gjør til hoved» ble avvist med «Prøv
+  på nytt senere» – det gikk gjennom ved et senere forsøk.
+- **Koden:** `felles@` står der `kitchen@` sto – innloggingslista og
+  `DASH_TILGANG` i `index.html`, `DASH_TILGANG` i `dashboard.html`,
+  `SKRIV_UPERSONLIG` i `felles-skriv.js`, `NEAM_FELLES` i `felles-neam.js`
+  (pinkoden), `HENT_TILGANG` i bankfunksjonen og `HUSSTAND` i
+  `kalender.html` (bokstaven **F** i stedet for K).
+- **Kalenderens tilgangsmatrise i KV** sto på `kitchen@`. Den flyttes
+  til `felles@` første gang en side leser den (`tildelingFraKitchen()` i
+  `kalender.html`) og lagres én gang. **Kan fjernes** når den har gått.
+- **Neste, ikke startet:** eget dashbord for fellesenhetene (Magne: «så
+  kan de heller få sitt eget dashbord»).
 
 ### Åpne tråder
 

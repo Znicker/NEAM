@@ -928,7 +928,8 @@ sider uten egne handlinger; et vanlig trykk der sier at man kan holde inne
 for innstillinger. Dialogene (120) ligger fortsatt øverst.
 
 **Pinkoden på kjøkkenskjermen** (8. november 2026). Bare når sida er logget
-inn som kitchen@. Første trykk etter tre minutter i ro – eller første trykk
+inn som felles@ (fellesenhetene – het kitchen@ til 8. november 2026).
+Første trykk etter tre minutter i ro – eller første trykk
 etter at sida lastet – svelges, og tastaturet kommer: tittelen «Tast koden
 din», **seks prikker** i `--aksent` (fylt for hvert siffer), og **store
 taster** i tre kolonner (76 px høye, 34 px tall, `--paper-soft` med
