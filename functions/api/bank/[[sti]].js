@@ -27,6 +27,9 @@
      POST /api/bank {hva:'koble-alle', utfor} - kvitteringer og transaksjoner som hoerer sammen, i ettertid
      POST /api/bank {hva:'faktura-innboks', id} - en faktura som venter, blir en post i innboksen
      POST /api/bank {hva:'faktura-kategori', id, kategori} - kategorien paa en faktura som venter
+     GET /api/bank?hva=post&id= - alt om én foering (vinduet i Regnskap)
+     POST /api/bank {hva:'post-endre', id, motpart?, belop?, notat?, merke?} - endre en foering
+     POST /api/bank {hva:'post-vedlegg', id, type, data, navn} / {hva:'post-vedlegg-slett', id, n} - vedleggene
      GET /api/bank?hva=regningskonto / POST {hva:'regningskonto', uid} - bufferen regningskontoen trenger
      POST /api/bank {hva:'kategori-merke', kategori, merke} - merket paa en post (forsikring, laan …); tomt fjerner
      POST /api/bank {hva:'budsjett-perioder', kategori, maaneder} - hvilke maaneder posten kommer (tom = hver maaned)
@@ -1414,12 +1417,115 @@ async function foringer(env, mnd, kat, eksakt){
         kilde: p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? 'Lagt inn for hånd' : 'Kvittering fra bilde') : (kn[p.konto] || p.kontoNavn || ''),
         betaltFra: bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
         kategori:d.kategori, del:deler.length > 1, harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false,
-        harFil:!!p.harFil, filType:p.filType || '',
+        harFil:!!p.harFil, filType:p.filType || '', overstyrt:!!p.overstyrt, merke:p.merke || '',
         belop: Math.round((d.kategori.indexOf('Inntekter') === 0 ? d.belop : -d.belop) * 100) / 100 });
     }
   }
   ut.sort((a, b) => String(a.dato).localeCompare(String(b.dato)));
   return svar({ ok:true, mnd:mnd, kategori:kat, foringer:ut });
+}
+
+/* ---------- Én foering: alt om den, og endringene (8. november 2026) ----------
+   Magne: «Når jeg trykker på en føring ønsker jeg et større vindu som viser
+   meg all info om den … Endre vedlegg, endre sum, endre navn osv.» Summen
+   kan overstyres: den opprinnelige (fra banken) ligger i bankBelop, og
+   overstyrt merkes - sida viser et utropstegn. En ny henting fra banken
+   rører ikke en post som finnes (se hentingen), saa endringen blir staaende.
+   Navnet: det opprinnelige i motpartBank. Merke paa foeringen gaar foran
+   kategoriens. */
+function vedleggListe(p){
+  const l = [];
+  if(p.harFil) l.push({ n:0, type:p.filType || '', navn:p.filNavn || '' });
+  for(const v of (p.vedlegg || [])) l.push({ n:v.n, type:v.type, navn:v.navn || '' });
+  return l;
+}
+async function postDetaljer(env, id){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const p = poster[String(id || '')];
+  if(!p) return svar({ ok:false, feil:'Fant ikke føringen' });
+  const kn = await lesJson(env, KONTONAVN_NOKKEL, {});
+  const bank = p.bankId && poster[p.bankId];
+  return svar({ ok:true, post:{ id:p.id, dato:p.dato, belop:p.belop, bankBelop:p.bankBelop != null ? p.bankBelop : null, overstyrt:!!p.overstyrt,
+    motpart:p.motpart || '', tekst:p.tekst || '', motpartBank:p.motpartBank || '', notat:p.notat || '', kategori:p.kategori || '', merke:p.merke || '',
+    status:p.status || '', auto:!!p.auto, kilde:p.kilde || '', fra:p.fra || '', forHand:!!p.forHand, faktura:!!p.faktura,
+    konto:p.konto ? (kn[p.konto] || p.kontoNavn || '') : '', betaltFra:bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
+    behandlet:p.behandlet || '', av:p.av ? masker(p.av) : '', deler:(p.deler || []).map(d => ({ kategori:d.kategori, belop:d.belop })),
+    harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, vedlegg:vedleggListe(p) } });
+}
+async function postEndre(env, kropp){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const p = poster[String(kropp.id || '')];
+  if(!p) return svar({ ok:false, feil:'Fant ikke føringen' });
+  if(kropp.motpart != null){
+    const v = String(kropp.motpart).trim().slice(0, 120);
+    if(!v) return svar({ ok:false, feil:'Navnet kan ikke være tomt' });
+    if(v !== (p.motpart || p.tekst || '')){
+      if(p.motpartBank == null) p.motpartBank = p.motpart || p.tekst || '';
+      p.motpart = v;
+      if(v === p.motpartBank) delete p.motpartBank;
+    }
+  }
+  if(kropp.notat != null){ const n = String(kropp.notat).trim().slice(0, 1000); if(n) p.notat = n; else delete p.notat; }
+  if(kropp.belop != null){
+    const b = Math.round(Number(kropp.belop) * 100) / 100;
+    if(!isFinite(b) || Math.abs(b) > 1e8) return svar({ ok:false, feil:'Ugyldig beløp' });
+    if(b !== p.belop){
+      if(p.deler && p.deler.length > 1) return svar({ ok:false, feil:'Kvitteringen er delt på flere kategorier – endre fordelingen i kvitteringen' });
+      if(p.bankBelop == null) p.bankBelop = p.belop;
+      p.belop = b;
+      if(b === p.bankBelop){ delete p.bankBelop; delete p.overstyrt; } else p.overstyrt = true;
+    }
+  }
+  if(kropp.merke != null){
+    const m = String(kropp.merke);
+    if(m){
+      const liste = await lesMerkeliste(env);
+      if(!liste.some(x => x.id === m)) return svar({ ok:false, feil:'Ukjent merke' });
+      p.merke = m;
+    } else delete p.merke;
+  }
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  return postDetaljer(env, p.id);
+}
+async function postVedlegg(env, kropp){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const p = poster[String(kropp.id || '')];
+  if(!p) return svar({ ok:false, feil:'Fant ikke føringen' });
+  const type = String(kropp.type || '');
+  if(!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(type)) return svar({ ok:false, feil:'Bare bilde eller PDF' });
+  const data = String(kropp.data || '');
+  if(!data || data.length > 14e6) return svar({ ok:false, feil:'Fila er for stor' });
+  const navn = String(kropp.navn || '').slice(0, 120);
+  if(!p.harFil){
+    await env.FAMILIE_KV.put(filNokkel(p.id), JSON.stringify({ type:type, data:data }));
+    p.harFil = true; p.filType = type; if(navn) p.filNavn = navn; else delete p.filNavn;
+  } else {
+    const n = (p.vedlegg || []).reduce((s, v) => Math.max(s, v.n), 0) + 1;
+    if(n > 20) return svar({ ok:false, feil:'For mange vedlegg' });
+    await env.FAMILIE_KV.put(vedleggNokkel(p.id, n), JSON.stringify({ type:type, data:data }));
+    (p.vedlegg = p.vedlegg || []).push({ n:n, type:type, navn:navn });
+  }
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  return postDetaljer(env, p.id);
+}
+async function postVedleggSlett(env, kropp){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const p = poster[String(kropp.id || '')];
+  if(!p) return svar({ ok:false, feil:'Fant ikke føringen' });
+  const n = Number(kropp.n);
+  if(n === 0){
+    if(!p.harFil) return svar({ ok:false, feil:'Fant ikke vedlegget' });
+    await env.FAMILIE_KV.delete(filNokkel(p.id));
+    p.harFil = false; delete p.filType; delete p.filNavn;
+  } else {
+    const i = (p.vedlegg || []).findIndex(v => v.n === n);
+    if(i === -1) return svar({ ok:false, feil:'Fant ikke vedlegget' });
+    await env.FAMILIE_KV.delete(vedleggNokkel(p.id, n));
+    p.vedlegg.splice(i, 1);
+    if(!p.vedlegg.length) delete p.vedlegg;
+  }
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  return postDetaljer(env, p.id);
 }
 
 /* Alle transaksjonene fra nullpunktet - kontoutskriften under Transaksjoner
@@ -1438,7 +1544,8 @@ async function allePoster(env){
       status:p.status, auto:!!p.auto, fra:p.fra || '', forHand:!!p.forHand, faktura:!!p.faktura,
       konto:p.konto || '', kontoNavn:kn[p.konto] || p.kontoNavn || '', betaltFra:bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
       deler:p.deler && p.deler.length > 1 ? p.deler.length : 0,
-      harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, harFil:!!p.harFil, filType:p.filType || '' });
+      harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, harFil:!!p.harFil, filType:p.filType || '',
+      overstyrt:!!p.overstyrt });
   }
   ut.sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
   return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', poster:ut });
@@ -1600,11 +1707,15 @@ async function nyKvittering(env, kropp, epost){
 }
 const KVITTERING_FILTYPER = ['image/jpeg', 'image/png', 'application/pdf'];
 function filNokkel(id){ return 'auth:bank:fil:' + id; }
+/* Flere vedlegg (8. november 2026): det foerste ligger som foer i fil:<id>
+   (harFil/filType), de neste i fil:<id>:<n> og i p.vedlegg = [{ n, type, navn }]. */
+function vedleggNokkel(id, n){ return n ? filNokkel(id) + ':' + n : filNokkel(id); }
 /* Selve fila, aapnet i en egen fane fra Oekonomi-sida. */
-async function kvitteringFil(env, id){
+async function kvitteringFil(env, id, n){
   /* Ogsaa et banktrekk kan ha en fil lagt ved - id-en er da bankens. */
   if(!/^[\w:.-]{1,120}$/.test(id)) return svar({ ok:false, feil:'Ugyldig id' });
-  const f = await lesJson(env, filNokkel(id), null);
+  n = /^\d{1,2}$/.test(String(n || '')) ? Number(n) : 0;
+  const f = await lesJson(env, vedleggNokkel(id, n), null);
   if(!f || !f.data) return svar({ ok:false, feil:'Fant ikke fila til kvitteringen' });
   const bin = atob(f.data), bytes = new Uint8Array(bin.length);
   for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
@@ -2261,7 +2372,8 @@ export async function onRequestGet({ request, env }){
     if(hva === 'dropbox') return await dropboxStatus(env);
     if(hva === 'dropbox-filer') return await dropboxFiler(env);
     if(hva === 'dropbox-fil') return await dropboxFil(env, url.searchParams.get('id') || '');
-    if(hva === 'kvittering-fil') return await kvitteringFil(env, url.searchParams.get('id') || '');
+    if(hva === 'kvittering-fil') return await kvitteringFil(env, url.searchParams.get('id') || '', url.searchParams.get('n') || '');
+    if(hva === 'post') return await postDetaljer(env, url.searchParams.get('id') || '');
     if(hva === 'kilder') return await kilder(env, okt);
     /* Trumf trenger ikke banken - den har sin egen innlogging. */
     if(hva === 'trumf') return await trumfStatus(env, fersk);
@@ -2307,6 +2419,9 @@ export async function onRequestPost({ request, env }){
   if(kropp && kropp.hva === 'koble-alle') return await kobleAlle(env, kropp, request);
   if(kropp && kropp.hva === 'faktura-innboks') return await fakturaInnboks(env, kropp);
   if(kropp && kropp.hva === 'faktura-kategori') return await fakturaKategori(env, kropp);
+  if(kropp && kropp.hva === 'post-endre') return await postEndre(env, kropp);
+  if(kropp && kropp.hva === 'post-vedlegg') return await postVedlegg(env, kropp);
+  if(kropp && kropp.hva === 'post-vedlegg-slett') return await postVedleggSlett(env, kropp);
   if(kropp && kropp.hva === 'regningskonto') return await lagreRegningskonto(env, kropp);
   if(kropp && kropp.hva === 'kategori-merke') return await settMerke(env, kropp);
   if(kropp && kropp.hva === 'budsjett-perioder') return await settPerioder(env, kropp);
