@@ -1,6 +1,9 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 8. november 2026, kveld: klokka i topplinja har fått alarm,
+*Ført à jour 8. november 2026, sent: Matlaging har fått Tips og Kokken i
+én fane, en Handleliste-fane, og «Start matlaging» med låste porsjoner,
+trykkbare ingredienser og koketider, og en plass som huskes (se
+toppblokka). Ført à jour 8. november 2026, kveld: klokka i topplinja har fått alarm,
 nedtelling og stoppeklokke – for denne enheten, Kjøkkenet eller personene
 – og dashene bruker den felles toppen (se toppblokka). Ført à jour
 8. november 2026: topplinja er felles på alle sidene –
@@ -119,7 +122,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 ?v=88`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
-`felles-topp.js ?v=3`, `felles-topp.css ?v=3`;
+`felles-topp.js ?v=5`, `felles-topp.css ?v=5`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
@@ -139,7 +142,7 @@ gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–88; neam.css til og
 med 87; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
-hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–2**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–4**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -1038,6 +1041,44 @@ ikke push.
   med vakter, men tegner ingenting (`hentVaer`, `vekslVaerBoble` m.fl.).
 - **Ikke prøvd:** delingen mellom enheter og dashene i drift – bare testet
   lokalt (Cloudflare Access).
+
+**8. november, sent: Matlaging – faner og matlaging** (`df21761`, topp
+`?v=4`). Magne: Tips og Kokken i samme fane, en ny fane Handleliste,
+porsjonsvelger, «Finn ingredienser» og «Start matlaging» under fanene,
+ingrediensen som lyser opp, matlagingsikonet ved klokka, at Neam husker
+plassen, og koketider som kan bli alarm.
+- **Fanene:** Ingredienser, Steg (telefon) / Oppskrift (landskap), **Tips**
+  (tipsene, så kokkens kommentarer), **Handleliste** (ingrediensene for
+  porsjonene som er valgt, og den lilla knappen til handlelista – flyttet
+  hit fra ingredienslista) og Vurdering. `#tab-comments` er borte.
+- **Under fanene** (`.mat-styring`): porsjonene (flyttet fra
+  ingredienslista), «Finn ingredienser» og «Start matlaging».
+- **Start matlaging** bekrefter antallet, låser porsjonene, setter lista i
+  oppskriftens rekkefølge og legger `neam-matlaging` i `localStorage`
+  (`{id, tittel, porsjoner, start, fane, venstre, lys, rull}`).
+  `felles-topp.js` viser da matlagingsikonet til venstre for klokka, med
+  en roterende ring og tiden under; trykk leder tilbake
+  (`window.ntpMatGaaTil` på sida selv).
+- **Stegene:** ingrediensnavn (navnet før komma eller parentes, også med
+  endelse) lyser opp raden sin; koketider («10 minutter», «5–7 min» – et
+  spenn gir den korteste) åpner nedtellingen ferdig utfylt
+  (`ntpTmNyForslag` i `felles-topp.js`). Står ingrediensen med et annet ord
+  i steget, blir den ikke trykkbar.
+- **Plassen huskes** mens retten lages: fane, liste, markert ingrediens og
+  rulling. Sida åpner retten igjen ved oppstart, og ikonet ved klokka
+  leder dit.
+- **Avslutt matlaging** spør: Vurder retten, Skriv et tips, Kokkens
+  kommentar, Bare avslutt – eller Avbryt.
+- **Ikke prøvd:** med ekte oppskrifter på neam.no, og åpning ved oppstart
+  (oppskriftene hentes fra KV). Testet lokalt med en prøverett.
+- **Rett etter** (topp `?v=5`, Magne): nedtellingen får navn fra leddet i
+  steget – «Kok basmatirisen i 10 minutter» gir «Kok basmatirisen», og
+  rettens navn bare når leddet er tomt (`matAlarmNavn`). Matlagingsikonet
+  står til venstre for klokka med en roterende ring, **timerne også** –
+  under klokka ble toppen for høy. Den valgte ingrediensen sentreres i
+  lista. Underveis: en funksjon `ntpMatTegn` het det samme som kroken
+  `window.ntpMatTegn` og kalte seg selv i det uendelige – den heter
+  `ntpMatIkon` nå (en funksjonsdeklarasjon og `window.navn` er samme navn).
 
 ### Åpne tråder
 

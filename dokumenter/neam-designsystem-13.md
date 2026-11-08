@@ -23,7 +23,8 @@ Mye ligger nå i **fellesfiler** (`felles-rot.css`, `felles-skall.css`,
 `felles-skriv.js`, `felles-hus.js`, `felles-ms.js`, `felles-tale.js`). Det som ennå er kopiert per fil, holdes likt av dette
 dokumentet – det er fortsatt fasiten for hva som skal være likt på tvers.
 
-*Sist oppdatert 8. november 2026: **topplinja er felles** på alle sidene,
+*Sist oppdatert 8. november 2026: **matlagingen** i Oppskriftssida (se
+der). Samme dag: **topplinja er felles** på alle sidene,
 også dashene, og **klokka har alarm, nedtelling og stoppeklokke** (se
 «Topplinja»). Samme dag: **pinkoden på kjøkkenskjermen** –
 tastaturet, «Hei Magne!», Pinkoder for sys@, og låseikonet med valgt tid
@@ -643,9 +644,10 @@ variant.
   **Slett** (rød) og Pause/Fortsett på stoppeklokka, og **Ny** (grønn).
   Det som fjerner heter Slett – «Avbryt» er nøytral og bare for å gå ut av
   skjemaet (Avbryt-regelen).
-- **Under klokka:** små ikoner med tallet under – alarmen `--aksent`,
-  nedtellingen `--handling-endre`, stoppeklokka `--handling-ny`.
-  **Høyst ti** på en skjerm.
+- **Til venstre for klokka:** små ikoner med tallet under – alarmen
+  `--aksent`, nedtellingen `--handling-endre`, stoppeklokka
+  `--handling-ny` – i høyst to rader. **Ikke under klokka:** det gjorde
+  toppen for høy. **Høyst ti** på en skjerm.
 - **Gjelder for:** «Bare denne enheten», eller Kjøkkenet og/eller Magne,
   Nina, Emma og Andrea. Det delte ringer der en mottaker har Neam åpen, og
   der det ble laget – ikke på en låst telefon (det krever push).
@@ -1715,6 +1717,40 @@ ganger kommer og noen ganger ikke, er verre enn ett trykk ekstra.
 **Krydderblandinger er byggeklosser.** Navnet blir en lenke i andre
 oppskrifters ingredienslister — understreket og i aksentfarge, ikke en
 knapp: den utfører ingenting, den viser noe.
+
+### En oppskrift: fanene og matlagingen
+
+*Fra 8. november 2026 (Magne).*
+
+**Fanene er Ingredienser og Steg (telefon) eller Oppskrift (landskap),
+Tips, Handleliste og Vurdering.** Tips og Kokken er én fane: tipsene
+først, kokkens kommentarer under. Handleliste viser ingrediensene for
+porsjonene som er valgt, og der ligger knappen til handlelista.
+
+**Under fanene står porsjonene, «Finn ingredienser» og «Start
+matlaging».** Finn ingredienser gir lista gruppert som i handlelista –
+det er også det man ser før noe er trykket.
+
+**Start matlaging spør om antallet porsjoner og låser det.** Så står
+ingrediensene i oppskriftens rekkefølge, og matlagingsikonet står til
+venstre for klokka i topplinja, på alle sidene – med en ring i
+`--aksent` som går rundt så man ser at den er i gang, og tiden under.
+Trykk leder tilbake til retten. Ringen står stille ved redusert bevegelse.
+Den valgte ingrediensen sentreres i lista.
+Mens retten lages, bytter Finn-knappen mellom de to rekkefølgene.
+
+**Ord i stegene kan trykkes:** et ingrediensnavn lyser opp raden sin i
+lista (aksentkant og mild flate, som en valgt rad ellers); en koketid,
+merket med timeglass, åpner nedtellingen i klokka ferdig utfylt – man
+velger hvem og lagrer selv. Begge er prikkunderstreket: de viser noe eller
+foreslår noe, de utfører ingenting alene.
+
+**Neam husker hvor man var** mens retten lages, og sida åpner seg der
+igjen.
+
+**Avslutt matlaging spør før den lukkes:** Vurder retten, Skriv et tips og
+Kokkens kommentar (grønne – de legger til), Bare avslutt (blå) og Avbryt
+(nøytral).
 
 ## Økonomi
 
