@@ -1851,7 +1851,12 @@ først, Sparing sist. Bare tallene skiller dem:
   gul boks (`.ok-mangler`) med bankens sum. Rediger har også **dato**, og
   en endret dato vises som «Opprinnelig dato». **Regninger som forfaller**
   åpnes likt, med «Legg i innboksen» i stedet for Stryk og Send tilbake.
-  **Listene** (fra 8. november 2026, til Magne har sett dem på neam.no):
+  **Vedleggene** vises av seg selv i høyre spalte, én side om gangen
+  (bilde = én side, PDF side for side), med runde piler ‹ › når det er
+  flere sider, piltaster og sveip, og «Side X av N · navn» under. På PC
+  (fra 1100 px) blir vinduet bredt og siden står i full høyde ved siden av
+  infoen. PDF tegnes med pdf.js fra cdnjs, lastet bare ved behov – det
+  eneste biblioteket utenfra i Neam. **Listene** (fra 8. november 2026, til Magne har sett dem på neam.no):
   høyst 900 px brede, grupper i `--t-stor` med et ikon foran, poster i
   `--t-stor` fra 700 px, en tynn stolpe (`.ok-rad-bar`) under hver post,
   raden lyser når man peker, og annenhver gruppe har `--bg-1`.

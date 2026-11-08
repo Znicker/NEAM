@@ -531,8 +531,9 @@ vedlegg og kvitteringslinjer samtidig i vinduet og «Før inn ny utgift»
 (`67ef6b5`), merkesystemet i Regnskap med samme merkeliste i alle tre
 fanene (`8159134`), Resultat med samme liste i tre kolonner (`ebc7a33`),
 listene lettere å lese – smalere, større skrift, stolper og ikoner
-(`e9432b6`) – og til sist fakturaer som forfaller i vinduet og dato under
-Rediger (`6e593ff`).
+(`e9432b6`), fakturaer som forfaller i vinduet og dato under Rediger
+(`6e593ff`), og til sist vedleggene i vinduet, én side om gangen med piler
+(`d4fdbbd`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -541,7 +542,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 84 commits, `0e0050a`–`6e593ff`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 85 commits, `0e0050a`–`d4fdbbd`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4428,7 +4429,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 84 commits fra `0e0050a` til `6e593ff` (dialogen med
+verdier. Bygget i 85 commits fra `0e0050a` til `d4fdbbd` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4873,6 +4874,26 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Vedleggene i vinduet, én side om gangen med piler** (`d4fdbbd`).
+  Magne: «Jeg ønsker at alle vedlegg også åpnes automatisk når jeg trykker
+  på føringene. dersom det er flere sider kan det vises klarer piler til
+  hver side» – og underveis: «På pc er det plass til vedlegsvisning i full
+  størrelse ved siden av info om føringen».
+  - **`okFrBlad(p)`** i høyre spalte: hvert bilde er én side, en PDF én
+    side per PDF-side (tegnet på canvas, skarpt for plassen). Under:
+    «Side X av N · navn», med «(side x av y)» for en PDF med flere sider.
+  - **Bla:** runde piler ‹ › (`.ok-fr-pil`, 48 px) bare når det er mer enn
+    én side, piltastene (ikke i et felt, og ikke når filviseren eller
+    kvitteringen ligger over) og sveip på telefon. Trykk på siden åpner
+    filviseren som før. Uten vedlegg: «Ingen vedlegg.».
+  - **PC (fra 1100 px):** vinduet blir bredt (`min(1500px, 96vw)`) når
+    føringen har vedlegg; infoen og knappene i venstre spalte, siden i
+    full høyde til høyre uten at vinduet ruller (`:has(.ok-fr-blad)`).
+    Under Rediger er vinduet som før.
+  - **pdf.js 3.11.174 fra cdnjs** – Neams første bibliotek utenfra – lastes
+    bare når en føring har en PDF. Laster det ikke, blir PDF-en kortet
+    som før.
+  - Testet i testserveren på PC og telefon; ikke på neam.no eller iPhone.
 - **Fakturaer som forfaller åpnes, og dato under Rediger** (`6e593ff`).
   Magne: «jeg ønsker at alle transaksjoner åpner seg slik som kvitteringer
   gjør i dag» – Autosync AS under Bil (en faktura som forfaller) kunne ikke
