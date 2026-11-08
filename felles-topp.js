@@ -20,6 +20,10 @@
 
    Posisjonen deles med dashene (fh_pos i localStorage): spurt én gang,
    husket etterpaa. Uten svar staar Arendal.
+
+   Matlagingen (oppskrifter.html) legger «neam-matlaging» i localStorage
+   mens en rett lages. Da staar et lite matlagingsikon med tiden som har
+   gaatt foerst blant timerne under klokka, og det leder tilbake dit.
    ============================================================ */
 
 const NTP_STED = { lat: 58.4614, lon: 8.7724, navn: 'Arendal' };  /* som STED paa dashene */
@@ -459,6 +463,16 @@ async function ntpTmFjern(t){
   await ntpTmEndreDelt(function(l){ return l.filter(function(x){ return x.id !== t.id; }); });
 }
 
+/* ---------- Matlagingen ----------
+   Settes av oppskrifter.html: {id, tittel, porsjoner, start, ...}. */
+const NTP_MAT = 'neam-matlaging';
+function ntpMat(){
+  try{
+    const m = JSON.parse(localStorage.getItem(NTP_MAT) || 'null');
+    return (m && m.id && m.start) ? m : null;
+  }catch(e){ return null; }
+}
+
 /* ---------- Tid ---------- */
 function ntpTmVarighet(ms){
   const s = Math.max(0, Math.round(ms / 1000));
@@ -483,16 +497,28 @@ function ntpTmTegn(){
   const el = document.getElementById('ntpTimere');
   if(!el) return;
   const alle = ntpTmAlle();
-  el.hidden = !alle.length;
-  el.innerHTML = alle.map(function(t){
-    return '<span class="ntp-tm ntp-tm-' + t.type + (ntpTmRinger === t.id ? ' ringer' : '') + '" title="' + ntpEsc(t.navn || NTP_TM_TYPER[t.type]) + '">'
+  const mat = ntpMat();
+  el.hidden = !alle.length && !mat;
+  const matIkon = (typeof neamIkonUrl === 'function') ? neamIkonUrl('matlaging') : '/bilder/ikoner/matlaging.png';
+  el.innerHTML = (mat
+      ? '<a class="ntp-tm ntp-tm-mat" href="/oppskrifter.html" data-mat="1" title="' + ntpEsc('Matlaging: ' + (mat.tittel || '')) + '">'
+        + '<img src="' + ntpEsc(matIkon) + '" alt="" width="512" height="511"><b>' + ntpTmVarighet(Date.now() - mat.start) + '</b></a>'
+      : '')
+    + alle.map(function(t){
+    return '<span class="ntp-tm ntp-tm-' + t.type + (ntpTmRinger === t.id ? ' ringer' : '') + '" data-id="' + ntpEsc(t.id) + '" title="' + ntpEsc(t.navn || NTP_TM_TYPER[t.type]) + '">'
       + NTP_TM_SVG[t.type] + '<b>' + ntpTmKort(t) + '</b></span>';
   }).join('');
+  const lenke = el.querySelector('[data-mat]');
+  if(lenke) lenke.addEventListener('click', function(e){
+    /* Ikke aapne timerpanelet - dette er en vei tilbake til gryta. */
+    e.stopPropagation();
+    if(typeof window.ntpMatGaaTil === 'function'){ e.preventDefault(); window.ntpMatGaaTil(); }
+  });
   const panel = document.getElementById('ntpTmBak');
   if(panel && !panel.hidden && panel.dataset.vis === 'liste') ntpTmListe();
   /* Sekundene teller bare naar noe gaar - ogsaa en alarm langt fram,
      ellers ville ingen sett at tiden kom. */
-  const trenger = alle.length > 0;
+  const trenger = alle.length > 0 || !!mat;
   if(trenger && !ntpTmTikker) ntpTmTikker = setInterval(ntpTmTikk, 1000);
   if(!trenger && ntpTmTikker){ clearInterval(ntpTmTikker); ntpTmTikker = null; }
 }
@@ -502,10 +528,13 @@ function ntpTmTikk(){
     const ferdig = ntpTmAlle().filter(function(t){ return t.type !== 'stoppeklokke' && t.mal <= naa; })[0];
     if(ferdig) ntpTmRing(ferdig);
   }
-  document.querySelectorAll('#ntpTimere .ntp-tm b').forEach(function(b, i){
-    const t = ntpTmAlle()[i];
-    if(t) b.textContent = ntpTmKort(t);
+  const alle = ntpTmAlle();
+  document.querySelectorAll('#ntpTimere .ntp-tm[data-id]').forEach(function(s){
+    const t = alle.filter(function(x){ return x.id === s.dataset.id; })[0];
+    if(t) s.querySelector('b').textContent = ntpTmKort(t);
   });
+  const mat = ntpMat(), mb = document.querySelector('#ntpTimere [data-mat] b');
+  if(mat && mb) mb.textContent = ntpTmVarighet(naa - mat.start);
   const panel = document.getElementById('ntpTmBak');
   if(panel && !panel.hidden && panel.dataset.vis === 'liste'){
     panel.querySelectorAll('[data-tm-tid]').forEach(function(s){
@@ -590,12 +619,13 @@ function ntpTmVarsle(tekst){
 }
 
 /* ---------- Skjemaet: ny eller endre ---------- */
-function ntpTmSkjema(t){
+function ntpTmSkjema(t, forslag){
   const bak = ntpTmBak(), kort = bak.querySelector('.ntp-tm-kort');
   bak.dataset.vis = 'skjema';
   const ny = !t;
-  const type = t ? t.type : 'nedtelling';
-  const rest = t && t.type === 'nedtelling' ? Math.max(0, t.mal - Date.now()) : 10 * 60000;
+  const type = t ? t.type : ((forslag && forslag.type) || 'nedtelling');
+  const rest = t && t.type === 'nedtelling' ? Math.max(0, t.mal - Date.now())
+    : (forslag && forslag.ms) ? forslag.ms : 10 * 60000;
   const alarmTid = t && t.type === 'alarm' ? ntpTmKlokkeslett(t.mal) : '';
   const valgt = t ? (t.for || []) : [];
   kort.innerHTML = '<div class="ntp-tm-tittel">' + (ny ? 'Ny' : 'Endre') + '</div>'
@@ -606,7 +636,7 @@ function ntpTmSkjema(t){
         }).join('')
     + '</div>'
     + '<label class="ntp-tm-felt">Navn<input type="text" id="ntpTmNavn" maxlength="40" placeholder="F.eks. Pasta"'
-    +   ' value="' + ntpEsc(t ? t.navn || '' : '') + '"></label>'
+    +   ' value="' + ntpEsc(t ? t.navn || '' : (forslag && forslag.navn) || '') + '"></label>'
     + '<div class="ntp-tm-del" data-for="alarm"><label class="ntp-tm-felt">Klokkeslett'
     +   '<input type="time" id="ntpTmAlarm" value="' + alarmTid + '"></label></div>'
     + '<div class="ntp-tm-del" data-for="nedtelling"><div class="ntp-tm-felt">Hvor lenge'
@@ -777,13 +807,27 @@ function ntpTmStille(){
   ntpTmTegn();
 }
 
+/* Utenfra: aapner skjemaet med et forslag ferdig utfylt - en koketid
+   trykket i en oppskrift. Man velger hvem og trykker Lagre selv. */
+function ntpTmNyForslag(forslag){
+  ntpTmLyd();
+  if(ntpTmAlle().length >= NTP_TM_MAKS){ ntpTmVarsle('Det går alt ' + NTP_TM_MAKS + ' her. Slett én først.'); return; }
+  ntpTmSkjema(null, forslag || {});
+  ntpTmBak().hidden = false;
+}
+/* Matlagingen har startet eller sluttet paa denne sida. */
+window.ntpMatTegn = function(){ ntpTmTegn(); };
+
 function ntpTmStart(){
   ntpTmLesLokal();
   ntpTmTegn();
   ntpTmHent();
   setInterval(function(){ if(!document.hidden) ntpTmHent(); }, NTP_TM_HENT);
   document.addEventListener('visibilitychange', function(){ if(!document.hidden) ntpTmHent(); });
-  window.addEventListener('storage', function(e){ if(e.key === NTP_TM_LOKAL){ ntpTmLesLokal(); ntpTmTegn(); } });
+  window.addEventListener('storage', function(e){
+    if(e.key === NTP_TM_LOKAL) ntpTmLesLokal();
+    if(e.key === NTP_TM_LOKAL || e.key === NTP_MAT) ntpTmTegn();
+  });
 }
 
 if(document.getElementById('neamTopp')) ntpTegn();

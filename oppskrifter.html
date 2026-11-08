@@ -14,7 +14,7 @@
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
 <link rel="stylesheet" href="/felles-neam.css?v=88">
-<link rel="stylesheet" href="/felles-topp.css?v=3">
+<link rel="stylesheet" href="/felles-topp.css?v=4">
 <!-- ?v=: bump tallet naar en fellesfil endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -1470,7 +1470,7 @@
     #oppskrift-kolonner.tokolonner #tab-list .shop-table td{ font-size:var(--t-brod); }
 
     #view-detail #tab-list-btn, #view-detail #tab-steps-btn{ display:none; }
-    #view-detail #tab-tips, #view-detail #tab-comments, #view-detail #tab-rating{
+    #view-detail #tab-tips, #view-detail #tab-comments, #view-detail #tab-handle, #view-detail #tab-rating{
       max-width:1240px; margin:0 auto; width:100%;
       flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain;
     }
@@ -1701,6 +1701,35 @@ input,select,textarea{font-size:16px}
   width:60%; margin:20% auto 0; padding:0; background:none; box-shadow:none; border-radius:0;
 }
 .home-hero-navn{ font-size:var(--t-stor); margin:0 0 2px; }
+
+/* ---------- Matlaging (8. november 2026) ----------
+   Porsjoner, «Finn ingredienser» og «Start matlaging» under fanene. Mens
+   en rett lages er porsjonene laast, ingrediensene staar i oppskriftens
+   rekkefoelge, og ingrediensnavn og koketider i stegene kan trykkes. */
+.mat-styring{ display:flex; align-items:center; justify-content:center; gap:10px 16px; flex-wrap:wrap; margin:12px 0 2px; }
+.mat-styring .servings-bar{ margin:0; padding:0; border:0; }
+.mat-styring .servings-bar.laast .servings-btn{ opacity:.35; pointer-events:none; }
+.mat-knapp{
+  border:0; border-radius:999px; padding:9px 16px; background:var(--aksent); color:#fff; cursor:pointer;
+  font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
+}
+.mat-knapp:active{ transform:scale(.97); }
+.mat-knapp.ny{ background:var(--handling-ny); }
+.mat-tid{ font-size:var(--t-meta); font-weight:700; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+.mat-tid[hidden]{ display:none; }
+.mat-hint{ text-align:center; color:var(--ink-soft); font-size:var(--t-meta); font-weight:600; margin:0 0 10px; }
+/* Ingrediensen man trykket paa i stegene. Samme markering som en valgt
+   rad ellers i huset: aksentkant og mild flate. */
+.shop-table tr.lyser td{ background:var(--boks-mild); }
+.shop-table tr.lyser td:first-child{ box-shadow:inset 4px 0 0 var(--aksent); }
+.steg-ing, .steg-tid{
+  border:0; background:none; padding:0; font:inherit; color:inherit; cursor:pointer;
+  border-bottom:2px dotted var(--aksent);
+}
+.steg-tid{ border-bottom-color:var(--handling-endre); font-weight:700; white-space:nowrap; }
+.steg-tid svg{ width:.95em; height:.95em; vertical-align:-.12em; margin-right:2px; color:var(--handling-endre); }
+.mat-slutt-valg{ display:flex; flex-direction:column; gap:8px; margin:0 0 16px; }
+.mat-slutt-valg .mat-knapp{ width:100%; padding:12px 16px; font-size:var(--t-brod); }
 </style>
 </head>
 <body>
@@ -1899,8 +1928,22 @@ input,select,textarea{font-size:16px}
         <button class="tab-btn" id="tab-steps-btn" onclick="switchTab('steps')"><span class="tab-tekst">Steg</span></button>
         <button class="tab-btn" id="tab-begge-btn" onclick="switchTab('begge')"><span class="tab-tekst">Oppskrift</span></button>
         <button class="tab-btn" id="tab-tips-btn" onclick="switchTab('tips')"><span class="tab-tekst">Tips</span></button>
-        <button class="tab-btn" id="tab-comments-btn" onclick="switchTab('comments')"><span class="tab-tekst">Kokken</span></button>
+        <button class="tab-btn" id="tab-handle-btn" onclick="switchTab('handle')"><span class="tab-tekst">Handleliste</span></button>
         <button class="tab-btn" id="tab-rating-btn" onclick="switchTab('rating')"><span class="tab-tekst">Vurdering</span></button>
+      </div>
+
+      <!-- Porsjoner, Finn ingredienser og Start matlaging (8. november 2026).
+           Porsjonene sto foer oeverst i ingredienslista. -->
+      <div class="mat-styring" id="mat-styring">
+        <div class="servings-bar" id="servings-bar">
+          <span class="lbl">Porsjoner</span>
+          <button class="servings-btn" onclick="changeServings(-1)">−</button>
+          <span class="servings-count" id="d-servings-count">4</span>
+          <button class="servings-btn" onclick="changeServings(1)">+</button>
+        </div>
+        <button type="button" class="mat-knapp" id="mat-finn" onclick="matFinn()">Finn ingredienser</button>
+        <button type="button" class="mat-knapp" id="mat-start" onclick="matStartEllerSlutt()">Start matlaging</button>
+        <span class="mat-tid" id="mat-tid" hidden></span>
       </div>
     </div>
     </div>
@@ -1908,19 +1951,10 @@ input,select,textarea{font-size:16px}
     <div id="oppskrift-kolonner">
     <div class="tabpane active" id="tab-list">
       <div class="card-panel punched" style="padding-top:20px;">
-        <div class="servings-bar">
-          <span class="lbl">Porsjoner</span>
-          <button class="servings-btn" onclick="changeServings(-1)">−</button>
-          <span class="servings-count" id="d-servings-count">4</span>
-          <button class="servings-btn" onclick="changeServings(1)">+</button>
-        </div>
         <table class="shop-table">
           <thead><tr><th>Ingrediens</th><th>Mengde</th></tr></thead>
           <tbody id="d-shopping-body"></tbody>
         </table>
-        <button type="button" class="til-handleliste" onclick="sendTilHandleliste()">
-          Legg ingrediensene i handlelista
-        </button>
         <div class="allergen-summary" id="d-allergens" style="display:none;">
           <span class="lbl">⚠ Allergener i denne oppskriften</span>
           <div class="allergen-pills" id="d-allergen-pills"></div>
@@ -1942,18 +1976,31 @@ input,select,textarea{font-size:16px}
     </div>
     </div>
 
+    <!-- Tips og Kokken i samme fane fra 8. november 2026: tipsene foerst,
+         kokkens kommentarer under. -->
     <div class="tabpane" id="tab-tips">
       <div class="card-panel punched" style="padding-top:20px;">
         <button class="btn btn-pille btn-ny" onclick="openNewTipModal()">Nytt tips</button>
         <div class="section-label">Tips fra oppskriften</div>
         <div id="d-tips-list"></div>
+        <div class="section-label">Kokken</div>
+        <button class="btn btn-pille btn-ny" onclick="openNewCommentModal()">Ny kommentar</button>
+        <div id="d-comments-list" style="margin-top:18px;"></div>
       </div>
     </div>
 
-    <div class="tabpane" id="tab-comments">
+    <!-- Handleliste (8. november 2026): ingrediensene for porsjonene som er
+         valgt over fanene, og veien til handlelista. -->
+    <div class="tabpane" id="tab-handle">
       <div class="card-panel punched" style="padding-top:20px;">
-        <button class="btn btn-pille btn-ny" onclick="openNewCommentModal()">Ny kommentar</button>
-        <div id="d-comments-list" style="margin-top:18px;"></div>
+        <p class="mat-hint" id="d-handle-hint"></p>
+        <table class="shop-table">
+          <thead><tr><th>Ingrediens</th><th>Mengde</th></tr></thead>
+          <tbody id="d-handle-body"></tbody>
+        </table>
+        <button type="button" class="til-handleliste" onclick="sendTilHandleliste()">
+          Legg ingrediensene i handlelista
+        </button>
       </div>
     </div>
 
@@ -2365,7 +2412,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=89"></script>
-<script src="/felles-topp.js?v=3"></script>
+<script src="/felles-topp.js?v=4"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB-basert erstatning for window.storage.
@@ -5489,10 +5536,17 @@ let currentServings = 1;
 
 async function openRecipe(id){
   currentRecipeId = id;
+  /* Fanebytter under aapningen skal ikke skrive over plassen som er husket. */
+  matApner = true;
   const r = await loadFullRecipe(id);
-  if(!r) return goHome();
+  if(!r){ matApner = false; return goHome(); }
 
   currentServings = r.baseServings || 1;
+  /* Lages denne retten naa, staar porsjonene og lista som da den startet. */
+  const lages = !!(matlaging && matlaging.id === id);
+  if(lages) currentServings = matlaging.porsjoner || currentServings;
+  matVenstre = lages ? (matlaging.venstre || 'rekkefolge') : 'gruppert';
+  matLys = null;
 
   const photoEl = $('d-photo');
   const photoCard = $('detail-photo-card');
@@ -5525,6 +5579,9 @@ async function openRecipe(id){
   lukkRedigerMeny();
   switchTab('list');
   showView('view-detail');
+  matApner = false;
+  matTegnStyring();
+  matGjenopprettPlass();
 }
 
 function scaledAmountLabel(i, factor){
@@ -5864,6 +5921,7 @@ function renderIngredientViews(){
   const shopBody = $('d-shopping-body');
   if(r.ingredients.length === 0){
     shopBody.innerHTML = `<tr><td colspan="2" class="ing-empty">Ingen ingredienser lagt inn</td></tr>`;
+    $('d-handle-body').innerHTML = shopBody.innerHTML;
   }else{
     /* Ingrediensene grupperes etter varetype, som i ukemenyen. Rekkefølgen inne
        i hver bolk er den oppskriften selv har, så sammenhengen beholdes. */
@@ -5877,30 +5935,39 @@ function renderIngredientViews(){
                    title="Se hva som er i blandingen">${escapeHtml(i.name)}</button>`
         : escapeHtml(i.name);
     };
-    const rad = (i, idx) => `
-      <tr id="shop-${idx}">
+    const rad = (i, idx, pre) => `
+      <tr id="${pre || 'shop-'}${idx}">
         <td class="name">${navnCelle(i)}${(i.allergens && i.allergens.length) ? ` <button type="button" class="allergen-flag" onclick="visAllergener('${jsStr(i.name)}', '${jsStr(i.allergens.join(', '))}')">!</button>` : ''}</td>
         <td class="amt mono">${escapeHtml(scaledAmountLabel(i, factor))}${nutritionFlagHtml(i.nutrition, i, r.baseServings)}</td>
       </tr>`;
     /* Seksjon ytterst, varetype inni. Uten seksjoner blir det bare
        varetypebolkene, akkurat som foer. */
-    const varebolker = (medIdx) => {
+    const varebolker = (medIdx, pre) => {
       const brukte = VARETYPER.filter(t => medIdx.some(x => x.type === t));
       const bolker = brukte.map(t => ({ type: t, rader: medIdx.filter(x => x.type === t) }));
       const uten = medIdx.filter(x => !VARETYPER.includes(x.type));
       if(uten.length) bolker.push({ type: brukte.length ? 'Uten kategori' : '', rader: uten });
       return bolker.map(b =>
         (b.type ? `<tr class="ing-bolk"><td colspan="2"><span>${escapeHtml(b.type)}</span></td></tr>` : '')
-        + b.rader.map(x => rad(x.i, x.idx)).join('')
+        + b.rader.map(x => rad(x.i, x.idx, pre)).join('')
       ).join('');
     };
     const medType = x => ({ i: x.x, idx: x.idx, type: slaaOppVare(x.x.name).type || '' });
 
-    shopBody.innerHTML = grupperISeksjoner(r.ingredients).map(sek =>
-      (sek.navn ? `<tr class="ing-seksjon"><td colspan="2"><span>${escapeHtml(sek.navn)}</span></td></tr>` : '')
-      + varebolker(sek.rader.map(medType))
+    const seksjon = sek => sek.navn ? `<tr class="ing-seksjon"><td colspan="2"><span>${escapeHtml(sek.navn)}</span></td></tr>` : '';
+    const gruppert = pre => grupperISeksjoner(r.ingredients).map(sek =>
+      seksjon(sek) + varebolker(sek.rader.map(medType), pre)
     ).join('');
+    /* Mens retten lages: oppskriftens egen rekkefoelge, uten varetyper. */
+    const rekke = () => grupperISeksjoner(r.ingredients).map(sek =>
+      seksjon(sek) + sek.rader.map(x => rad(x.x, x.idx)).join('')
+    ).join('');
+    shopBody.innerHTML = matVenstre === 'rekkefolge' ? rekke() : gruppert('shop-');
+    $('d-handle-body').innerHTML = gruppert('hl-');
   }
+  $('d-handle-hint').textContent = 'For ' + formatAmt(currentServings)
+    + (currentServings === 1 ? ' porsjon' : ' porsjoner') + ' – velg antall over fanene.';
+  matLysIgjen(false);
 
   const allergenMap = {};
   r.ingredients.forEach(i => (i.allergens || []).forEach(a => {
@@ -6213,7 +6280,7 @@ function renderSteps(){
       <div class="num">${nr}</div>
       <div class="step-block-body">
         ${s.photo ? `<img class="step-photo" src="${s.photo}" alt="">` : ''}
-        <div class="txt">${escapeHtml(s.text)}</div>
+        <div class="txt">${stegMedLenker(s.text, nr)}</div>
       </div>
     </div>`;
   /* Nummereringen starter paa 1 i hver seksjon, saa "steg 2 i kremen" er
@@ -6384,7 +6451,229 @@ function renderCommentsList(){
   }).join('');
 }
 
+/* ============================================================
+   Matlaging (8. november 2026, Magne)
+   ------------------------------------------------------------
+   Under fanene: porsjoner, «Finn ingredienser» og «Start matlaging».
+   - Finn ingredienser: venstre kolonne gruppert som i handlelista (som
+     foer). Mens retten lages bytter knappen mellom den og oppskriftens
+     rekkefoelge.
+   - Start matlaging: porsjonene bekreftes og laases, lista staar i
+     oppskriftens rekkefoelge, og et lite matlagingsikon med tiden som har
+     gaatt staar ved klokka (felles-topp.js leser «neam-matlaging»).
+   - Ingrediensnavn i stegene lyser opp raden sin i lista; koketider
+     aapner en ferdig utfylt nedtelling i klokka.
+   - Plassen huskes i localStorage mens retten lages - fane, liste,
+     markert ingrediens og rulling - og sida aapner seg der igjen, ogsaa
+     etter et besoek paa en annen side.
+   - Avslutt matlaging: spoer om vurdering, tips eller kokkens kommentar
+     foer den lukkes.
+   ============================================================ */
+const MAT_NOKKEL = 'neam-matlaging';
+let matlaging = null;
+try{ matlaging = JSON.parse(localStorage.getItem(MAT_NOKKEL) || 'null'); }catch(e){ matlaging = null; }
+let matVenstre = 'gruppert';
+let matApner = false;
+let matLys = null;
+const MAT_KLOKKE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"'
+  + ' stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12M6 21h12M7 3c0 5 10 5 10 9s-10 4-10 9M17 3c0 5-10 5-10 9"/></svg>';
+
+function matAktivHer(){ return !!(matlaging && matlaging.id === currentRecipeId); }
+
+function matHusk(){
+  if(!matAktivHer() || matApner) return;
+  matlaging.fane = sisteFane;
+  matlaging.venstre = matVenstre;
+  matlaging.lys = matLys;
+  matlaging.rull = { vindu: window.scrollY };
+  ['tab-list', 'tab-steps', 'tab-tips', 'tab-handle', 'tab-rating'].forEach(id => {
+    const e = $(id);
+    if(e && e.scrollTop) matlaging.rull[id] = e.scrollTop;
+  });
+  try{ localStorage.setItem(MAT_NOKKEL, JSON.stringify(matlaging)); }catch(e){}
+}
+let matRullVent = null;
+/* Kolonnene ruller selv i landskap, saa det lyttes paa hele dokumentet. */
+document.addEventListener('scroll', () => {
+  if(!matAktivHer()) return;
+  clearTimeout(matRullVent);
+  matRullVent = setTimeout(matHusk, 400);
+}, { passive:true, capture:true });
+
+function matGjenopprettPlass(){
+  if(!matAktivHer()) return;
+  matLys = (matlaging.lys != null) ? matlaging.lys : null;
+  if(matlaging.fane) switchTab(matlaging.fane);
+  matLysIgjen(false);
+  const r = matlaging.rull || {};
+  setTimeout(() => {
+    Object.keys(r).forEach(k => {
+      if(k === 'vindu') window.scrollTo(0, r[k]);
+      else if($(k)) $(k).scrollTop = r[k];
+    });
+  }, 80);
+}
+/* Det lille ikonet ved klokka: paa denne sida aapnes retten uten ny lasting. */
+window.ntpMatGaaTil = function(){ if(matlaging) openRecipe(matlaging.id); };
+
+function matTegnStyring(){
+  const aktiv = matAktivHer();
+  const sb = $('servings-bar'); if(sb) sb.classList.toggle('laast', aktiv);
+  const st = $('mat-start'); if(st) st.textContent = aktiv ? 'Avslutt matlaging' : 'Start matlaging';
+  const fi = $('mat-finn');
+  if(fi) fi.textContent = (aktiv && matVenstre === 'gruppert') ? 'Oppskriftens rekkefølge' : 'Finn ingredienser';
+  const t = $('mat-tid'); if(t) t.hidden = !aktiv;
+  matTid();
+}
+function matTid(){
+  const t = $('mat-tid');
+  if(!t || !matAktivHer()) return;
+  const min = Math.floor((Date.now() - matlaging.start) / 60000);
+  t.textContent = 'Startet for ' + (min >= 60 ? Math.floor(min / 60) + ' t ' + (min % 60) + ' min' : min + ' min') + ' siden';
+}
+setInterval(matTid, 15000);
+
+function matFinn(){
+  matVenstre = (matAktivHer() && matVenstre === 'gruppert') ? 'rekkefolge' : 'gruppert';
+  renderIngredientViews();
+  switchTab(LANDSKAP.matches ? 'begge' : 'list');
+  matTegnStyring();
+  matHusk();
+}
+
+async function matStartEllerSlutt(){
+  if(matAktivHer()) return matAvslutt();
+  const r = recipeCache[currentRecipeId];
+  if(!r) return;
+  const n = formatAmt(currentServings) + (currentServings === 1 ? ' porsjon' : ' porsjoner');
+  const tekst = (matlaging && matlaging.id !== currentRecipeId)
+    ? 'Du lager «' + (matlaging.tittel || 'en annen rett') + '». Avslutte den og starte «' + (r.title || 'denne') + '» for ' + n + '?'
+    : 'Start matlaging for ' + n + '?';
+  if(!(await bekreft(tekst, { jaTekst:'Start' }))) return;
+  matlaging = { id: currentRecipeId, tittel: r.title || '', porsjoner: currentServings, start: Date.now() };
+  matVenstre = 'rekkefolge';
+  matLys = null;
+  renderIngredientViews();
+  switchTab(LANDSKAP.matches ? 'begge' : 'steps');
+  matTegnStyring();
+  matHusk();
+  if(typeof window.ntpMatTegn === 'function') window.ntpMatTegn();
+}
+
+function matAvslutt(){
+  let bak = $('mat-slutt-bak');
+  if(!bak){
+    bak = document.createElement('div');
+    bak.id = 'mat-slutt-bak';
+    bak.className = 'dlg-bak';
+    bak.innerHTML = '<div class="dlg-kort" role="dialog" aria-label="Avslutt matlaging">'
+      + '<p class="dlg-tekst">Ferdig med maten? Vil du skrive noe før matlagingen avsluttes?</p>'
+      + '<div class="mat-slutt-valg">'
+      +   '<button type="button" class="mat-knapp ny" data-valg="rating">Vurder retten</button>'
+      +   '<button type="button" class="mat-knapp ny" data-valg="tips">Skriv et tips</button>'
+      +   '<button type="button" class="mat-knapp ny" data-valg="kokken">Kokkens kommentar</button>'
+      +   '<button type="button" class="mat-knapp" data-valg="slutt">Bare avslutt</button>'
+      + '</div>'
+      + '<div class="dlg-rad"><button type="button" class="dlg-knapp nei" data-valg="avbryt">Avbryt</button></div>'
+      + '</div>';
+    bak.addEventListener('click', e => {
+      const b = e.target.closest('[data-valg]');
+      if(!b && e.target !== bak) return;
+      const v = b ? b.dataset.valg : 'avbryt';
+      bak.hidden = true;
+      if(v === 'avbryt') return;
+      matSlutt();
+      if(v === 'rating'){ switchTab('rating'); openNewTastingModal(); }
+      else if(v === 'tips'){ switchTab('tips'); openNewTipModal(); }
+      else if(v === 'kokken'){ switchTab('tips'); openNewCommentModal(); }
+    });
+    document.body.appendChild(bak);
+  }
+  bak.hidden = false;
+}
+function matSlutt(){
+  matlaging = null;
+  matVenstre = 'gruppert';
+  matLys = null;
+  try{ localStorage.removeItem(MAT_NOKKEL); }catch(e){}
+  renderIngredientViews();
+  matTegnStyring();
+  if(typeof window.ntpMatTegn === 'function') window.ntpMatTegn();
+}
+
+/* Ingrediensen fra et steg lyser opp i lista. Staar lista i en annen fane
+   (telefon), kommer mengden som en melding i stedet. */
+function lysIngrediens(idx){
+  matLys = idx;
+  matLysIgjen(true);
+  if(!LANDSKAP.matches){
+    const r = recipeCache[currentRecipeId];
+    const i = r && r.ingredients[idx];
+    if(i){
+      const faktor = (r.baseServings > 0) ? (currentServings / r.baseServings) : 1;
+      showToast(i.name + ': ' + scaledAmountLabel(i, faktor));
+    }
+  }
+  matHusk();
+}
+function matLysIgjen(rull){
+  document.querySelectorAll('#d-shopping-body tr.lyser').forEach(t => t.classList.remove('lyser'));
+  if(matLys == null) return;
+  const rad = $('shop-' + matLys);
+  if(!rad) return;
+  rad.classList.add('lyser');
+  if(rull) rad.scrollIntoView({ block:'nearest', behavior:'smooth' });
+}
+
+/* En koketid i et steg: nedtellingen i klokka, ferdig utfylt. Man velger
+   hvem den gjelder for og trykker Lagre selv. */
+function tidTilAlarm(ms, navn){
+  if(typeof ntpTmNyForslag === 'function') ntpTmNyForslag({ type:'nedtelling', ms: ms, navn: navn });
+  else showToast('Klokka er ikke lastet på denne sida.', true);
+}
+
+/* Koketider: «10 minutter», «10–12 min», «1 time», «30 sek». Et spenn gir
+   den korteste tiden - da kan man heller sjekke og legge til. */
+const MAT_TID = /(\d+(?:[.,]\d+)?)(?:\s*(?:-|–|til)\s*\d+(?:[.,]\d+)?)?\s*(timer|time|t|minutter|minutt|min|sekunder|sekund|sek)(?![\p{L}\d])/giu;
+function stegMedLenker(tekst, nr){
+  const r = recipeCache[currentRecipeId];
+  const t = String(tekst || '');
+  const treff = [];
+  let m;
+  MAT_TID.lastIndex = 0;
+  while((m = MAT_TID.exec(t))){
+    const tall = parseFloat(m[1].replace(',', '.'));
+    const e = m[2].toLowerCase();
+    const ms = Math.round(tall * (e.charAt(0) === 't' ? 3600000 : e.indexOf('sek') === 0 ? 1000 : 60000));
+    if(ms > 0 && ms <= 24 * 3600000) treff.push({ fra: m.index, til: m.index + m[0].length, tid: ms });
+  }
+  /* Ingrediensene kjennes paa navnet foer komma eller parentes, ogsaa med
+     endelse: «løk» treffer «løken». */
+  ((r && r.ingredients) || []).forEach((ing, idx) => {
+    const hode = String(ing.name || '').split(/[,(]/)[0].trim();
+    if(hode.length < 3) return;
+    const re = new RegExp('(?<![\\p{L}])' + hode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[\\p{L}]*', 'giu');
+    let k;
+    while((k = re.exec(t))) treff.push({ fra: k.index, til: k.index + k[0].length, ing: idx });
+  });
+  treff.sort((a, b) => a.fra - b.fra || (b.til - b.fra) - (a.til - a.fra));
+  const navn = ((r && r.title) || 'Matlaging') + ' – steg ' + nr;
+  let ut = '', pos = 0;
+  treff.forEach(x => {
+    if(x.fra < pos) return;     /* overlapper noe som alt er merket */
+    ut += escapeHtml(t.slice(pos, x.fra));
+    const bit = escapeHtml(t.slice(x.fra, x.til));
+    ut += (x.tid != null)
+      ? `<button type="button" class="steg-tid" onclick="tidTilAlarm(${x.tid}, '${jsStr(navn)}')" title="Lag en nedtelling">${MAT_KLOKKE}${bit}</button>`
+      : `<button type="button" class="steg-ing" onclick="lysIngrediens(${x.ing})">${bit}</button>`;
+    pos = x.til;
+  });
+  return ut + escapeHtml(t.slice(pos));
+}
+
 function changeServings(dir){
+  /* Laast mens retten lages - porsjonene ble bekreftet ved start. */
+  if(matAktivHer()) return;
   currentServings = Math.max(1, currentServings + dir);
   renderIngredientViews();
   renderDetailStats();
@@ -6397,6 +6686,7 @@ let sisteFane = 'list';
 
 function switchTab(which){
   sisteFane = which;
+  matHusk();
   const kol = $('oppskrift-kolonner');
 
   /* Fem faner staaende, fire liggende. "Oppskrift" ER landskapsvisningen,
@@ -6415,10 +6705,10 @@ function switchTab(which){
     const viserKolonner = (which === 'begge');
     kol.classList.toggle('tokolonner', viserKolonner);
     kol.style.display = viserKolonner ? '' : 'none';
-    ['tips', 'comments', 'rating'].forEach(t => {
+    ['tips', 'handle', 'rating'].forEach(t => {
       $('tab-' + t).classList.toggle('active', t === which);
     });
-    ['begge', 'list', 'steps', 'tips', 'comments', 'rating'].forEach(t => {
+    ['begge', 'list', 'steps', 'tips', 'handle', 'rating'].forEach(t => {
       const b = $('tab-' + t + '-btn');
       if(b) b.classList.toggle('active', t === which);
     });
@@ -6428,7 +6718,7 @@ function switchTab(which){
   kol.classList.remove('tokolonner');
   kol.style.display = '';
   if(which === 'begge') which = 'list';
-  ['list', 'steps', 'tips', 'comments', 'rating'].forEach(t => {
+  ['list', 'steps', 'tips', 'handle', 'rating'].forEach(t => {
     $('tab-' + t).classList.toggle('active', t === which);
     $('tab-' + t + '-btn').classList.toggle('active', t === which);
   });
@@ -6518,7 +6808,7 @@ function startStegRedigering(){
   redigerModus = true;
   /* Staar man allerede i en fane som kan redigeres, blir man staaende.
      Bare fra Ingredienser - som ikke redigeres her - flyttes man. */
-  const redigerbare = ['steps', 'begge', 'tips', 'comments', 'rating'];
+  const redigerbare = ['steps', 'begge', 'tips', 'rating'];
   if(redigerbare.indexOf(sisteFane) < 0){
     switchTab(LANDSKAP.matches ? 'begge' : 'steps');
   }
@@ -8509,6 +8799,11 @@ function settBusy(på){
       await openRecipe(rett);
     }
   }catch(e){ console.warn('Kunne ikke aapne oppskrift fra lenke:', e); }
+
+  /* Matlaging som var i gang: rett tilbake dit man var (8. november 2026). */
+  if(matlaging && matlaging.id && currentRecipeId !== matlaging.id){
+    try{ await openRecipe(matlaging.id); }catch(e){ console.warn('Fant ikke retten som ble laget:', e); }
+  }
 })();
 
 /* Live-synk: frisk opp oppskrift-indeksen fra skyen naar appen kommer i
