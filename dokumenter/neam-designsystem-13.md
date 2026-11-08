@@ -23,7 +23,8 @@ Mye ligger nå i **fellesfiler** (`felles-rot.css`, `felles-skall.css`,
 `felles-skriv.js`, `felles-hus.js`, `felles-ms.js`, `felles-tale.js`). Det som ennå er kopiert per fil, holdes likt av dette
 dokumentet – det er fortsatt fasiten for hva som skal være likt på tvers.
 
-*Sist oppdatert 8. november 2026: **pinkoden på kjøkkenskjermen** –
+*Sist oppdatert 8. november 2026: **topplinja er felles** på alle sidene
+utenom dashene (se «Topplinja»). Samme dag: **pinkoden på kjøkkenskjermen** –
 tastaturet, «Hei Magne!», Pinkoder for sys@, og låseikonet med valgt tid
 og pling (se «Neam-assistenten»).
 Forrige oppdatering 6. november 2026: **fargekatalogen** er nytt verktøy for
@@ -598,6 +599,37 @@ Alt skal **virke** overalt. Bare primærenheten skal være **forseggjort**.
 | Sikkerhet | mobil og iPad |
 
 PC er utviklingsflate, ikke bruksflate.
+
+## Topplinja
+
+*Fra 8. november 2026.*
+
+**Alle sidene har samme topp som dashene:** sidas ikon på 84 px med navnet
+ved siden av (lenke til forsiden), låseikonet på fellesenhetene, været nå,
+stedet og klapptavla med dato til høyre. Den ligger i `felles-topp.js` og
+`felles-topp.css`; en side får den med
+`<header class="ntp" id="neamTopp" data-ikon="…" data-navn="…">` og fila
+lastet etter `felles-neam.js`. **En ny side skal ha den** – ikke en egen
+variant.
+
+- **Ikonet er flisen man trykket på** for å komme dit. Spill- og
+  øvingssidene lenker tilbake til dashet sitt (`data-hjem`), ellers går
+  ikonet til forsiden.
+- **Forsiden viser bare logoen** (`data-navn=""`) – NEAM-logoen sier
+  navnet selv.
+- **Navnet på den innloggede står ikke i toppen**, verken her eller på
+  dashene.
+- **Været er alltid nå** utenfor dashene. På dashene følger det dagen man
+  ser på.
+- **Kompakt under 700 px:** ikon på 56 px, navn og liten klokke; været og
+  stedet vises ikke. Bredden som måles er **toppens egen** (container
+  query), ikke skjermens – en side i smal spalte på PC blir også kompakt.
+  Stedet faller bort under 780 px, vinden under 900 px.
+- **Kalender skjuler toppen** i fullskjerm og på liggende telefon, der
+  høyden trengs til kalenderen.
+
+Dashene har fortsatt sin egen kopi av toppen (se under). Avvik fra den
+felles toppen på en side er et nytt valg – spør.
 
 ## Kjøkken dash
 

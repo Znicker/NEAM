@@ -1,6 +1,9 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 8. november 2026, natt: pinkoder på kjøkkenskjermen – den som
+*Ført à jour 8. november 2026: topplinja er felles på alle sidene –
+`felles-topp.js` og `felles-topp.css` gir ikon og navn, låseikonet, været,
+stedet og klapptavla som på dashene (se toppblokka). Ført à jour
+8. november 2026, natt: pinkoder på kjøkkenskjermen – den som
 står der, taster sin sekssifrede kode ved første trykk etter hvilen, får
 «Hei Magne!», og Neam vet hvem han snakker med og kan skrive lekser for
 dem. sys@ legger inn kodene (se toppblokka og del 52). Senere samme natt:
@@ -89,7 +92,7 @@ ny tråd alltid lander på samme sted.*
 
 ---
 
-## Nåstatus – 7. november 2026
+## Nåstatus – 8. november 2026
 
 **Hvor prosjektet er nå.** Ni sider og fire spill, og Andreas tre spill
 nås fra én egen spillside. To økter 12.–13. september
@@ -112,7 +115,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 **Siste leverte versjoner:** `felles-neam.js ?v=89`, `felles-neam.css
 ?v=88`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
-`felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
+`felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
+`felles-topp.js ?v=1`, `felles-topp.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
@@ -953,6 +957,35 @@ Magne: «rydd i vei».
   så endene ligger under knappene til man ruller litt; midten er fri.
 - **Rykket på iPhone er tatt bort.** Den skjulte `switch`-avkrysningen ga
   ingen vibrasjon; `neamRykk()` bruker bare `navigator.vibrate` (Android).
+
+**8. november: topplinja felles på alle sidene** (`d449bb8`; nye
+`felles-topp.js ?v=1` og `felles-topp.css ?v=1`, ingen andre numre brukt).
+Magne: «ikke alle sider er likt bygget opp … ordne slik at det blir slik på
+ikon, skjermlås, klokke, vær, sted osv som på dashboards». Valgt: alle
+sidene, også forsiden, og kompakt på smal skjerm.
+- **Bruk:** `<header class="ntp" id="neamTopp" data-ikon="…" data-navn="…">`
+  og fila lastet etter `felles-neam.js`. `data-hjem` setter hvor ikonet
+  lenker (spillene går tilbake til dashet sitt); tomt `data-navn` gir bare
+  ikonet (forsidens logo). Låseikonet er `#neamLaas` fra `felles-neam.js`,
+  klapptavla `neamFlipKlokke`. Posisjonen deles med dashene (`fh_pos`).
+- **Sidene:** forsiden, Kalender, Handleliste, Matlaging, Sikkerhet,
+  Neamow, Økonomi, begge spillsidene, Diktat, Klokkespill, Mattespill,
+  Spansk, Naturfag og Grunnstoffene. **Dashene har fortsatt sin egen topp**
+  – været der følger dagen man ser på, og dagen skifter kl. 20. Å flytte
+  dem over er et eget steg.
+- **Tatt bort:** forsidens store klokke og NEAM-merket, Kalenders merke
+  foran månedsnavnet (topplinja skjules i fullskjerm og på liggende
+  telefon), ikonsirkelen og innlogget navn på Handleliste og Matlaging, og
+  overskriften over fanene i Økonomi.
+- **Bredden er toppens egen** (container query), ikke skjermens: Handleliste
+  står i en smal spalte også på PC, og der la været seg over navnet. Under
+  700 px er toppen kompakt – ikon, navn og liten klokke.
+- **Står igjen:** Spansk, Naturfag og Grunnstoffene viser navnet to ganger
+  (topplinja og egen overskrift med undertittel). `kort.html` er ikke
+  lenket og laster ikke Neam, og har ikke fått topplinja. Den gamle
+  topp-CSS-en på sidene (`.topp`, `.merke`, `.brand`) står igjen ubrukt.
+- **Ikke sett på neam.no:** bare testet lokalt; Cloudflare Access krever
+  innlogging i nettleserpanelet.
 
 ### Åpne tråder
 
