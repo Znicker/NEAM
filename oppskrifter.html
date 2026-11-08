@@ -14,7 +14,7 @@
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
 <link rel="stylesheet" href="/felles-neam.css?v=88">
-<link rel="stylesheet" href="/felles-topp.css?v=8">
+<link rel="stylesheet" href="/felles-topp.css?v=9">
 <!-- ?v=: bump tallet naar en fellesfil endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -1703,18 +1703,28 @@ input,select,textarea{font-size:16px}
 .home-hero-navn{ font-size:var(--t-stor); margin:0 0 2px; }
 
 /* ---------- Matlaging (8. november 2026) ----------
-   Porsjoner, «Finn ingredienser» og «Start matlaging» under fanene. Mens
-   en rett lages er porsjonene laast, ingrediensene staar i oppskriftens
+   Start matlaging foran rettens navn, porsjonene i raden under. Mens en
+   rett lages er porsjonene borte, ingrediensene staar i oppskriftens
    rekkefoelge, og ingrediensnavn og koketider i stegene kan trykkes. */
-.mat-styring{ display:flex; align-items:center; justify-content:center; gap:10px 16px; flex-wrap:wrap; margin:12px 0 2px; }
-.mat-styring .servings-bar{ margin:0; padding:0; border:0; }
-.mat-styring .servings-bar.laast .servings-btn{ opacity:.35; pointer-events:none; }
 .mat-knapp{
   border:0; border-radius:999px; padding:9px 16px; background:var(--aksent); color:#fff; cursor:pointer;
   font-family:'Archivo',sans-serif; font-size:var(--t-meta); font-weight:700;
 }
 .mat-knapp:active{ transform:scale(.97); }
 .mat-knapp.ny{ background:var(--handling-ny); }
+/* Start til venstre for rettens navn: groenn naar den starter, roed naar
+   den stanser (Magne, 8. november 2026). */
+.mat-tittel{ display:flex; align-items:center; gap:12px; min-width:0; flex:1 1 auto; }
+#mat-start{ flex-shrink:0; background:var(--handling-ny); }
+#mat-start.stans{ background:var(--danger); }
+/* Porsjonene i raden under navnet, der antallet sto. */
+.detail-stats-row .stat.porsjoner .servings-btn{ width:26px; height:26px; }
+.detail-stats-row .stat.porsjoner .servings-count{ font-weight:700; color:var(--ink); }
+/* Paa telefonen ligger «Ingredienser» som egen fane foran stegene, og
+   knappen til handlelista staar der. I landskap har den sin egen fane. */
+@media (min-width:820px) and (min-height:600px) and (orientation:landscape){
+  .mat-kun-staaende{ display:none !important; }
+}
 .mat-tid{ font-size:var(--t-meta); font-weight:700; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
 .mat-tid[hidden]{ display:none; }
 .mat-hint{ text-align:center; color:var(--ink-soft); font-size:var(--t-meta); font-weight:600; margin:0 0 10px; }
@@ -1918,8 +1928,11 @@ input,select,textarea{font-size:16px}
     <div class="sticky-sub">
       <div class="card-panel punched detail-header">
         <div class="title-row">
-          <h2 id="d-title"></h2>
-          <input id="d-title-felt" class="tittel-felt" hidden aria-label="Navn på retten">
+          <div class="mat-tittel">
+            <button type="button" class="mat-knapp" id="mat-start" onclick="matStartEllerSlutt()">Start matlaging</button>
+            <h2 id="d-title"></h2>
+            <input id="d-title-felt" class="tittel-felt" hidden aria-label="Navn på retten">
+          </div>
           <div class="actions rediger-hjoerne">
             <div class="rediger-valg" id="rediger-meny" hidden>
               <button type="button" class="rediger-valg-knapp endre" onclick="editCurrentRecipe()">
@@ -1942,23 +1955,12 @@ input,select,textarea{font-size:16px}
         <button class="tab-btn" id="tab-steps-btn" onclick="switchTab('steps')"><span class="tab-tekst">Steg</span></button>
         <button class="tab-btn" id="tab-begge-btn" onclick="switchTab('begge')"><span class="tab-tekst">Oppskrift</span></button>
         <button class="tab-btn" id="tab-tips-btn" onclick="switchTab('tips')"><span class="tab-tekst">Tips</span></button>
-        <button class="tab-btn" id="tab-handle-btn" onclick="switchTab('handle')"><span class="tab-tekst">Handleliste</span></button>
+        <button class="tab-btn" id="tab-handle-btn" onclick="switchTab('handle')"><span class="tab-tekst">Ingredienser</span></button>
         <button class="tab-btn" id="tab-rating-btn" onclick="switchTab('rating')"><span class="tab-tekst">Vurdering</span></button>
       </div>
 
-      <!-- Porsjoner, Finn ingredienser og Start matlaging (8. november 2026).
-           Porsjonene sto foer oeverst i ingredienslista. -->
-      <div class="mat-styring" id="mat-styring">
-        <div class="servings-bar" id="servings-bar">
-          <span class="lbl">Porsjoner</span>
-          <button class="servings-btn" onclick="changeServings(-1)">−</button>
-          <span class="servings-count" id="d-servings-count">4</span>
-          <button class="servings-btn" onclick="changeServings(1)">+</button>
-        </div>
-        <button type="button" class="mat-knapp" id="mat-finn" onclick="matFinn()">Finn ingredienser</button>
-        <button type="button" class="mat-knapp" id="mat-start" onclick="matStartEllerSlutt()">Start matlaging</button>
-        <span class="mat-tid" id="mat-tid" hidden></span>
-      </div>
+      <!-- Nedtellingene fra retten. Porsjonene staar i raden under navnet og
+           Start matlaging foran navnet (8. november 2026). -->
       <div class="mat-nedtellinger" id="mat-nedtellinger" hidden></div>
     </div>
     </div>
@@ -1970,6 +1972,9 @@ input,select,textarea{font-size:16px}
           <thead><tr><th>Ingrediens</th><th>Mengde</th></tr></thead>
           <tbody id="d-shopping-body"></tbody>
         </table>
+        <button type="button" class="til-handleliste mat-kun-staaende" onclick="sendTilHandleliste()">
+          Legg ingrediensene i handlelista
+        </button>
         <div class="allergen-summary" id="d-allergens" style="display:none;">
           <span class="lbl">⚠ Allergener i denne oppskriften</span>
           <div class="allergen-pills" id="d-allergen-pills"></div>
@@ -2427,7 +2432,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=89"></script>
-<script src="/felles-topp.js?v=8"></script>
+<script src="/felles-topp.js?v=9"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB-basert erstatning for window.storage.
@@ -5728,7 +5733,16 @@ function renderDetailStats(){
   const avg = computeRecipeAverageRating(r);
   const count = countRecipeRatings(r);
   const stats = [];
-  if(r.baseServings) stats.push(`<span class="stat">🍽 ${escapeHtml(formatAmt(currentServings))} porsjoner</span>`);
+  /* Porsjonsvelgeren staar her (Magne, 8. november 2026). Mens retten
+     lages, er den borte: antallet staar fast, og tiden siden start. */
+  if(matAktivHer()){
+    stats.push(`<span class="stat">🍽 ${escapeHtml(formatAmt(currentServings))} porsjoner</span>`);
+    stats.push(`<span class="stat" id="mat-tid"></span>`);
+  }else if(r.baseServings){
+    stats.push(`<span class="stat porsjoner">🍽 <button class="servings-btn" onclick="changeServings(-1)" aria-label="Færre porsjoner">−</button>`
+      + `<span class="servings-count" id="d-servings-count">${escapeHtml(formatAmt(currentServings))}</span>`
+      + `<button class="servings-btn" onclick="changeServings(1)" aria-label="Flere porsjoner">+</button> porsjoner</span>`);
+  }
   if(r.time) stats.push(`<span class="stat">⏱ ${escapeHtml(r.time)}</span>`);
   stats.push(`<span class="stat">${
     count > 0
@@ -5736,6 +5750,7 @@ function renderDetailStats(){
       : `<span class="rating-count">Ingen vurdering</span>`
   }</span>`);
   $('d-stats-row').innerHTML = stats.join('<span class="stat-divider"></span>');
+  matTid();
 }
 
 /* ---- Ny vurdering (smaksdagbok) ---- */
@@ -5932,7 +5947,7 @@ function renderIngredientViews(){
   const r = recipeCache[currentRecipeId];
   if(!r) return;
 
-  $('d-servings-count').textContent = formatAmt(currentServings);
+  const antall = $('d-servings-count'); if(antall) antall.textContent = formatAmt(currentServings);
   const factor = (r.baseServings && r.baseServings > 0) ? (currentServings / r.baseServings) : 1;
 
   // Shopping-list table
@@ -5984,7 +5999,7 @@ function renderIngredientViews(){
     $('d-handle-body').innerHTML = gruppert('hl-');
   }
   $('d-handle-hint').textContent = 'For ' + formatAmt(currentServings)
-    + (currentServings === 1 ? ' porsjon' : ' porsjoner') + ' – velg antall over fanene.';
+    + (currentServings === 1 ? ' porsjon' : ' porsjoner') + ' – velg antall under navnet.';
   matLysIgjen(false);
 
   const allergenMap = {};
@@ -6472,11 +6487,11 @@ function renderCommentsList(){
 /* ============================================================
    Matlaging (8. november 2026, Magne)
    ------------------------------------------------------------
-   Under fanene: porsjoner, «Finn ingredienser» og «Start matlaging».
-   - Finn ingredienser: venstre kolonne gruppert som i handlelista (som
-     foer). Mens retten lages bytter knappen mellom den og oppskriftens
-     rekkefoelge.
-   - Start matlaging: porsjonene bekreftes og laases, lista staar i
+   «Start matlaging» (groenn) staar foran rettens navn og blir «Stans
+   matlaging» (roed); porsjonsvelgeren staar i raden under navnet.
+   «Finn ingredienser» er tatt bort: foer start staar lista gruppert som i
+   handlelista, under matlaging i oppskriftens rekkefoelge.
+   - Start matlaging: porsjonene bekreftes, velgeren forsvinner, lista staar i
      oppskriftens rekkefoelge, og et lite matlagingsikon med tiden som har
      gaatt staar ved klokka (felles-topp.js leser «neam-matlaging»).
    - Ingrediensnavn i stegene lyser opp raden sin i lista; koketider
@@ -6484,7 +6499,7 @@ function renderCommentsList(){
    - Plassen huskes i localStorage mens retten lages - fane, liste,
      markert ingrediens og rulling - og sida aapner seg der igjen, ogsaa
      etter et besoek paa en annen side.
-   - Avslutt matlaging: spoer om vurdering, tips eller kokkens kommentar
+   - Stans matlaging: spoer om vurdering, tips eller kokkens kommentar
      foer den lukkes.
    - Flere retter kan lages samtidig, og hver husker sin egen plass
      (Magne, 8. november 2026): «neam-matlaging» er et oppslag
@@ -6571,12 +6586,12 @@ window.ntpMatGaaTil = function(id){
 
 function matTegnStyring(){
   const aktiv = matAktivHer();
-  const sb = $('servings-bar'); if(sb) sb.classList.toggle('laast', aktiv);
-  const st = $('mat-start'); if(st) st.textContent = aktiv ? 'Avslutt matlaging' : 'Start matlaging';
-  const fi = $('mat-finn');
-  if(fi) fi.textContent = (aktiv && matVenstre === 'gruppert') ? 'Oppskriftens rekkefølge' : 'Finn ingredienser';
-  const t = $('mat-tid'); if(t) t.hidden = !aktiv;
-  matTid();
+  const st = $('mat-start');
+  if(st){
+    st.textContent = aktiv ? 'Stans matlaging' : 'Start matlaging';
+    st.classList.toggle('stans', aktiv);
+  }
+  renderDetailStats();
 }
 function matTid(){
   const t = $('mat-tid');
@@ -6585,14 +6600,6 @@ function matTid(){
   t.textContent = 'Startet for ' + (min >= 60 ? Math.floor(min / 60) + ' t ' + (min % 60) + ' min' : min + ' min') + ' siden';
 }
 setInterval(matTid, 15000);
-
-function matFinn(){
-  matVenstre = (matAktivHer() && matVenstre === 'gruppert') ? 'rekkefolge' : 'gruppert';
-  renderIngredientViews();
-  switchTab(LANDSKAP.matches ? 'begge' : 'list');
-  matTegnStyring();
-  matHusk();
-}
 
 async function matStartEllerSlutt(){
   if(matAktivHer()) return matAvslutt();
@@ -6618,7 +6625,7 @@ function matAvslutt(){
     bak = document.createElement('div');
     bak.id = 'mat-slutt-bak';
     bak.className = 'dlg-bak';
-    bak.innerHTML = '<div class="dlg-kort" role="dialog" aria-label="Avslutt matlaging">'
+    bak.innerHTML = '<div class="dlg-kort" role="dialog" aria-label="Stans matlaging">'
       + '<p class="dlg-tekst">Ferdig med maten? Vil du skrive noe før matlagingen avsluttes?</p>'
       + '<div class="mat-slutt-valg">'
       +   '<button type="button" class="mat-knapp ny" data-valg="rating">Vurder retten</button>'
@@ -6892,6 +6899,9 @@ function switchTab(which){
   vis('tab-begge-btn', land);
   vis('tab-list-btn', !land);
   vis('tab-steps-btn', !land);
+  /* Paa telefonen er «Ingredienser» fanen foran stegene - to med samme navn ville vaert forvirrende. */
+  vis('tab-handle-btn', land);
+  if(!land && which === 'handle') which = 'list';
 
   if(LANDSKAP.matches){
     /* Ingredienser og fremgangsmaate staar side om side. De to fanene er

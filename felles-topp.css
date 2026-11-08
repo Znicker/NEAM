@@ -124,16 +124,19 @@
    Smaa klokkeikoner med tallet under (Magne, 8. november 2026). De sto
    foerst under datoen, men det gjorde toppen for hoey; ved siden av
    klokka bryter de i hoeyst to rader, som er lavere enn klapptavla. */
+/* Stablet i hoeyden, fire per kolonne (Magne, 8. november 2026): ikon og
+   tall paa én linje, nye kolonner legger seg ved siden av. */
 .ntp-timere{
-  display:flex; flex-wrap:wrap; justify-content:flex-end; align-content:center; gap:6px 8px;
-  max-width:210px; margin-left:14px; flex-shrink:0; cursor:pointer; border-radius:12px;
+  display:grid; grid-auto-flow:column; grid-template-rows:repeat(4, auto);
+  justify-content:end; align-content:center; gap:3px 12px;
+  margin-left:14px; flex-shrink:0; cursor:pointer; border-radius:12px;
 }
 .ntp-timere[hidden]{ display:none; }
 .ntp-timere:focus-visible{ outline:3px solid var(--aksent); outline-offset:4px; }
 .ntp-timere:not([hidden]) ~ .ntp-klokke{ margin-left:14px; }
-.ntp-tm{ display:flex; flex-direction:column; align-items:center; gap:1px; min-width:34px; color:var(--ink-soft); }
-.ntp-tm svg{ width:20px; height:20px; }
-.ntp-tm .ntp-tm-matbilde{ width:22px; height:22px; object-fit:contain; display:block; }
+.ntp-tm{ display:flex; flex-direction:row; align-items:center; gap:5px; color:var(--ink-soft); }
+.ntp-tm svg{ width:17px; height:17px; flex-shrink:0; }
+.ntp-tm .ntp-tm-matbilde{ width:18px; height:18px; object-fit:contain; display:block; flex-shrink:0; }
 .ntp-tm-radikon .ntp-tm-matbilde{ width:30px; height:30px; object-fit:contain; display:block; }
 .ntp-tm b{ font-size:var(--t-etikett); font-weight:700; font-variant-numeric:tabular-nums; color:var(--ink); }
 .ntp-tm-alarm{ color:var(--aksent); }
@@ -238,7 +241,7 @@
   .ntp-mat-ikon img{ width:40px; height:40px; }
   .ntp-tid{ font-size:var(--t-stor); }
   .ntp-dato{ font-size:var(--t-meta); margin-top:2px; }
-  .ntp-timere{ margin-left:auto; max-width:126px; gap:4px 6px; }
+  .ntp-timere{ margin-left:auto; grid-template-rows:repeat(3, auto); gap:2px 8px; }
   .ntp-matrad:not([hidden]) ~ .ntp-timere{ margin-left:10px; }
   .ntp-timere:not([hidden]) ~ .ntp-klokke{ margin-left:10px !important; }
 }
