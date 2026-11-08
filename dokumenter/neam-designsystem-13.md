@@ -1846,16 +1846,15 @@ først, Sparing sist. Bare tallene skiller dem:
     markøren ikke står i et felt.
   - **Kontoutskrift** (het Alle) – alt fra nullpunktet. Øverst ‹ måned ›, så et
     kort med søk, konto, kategori, type og fra–til, så en meta-linje med
-    antall og inn/ut, og radene som kjøpene i Regnskap (dato, navn med
-    kategori og kilde under, beløp, ›). **Uten filter** vises én måned;
-    **med søk, filter eller periode** vises alt som treffer, med måneden
-    som overskrift (`.ok-etikett`), og ‹ måned › byttes mot «Søk og
-    filter» og Nullstill. En rad åpnes på stedet med detaljene og
-    handlingene (varene, PDF-en; «Send tilbake til innboksen» bare for en
-    strøket post – en ført endres direkte). Strøket
-    vises med lav opasitet og streket navn, som i innboksen. Vedlegget
-    står i meta-linja på raden («PDF vedlagt», «bilde vedlagt»,
-    «varelinjer») – en lenke inni radknappen ville vært en knapp i en knapp.
+    antall og inn/ut, og **de samme radene som føringene i Regnskap** (fra
+    8. november 2026, i et listekort): dato, navn, kilde og merke, beløp
+    med fortegn. Kategorien står først og statusen sist i meta-linja.
+    **Trykk** åpner føringsvinduet, **høyreklikk** (hold inne) samme meny
+    som i Regnskap – for en strøket post «Send tilbake til innboksen» i
+    stedet for Stryk; en ført endres direkte. Strøket er blek og
+    gjennomstreket. **Uten filter** vises én måned; **med søk, filter
+    eller periode** vises alt som treffer, med måneden som overskrift
+    (`.ok-etikett`), og ‹ måned › byttes mot «Søk og filter» og Nullstill.
   Valgt ut uten skisse (Magne: «bare kjør det ut på neam»).
 - **Regnskap** (fra 8. november 2026) – det som er brukt, uten budsjett,
   med det som forfaller: sumboksene som under, diagrammet uten

@@ -536,7 +536,8 @@ listene lettere å lese – smalere, større skrift, stolper og ikoner
 (`e9432b6`), fakturaer som forfaller i vinduet og dato under Rediger
 (`6e593ff`), vedleggene i vinduet, én side om gangen med piler
 (`d4fdbbd`), og til sist innboksen bare for nye føringer, Kontoutskrift og
-rød prikk ved klokka (`e3ce2a2`, `felles-topp ?v=10`).
+rød prikk ved klokka (`e3ce2a2`, `felles-topp ?v=10`), og til sist
+Kontoutskrift med samme rader, trykk og meny som Regnskap (`bc66f5b`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -545,7 +546,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 86 commits, `0e0050a`–`e3ce2a2`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 88 commits, `0e0050a`–`bc66f5b`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4495,7 +4496,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 86 commits fra `0e0050a` til `e3ce2a2` (dialogen med
+verdier. Bygget i 88 commits fra `0e0050a` til `bc66f5b` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4940,6 +4941,25 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Kontoutskrift med samme rader som Regnskap** (`bc66f5b`). Magne: «Jeg
+  ønsker at linjene under kontoutskrift er lik dem i regnskap og kan
+  trykkes og endres på samme måte. De skal speile hverandre både i innhold
+  og funksjonalitet».
+  - **Samme rad:** `okAlRad` gjør posten om til føringens form (som
+    `?hva=foringer` gir den) og bruker `okRgForRad` – dato, navn, kilde,
+    merke, «!» ved endret sum. I et listekort (`.ok-liste-kort`) som
+    Regnskap; måneden som overskrift ved søk.
+  - **Samme trykk og meny:** trykk åpner føringsvinduet, høyreklikk/hold
+    inne `okForMeny` (`ok-al-liste` i samme løkke som Regnskap og
+    Resultat). Den gamle utfoldingen på stedet er borte.
+  - **Avvik som må være der:** kategorien først og statusen sist i
+    meta-linja («venter i innboksen», «strøket», «forfaller – ikke betalt
+    ennå»), siden ingen kategori står over raden; en strøket rad er blek og
+    gjennomstreket, og menyen har «Send tilbake til innboksen» i stedet for
+    Stryk. **Fortegnet beholdes** (−) – inn og ut står i samme liste.
+  - `alle-poster` gir nå også `merke`. Endre kategori på en post i
+    innboksen eller en strøket post fører den, som i innboksen.
+  - Testet i testserveren på PC og telefon.
 - **Innboksen bare for nye føringer, Kontoutskrift og rød prikk**
   (`e3ce2a2`). Magne: «transaksjoner som er registrert trenger ikke å ha et
   valg for å komme tilbake til innboksen, de endres nå direkte. nye
