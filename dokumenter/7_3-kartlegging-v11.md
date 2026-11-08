@@ -1,6 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 8. november 2026, sent: ikonet oppe til venstre går til
+*Ført à jour 8. november 2026, natt: på fellesenheten kommer Magne og Nina
+inn på Økonomi med pinkoden sin, og sperra sitter på serveren (se
+toppblokka). Ført à jour 8. november 2026, sent: ikonet oppe til venstre går til
 sidas startvisning, og holdt inne i to sekunder til forsiden (se
 toppblokka). Ført à jour 8. november 2026, sent: Matlaging har fått Tips og Kokken i
 én fane, en Handleliste-fane, og «Start matlaging» med låste porsjoner,
@@ -120,7 +122,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=89`, `felles-neam.css
+**Siste leverte versjoner:** `felles-neam.js ?v=90`, `felles-neam.css
 ?v=88`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
@@ -142,7 +144,7 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–88; neam.css til og
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–89; neam.css til og
 med 87; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
 hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–9**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
@@ -1154,6 +1156,38 @@ long press 2 sekunder tar deg til index».
   lages. `topp ?v=10` er en annen økts (Økonomi-prikken ved klokka,
   `e3ce2a2`).
 
+**8. november, natt: Økonomi med pinkoden på fellesenheten** (neam.js
+`?v=90`, ingen andre numre brukt). Magne: «Det er kun nina og magne som
+kan komme inn på økonomi med sin pin.» Valgt: koden kreves **på
+fellesenheten**; magne@, nina@ og sys@ kommer inn som før uten kode.
+- **Sperra sitter på serveren.** Sperra for leksene sitter i nettleseren
+  og holder bare barna unna hverandre; for penger holder ikke det. Riktig
+  kode gir en økt i `functions/api/pin.js`: en tilfeldig id i kaka
+  **`neam_pin`** (HttpOnly, `Path=/api`, SameSite=Strict) og personen i KV
+  under **`pin:okt:<id>`** – utenfor `fh:` av samme grunn som `pin:koder`.
+  Bank-funksjonen slipper felles@ inn bare når økta er Magnes eller Ninas
+  (`PIN_TILGANG`), og føringene får deres adresse, ikke felles@.
+- **Økta følger skjermens regel:** tre minutter uten trykk (fire på
+  serveren, for pingen), eller tiden valgt fra låseikonet – høyst én time.
+  `felles-neam.js` melder trykk høyst hvert minutt (`vaaken`), sender tiden
+  fra låseikonet, og sier fra når skjermen sovner (`glem`) – da slettes kaka,
+  så neste kall er uten økt med en gang selv om KV fortsatt husker.
+- **Økonomi-sida på fellesenheten** går til forsiden når skjermen sovner,
+  eller når den åpnes uten Magnes eller Ninas kode (`NEAM_PIN_SIDER`).
+  Forsiden lastes på nytt når koden endrer om flisen skal vises (hendelsen
+  `neam-pin`).
+- **Barna:** Emmas og Andreas kode gir ingen økonomi, og egne brukere
+  (emma@, andrea@) står fortsatt utenfor `TILGANG`. Skriver de adressen,
+  får de skallet med en feilmelding, ingen data.
+- **Ikke gjort:** Neams økonomiverktøy følger fortsatt bare innloggingen
+  (`?hvem=1`), ikke koden – på kjøkkenet har Neam dem ikke, også med
+  Magnes kode. Hver ping er en KV-skriving; bare mens noen med kode bruker
+  skjermen.
+- **Testet** lokalt med en falsk KV: Magnes kode slipper inn, valgt tid
+  holder, uten valgt tid går den ut, `glem` sletter, Emmas kode slipper
+  ikke inn, og en ny kode sletter den gamle økta. Ikke prøvd på
+  kjøkkenskjermen.
+
 ### Åpne tråder
 
 **Besluttet, ikke bygget – fem systemer med begrunnelse i del 47–50 og 52:**
@@ -1249,6 +1283,9 @@ long press 2 sekunder tar deg til index».
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **Økonomi med pinkoden på kjøkkenskjermen** (8. november): Magnes kode
+  gir flisen og sida, Emmas ikke; sida går til forsiden når skjermen
+  sovner, og «Lås nå» stenger den med en gang.
 - **Tommelknappen i spillene på telefon** (7. november): i Mattespillet
   dekker NEAM venstre ende av Start-knappen, og i naturfag et par
   avkrysningsvalg nederst (målt på 393 px bredde). Hard reset på iPad.

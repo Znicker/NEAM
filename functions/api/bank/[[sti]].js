@@ -117,11 +117,29 @@ const APP_ID = '429ce2c9-55e4-4183-a695-d9df8763a260';   // ikke hemmelig - staa
 const BANK = { name:'DNB', country:'NO' };
 const TILBAKE = 'https://neam.no/api/bank/tilbake';
 /* sys@, Magne og Nina - Neam skal kunne bruke økonomien fra alle sidene
-   for dem (Magne, 6. november 2026). Aldri felles@ eller barna. */
+   for dem (Magne, 6. november 2026). Aldri barna, og felles@ bare med
+   Magnes eller Ninas pinkode (se PIN_TILGANG under). */
 const TILGANG = ['sys@neam.no', 'magne@neam.no', 'nina@neam.no'];
 /* Kan vekke hentingen (?hva=hent), men faar ikke se noe. Se der. */
 /* Fellesenhetene - felles@ het kitchen@ til 8. november 2026. */
-const HENT_TILGANG = TILGANG.concat(['felles@neam.no', 'kitchen@neam.no']);
+const FELLES = ['felles@neam.no', 'kitchen@neam.no'];
+const HENT_TILGANG = TILGANG.concat(FELLES);
+/* Paa fellesenheten slipper Magne og Nina inn med pinkoden sin (Magne,
+   8. november 2026: «Det er kun nina og magne som kan komme inn på
+   økonomi med sin pin»). Oekta lages av /api/pin ved riktig kode og
+   ligger i KV under pin:okt:<id>, med id-en i kaka neam_pin. Regelen
+   for naar den er ute, er den samme som i pin.js (oktGyldig der). */
+const PIN_TILGANG = { magne:'magne@neam.no', nina:'nina@neam.no' };
+const PIN_OKT_HVILE_MS = 4 * 60 * 1000;
+async function pinPerson(request, env){
+  const id = cookieAv(request, 'neam_pin');
+  if(!/^[0-9a-f]{48}$/.test(id) || !env.FAMILIE_KV) return '';
+  const o = await lesJson(env, 'pin:okt:' + id, null);
+  if(!o) return '';
+  const naa = Date.now();
+  const gyldig = o.til ? naa < o.til : naa - (o.sist || 0) <= PIN_OKT_HVILE_MS;
+  return gyldig ? (PIN_TILGANG[o.hvem] || '') : '';
+}
 const SIST_HENTET_NOKKEL = 'auth:bank:sist-hentet';
 const TRUMF_FEIL_NOKKEL = 'auth:bank:trumf-feil';
 
@@ -217,7 +235,14 @@ async function verifisertEpost(request, env){
 async function voksen(request, env){
   const id = await verifisertEpost(request, env);
   if(!id.epost) return { ok:false, feil:'Ingen gyldig innlogging (' + id.grunn + ')' };
-  if(TILGANG.indexOf(id.epost) === -1) return { ok:false, feil:'Bankdata er ikke åpnet for denne kontoen' };
+  if(TILGANG.indexOf(id.epost) === -1){
+    /* Fellesenheten med Magnes eller Ninas kode: de er den som spoer. */
+    if(FELLES.indexOf(id.epost) !== -1){
+      const p = await pinPerson(request, env);
+      if(p) return { ok:true, epost:p };
+    }
+    return { ok:false, feil:'Bankdata er ikke åpnet for denne kontoen' };
+  }
   return { ok:true, epost:id.epost };
 }
 function masker(epost){

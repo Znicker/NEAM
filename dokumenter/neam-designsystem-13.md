@@ -26,7 +26,8 @@ dokumentet – det er fortsatt fasiten for hva som skal være likt på tvers.
 *Sist oppdatert 8. november 2026: **matlagingen** i Oppskriftssida (se
 der). Samme dag: **topplinja er felles** på alle sidene,
 også dashene, og **klokka har alarm, nedtelling og stoppeklokke** (se
-«Topplinja»). Samme dag: **pinkoden på kjøkkenskjermen** –
+«Topplinja»). Samme natt: **Økonomi på fellesenheten krever Magnes eller
+Ninas kode** (se «Pinkoden på kjøkkenskjermen»). Samme dag: **pinkoden på kjøkkenskjermen** –
 tastaturet, «Hei Magne!», Pinkoder for sys@, og låseikonet med valgt tid
 og pling (se «Neam-assistenten»).
 Forrige oppdatering 6. november 2026: **fargekatalogen** er nytt verktøy for
@@ -1020,6 +1021,14 @@ koden – ingen OK-knapp, alle kodene har seks sifre. Feil står i `--danger`
 under tastene. Riktig kode gir **«Hei Magne!»** i displaystørrelse og en
 blå OK over hele bredden; den må trykkes bort. «Hopp over» gir husmodus.
 Tastaturet ligger på `.dlg-bak` (120) og lukkes ikke av bakteppet.
+
+**Økonomi på fellesenheten krever Magnes eller Ninas kode** (8. november
+2026, Magne). Flisen på forsiden kommer når koden er tastet (forsiden
+lastes på nytt), og Økonomi-sida går til forsiden når skjermen sovner
+eller åpnes uten koden. Sperra sitter på serveren (`pin.js` og
+bank-funksjonen), ikke i sida. En ny side som skal ha samme krav, føres
+inn i `NEAM_PIN_SIDER` i `felles-neam.js` **og** sperres i funksjonen den
+henter fra.
 
 **Pinkoder for sys@ ligger under Husregisteret** i innstillingene: for sys@
 åpner Husregisteret en liten stabel med Husregisteret og Pinkoder

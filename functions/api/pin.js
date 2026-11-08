@@ -16,6 +16,8 @@
      POST /api/pin { hva:'sett', hvem, kode }                                             bare sys@
      POST /api/pin { hva:'fjern', hvem }                                                  bare sys@
      POST /api/pin { hva:'sjekk', kode }   -> { ok, hvem, navn } | { ok:false, feil, laast }
+     POST /api/pin { hva:'vaaken', igjen? } -> { ok }   holder oekta paa serveren i live
+     POST /api/pin { hva:'glem' }           -> { ok }   skjermen sovnet: oekta slettes
 
    HVEM SOM SPØR
    Identiteten er Microsoft-innloggingen, lest med tokenet sida sender
@@ -25,9 +27,21 @@
    NØKLER I KV – UTENFOR `fh:` MED VILJE
      pin:koder  – { <id>: { salt, hash, satt } }
      pin:feil   – { antall, til } – bremsen mot gjetting
+     pin:okt:<id> – { hvem, epost, sist, til } – oekta etter riktig kode
    `/api/data` slipper alle innloggede til alt under `fh:`. Seks sifre er
    bare en million muligheter, så en hash som kan leses derfra, er så
    godt som koden selv. Samme grep som `auth:` (kartleggingen del 30).
+
+   ØKTA PÅ SERVEREN (8. november 2026)
+   Magne: «Det er kun nina og magne som kan komme inn på økonomi med
+   sin pin.» Sperra i nettleseren holder barna unna leksene, men ikke
+   unna penger, så riktig kode gir ogsaa en oekt her: en tilfeldig id i
+   kaka `neam_pin` (HttpOnly, bare /api) og personen i KV. Bank-
+   funksjonen leser den og slipper fellesenheten inn naar oekta er
+   Magnes eller Ninas. Oekta foelger skjermens regel: tre minutter uten
+   trykk, eller tiden valgt fra laaseikonet. Nettleseren melder trykk
+   (`vaaken`, hoeyst hvert minutt) og sier fra naar skjermen sovner
+   (`glem`); da slettes kaka, saa neste kall er uten oekt med en gang.
 
    Alt svares med 200, også feil – kallstedet leser `ok`.
    ============================================================ */
@@ -43,12 +57,33 @@ const KODER = 'pin:koder';
 const FEIL = 'pin:feil';
 const MAKS_FEIL = 5;
 const LAAS_MS = 60 * 1000;
+const OKT = 'pin:okt:';
+const OKT_KAKE = 'neam_pin';
+/* Tre minutter som paa skjermen, pluss ett for pingen som gaar hvert minutt. */
+const OKT_HVILE_MS = 4 * 60 * 1000;
+/* Lengste aapningstid fra laaseikonet er én time; mer enn det godtas ikke. */
+const OKT_MAKS_MS = 60 * 60 * 1000;
 
-function svar(obj){
-  return new Response(JSON.stringify(obj), {
-    status: 200,
-    headers: { 'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store' }
-  });
+function svar(obj, kake){
+  const headers = { 'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store' };
+  if(kake) headers['Set-Cookie'] = kake;
+  return new Response(JSON.stringify(obj), { status: 200, headers });
+}
+function oktKake(id){
+  return OKT_KAKE + '=' + (id || '') + '; Path=/api; HttpOnly; Secure; SameSite=Strict' + (id ? '' : '; Max-Age=0');
+}
+function kakeAv(request, navn){
+  const raa = request.headers.get('Cookie') || '';
+  for(const bit of raa.split(';')){
+    const i = bit.indexOf('=');
+    if(i !== -1 && bit.slice(0, i).trim() === navn) return bit.slice(i + 1).trim();
+  }
+  return '';
+}
+/* Samme regel som i bank-funksjonen (oktGyldig der). */
+function oktGyldig(o, naa){
+  if(!o) return false;
+  return o.til ? naa < o.til : naa - (o.sist || 0) <= OKT_HVILE_MS;
 }
 
 async function hvemSpor(request){
@@ -134,7 +169,30 @@ export async function onRequestPost({ request, env }){
       return svar({ ok:false, feil:'Feil kode', laast: ny.til ? Math.ceil(LAAS_MS / 1000) : 0 });
     }
     if(brems.antall) await env.FAMILIE_KV.put(FEIL, JSON.stringify({ antall:0, til:0 }));
-    return svar({ ok:true, hvem:eier.id, navn:eier.navn });
+    const gammel = kakeAv(request, OKT_KAKE);
+    if(/^[0-9a-f]{48}$/.test(gammel)) await env.FAMILIE_KV.delete(OKT + gammel);
+    const id = hex(crypto.getRandomValues(new Uint8Array(24)));
+    await env.FAMILIE_KV.put(OKT + id, JSON.stringify({ hvem:eier.id, epost, sist:naa, til:0 }),
+                             { expirationTtl: Math.ceil(OKT_MAKS_MS / 1000) + 300 });
+    return svar({ ok:true, hvem:eier.id, navn:eier.navn }, oktKake(id));
+  }
+
+  if(hva === 'vaaken' || hva === 'glem'){
+    const id = kakeAv(request, OKT_KAKE);
+    if(!/^[0-9a-f]{48}$/.test(id)) return svar({ ok:false, feil:'Ingen økt' }, id ? oktKake('') : '');
+    const naa = Date.now();
+    const o = hva === 'vaaken' ? await lesJson(env, OKT + id, null) : null;
+    if(!oktGyldig(o, naa)){
+      await env.FAMILIE_KV.delete(OKT + id);
+      return svar(hva === 'glem' ? { ok:true } : { ok:false, feil:'Økta er ute' }, oktKake(''));
+    }
+    o.sist = naa;
+    if(k.igjen !== undefined){
+      const igjen = Number(k.igjen) || 0;
+      o.til = igjen > 0 ? naa + Math.min(igjen, OKT_MAKS_MS) : 0;
+    }
+    await env.FAMILIE_KV.put(OKT + id, JSON.stringify(o), { expirationTtl: Math.ceil(OKT_MAKS_MS / 1000) + 300 });
+    return svar({ ok:true });
   }
 
   if(epost !== ADMIN) return svar({ ok:false, feil:'Bare administratoren kan endre pinkodene.' });

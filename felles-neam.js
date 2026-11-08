@@ -1911,7 +1911,29 @@ function neamPinSover(naa){
   if(neamPinAapenTil) return naa >= neamPinAapenTil;
   return !neamPinSistTrykk || naa - neamPinSistTrykk > NEAM_PIN_HVILE_MS;
 }
+/* Oekta paa serveren (functions/api/pin.js, 8. november 2026): riktig kode
+   gir en oekt der, som bank-funksjonen leser - Magne og Nina kommer inn paa
+   Oekonomi med koden sin. Nettleseren melder trykk hoeyst hvert minutt og
+   sier fra naar skjermen sovner. Sidene i NEAM_PIN_SIDER kan bare staa
+   aapne paa fellesenheten mens en av personene der har tastet koden;
+   ellers gaar skjermen til forsiden. Samme personer som PIN_TILGANG i
+   functions/api/bank/[[sti]].js - sperra som teller, er den. */
+const NEAM_PIN_SIDER = { '/okonomi.html': ['magne', 'nina'] };
+let neamPinPinget = 0;
+function neamPinPing(igjen){
+  neamPinPinget = Date.now();
+  neamPinKall('POST', igjen === undefined ? { hva:'vaaken' } : { hva:'vaaken', igjen:igjen }).catch(function(){});
+}
+function neamPinMeld(){
+  try{ window.dispatchEvent(new Event('neam-pin')); }catch(e){}
+  const krav = NEAM_PIN_SIDER[location.pathname];
+  if(krav && neamErKjokken() && !(neamPinPerson && krav.indexOf(neamPinPerson.hvem) !== -1)){
+    location.replace('/');
+  }
+}
 function neamPinSovn(){
+  const hadde = !!neamPinPerson;
+  if(hadde) neamPinKall('POST', { hva:'glem' }).catch(function(){});
   neamPinPerson = null;
   neamPinAapenTil = 0;
   neamPinVarslet = 0;
@@ -1919,6 +1941,7 @@ function neamPinSovn(){
   neamPinLagre();
   neamPinVarselLukk();
   neamLaasTegn();
+  neamPinMeld();
 }
 function neamHvemStaar(){
   if(neamPinPerson && neamPinSover(Date.now())) neamPinSovn();
@@ -1930,6 +1953,7 @@ function neamPinVaaken(){
   if(!neamErKjokken() || neamPinSover(Date.now())) return;
   neamPinSistTrykk = Date.now();
   neamPinLagre();
+  if(neamPinPerson && Date.now() - neamPinPinget > 60000) neamPinPing();
 }
 window.addEventListener('keydown', function(){ if(!neamPinAapen) neamPinVaaken(); }, true);
 window.addEventListener('pointerdown', function(ev){
@@ -1939,7 +1963,11 @@ window.addEventListener('pointerdown', function(ev){
   const sover = neamPinSover(naa);
   if(sover && neamPinPerson) neamPinSovn();
   neamPinSistTrykk = naa;
-  if(neamPinAapen || !sover || !kjokken){ neamPinLagre(); return; }
+  if(neamPinAapen || !sover || !kjokken){
+    neamPinLagre();
+    if(kjokken && neamPinPerson && naa - neamPinPinget > 60000) neamPinPing();
+    return;
+  }
   neamPinPerson = null;
   neamPinAapenTil = 0;
   neamPinLagre();
@@ -1970,6 +1998,7 @@ async function neamPinInngang(medTid){
       neamPinPerson = { hvem:r.hvem, navn:r.navn };
       neamPinAapenTil = 0;
       neamPinVarslet = 0;
+      neamPinPinget = Date.now();
       await neamPinHei(r.navn);
       break;
     }
@@ -1980,6 +2009,7 @@ async function neamPinInngang(medTid){
   neamPinSistTrykk = Date.now();
   neamPinLagre();
   neamLaasTegn();
+  neamPinMeld();
   if(medTid && neamPinPerson) neamLaasVelg();
 }
 
@@ -2032,6 +2062,7 @@ function neamLaasVelg(){
     k.onclick = function(){
       neamPinAapenTil = Date.now() + t.min * 60000;
       neamPinVarslet = 0;
+      neamPinPing(t.min * 60000);
       ferdig();
     };
     tider.appendChild(k);
@@ -2065,6 +2096,11 @@ function neamPinVarselLukk(){
   if(neamPinBak && neamPinBak.querySelector('.neam-pin-varsel')) neamPinLukk();
 }
 function neamPinTikk(){
+  /* En side som krever koden, staar ikke aapen etter at skjermen har
+     sovnet - heller ikke foer noen har trykket. */
+  if(NEAM_PIN_SIDER[location.pathname] && neamErKjokken()){
+    if(neamPinPerson) neamHvemStaar(); else neamPinMeld();
+  }
   if(neamErKjokken() && neamPinPerson && neamPinAapenTil){
     const igjen = neamPinAapenTil - Date.now();
     if(igjen <= 0) neamPinSovn();

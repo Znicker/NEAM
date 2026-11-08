@@ -1276,6 +1276,20 @@ window.neamUtfor = async function(navn, arg){
 })();
 </script>
 
+<script>
+/* Paa fellesenheten kommer Magne og Nina inn paa Oekonomi med pinkoden
+   (8. november 2026). Flisen og kortet over leses én gang ved lasting, saa
+   naar koden er tastet eller skjermen har sovnet og det endrer om
+   Oekonomi skal vises, lastes forsiden paa nytt. Personene staar i
+   NEAM_PIN_SIDER i felles-neam.js. */
+window.addEventListener('neam-pin', function(){
+  if(typeof neamErKjokken !== 'function' || !neamErKjokken()) return;
+  var p = neamHvemStaar(), krav = NEAM_PIN_SIDER['/okonomi.html'] || [];
+  var skal = !!(p && krav.indexOf(p.hvem) !== -1);
+  if(skal !== !document.getElementById('ixokFlis').hidden) location.reload();
+});
+</script>
+
 <!-- Neam: samme femmer som paa de andre sidene. Dialog-fila foerst,
      den baerer varsle() som lys-knappen bruker. Paa forsiden er hjem og
      applista litt dobbelt opp mot flisene - men grepet skal vaere likt
@@ -1283,7 +1297,7 @@ window.neamUtfor = async function(navn, arg){
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
-<script src="/felles-neam.js?v=89"></script>
+<script src="/felles-neam.js?v=90"></script>
 <script src="/felles-topp.js?v=10"></script>
 </body>
 </html>
