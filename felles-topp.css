@@ -67,6 +67,32 @@
 }
 .ntp-sted-ikon{ width:.8em; height:.8em; flex-shrink:0; opacity:.75; }
 
+/* ---------- Matlagingen som gaar ----------
+   Til venstre for klokka, med en ring som gaar rundt saa man ser at den
+   er i gang, og tiden under (Magne, 8. november 2026). Ringen er
+   aksentfargen paa et spor i --line, som en framdrift som aldri blir ferdig. */
+.ntp-mat{
+  display:flex; flex-direction:column; align-items:center; gap:3px; flex-shrink:0;
+  margin-left:18px; text-decoration:none; color:var(--ink);
+}
+.ntp-mat[hidden]{ display:none; }
+.ntp-mat-ikon{
+  position:relative; width:56px; height:56px; border-radius:50%;
+  display:grid; place-items:center; box-shadow:inset 0 0 0 4px var(--line);
+}
+.ntp-mat-ikon::before{
+  content:''; position:absolute; inset:0; border-radius:50%;
+  background:conic-gradient(var(--aksent) 0 28%, transparent 28% 100%);
+  -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));
+          mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));
+  animation:ntp-mat-snurr 1.6s linear infinite;
+}
+@keyframes ntp-mat-snurr{ to{ transform:rotate(360deg); } }
+.ntp-mat-ikon img{ width:40px; height:40px; object-fit:contain; display:block; }
+.ntp-mat b{ font-size:var(--t-etikett); font-weight:700; font-variant-numeric:tabular-nums; }
+@media (prefers-reduced-motion:reduce){ .ntp-mat-ikon::before{ animation:none; } }
+.ntp-mat:not([hidden]) ~ .ntp-klokke{ margin-left:14px; }
+
 /* Uten vaer staar klokka likevel helt til hoeyre. Trykk paa den aapner
    alarmene og timerne. */
 .ntp-klokke{ margin-left:auto; text-align:right; line-height:1; flex-shrink:0; cursor:pointer; border-radius:12px; }
@@ -79,16 +105,20 @@
   text-transform:capitalize; margin-top:4px;
 }
 
-/* ---------- Timerne under klokka ----------
-   Smaa klokkeikoner med tallet under (Magne, 8. november 2026). */
-.ntp-timere{ display:flex; justify-content:flex-end; gap:8px; margin-top:6px; flex-wrap:wrap; max-width:260px; margin-left:auto; }
+/* ---------- Timerne til venstre for klokka ----------
+   Smaa klokkeikoner med tallet under (Magne, 8. november 2026). De sto
+   foerst under datoen, men det gjorde toppen for hoey; ved siden av
+   klokka bryter de i hoeyst to rader, som er lavere enn klapptavla. */
+.ntp-timere{
+  display:flex; flex-wrap:wrap; justify-content:flex-end; align-content:center; gap:6px 8px;
+  max-width:210px; margin-left:14px; flex-shrink:0; cursor:pointer; border-radius:12px;
+}
 .ntp-timere[hidden]{ display:none; }
+.ntp-timere:focus-visible{ outline:3px solid var(--aksent); outline-offset:4px; }
+.ntp-timere:not([hidden]) ~ .ntp-klokke{ margin-left:14px; }
 .ntp-tm{ display:flex; flex-direction:column; align-items:center; gap:1px; min-width:34px; color:var(--ink-soft); }
 .ntp-tm svg{ width:20px; height:20px; }
 .ntp-tm b{ font-size:var(--t-etikett); font-weight:700; font-variant-numeric:tabular-nums; color:var(--ink); }
-/* Matlagingen: ikonet i miniatyr, foerst i raden, med tiden som har gaatt. */
-.ntp-tm-mat{ text-decoration:none; }
-.ntp-tm-mat img{ width:22px; height:22px; object-fit:contain; display:block; }
 .ntp-tm-alarm{ color:var(--aksent); }
 .ntp-tm-nedtelling{ color:var(--handling-endre); }
 .ntp-tm-stoppeklokke{ color:var(--handling-ny); }
@@ -181,7 +211,14 @@
   .ntp-ikon{ width:56px; height:56px; }
   .ntp-vaer, .ntp-sted{ display:none !important; }
   .ntp-klokke{ margin-left:auto !important; }   /* vaeret skjoeves ikke lenger mot hoeyre */
+  /* Matlagingen legger seg inntil klokka ogsaa her. */
+  .ntp-mat{ margin-left:auto; }
+  .ntp-mat:not([hidden]) ~ .ntp-klokke{ margin-left:10px !important; }
+  .ntp-mat-ikon{ width:42px; height:42px; }
+  .ntp-mat-ikon img{ width:30px; height:30px; }
   .ntp-tid{ font-size:var(--t-stor); }
   .ntp-dato{ font-size:var(--t-meta); margin-top:2px; }
-  .ntp-timere{ max-width:180px; }
+  .ntp-timere{ margin-left:auto; max-width:126px; gap:4px 6px; }
+  .ntp-mat:not([hidden]) ~ .ntp-timere{ margin-left:10px; }
+  .ntp-timere:not([hidden]) ~ .ntp-klokke{ margin-left:10px !important; }
 }

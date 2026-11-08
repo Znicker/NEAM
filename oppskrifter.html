@@ -14,7 +14,7 @@
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
 <link rel="stylesheet" href="/felles-neam.css?v=88">
-<link rel="stylesheet" href="/felles-topp.css?v=4">
+<link rel="stylesheet" href="/felles-topp.css?v=5">
 <!-- ?v=: bump tallet naar en fellesfil endres, ellers kan iPaden
      sitte igjen med den gamle fila fra cachen. -->
 <style>
@@ -2412,7 +2412,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=89"></script>
-<script src="/felles-topp.js?v=4"></script>
+<script src="/felles-topp.js?v=5"></script>
 <script>
 /* ============================================================
    Lagring: IndexedDB-basert erstatning for window.storage.
@@ -6622,7 +6622,8 @@ function matLysIgjen(rull){
   const rad = $('shop-' + matLys);
   if(!rad) return;
   rad.classList.add('lyser');
-  if(rull) rad.scrollIntoView({ block:'nearest', behavior:'smooth' });
+  /* Midt i lista, ikke i kanten (Magne, 8. november 2026). */
+  if(rull) rad.scrollIntoView({ block:'center', behavior:'smooth' });
 }
 
 /* En koketid i et steg: nedtellingen i klokka, ferdig utfylt. Man velger
@@ -6630,6 +6631,27 @@ function matLysIgjen(rull){
 function tidTilAlarm(ms, navn){
   if(typeof ntpTmNyForslag === 'function') ntpTmNyForslag({ type:'nedtelling', ms: ms, navn: navn });
   else showToast('Klokka er ikke lastet på denne sida.', true);
+}
+
+/* Navnet paa nedtellingen: leddet tiden staar i, uten tiden selv og
+   smaaordene foran den. «Kok basmatirisen i 10 minutter» gir «Kok
+   basmatirisen». Staar tiden foerst i leddet, brukes det som kommer etter.
+   Tomt svar gir rettens navn og stegnummeret. */
+function matAlarmNavn(tekst, fra, til){
+  const foer = tekst.slice(0, fra);
+  const skille = Math.max(foer.lastIndexOf('.'), foer.lastIndexOf('!'), foer.lastIndexOf('?'),
+                          foer.lastIndexOf(';'), foer.lastIndexOf(','), foer.lastIndexOf('\n'));
+  let ledd = foer.slice(skille + 1);
+  for(let n = 0; n < 3; n++){
+    ledd = ledd.replace(/\s+(?:i|på|til|ca\.?|cirka|omtrent|rundt|minst|ytterligere|videre)\s*$/i, '');
+  }
+  ledd = ledd.replace(/^\s*(?:og|så|deretter|da|etterpå)\s+/i, '').trim();
+  if(ledd.length < 3){
+    ledd = tekst.slice(til).split(/[.!?;,\n]/)[0].replace(/^\s*(?:i|på|til)\s+/i, '').trim();
+  }
+  if(!ledd) return '';
+  if(ledd.length > 40) ledd = ledd.slice(0, 38).replace(/\s+\S*$/, '') + '…';
+  return ledd.charAt(0).toUpperCase() + ledd.slice(1);
 }
 
 /* Koketider: «10 minutter», «10–12 min», «1 time», «30 sek». Et spenn gir
@@ -6657,14 +6679,14 @@ function stegMedLenker(tekst, nr){
     while((k = re.exec(t))) treff.push({ fra: k.index, til: k.index + k[0].length, ing: idx });
   });
   treff.sort((a, b) => a.fra - b.fra || (b.til - b.fra) - (a.til - a.fra));
-  const navn = ((r && r.title) || 'Matlaging') + ' – steg ' + nr;
+  const reserve = ((r && r.title) || 'Matlaging') + ' – steg ' + nr;
   let ut = '', pos = 0;
   treff.forEach(x => {
     if(x.fra < pos) return;     /* overlapper noe som alt er merket */
     ut += escapeHtml(t.slice(pos, x.fra));
     const bit = escapeHtml(t.slice(x.fra, x.til));
     ut += (x.tid != null)
-      ? `<button type="button" class="steg-tid" onclick="tidTilAlarm(${x.tid}, '${jsStr(navn)}')" title="Lag en nedtelling">${MAT_KLOKKE}${bit}</button>`
+      ? `<button type="button" class="steg-tid" onclick="tidTilAlarm(${x.tid}, '${jsStr(matAlarmNavn(t, x.fra, x.til) || reserve)}')" title="Lag en nedtelling">${MAT_KLOKKE}${bit}</button>`
       : `<button type="button" class="steg-ing" onclick="lysIngrediens(${x.ing})">${bit}</button>`;
     pos = x.til;
   });

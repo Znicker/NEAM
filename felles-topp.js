@@ -3,8 +3,8 @@
    ------------------------------------------------------------
    Fra 8. november 2026. Sidas ikon og navn (lenke til forsiden),
    laaseikonet paa fellesenhetene, vaeret med stedet ved siden av, og
-   klapptavla med dato - og under den alarmene, nedtellingene og
-   stoppeklokkene som gaar.
+   klapptavla med dato - og til venstre for den alarmene, nedtellingene
+   og stoppeklokkene som gaar.
 
    Bruk: et tomt element der toppen skal staa,
      <header class="ntp" id="neamTopp" data-ikon="sikkerhet" data-navn="Sikkerhet"></header>
@@ -22,8 +22,9 @@
    husket etterpaa. Uten svar staar Arendal.
 
    Matlagingen (oppskrifter.html) legger «neam-matlaging» i localStorage
-   mens en rett lages. Da staar et lite matlagingsikon med tiden som har
-   gaatt foerst blant timerne under klokka, og det leder tilbake dit.
+   mens en rett lages. Da staar matlagingsikonet til venstre for klokka,
+   med en ring som gaar rundt og tiden som har gaatt, og det leder
+   tilbake dit.
    ============================================================ */
 
 const NTP_STED = { lat: 58.4614, lon: 8.7724, navn: 'Arendal' };  /* som STED paa dashene */
@@ -86,11 +87,19 @@ function ntpTegn(){
     /* Stedet staar inntil vaeret (Magne, 8. november 2026) - det gir plass
        til timerne under klokka. */
     + '<div class="ntp-vaer" id="ntpVaer" hidden></div>'
+    /* Matlagingen som gaar: til venstre for klokka, med en ring som gaar
+       rundt (Magne, 8. november 2026). Fylles av ntpMatIkon(). */
+    + '<a class="ntp-mat" id="ntpMat" href="/oppskrifter.html" hidden>'
+    +   '<span class="ntp-mat-ikon"></span><b id="ntpMatTid"></b>'
+    + '</a>'
+    /* Timerne til venstre for klokka, ikke under den - under gjorde de
+       toppen for hoey (Magne, 8. november 2026). */
+    + '<div class="ntp-timere" id="ntpTimere" role="button" tabindex="0" hidden'
+    +   ' aria-label="Alarmer, nedtellinger og stoppeklokker"></div>'
     + '<div class="ntp-klokke" id="ntpKlokke" role="button" tabindex="0"'
     +   ' aria-label="Klokka – alarmer, nedtellinger og stoppeklokker">'
     +   '<div class="ntp-tid" id="ntpTid">--:--</div>'
     +   '<div class="ntp-dato" id="ntpDato">&nbsp;</div>'
-    +   '<div class="ntp-timere" id="ntpTimere" hidden></div>'
     + '</div>'
     + '</div>';
   if(typeof neamLaasTegn === 'function') neamLaasTegn();
@@ -102,9 +111,15 @@ function ntpTegn(){
   const hoyde = function(){ document.documentElement.style.setProperty('--ntp-h', t.offsetHeight + 'px'); };
   if(window.ResizeObserver) new ResizeObserver(hoyde).observe(t);
   hoyde();
-  const kl = document.getElementById('ntpKlokke');
-  kl.addEventListener('click', function(){ ntpTmApne(); });
-  kl.addEventListener('keydown', function(ev){ if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); ntpTmApne(); } });
+  document.getElementById('ntpMat').addEventListener('click', function(e){
+    /* Paa matlagingssida selv aapnes retten uten ny lasting. */
+    if(typeof window.ntpMatGaaTil === 'function'){ e.preventDefault(); window.ntpMatGaaTil(); }
+  });
+  ['ntpKlokke', 'ntpTimere'].forEach(function(id){
+    const kl = document.getElementById(id);
+    kl.addEventListener('click', function(){ ntpTmApne(); });
+    kl.addEventListener('keydown', function(ev){ if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); ntpTmApne(); } });
+  });
   ntpKlokke();
   setInterval(ntpKlokke, 10000);
   ntpVaerStart();
@@ -473,6 +488,24 @@ function ntpMat(){
   }catch(e){ return null; }
 }
 
+/* Ikonet til venstre for klokka. Gir matlagingen tilbake, eller null. */
+function ntpMatIkon(){
+  const a = document.getElementById('ntpMat');
+  const mat = ntpMat();
+  if(!a) return mat;
+  a.hidden = !mat;
+  if(!mat) return null;
+  const ikon = a.querySelector('.ntp-mat-ikon');
+  if(!ikon.firstChild){
+    const url = (typeof neamIkonUrl === 'function') ? neamIkonUrl('matlaging') : '/bilder/ikoner/matlaging.png';
+    ikon.innerHTML = '<img src="' + ntpEsc(url) + '" alt="" width="512" height="511">';
+  }
+  a.title = 'Matlaging: ' + (mat.tittel || '') + ' – trykk for å gå tilbake';
+  a.setAttribute('aria-label', a.title);
+  document.getElementById('ntpMatTid').textContent = ntpTmVarighet(Date.now() - mat.start);
+  return mat;
+}
+
 /* ---------- Tid ---------- */
 function ntpTmVarighet(ms){
   const s = Math.max(0, Math.round(ms / 1000));
@@ -497,23 +530,12 @@ function ntpTmTegn(){
   const el = document.getElementById('ntpTimere');
   if(!el) return;
   const alle = ntpTmAlle();
-  const mat = ntpMat();
-  el.hidden = !alle.length && !mat;
-  const matIkon = (typeof neamIkonUrl === 'function') ? neamIkonUrl('matlaging') : '/bilder/ikoner/matlaging.png';
-  el.innerHTML = (mat
-      ? '<a class="ntp-tm ntp-tm-mat" href="/oppskrifter.html" data-mat="1" title="' + ntpEsc('Matlaging: ' + (mat.tittel || '')) + '">'
-        + '<img src="' + ntpEsc(matIkon) + '" alt="" width="512" height="511"><b>' + ntpTmVarighet(Date.now() - mat.start) + '</b></a>'
-      : '')
-    + alle.map(function(t){
+  const mat = ntpMatIkon();
+  el.hidden = !alle.length;
+  el.innerHTML = alle.map(function(t){
     return '<span class="ntp-tm ntp-tm-' + t.type + (ntpTmRinger === t.id ? ' ringer' : '') + '" data-id="' + ntpEsc(t.id) + '" title="' + ntpEsc(t.navn || NTP_TM_TYPER[t.type]) + '">'
       + NTP_TM_SVG[t.type] + '<b>' + ntpTmKort(t) + '</b></span>';
   }).join('');
-  const lenke = el.querySelector('[data-mat]');
-  if(lenke) lenke.addEventListener('click', function(e){
-    /* Ikke aapne timerpanelet - dette er en vei tilbake til gryta. */
-    e.stopPropagation();
-    if(typeof window.ntpMatGaaTil === 'function'){ e.preventDefault(); window.ntpMatGaaTil(); }
-  });
   const panel = document.getElementById('ntpTmBak');
   if(panel && !panel.hidden && panel.dataset.vis === 'liste') ntpTmListe();
   /* Sekundene teller bare naar noe gaar - ogsaa en alarm langt fram,
@@ -533,7 +555,7 @@ function ntpTmTikk(){
     const t = alle.filter(function(x){ return x.id === s.dataset.id; })[0];
     if(t) s.querySelector('b').textContent = ntpTmKort(t);
   });
-  const mat = ntpMat(), mb = document.querySelector('#ntpTimere [data-mat] b');
+  const mat = ntpMat(), mb = document.getElementById('ntpMatTid');
   if(mat && mb) mb.textContent = ntpTmVarighet(naa - mat.start);
   const panel = document.getElementById('ntpTmBak');
   if(panel && !panel.hidden && panel.dataset.vis === 'liste'){
