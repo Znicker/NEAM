@@ -1306,7 +1306,7 @@
    haandtaket ogsaa her - men maales fra hoeyre kant, saa bildet speiles
    og hjoernet er det samme. */
 .neam-handtak.neam-hoyre{ left:auto; right:var(--f-marg-h, var(--f-marg-x)); }
-/* Hold inne i tre sekunder for innstillingene (felles-neam.js,
+/* Hold inne i to sekunder for innstillingene (felles-neam.js,
    neamSideHoldStart): en blaa ring vokser rundt haandtaket mens man
    holder, og staar fullt ute naar man kan slippe. Ingen lang-trykk-meny
    eller markering fra telefonen. */
@@ -1322,7 +1322,7 @@
    under tommelen»). */
 .neam-handtak.neam-hoyre.holdes{
   box-shadow:0 0 0 36px rgba(74,127,168,.35), 0 4px 14px rgba(44,62,80,.28);
-  transition:box-shadow 3s linear, width .18s ease, height .18s ease;
+  transition:box-shadow 2s linear, width .18s ease, height .18s ease;
 }
 .neam-firer.neam-hoyre{ left:auto; right:var(--f-marg-h, var(--f-marg-x)); }
 .neam-firer.neam-hoyre .neam-knapp{ left:auto; right:0; }

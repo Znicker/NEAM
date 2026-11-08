@@ -126,8 +126,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=91`, `felles-neam.css
-?v=88`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
+**Siste leverte versjoner:** `felles-neam.js ?v=92`, `felles-neam.css
+?v=89`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
 `felles-topp.js ?v=10`, `felles-topp.css ?v=10`;
@@ -148,8 +148,8 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–90; neam.css til og
-med 87; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–91; neam.css til og
+med 88; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
 hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–9**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -831,7 +831,7 @@ neste; neam.js `?v=79`, neam.css `?v=83`). Magne: «Høyre tommelknapp kan
 få ny funksjon. Holder man den inne i 3 sekunder blir man promtet om man
 vil åpne innstillinger», og «Long press kan åpne alle andre innstillinger
 som ligger på forsiden også».
-- **Hold inne i tre sekunder:** en blå ring vokser rundt knappen; når man
+- **Hold inne i tre sekunder (to fra 8. november, neam.js `?v=92`, neam.css `?v=89`; Magne: «det holder med 2 sec»):** en blå ring vokser rundt knappen; når man
   slipper, spør Neam «Åpne innstillinger?». Spørsmålet kommer først ved
   slipp – kom det mens fingeren lå på, landet slippet på dialogens
   bakteppe, og det er nei. Trykket etter slippet svelges, ellers åpnet
@@ -842,7 +842,7 @@ som ligger på forsiden også».
   forsiden nå forstår (`loggutFraUrl()`). Funksjonene er `neamSystemValg()`,
   `neamSideHoldStart()` og `neamLoggUt()` i `felles-neam.js`.
 - **Høyre tommelknapp står på alle sidene,** også spillene. På en side
-  uten egne handlinger sier et vanlig trykk «Hold inne i tre sekunder for
+  uten egne handlinger sier et vanlig trykk «Hold inne i to sekunder for
   innstillinger.»
 - **Reset er tatt bort fra «Enheter og lys»,** og forsidens egen «System»
   (Oppdater og Logg ut) er fjernet – det ligger i innstillingene nå.

@@ -979,7 +979,7 @@ boksen vises, og en skjult boks har ingen høyde å måle.
 er det lista som må filtreres på innlogget bruker — ikke skalaen som skal
 settes lavere.
 
-**Innstillingene: hold inne høyre tommelknapp i tre sekunder** (7. november
+**Innstillingene: hold inne høyre tommelknapp i to sekunder** (7. november
 2026), på alle sidene. En blå ring (`--aksent` med gjennomsiktighet) vokser
 rundt knappen mens man holder; når man slipper, spør Neam «Åpne
 innstillinger?». Spørsmålet kommer ved slipp, aldri mens fingeren ligger
@@ -1079,7 +1079,7 @@ aldri. Stemmen er dessuten det ene skjulte grepet systemet har råd til; flere
 blir en hemmelighet folk ikke finner.
 
 **Unntak, Magnes valg 7. november 2026:** høyre knapp har likevel fått et
-langt trykk – tre sekunder til innstillingene (se over). Det er langt nok
+langt trykk – to sekunder til innstillingene (se over). Det er langt nok
 til ikke å forveksles med stemmens ~0,5 sek, og et vanlig trykk på en side
 uten handlinger sier at grepet finnes.
 

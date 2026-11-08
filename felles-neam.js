@@ -1585,7 +1585,7 @@ function neamGren(plass){     neamGrenPaa('neamFirer', plass); }
 function neamSideGren(plass){ neamGrenPaa('neamSideFirer', plass); }
 
 /* ---------- Innstillingene: myk og hard reset ----------
-   Aapnes ved aa holde hoeyre tommelknapp inne i 3 sekunder, paa alle
+   Aapnes ved aa holde hoeyre tommelknapp inne i to sekunder (tre til 8. november), paa alle
    sidene (Magne, 7. november 2026: «Holder man den inne i 3 sekunder blir
    man promtet om man vil åpne innstillinger. Da ekspanderes
    innstillingknappene som eneste på høyre tommelknapp»). Til samme kveld
@@ -1636,14 +1636,14 @@ async function neamLoggUt(){
   else location.href = '/?loggut';
 }
 
-/* Hold inne: haandtaket vokser sakte i tre sekunder (.holdes i CSS-en),
+/* Hold inne: haandtaket vokser sakte i to sekunder (.holdes i CSS-en),
    saa man ser at noe skjer. Slippes det foer, er det et vanlig trykk.
 
    Spoersmaalet kommer foerst naar man SLIPPER. Kom det mens fingeren
    laa paa, landet slippet paa dialogens bakteppe - og det er nei. Trykket
    som foelger slippet, svelges foer det naar haandtaket: forsiden setter
    sin egen onclick, og den ville ellers aapnet sidas meny bak spoersmaalet. */
-const NEAM_HOLD_MS = 3000;
+const NEAM_HOLD_MS = 2000;   /* tre sekunder til 8. november (Magne: «det holder med 2 sec») */
 let neamHoldTimer = null;
 let neamHoldKlar = false;
 let neamHoldSvelg = false;
@@ -1707,7 +1707,7 @@ function neamSideKlikk(){
   /* En side uten egne handlinger: haandtaket staar der likevel, for
      innstillingenes skyld, og et trykk sier hvordan de naas. */
   if(!neamSideHarNoe() && !document.getElementById('neamSideFirer').classList.contains('oppe')){
-    if(typeof varsle === 'function') varsle('Hold inne i tre sekunder for innstillinger.');
+    if(typeof varsle === 'function') varsle('Hold inne i to sekunder for innstillinger.');
     return;
   }
   neamSideFirer();
@@ -2513,7 +2513,7 @@ function neamBygg(){
   sHandtak.setAttribute('aria-label', sm.navn + ' - handlinger');
   sHandtak.innerHTML = neamIkonImg(sm.ikon);
   /* Staar paa alle sidene fra 7. november 2026, ogsaa uten egne
-     handlinger: hold inne i tre sekunder aapner innstillingene (se
+     handlinger: hold inne i to sekunder aapner innstillingene (se
      neamSideHoldStart). */
   sHandtak.onclick = neamSideKlikk;
   sHandtak.addEventListener('pointerdown', neamSideHoldStart);
