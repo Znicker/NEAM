@@ -24,7 +24,8 @@ Mye ligger nå i **fellesfiler** (`felles-rot.css`, `felles-skall.css`,
 dokumentet – det er fortsatt fasiten for hva som skal være likt på tvers.
 
 *Sist oppdatert 8. november 2026: **pinkoden på kjøkkenskjermen** –
-tastaturet, «Hei Magne!» og Pinkoder for sys@ (se «Neam-assistenten»).
+tastaturet, «Hei Magne!», Pinkoder for sys@, og låseikonet med valgt tid
+og pling (se «Neam-assistenten»).
 Forrige oppdatering 6. november 2026: **fargekatalogen** er nytt verktøy for
 farger og bakgrunner (se «Farger → Fargekatalogen»), bildekatalogen kan
 bestille strektegningene i koden og dele store utvalg i flere ark (se
@@ -946,6 +947,15 @@ Tastaturet ligger på `.dlg-bak` (120) og lukkes ikke av bakteppet.
 «Har kode» / «Ingen kode», og knappene følger betydningene: grønn «Sett
 kode», oker «Endre», rød «Fjern» (spør først). En ny kode tastes på det
 samme tastaturet, to ganger.
+
+**Låseikonet på fellesenhetene** (8. november 2026) står til høyre for
+ikonet oppe til venstre (Kjøkken dash og forsiden), 64 px, med navnet
+under i ikonstilen: «Låst», personen eller minuttene som er igjen. Trykk
+gir valget om tid – store, nøytrale knapper i `--paper-soft` (15 minutter,
+30 minutter, 1 time), og «Lås nå» og «Avbryt» som nøytrale dialogknapper.
+Fem og to minutter før tiden er ute: «Skjermen låses om 5 minutter.» med
+OK (nøytral) og Forleng (blå), og **et lite pling** – to korte toner laget
+i nettleseren. Plinget brukes bare når skjermen er i ferd med å låse seg.
 
 **Neams egne klasser har `neam-`-prefiks, også modifikatorene.** Høyre
 hjørne het `.side` til 7. november 2026, og fem spillsider og kalenderen

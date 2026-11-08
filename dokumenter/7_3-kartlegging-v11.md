@@ -5,7 +5,8 @@ står der, taster sin sekssifrede kode ved første trykk etter hvilen, får
 «Hei Magne!», og Neam vet hvem han snakker med og kan skrive lekser for
 dem. sys@ legger inn kodene (se toppblokka og del 52). Senere samme natt:
 kjøkkenkontoen heter nå **felles@neam.no** – den skal brukes av alle
-fellesenhetene (se toppblokka). Ført à jour 7. november 2026, kveld: Rommene har fått fjernkontroll til
+fellesenhetene (se toppblokka). Til slutt: låseikon med valgt tid og varsel
+med pling før skjermen sovner (se toppblokka). Ført à jour 7. november 2026, kveld: Rommene har fått fjernkontroll til
 Samsung-TV-ene, gjennom en Logic-variabel og HomeyScript i Homey, og
 enheter kan dras oppå hverandre til navngitte grupper med felles bryter.
 Senere samme kveld: innstillingene (Husregisteret, myk og hard reset, Logg ut) ved å holde inne høyre tommelknapp på alle
@@ -107,8 +108,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=86`, `felles-neam.css
-?v=87`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=15`, `felles-lesalt.js
+**Siste leverte versjoner:** `felles-neam.js ?v=88`, `felles-neam.css
+?v=88`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
@@ -128,8 +129,8 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–85; neam.css til og
-med 86; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–14,
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–87; neam.css til og
+med 87; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
 hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -895,8 +896,44 @@ uten tilgang: begge navnene i koden → kontoen døpt om → `kitchen@` fjernet.
 - **Kalenderens tilgangsmatrise i KV** sto på `kitchen@`. Den flyttes
   til `felles@` første gang en side leser den (`tildelingFraKitchen()` i
   `kalender.html`) og lagres én gang. **Kan fjernes** når den har gått.
+- **`kitchen@` lagt tilbake samme natt** (`8ea4374`; neam.js `?v=87`, skriv
+  `?v=16`). Etter steg 3 fikk kjøkkenskjermen «Denne kontoen har ikke
+  tilgang» – Microsoft oppga ikke `felles@` for kontoen selv om den var
+  hovedalias. Nå står **begge** i alle listene, og kalenderen leser
+  `kitchen@` som `felles@` (`tildelingEpost()`). Avvisningen på forsiden
+  viser navnet Microsoft oppga i parentes, så neste avvisning kan leses
+  uten konsoll. **Åpent:** hvilket navn Microsoft faktisk gir kontoen –
+  `kitchen@` kan først fjernes når det er sett. Cloudflare Access trengte
+  ingen endring: policyen «Familien» slipper inn alt som slutter på
+  `neam.no`.
 - **Neste, ikke startet:** eget dashbord for fellesenhetene (Magne: «så
   kan de heller få sitt eget dashbord»).
+
+**8. november, natt: låseikon på fellesenhetene** (`93a5f20`; neam.js og
+neam.css `?v=88`). Magne: «lag et låse ikon ( relativt stort) til høyre for
+ikonet oppe til venstre. trykker man får man valget om tid», med «en promt
+5 og 2 minutter før den sovner. gjerne med et lite pling også», og «La tale
+og skriving i Neam holde den våken».
+- **Ikonet** (`laas`, 64 px) står til høyre for ikonet oppe til venstre på
+  Kjøkken dash og forsiden – sidene har en tom `<button id="neamLaas">`
+  som `felles-neam.js` fyller og bare viser på fellesenhetene. Under
+  ikonet: «Låst», navnet (vanlig hvile) eller minuttene som er igjen.
+- **Trykk:** låst → tastaturet, «Hei …!», så valget; åpen → valget med en
+  gang. 15 minutter, 30 minutter, 1 time, «Lås nå» og «Avbryt». Med valgt
+  tid holder skjermen seg åpen uansett trykk til tiden er ute.
+- **Varsel** 5 og 2 minutter før: «Skjermen låses om 5 minutter.» med OK
+  og Forleng (åpner valget), og et pling laget i nettleseren (Web Audio, to
+  korte toner – ingen lydfil). Lyden vekkes av hvert trykk på
+  fellesenhetene; er sida lastet uten at noen har rørt den, kan
+  nettleseren holde plinget tilbake. Varselet kommer uansett.
+- **Uten valgt tid** gjelder tre minutter som før, men tastetrykk og
+  meldinger til Neam (skrevet eller talt, før og etter svaret) holder den
+  våken (`neamPinVaaken()`).
+- Tidene ligger i fanens `sessionStorage` (`neam-pin`) sammen med
+  personen, så de følger med fra side til side.
+- **Venstre tommelknapp er urørt:** Magne vurderte hold-inne til
+  forsiden, men angret – «longpress venstre tommelknapp blir etterhvert
+  push to tallk». Knappen oppe til venstre virker som før.
 
 ### Åpne tråder
 
