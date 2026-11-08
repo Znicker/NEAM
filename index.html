@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="/felles-knapper.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <link rel="stylesheet" href="/felles-neam.css?v=88">
+<link rel="stylesheet" href="/felles-topp.css?v=1">
 <!-- Datalaget baerer husregisteret og lastes foer sidens eget skript.
      felles-skjema.js gir avbryt-regelen paa husskjemaet og krever
      felles-dialog.js, som ligger nederst - derfor staar begge to der,
@@ -413,17 +414,10 @@ input,select,textarea{font-size:16px}
 
 <div id="innside" hidden>
 
-  <div class="top">
-    <div class="brand">
-      <a href="/" class="brand-icon" title="Til Neam" style="display:block;text-decoration:none"><img class="ikon-flis" alt="Neam" src="/bilder/ikoner/neam-logo.png?v=1" width="512" height="512"></a>
-      <!-- Låseikonet på fellesenhetene - fylles og vises av felles-neam.js. -->
-      <button type="button" class="neam-laas" id="neamLaas" hidden></button>
-    </div>
-    <div class="clock">
-      <div class="clock-time" id="clock-time">--:--</div>
-      <div class="clock-date" id="clock-date">&nbsp;</div>
-    </div>
-  </div>
+  <!-- Topplinja er felles fra 8. november 2026 - se felles-topp.js. Logoen
+       sier navnet selv, saa navnet ved siden av staar tomt. Klokka og
+       laaseikonet kommer derfra. -->
+  <header class="ntp" id="neamTopp" data-ikon="neam-logo" data-navn="" style="margin-bottom:18px"></header>
 
   <!-- Oekonomien (okonomi.html) naas herfra og fra Oekonomi-flisen. Kortet
        vises bare for dem bank-funksjonen slipper inn, og bare naar noe
@@ -849,6 +843,9 @@ const MND = ['januar','februar','mars','april','mai','juni',
 /* Vaermeldingen ligger sammenslaatt. Trykk paa temperaturen i toppen
    aapner den, trykk igjen lukker. */
 function tegnKlokke(){
+  /* Klokka staar i den felles topplinja fra 8. november 2026; denne er
+     igjen bare om sida en dag faar tilbake sin egen. */
+  if(!document.getElementById('clock-time')) return;
   const n = new Date();
   /* Klapptavla bygger og flipper seg selv - se neamFlipKlokke i
      felles-neam.js. Stoerrelsen arves fra .clock-time sin font-size. */
@@ -1278,5 +1275,6 @@ window.neamUtfor = async function(navn, arg){
 <script src="/felles-skjema.js?v=1"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=89"></script>
+<script src="/felles-topp.js?v=1"></script>
 </body>
 </html>

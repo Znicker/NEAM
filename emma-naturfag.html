@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=6">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <link rel="stylesheet" href="/felles-neam.css?v=88">
+<link rel="stylesheet" href="/felles-topp.css?v=1">
 <style>
 /* ============================================================
    NEAM - Naturfagspill for Emma
@@ -308,11 +309,9 @@ body{
 
 <div class="nf-side">
 
+  <!-- Topplinja er felles fra 8. november 2026 - se felles-topp.js. -->
+  <header class="ntp" id="neamTopp" data-ikon="emma" data-navn="Naturfag" data-hjem="/emma.html"></header>
   <div class="nf-topp">
-    <a class="nf-merke" href="/emma.html" aria-label="Til Emma dash">
-      <img src="/bilder/ikoner/emma.png?v=2" alt="Emma dash" width="512" height="508"
-           onerror="this.hidden = true">
-    </a>
     <h1 class="nf-tittel">Naturfag<span>Emmas puggeark</span></h1>
     <div class="nf-faner">
       <button class="nf-fane nf-valgt" id="faneQuiz" onclick="visFane('quiz')">Quiz</button>
@@ -1094,5 +1093,6 @@ visQuizOppsett();
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-hus.js?v=28"></script>
 <script src="/felles-neam.js?v=89"></script>
+<script src="/felles-topp.js?v=1"></script>
 </body>
 </html>

@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=6">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <link rel="stylesheet" href="/felles-neam.css?v=88">
+<link rel="stylesheet" href="/felles-topp.css?v=1">
 <style>
 /* ============================================================
    NEAM – Sikkerhet
@@ -234,18 +235,10 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
 
 <div class="skjerm">
 
-  <header class="topp">
-    <!-- Sida baerer SITT EGET merke, ikke Neam-merket. Regelen ellers i
-         huset: merket oeverst er det samme som flisen man trykket paa
-         for aa komme hit. -->
-    <a class="merke" href="/" aria-label="Til forsiden">
-      <img class="ikon-flis" src="/bilder/ikoner/sikkerhet.png?v=2" alt="Sikkerhet" width="500" height="512">
-    </a>
-    <div>
-      <h1 class="tittel">Sikkerhet</h1>
-      <p class="status" id="status">Kobler til …</p>
-    </div>
-  </header>
+  <!-- Topplinja er felles fra 8. november 2026 - se felles-topp.js.
+       Ikonet er det samme som flisen man trykket paa for aa komme hit. -->
+  <header class="ntp" id="neamTopp" data-ikon="sikkerhet" data-navn="Sikkerhet"></header>
+  <p class="status" id="status">Kobler til …</p>
 
   <div class="feil" id="feilboks" hidden></div>
 
@@ -272,6 +265,7 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
 <script src="/felles-skriv.js?v=16"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=89"></script>
+<script src="/felles-topp.js?v=1"></script>
 <script>
 'use strict';
 

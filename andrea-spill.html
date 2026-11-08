@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=6">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <link rel="stylesheet" href="/felles-neam.css?v=88">
+<link rel="stylesheet" href="/felles-topp.css?v=1">
 <style>
 /* ============================================================
    NEAM – Spillene til Andrea
@@ -110,15 +111,9 @@ a:focus-visible{ outline:3px solid var(--aksent); outline-offset:2px; }
 
 <div class="side">
 
-  <header class="topp">
-    <a class="merke" href="/andrea.html" aria-label="Til Andrea dash">
-      <img src="/bilder/ikoner/andrea.png?v=2" alt="Andrea dash" width="491" height="512">
-    </a>
-    <div>
-      <h1 class="tittel">Spill</h1>
-      <p class="ingress">Hva vil du spille?</p>
-    </div>
-  </header>
+  <!-- Topplinja er felles fra 8. november 2026 - se felles-topp.js. -->
+  <header class="ntp" id="neamTopp" data-ikon="spill" data-navn="Spill" data-hjem="/andrea.html"></header>
+  <p class="ingress">Hva vil du spille?</p>
 
   <main>
     <ul class="spillene">
@@ -151,5 +146,6 @@ a:focus-visible{ outline:3px solid var(--aksent); outline-offset:2px; }
 <script src="/felles-dialog.js?v=1"></script>
 <script src="/felles-hus.js?v=28"></script>
 <script src="/felles-neam.js?v=89"></script>
+<script src="/felles-topp.js?v=1"></script>
 </body>
 </html>

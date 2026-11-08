@@ -1,0 +1,71 @@
+/* ============================================================
+   felles-topp.css - topplinja, lik paa alle sidene
+   ------------------------------------------------------------
+   Fra 8. november 2026. Maalene er dashenes (.topp, .merke-ikon,
+   .klokke-tid i dashboard.html): ikon paa 84 px med navnet ved siden
+   av, vaeret midt i, stedet og klapptavla til hoeyre.
+   Under 700 px er toppen kompakt: ikon, navn og en mindre klokke -
+   vaeret og stedet vises fra nettbrettbredde og opp. Bredden er toppens
+   egen (container query), ikke skjermens: Handleliste staar i en smal
+   spalte ogsaa paa PC.
+   ============================================================ */
+
+.ntp{
+  display:block; flex-shrink:0; container-type:inline-size;
+  align-self:stretch;   /* full bredde ogsaa i en sentrert flex-kolonne */
+  font-family:'Archivo',system-ui,-apple-system,sans-serif; color:var(--ink);
+}
+.ntp-rad{ display:flex; align-items:center; gap:16px; }
+.ntp-merke{ display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit; min-width:0; }
+.ntp-ikon{
+  width:84px; height:84px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.ntp-ikon img{ width:100%; height:100%; object-fit:contain; display:block; }
+.ntp-navn{ font-size:var(--t-stor); text-align:left; white-space:nowrap; }
+
+.ntp-vaer{
+  display:flex; align-items:center; gap:18px; flex-shrink:1; min-width:0;
+  margin-left:auto; margin-right:auto;
+}
+.ntp-vaer[hidden]{ display:none; }
+.ntp-vaer-ikon{ font-size:var(--t-ikon); line-height:1; }
+.ntp-vaer-tall{ display:flex; flex-direction:column; line-height:1.15; }
+.ntp-grad{ font-size:var(--t-stor); font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.ntp-tekst{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; }
+.ntp-vind{ margin-top:2px; font-size:var(--t-etikett); color:var(--ink-soft); font-weight:600; white-space:nowrap; }
+.ntp-pil{ width:1.1em; height:1.1em; vertical-align:-.18em; margin-right:1px; }
+.ntp-sjo{ display:flex; align-items:center; gap:8px; }
+.ntp-sjo:empty{ display:none; }
+.ntp-sjo-ikon{ font-size:24px; line-height:1; }
+.ntp-sjo-grad{ font-size:var(--t-stor); font-weight:700; line-height:1; }
+.ntp-sjo.gammel .ntp-sjo-grad{ color:var(--ink-soft); }
+
+/* Stedsnavnet hoerer til vaeret, ikke til klokka. */
+.ntp-sted{
+  font-size:var(--t-stor); font-weight:700; color:var(--ink-soft); flex-shrink:0;
+  letter-spacing:.01em; display:flex; align-items:center; gap:6px;
+}
+.ntp-sted[hidden]{ display:none; }
+.ntp-sted-ikon{ width:.8em; height:.8em; flex-shrink:0; opacity:.75; }
+
+/* Uten vaer staar klokka likevel helt til hoeyre. */
+.ntp-klokke{ margin-left:auto; text-align:right; line-height:1; flex-shrink:0; }
+.ntp-vaer:not([hidden]) ~ .ntp-sted ~ .ntp-klokke{ margin-left:18px; }
+/* Font-size er alt klapptavla trenger - se .fk i felles-neam.css. */
+.ntp-tid{ font-size:var(--t-display); }
+.ntp-dato{
+  font-size:var(--t-brod); color:var(--ink-soft); font-weight:600;
+  text-transform:capitalize; margin-top:4px;
+}
+
+@container (max-width:900px){ .ntp-vind{ display:none; } }
+@container (max-width:780px){ .ntp-sted{ display:none !important; } }
+@container (max-width:699px){
+  .ntp-rad{ gap:10px; }
+  .ntp-ikon{ width:56px; height:56px; }
+  .ntp-vaer, .ntp-sted{ display:none !important; }
+  .ntp-klokke{ margin-left:auto !important; }   /* vaeret skjoeves ikke lenger mot hoeyre */
+  .ntp-tid{ font-size:var(--t-stor); }
+  .ntp-dato{ font-size:var(--t-meta); margin-top:2px; }
+}

@@ -15,6 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/felles-rot.css?v=6">
 <link rel="stylesheet" href="/felles-neam.css?v=88">
+<link rel="stylesheet" href="/felles-topp.css?v=1">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <style>
 /* ============================================================
@@ -515,15 +516,12 @@ body.spiller .rekorder{ display:none; }
 
 <div class="side">
 
-  <header class="topp">
-    <a class="merke" href="/andrea.html" aria-label="Til Andrea dash">
-      <img src="/bilder/ikoner/mattespill.png?v=2" alt="Mattespill" width="588" height="595">
-    </a>
-    <div>
-      <h1 class="tittel">Hjelp Neam hjem</h1>
-      <p class="ingress">Hvert riktige svar gir Neam kraft til ett skritt mot laderen.</p>
-    </div>
-  </header>
+  <!-- Topplinja er felles fra 8. november 2026 - se felles-topp.js. -->
+  <header class="ntp" id="neamTopp" data-ikon="mattespill" data-navn="Mattespill" data-hjem="/andrea.html"></header>
+  <div>
+    <h1 class="tittel">Hjelp Neam hjem</h1>
+    <p class="ingress">Hvert riktige svar gir Neam kraft til ett skritt mot laderen.</p>
+  </div>
 
   <section class="scene" id="scene">
     <div class="ror" aria-hidden="true"></div>
@@ -1573,5 +1571,6 @@ sjekkRedaktor();
 <script>window.neamUtenSamtale = true;</script>
 <script src="/felles-hus.js?v=28"></script>
 <script src="/felles-neam.js?v=89"></script>
+<script src="/felles-topp.js?v=1"></script>
 </body>
 </html>

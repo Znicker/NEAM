@@ -15,6 +15,7 @@
 <!-- Neam-panelet: haandtaket som foelger deg rundt. Egen fil, saa den
      kan lastes av en ramme i stedet for av hver side en dag. -->
 <link rel="stylesheet" href="/felles-neam.css?v=88">
+<link rel="stylesheet" href="/felles-topp.css?v=1">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
@@ -1233,7 +1234,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 .fs-logo:active{transform:scale(.94)}
 .fs-logo img{width:100%;height:100%;object-fit:contain;display:block}
 
-.shell.fullscreen .top{display:none}
+.shell.fullscreen .top,.shell.fullscreen .ntp{display:none}
 .shell.fullscreen .mnav-hode .brand{display:none}
 .shell.fullscreen .side{display:none}
 .shell.fullscreen .grid{grid-template-columns:1fr}
@@ -1311,7 +1312,7 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
 
   body{overflow:hidden}
   .shell{height:100dvh;min-height:0;padding:8px 12px calc(var(--f-marg-y) + max(var(--f-handtak), var(--kv-hoyde, 0px)) + 8px + env(safe-area-inset-bottom));gap:8px}
-  .top{display:none}                       /* logoen tar for mye hoeyde */
+  .top,.ntp{display:none}                  /* logoen tar for mye hoeyde */
   .mnav-hode .brand{display:none}
   .mnav-topp{
     grid-template-columns:auto 1fr auto;justify-items:stretch;gap:10px;
@@ -1410,18 +1411,11 @@ input,select,textarea{font-size:16px}
 
   <button class="fs-logo" id="fsLogo" onclick="toggleFull()" title="Avslutt fullskjerm" aria-label="Avslutt fullskjerm"><img alt=""></button>
 
-  <!-- Bare paa innloggingsskjermen. Inne staar merket foran
-       maanedsnavnet i stedet (12. oktober 2026), saa kalenderen faar
-       raden - se .mnav-hode. -->
-  <div class="top" id="topp">
-    <a class="brand" href="./index.html">
-      <span class="brand-icon"><img class="ikon-flis" src="/bilder/ikoner/kalender.png?v=2" alt="" width="509" height="512"></span>
-      <div>
-        <div class="brand-title">Kalender</div>
-        <div class="brand-sub">Neam</div>
-      </div>
-    </a>
-  </div>
+  <!-- Topplinja er felles fra 8. november 2026 - se felles-topp.js. Den
+       staar baade paa innloggingsskjermen og inne; merket foran
+       maanedsnavnet (12. oktober 2026) er tatt bort. Skjult i fullskjerm
+       og paa liggende telefon, der hoeyden trengs til kalenderen. -->
+  <header class="ntp" id="neamTopp" data-ikon="kalender" data-navn="Kalender"></header>
 
   <div class="gate-wrap" id="gate">
     <section class="panel">
@@ -1438,13 +1432,6 @@ input,select,textarea{font-size:16px}
   <div class="mnav" id="mnav" hidden>
     <div class="mnav-topp">
       <div class="mnav-hode">
-        <a class="brand" href="./index.html">
-          <span class="brand-icon"><img class="ikon-flis" src="/bilder/ikoner/kalender.png?v=2" alt="" width="509" height="512"></span>
-          <div>
-            <div class="brand-title">Kalender</div>
-            <div class="brand-sub">Neam<span class="brand-navn" id="brandNavn"></span></div>
-          </div>
-        </a>
         <div class="mnav-title" id="monthTitle">—</div>
       </div>
       <div class="kal-valg" id="kalValg">
@@ -1663,6 +1650,7 @@ input,select,textarea{font-size:16px}
 <script src="/felles-filviser.js?v=2"></script>
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=89"></script>
+<script src="/felles-topp.js?v=1"></script>
 <script>
 /* ============================================================
    Konfigurasjon — Azure app-registrering
@@ -2105,7 +2093,7 @@ function settFull(på){
   shell.classList.toggle('fullscreen', på);
   const logo = $('fsLogo');
   if(på && logo){
-    const kilde = document.querySelector('.brand-icon img');
+    const kilde = document.querySelector('.ntp-ikon img');
     const bilde = logo.querySelector('img');
     if(kilde && bilde && !bilde.getAttribute('src')) bilde.src = kilde.src;
   }
@@ -3132,8 +3120,6 @@ function render(){
   }
   $('bottomBar').hidden = !inn;
   $('mnav').hidden = !inn;
-  /* Inne staar merket i maanedslinja - topplinja er bare for porten. */
-  $('topp').hidden = inn;
   /* Hoeyre firer: handlingene krever en oekt. neamBygg() avgjorde
      synligheten foer dette skriptet var lest, saa den settes her. */
   const sideH = $('neamSideHandtak');
