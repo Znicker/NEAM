@@ -316,6 +316,23 @@ input.ok-regnefeil{ border-color:var(--danger) !important; }
   .ok-rs-liste .ok-under-rad, .ok-rs-liste .ok-mnd-kat summary{ font-size:var(--t-meta); }
   .ok-rs-hode{ letter-spacing:0; }
 }
+/* Listene i Regnskap, Budsjett og Resultat (8. november 2026, Magne: «større
+   skrift i alle føringer … lang avstand mellom beskrivelsen og summene»):
+   smalere paa PC, grupper i --t-stor med ikon, poster i --t-stor fra 700 px,
+   linjer og foeringer i --t-brod, en tynn stolpe under posten, raden lyser
+   naar man peker, og annenhver gruppe har en svak tone. */
+.ok-liste-kort{ max-width:900px; width:100%; box-sizing:border-box; }
+.ok-liste-kort .ok-mnd-kat summary{ font-size:var(--t-stor); }
+.ok-liste-kort .ok-mnd-kat summary .ok-avvik{ font-size:var(--t-stor); }
+.ok-liste-kort .ok-mnd-kat-navn{ gap:10px; }
+.ok-gr-ikon{ width:28px; height:28px; flex:none; border-radius:8px; object-fit:cover; }
+@media (min-width:700px){ .ok-liste-kort .ok-under-rader > .ok-bl-rad{ font-size:var(--t-stor); } }
+.ok-liste-kort .ok-rg-inn .ok-under-rad, .ok-liste-kort .ok-bl-linjer .ok-under-rad{ font-size:var(--t-brod); }
+.ok-liste-kort .ok-bl-rad:hover, .ok-liste-kort .ok-mnd-kat summary:hover{ background:var(--boks-mild); box-shadow:0 0 0 8px var(--boks-mild); border-radius:8px; }
+.ok-liste-kort .ok-mnd-kat:nth-of-type(even){ background:var(--bg-1); border-radius:12px; margin:0 -12px; padding:0 12px; }
+.ok-rad-bar{ height:5px; margin-top:2px; }
+.ok-rad-bar .ok-bar-fyll{ border-radius:999px; }
+@media (min-width:700px){ .ok-liste-kort .ok-rs-liste .ok-under-rader > .ok-under-rad, .ok-liste-kort .ok-rs-liste .ok-mnd-kat summary, .ok-liste-kort .ok-rs-hode{ grid-template-columns:minmax(0,1fr) 120px 120px 120px; } }
 .ok-meny-hint{ padding:6px 10px 2px; font-size:var(--t-etikett); color:var(--ink-soft); border-top:1px solid var(--line); margin-top:4px; }
 .ok-std-utvid{ font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; display:inline-flex; align-items:baseline; gap:6px; text-align:left; }
 .ok-std-utvid:hover{ color:var(--aksent); }
@@ -976,7 +993,7 @@ button.ok-dr-rad{ cursor:pointer; }
       </div>
     </section>
     <!-- Én spalte som Budsjett; kjøpene bak en post åpnes i en dialog (8. november 2026). -->
-    <section class="ok-kort">
+    <section class="ok-kort ok-liste-kort">
       <div class="ok-kort-hode"><h2>Brukt per post</h2></div>
       <p class="ok-meta">Trykk en post for linjene og føringene, og en føring for detaljene. Høyreklikk – eller hold fingeren – for å endre.</p>
       <div id="ok-rg-tabell"><p class="ok-meta">Henter …</p></div>
@@ -1014,7 +1031,7 @@ button.ok-dr-rad{ cursor:pointer; }
       </div>
     </section>
     <!-- Samme liste som Regnskap og Budsjett, med tre kolonner (8. november 2026). -->
-    <section class="ok-kort">
+    <section class="ok-kort ok-liste-kort">
       <div class="ok-kort-hode"><h2>Budsjett mot regnskap</h2></div>
       <p class="ok-meta">Trykk en post for linjene og føringene, og en føring for detaljene. Høyreklikk – eller hold fingeren – for å endre. Avviket er rødt når det er brukt mer enn budsjettet.</p>
       <div class="ok-rs-liste" id="ok-rs-liste"><p class="ok-meta">Henter …</p></div>
@@ -1043,7 +1060,7 @@ button.ok-dr-rad{ cursor:pointer; }
           </div>
         </div>
       </section>
-      <section class="ok-kort">
+      <section class="ok-kort ok-liste-kort">
         <div class="ok-kort-hode"><h2>Budsjett per post</h2><div class="ok-rad-knapper" id="ok-bu-liste-knapper"></div></div>
         <div id="ok-bu-liste"><p class="ok-meta">Henter …</p></div>
       </section>
@@ -4702,12 +4719,25 @@ button.ok-dr-rad{ cursor:pointer; }
     rad.appendChild(kb);
   }
   /* En gruppe som sammenleggbar linje, som i Resultat - her med ett tall. */
+  /* Et ikon foran gruppen, fra husets ikoner (bilder/ikoner). Grupper uten eget ikon faar ingen. */
+  var OK_GR_IKON = { 'Inntekter':'okonomi', 'Bolig':'hjem', 'Bil':'bil', 'Mat':'handleliste', 'Barna':'familie', 'Felles fritid':'spill', 'Andre utgifter':'kvitteringer', 'Sparing':'laas' };
+  function okGruppeIkon(g){
+    var n = OK_GR_IKON[g];
+    return n && typeof neamIkonUrl === 'function' ? '<img class="ok-gr-ikon" src="' + neamIkonUrl(n) + '" width="28" height="28" alt="">' : '';
+  }
+  /* Den tynne stolpen under en post: andel 0-1, roed naar den er over. */
+  function okRadBar(andel, over){
+    var b = okEl('div', 'ok-bar ok-rad-bar');
+    var f = okEl('div', 'ok-bar-fyll' + (over ? ' over' : '')); f.style.width = Math.max(0, Math.min(andel, 1)) * 100 + '%';
+    b.appendChild(f);
+    return b;
+  }
   function okMndGruppeLinje(g, tall, under){
     var d = okEl('details', 'ok-mnd-kat');
     d.open = !!okMnd.apneKjop['g:' + g];
     d.addEventListener('toggle', function(){ okMnd.apneKjop['g:' + g] = d.open; });
     var s = document.createElement('summary');
-    s.appendChild(okEl('span', 'ok-mnd-kat-navn', okVask(g)));
+    s.appendChild(okEl('span', 'ok-mnd-kat-navn', okGruppeIkon(g) + okVask(g)));
     s.appendChild(okEl('span', 'ok-avvik', okVask(tall)));
     if(under) s.appendChild(okEl('div', 'ok-bar-tall', '<span>' + okVask(under) + '</span>'));
     d.appendChild(s);
@@ -4760,8 +4790,11 @@ button.ok-dr-rad{ cursor:pointer; }
   function okRgRad(c, k, sum, modus){
     var rad = okEl('div', 'ok-under-rad ok-bl-rad'); rad.dataset.k = k;
     rad.appendChild(okEl('span', '', '<span class="ok-bl-pil" aria-hidden="true">›</span>' + okVask(k.split(' · ').slice(1).pop())));
-    if(modus === 'rs'){ var vv = okRsVerdier(c, k); rad.insertAdjacentHTML('beforeend', okRsTall(c, vv.b, vv.r, vv.snu)); }
+    var vv = okRsVerdier(c, k);
+    if(modus === 'rs') rad.insertAdjacentHTML('beforeend', okRsTall(c, vv.b, vv.r, vv.snu));
     else rad.appendChild(okEl('b', '', sum ? okVask(c.kr(sum)) : '<span class="ok-bl-tom">–</span>'));
+    /* Stolpen: brukt av budsjettet - roed over (ikke for inntekter og sparing). */
+    if(vv.b > 0) rad.appendChild(okRadBar(vv.r / vv.b, !vv.snu && vv.r > vv.b * 1.02));
     /* Merket under, som i budsjettlista. */
     var mk = okBuMerke(k);
     if(mk){ var me = okEl('span', 'ok-meta', okVask(okMerkeFullNavn(mk))); me.style.gridColumn = '1 / -1'; rad.appendChild(me); }
@@ -4816,7 +4849,7 @@ button.ok-dr-rad{ cursor:pointer; }
       d.open = !!okMnd.apneKjop['rs:' + g];
       d.addEventListener('toggle', function(){ okMnd.apneKjop['rs:' + g] = d.open; });
       var s = document.createElement('summary'); s.dataset.k = g;
-      s.innerHTML = '<span class="ok-mnd-kat-navn">' + okVask(g) + '</span>' + okRsTall(c, b, r, snu);
+      s.innerHTML = '<span class="ok-mnd-kat-navn">' + okGruppeIkon(g) + okVask(g) + '</span>' + okRsTall(c, b, r, snu);
       d.appendChild(s);
       var ur = okEl('div', 'ok-under-rader');
       gp.forEach(function(k){
@@ -5335,6 +5368,8 @@ button.ok-dr-rad{ cursor:pointer; }
         var rad = okEl('div', 'ok-under-rad ok-bl-rad'); rad.dataset.k = k;
         rad.appendChild(okEl('span', '', (lin.length ? '<span class="ok-bl-pil" aria-hidden="true">›</span>' : '') + okVask(k.split(' · ')[1])));
         rad.appendChild(okEl('b', '', belop(ub)));
+        /* Stolpen: postens del av gruppen. */
+        if(ub && b) rad.appendChild(okRadBar(ub / b, false));
         /* Under posten: merket, maanedene i standarden, og i en maaned med eget budsjett standarden naar den er en annen. */
         var meta = [], mk = okBuMerke(k);
         if(mk) meta.push(okMerkeFullNavn(mk));
