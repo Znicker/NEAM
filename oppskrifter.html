@@ -1712,8 +1712,8 @@ input,select,textarea{font-size:16px}
 }
 .mat-knapp:active{ transform:scale(.97); }
 .mat-knapp.ny{ background:var(--handling-ny); }
-/* Start til venstre for rettens navn: groenn naar den starter, roed naar
-   den stanser (Magne, 8. november 2026). */
+/* Start foerst i raden under navnet, til venstre for porsjonene: groenn
+   naar den starter, roed naar den stanser (Magne, 8. november 2026). */
 .mat-tittel{ display:flex; align-items:center; gap:12px; min-width:0; flex:1 1 auto; }
 #mat-start{ flex-shrink:0; background:var(--handling-ny); }
 #mat-start.stans{ background:var(--danger); }
@@ -1929,7 +1929,6 @@ input,select,textarea{font-size:16px}
       <div class="card-panel punched detail-header">
         <div class="title-row">
           <div class="mat-tittel">
-            <button type="button" class="mat-knapp" id="mat-start" onclick="matStartEllerSlutt()">Start matlaging</button>
             <h2 id="d-title"></h2>
             <input id="d-title-felt" class="tittel-felt" hidden aria-label="Navn på retten">
           </div>
@@ -5736,10 +5735,10 @@ function renderDetailStats(){
   /* Porsjonsvelgeren staar her (Magne, 8. november 2026). Mens retten
      lages, er den borte: antallet staar fast, og tiden siden start. */
   if(matAktivHer()){
-    stats.push(`<span class="stat">🍽 ${escapeHtml(formatAmt(currentServings))} porsjoner</span>`);
+    stats.push(`<span class="stat">${escapeHtml(formatAmt(currentServings))} porsjoner</span>`);
     stats.push(`<span class="stat" id="mat-tid"></span>`);
   }else if(r.baseServings){
-    stats.push(`<span class="stat porsjoner">🍽 <button class="servings-btn" onclick="changeServings(-1)" aria-label="Færre porsjoner">−</button>`
+    stats.push(`<span class="stat porsjoner"><button class="servings-btn" onclick="changeServings(-1)" aria-label="Færre porsjoner">−</button>`
       + `<span class="servings-count" id="d-servings-count">${escapeHtml(formatAmt(currentServings))}</span>`
       + `<button class="servings-btn" onclick="changeServings(1)" aria-label="Flere porsjoner">+</button> porsjoner</span>`);
   }
@@ -5749,7 +5748,12 @@ function renderDetailStats(){
       ? `<span class="card-rating">${starsHtml(Math.round(avg), false)}</span><span class="rating-count">${formatAmt(avg)} (${count})</span>`
       : `<span class="rating-count">Ingen vurdering</span>`
   }</span>`);
-  $('d-stats-row').innerHTML = stats.join('<span class="stat-divider"></span>');
+  /* Start matlaging staar foerst i raden, til venstre for porsjonene
+     (Magne, 8. november 2026): groenn, roed «Stans» naar retten lages. */
+  const aktiv = matAktivHer();
+  const start = `<button type="button" class="mat-knapp${aktiv ? ' stans' : ''}" id="mat-start" onclick="matStartEllerSlutt()">`
+    + (aktiv ? 'Stans matlaging' : 'Start matlaging') + '</button>';
+  $('d-stats-row').innerHTML = start + stats.join('<span class="stat-divider"></span>');
   matTid();
 }
 
@@ -6487,7 +6491,7 @@ function renderCommentsList(){
 /* ============================================================
    Matlaging (8. november 2026, Magne)
    ------------------------------------------------------------
-   «Start matlaging» (groenn) staar foran rettens navn og blir «Stans
+   «Start matlaging» (groenn) staar foerst i raden under navnet og blir «Stans
    matlaging» (roed); porsjonsvelgeren staar i raden under navnet.
    «Finn ingredienser» er tatt bort: foer start staar lista gruppert som i
    handlelista, under matlaging i oppskriftens rekkefoelge.
@@ -6585,12 +6589,7 @@ window.ntpMatGaaTil = function(id){
 };
 
 function matTegnStyring(){
-  const aktiv = matAktivHer();
-  const st = $('mat-start');
-  if(st){
-    st.textContent = aktiv ? 'Stans matlaging' : 'Start matlaging';
-    st.classList.toggle('stans', aktiv);
-  }
+  /* Knappen og porsjonene tegnes i raden under navnet - se renderDetailStats. */
   renderDetailStats();
 }
 function matTid(){
