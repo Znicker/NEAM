@@ -1799,27 +1799,7 @@ async function hentTildeling(){
       d = (typeof d.value === 'string') ? JSON.parse(d.value) : d.value;
     }
     if(d && typeof d === 'object') tildeling = d;
-    tildelingFraKitchen();
   }catch(e){ console.warn('Kunne ikke hente tilgang:', e.message); }
-}
-/* Fellesenhetenes konto het kitchen@ til 8. november 2026. Matrisen i KV
-   sto paa det gamle navnet; den flyttes til felles@ foerste gang en side
-   leser den, og lagres. Kan fjernes naar ingen kalender har kitchen@ igjen. */
-function tildelingFraKitchen(){
-  const gml = 'kitchen@neam.no', ny = 'felles@neam.no';
-  let endret = false;
-  Object.keys(tildeling).forEach(function(n){
-    const t = tildeling[n];
-    if(!t || typeof t !== 'object') return;
-    ['tilgang', 'vis'].forEach(function(felt){
-      const l = t[felt];
-      if(!Array.isArray(l) || l.indexOf(gml) === -1) return;
-      t[felt] = l.filter(function(e){ return e !== gml; });
-      if(t[felt].indexOf(ny) === -1) t[felt].push(ny);
-      endret = true;
-    });
-  });
-  if(endret) lagreTildeling();
 }
 async function lagreTildeling(){
   try{
