@@ -1011,6 +1011,8 @@ sidene, også forsiden, og kompakt på smal skjerm.
   som spiste. Krever timere som overlever sidebytte – `hub.html`.
 - **Push** (del 49). Høyt ønsket, bredt omfang. Krever service worker, og
   **noe som våker på serveren** – det siste er den egentlige mangelen.
+  Fra 8. november: varsler skal kunne gå til én enhet, ikke bare én
+  person (del 49, punkt 4).
 - **Språkmodus** (del 50). Neam snakker spansk med Emma og engelsk med
   Andrea, slått på ved å si det og av ved å si det på målspråket.
   Billigst av alt som står på lista: et modusflagg, en systemtekst og et
@@ -3526,7 +3528,7 @@ man selv må rydde i. Med tanke på hvor mange ganger cachefella har slått til
 **Offline kommer nesten gratis med**, men er ikke ønsket – det er greit.
 Halve jobben blir gjort uansett.
 
-**Tre ting må avgjøres før det bygges:**
+**Fire ting må avgjøres før det bygges:**
 1. **Varsler går til en PERSON, ikke en skjerm.** Abonnementet knyttes til
    Access-identiteten, slik økta gjør. Ellers får kjøkkenskjermen beskjed om
    at Emma har lekser, og den skjermen er ingen.
@@ -3538,6 +3540,16 @@ Halve jobben blir gjort uansett.
    e-post – alle trenger det samme, og det er ikke push. **Det er en klokke
    på serveren.** Det er egentlig den store mangelen i huset; push er bare
    måten et våkent system når deg på.
+4. **Varsler kan sendes til én ENHET hos personen** (Magne, 8. november
+   2026: Emma er logget inn på telefon og iPad, men varselet skal bare til
+   telefonen). Web push gir allerede ett abonnement per enhet, så hvert
+   abonnement lagres med person *og* enhet. Enheten gjettes ved påslåing
+   (telefon, iPad, PC) og får et navn som kan rettes («Emmas iPhone»).
+   Fella: iPad melder seg som Mac – skilles ut med `maxTouchPoints`.
+   Mottaker kan da være en person, en enhetstype eller én bestemt enhet.
+   **På iPhone og iPad virker push bare når Neam er lagt på hjemskjermen**
+   og åpnet derfra, ikke i en Safari-fane – og hver hjemskjerm-
+   installasjon blir sin egen enhet.
 
 **Brannalarmen bør IKKE gå via nettpush.** iOS gir ingen garanti for
 leveringstid, varselet kan holdes tilbake i strømsparing, og det kommer som
