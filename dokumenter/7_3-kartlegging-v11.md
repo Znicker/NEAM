@@ -532,8 +532,9 @@ vedlegg og kvitteringslinjer samtidig i vinduet og «Før inn ny utgift»
 fanene (`8159134`), Resultat med samme liste i tre kolonner (`ebc7a33`),
 listene lettere å lese – smalere, større skrift, stolper og ikoner
 (`e9432b6`), fakturaer som forfaller i vinduet og dato under Rediger
-(`6e593ff`), og til sist vedleggene i vinduet, én side om gangen med piler
-(`d4fdbbd`).
+(`6e593ff`), vedleggene i vinduet, én side om gangen med piler
+(`d4fdbbd`), og til sist innboksen bare for nye føringer, Kontoutskrift og
+rød prikk ved klokka (`e3ce2a2`, `felles-topp ?v=10`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -542,7 +543,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 85 commits, `0e0050a`–`d4fdbbd`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 86 commits, `0e0050a`–`e3ce2a2`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4457,7 +4458,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 85 commits fra `0e0050a` til `d4fdbbd` (dialogen med
+verdier. Bygget i 86 commits fra `0e0050a` til `e3ce2a2` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4902,6 +4903,34 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Innboksen bare for nye føringer, Kontoutskrift og rød prikk**
+  (`e3ce2a2`). Magne: «transaksjoner som er registrert trenger ikke å ha et
+  valg for å komme tilbake til innboksen, de endres nå direkte. nye
+  føringer som må kontrolleres kan ligge i innboks … Alle kan du kalle
+  kontoutskrift. ved innhold i innboks er det rød prikk på innboks, på
+  transaksjoner og på økonomisymbolet over hele neam systemet» – og
+  underveis: «det dukke opp et ikon likt matlagingssymbolet ved klokken
+  med en rød prikk».
+  - **Innboks:** bare «Trenger et valg» og «Klare til godkjenning», med
+    «Legg til kvittering» og «Lim inn» øverst. «Ført automatisk» og
+    «Fakturaer som venter» er tatt ut – postene står i Kontoutskrift
+    (filtrene «Ført automatisk» og «Faktura») og fakturaene i Regnskap som
+    forfaller. **«Neam trenger»** står på Status, over Nøkkeltall.
+  - **Alle heter Kontoutskrift** (internt fortsatt `data-tr="alle"`).
+  - **«Send tilbake til innboksen»** er borte for førte poster – i
+    vinduet, menyen og kontoutskriften. Bare en strøket post kan sendes
+    tilbake (ellers kommer den aldri inn igjen).
+  - **Rød prikk** (`.ok-fane-prikk`, `--danger`) i stedet for tallet på
+    Transaksjoner og Innboks; på Økonomi-flisen på forsiden; og
+    **Økonomi-ikonet ved klokka** på alle de andre sidene (`ntpOkTegn` i
+    `felles-topp.js`): samme form som matlagingen, uten ringen, med prikk
+    og «Innboks» under; trykk går til innboksen. Ikke på Økonomi-sida selv
+    – der dekket det navnet på telefon. Svaret fra `?hva=varsler` huskes i
+    localStorage `neam-okonomi` (to minutter; en time for den som ikke har
+    tilgang), og `okonomi.html` skriver det når innboksen endres, så
+    ikonet forsvinner med en gang.
+  - Testet i testserveren på PC og telefon; forsiden bare som utdrag (den
+    sender til Microsoft-innloggingen lokalt). Ikke testet på neam.no.
 - **Vedleggene i vinduet, én side om gangen med piler** (`d4fdbbd`).
   Magne: «Jeg ønsker at alle vedlegg også åpnes automatisk når jeg trykker
   på føringene. dersom det er flere sider kan det vises klarer piler til

@@ -664,6 +664,11 @@ variant.
 - Panelene bygger på `felles-dialog.css` og ligger mellom Neam (til 92) og
   sidenes dialoger (120), så en bekreftelse fra skjemaet havner oppå.
 
+**Økonomi ved klokka** (8. november 2026): når noe venter i innboksen i
+Økonomi, står Økonomi-ikonet i samme form – uten ringen, med en rød prikk
+(`--danger`) og «Innboks» under – og trykk går til innboksen. Bare for den
+som har tilgang til Økonomi, og ikke på Økonomi-sida selv.
+
 Avvik fra den felles toppen på en side er et nytt valg – spør.
 
 ## Kjøkken dash
@@ -1821,22 +1826,24 @@ først, Sparing sist. Bare tallene skiller dem:
   (opasitet .38), og «herav … forfaller» under «Brukt i …» i
   tallboksene.
 - **Transaksjoner** (fra 6. november 2026, het Innboks) – to underfaner:
-  - **Innboks** – det som venter på deg, i sammenleggbare linjer: Trenger
-    et valg, Klare til godkjenning, Ført automatisk, Fakturaer som venter og
-    Neam trenger. Én linje per post også på PC (fra 8. november 2026;
-    før sto den valgte posten til høyre). Tallet for det
-    som venter står både på fanen og på underfanen. Øverst «Legg til
+  - **Innboks** – bare nye føringer som må kontrolleres (fra 8. november
+    2026), i sammenleggbare linjer: Trenger et valg og Klare til
+    godkjenning. «Neam trenger» står på Status. Én linje per post også på
+    PC. Når noe venter, står en **rød prikk** (`.ok-fane-prikk`) på fanen og
+    underfanen, på Økonomi-flisen på forsiden og som Økonomi-ikonet ved
+    klokka på de andre sidene (se Topplinja). Øverst «Legg til
     kvittering» (`.btn-ny`) og «Lim inn» (`.btn-blaa`, 7. november 2026):
     bilde, PDF eller tekst fra utklippstavla – eller Ctrl+V på sida, når
     markøren ikke står i et felt.
-  - **Alle** – kontoutskriften fra nullpunktet. Øverst ‹ måned ›, så et
+  - **Kontoutskrift** (het Alle) – alt fra nullpunktet. Øverst ‹ måned ›, så et
     kort med søk, konto, kategori, type og fra–til, så en meta-linje med
     antall og inn/ut, og radene som kjøpene i Regnskap (dato, navn med
     kategori og kilde under, beløp, ›). **Uten filter** vises én måned;
     **med søk, filter eller periode** vises alt som treffer, med måneden
     som overskrift (`.ok-etikett`), og ‹ måned › byttes mot «Søk og
     filter» og Nullstill. En rad åpnes på stedet med detaljene og
-    handlingene (varene, PDF-en, «Send tilbake til innboksen»). Strøket
+    handlingene (varene, PDF-en; «Send tilbake til innboksen» bare for en
+    strøket post – en ført endres direkte). Strøket
     vises med lav opasitet og streket navn, som i innboksen. Vedlegget
     står i meta-linja på raden («PDF vedlagt», «bilde vedlagt»,
     «varelinjer») – en lenke inni radknappen ville vært en knapp i en knapp.
@@ -1855,8 +1862,9 @@ først, Sparing sist. Bare tallene skiller dem:
   alt om føringen som en liste (`.ok-fr-info`, navn til venstre i
   `--ink-soft`) og varelinjene fra kvitteringen til venstre, vedleggene til
   høyre – bilder i full bredde (`.ok-fr-stort-bilde`), PDF som kort – og
-  valgene under: **Rediger** (`.btn-endre`), «Stryk – føres ikke» og «Send
-  tilbake til innboksen» (`.btn-ghost`). Under hverandre på telefon. I
+  valgene under: **Rediger** (`.btn-endre`) og «Stryk – føres ikke»
+  (`.btn-ghost`); en ført post sendes ikke tilbake til innboksen. Under
+  hverandre på telefon. I
   menyen på en post eller linje i Regnskap står **«Før inn ny utgift …»**
   (i Budsjett «Ny linje under …»); skjemaet åpnes i samme vindu.
   Rediger viser feltene: navn, sum, kategori i tre nedtrekk side om side
