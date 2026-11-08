@@ -28,7 +28,7 @@
      POST /api/bank {hva:'faktura-innboks', id} - en faktura som venter, blir en post i innboksen
      POST /api/bank {hva:'faktura-kategori', id, kategori} - kategorien paa en faktura som venter
      GET /api/bank?hva=post&id= - alt om én foering (vinduet i Regnskap)
-     POST /api/bank {hva:'post-endre', id, motpart?, belop?, notat?, merke?} - endre en foering
+     POST /api/bank {hva:'post-endre', id, motpart?, belop?, notat?, merke?, dato?} - endre en foering
      POST /api/bank {hva:'post-vedlegg', id, type, data, navn} / {hva:'post-vedlegg-slett', id, n} - vedleggene
      GET /api/bank?hva=regningskonto / POST {hva:'regningskonto', uid} - bufferen regningskontoen trenger
      POST /api/bank {hva:'kategori-merke', kategori, merke} - merket paa en post (forsikring, laan …); tomt fjerner
@@ -1455,7 +1455,7 @@ async function postDetaljer(env, id){
   if(!p) return svar({ ok:false, feil:'Fant ikke føringen' });
   const kn = await lesJson(env, KONTONAVN_NOKKEL, {});
   const bank = p.bankId && poster[p.bankId];
-  return svar({ ok:true, post:{ id:p.id, dato:p.dato, belop:p.belop, bankBelop:p.bankBelop != null ? p.bankBelop : null, overstyrt:!!p.overstyrt,
+  return svar({ ok:true, post:{ id:p.id, dato:p.dato, datoBank:p.datoBank || '', belop:p.belop, bankBelop:p.bankBelop != null ? p.bankBelop : null, overstyrt:!!p.overstyrt,
     motpart:p.motpart || '', tekst:p.tekst || '', motpartBank:p.motpartBank || '', notat:p.notat || '', kategori:p.kategori || '', merke:p.merke || '',
     status:p.status || '', auto:!!p.auto, kilde:p.kilde || '', fra:p.fra || '', forHand:!!p.forHand, faktura:!!p.faktura,
     konto:p.konto ? (kn[p.konto] || p.kontoNavn || '') : '', betaltFra:bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
@@ -1476,6 +1476,16 @@ async function postEndre(env, kropp){
     }
   }
   if(kropp.notat != null){ const n = String(kropp.notat).trim().slice(0, 1000); if(n) p.notat = n; else delete p.notat; }
+  /* Datoen (8. november 2026): den opprinnelige i datoBank, som summen og navnet. */
+  if(kropp.dato != null){
+    const d = String(kropp.dato);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d) || isNaN(Date.parse(d))) return svar({ ok:false, feil:'Ugyldig dato' });
+    if(d !== String(p.dato).slice(0, 10)){
+      if(p.datoBank == null) p.datoBank = p.dato;
+      p.dato = d;
+      if(String(p.datoBank).slice(0, 10) === d){ p.dato = p.datoBank; delete p.datoBank; }
+    }
+  }
   if(kropp.belop != null){
     const b = Math.round(Number(kropp.belop) * 100) / 100;
     if(!isFinite(b) || Math.abs(b) > 1e8) return svar({ ok:false, feil:'Ugyldig beløp' });

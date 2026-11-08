@@ -270,8 +270,6 @@ input.ok-regnefeil{ border-color:var(--danger) !important; }
 .ok-rg-for:hover, .ok-rg-for:focus-visible{ background:var(--boks-mild); box-shadow:0 0 0 6px var(--boks-mild); outline:none; }
 .ok-rg-for .ok-dato{ display:inline-block; min-width:52px; color:var(--ink-soft); font-size:var(--t-meta); }
 .ok-rg-for .ok-meta{ display:block; }
-.ok-rg-for.forfaller{ cursor:default; }
-.ok-rg-for.forfaller:hover{ background:none; box-shadow:none; }
 #ok-fr-innhold{ display:flex; flex-direction:column; gap:10px; }
 #ok-fr-innhold select{ width:100%; font-family:inherit; font-size:16px; padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
 /* Foeringsvinduet: stort, med alt om foeringen og Rediger (8. november 2026). */
@@ -4877,9 +4875,16 @@ button.ok-dr-rad{ cursor:pointer; }
     });
     var ffListe = okMnd.forfall.filter(function(f){ return c.ms.indexOf(f.mnd) !== -1 && f.kategori === k; });
     ffListe.forEach(function(f){
+      /* Fakturaen aapnes som de andre foeringene (8. november 2026, Magne: «jeg
+         ønsker at alle transaksjoner åpner seg slik som kvitteringer gjør»). */
+      var ff = { id:f.id, dato:f.dato, tekst:f.motpart || 'Faktura', belop:f.belop, kategori:f.kategori, harFil:f.harFil, filType:f.filType, kilde:'Faktura', venter:true };
+      okRgForAv[f.id] = ff;
       var rf = okEl('div', 'ok-under-rad ok-rg-for forfaller',
-        '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.motpart || 'Faktura') + '<span class="ok-meta">Forfaller – ikke betalt ennå</span></span><b>' + okKr0.format(f.belop) + '</b>');
-      if(f.harFil) rf.firstChild.appendChild(okFilLenke(f));
+        '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.motpart || 'Faktura') + '<span class="ok-meta">Forfaller – ikke betalt ennå' + (f.harFil ? ' · PDF vedlagt' : '') + '</span></span><b>' + okKr0.format(f.belop) + '</b>');
+      rf.dataset.f = f.id; rf.tabIndex = 0; rf.setAttribute('role', 'button');
+      rf.setAttribute('aria-label', (f.motpart || 'Faktura') + ', forfaller ' + okKort.format(new Date(f.dato)) + ', ' + okKr0.format(f.belop) + ' kr. Trykk for detaljene.');
+      rf.addEventListener('click', function(){ okForVindu(ff, rf); });
+      rf.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); okForVindu(ff, rf); } });
       inn.appendChild(rf);
     });
     var vent = okEl('p', 'ok-meta', 'Henter føringene …'); inn.appendChild(vent);
@@ -4975,6 +4980,7 @@ button.ok-dr-rad{ cursor:pointer; }
     rad('Betalt fra', p.betaltFra);
     rad('Tekst fra banken', p.tekst && p.tekst !== p.motpart ? p.tekst : '');
     rad('Opprinnelig navn', p.motpartBank);
+    rad('Opprinnelig dato', p.datoBank ? okDato.format(new Date(p.datoBank)) : '');
     if(p.deler.length > 1) rad('Kategorier', p.deler.map(function(d){ return okNeamKat(d.kategori) + ' ' + okKr0.format(Math.abs(d.belop)) + ' kr'; }).join(' · '));
     else rad('Kategori', p.kategori ? okNeamKat(p.kategori) : 'Uten kategori');
     rad('Merke', p.merke ? okMerkeFullNavn(p.merke) : arv ? okMerkeFullNavn(arv) + ' (fra kategorien)' : 'Uten merke');
@@ -4984,13 +4990,14 @@ button.ok-dr-rad{ cursor:pointer; }
     venstre.appendChild(dl);
     /* Varelinjene fra kvitteringen, rett i vinduet. */
     if(p.harKvittering){
-      venstre.appendChild(okEl('span', 'ok-etikett', 'Kvitteringen'));
+      var kvEt = okEl('span', 'ok-etikett', 'Kvitteringen');
+      venstre.appendChild(kvEt);
       var lb = okEl('div', 'ok-fr-linjer', '<p class="ok-meta">Henter varene …</p>');
       venstre.appendChild(lb);
       okHent('/api/bank?hva=kvittering&id=' + encodeURIComponent(p.id)).then(function(kv){
         lb.innerHTML = '';
-        if(!kv.ok){ lb.appendChild(okEl('p', 'ok-meta', okVask(kv.feil))); return; }
-        if(!(kv.linjer || []).length){ lb.appendChild(okEl('p', 'ok-meta', 'Kvitteringen har ingen varelinjer.')); return; }
+        /* Uten varelinjer (en faktura, et kjøp for hånd) - ingen kvitteringsdel. */
+        if(!kv.ok || !(kv.linjer || []).length){ kvEt.remove(); lb.remove(); return; }
         kv.linjer.forEach(function(l){
           lb.appendChild(okEl('div', 'ok-kv-linje', '<span>' + okVask(l.navn) + (l.antall !== 1 ? ' <span class="ok-meta">× ' + okVask(Number(l.antall).toLocaleString('nb-NO')) + '</span>' : '')
             + (l.rabatt ? '<br><span class="ok-meta">Rabatt ' + okKr0.format(l.rabatt) + '</span>' : '') + '</span><b>' + okKr0.format(l.belop + (l.rabatt || 0)) + '</b>'));
@@ -5009,7 +5016,12 @@ button.ok-dr-rad{ cursor:pointer; }
       stryk.addEventListener('click', function(){ stryk.disabled = true; okForEndre({ hva:'godkjenn', godkjenn:[], strok:[p.id] }, feil).then(function(r){ if(r.ok) okLukkFor(true); else stryk.disabled = false; }); });
       knapper.appendChild(stryk);
     }
-    if(p.status !== 'ny'){
+    if(p.status === 'venter'){
+      /* Betalt fra en konto Neam ikke henter: fakturaen blir en post i innboksen. */
+      var tilInn = okEl('button', 'btn btn-ghost ok-smal', 'Legg i innboksen'); tilInn.type = 'button';
+      tilInn.addEventListener('click', function(){ tilInn.disabled = true; okForEndre({ hva:'faktura-innboks', id:p.id }, feil).then(function(r){ if(r.ok) okLukkFor(true); else tilInn.disabled = false; }); });
+      knapper.appendChild(tilInn);
+    } else if(p.status !== 'ny'){
       var tilbake = okEl('button', 'btn btn-ghost ok-smal', 'Send tilbake til innboksen'); tilbake.type = 'button';
       tilbake.addEventListener('click', function(){ tilbake.disabled = true; okForEndre({ hva:'angre', ider:[p.id] }, feil).then(function(r){ if(r.ok) okLukkFor(true); else tilbake.disabled = false; }); });
       knapper.appendChild(tilbake);
@@ -5173,6 +5185,9 @@ button.ok-dr-rad{ cursor:pointer; }
     var abs = Math.abs(p.belop); sum.value = (abs % 1 ? abs.toFixed(2) : String(abs)).replace('.', ',');
     sum.disabled = delt;
     felt('Sum i kroner' + (p.belop > 0 ? ' (inn)' : ''), sum);
+    var dato = document.createElement('input'); dato.type = 'date'; dato.value = String(p.dato).slice(0, 10);
+    felt('Dato', dato);
+    if(p.datoBank) inn.appendChild(okEl('p', 'ok-meta', okVask('Opprinnelig dato ' + okDato.format(new Date(p.datoBank)) + '. Velg den igjen for å fjerne endringen.')));
     if(delt) inn.appendChild(okEl('p', 'ok-meta', 'Kvitteringen er delt på flere kategorier – summen og kategorien endres i kvitteringen.'));
     else if(p.overstyrt && p.bankBelop != null) inn.appendChild(okEl('p', 'ok-meta', okVask((p.konto ? 'Banken viser ' : 'Opprinnelig ') + okFrKr(p.bankBelop) + '. Skriv den inn igjen for å fjerne endringen.')));
     var nyKat = okFrKatVelger(inn, p.kategori, delt);
@@ -5211,8 +5226,8 @@ button.ok-dr-rad{ cursor:pointer; }
     });
     inn.appendChild(filInn); inn.appendChild(legg);
     /* Hva som er endret - Avbryt spoer bare da (Avbryt-regelen). */
-    var start = { navn:navn.value, sum:sum.value, kat:nyKat(), merke:sm.value, notat:notat.value };
-    okFrEndret = function(){ return navn.value !== start.navn || sum.value !== start.sum || nyKat() !== start.kat || sm.value !== start.merke || notat.value !== start.notat; };
+    var start = { navn:navn.value, sum:sum.value, dato:dato.value, kat:nyKat(), merke:sm.value, notat:notat.value };
+    okFrEndret = function(){ return navn.value !== start.navn || sum.value !== start.sum || dato.value !== start.dato || nyKat() !== start.kat || sm.value !== start.merke || notat.value !== start.notat; };
     var knapper = okEl('div', 'ok-rad-knapper');
     var lagre = okEl('button', 'btn btn-ny', 'Lagre'); lagre.type = 'button';
     var avbryt = okEl('button', 'btn btn-ghost ok-smal', 'Avbryt'); avbryt.type = 'button';
@@ -5229,6 +5244,10 @@ button.ok-dr-rad{ cursor:pointer; }
         if(isNaN(v) || v < 0){ feil.textContent = 'Skriv summen som et tall.'; feil.hidden = false; sum.focus(); return; }
         endre.belop = (p.belop < 0 ? -1 : 1) * Math.round(v * 100) / 100; noe = true;
       }
+      if(dato.value !== start.dato){
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(dato.value)){ feil.textContent = 'Velg en dato.'; feil.hidden = false; dato.focus(); return; }
+        endre.dato = dato.value; noe = true;
+      }
       if(sm.value !== start.merke){ endre.merke = sm.value; noe = true; }
       if(notat.value !== start.notat){ endre.notat = notat.value; noe = true; }
       var kat = nyKat(), katEndret = !delt && kat && kat !== start.kat;
@@ -5238,7 +5257,9 @@ button.ok-dr-rad{ cursor:pointer; }
       kjede.then(function(r){
         if(!r.ok) return r;
         if(!katEndret) return r;
-        return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'godkjenn', godkjenn:[{ id:p.id, kategori:kat }], strok:[] }) });
+        /* En faktura som venter, er ikke ført - kategorien er fakturaens (faktura-kategori). */
+        var kKropp = p.status === 'venter' ? { hva:'faktura-kategori', id:p.id, kategori:kat } : { hva:'godkjenn', godkjenn:[{ id:p.id, kategori:kat }], strok:[] };
+        return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(kKropp) });
       }).then(function(r){
         lagre.disabled = false;
         if(!r.ok){ feil.textContent = 'Ble ikke lagret: ' + r.feil; feil.hidden = false; return; }
@@ -5283,12 +5304,15 @@ button.ok-dr-rad{ cursor:pointer; }
     if(!f.del) punkt('Endre kategori …', function(b){
       var s = okKatVelg('ok-fm-kat', f.kategori, null, 'Ny kategori for ' + (f.tekst || 'føringen'));
       b.replaceWith(s); s.focus();
-      s.addEventListener('change', function(){ okForEndre({ hva:'godkjenn', godkjenn:[{ id:f.id, kategori:s.value }], strok:[] }, info).then(ferdig); });
+      s.addEventListener('change', function(){ okForEndre(f.venter ? { hva:'faktura-kategori', id:f.id, kategori:s.value } : { hva:'godkjenn', godkjenn:[{ id:f.id, kategori:s.value }], strok:[] }, info).then(ferdig); });
     });
     if(f.harKvittering) punkt('Se kvittering', function(){ okBuMenyLukk(); okVisKvittering({ id:f.id, tittel:f.tekst, dato:f.dato, kilde:f.kilde, belop:-f.belop, harFil:f.harFil, filType:f.filType }); });
     if(f.harFil) punkt(f.filType === 'application/pdf' ? 'Åpne PDF-en' : 'Åpne bildet', function(){ okBuMenyLukk(); okVisFil(f); });
-    punkt('Stryk – føres ikke', function(){ okForEndre({ hva:'godkjenn', godkjenn:[], strok:[f.id] }, info).then(ferdig); });
-    punkt('Send tilbake til innboksen', function(){ okForEndre({ hva:'angre', ider:[f.id] }, info).then(ferdig); });
+    if(f.venter) punkt('Legg i innboksen', function(){ okForEndre({ hva:'faktura-innboks', id:f.id }, info).then(ferdig); });
+    else{
+      punkt('Stryk – føres ikke', function(){ okForEndre({ hva:'godkjenn', godkjenn:[], strok:[f.id] }, info).then(ferdig); });
+      punkt('Send tilbake til innboksen', function(){ okForEndre({ hva:'angre', ider:[f.id] }, info).then(ferdig); });
+    }
     meny.appendChild(info);
     meny.appendChild(okEl('span', 'ok-meny-hint', 'Shift + høyreklikk: vanlig meny'));
     document.body.appendChild(meny);
