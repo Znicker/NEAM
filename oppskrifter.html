@@ -6716,6 +6716,17 @@ const MAT_KATEGORI = {
   'grønnsak': ['Grønnsaker'], 'grønnsaker': ['Grønnsaker'], 'grønt': ['Grønnsaker', 'Frukt'],
   'frukt': ['Frukt'], 'krydder': ['Krydder og saus'], 'krydderne': ['Krydder og saus']
 };
+/* Naar varetypen mangler, kjennes kjoett og fisk paa navnet. */
+const MAT_KATEGORI_ORD = {
+  'Kjøtt': ['kjøtt', 'kjøttdeig', 'mørbrad', 'indrefilet', 'ytrefilet', 'entrecôte', 'entrecote', 'biff',
+            'storfe', 'okse', 'svin', 'svinekjøtt', 'lam', 'lammekjøtt', 'kylling', 'kyllingfilet', 'kalkun',
+            'and', 'bacon', 'pølse', 'pølser', 'skinke', 'karbonade', 'kotelett', 'koteletter', 'ribbe',
+            'nakke', 'bog', 'lår', 'vilt', 'hjort', 'elg', 'rein', 'chorizo', 'salami'],
+  'Fisk og sjømat': ['fisk', 'laks', 'torsk', 'sei', 'hyse', 'ørret', 'makrell', 'sild', 'tunfisk', 'kveite',
+            'steinbit', 'breiflabb', 'reker', 'scampi', 'krabbe', 'hummer', 'blåskjell', 'skjell', 'kamskjell',
+            'blekksprut', 'ansjos']
+};
+
 function matStammer(ord){
   const s = [ord];
   ['ene', 'ane', 'en', 'et', 'er', 'a', 'e'].forEach(e => {
@@ -6728,9 +6739,14 @@ function matIngTreff(ord, r){
   if(w.length < 3 || MAT_STOPP.has(w)) return [];
   const st = matStammer(w);
   const ut = [];
+  /* Bare det ingrediensen ER teller, ikke hva den er TIL: «Salt til
+     kjøtt» er salt, og skal ikke lyse opp for «kjøttet» (Magne,
+     8. november 2026). */
+  const navnOrdFor = ing => String(ing.name || '').toLowerCase()
+    .split(/\s+(?:til|for|på|i)\s+/)[0]
+    .split(/[^\p{L}]+/u).filter(x => x.length >= 3 && !MAT_STOPP.has(x));
   r.ingredients.forEach((ing, idx) => {
-    const navnOrd = String(ing.name || '').toLowerCase().split(/[^\p{L}]+/u)
-      .filter(x => x.length >= 3 && !MAT_STOPP.has(x));
+    const navnOrd = navnOrdFor(ing);
     const passer = navnOrd.some(nw => {
       const ns = matStammer(nw);
       return st.some(s => ns.indexOf(s) !== -1 || (s.length >= 3 && nw.endsWith(s)))
@@ -6738,14 +6754,17 @@ function matIngTreff(ord, r){
     });
     if(passer) ut.push(idx);
   });
-  if(!ut.length){
-    const kat = st.map(s => MAT_KATEGORI[s]).filter(Boolean)[0];
-    if(kat) r.ingredients.forEach((ing, idx) => {
-      const type = ing.type || slaaOppVare(ing.name).type;
-      if(kat.indexOf(type) !== -1) ut.push(idx);
-    });
-  }
-  return ut;
+  /* Fellesordet tar med hele varetypen, ogsaa naar noe annet traff:
+     «kjøttet» er mørbraden selv om en ingrediens heter noe med kjøtt. */
+  const kat = st.map(s => MAT_KATEGORI[s]).filter(Boolean)[0];
+  if(kat) r.ingredients.forEach((ing, idx) => {
+    if(ut.indexOf(idx) !== -1) return;
+    const type = ing.type || slaaOppVare(ing.name).type;
+    const paaNavn = !type && kat.some(k => (MAT_KATEGORI_ORD[k] || []).some(o =>
+      navnOrdFor(ing).some(nw => nw === o || nw.endsWith(o))));
+    if(kat.indexOf(type) !== -1 || paaNavn) ut.push(idx);
+  });
+  return ut.sort((a, b) => a - b);
 }
 
 /* Navnet paa nedtellingen: leddet tiden staar i, uten tiden selv og
