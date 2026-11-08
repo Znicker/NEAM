@@ -10,7 +10,8 @@
      <header class="ntp" id="neamTopp" data-ikon="sikkerhet" data-navn="Sikkerhet"></header>
    og fila lastet ETTER felles-neam.js (klapptavla, ikonene og laasen
    kommer derfra). data-hjem setter hvor ikonet lenker (spillene gaar
-   tilbake til dashet sitt); uten den: forsiden. Tomt data-navn gir bare
+   tilbake til dashet sitt); uten den gaar et trykk til sidas
+   startvisning, se ntpMerkeTrykk(). Tomt data-navn gir bare
    ikonet. Toppen tegnes med en gang fila leses.
 
    Vaeret viser i dag. En side som blar i dager (dashene) setter
@@ -78,7 +79,7 @@ function ntpTegn(){
      en smal spalte ogsaa paa PC. */
   t.innerHTML = '<div class="ntp-rad">'
     + '<a class="ntp-merke" href="' + ntpEsc(hjem) + '" aria-label="' + ntpEsc(navn || 'Neam')
-    +   (hjem === '/' ? ' – til forsiden' : ' – tilbake') + '">'
+    +   (hjem === '/' ? ' – til start, hold inne for forsiden' : ' – tilbake, hold inne for forsiden') + '">'
     +   '<span class="ntp-ikon">' + bilde + '</span>'
     +   (navn ? '<span class="ikon-navn ntp-navn">' + ntpEsc(navn) + '</span>' : '')
     + '</a>'
@@ -103,6 +104,7 @@ function ntpTegn(){
     + '</div>'
     + '</div>';
   if(typeof neamLaasTegn === 'function') neamLaasTegn();
+  ntpMerkeTrykk(t.querySelector('.ntp-merke'), !!t.dataset.hjem);
   /* Laast ved rulling: bakgrunn naar sida er rullet, og hoeyden som
      --ntp-h til sider med en egen laast rad under. */
   const rull = function(){ t.classList.toggle('ntp-rullet', window.scrollY > 4); };
@@ -124,6 +126,40 @@ function ntpTegn(){
   setInterval(ntpKlokke, 10000);
   ntpVaerStart();
   ntpTmStart();
+}
+
+/* Ikonet oppe til venstre (Magne, 8. november 2026): et kort trykk er
+   tilbake til sidas startvisning, et langt trykk paa to sekunder er
+   forsiden. Startvisningen er det samme som andre trykk paa
+   sidehaandtaket - window.neamSideAndreTrykk, som sida setter selv.
+   Undersidene (spillene, fagene) har data-hjem og lenker dit som foer.
+   Uten noen av delene ruller trykket til toppen. Forsiden naas uten aa
+   slippe: man ser at to sekunder er gaatt ved at sida bytter. */
+const NTP_LANGT_MS = 2000;
+function ntpMerkeTrykk(a, harHjem){
+  if(!a) return;
+  let tid = null, lang = false;
+  a.addEventListener('pointerdown', function(ev){
+    if(ev.button) return;
+    lang = false;
+    clearTimeout(tid);
+    tid = setTimeout(function(){ lang = true; location.href = '/'; }, NTP_LANGT_MS);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function(n){
+    a.addEventListener(n, function(){ clearTimeout(tid); });
+  });
+  /* Ellers legger iOS og Android lenkemenyen oppaa det lange trykket. */
+  a.addEventListener('contextmenu', function(ev){ ev.preventDefault(); });
+  a.addEventListener('click', function(ev){
+    if(lang){ ev.preventDefault(); return; }
+    if(harHjem || ev.metaKey || ev.ctrlKey || ev.shiftKey) return;
+    ev.preventDefault();
+    if(typeof window.neamSideAndreTrykk === 'function'){
+      try{ window.neamSideAndreTrykk(); }
+      catch(e){ console.warn('neamSideAndreTrykk feilet:', e); }
+    }
+    window.scrollTo({ top:0, behavior:'smooth' });
+  });
 }
 
 function ntpKlokke(){
@@ -506,6 +542,14 @@ function ntpMatIkon(){
   return mat;
 }
 
+/* Symbolet for en timer. Nedtellinger fra en oppskrift faar et lite
+   matlagingssymbol i stedet for timeglasset (Magne, 8. november 2026). */
+function ntpTmSymbol(t){
+  if(!t.mat) return NTP_TM_SVG[t.type];
+  const url = (typeof neamIkonUrl === 'function') ? neamIkonUrl('matlaging') : '/bilder/ikoner/matlaging.png';
+  return '<img class="ntp-tm-matbilde" src="' + ntpEsc(url) + '" alt="" width="512" height="511">';
+}
+
 /* ---------- Tid ---------- */
 function ntpTmVarighet(ms){
   const s = Math.max(0, Math.round(ms / 1000));
@@ -535,7 +579,7 @@ function ntpTmTegn(){
   el.hidden = !alle.length;
   el.innerHTML = alle.map(function(t){
     return '<span class="ntp-tm ntp-tm-' + t.type + (ntpTmRinger === t.id ? ' ringer' : '') + '" data-id="' + ntpEsc(t.id) + '" title="' + ntpEsc(t.navn || NTP_TM_TYPER[t.type]) + '">'
-      + NTP_TM_SVG[t.type] + '<b>' + ntpTmKort(t) + '</b></span>';
+      + ntpTmSymbol(t) + '<b>' + ntpTmKort(t) + '</b></span>';
   }).join('');
   const panel = document.getElementById('ntpTmBak');
   if(panel && !panel.hidden && panel.dataset.vis === 'liste') ntpTmListe();
@@ -598,7 +642,7 @@ function ntpTmListe(){
   kort.innerHTML = '<div class="ntp-tm-tittel">Alarmer og timere</div>'
     + (alle.length ? '<div class="ntp-tm-liste">' + alle.map(function(t){
         return '<div class="ntp-tm-rad" data-id="' + ntpEsc(t.id) + '">'
-          + '<span class="ntp-tm-radikon ntp-tm-' + t.type + '">' + NTP_TM_SVG[t.type] + '</span>'
+          + '<span class="ntp-tm-radikon ntp-tm-' + t.type + '">' + ntpTmSymbol(t) + '</span>'
           + '<div class="ntp-tm-radtekst"><b>' + ntpEsc(t.navn || NTP_TM_TYPER[t.type]) + '</b>'
           +   '<span data-tm-tid="' + ntpEsc(t.id) + '">' + ntpTmLang(t) + '</span>'
           +   '<span class="ntp-tm-hvem">' + ntpEsc(NTP_TM_TYPER[t.type] + ' · ' + ntpTmHvem(t)) + '</span></div>'
@@ -798,7 +842,7 @@ function ntpTmRing(t){
     document.body.appendChild(bak);
   }
   const kort = bak.querySelector('.ntp-tm-ringkort');
-  kort.innerHTML = '<div class="ntp-tm-ringikon ntp-tm-' + t.type + '">' + NTP_TM_SVG[t.type] + '</div>'
+  kort.innerHTML = '<div class="ntp-tm-ringikon ntp-tm-' + t.type + '">' + ntpTmSymbol(t) + '</div>'
     + '<div class="ntp-tm-ringnavn">' + ntpEsc(t.navn || NTP_TM_TYPER[t.type]) + '</div>'
     + '<div class="ntp-tm-ringtekst">' + (t.type === 'alarm' ? 'Alarm kl. ' + ntpTmKlokkeslett(t.mal) : 'Nedtellingen er ferdig') + '</div>'
     + '<div class="dlg-rad">'

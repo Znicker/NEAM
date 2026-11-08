@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <link rel="stylesheet" href="/felles-neam.css?v=88">
-<link rel="stylesheet" href="/felles-topp.css?v=6">
+<link rel="stylesheet" href="/felles-topp.css?v=7">
 <style>
   /* Sidespesifikke variabler. Palett og typeskala ligger i
      felles-rot.css. */
@@ -1076,7 +1076,7 @@ select.hu-felt{
      tilbakeTilStandard() legger femmeren ned naar skjermen hviler. -->
 <script src="/felles-tale.js?v=5"></script>
 <script src="/felles-neam.js?v=89"></script>
-<script src="/felles-topp.js?v=6"></script>
+<script src="/felles-topp.js?v=7"></script>
 <script>
 /* ============================================================
    NEAM – Kjøkken dash (pilot)
@@ -3424,6 +3424,10 @@ function tilbakeTilStandard(){
   visTilIdag();
   if(flyttet && !byttet) tegnPlanPaaNytt();
 }
+/* Sidas startvisning, som paa Emma og Andrea dash: andre trykk paa
+   haandtaket og et kort trykk paa ikonet oppe til venstre
+   (felles-topp.js, 8. november 2026). */
+window.neamSideAndreTrykk = function(){ tilbakeTilStandard(); };
 /* ============================================================
    Neam paa veggskjermen
    ------------------------------------------------------------

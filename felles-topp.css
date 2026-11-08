@@ -30,6 +30,9 @@
    er laast, saa toppen selv staar stille i den. */
 .topbar .ntp{ position:static; padding:0; background:none; box-shadow:none; flex:1; min-width:0; }
 .ntp-merke{ display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit; min-width:0; }
+/* Et langt trykk er forsiden (felles-topp.js): ingen lenkemeny og ingen
+   tekstmarkering mens man holder. */
+.ntp-merke{ -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
 .ntp-ikon{
   width:84px; height:84px; flex-shrink:0;
   display:flex; align-items:center; justify-content:center;
@@ -77,7 +80,7 @@
 }
 .ntp-mat[hidden]{ display:none; }
 .ntp-mat-ikon{
-  position:relative; width:56px; height:56px; border-radius:50%;
+  position:relative; width:78px; height:78px; border-radius:50%;
   display:grid; place-items:center; box-shadow:inset 0 0 0 4px var(--line);
 }
 .ntp-mat-ikon::before{
@@ -88,7 +91,8 @@
   animation:ntp-mat-snurr 1.6s linear infinite;
 }
 @keyframes ntp-mat-snurr{ to{ transform:rotate(360deg); } }
-.ntp-mat-ikon img{ width:40px; height:40px; object-fit:contain; display:block; }
+/* Stoerre enn timerne, med ringen rundt (Magne, 8. november 2026). */
+.ntp-mat-ikon img{ width:58px; height:58px; object-fit:contain; display:block; }
 .ntp-mat b{ font-size:var(--t-etikett); font-weight:700; font-variant-numeric:tabular-nums; }
 @media (prefers-reduced-motion:reduce){ .ntp-mat-ikon::before{ animation:none; } }
 .ntp-mat:not([hidden]) ~ .ntp-klokke{ margin-left:14px; }
@@ -118,6 +122,8 @@
 .ntp-timere:not([hidden]) ~ .ntp-klokke{ margin-left:14px; }
 .ntp-tm{ display:flex; flex-direction:column; align-items:center; gap:1px; min-width:34px; color:var(--ink-soft); }
 .ntp-tm svg{ width:20px; height:20px; }
+.ntp-tm .ntp-tm-matbilde{ width:22px; height:22px; object-fit:contain; display:block; }
+.ntp-tm-radikon .ntp-tm-matbilde{ width:30px; height:30px; object-fit:contain; display:block; }
 .ntp-tm b{ font-size:var(--t-etikett); font-weight:700; font-variant-numeric:tabular-nums; color:var(--ink); }
 .ntp-tm-alarm{ color:var(--aksent); }
 .ntp-tm-nedtelling{ color:var(--handling-endre); }
@@ -179,12 +185,12 @@
 /* Over alt, ogsaa laaseskjermen paa kjoekkenet (150). */
 .ntp-tm-ringbak{ z-index:160; }
 .ntp-tm-ringkort{ text-align:center; width:min(420px, calc(100vw - 24px)); }
-.ntp-tm-ringikon svg{ width:64px; height:64px; animation:ntp-tm-rist .5s ease-in-out infinite alternate; }
+.ntp-tm-ringikon svg, .ntp-tm-ringikon img{ width:64px; height:64px; object-fit:contain; animation:ntp-tm-rist .5s ease-in-out infinite alternate; }
 @keyframes ntp-tm-rist{ from{ transform:rotate(-8deg); } to{ transform:rotate(8deg); } }
 .ntp-tm-ringnavn{ font-size:var(--t-stor); font-weight:700; margin-top:8px; }
 .ntp-tm-ringtekst{ color:var(--ink-soft); margin:4px 0 16px; }
 .ntp-tm-ringkort .dlg-rad{ justify-content:center; }
-@media (prefers-reduced-motion:reduce){ .ntp-tm-ringikon svg, .ntp-tm.ringer{ animation:none; } }
+@media (prefers-reduced-motion:reduce){ .ntp-tm-ringikon svg, .ntp-tm-ringikon img, .ntp-tm.ringer{ animation:none; } }
 
 /* ---------- Vaerboblen ---------- */
 .ntp-vb-bak{ position:fixed; inset:0; z-index:105; background:rgba(20,32,54,.18); display:flex; align-items:flex-start; justify-content:center; padding:90px 12px 12px; }
@@ -214,8 +220,8 @@
   /* Matlagingen legger seg inntil klokka ogsaa her. */
   .ntp-mat{ margin-left:auto; }
   .ntp-mat:not([hidden]) ~ .ntp-klokke{ margin-left:10px !important; }
-  .ntp-mat-ikon{ width:42px; height:42px; }
-  .ntp-mat-ikon img{ width:30px; height:30px; }
+  .ntp-mat-ikon{ width:54px; height:54px; }
+  .ntp-mat-ikon img{ width:40px; height:40px; }
   .ntp-tid{ font-size:var(--t-stor); }
   .ntp-dato{ font-size:var(--t-meta); margin-top:2px; }
   .ntp-timere{ margin-left:auto; max-width:126px; gap:4px 6px; }
