@@ -1812,10 +1812,14 @@ først, Sparing sist. Bare tallene skiller dem:
   Budsjett:** grupper som åpnes, postene under; trykk en post for linjene
   og **føringene** (dato, sted, kilde, beløp – innrykket med en strek til
   venstre, `.ok-rg-inn`). **Trykk en føring:** et stort vindu
-  (`.dlg-kort.ok-fr-stor`, 760 px) med alt om føringen som en liste
-  (`.ok-fr-info`, navn til venstre i `--ink-soft`), vedleggene som kort
-  (`.ok-fr-ved`) og valgene – **Rediger** (`.btn-endre`), «Se kvittering ›»,
-  «Stryk – føres ikke» og «Send tilbake til innboksen» (`.btn-ghost`).
+  (`.dlg-kort.ok-fr-stor`, 960 px) med to spalter fra 820 px (`.ok-fr-to`):
+  alt om føringen som en liste (`.ok-fr-info`, navn til venstre i
+  `--ink-soft`) og varelinjene fra kvitteringen til venstre, vedleggene til
+  høyre – bilder i full bredde (`.ok-fr-stort-bilde`), PDF som kort – og
+  valgene under: **Rediger** (`.btn-endre`), «Stryk – føres ikke» og «Send
+  tilbake til innboksen» (`.btn-ghost`). Under hverandre på telefon. I
+  menyen på en post eller linje i Regnskap står **«Før inn ny utgift …»**
+  (i Budsjett «Ny linje under …»); skjemaet åpnes i samme vindu.
   Rediger viser feltene: navn, sum, kategori i tre nedtrekk side om side
   (gruppe › post › linje; under hverandre på telefon), merke, notat og
   vedleggene med «Fjern» og «+ Legg til vedlegg»; Lagre (`.btn-ny`) og

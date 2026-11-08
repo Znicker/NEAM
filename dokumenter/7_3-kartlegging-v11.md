@@ -523,8 +523,10 @@ differansen i «måned så langt», Resultat før Transaksjoner og innboksen på
 stolpediagram (`a6b79e2`), «Start budsjett» per måned og hele året med
 standarden i diagrammene (`4cb70d8`), og til sist høyreklikk i stedet for
 knapper i Budsjett (`2f63779`), Regnskap med samme liste, føringene
-under og et vindu per føring (`16bb99f`), og til sist det store vinduet for
-en føring med Rediger, flere vedlegg og «!» ved endret sum (`8ab7e7e`).
+under og et vindu per føring (`16bb99f`), det store vinduet for en føring
+med Rediger, flere vedlegg og «!» ved endret sum (`8ab7e7e`), og til sist
+vedlegg og kvitteringslinjer samtidig i vinduet og «Før inn ny utgift»
+(`67ef6b5`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -533,7 +535,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 79 commits, `0e0050a`–`8ab7e7e`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 80 commits, `0e0050a`–`67ef6b5`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4384,7 +4386,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 79 commits fra `0e0050a` til `8ab7e7e` (dialogen med
+verdier. Bygget i 80 commits fra `0e0050a` til `67ef6b5` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -4829,6 +4831,27 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Alt samtidig i vinduet, og «Før inn ny utgift»** (`67ef6b5`). Magne:
+  «Jeg ønsker å se vedlegg og kvitteringsdetaljer, sammen med den andre
+  informasjonen når jeg trykker på en føring. når jeg høyreklikker en
+  underpost ønsker jeg at ny linje under byttes ut med Før inn ny utgift».
+  - **Vinduet** er 960 px og har to spalter fra 820 px (`.ok-fr-to`):
+    infoen og **varelinjene fra kvitteringen** (`?hva=kvittering`, som
+    `.ok-kv-linje`) til venstre, **vedleggene** til høyre – bilder i full
+    bredde (`.ok-fr-stort-bilde`, trykk åpner filviseren), PDF som kort.
+    Under hverandre på telefon. «Se kvittering ›» er borte; Konto-raden
+    vises ikke for kvitteringer og føringer lagt inn for hånd.
+  - **Menyen på en post eller linje i Regnskap** har «Før inn ny utgift …»
+    i stedet for «Ny linje under …» (Budsjett har den fortsatt).
+    `okForNy` åpner skjemaet i samme vindu: navn, dato (i dag i
+    inneværende måned, ellers den siste i den valgte), sum, kategori i tre
+    ledd (utfylt), notat og vedlegg. «Før inn» går samme vei som Neams
+    `legg_til_okonomi_foring` – `kvittering-ny` for hånd, så `godkjenn` –
+    og så notat (`post-endre`) og vedlegg (`post-vedlegg`). Vinduet viser
+    den nye føringen etterpå. Kategorivelgeren i tre ledd er felles
+    (`okFrKatVelger`) for Rediger og ny utgift.
+  - Testet i testserveren (kvittering med tre varer, bilde i full bredde,
+    ny utgift med notat).
 - **Det store vinduet for en føring** (`8ab7e7e`). Magne: «Når jeg trykker
   på en føring ønsker jeg et større vindu som viser meg all info om den.
   gjerne vise vedlegg og all annen info. gjerne vise flere rullgardinmenyer
