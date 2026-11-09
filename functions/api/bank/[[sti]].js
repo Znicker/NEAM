@@ -1903,6 +1903,35 @@ async function postVedleggSlett(env, kropp){
    telles ikke. Trumf-kvitteringer hentes foerste gang de trengs, noen om
    gangen: `mangler` sier at sida maa spoerre igjen. */
 const VARE_SOK_TRUMF = 15;
+const harVareLinjer = p => (p.fra || p.harLinjer) && p.harKvittering !== false;
+const harUlestVedlegg = p => !harVareLinjer(p) && !p.vedleggLest && (p.harFil || (p.vedlegg || []).length > 0);
+/* Det som teller i varesoeket: ikke stroeket, sammenslaatt eller mulig dobbelt. */
+function varePoster(poster, fra, til){
+  return Object.keys(poster).map(id => poster[id]).filter(p => p.status !== 'stroket' && p.status !== 'sammenslatt' && !p.dekketAv
+    && !(p.status === 'ny' && (p.mulDobbel || p.lignerPaa)) && (!fra || p.dato >= fra) && (!til || p.dato <= til))
+    .sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
+}
+/* Vedlegg ingen har lest varelinjene fra. Sida lar Neam lese dem. */
+async function vedleggUleste(env, fra, til){
+  const poster = await bareFelles(env, await lesJson(env, POST_NOKKEL, {}));
+  return svar({ ok:true, poster:varePoster(poster, fra, til).filter(harUlestVedlegg).map(p => ({ id:p.id,
+    filer:(p.harFil ? [{ n:0, type:p.filType || '' }] : []).concat((p.vedlegg || []).map(v => ({ n:v.n, type:v.type }))) })) });
+}
+async function vedleggLinjer(env, kropp){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const p = poster[String(kropp.id || '')];
+  if(!p) return svar({ ok:false, feil:'Fant ikke føringen' });
+  if(harVareLinjer(p) || p.fra === 'trumf') return svar({ ok:true, linjer:0 });
+  const linjer = renLinjer(kropp.linjer);
+  p.vedleggLest = new Date().toISOString();
+  if(linjer.length){
+    await env.FAMILIE_KV.put(kvitteringNokkel(p), JSON.stringify({ id:p.id, belop:Math.abs(p.belop), linjer:linjer }));
+    p.harLinjer = true;
+    delete p.harKvittering;
+  }
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  return svar({ ok:true, linjer:linjer.length });
+}
 async function vareSok(env, sok, fra, til){
   const tekst = String(sok || '').trim().toLowerCase();
   if(!tekst) return svar({ ok:false, feil:'Mangler hva det skal søkes etter' });
@@ -1913,10 +1942,8 @@ async function vareSok(env, sok, fra, til){
   };
   const kr = n => Math.round(n * 100) / 100;
   const poster = await bareFelles(env, await lesJson(env, POST_NOKKEL, {}));
-  const aktuelle = Object.keys(poster).map(id => poster[id]).filter(p => p.status !== 'stroket' && p.status !== 'sammenslatt' && !p.dekketAv
-    && !(p.status === 'ny' && (p.mulDobbel || p.lignerPaa)) && (!fra || p.dato >= fra) && (!til || p.dato <= til))
-    .sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
-  const medLinjer = aktuelle.filter(p => (p.fra || p.harLinjer) && p.harKvittering !== false);
+  const aktuelle = varePoster(poster, fra, til);
+  const medLinjer = aktuelle.filter(harVareLinjer);
   const varer = [], medTreff = {};
   let lest = 0, feil = 0, mangler = 0, hentet = 0;
   for(let i = 0; i < medLinjer.length; i += 25){
@@ -1943,7 +1970,9 @@ async function vareSok(env, sok, fra, til){
   }
   const regninger = aktuelle.filter(p => p.faktura && !medTreff[p.id] && passer([p.motpart, p.tekst].join(' ')))
     .map(p => ({ id:p.id, dato:p.dato, fra:p.motpart || p.tekst || '', belop:kr(Math.abs(p.belop)), kategori:p.kategori || '', status:p.status }));
-  return svar({ ok:true, varer:varer, regninger:regninger, sumVarer:kr(varer.reduce((t, x) => t + x.belop, 0)), sumRegninger:kr(regninger.reduce((t, x) => t + x.belop, 0)), lest:lest, feil:feil, mangler:mangler });
+  return svar({ ok:true, varer:varer, regninger:regninger, sumVarer:kr(varer.reduce((t, x) => t + x.belop, 0)), sumRegninger:kr(regninger.reduce((t, x) => t + x.belop, 0)), lest:lest, feil:feil, mangler:mangler,
+    ulesteVedlegg:aktuelle.filter(harUlestVedlegg).map(p => ({ id:p.id, dato:p.dato, sted:p.motpart || p.tekst || '', belop:kr(Math.abs(p.belop)), kategori:p.kategori || '',
+      vedlegg:p.filType === 'application/pdf' ? 'pdf' : 'bilde' })) });
 }
 
 async function allePoster(env){
@@ -2037,13 +2066,7 @@ async function nyKvittering(env, kropp, epost){
   const sum = Math.abs(Number(k.belop));
   if(!/^\d{4}-\d{2}-\d{2}$/.test(dato) || !(sum > 0) || sum > 1e6) return svar({ ok:false, feil:'Mangler dato eller sum – les kvitteringen på nytt eller fyll inn' });
   const butikk = String(k.butikk || '').slice(0, 120) || 'Ukjent butikk';
-  const linjer = [].concat(k.linjer || []).slice(0, 300).map(l => ({
-    navn: String(l.navn || '').slice(0, 120),
-    antall: Number(l.antall) || 1,
-    enhet: String(l.enhet || '').slice(0, 10),
-    belop: Math.round((Number(l.belop) || 0) * 100) / 100,
-    rabatt: Math.round((Number(l.rabatt) || 0) * 100) / 100
-  })).filter(l => l.navn);
+  const linjer = renLinjer(k.linjer);
   /* Delt paa flere kategorier i vinduet: linjenummer -> kategori. */
   let linjeKat = null;
   if(kropp.linjeKat && linjer.length){
@@ -2158,6 +2181,15 @@ async function nyKvittering(env, kropp, epost){
   return svar({ ok:true, post:p });
 }
 const KVITTERING_FILTYPER = ['image/jpeg', 'image/png', 'application/pdf'];
+function renLinjer(kilde){
+  return [].concat(kilde || []).slice(0, 300).map(l => ({
+    navn: String(l.navn || '').slice(0, 120),
+    antall: Number(l.antall) || 1,
+    enhet: String(l.enhet || '').slice(0, 10),
+    belop: Math.round((Number(l.belop) || 0) * 100) / 100,
+    rabatt: Math.round((Number(l.rabatt) || 0) * 100) / 100
+  })).filter(l => l.navn);
+}
 function filNokkel(id){ return 'auth:bank:fil:' + id; }
 /* Flere vedlegg (8. november 2026): det foerste ligger som foer i fil:<id>
    (harFil/filType), de neste i fil:<id>:<n> og i p.vedlegg = [{ n, type, navn }]. */
@@ -3279,6 +3311,7 @@ export async function onRequestGet({ request, env }){
     if(hva === 'regnskap-aar') return await regnskapAar(env);
     if(hva === 'regningskonto') return await regningskonto(env);
     if(hva === 'alle-poster') return await allePoster(env);
+    if(hva === 'vedlegg-uleste') return await vedleggUleste(env, url.searchParams.get('fra') || '', url.searchParams.get('til') || '');
     if(hva === 'vare-sok') return await vareSok(env, url.searchParams.get('sok') || '', url.searchParams.get('fra') || '', url.searchParams.get('til') || '');
     if(hva === 'rydd') return await ryddForslag(env, url.searchParams.get('mnd') || '');
     if(hva === 'logg'){ const l = await lesJson(env, LOGG_NOKKEL, []); return svar({ ok:true, logg:Array.isArray(l) ? l : [] }); }
@@ -3338,6 +3371,7 @@ async function postHandling(request, env, v, kropp){
   if(kropp && kropp.hva === 'privat-vedlegg-slett') return await privatVedleggSlett(env, v.epost, kropp);
   if(kropp && kropp.hva === 'privat-kv-tilbake') return await privatKvTilbake(env, v.epost, kropp);
   if(kropp && kropp.hva === 'post-endre') return await postEndre(env, kropp);
+  if(kropp && kropp.hva === 'vedlegg-linjer') return await vedleggLinjer(env, kropp);
   if(kropp && kropp.hva === 'post-vedlegg') return await postVedlegg(env, kropp);
   if(kropp && kropp.hva === 'post-vedlegg-slett') return await postVedleggSlett(env, kropp);
   if(kropp && kropp.hva === 'regningskonto') return await lagreRegningskonto(env, kropp);

@@ -3479,6 +3479,38 @@ button.ok-dr-rad{ cursor:pointer; }
     e.stopImmediatePropagation();
     okLukkFil();
   }, true);
+  /* Neam leser ett dokument og svarer med det som staar paa det. */
+  async function okKvLes(innhold){
+    var r = await fetch('/api/claude', { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ model:OK_MODELL, max_tokens:4000,
+        system:'Du leser butikkvitteringer og fakturaer og svarer bare med JSON. Du gjetter aldri tall du ikke kan lese.',
+        messages:[{ role:'user', content:[ innhold, { type:'text', text:OK_KV_INSTRUKS } ] }] }) });
+    var d = await r.json();
+    if(d.error) throw new Error(d.error.message || 'Neam kunne ikke lese kvitteringen');
+    var tekst = (d.content || []).filter(function(c){ return c.type === 'text'; }).map(function(c){ return c.text; }).join('');
+    return JSON.parse(tekst.slice(tekst.indexOf('{'), tekst.lastIndexOf('}') + 1));
+  }
+  /* Varelinjene fra vedlegg paa en foering, saa Neam kan soeke i dem
+     (9. november 2026). deler: [{ type, data }]. */
+  async function okVedleggLinjer(deler){
+    var linjer = [], feil = 0;
+    for(var i = 0; i < deler.length; i++){
+      var pdf = deler[i].type === 'application/pdf';
+      var innhold = { type:pdf ? 'document' : 'image', source:{ type:'base64', media_type:deler[i].type, data:deler[i].data } };
+      try{ linjer = linjer.concat((await okKvLes(innhold)).linjer || []); }catch(e){ feil++; }
+    }
+    return { linjer:linjer, feil:feil };
+  }
+  function okVedleggLagre(id, linjer){
+    return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'vedlegg-linjer', id:id, linjer:linjer }) });
+  }
+  /* Etter en opplasting. Feiler det, staar vedlegget som ulest i varesoeket. */
+  function okVedleggBak(id, deler){
+    if(!deler.length) return;
+    okVedleggLinjer(deler).then(function(r){
+      if(!r.feil || r.linjer.length) return okVedleggLagre(id, r.linjer);
+    }).catch(function(){});
+  }
   /* limt: kopiert tekst fra en kvittering eller faktura i stedet for en fil
      (Magne, 7. november 2026). Da lagres ingen fil med posten. */
   async function okTolkKvittering(fil, limt, spor){
@@ -3488,14 +3520,7 @@ button.ok-dr-rad{ cursor:pointer; }
       : { type:'image', source:{ type:'base64', media_type:'image/jpeg', data: await okKrympBilde(fil) } };
     /* Den samme fila Neam leste, lagres med kvitteringen - det krympede bildet, eller PDF-en som den er. */
     var lagres = limt ? null : { type:innhold.source.media_type, data:innhold.source.data };
-    var r = await fetch('/api/claude', { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ model:OK_MODELL, max_tokens:4000,
-        system:'Du leser butikkvitteringer og fakturaer og svarer bare med JSON. Du gjetter aldri tall du ikke kan lese.',
-        messages:[{ role:'user', content:[ innhold, { type:'text', text:OK_KV_INSTRUKS } ] }] }) });
-    var d = await r.json();
-    if(d.error) throw new Error(d.error.message || 'Neam kunne ikke lese kvitteringen');
-    var tekst = (d.content || []).filter(function(c){ return c.type === 'text'; }).map(function(c){ return c.text; }).join('');
-    var kv = JSON.parse(tekst.slice(tekst.indexOf('{'), tekst.lastIndexOf('}') + 1));
+    var kv = await okKvLes(innhold);
     /* Dropbox spoer ikke; det som legges inn for haand, gjoer det. */
     var eget = spor ? await spor(kv) : null;
     if(eget === false) return null;
@@ -6345,14 +6370,16 @@ button.ok-dr-rad{ cursor:pointer; }
           return notat.value.trim() ? post({ hva:'post-endre', id:id, notat:notat.value.trim() }) : { ok:true };
         })
         .then(function(){
+          var lest = [];
           return filer.reduce(function(kjede, fil){
             return kjede.then(function(){
               var pdf = fil.type === 'application/pdf';
               return (pdf ? okSomBase64(fil) : okKrympBilde(fil)).then(function(data){
+                lest.push({ type:pdf ? 'application/pdf' : 'image/jpeg', data:data });
                 return post({ hva:'post-vedlegg', id:id, type:pdf ? 'application/pdf' : 'image/jpeg', data:data, navn:fil.name });
               });
             });
-          }, Promise.resolve());
+          }, Promise.resolve()).then(function(){ okVedleggBak(id, lest); });
         })
         .then(function(){
           okRgFor = {}; okMnd.kjop = {};
@@ -6422,14 +6449,16 @@ button.ok-dr-rad{ cursor:pointer; }
     filInn.addEventListener('change', function(){
       var filer = Array.prototype.slice.call(filInn.files || []); filInn.value = '';
       legg.disabled = true; legg.textContent = 'Lagrer …';
+      var lest = [];
       filer.reduce(function(kjede, fil){
         return kjede.then(function(){
           var pdf = fil.type === 'application/pdf';
           return (pdf ? okSomBase64(fil) : okKrympBilde(fil)).then(function(data){
+            lest.push({ type:pdf ? 'application/pdf' : 'image/jpeg', data:data });
             return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'post-vedlegg', id:p.id, type:pdf ? 'application/pdf' : 'image/jpeg', data:data, navn:fil.name }) });
           }).then(oppdaterVed);
         });
-      }, Promise.resolve()).catch(function(e){ feil.textContent = 'Vedlegget ble ikke lagret: ' + e.message; feil.hidden = false; }).then(function(){ legg.disabled = false; legg.textContent = '+ Legg til vedlegg'; });
+      }, Promise.resolve()).then(function(){ if(!p.harKvittering) okVedleggBak(p.id, lest); }).catch(function(e){ feil.textContent = 'Vedlegget ble ikke lagret: ' + e.message; feil.hidden = false; }).then(function(){ legg.disabled = false; legg.textContent = '+ Legg til vedlegg'; });
     });
     inn.appendChild(filInn); inn.appendChild(legg);
     /* Hva som er endret - Avbryt spoer bare da (Avbryt-regelen). */
@@ -7400,12 +7429,30 @@ button.ok-dr-rad{ cursor:pointer; }
                  + 'postene på regningene, og i hvem regningene er fra. Bruk denne for spørsmål som «hvor mye brukte vi '
                  + 'på Pepsi Max i forrige måned». Gi fra og til for perioden. Kvitteringer skriver ofte varer forkortet: '
                  + 'finner du ingenting, prøv et kortere ord («pepsi»). Regninger med status venter er ikke betalt ennå. '
+                 + 'Står det uleste_vedlegg i svaret, kan varen stå på vedlegg som ikke er lest inn: si det, i stedet for å '
+                 + 'svare at varen ikke finnes, og tilby tolk_okonomi_vedlegg. '
                  + 'Gjelder felles økonomi. Bare på Økonomi-sida.',
       input_schema: { type:'object', properties:{
         sok: { type:'string', description:'Varen eller regningen, f.eks. «pepsi max» eller «forsikring».' },
         fra: { type:'string', description:'ÅÅÅÅ-MM-DD.' }, til: { type:'string', description:'ÅÅÅÅ-MM-DD.' },
         maks: { type:'number', description:'Hvor mange rader, høyst 200. Standard 60. Summene gjelder alle treff.' }
       }, required:['sok'] }
+    },
+    {
+      name: 'tolk_okonomi_vedlegg',
+      description: 'Leser varelinjene fra bilde- og PDF-vedlegg som ikke er lest inn ennå (uleste_vedlegg i les_okonomi_varer) '
+                 + 'og lagrer dem på transaksjonene, så de kan søkes i. Beløp og kategorier endres ikke. Svaret sier hvor mange '
+                 + 'som er igjen. Bare på Økonomi-sida.',
+      input_schema: { type:'object', properties:{
+        fra: { type:'string', description:'ÅÅÅÅ-MM-DD.' }, til: { type:'string', description:'ÅÅÅÅ-MM-DD.' },
+        maks: { type:'number', description:'Hvor mange transaksjoner, høyst 20. Standard 10.' }
+      }, required:[] },
+      neamSkriver: true,
+      neamBeskriv: function(arg){
+        var m = Math.min(20, Math.max(1, Number(arg.maks) || 10));
+        return 'Lese varelinjene fra vedleggene på opptil ' + m + ' transaksjoner' + (arg.fra || arg.til ? ' (' + (arg.fra || 'starten') + ' til ' + (arg.til || 'i dag') + ')' : '')
+          + ' og lagre dem, så de kan søkes i. Beløp og kategorier endres ikke.';
+      }
     },
     {
       name: 'les_okonomi_regningskonto',
@@ -7692,7 +7739,32 @@ button.ok-dr-rad{ cursor:pointer; }
       var vm = Math.min(200, Math.max(1, Number(arg.maks) || 60));
       return { antall_varer:vs.varer.length, sum_varer:vs.sumVarer, antall_regninger:vs.regninger.length, sum_regninger:vs.sumRegninger,
         kvitteringer_lest:vs.lest, ikke_lest:(vs.feil || 0) + (vs.mangler || 0) || undefined,
-        varer:vs.varer.slice(0, vm), regninger:vs.regninger.slice(0, vm) };
+        varer:vs.varer.slice(0, vm), regninger:vs.regninger.slice(0, vm),
+        uleste_vedlegg:vs.ulesteVedlegg.length ? { antall:vs.ulesteVedlegg.length, poster:vs.ulesteVedlegg.slice(0, 40),
+          merknad:'Disse transaksjonene har vedlegg som ikke er lest inn. Varen kan stå der, så svaret over er ikke hele sannheten.' } : undefined };
+    }
+    if(navn === 'tolk_okonomi_vedlegg'){
+      var vu = await okNeamPost2('?hva=vedlegg-uleste&fra=' + encodeURIComponent(String(arg.fra || '')) + '&til=' + encodeURIComponent(String(arg.til || '')));
+      if(!vu.ok) throw new Error(vu.feil);
+      var vtall = Math.min(Math.min(20, Math.max(1, Number(arg.maks) || 10)), vu.poster.length), vres = { lest:0, uten_varelinjer:0, feilet:0, varelinjer:0 };
+      for(var vk = 0; vk < vtall; vk++){
+        var vp = vu.poster[vk], vd = [];
+        try{
+          for(var vf = 0; vf < vp.filer.length; vf++){
+            var vb = await (await fetch('/api/bank?hva=kvittering-fil&id=' + encodeURIComponent(vp.id) + (vp.filer[vf].n ? '&n=' + vp.filer[vf].n : ''), { credentials:'same-origin' })).blob();
+            if(/json/.test(vb.type)) throw new Error('Fant ikke fila');
+            var vpdf = vb.type === 'application/pdf';
+            vd.push({ type:vpdf ? 'application/pdf' : 'image/jpeg', data:await (vpdf ? okSomBase64(vb) : okKrympBilde(vb)) });
+          }
+          var vl = await okVedleggLinjer(vd);
+          if(vl.feil && !vl.linjer.length){ vres.feilet++; continue; }
+          var vlagret = await okVedleggLagre(vp.id, vl.linjer);
+          if(!vlagret.ok){ vres.feilet++; continue; }
+          if(vlagret.linjer){ vres.lest++; vres.varelinjer += vlagret.linjer; } else vres.uten_varelinjer++;
+        }catch(e){ vres.feilet++; }
+      }
+      vres.igjen = vu.poster.length - vtall + vres.feilet;
+      return vres;
     }
     if(navn === 'les_okonomi_regningskonto'){
       var rk = await okRkLast();
