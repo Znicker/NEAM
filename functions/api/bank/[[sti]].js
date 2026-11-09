@@ -1038,14 +1038,17 @@ async function flyttFaktura(env, f, b, naa){
     b.kategori = f.kategori; b.kilde = 'faktura';
     if(!b.mulDobbel && !b.lignerPaa && !b.dekketAv) autoFoer({}, b, naa);
   }
-  /* Delt paa flere kategorier: linjene og fordelingen foelger med til trekket. */
-  if(f.linjeKat && !b.fra && !b.harLinjer && !b.manuell){
+  /* Linjene foelger med til trekket, og fordelingen om den er delt paa flere kategorier. */
+  if(f.harKvittering && !b.fra && !b.harLinjer){
     const kv = await lesJson(env, kvitteringNokkel(f), null);
     if(kv){
       await env.FAMILIE_KV.put(kvitteringNokkel(b), JSON.stringify(Object.assign({}, kv, { id:b.id })));
-      b.harLinjer = true; b.linjeKat = f.linjeKat;
-      if(f.kategori) b.kategori = f.kategori;
-      if(f.deler) b.deler = f.deler;
+      b.harLinjer = true;
+      if(f.linjeKat && !b.manuell){
+        b.linjeKat = f.linjeKat;
+        if(f.kategori) b.kategori = f.kategori;
+        if(f.deler) b.deler = f.deler;
+      }
     }
   }
   Object.assign(f, { status:'sammenslatt', slaattInn:b.id, behandlet:naa });
@@ -1894,6 +1897,55 @@ async function postVedleggSlett(env, kropp){
    › Alle (Magne, 6. november 2026). Det som er slaatt inn i en annen post,
    vises som den posten: et banktrekk dekket av en kvittering, og en
    kvittering eller faktura lagt ved et trekk. Sida soeker og filtrerer selv. */
+/* Soek paa tvers av varelinjene og regningene (Magne, 9. november 2026: «Om
+   jeg ber om å finne ut hvor mye vi brukte på pepsi max i forrige måneden vil
+   jeg neam skal ordne det»). Det som er stroeket eller kan vaere dobbelt,
+   telles ikke. Trumf-kvitteringer hentes foerste gang de trengs, noen om
+   gangen: `mangler` sier at sida maa spoerre igjen. */
+const VARE_SOK_TRUMF = 15;
+async function vareSok(env, sok, fra, til){
+  const tekst = String(sok || '').trim().toLowerCase();
+  if(!tekst) return svar({ ok:false, feil:'Mangler hva det skal søkes etter' });
+  const ord = tekst.split(/\s+/), samlet = tekst.replace(/[\s.-]/g, '');
+  const passer = t => {
+    const l = String(t || '').toLowerCase();
+    return ord.every(o => l.indexOf(o) !== -1) || l.replace(/[\s.-]/g, '').indexOf(samlet) !== -1;
+  };
+  const kr = n => Math.round(n * 100) / 100;
+  const poster = await bareFelles(env, await lesJson(env, POST_NOKKEL, {}));
+  const aktuelle = Object.keys(poster).map(id => poster[id]).filter(p => p.status !== 'stroket' && p.status !== 'sammenslatt' && !p.dekketAv
+    && !(p.status === 'ny' && (p.mulDobbel || p.lignerPaa)) && (!fra || p.dato >= fra) && (!til || p.dato <= til))
+    .sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
+  const medLinjer = aktuelle.filter(p => (p.fra || p.harLinjer) && p.harKvittering !== false);
+  const varer = [], medTreff = {};
+  let lest = 0, feil = 0, mangler = 0, hentet = 0;
+  for(let i = 0; i < medLinjer.length; i += 25){
+    const bolk = medLinjer.slice(i, i + 25);
+    const kv = await Promise.all(bolk.map(p => lesJson(env, kvitteringNokkel(p), null)));
+    for(let j = 0; j < bolk.length; j++){
+      const p = bolk[j];
+      let k = kv[j];
+      if(!k && p.fra === 'trumf'){
+        if(hentet >= VARE_SOK_TRUMF){ mangler++; continue; }
+        hentet++;
+        k = await (await trumfKvittering(env, p.trumfId)).json();
+        if(!k.ok){ feil++; continue; }
+      }
+      if(!k) continue;
+      lest++;
+      for(const l of k.linjer || []){
+        if(!passer(l.navn)) continue;
+        medTreff[p.id] = true;
+        varer.push({ id:p.id, dato:p.dato, sted:p.motpart || p.tekst || '', vare:l.navn, antall:l.antall, belop:kr((Number(l.belop) || 0) + (Number(l.rabatt) || 0)), status:p.status,
+          kilde:p.faktura ? 'regning' : 'kvittering' });
+      }
+    }
+  }
+  const regninger = aktuelle.filter(p => p.faktura && !medTreff[p.id] && passer([p.motpart, p.tekst].join(' ')))
+    .map(p => ({ id:p.id, dato:p.dato, fra:p.motpart || p.tekst || '', belop:kr(Math.abs(p.belop)), kategori:p.kategori || '', status:p.status }));
+  return svar({ ok:true, varer:varer, regninger:regninger, sumVarer:kr(varer.reduce((t, x) => t + x.belop, 0)), sumRegninger:kr(regninger.reduce((t, x) => t + x.belop, 0)), lest:lest, feil:feil, mangler:mangler });
+}
+
 async function allePoster(env){
   const poster = await bareFelles(env, await lesJson(env, POST_NOKKEL, {}));
   const kn = await lesJson(env, KONTONAVN_NOKKEL, {});
@@ -1985,8 +2037,7 @@ async function nyKvittering(env, kropp, epost){
   const sum = Math.abs(Number(k.belop));
   if(!/^\d{4}-\d{2}-\d{2}$/.test(dato) || !(sum > 0) || sum > 1e6) return svar({ ok:false, feil:'Mangler dato eller sum – les kvitteringen på nytt eller fyll inn' });
   const butikk = String(k.butikk || '').slice(0, 120) || 'Ukjent butikk';
-  /* En faktura faar bare linjer naar den deles paa flere kategorier. */
-  const linjer = (k.type === 'faktura' && !kropp.forHand && !kropp.linjeKat ? [] : [].concat(k.linjer || [])).slice(0, 300).map(l => ({
+  const linjer = [].concat(k.linjer || []).slice(0, 300).map(l => ({
     navn: String(l.navn || '').slice(0, 120),
     antall: Number(l.antall) || 1,
     enhet: String(l.enhet || '').slice(0, 10),
@@ -2052,6 +2103,10 @@ async function nyKvittering(env, kropp, epost){
       if(filOk){ await env.FAMILIE_KV.put(filNokkel(ledig.id), JSON.stringify({ type:fil.type, data:fil.data })); ledig.harFil = true; ledig.filType = fil.type; }
       ledig.vedlagt = new Date().toISOString(); ledig.faktura = { id:id, forfall:dato };
       if(linjeKat) await settDeling(env, ledig, linjer, linjeKat, sum);
+      else if(linjer.length && !ledig.harLinjer){
+        await env.FAMILIE_KV.put(kvitteringNokkel(ledig), JSON.stringify({ id:ledig.id, belop:sum, linjer:linjer }));
+        ledig.harLinjer = true;
+      }
       await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
       return svar({ ok:true, post:ledig, festet:'faktura' });
     }
@@ -3224,6 +3279,7 @@ export async function onRequestGet({ request, env }){
     if(hva === 'regnskap-aar') return await regnskapAar(env);
     if(hva === 'regningskonto') return await regningskonto(env);
     if(hva === 'alle-poster') return await allePoster(env);
+    if(hva === 'vare-sok') return await vareSok(env, url.searchParams.get('sok') || '', url.searchParams.get('fra') || '', url.searchParams.get('til') || '');
     if(hva === 'rydd') return await ryddForslag(env, url.searchParams.get('mnd') || '');
     if(hva === 'logg'){ const l = await lesJson(env, LOGG_NOKKEL, []); return svar({ ok:true, logg:Array.isArray(l) ? l : [] }); }
     if(hva === 'formue') return await formue(env);

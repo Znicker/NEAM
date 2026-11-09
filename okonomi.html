@@ -7395,6 +7395,19 @@ button.ok-dr-rad{ cursor:pointer; }
       }, required:[] }
     },
     {
+      name: 'les_okonomi_varer',
+      description: 'Søker på tvers av varelinjene på kvitteringene (Trumf og det som er lest fra bilde eller PDF) og '
+                 + 'postene på regningene, og i hvem regningene er fra. Bruk denne for spørsmål som «hvor mye brukte vi '
+                 + 'på Pepsi Max i forrige måned». Gi fra og til for perioden. Kvitteringer skriver ofte varer forkortet: '
+                 + 'finner du ingenting, prøv et kortere ord («pepsi»). Regninger med status venter er ikke betalt ennå. '
+                 + 'Gjelder felles økonomi. Bare på Økonomi-sida.',
+      input_schema: { type:'object', properties:{
+        sok: { type:'string', description:'Varen eller regningen, f.eks. «pepsi max» eller «forsikring».' },
+        fra: { type:'string', description:'ÅÅÅÅ-MM-DD.' }, til: { type:'string', description:'ÅÅÅÅ-MM-DD.' },
+        maks: { type:'number', description:'Hvor mange rader, høyst 200. Standard 60. Summene gjelder alle treff.' }
+      }, required:['sok'] }
+    },
+    {
       name: 'les_okonomi_regningskonto',
       description: 'Bufferen regningskontoen trenger (Oppsett › Regningskontoen): hvilken konto som er regningskontoen, '
                  + 'hvor langt ned saldoen har gått før påfyllet (den største innbetalingen) hver måned, anbefalt buffer '
@@ -7666,6 +7679,20 @@ button.ok-dr-rad{ cursor:pointer; }
             kategori:x.kategori || null, status:x.status, kilde:kilde(x), fort_automatisk:x.auto || undefined,
             vedlegg:x.harFil ? (x.filType === 'application/pdf' ? 'pdf' : 'bilde') : x.harKvittering ? 'varelinjer' : undefined };
         }) };
+    }
+    if(navn === 'les_okonomi_varer'){
+      var vq = '?hva=vare-sok&sok=' + encodeURIComponent(String(arg.sok || '')) + '&fra=' + encodeURIComponent(String(arg.fra || '')) + '&til=' + encodeURIComponent(String(arg.til || ''));
+      /* Trumf-kvitteringer som ikke er hentet ennaa, tas noen om gangen. */
+      var vs = null;
+      for(var vi = 0; vi < 10; vi++){
+        vs = await okNeamPost2(vq);
+        if(!vs.ok) throw new Error(vs.feil);
+        if(!vs.mangler) break;
+      }
+      var vm = Math.min(200, Math.max(1, Number(arg.maks) || 60));
+      return { antall_varer:vs.varer.length, sum_varer:vs.sumVarer, antall_regninger:vs.regninger.length, sum_regninger:vs.sumRegninger,
+        kvitteringer_lest:vs.lest, ikke_lest:(vs.feil || 0) + (vs.mangler || 0) || undefined,
+        varer:vs.varer.slice(0, vm), regninger:vs.regninger.slice(0, vm) };
     }
     if(navn === 'les_okonomi_regningskonto'){
       var rk = await okRkLast();
