@@ -1810,17 +1810,22 @@ kartleggingen, del 57; her står det som angår oppbygning og utseende.
 **Fem faner, hver ting ett sted** (skissen «Neam Økonomi – ny struktur»,
 godkjent 6. november 2026; Innboks ble Transaksjoner samme kveld). Fra
 8. november 2026 (skissen «Regnskap, Budsjett, Resultat»): Status,
-Resultat, Regnskap, Budsjett og Transaksjoner. **Oppsett og Oppdater ligger
+Resultat, Regnskap, Budsjett og Transaksjoner. Fra 9. november 2026 (`9d6637a`):
+Status, Regnskap, Budsjett, Transaksjoner, Resultat, Lån og Verdier, og
+personfanene etter dem. **Oppsett og Oppdater ligger
 på høyre tommelknapp** – Oppdater på skrå, Oppsett ved siden av, gult når
 en kilde ikke er oppdatert. **Regnskap, Budsjett og Resultat har samme
 plassering:** én periodevelger over alle tre (‹ måned ›, Måned / Hittil i
 år / Siste 12 mnd), så sumboksene, et kort med diagrammet og «På tvers»
-som sammenleggbare linjer, og postene gruppe for gruppe – Inntekter
+som sammenleggbare linjer (diagrammene, «På tvers» og «Hvor det glir» er skjult
+enn så lenge fra 9. november 2026), og postene gruppe for gruppe – Inntekter
 først, Sparing sist. Bare tallene skiller dem:
 
 - **Status** – bare oversikt: fire tallbokser, måneden som én stolpe med de
   tre postene med minst igjen, nøkkeltallene, netto formue og
-  familiemålet. **Differanse, ikke «foran skjema»** (fra 8. november 2026):
+  familiemålet. **Måneden er skjult enn så lenge** (fra 9. november 2026,
+  `9d6637a`, Magne: «det har vi under resultat»), med mangel-boksen; resten av
+  punktet gjelder kortet når det er framme. **Differanse, ikke «foran skjema»** (fra 8. november 2026):
   budsjett minus brukt for måneden, overforbruk som røde minustall og
   under eller lik bruk som grønne tall (`.ok-avvik.over`/`.under`). På
   telefon står Differanse i stedet for Budsjett. **Måneden vises også uten fullt budsjett** (fra 6. november
@@ -2050,9 +2055,12 @@ først, Sparing sist. Bare tallene skiller dem:
     (grået ut mens noe redigeres). Valg som sletter, er røde og må trykkes
     to ganger. Nederst: «Shift + høyreklikk: vanlig meny». Lukkes med
     Escape, klikk utenfor eller rulling.
+- **Lån og Verdier** (fra 9. november 2026, `9d6637a`, flyttet fra Oppsett) –
+  ett kort hver (`.ok-kort`) med tittel og navn og sum til høyre, så skjemaradene
+  som i Oppsett og **Lagre** (`.btn-ny`), som sender hele formuen.
 - **Oppsett** (åpnes fra høyre tommelknapp fra 8. november 2026) – alt som sammenleggbare linjer: én linje per kilde (med
-  statusprikk, og kildens kort inni), kontoene per rolle, formuen (verdier,
-  gjeld, bruttoinntekt, buffer, familiemål), **Regningskontoen** (7. november
+  statusprikk, og kildens kort inni), kontoene per rolle, formuen
+  (bruttoinntekt, buffer, familiemål), **Regningskontoen** (7. november
   2026: kontoen i et nedtrekk, «anbefalt buffer» som `.ok-stort`, og
   månedene som rader – hvor langt ned saldoen gikk før påfyllet) og «Neam
   husker». Under **Neam** øverst **«Rydd opp i en måned»** (8. november
@@ -2102,6 +2110,13 @@ først, Sparing sist. Bare tallene skiller dem:
   Hvor mye (kr) med «Hele summen» som forvalg. Under: **Legg til** (`.btn-ny`)
   og **Avbryt** (`.btn-ghost ok-smal`) etter Avbryt-regelen – den spør bare når
   noe er skrevet inn. Valgt uten skisse.
+  **Flere kategorier** (fra 9. november 2026, `a608f4a`): under utlegget, med
+  minst to linjer, «Er det flere kategorier på denne?» med avkrysningen «Ja,
+  flere kategorier» (`.ok-kv-kryss`). Da får hver linje en avkrysning bak
+  beløpet (`.ok-kvs-lin`, 18 px), og **Legg til** blir **Neste**. Neste viser
+  de avkryssede linjene (`.ok-kv-linje`) med kategorivalg under hver, og
+  **Avbryt** blir **Tilbake**, som husker valgene. En faktura får vinduet
+  bare med dette spørsmålet («Ny faktura» øverst). Valgt uten skisse.
   **Nye kategorier og merker** (fra 9. november 2026, `85b6ba5`, Magne:
   «uansett hvor det skal settes kategorier og merker bør man få lov til å lage
   nye»): en velger som setter kategori eller merke på en føring, har et siste
@@ -2135,6 +2150,8 @@ først, Sparing sist. Bare tallene skiller dem:
   fanenavn må måles der før det tas i bruk. **Unntaket er personfanene for
   sys@**, som ser alle: da rulles raden sidelengs på telefon (Magne: «det
   blir dårlig plass på mobil for sys, men det er ikke noe problem»).
+  Med Lån og Verdier (9. november 2026) er raden for trang på andre skjermer
+  enn PC (Magne: «det rydder vi i senere»).
 - **Toppen står fast** når man ruller, og sida har plass nederst så det
   siste kan rulles fram over NEAM-knappen (se lærdommene i kartleggingen,
   del 57).

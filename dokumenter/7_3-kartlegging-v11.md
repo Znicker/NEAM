@@ -558,7 +558,9 @@ når en kvittering legges til (`c282324`), og nye kategorier og merker der
 de velges (`85b6ba5`), og kategori- og merkevalg som kan foldes (`7e85730`),
 innboksen som rene linjer med Godkjenn per post og kort per gruppe over hele
 bredden (`b4493b2`), og to kort i bredden også i Resultat, med søylene skjult
-(`cf98c9a`).
+(`cf98c9a`), fanene Lån og Verdier med Resultat etter Transaksjoner (`9d6637a`),
+og kvitteringer og fakturaer delt på flere kategorier når de legges inn
+(`a608f4a`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -567,7 +569,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 103 commits, `0e0050a`–`cf98c9a`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 105 commits, `0e0050a`–`a608f4a`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1351,6 +1353,11 @@ oppgi kode.»
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **Deling på flere kategorier** (`a608f4a`) med en ekte forsikringsfaktura:
+  at Neam finner postene. Finner den ingen, kommer ikke spørsmålet. Så
+  faktura delt mot et ekte trekk fra banken.
+- **Fanene Lån og Verdier** (`9d6637a`) på neam.no og på telefon. Faneraden er
+  for trang på andre skjermer enn PC, og det ryddes senere.
 - **Kortene i Budsjett, Regnskap og Resultat** (`b4493b2`, `cf98c9a`) med
   ekte poster, på en ekte telefon og på neam.no.
 - **Innboksen som linjer** (`b4493b2`): en faktura uten kategori i vinduet,
@@ -4581,7 +4588,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 103 commits fra `0e0050a` til `cf98c9a` (dialogen med
+verdier. Bygget i 105 commits fra `0e0050a` til `a608f4a` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5026,6 +5033,38 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Kvitteringer og fakturaer delt på flere kategorier** (`a608f4a`). Magne:
+  «da blir det avmerkingspunkter bak hver linje. Trykker neste og da står disse
+  linjene med rullgardinmenyen over kategorier».
+  - `okKvSpor` har to steg. Bryteren viser avkrysning per linje, og Neste viser
+    de avkryssede med `okKatVelg`. Svaret går som `linjeKat` (linjenummer ->
+    kategori) til `kvittering-ny`, og `settDeling` lagrer linjene.
+  - Har alle linjene kategori, blir den største postens kategori. Ellers
+    velges den i innboksen eller under «Fakturaer uten kategori», og
+    `fakturaKategori` regner fordelingen da. Det som er ført eller venter som
+    faktura, får `deler` med en gang; `status:'ny'` fordeles ved godkjenning.
+  - `regnskapAar` gir én «forfaller»-rad per del, og `flyttFaktura` tar med
+    linjene og `deler` til trekket.
+  - Fakturaer fikk ikke vinduet før, og instruksen ba om tomme linjer. Nå leses
+    postene, men serveren kaster linjene på en faktura som ikke deles, så
+    Dropbox-fakturaer er som før. Dropbox spør ikke.
+  - Legges kvitteringen ved noe som alt har varelinjer, blir delingen ikke
+    brukt (linjenumrene stemmer ikke).
+  - Testet i testserveren med liksom-svar fra Neam: faktura delt på tre mot
+    trekk, delvis deling godkjent i innboksen, utlegg betalt tilbake, 375 px.
+    Ikke med et ekte dokument eller på neam.no.
+- **Fanene Lån og Verdier, og mindre på Status** (`9d6637a`). Magne: «Jeg ønsker
+  at du lager en fane som heter Lån og en som heter Verdier. disse ligger like
+  før magne», «måneden så lang kan bort fra status», «flytt resultat til etter
+  transaksjoner» og «På tvers og hvor det glir kan du gjemme».
+  - `okTegnFormueSkjema` tegner Verdier i `#ok-fo-verdier` og Gjeld i
+    `#ok-fo-lan`. Resten står i `#ok-fo` i Oppsett. Hver har Lagre, som sender
+    hele formuen som før. Personfanene legges etter `ok-fane-verdier`.
+  - `#ok-mnd-kort` og foldene `rg-merker`, `rs-merker`, `rs-glir` og `bu-merker`
+    har `hidden`; koden står. Med måneden er også mangel-boksen og de tre
+    postene med minst igjen borte fra Status.
+  - Testet i testserveren på PC: rekkefølge, legge til og lagre. Ikke telefon
+    eller neam.no.
 - **To kort i bredden, og søylene skjult** (`cf98c9a`). Magne: «Vi kjører to
   kort i bredden på alle tre fanene. vi kan ta ut søylediagrammet enn så
   lenge».
