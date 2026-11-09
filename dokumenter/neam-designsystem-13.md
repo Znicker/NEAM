@@ -1848,6 +1848,13 @@ først, Sparing sist. Bare tallene skiller dem:
     kvittering» (`.btn-ny`) og «Lim inn» (`.btn-blaa`, 7. november 2026):
     bilde, PDF eller tekst fra utklippstavla – eller Ctrl+V på sida, når
     markøren ikke står i et felt.
+    **Rene linjer** (fra 9. november 2026, `b4493b2`): postene i innboksen
+    og fakturaene uten kategori er vanlige føringsrader uten valg på linja.
+    Trykk åpner føringsvinduet, der kategori og varelinjer velges, med
+    **Godkjenn** (`.btn-ny`, av til kategori er valgt) for den ene posten,
+    **Rediger**, **Stryk – føres ikke** og, for en strøket post, **Ta med
+    likevel** (`.btn-ghost ok-smal`). Knappen under lista godkjenner alle
+    klare. Begge gir Angre-stripa.
   - **Kontoutskrift** (het Alle) – alt fra nullpunktet. Øverst ‹ måned ›, så et
     kort med søk og **flervalg** (`.ok-flervalg`) for konto, kategori, merke
     og type – «eller» innen ett, «og» mellom – og Fra og Til på én linje,
@@ -1908,15 +1915,22 @@ først, Sparing sist. Bare tallene skiller dem:
   (fra 1100 px) blir vinduet bredt og siden står i full høyde ved siden av
   infoen. PDF tegnes med pdf.js fra cdnjs, lastet bare ved behov – det
   eneste biblioteket utenfra i Neam. **Listene** (fra 8. november 2026, til Magne har sett dem på neam.no):
-  høyst 900 px brede, grupper i `--t-stor` med et ikon foran, poster i
+  grupper i `--t-stor` med et ikon foran, poster i
   `--t-stor` fra 700 px, en tynn stolpe (`.ok-rad-bar`) under hver post
   bare i Resultat (tatt ut i Regnskap og Budsjett 8. november 2026),
-  raden lyser når man peker, og annenhver gruppe har `--bg-1`.
+  raden lyser når man peker, og annenhver gruppe har `--bg-1` i lister som
+  ikke er kort. **Kort per gruppe** (fra 9. november 2026, `b4493b2`,
+  `cf98c9a`): Budsjett, Regnskap og Resultat bruker hele bredden, med ett kort
+  per gruppe (`--paper`, `--shadow`) og Inntekter og Sparing først. To kort i
+  bredden fra 620 px sideinnhold, ett under det. Resultat, med tre tall per
+  linje, holder ett kort til 1100 px og har kolonnetitlene i hvert kort.
+  Kontoutskrift og Logg er også fulle i bredden. **Søylediagrammene** på de tre
+  fanene er skjult enn så lenge (9. november 2026, `cf98c9a`).
   **Høyreklikk** (hold fingeren på telefon) på
-  en føring eller kategori åpner menyen (`.ok-meny`). **Én spalte, som
-  Budsjett** – også Resultat, der kjøpene bak en post åpnes i en dialog
-  («Vis kjøpene ›», `#ok-kb-bak`).
+  en føring eller kategori åpner menyen (`.ok-meny`). Kjøpene bak en post i
+  Resultat åpnes i en dialog («Vis kjøpene ›», `#ok-kb-bak`).
 - **Resultat** (het Regnskap til 8. november 2026) – budsjett mot faktisk.
+  Diagrammet under er skjult enn så lenge (9. november 2026, `cf98c9a`).
   **Fra 8. november 2026 (skissen «Resultat – måneder og kategorier»):**
   sumboksene viser differansen (Status' regel: røde minustall over, grønt
   ellers); så én sammenleggbar linje, «Utgifter mot budsjett», med **ett
@@ -1958,8 +1972,8 @@ først, Sparing sist. Bare tallene skiller dem:
   kjøpene bak posten står regningen først, som en vanlig rad med
   «Forfaller – ikke betalt ennå» i meta-linja og «Åpne PDF-en ›».
 - **Budsjett** – lista for perioden (fra 8. november 2026), med budsjett
-  per måned gjennom året som diagram – bare startede måneder, og
-  standardbudsjettet helt til høyre. **Ingen knapper for å endre** (fra
+  per måned gjennom året som diagram (skjult enn så lenge, `cf98c9a`) – bare
+  startede måneder, og standardbudsjettet helt til høyre. **Ingen knapper for å endre** (fra
   8. november 2026, Magne: «ønsker man å endre trykker man andre
   museknapp på kategorien eller linjen man ønsker endring på. ingen andre
   knapper for dette»): **høyreklikk** – eller hold fingeren på telefon – på

@@ -555,7 +555,10 @@ løpende saldo, med overføringer fra felles til person i innboksen
 overføring, med forbindelser på transaksjonene (`15337f8`), «Lim inn» som
 sier at en PDF må velges som fil (`5f23002`), og vinduet som spør om utlegg
 når en kvittering legges til (`c282324`), og nye kategorier og merker der
-de velges (`85b6ba5`), og kategori- og merkevalg som kan foldes (`7e85730`).
+de velges (`85b6ba5`), og kategori- og merkevalg som kan foldes (`7e85730`),
+innboksen som rene linjer med Godkjenn per post og kort per gruppe over hele
+bredden (`b4493b2`), og to kort i bredden også i Resultat, med søylene skjult
+(`cf98c9a`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -564,7 +567,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 101 commits, `0e0050a`–`7e85730`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 103 commits, `0e0050a`–`cf98c9a`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1348,6 +1351,10 @@ oppgi kode.»
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **Kortene i Budsjett, Regnskap og Resultat** (`b4493b2`, `cf98c9a`) med
+  ekte poster, på en ekte telefon og på neam.no.
+- **Innboksen som linjer** (`b4493b2`): en faktura uten kategori i vinduet,
+  og Godkjenn og Stryk på en ekte telefon.
 - **Foldbare kategori- og merkevalg** (`7e85730`) på en ekte telefon: at
   telefonens egen rulleliste ikke kommer opp i stedet.
 - **Nye kategorier og merker** (`85b6ba5`): på telefon, i høyreklikkmenyene
@@ -4574,7 +4581,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 101 commits fra `0e0050a` til `7e85730` (dialogen med
+verdier. Bygget i 103 commits fra `0e0050a` til `cf98c9a` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5019,6 +5026,33 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **To kort i bredden, og søylene skjult** (`cf98c9a`). Magne: «Vi kjører to
+  kort i bredden på alle tre fanene. vi kan ta ut søylediagrammet enn så
+  lenge».
+  - Budsjett, Regnskap og Resultat har to kort i bredden fra 620 px sideinnhold,
+    ett under det. Resultat har tre tallkolonner og holder ett kort til 1100 px.
+    Kolonnetitlene står øverst i hvert kort (`.ok-rs-hode` inne i `summary`).
+  - Foldene `rg-trend`, `bu-trend` og `rs-drill` har `hidden`. Koden står, så
+    søylene kommer tilbake ved å ta bort attributtet. Med `rs-drill` er også
+    trykk på en måned for kategoriene borte så lenge.
+  - Tolket som søylene på alle tre fanene; Magne har ikke sagt annet.
+  - Testet i testserveren: PC, 1050 px og 375 px, åpne post, folde kort og
+    høyreklikk. Ikke på en ekte telefon, med ekte poster eller på neam.no.
+- **Kort per gruppe over hele bredden** (`b4493b2`). Magne: «standardbudsjettet
+  bruker mer av skjermen det liker jeg». Budsjett og Regnskap fikk rutenettet
+  (`.ok-rutenett`, `.ok-rutenett-liste`, kolonner etter `@container`), og
+  Kontoutskrift og Logg hele bredden (`.ok-bred`). Gruppene er åpne til de
+  lukkes. Først tre kort i bredden, endret til to i `cf98c9a`.
+- **Innboksen som rene linjer** (`b4493b2`). Magne: «Når ting komme i innboks,
+  ønsker jeg de bare som linje med vanlig info. alle andre valg gjøres ved å
+  trykke på linjen» og «jeg må også kunne godkjenne en post om gangen, ikke
+  alle».
+  - `okPostRad` og fakturaene bruker `okRgForRad`. Valgene ligger i
+    føringsvinduet (`okFrVis`): kategori, varelinjer, Godkjenn, Rediger, Stryk
+    og Ta med likevel. Knappen nederst godkjenner fortsatt alle klare, og begge
+    går gjennom `okSendGodkjenning`, med Angre-stripa.
+  - Testet i testserveren på PC og 375 px. Ikke en faktura uten kategori, ekte
+    telefon eller neam.no.
 - **Kategori- og merkevalg som kan foldes** (`7e85730`). Magne: «i valg av
   kategori og merker må vi kunne lukke kollapse hovedkategorier. listen i
   rullgardinmenyen blir for lang».
