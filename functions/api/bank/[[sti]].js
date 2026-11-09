@@ -15,7 +15,7 @@
      GET /api/bank?hva=trumf-kjop      - kjoepene fra trumf.no (siste 12 mnd)
      GET /api/bank?hva=trumf-kvittering&id=<batchId> - varelinjene
      POST /api/bank {hva:'trumf-innlogging', cookie} / {hva:'trumf-koble-fra'}
-     POST /api/bank {hva:'kvittering-ny', kvittering, forHand, eier, tilbakebetalt, overfort, kategori, notat} - kvittering lest fra bilde/PDF, eller en foering lagt inn for haand
+     POST /api/bank {hva:'kvittering-ny', kvittering, forHand, eier, tilbakebetalt, overfort, kategori, notat, linjeKat} - kvittering lest fra bilde/PDF, eller en foering lagt inn for haand
      GET /api/bank?hva=kvittering&id=<postId>         - varelinjene til en kvitteringspost
      GET /api/bank?hva=kvittering-fil&id=<postId>     - selve bildet eller PDF-en
      GET /api/bank?hva=budsjett / POST {hva:'budsjett', standard} - standardbudsjettet
@@ -1038,6 +1038,16 @@ async function flyttFaktura(env, f, b, naa){
     b.kategori = f.kategori; b.kilde = 'faktura';
     if(!b.mulDobbel && !b.lignerPaa && !b.dekketAv) autoFoer({}, b, naa);
   }
+  /* Delt paa flere kategorier: linjene og fordelingen foelger med til trekket. */
+  if(f.linjeKat && !b.fra && !b.harLinjer && !b.manuell){
+    const kv = await lesJson(env, kvitteringNokkel(f), null);
+    if(kv){
+      await env.FAMILIE_KV.put(kvitteringNokkel(b), JSON.stringify(Object.assign({}, kv, { id:b.id })));
+      b.harLinjer = true; b.linjeKat = f.linjeKat;
+      if(f.kategori) b.kategori = f.kategori;
+      if(f.deler) b.deler = f.deler;
+    }
+  }
   Object.assign(f, { status:'sammenslatt', slaattInn:b.id, behandlet:naa });
 }
 async function synkFakturaer(env, poster){
@@ -1062,6 +1072,10 @@ async function fakturaKategori(env, kropp){
   const k = String(kropp.kategori || '');
   if(k && (await alleKategorier(env)).indexOf(k) === -1) return svar({ ok:false, feil:'Ukjent kategori' });
   if(k){ p.kategori = k; p.kilde = 'manuell'; } else { delete p.kategori; delete p.kilde; }
+  if(p.linjeKat){
+    const d = k ? await fordelKvittering(env, p, p.linjeKat, k) : null;
+    if(d) p.deler = d; else delete p.deler;
+  }
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
   return svar({ ok:true, post:p });
 }
@@ -1621,7 +1635,8 @@ async function regnskapAar(env){
   for(const id of Object.keys(poster)){
     const p = poster[id];
     if(p.status === 'venter' && p.faktura && kategorier.indexOf(p.kategori) !== -1 && p.kategori.indexOf('Inntekter') !== 0){
-      forfaller.push({ id:p.id, mnd:String(p.dato).slice(0, 7), dato:p.dato, kategori:p.kategori, belop:Math.round(-p.belop * 100) / 100, motpart:p.motpart || p.tekst || '',
+      const fDeler = p.deler && p.deler.length ? p.deler : [{ kategori:p.kategori, belop:p.belop }];
+      for(const d of fDeler) forfaller.push({ id:p.id, mnd:String(p.dato).slice(0, 7), dato:p.dato, kategori:d.kategori, belop:Math.round(-d.belop * 100) / 100, motpart:p.motpart || p.tekst || '',
         harFil:!!p.harFil, filType:p.filType || '' });
       continue;
     }
@@ -1970,13 +1985,27 @@ async function nyKvittering(env, kropp, epost){
   const sum = Math.abs(Number(k.belop));
   if(!/^\d{4}-\d{2}-\d{2}$/.test(dato) || !(sum > 0) || sum > 1e6) return svar({ ok:false, feil:'Mangler dato eller sum – les kvitteringen på nytt eller fyll inn' });
   const butikk = String(k.butikk || '').slice(0, 120) || 'Ukjent butikk';
-  const linjer = [].concat(k.linjer || []).slice(0, 300).map(l => ({
+  /* En faktura faar bare linjer naar den deles paa flere kategorier. */
+  const linjer = (k.type === 'faktura' && !kropp.forHand && !kropp.linjeKat ? [] : [].concat(k.linjer || [])).slice(0, 300).map(l => ({
     navn: String(l.navn || '').slice(0, 120),
     antall: Number(l.antall) || 1,
     enhet: String(l.enhet || '').slice(0, 10),
     belop: Math.round((Number(l.belop) || 0) * 100) / 100,
     rabatt: Math.round((Number(l.rabatt) || 0) * 100) / 100
   })).filter(l => l.navn);
+  /* Delt paa flere kategorier i vinduet: linjenummer -> kategori. */
+  let linjeKat = null;
+  if(kropp.linjeKat && linjer.length){
+    const kategorier = await alleKategorier(env);
+    linjeKat = {};
+    for(const i of Object.keys(kropp.linjeKat)){
+      const kat = String(kropp.linjeKat[i] || '');
+      if(!linjer[Number(i)] || !kat) continue;
+      if(kategorier.indexOf(kat) === -1) return svar({ ok:false, feil:'Ukjent kategori på en linje: ' + kat });
+      linjeKat[i] = kat;
+    }
+    if(!Object.keys(linjeKat).length) linjeKat = null;
+  }
   /* Samme kvittering lest to ganger skal ikke bli to poster. */
   const id = 'foto:' + b64url(await crypto.subtle.digest('SHA-256', tekstTilBytes([butikk, dato, sum.toFixed(2)].join('|')))).slice(0, 18);
   const poster = await lesJson(env, POST_NOKKEL, {});
@@ -2000,8 +2029,11 @@ async function nyKvittering(env, kropp, epost){
   const leggVed = async function(maal, hva){
     if(filOk){ await env.FAMILIE_KV.put(filNokkel(maal.id), JSON.stringify({ type:fil.type, data:fil.data })); maal.harFil = true; maal.filType = fil.type; }
     if(linjer.length && !maal.fra && !maal.harLinjer){
-      await env.FAMILIE_KV.put(kvitteringNokkel(maal), JSON.stringify({ id:maal.id, belop:sum, linjer:linjer }));
-      maal.harLinjer = true;
+      if(linjeKat) await settDeling(env, maal, linjer, linjeKat, sum);
+      else {
+        await env.FAMILIE_KV.put(kvitteringNokkel(maal), JSON.stringify({ id:maal.id, belop:sum, linjer:linjer }));
+        maal.harLinjer = true;
+      }
     }
     maal.vedlagt = new Date().toISOString();
     await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
@@ -2019,6 +2051,7 @@ async function nyKvittering(env, kropp, epost){
     if(ledig){
       if(filOk){ await env.FAMILIE_KV.put(filNokkel(ledig.id), JSON.stringify({ type:fil.type, data:fil.data })); ledig.harFil = true; ledig.filType = fil.type; }
       ledig.vedlagt = new Date().toISOString(); ledig.faktura = { id:id, forfall:dato };
+      if(linjeKat) await settDeling(env, ledig, linjer, linjeKat, sum);
       await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
       return svar({ ok:true, post:ledig, festet:'faktura' });
     }
@@ -2062,9 +2095,10 @@ async function nyKvittering(env, kropp, epost){
     const ligner = await finnLignende(env, poster, p, linjer);
     if(ligner) p.lignerPaa = ligner;
   }
+  if(linjeKat) await settDeling(env, p, linjer, linjeKat, sum);
   if(overfort && p.kategori && !p.lignerPaa && !p.mulDobbel) Object.assign(p, { status:'godkjent', behandlet:new Date().toISOString(), av:epost });
   poster[id] = p;
-  if(linjer.length) await env.FAMILIE_KV.put(kvitteringNokkel(p), JSON.stringify({ id:id, belop:sum, linjer:linjer }));
+  if(linjer.length && !linjeKat) await env.FAMILIE_KV.put(kvitteringNokkel(p), JSON.stringify({ id:id, belop:sum, linjer:linjer }));
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
   return svar({ ok:true, post:p });
 }
@@ -2117,6 +2151,25 @@ async function fordelKvittering(env, p, linjeKat, hovedKat){
   return deler.map(d => ({ kategori:d.kategori, belop:Math.round(d.belop * 100) / 100 }));
 }
 
+/* Delingen fra vinduet: linjene lagres, og den som alt er ført eller venter
+   som faktura, faar fordelingen med en gang. Har alle linjene kategori, blir
+   den stoerste kjoepets kategori. Ellers fordeles det ved godkjenning. */
+async function settDeling(env, p, linjer, linjeKat, sum){
+  await env.FAMILIE_KV.put(kvitteringNokkel(p), JSON.stringify({ id:p.id, belop:sum, linjer:linjer }));
+  if(!p.fra) p.harLinjer = true;
+  p.linjeKat = linjeKat;
+  if(linjer.every((l, i) => linjeKat[i])){
+    const s = {};
+    linjer.forEach((l, i) => { s[linjeKat[i]] = (s[linjeKat[i]] || 0) + (Number(l.belop) || 0) + (Number(l.rabatt) || 0); });
+    p.kategori = Object.keys(s).sort((a, b) => s[b] - s[a])[0];
+    p.kilde = 'manuell';
+  }
+  if(p.kategori && (p.status !== 'ny' || p.overfort)){
+    const d = await fordelKvittering(env, p, linjeKat, p.kategori);
+    if(d) p.deler = d; else delete p.deler;
+  }
+}
+
 /* Godkjenner og stryker i én runde. Kategorien som velges, huskes for
    motparten - neste gang foreslaas den samme. */
 async function godkjenn(env, kropp, epost){
@@ -2137,6 +2190,7 @@ async function godkjenn(env, kropp, epost){
     if((p.fra || p.harLinjer) && g.linjer){
       const deler = await fordelKvittering(env, p, g.linjer, g.kategori);
       if(deler) p.deler = deler;
+      p.linjeKat = g.linjer;
     }
     /* Banktrekket kvitteringen dekker, foelger med - det skal ikke telles. */
     if(p.bankId && poster[p.bankId]) Object.assign(poster[p.bankId], { status:'sammenslatt', behandlet:naa, av:epost });

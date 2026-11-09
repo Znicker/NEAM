@@ -623,6 +623,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-kvs-rad input[type="text"]:focus, .ok-kvs-rad select:focus{ outline:none; border-color:var(--aksent); }
 .ok-kv-kryss{ display:inline-flex; gap:8px; align-items:center; font-size:var(--t-brod); }
 .ok-kv-kryss input[type="checkbox"]{ width:18px; height:18px; margin:0; accent-color:var(--aksent); }
+.ok-kvs-lin{ grid-template-columns:minmax(0,1fr) auto 18px; align-items:center; cursor:pointer; }
+.ok-kvs-lin input{ width:18px; height:18px; margin:0; accent-color:var(--aksent); }
 .ok-ib-rad .ok-sted{ display:flex; flex-direction:column; min-width:0; }
 .ok-ib-rad .ok-sted b{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ok-ib-rad .ok-sted span{ font-size:var(--t-meta); color:var(--ink-soft); }
@@ -1325,9 +1327,11 @@ button.ok-dr-rad{ cursor:pointer; }
 <div class="dlg-bak" id="ok-kvs-bak" hidden>
   <div class="dlg-kort ok-kv-kort" role="dialog" aria-modal="true" aria-labelledby="ok-kvs-tittel">
     <div class="ok-kort-hode">
-      <div><span class="ok-etikett">Ny kvittering</span><h2 id="ok-kvs-tittel"></h2><p class="ok-meta" id="ok-kvs-meta"></p></div>
+      <div><span class="ok-etikett" id="ok-kvs-hva">Ny kvittering</span><h2 id="ok-kvs-tittel"></h2><p class="ok-meta" id="ok-kvs-meta"></p></div>
     </div>
     <div class="ok-kv-total" id="ok-kvs-total"></div>
+    <div class="ok-kvs-mer" id="ok-kvs-steg1">
+    <div class="ok-kvs-mer" id="ok-kvs-utlegg-del">
     <p class="ok-meta">Er dette et utlegg – betalt med egne penger?</p>
     <label class="ok-kv-kryss"><input type="checkbox" id="ok-kvs-utlegg"><span>Ja, det er et utlegg</span></label>
     <div class="ok-kvs-mer" id="ok-kvs-mer" hidden>
@@ -1337,6 +1341,17 @@ button.ok-dr-rad{ cursor:pointer; }
       <label class="ok-kvs-rad"><span class="ok-etikett">Sum (kr)</span><input type="text" inputmode="decimal" id="ok-kvs-sum"></label>
       <label class="ok-kv-kryss"><input type="checkbox" id="ok-kvs-betalt"><span>Det er alt betalt tilbake til meg</span></label>
       <label class="ok-kvs-rad" id="ok-kvs-mye-rad" hidden><span class="ok-etikett">Hvor mye (kr)</span><input type="text" inputmode="decimal" id="ok-kvs-mye" placeholder="Hele summen"></label>
+    </div>
+    </div>
+    <div class="ok-kvs-mer" id="ok-kvs-flere-del" hidden>
+      <p class="ok-meta">Er det flere kategorier på denne?</p>
+      <label class="ok-kv-kryss"><input type="checkbox" id="ok-kvs-flere"><span>Ja, flere kategorier</span></label>
+      <div class="ok-kv-linjer" id="ok-kvs-linjer" hidden></div>
+    </div>
+    </div>
+    <div class="ok-kvs-mer" id="ok-kvs-steg2" hidden>
+      <p class="ok-meta">Velg kategori for hver linje. Det du ikke krysset av, føres samlet på én kategori.</p>
+      <div class="ok-kv-linjer" id="ok-kvs-valg"></div>
     </div>
     <p class="ok-melding feil" id="ok-kvs-feil" hidden></p>
     <div class="ok-rad-knapper">
@@ -1704,7 +1719,7 @@ button.ok-dr-rad{ cursor:pointer; }
       /* En kvittering som kan vaere telt i banken allerede, staar stroeket
          til noen tar den med - heller én for lite enn én dobbelt. */
       okPoster = (r.poster || []).map(function(p){
-        p.ute = !!(p.mulDobbel || p.lignerPaa); p.linjeKat = {}; p.apen = false;
+        p.ute = !!(p.mulDobbel || p.lignerPaa); p.linjeKat = p.linjeKat || {}; p.apen = false;
         p.gruppe = p.mulDobbel || p.lignerPaa || !p.kategori || p.kilde === 'ai-usikker' ? 'tvil' : 'sikre';
         return p;
       });
@@ -2481,7 +2496,7 @@ button.ok-dr-rad{ cursor:pointer; }
       hva:'godkjenn',
       godkjenn:klare.map(function(p){
         var g = { id:p.id, kategori:p.kategori };
-        if(p.fra && Object.keys(p.linjeKat).length) g.linjer = p.linjeKat;
+        if((p.fra || p.harLinjer) && Object.keys(p.linjeKat).length) g.linjer = p.linjeKat;
         return g;
       }),
       strok:strokne.map(function(p){ return p.id; })
@@ -3400,7 +3415,7 @@ button.ok-dr-rad{ cursor:pointer; }
     + '{"type":"kvittering","butikk":"…","dato":"ÅÅÅÅ-MM-DD","belop":0,"linjer":[{"navn":"…","antall":1,"belop":0,"rabatt":0}]}\n\n'
     + 'Regler:\n'
     + '- "type" er "faktura" når det er en regning som skal betales – faktura, e-faktura, giro eller avtalegiro med forfallsdato og beløp å betale. Ellers "kvittering".\n'
-    + '- For en faktura: "butikk" er den som sender fakturaen, f.eks. "Statens pensjonskasse". "dato" er forfallsdatoen, "belop" er beløpet som skal betales, og "linjer" er tom.\n'
+    + '- For en faktura: "butikk" er den som sender fakturaen, f.eks. "Statens pensjonskasse". "dato" er forfallsdatoen, "belop" er beløpet som skal betales. "linjer" er postene på fakturaen med hvert sitt beløp, f.eks. personforsikring og husforsikring, med gebyr som egen linje. Står det bare én post, eller ikke beløp per post, er "linjer" tom.\n'
     + 'For en kvittering:\n'
     + '- "butikk" er navnet på butikken slik det står øverst, f.eks. "Coop Extra Mandal".\n'
     + '- "belop" er totalsummen kunden betalte, i kroner, med punktum som desimaltegn.\n'
@@ -3574,32 +3589,67 @@ button.ok-dr-rad{ cursor:pointer; }
      hvor mye»). Svarer med valgene, null (ikke utlegg) eller false (Avbryt). */
   var okKvPersoner = [];
   function okKvTall(s){ return Number(String(s || '').replace(/\s/g, '').replace(',', '.')); }
+  /* Vinduet naar noe legges inn: utlegg, og deling paa flere kategorier
+     (Magne, 9. november 2026: «Jeg ønsker spørsmål om det er flere kategorier
+     som toggles på da blir det avmerkingspunkter bak hver linje. Trykker neste
+     og da står disse linjene med rullgardinmenyen over kategorier»). */
   function okKvSpor(kv){
-    if(kv.type === 'faktura' || !okKvPersoner.length || !(Number(kv.belop) > 0) || !kv.dato) return Promise.resolve(null);
+    /* Bare linjer med navn - serveren teller dem likt naar kategoriene sendes. */
+    kv.linjer = (kv.linjer || []).filter(function(l){ return l && l.navn; });
+    var medUtlegg = kv.type !== 'faktura' && okKvPersoner.length > 0, kanDele = kv.linjer.length > 1;
+    if((!medUtlegg && !kanDele) || !(Number(kv.belop) > 0) || !kv.dato) return Promise.resolve(null);
     var e = function(id){ return document.getElementById(id); };
     return new Promise(function(ferdig){
       var sumStart = String(kv.belop).replace('.', ',');
+      var steg = 1, kryss = [], valgt = {};
+      e('ok-kvs-hva').textContent = kv.type === 'faktura' ? 'Ny faktura' : 'Ny kvittering';
       e('ok-kvs-tittel').textContent = kv.butikk || 'Ukjent butikk';
       e('ok-kvs-meta').textContent = okDato.format(new Date(kv.dato));
       e('ok-kvs-total').textContent = okKr0.format(Number(kv.belop)) + ' kr';
-      e('ok-kvs-utlegg').checked = false; e('ok-kvs-betalt').checked = false;
+      e('ok-kvs-utlegg').checked = false; e('ok-kvs-betalt').checked = false; e('ok-kvs-flere').checked = false;
       e('ok-kvs-notat').value = ''; e('ok-kvs-mye').value = ''; e('ok-kvs-sum').value = sumStart;
       e('ok-kvs-feil').hidden = true;
+      e('ok-kvs-utlegg-del').hidden = !medUtlegg;
+      e('ok-kvs-flere-del').hidden = !kanDele;
       var v = e('ok-kvs-hvem'); v.innerHTML = '';
       okKvPersoner.forEach(function(p){ var o = okEl('option', '', okVask(p.navn)); o.value = p.hvem; v.appendChild(o); });
       e('ok-kvs-hvem-rad').hidden = okKvPersoner.length < 2;
       var kat = e('ok-kvs-kat'); kat.innerHTML = '';
       var velg = okKatVelg('ok-kvs-kat-valg', '', 'Velg kategori', 'Kategori for utlegget');
       kat.appendChild(velg);
-      okHent('/api/bank?hva=kategori-forslag&navn=' + encodeURIComponent(kv.butikk || '')).then(function(r){ if(r.ok && r.kategori && !velg.value) velg.value = r.kategori; });
+      if(medUtlegg) okHent('/api/bank?hva=kategori-forslag&navn=' + encodeURIComponent(kv.butikk || '')).then(function(r){ if(r.ok && r.kategori && !velg.value) velg.value = r.kategori; });
+      var linjeHtml = function(l){
+        return '<span>' + okVask(l.navn) + (Number(l.antall) > 0 && Number(l.antall) !== 1 ? ' <span class="ok-meta">× ' + okVask(Number(l.antall).toLocaleString('nb-NO')) + '</span>' : '') + '</span>'
+          + '<b>' + okKr0.format((Number(l.belop) || 0) + (Number(l.rabatt) || 0)) + '</b>';
+      };
+      var liste = e('ok-kvs-linjer'); liste.innerHTML = '';
+      kv.linjer.forEach(function(l){
+        var r = okEl('label', 'ok-kv-linje ok-kvs-lin', linjeHtml(l));
+        var c = document.createElement('input'); c.type = 'checkbox'; c.setAttribute('aria-label', 'Egen kategori for ' + l.navn);
+        r.appendChild(c); liste.appendChild(r); kryss.push(c);
+      });
+      var tegnKnapper = function(){
+        e('ok-kvs-ja').textContent = steg === 1 && e('ok-kvs-flere').checked ? 'Neste' : 'Legg til';
+        e('ok-kvs-nei').textContent = steg === 1 ? 'Avbryt' : 'Tilbake';
+      };
       var tegn = function(){
         e('ok-kvs-mer').hidden = !e('ok-kvs-utlegg').checked;
         e('ok-kvs-mye-rad').hidden = !e('ok-kvs-betalt').checked;
+        liste.hidden = !e('ok-kvs-flere').checked;
+        tegnKnapper();
       };
+      var visSteg = function(n){
+        steg = n;
+        e('ok-kvs-steg1').hidden = n !== 1;
+        e('ok-kvs-steg2').hidden = n !== 2;
+        e('ok-kvs-feil').hidden = true;
+        tegnKnapper();
+      };
+      visSteg(1);
       tegn();
       var ut = function(svar){
         e('ok-kvs-bak').hidden = true;
-        e('ok-kvs-utlegg').onchange = e('ok-kvs-betalt').onchange = e('ok-kvs-ja').onclick = e('ok-kvs-nei').onclick = null;
+        e('ok-kvs-utlegg').onchange = e('ok-kvs-betalt').onchange = e('ok-kvs-flere').onchange = e('ok-kvs-ja').onclick = e('ok-kvs-nei').onclick = null;
         document.removeEventListener('keydown', tast);
         var k = e('ok-kv-knapp'); if(k) k.focus();
         ferdig(svar);
@@ -3607,32 +3657,66 @@ button.ok-dr-rad{ cursor:pointer; }
       var feil = function(tekst){ e('ok-kvs-feil').textContent = tekst; e('ok-kvs-feil').hidden = false; };
       var sporsmaal = false;
       var avbryt = function(){
-        var endret = e('ok-kvs-utlegg').checked && (e('ok-kvs-notat').value.trim() || e('ok-kvs-mye').value.trim() || e('ok-kvs-sum').value !== sumStart);
+        var endret = (e('ok-kvs-utlegg').checked && (e('ok-kvs-notat').value.trim() || e('ok-kvs-mye').value.trim() || e('ok-kvs-sum').value !== sumStart))
+          || (e('ok-kvs-flere').checked && kryss.some(function(c){ return c.checked; }));
         if(!endret){ ut(false); return; }
         if(sporsmaal) return;
         sporsmaal = true;
         bekreft('Du har fylt inn noe som ikke er lagret. Forkaster du det nå, er det borte.', { jaTekst:'Forkast', fare:true }).then(function(ja){ sporsmaal = false; if(ja) ut(false); });
       };
-      var tast = function(ev){ if(ev.key === 'Escape'){ ev.stopPropagation(); avbryt(); } };
-      e('ok-kvs-utlegg').onchange = tegn;
-      e('ok-kvs-betalt').onchange = tegn;
-      e('ok-kvs-nei').onclick = avbryt;
-      e('ok-kvs-ja').onclick = function(){
-        if(!e('ok-kvs-utlegg').checked){ ut(null); return; }
+      var tilbake = function(){ if(steg === 2){ visSteg(1); e('ok-kvs-flere').focus(); return; } avbryt(); };
+      var tast = function(ev){ if(ev.key === 'Escape'){ ev.stopPropagation(); tilbake(); } };
+      /* Svarene om utlegget. null: ikke et utlegg. false: noe maa rettes. */
+      var lesUtlegg = function(){
+        if(!e('ok-kvs-utlegg').checked) return null;
         var sum = okKvTall(e('ok-kvs-sum').value);
-        if(!(sum > 0)){ feil('Skriv summen som et tall.'); return; }
-        var u = { eier:okKvPersoner.length > 1 ? e('ok-kvs-hvem').value : okKvPersoner[0].hvem, kategori:velg.value, notat:e('ok-kvs-notat').value, tilbakebetalt:e('ok-kvs-betalt').checked };
+        if(!(sum > 0)){ feil('Skriv summen som et tall.'); return false; }
+        var u = { eier:okKvPersoner.length > 1 ? e('ok-kvs-hvem').value : okKvPersoner[0].hvem, kategori:velg.value, notat:e('ok-kvs-notat').value, tilbakebetalt:e('ok-kvs-betalt').checked, sum:sum };
         if(u.tilbakebetalt && e('ok-kvs-mye').value.trim()){
           var mye = okKvTall(e('ok-kvs-mye').value);
-          if(!(mye > 0)){ feil('Skriv hvor mye som et tall.'); return; }
+          if(!(mye > 0)){ feil('Skriv hvor mye som et tall.'); return false; }
           u.overfort = mye;
         }
-        kv.belop = sum;
-        ut(u);
+        return u;
+      };
+      var tilLinjene = function(){
+        var boks = e('ok-kvs-valg'), forste = null; boks.innerHTML = '';
+        kryss.forEach(function(c, i){
+          if(!c.checked) return;
+          var l = kv.linjer[i], r = okEl('div', 'ok-kv-linje', linjeHtml(l));
+          var s = okKatVelg('ok-kvs-lin-' + i, valgt[i] || '', 'Velg kategori', 'Kategori for ' + l.navn);
+          s.addEventListener('change', function(){ valgt[i] = s.value; });
+          r.appendChild(s); boks.appendChild(r);
+          if(!forste) forste = s;
+        });
+        visSteg(2);
+        if(forste) forste.focus();
+      };
+      e('ok-kvs-utlegg').onchange = tegn;
+      e('ok-kvs-betalt').onchange = tegn;
+      e('ok-kvs-flere').onchange = tegn;
+      e('ok-kvs-nei').onclick = tilbake;
+      e('ok-kvs-ja').onclick = function(){
+        var u = lesUtlegg();
+        if(u === false) return;
+        if(steg === 1 && e('ok-kvs-flere').checked){
+          if(!kryss.some(function(c){ return c.checked; })){ feil('Kryss av minst én linje.'); return; }
+          tilLinjene();
+          return;
+        }
+        var linjeKat = null;
+        if(steg === 2){
+          linjeKat = {};
+          var mangler = kryss.some(function(c, i){ if(!c.checked) return false; if(!valgt[i]) return true; linjeKat[i] = valgt[i]; return false; });
+          if(mangler){ feil('Velg kategori på alle linjene.'); return; }
+        }
+        if(!u && !linjeKat){ ut(null); return; }
+        if(u){ kv.belop = u.sum; delete u.sum; }
+        ut(Object.assign(u || {}, linjeKat ? { linjeKat:linjeKat } : {}));
       };
       document.addEventListener('keydown', tast);
       e('ok-kvs-bak').hidden = false;
-      e('ok-kvs-utlegg').focus();
+      (medUtlegg ? e('ok-kvs-utlegg') : e('ok-kvs-flere')).focus();
     });
   }
   async function okLesKvittering(fil, tekst){
