@@ -587,12 +587,13 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-ib-rad:focus-visible{ outline:2px solid var(--aksent); outline-offset:-2px; }
 .ok-ib-rad .ok-dato{ color:var(--ink-soft); font-size:var(--t-meta); }
 .ok-forb-pluss{ margin-left:5px; font-weight:700; color:var(--aksent); }
-.ok-kv-eget{ display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; }
-.ok-kv-eget[hidden], .ok-kv-kryss[hidden]{ display:none; }
+.ok-kvs-mer{ display:flex; flex-direction:column; gap:10px; }
+.ok-kvs-mer[hidden], .ok-kv-kryss[hidden], .ok-kvs-rad[hidden]{ display:none; }
+.ok-kvs-rad{ display:flex; flex-direction:column; gap:4px; }
+.ok-kvs-rad input[type="text"], .ok-kvs-rad select{ width:100%; font-family:inherit; font-size:16px; padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
+.ok-kvs-rad input[type="text"]:focus, .ok-kvs-rad select:focus{ outline:none; border-color:var(--aksent); }
 .ok-kv-kryss{ display:inline-flex; gap:8px; align-items:center; font-size:var(--t-brod); }
 .ok-kv-kryss input[type="checkbox"]{ width:18px; height:18px; margin:0; accent-color:var(--aksent); }
-.ok-kv-kryss input[type="text"], .ok-kv-eget select{ font-family:inherit; font-size:16px; padding:6px 8px; border:1.5px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
-.ok-kv-kryss input[type="text"]{ width:120px; }
 .ok-ib-rad .ok-sted{ display:flex; flex-direction:column; min-width:0; }
 .ok-ib-rad .ok-sted b{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ok-ib-rad .ok-sted span{ font-size:var(--t-meta); color:var(--ink-soft); }
@@ -968,12 +969,6 @@ button.ok-dr-rad{ cursor:pointer; }
         <input type="file" id="ok-kv-fil" accept="image/*,application/pdf" hidden>
       </div>
     </div>
-    <div class="ok-kv-eget" id="ok-kv-eget" hidden>
-      <label class="ok-kv-kryss"><input type="checkbox" id="ok-kv-min"><span id="ok-kv-min-tekst">Betalt fra min konto</span></label>
-      <select id="ok-kv-hvem" aria-label="Hvem betalte" hidden></select>
-      <label class="ok-kv-kryss" id="ok-kv-betalt-rad" hidden><input type="checkbox" id="ok-kv-betalt"><span>Jeg har alt overført pengene til meg</span></label>
-      <label class="ok-kv-kryss" id="ok-kv-sum-rad" hidden><span>Overført</span><input type="text" inputmode="decimal" id="ok-kv-sum" placeholder="Hele beløpet"><span>kr</span></label>
-    </div>
     <p class="ok-meta" id="ok-kv-status" aria-live="polite">Bilde, PDF eller tekst – velg en fil, eller kopier og lim inn (Ctrl+V). Neam leser butikk, dato, sum og varer. En faktura venter på trekket fra banken og legges ved det.</p>
     <div class="ok-filter" id="ok-filter" hidden></div>
     <div id="ok-innboks"></div>
@@ -1278,6 +1273,29 @@ button.ok-dr-rad{ cursor:pointer; }
 <!-- Kjøpene bak en post i Regnskap og Resultat (8. november 2026: «Kjøpene
      bak tror jeg får legge seg som en popup»). Står foran kvitteringen, så
      en kvittering åpnet herfra legger seg over. -->
+<div class="dlg-bak" id="ok-kvs-bak" hidden>
+  <div class="dlg-kort ok-kv-kort" role="dialog" aria-modal="true" aria-labelledby="ok-kvs-tittel">
+    <div class="ok-kort-hode">
+      <div><span class="ok-etikett">Ny kvittering</span><h2 id="ok-kvs-tittel"></h2><p class="ok-meta" id="ok-kvs-meta"></p></div>
+    </div>
+    <div class="ok-kv-total" id="ok-kvs-total"></div>
+    <p class="ok-meta">Er dette et utlegg – betalt med egne penger?</p>
+    <label class="ok-kv-kryss"><input type="checkbox" id="ok-kvs-utlegg"><span>Ja, det er et utlegg</span></label>
+    <div class="ok-kvs-mer" id="ok-kvs-mer" hidden>
+      <label class="ok-kvs-rad" id="ok-kvs-hvem-rad" hidden><span class="ok-etikett">Hvem betalte</span><select id="ok-kvs-hvem"></select></label>
+      <label class="ok-kvs-rad"><span class="ok-etikett">Hva gjelder det</span><input type="text" id="ok-kvs-notat" maxlength="300"></label>
+      <div class="ok-kvs-rad"><span class="ok-etikett">Kategori</span><div id="ok-kvs-kat"></div></div>
+      <label class="ok-kvs-rad"><span class="ok-etikett">Sum (kr)</span><input type="text" inputmode="decimal" id="ok-kvs-sum"></label>
+      <label class="ok-kv-kryss"><input type="checkbox" id="ok-kvs-betalt"><span>Det er alt betalt tilbake til meg</span></label>
+      <label class="ok-kvs-rad" id="ok-kvs-mye-rad" hidden><span class="ok-etikett">Hvor mye (kr)</span><input type="text" inputmode="decimal" id="ok-kvs-mye" placeholder="Hele summen"></label>
+    </div>
+    <p class="ok-melding feil" id="ok-kvs-feil" hidden></p>
+    <div class="ok-rad-knapper">
+      <button type="button" class="btn btn-ny" id="ok-kvs-ja">Legg til</button>
+      <button type="button" class="btn btn-ghost ok-smal" id="ok-kvs-nei">Avbryt</button>
+    </div>
+  </div>
+</div>
 <div class="dlg-bak" id="ok-kb-bak" hidden>
   <div class="dlg-kort ok-kv-kort" role="dialog" aria-modal="true" aria-labelledby="ok-kb-tittel">
     <div class="ok-kort-hode">
@@ -3194,7 +3212,7 @@ button.ok-dr-rad{ cursor:pointer; }
   }, true);
   /* limt: kopiert tekst fra en kvittering eller faktura i stedet for en fil
      (Magne, 7. november 2026). Da lagres ingen fil med posten. */
-  async function okTolkKvittering(fil, limt, eget){
+  async function okTolkKvittering(fil, limt, spor){
     var innhold = limt ? { type:'text', text:'Teksten under er kopiert fra dokumentet:\n\n' + String(limt).slice(0, 40000) }
       : fil.type === 'application/pdf'
       ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data: await okSomBase64(fil) } }
@@ -3209,6 +3227,9 @@ button.ok-dr-rad{ cursor:pointer; }
     if(d.error) throw new Error(d.error.message || 'Neam kunne ikke lese kvitteringen');
     var tekst = (d.content || []).filter(function(c){ return c.type === 'text'; }).map(function(c){ return c.text; }).join('');
     var kv = JSON.parse(tekst.slice(tekst.indexOf('{'), tekst.lastIndexOf('}') + 1));
+    /* Dropbox spoer ikke; det som legges inn for haand, gjoer det. */
+    var eget = spor ? await spor(kv) : null;
+    if(eget === false) return null;
     var lagret = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify(Object.assign({ hva:'kvittering-ny', kvittering:kv, fil:lagres }, eget || {})) });
     if(!lagret.ok){ var feil = new Error(lagret.feil); feil.duplikat = /allerede lagt inn/.test(lagret.feil || ''); throw feil; }
@@ -3296,48 +3317,80 @@ button.ok-dr-rad{ cursor:pointer; }
     return festet ? 'Fakturaen er lagt ved trekket fra ' + hvem + ', ' + okKort.format(new Date(p.dato)) + '. PDF-en kan åpnes fra posten.'
       : 'Fakturaen fra ' + hvem + ', forfall ' + okKort.format(new Date(p.dato)) + ', venter på trekket fra banken. Til da står den som «forfaller» i Regnskap – PDF-en legges ved trekket når det kommer.';
   }
-  /* Betalt fra egen konto (Magne, 9. november 2026): valgene gjelder neste
-     kvittering som legges inn her - ikke de Dropbox henter. */
-  function okKvEget(){
-    if(document.getElementById('ok-kv-eget').hidden || !document.getElementById('ok-kv-min').checked) return null;
-    var u = { eier:okPersoner.length > 1 ? document.getElementById('ok-kv-hvem').value : okPersoner[0], tilbakebetalt:document.getElementById('ok-kv-betalt').checked };
-    var s = document.getElementById('ok-kv-sum').value.replace(/\s/g, '').replace(',', '.');
-    if(u.tilbakebetalt && s){
-      if(!(Number(s) > 0)) throw new Error('Skriv beløpet du overførte som et tall');
-      u.overfort = Number(s);
-    }
-    return u;
+  /* Vinduet naar en kvittering er lest (Magne, 9. november 2026: «valget bør
+     komme allerede der om dette er utlegg. krysser man ja vokse vinduet med
+     spørsmål om hva det gjelder, kategori og su + om det er tilbakebetalt og
+     hvor mye»). Svarer med valgene, null (ikke utlegg) eller false (Avbryt). */
+  var okKvPersoner = [];
+  function okKvTall(s){ return Number(String(s || '').replace(/\s/g, '').replace(',', '.')); }
+  function okKvSpor(kv){
+    if(kv.type === 'faktura' || !okKvPersoner.length || !(Number(kv.belop) > 0) || !kv.dato) return Promise.resolve(null);
+    var e = function(id){ return document.getElementById(id); };
+    return new Promise(function(ferdig){
+      var sumStart = String(kv.belop).replace('.', ',');
+      e('ok-kvs-tittel').textContent = kv.butikk || 'Ukjent butikk';
+      e('ok-kvs-meta').textContent = okDato.format(new Date(kv.dato));
+      e('ok-kvs-total').textContent = okKr0.format(Number(kv.belop)) + ' kr';
+      e('ok-kvs-utlegg').checked = false; e('ok-kvs-betalt').checked = false;
+      e('ok-kvs-notat').value = ''; e('ok-kvs-mye').value = ''; e('ok-kvs-sum').value = sumStart;
+      e('ok-kvs-feil').hidden = true;
+      var v = e('ok-kvs-hvem'); v.innerHTML = '';
+      okKvPersoner.forEach(function(p){ var o = okEl('option', '', okVask(p.navn)); o.value = p.hvem; v.appendChild(o); });
+      e('ok-kvs-hvem-rad').hidden = okKvPersoner.length < 2;
+      var kat = e('ok-kvs-kat'); kat.innerHTML = '';
+      var velg = okKatVelg('ok-kvs-kat-valg', '', 'Velg kategori', 'Kategori for utlegget');
+      kat.appendChild(velg);
+      okHent('/api/bank?hva=kategori-forslag&navn=' + encodeURIComponent(kv.butikk || '')).then(function(r){ if(r.ok && r.kategori && !velg.value) velg.value = r.kategori; });
+      var tegn = function(){
+        e('ok-kvs-mer').hidden = !e('ok-kvs-utlegg').checked;
+        e('ok-kvs-mye-rad').hidden = !e('ok-kvs-betalt').checked;
+      };
+      tegn();
+      var ut = function(svar){
+        e('ok-kvs-bak').hidden = true;
+        e('ok-kvs-utlegg').onchange = e('ok-kvs-betalt').onchange = e('ok-kvs-ja').onclick = e('ok-kvs-nei').onclick = null;
+        document.removeEventListener('keydown', tast);
+        var k = e('ok-kv-knapp'); if(k) k.focus();
+        ferdig(svar);
+      };
+      var feil = function(tekst){ e('ok-kvs-feil').textContent = tekst; e('ok-kvs-feil').hidden = false; };
+      var sporsmaal = false;
+      var avbryt = function(){
+        var endret = e('ok-kvs-utlegg').checked && (e('ok-kvs-notat').value.trim() || e('ok-kvs-mye').value.trim() || e('ok-kvs-sum').value !== sumStart);
+        if(!endret){ ut(false); return; }
+        if(sporsmaal) return;
+        sporsmaal = true;
+        bekreft('Du har fylt inn noe som ikke er lagret. Forkaster du det nå, er det borte.', { jaTekst:'Forkast', fare:true }).then(function(ja){ sporsmaal = false; if(ja) ut(false); });
+      };
+      var tast = function(ev){ if(ev.key === 'Escape'){ ev.stopPropagation(); avbryt(); } };
+      e('ok-kvs-utlegg').onchange = tegn;
+      e('ok-kvs-betalt').onchange = tegn;
+      e('ok-kvs-nei').onclick = avbryt;
+      e('ok-kvs-ja').onclick = function(){
+        if(!e('ok-kvs-utlegg').checked){ ut(null); return; }
+        var sum = okKvTall(e('ok-kvs-sum').value);
+        if(!(sum > 0)){ feil('Skriv summen som et tall.'); return; }
+        var u = { eier:okKvPersoner.length > 1 ? e('ok-kvs-hvem').value : okKvPersoner[0].hvem, kategori:velg.value, notat:e('ok-kvs-notat').value, tilbakebetalt:e('ok-kvs-betalt').checked };
+        if(u.tilbakebetalt && e('ok-kvs-mye').value.trim()){
+          var mye = okKvTall(e('ok-kvs-mye').value);
+          if(!(mye > 0)){ feil('Skriv hvor mye som et tall.'); return; }
+          u.overfort = mye;
+        }
+        kv.belop = sum;
+        ut(u);
+      };
+      document.addEventListener('keydown', tast);
+      e('ok-kvs-bak').hidden = false;
+      e('ok-kvs-utlegg').focus();
+    });
   }
-  function okKvEgetTegn(){
-    var min = document.getElementById('ok-kv-min').checked, betalt = document.getElementById('ok-kv-betalt').checked;
-    document.getElementById('ok-kv-hvem').hidden = !min || okPersoner.length < 2;
-    document.getElementById('ok-kv-betalt-rad').hidden = !min;
-    document.getElementById('ok-kv-sum-rad').hidden = !min || !betalt;
-  }
-  function okKvEgetNull(){
-    document.getElementById('ok-kv-min').checked = false;
-    document.getElementById('ok-kv-betalt').checked = false;
-    document.getElementById('ok-kv-sum').value = '';
-    okKvEgetTegn();
-  }
-  function okKvEgetKlar(personer){
-    var v = document.getElementById('ok-kv-hvem');
-    v.innerHTML = '';
-    personer.forEach(function(p){ var o = okEl('option', '', okVask(p.navn)); o.value = p.hvem; v.appendChild(o); });
-    document.getElementById('ok-kv-min-tekst').textContent = personer.length > 1 ? 'Betalt fra egen konto' : 'Betalt fra min konto';
-    document.getElementById('ok-kv-eget').hidden = false;
-    okKvEgetTegn();
-  }
-  document.getElementById('ok-kv-min').addEventListener('change', okKvEgetTegn);
-  document.getElementById('ok-kv-betalt').addEventListener('change', okKvEgetTegn);
   async function okLesKvittering(fil, tekst){
     var status = document.getElementById('ok-kv-status'), knapp = document.getElementById('ok-kv-knapp'), lim = document.getElementById('ok-kv-lim');
     knapp.disabled = true; lim.disabled = true;
     status.textContent = 'Neam leser kvitteringen …';
     try{
-      var eget = okKvEget();
-      var res = await okTolkKvittering(fil, tekst, eget);
-      okKvEgetNull();
+      var res = await okTolkKvittering(fil, tekst, okKvSpor);
+      if(!res){ status.textContent = 'Kvitteringen ble ikke lagt inn.'; return; }
       var db = '';
       try{ db = await okLagreIDropbox(res); }catch(e){ db = ' Ikke lagret i Dropbox: ' + (e && e.message || e) + '.'; }
       if(res.festet === 'faktura' || res.post.status === 'venter'){
@@ -3756,7 +3809,7 @@ button.ok-dr-rad{ cursor:pointer; }
         etter.after(f); etter = f;
         okPersoner.push(p.hvem);
       });
-      okKvEgetKlar(r.personer);
+      okKvPersoner = r.personer;
       if(okPersoner.indexOf(okPeOnske) !== -1) okVis(okPeOnske);
     });
   }

@@ -15,7 +15,7 @@
      GET /api/bank?hva=trumf-kjop      - kjoepene fra trumf.no (siste 12 mnd)
      GET /api/bank?hva=trumf-kvittering&id=<batchId> - varelinjene
      POST /api/bank {hva:'trumf-innlogging', cookie} / {hva:'trumf-koble-fra'}
-     POST /api/bank {hva:'kvittering-ny', kvittering, forHand, eier, tilbakebetalt, overfort} - kvittering lest fra bilde/PDF, eller en foering lagt inn for haand
+     POST /api/bank {hva:'kvittering-ny', kvittering, forHand, eier, tilbakebetalt, overfort, kategori, notat} - kvittering lest fra bilde/PDF, eller en foering lagt inn for haand
      GET /api/bank?hva=kvittering&id=<postId>         - varelinjene til en kvitteringspost
      GET /api/bank?hva=kvittering-fil&id=<postId>     - selve bildet eller PDF-en
      GET /api/bank?hva=budsjett / POST {hva:'budsjett', standard} - standardbudsjettet
@@ -2045,6 +2045,12 @@ async function nyKvittering(env, kropp, epost){
   if(faktura){ p.faktura = true; p.kontoNavn = 'Faktura'; p.status = 'venter'; }
   const f = foreslaa(p, laert, omdopt);
   p.kategori = f.kategori; p.kilde = f.kilde;
+  /* Svarene fra vinduet naar kvitteringen ble lagt inn. */
+  if(eier){
+    if(kropp.kategori && (await alleKategorier(env)).indexOf(kropp.kategori) !== -1){ p.kategori = kropp.kategori; p.kilde = 'manuell'; }
+    const notat = String(kropp.notat || '').trim().slice(0, 300);
+    if(notat) p.notat = notat;
+  }
   /* Bildet eller PDF-en lagres, saa kvitteringen kan aapnes igjen (Magne,
      6. november 2026). Siden krymper bildene foer de sendes. */
   if(filOk){
@@ -3144,6 +3150,10 @@ export async function onRequestGet({ request, env }){
     if(hva === 'dropbox-fil') return await dropboxFil(env, url.searchParams.get('id') || '');
     if(hva === 'kvittering-fil') return await kvitteringFil(env, url.searchParams.get('id') || '', url.searchParams.get('n') || '');
     if(hva === 'post') return await postDetaljer(env, url.searchParams.get('id') || '');
+    if(hva === 'kategori-forslag'){
+      const f = foreslaa({ motpart:String(url.searchParams.get('navn') || '').slice(0, 120), tekst:'' }, await lesJson(env, LAERT_NOKKEL, {}), await lesOmdopt(env));
+      return svar({ ok:true, kategori:f.kategori || '' });
+    }
     if(hva === 'kilder') return await kilder(env, okt);
     /* Trumf trenger ikke banken - den har sin egen innlogging. */
     if(hva === 'trumf') return await trumfStatus(env, fersk);
