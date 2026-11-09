@@ -560,7 +560,8 @@ innboksen som rene linjer med Godkjenn per post og kort per gruppe over hele
 bredden (`b4493b2`), og to kort i bredden også i Resultat, med søylene skjult
 (`cf98c9a`), fanene Lån og Verdier med Resultat etter Transaksjoner (`9d6637a`),
 og kvitteringer og fakturaer delt på flere kategorier når de legges inn
-(`a608f4a`).
+(`a608f4a`), lister som ikke får fokus på trykkskjerm (`d6cbd20`), Neams søk i
+transaksjonene rettet (`ba264fe`), og søk på tvers av varelinjer (`fd86809`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -569,7 +570,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 105 commits, `0e0050a`–`a608f4a`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 108 commits, `0e0050a`–`fd86809`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1353,6 +1354,9 @@ oppgi kode.»
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **Neams søk på tvers av varelinjer** (`fd86809`) i en ekte samtale på
+  neam.no: at Neam velger verktøyet selv, og Trumf-rabattene i summen.
+- **Neams søk i transaksjonene** (`ba264fe`) på neam.no.
 - **Deling på flere kategorier** (`a608f4a`) med en ekte forsikringsfaktura:
   at Neam finner postene. Finner den ingen, kommer ikke spørsmålet. Så
   faktura delt mot et ekte trekk fra banken.
@@ -1362,8 +1366,8 @@ oppgi kode.»
   ekte poster, på en ekte telefon og på neam.no.
 - **Innboksen som linjer** (`b4493b2`): en faktura uten kategori i vinduet,
   og Godkjenn og Stryk på en ekte telefon.
-- **Foldbare kategori- og merkevalg** (`7e85730`) på en ekte telefon: at
-  telefonens egen rulleliste ikke kommer opp i stedet.
+- **Foldbare kategori- og merkevalg** (`7e85730`, `d6cbd20`) på en ekte telefon:
+  at telefonens egen rulleliste ikke kommer opp i stedet.
 - **Nye kategorier og merker** (`85b6ba5`): på telefon, i høyreklikkmenyene
   og på neam.no.
 - **Utleggsflyten med ekte DNB** (`15337f8`, `c282324`): at
@@ -4588,7 +4592,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 105 commits fra `0e0050a` til `a608f4a` (dialogen med
+verdier. Bygget i 108 commits fra `0e0050a` til `fd86809` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5033,6 +5037,27 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Neam søker på tvers av varelinjer** (`fd86809`). Magne: «Jeg ønsker st neam
+  kan søke på tvers av kvitteringer og regninger».
+  - `les_okonomi_varer` kaller `?hva=vare-sok` (`vareSok`) med sok, fra og til.
+    Svaret er varetreff med sum, og regninger uten varetreff der avsender
+    passer. Alt under `bareFelles`, så private kjøp er ikke med. Verktøyet ligger
+    i `okonomi.html`, så ingen `?v=` endres.
+  - Stroket, sammenslått, `dekketAv` og `status:'ny'` med `mulDobbel` eller
+    `lignerPaa` telles ikke. Det som venter i innboksen, telles med.
+  - Trumf-kvitteringer som aldri er åpnet, hentes `VARE_SOK_TRUMF` om gangen.
+    `mangler` sier at sida må spørre igjen, høyst ti ganger.
+  - Regninger beholder linjene, og `flyttFaktura` og `ledig` tar dem med til
+    trekket. Regninger lagt inn før dette har ingen linjer.
+  - Testet i testserveren ved å kjøre verktøyet. Ikke i en ekte samtale eller på
+    neam.no.
+- **Neams søk i transaksjonene krasjet** (`ba264fe`). Flervalget i Kontoutskrift
+  (`b403e73`, 8. november) gjorde `konto`, `kat`, `merke` og `type` til lister i
+  `okAlTreff`, men `les_okonomi_transaksjoner` sendte strenger og ingen `merke`.
+  Hvert søk feilet. Det kom ikke av endringene 9. november.
+- **Lister uten fokus på trykkskjerm** (`d6cbd20`). `okTreFokus` setter fokus bare
+  når `(hover:none)` ikke treffer, fordi fokus trolig åpnet telefonens egen
+  rulleliste etter valg i den foldbare lista. Ikke sjekket på en ekte telefon.
 - **Kvitteringer og fakturaer delt på flere kategorier** (`a608f4a`). Magne:
   «da blir det avmerkingspunkter bak hver linje. Trykker neste og da står disse
   linjene med rullgardinmenyen over kategorier».
@@ -5046,8 +5071,8 @@ ligge under høyre tommelknapp»).
   - `regnskapAar` gir én «forfaller»-rad per del, og `flyttFaktura` tar med
     linjene og `deler` til trekket.
   - Fakturaer fikk ikke vinduet før, og instruksen ba om tomme linjer. Nå leses
-    postene, men serveren kaster linjene på en faktura som ikke deles, så
-    Dropbox-fakturaer er som før. Dropbox spør ikke.
+    postene. Fra `fd86809` beholder alle fakturaer linjene sine, også de som
+    ikke deles. Dropbox spør ikke.
   - Legges kvitteringen ved noe som alt har varelinjer, blir delingen ikke
     brukt (linjenumrene stemmer ikke).
   - Testet i testserveren med liksom-svar fra Neam: faktura delt på tre mot
