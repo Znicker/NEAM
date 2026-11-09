@@ -3386,7 +3386,7 @@ button.ok-dr-rad{ cursor:pointer; }
   }
   function okKvLimTekst(s){
     s = String(s || '').trim();
-    if(s.length < 10){ document.getElementById('ok-kv-status').textContent = 'Utklippstavla har ingen kvittering å lese – kopier et bilde, en PDF eller teksten fra regningen først.'; return; }
+    if(s.length < 10){ document.getElementById('ok-kv-status').textContent = 'Utklippstavla har ingen kvittering å lese – kopier et bilde eller teksten fra regningen. En PDF kan ikke limes inn her: velg den som fil med «Legg til kvittering».'; return; }
     okLesKvittering(null, s);
   }
   document.addEventListener('paste', function(e){
