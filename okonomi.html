@@ -1332,6 +1332,18 @@ button.ok-dr-rad{ cursor:pointer; }
     <div class="dlg-rad"><button type="button" class="dlg-knapp nei" id="ok-kv-lukk">Lukk</button></div>
   </div>
 </div>
+<div class="dlg-bak" id="ok-ny-bak" hidden>
+  <div class="dlg-kort ok-kv-kort" role="dialog" aria-modal="true" aria-labelledby="ok-ny-tittel">
+    <h2 id="ok-ny-tittel"></h2>
+    <label class="ok-kvs-rad"><span class="ok-etikett">Navn</span><input type="text" id="ok-ny-navn" maxlength="40"></label>
+    <div class="ok-kvs-rad" id="ok-ny-under-rad"><span class="ok-etikett">Hører hjemme</span><div id="ok-ny-under"></div></div>
+    <p class="ok-melding feil" id="ok-ny-feil" hidden></p>
+    <div class="ok-rad-knapper">
+      <button type="button" class="btn btn-ny" id="ok-ny-ja">Legg til</button>
+      <button type="button" class="btn btn-ghost ok-smal" id="ok-ny-nei">Avbryt</button>
+    </div>
+  </div>
+</div>
 <!-- Filene lagt ved postene (PDF og bilde) åpnes her i stedet for i en ny
      fane (8. november 2026: «går det an å åpne filer i en popup, så
      tungvindt med egen fane»). Markupen er kalenderens; knappene kobles i
@@ -1811,6 +1823,110 @@ button.ok-dr-rad{ cursor:pointer; }
   }
 
   /* Nedtrekk med kategoriene, gruppert etter det som staar foran «·», som budsjettet. */
+  /* Nye kategorier og merker der de velges (Magne, 9. november 2026:
+     «uansett hvor det skal settes kategorier og merker bør man få lov til å
+     lage nye. det er slik det må vokse i starten»). Vinduet svarer med det
+     lagre() ga, eller null ved Avbryt. */
+  function okNyVindu(tittel, under, lagre){
+    var e = function(id){ return document.getElementById(id); };
+    return new Promise(function(ferdig){
+      e('ok-ny-tittel').textContent = tittel;
+      e('ok-ny-navn').value = '';
+      e('ok-ny-feil').hidden = true;
+      e('ok-ny-under').innerHTML = '';
+      if(under) e('ok-ny-under').appendChild(under);
+      e('ok-ny-under-rad').hidden = !under;
+      var sporsmaal = false;
+      var ut = function(svar){
+        e('ok-ny-bak').hidden = true;
+        e('ok-ny-ja').onclick = e('ok-ny-nei').onclick = null;
+        document.removeEventListener('keydown', tast, true);
+        ferdig(svar);
+      };
+      var avbryt = function(){
+        if(!e('ok-ny-navn').value.trim()){ ut(null); return; }
+        if(sporsmaal) return;
+        sporsmaal = true;
+        bekreft('Du har fylt inn noe som ikke er lagret. Forkaster du det nå, er det borte.', { jaTekst:'Forkast', fare:true }).then(function(ja){ sporsmaal = false; if(ja) ut(null); });
+      };
+      var ja = function(){
+        var navn = e('ok-ny-navn').value.trim();
+        if(!navn){ e('ok-ny-navn').focus(); return; }
+        e('ok-ny-ja').disabled = true;
+        lagre(navn, under ? under.value : '').then(function(r){
+          e('ok-ny-ja').disabled = false;
+          if(r.feil){ e('ok-ny-feil').textContent = r.feil; e('ok-ny-feil').hidden = false; return; }
+          ut(r);
+        });
+      };
+      var tast = function(ev){
+        if(sporsmaal) return;
+        if(ev.key === 'Escape'){ ev.stopImmediatePropagation(); ev.preventDefault(); avbryt(); }
+        if(ev.key === 'Enter' && document.activeElement === e('ok-ny-navn')){ ev.preventDefault(); ja(); }
+      };
+      e('ok-ny-ja').onclick = ja;
+      e('ok-ny-nei').onclick = avbryt;
+      document.addEventListener('keydown', tast, true);
+      e('ok-ny-bak').hidden = false;
+      e('ok-ny-navn').focus();
+    });
+  }
+  function okLagKategori(forelder, navn){
+    return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'kategori-ny', nye:[{ forelder:forelder, navn:navn }] }) }).then(function(r){
+      if(!r.ok) return { feil:r.feil };
+      var lik = (forelder + ' · ' + navn).toLowerCase();
+      var k = (r.nye && r.nye[0]) || (r.kategorier || []).filter(function(x){ return x.toLowerCase() === lik; })[0];
+      if(!k) return { feil:'Finner ikke kategorien etter at den ble laget.' };
+      if(okKategorier.length && okKategorier.indexOf(k) === -1) okKategorier.push(k);
+      if(okBu.kategorier.length){ okBu.kategorier = r.kategorier; okBu.egne = r.egne || []; okBuAlleTegn(); }
+      return { k:k };
+    });
+  }
+  /* Hvor den nye skal ligge: en ny post i en gruppe, eller en linje under en post. */
+  function okNyKategori(naa){
+    var sel = document.createElement('select');
+    sel.setAttribute('aria-label', 'Hvor den nye kategorien hører hjemme');
+    sel.appendChild(new Option('Velg hvor den hører hjemme', ''));
+    var grupper = {};
+    okKategorier.forEach(function(k){
+      var d = k.split(' · ');
+      if(d[0] === 'Utenfor budsjett') return;
+      if(!grupper[d[0]]){
+        grupper[d[0]] = document.createElement('optgroup'); grupper[d[0]].label = d[0];
+        grupper[d[0]].appendChild(new Option('Ny post i ' + d[0], d[0]));
+        sel.appendChild(grupper[d[0]]);
+      }
+      if(d.length === 2) grupper[d[0]].appendChild(new Option('Under ' + d[1], k));
+    });
+    var g = String(naa || '').split(' · ')[0];
+    if(grupper[g]) sel.value = g;
+    return okNyVindu('Ny kategori', sel, function(navn, under){
+      if(!under) return Promise.resolve({ feil:'Velg hvor den hører hjemme.' });
+      return okLagKategori(under, navn);
+    });
+  }
+  function okMerkeNyKrok(sel){
+    sel.appendChild(new Option('+ Nytt merke …', '__ny'));
+    var forrige = sel.value;
+    sel.addEventListener('change', function(ev){
+      if(sel.value !== '__ny'){ forrige = sel.value; return; }
+      ev.stopImmediatePropagation();
+      sel.value = forrige;
+      okNyVindu('Nytt merke', okMerkeUnderValg('', 'Hvor det nye merket hører hjemme'), function(navn, under){
+        return okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'merke-ny', navn:navn, forelder:under }) }).then(function(r){
+          if(!r.ok) return { feil:r.feil };
+          okBu.merkeliste = r.merkeliste;
+          if(okBu.kategorier.length) okBuAlleTegn(); else okTegnMerkeliste();
+          return { id:r.id };
+        });
+      }).then(function(r){
+        if(!r){ sel.focus(); return; }
+        sel.insertBefore(new Option(okMerkeFullNavn(r.id), r.id), sel.querySelector('option[value="__ny"]'));
+        sel.value = r.id; forrige = r.id;
+        sel.dispatchEvent(new Event('change', { bubbles:true }));
+      });
+    });
+  }
   function okKatVelg(id, verdi, tomTekst, etikett){
     var s = document.createElement('select');
     s.id = id;
@@ -1822,7 +1938,23 @@ button.ok-dr-rad{ cursor:pointer; }
       if(!grupper[g]){ grupper[g] = document.createElement('optgroup'); grupper[g].label = g; s.appendChild(grupper[g]); }
       grupper[g].appendChild(new Option(k.split(' · ').slice(1).join(' · ') || k, k));
     });
+    s.appendChild(new Option('+ Ny kategori …', '__ny'));
     s.value = verdi || '';
+    var forrige = s.value;
+    s.addEventListener('change', function(ev){
+      if(s.value !== '__ny'){ forrige = s.value; return; }
+      ev.stopImmediatePropagation();
+      s.value = forrige;
+      okNyKategori(forrige).then(function(r){
+        if(!r){ s.focus(); return; }
+        var d = r.k.split(' · ');
+        var o = new Option(d.slice(1).join(' · ') || r.k, r.k);
+        var gr = Array.prototype.filter.call(s.querySelectorAll('optgroup'), function(x){ return x.label === d[0]; })[0];
+        if(gr) gr.appendChild(o); else s.insertBefore(o, s.querySelector('option[value="__ny"]'));
+        s.value = r.k; forrige = r.k;
+        s.dispatchEvent(new Event('change', { bubbles:true }));
+      });
+    });
     return s;
   }
 
@@ -5847,21 +5979,45 @@ button.ok-dr-rad{ cursor:pointer; }
     var grupper = [];
     kats.forEach(function(k){ var g = k.split(' · ')[0]; if(grupper.indexOf(g) === -1) grupper.push(g); });
     grupper.forEach(function(g){ sg.appendChild(new Option(g, g)); });
+    var spForrige = '', slForrige = '';
     var fyllPoster = function(post){
       sp.innerHTML = '';
       kats.filter(function(k){ var d = k.split(' · '); return d.length === 2 && d[0] === sg.value; }).forEach(function(k){ sp.appendChild(new Option(k.split(' · ')[1], k)); });
+      if(!delt && sg.value !== 'Utenfor budsjett') sp.appendChild(new Option('+ Ny post …', '__ny'));
       if(post) sp.value = post;
+      spForrige = sp.value;
     };
     var fyllLinjer = function(linje){
       sl.innerHTML = ''; sl.appendChild(new Option('Ingen linje', ''));
       kats.filter(function(k){ return k.indexOf(sp.value + ' · ') === 0; }).forEach(function(k){ sl.appendChild(new Option(k.split(' · ')[2], k)); });
+      if(!delt && sg.value !== 'Utenfor budsjett' && sp.value) sl.appendChild(new Option('+ Ny linje …', '__ny'));
       sl.value = linje || ''; sl.disabled = !!delt || sl.options.length < 2;
+      slForrige = sl.value;
     };
     sg.value = d0[0] || grupper[0] || '';
     fyllPoster(d0.length >= 2 ? d0[0] + ' · ' + d0[1] : '');
     fyllLinjer(d0.length === 3 ? kategori : '');
     sg.addEventListener('change', function(){ fyllPoster(''); fyllLinjer(''); });
-    sp.addEventListener('change', function(){ fyllLinjer(''); });
+    sp.addEventListener('change', function(){
+      if(sp.value !== '__ny'){ spForrige = sp.value; fyllLinjer(''); return; }
+      sp.value = spForrige;
+      var forelder = sg.value;
+      okNyVindu('Ny post i ' + forelder, null, function(navn){ return okLagKategori(forelder, navn); }).then(function(r){
+        if(!r) return;
+        if(kats.indexOf(r.k) === -1) kats.push(r.k);
+        fyllPoster(r.k); fyllLinjer('');
+      });
+    });
+    sl.addEventListener('change', function(){
+      if(sl.value !== '__ny'){ slForrige = sl.value; return; }
+      sl.value = slForrige;
+      var forelder = sp.value;
+      okNyVindu('Ny linje under ' + forelder.split(' · ')[1], null, function(navn){ return okLagKategori(forelder, navn); }).then(function(r){
+        if(!r) return;
+        if(kats.indexOf(r.k) === -1) kats.push(r.k);
+        fyllLinjer(r.k);
+      });
+    });
     return function(){ return sl.value || sp.value || ''; };
   }
   /* ---------- Foer inn ny utgift (8. november 2026) ----------
@@ -5978,7 +6134,7 @@ button.ok-dr-rad{ cursor:pointer; }
     var sm = document.createElement('select');
     var arvNavn = function(){ var a = okBuMerke(nyKat()); return a ? okMerkeFullNavn(a) : ''; };
     sm.appendChild(new Option('Som kategorien' + (arvNavn() ? ': ' + arvNavn() : ' (uten merke)'), ''));
-    okMerkeValg(sm); sm.value = p.merke || '';
+    okMerkeValg(sm); sm.value = p.merke || ''; okMerkeNyKrok(sm);
     felt('Merke', sm);
     var notat = document.createElement('textarea'); notat.maxLength = 1000; notat.value = p.notat || '';
     felt('Notat', notat);
@@ -6391,6 +6547,7 @@ button.ok-dr-rad{ cursor:pointer; }
         sel.appendChild(new Option(arv && okMerkeAv(arv) ? 'Som posten: ' + okMerkeFullNavn(arv) : 'Uten merke', ''));
         okMerkeValg(sel);
         sel.value = okMerkeAv(okBu.merker[k]) ? okBu.merker[k] : '';
+        okMerkeNyKrok(sel);
         b.replaceWith(sel); sel.focus();
         sel.addEventListener('change', function(){ post({ hva:'kategori-merke', kategori:k, merke:sel.value }).then(ferdig); });
       });
