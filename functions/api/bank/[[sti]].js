@@ -15,7 +15,7 @@
      GET /api/bank?hva=trumf-kjop      - kjoepene fra trumf.no (siste 12 mnd)
      GET /api/bank?hva=trumf-kvittering&id=<batchId> - varelinjene
      POST /api/bank {hva:'trumf-innlogging', cookie} / {hva:'trumf-koble-fra'}
-     POST /api/bank {hva:'kvittering-ny', kvittering, forHand} - kvittering lest fra bilde/PDF, eller en foering lagt inn for haand
+     POST /api/bank {hva:'kvittering-ny', kvittering, forHand, eier, tilbakebetalt, overfort} - kvittering lest fra bilde/PDF, eller en foering lagt inn for haand
      GET /api/bank?hva=kvittering&id=<postId>         - varelinjene til en kvitteringspost
      GET /api/bank?hva=kvittering-fil&id=<postId>     - selve bildet eller PDF-en
      GET /api/bank?hva=budsjett / POST {hva:'budsjett', standard} - standardbudsjettet
@@ -457,7 +457,7 @@ function loggDiff(foer, etter, kilde){
     if(!f){
       if(p.fra === 'trumf') linje('Trumf', 'Ny Trumf-kvittering ' + n + ', ' + loggKr(p.belop) + (p.status === 'godkjent' ? ' – ført automatisk på ' + loggKat(p.kategori) : ' – lagt i innboksen'), id);
       else if(p.faktura && p.status === 'venter') linje(null, 'Regning fra ' + n + ' lagt inn: ' + loggKr(p.belop) + ', forfaller ' + loggDato(p.dato) + ' – venter på trekket fra regningskontoen', id);
-      else if(p.utlegg) linje(null, p.utlegg + ': ' + n + ', ' + loggKr(p.belop) + ' (' + loggDato(p.dato) + ') – lagt i innboksen', id);
+      else if(p.utlegg) linje(null, p.utlegg + ': ' + n + ', ' + loggKr(p.belop) + ' (' + loggDato(p.dato) + ')' + (p.status === 'godkjent' ? ' – ført, alt betalt tilbake' : ' – lagt i innboksen'), id);
       else if(p.forHand) linje(null, 'Førte inn ' + n + ' for hånd: ' + loggKr(p.belop), id);
       else if(p.fra) linje(null, 'Kvittering fra ' + n + ' lagt inn: ' + loggKr(p.belop) + (p.bankId ? ' – koblet til trekket' : ' – i innboksen'), id);
       else linje('Banken', (p.belop > 0 ? 'Penger inn ' + n + ', +' : 'Nytt trekk ' + n + ', ') + loggKr(p.belop) + ' (' + loggDato(p.dato) + ')' + (p.kontoNavn ? ' fra ' + p.kontoNavn : '')
@@ -1122,38 +1122,137 @@ function kobleKvittering(poster, kv){
   }
 }
 
-/* Overfoeringer fra felles til en voksens egen konto (Magne, 8. november
-   2026: «Slike overføringer fra felles til bruker bør komme i innboksen»).
-   Kjennetegnet er samme overfoering paa begge sider: ut av felleskontoen og
-   inn paa personens konto, samme beloep, hoeyst tre dager mellom. Den
-   foeres aldri av seg selv; en som alt er foert automatisk siste 14 dager,
-   hentes tilbake. Barna er ikke med (ikke i TILGANG). Teller som
-   tilbakebetaling naar den er godkjent som Utenfor budsjett. */
+/* Oppgjoeret mellom felles og den enkelte (Magne, 9. november 2026: «Jeg
+   vil da at Neam skal registrere det og samkjøre det med transaksjonene fra
+   dnb. både kjøpet men også overføringen»).
+   - Et utlegg er en post i felles med `eier`: en kvittering krysset av som
+     betalt fra egen konto, eller et kjoep sendt fra den egne fanen.
+   - Kjoepet: trekket paa personens konto (samme beloep, hoeyst tre dager)
+     huskes paa utlegget (`egetTrekk`).
+   - Overfoeringen: samme beloep ut av en felleskonto og inn paa personens
+     konto, hoeyst tre dager mellom. Er beloepet notert paa kvitteringen,
+     knyttes og foeres den med en gang. Ellers kommer den i innboksen naar
+     felles skylder personen penger og den ikke er mer enn OPPGJOR_RUNDING
+     over det - en som ikke hoerer til et utlegg, foeres som vanlig.
+   Den teller som tilbakebetaling naar den er godkjent som Utenfor budsjett.
+   Barna er ikke med (ikke i TILGANG). */
 const OPPGJOR_KATEGORI = 'Utenfor budsjett · Overføring mellom egne kontoer';
+const OPPGJOR_RUNDING = 100;
 function oppgjorTeller(p){ return !!p.oppgjor && p.status === 'godkjent' && String(p.kategori || '').indexOf('Utenfor budsjett') === 0; }
+function erUtleggFoert(f){ return f.status === 'godkjent' || f.status === 'sammenslatt'; }
+function harOverforing(f, poster){ return (f.overforing || []).some(id => poster[id] && poster[id].status !== 'stroket'); }
+function notertOverfort(f, poster){ return f.overfort && !harOverforing(f, poster) ? f.overfort : 0; }
+function forbLenke(hva, x){ return { hva:hva, navn:x.motpart || x.tekst || 'Uten tekst', dato:x.dato || '', belop:x.belop }; }
+/* Alt som hoerer sammen med en post i felles (Magne: «alle transaksjoner som
+   har noe med hverandre å gjøre linkes, så man ser dem når man trykker på en
+   transaksjon»). */
+function forbindelser(p, poster){
+  const ut = [];
+  const bank = p.bankId && poster[p.bankId], kv = p.dekketAv && poster[p.dekketAv];
+  if(bank) ut.push(forbLenke('Banktrekket', bank));
+  if(kv) ut.push(forbLenke('Kvitteringen', kv));
+  if(p.egetTrekk) ut.push(Object.assign(forbLenke('Kjøpet på ' + PERSONER[p.egetTrekk.hvem] + 's konto', p.egetTrekk), { eget:true }));
+  (p.overforing || []).map(id => poster[id]).filter(x => x && x.status !== 'stroket').forEach(x => ut.push(forbLenke('Overføringen fra felles', x)));
+  if(notertOverfort(p, poster)) ut.push({ hva:'Notert som overført – ikke funnet i banken ennå', navn:'Overført tilbake', dato:'', belop:p.overfort });
+  if(p.oppgjor){
+    (p.oppgjor.utlegg || []).map(id => poster[id]).filter(Boolean).forEach(x => ut.push(forbLenke('Utlegget', x)));
+    if(p.oppgjor.inn) ut.push(forbLenke('Inn på ' + p.oppgjor.navn + 's konto', p.oppgjor.inn));
+  }
+  return ut;
+}
+/* Det som gjenstaar av hvert utlegg, eldste foerst. */
+function oppgjorRest(mine, poster, hvem, hand){
+  let betalt = hand;
+  for(const id of Object.keys(poster)){
+    const p = poster[id];
+    if(p.oppgjor && p.oppgjor.hvem === hvem && (p.status === 'ny' || oppgjorTeller(p))) betalt += Math.abs(p.belop);
+  }
+  for(const f of mine) betalt += notertOverfort(f, poster);
+  return mine.map(f => {
+    const del = Math.min(Math.abs(f.belop), betalt);
+    betalt -= del;
+    return { f:f, rest:Math.abs(f.belop) - del };
+  }).filter(r => r.rest >= 0.005);
+}
 async function finnOppgjor(env, okt, roller, poster, fra, fersk, psu){
-  const grense = new Date(Date.now() - 14 * 86400000).toISOString();
+  let endret = false;
   const alle = Object.keys(poster).map(id => poster[id]);
+  /* Overfoeringer hentet inn foer de maatte hoere til et utlegg (a58914c),
+     foeres som vanlig igjen. Datoen er trekkets, saa de ikke fyller
+     «Foert automatisk». */
+  for(const p of alle){
+    if(!p.oppgjor || p.oppgjor.utlegg) continue;
+    delete p.oppgjor; delete p.manuell; delete p.kilde;
+    if(p.status === 'ny') Object.assign(p, { status:'godkjent', auto:true, behandlet:String(p.dato) + 'T12:00:00.000Z', av:'neam' });
+    endret = true;
+  }
+  const grense = new Date(Date.now() - 14 * 86400000).toISOString();
   const kandidater = alle.filter(p => !p.fra && !p.oppgjor && !p.dekketAv && p.belop < 0 && roller[p.konto] === 'felles'
     && (p.status === 'ny' || (p.status === 'godkjent' && p.auto && (p.behandlet || '') >= grense)));
-  if(!kandidater.length) return false;
+  const utlegg = alle.filter(f => f.eier && (f.status === 'ny' || erUtleggFoert(f))).sort((a, b) => String(a.dato).localeCompare(String(b.dato)));
+  if(!utlegg.length || (!kandidater.length && !utlegg.some(f => f.fra === 'foto' && !f.egetTrekk))) return endret;
   const brukt = {};
-  for(const p of alle) if(p.oppgjor) brukt[p.oppgjor.trekk] = true;
-  let endret = false;
+  for(const p of alle){
+    if(p.oppgjor) brukt[p.oppgjor.trekk] = true;
+    if(p.egetTrekk) brukt[p.egetTrekk.id] = true;
+  }
+  const naa = new Date().toISOString();
+  const motpost = t => kandidater.find(x => !x.oppgjor && Math.abs(Math.abs(x.belop) - t.belop) < 0.005 && dagerMellom(x.dato, t.dato) <= 3);
+  const knytt = (p, t, hvem, ider, foer) => {
+    p.oppgjor = { hvem:hvem, navn:PERSONER[hvem], trekk:t.id, utlegg:ider, inn:{ dato:t.dato, belop:t.belop, motpart:t.motpart || t.tekst || '' } };
+    p.manuell = true; p.kategori = OPPGJOR_KATEGORI; p.kilde = 'oppgjor';
+    if(foer){ Object.assign(p, { status:'godkjent', behandlet:naa, av:'neam' }); delete p.auto; }
+    else if(p.status === 'godkjent'){ p.status = 'ny'; delete p.auto; delete p.behandlet; delete p.av; }
+    ider.forEach(id => { poster[id].overforing = (poster[id].overforing || []).concat(p.id); });
+    brukt[t.id] = true;
+    endret = true;
+  };
+  const perPerson = {};
   for(const k of okt.kontoer){
     const hvem = roller[k.uid];
-    if(!PERSONER[hvem] || TILGANG.indexOf(hvem + '@neam.no') === -1) continue;
+    if(!PERSONER[hvem] || TILGANG.indexOf(hvem + '@neam.no') === -1 || !utlegg.some(f => f.eier === hvem)) continue;
     const r = await hentTransaksjoner(env, k.uid, fra, fersk, psu);
     if(!r.ok) continue;
-    for(const t of r.liste){
-      if(!(t.belop > 0) || brukt[t.id] || (t.status && t.status !== 'BOOK')) continue;
-      const p = kandidater.find(x => !x.oppgjor && Math.abs(Math.abs(x.belop) - t.belop) < 0.005 && dagerMellom(x.dato, t.dato) <= 3);
-      if(!p) continue;
-      p.oppgjor = { hvem:hvem, navn:PERSONER[hvem], trekk:t.id };
-      p.manuell = true; p.kategori = OPPGJOR_KATEGORI; p.kilde = 'oppgjor';
-      if(p.status === 'godkjent'){ p.status = 'ny'; delete p.auto; delete p.behandlet; delete p.av; }
+    (perPerson[hvem] = perPerson[hvem] || []).push(...r.liste.filter(t => !t.status || t.status === 'BOOK').map(t => Object.assign({ kontoNavn:k.navn }, t)));
+  }
+  for(const hvem of Object.keys(perPerson)){
+    const trekk = perPerson[hvem].sort((a, b) => String(a.dato).localeCompare(String(b.dato)));
+    const mine = utlegg.filter(f => f.eier === hvem);
+    /* Kjoepet. */
+    for(const t of trekk){
+      if(!(t.belop < 0) || brukt[t.id]) continue;
+      const f = mine.find(x => x.fra === 'foto' && !x.egetTrekk && erLik(t, x));
+      if(!f) continue;
+      f.egetTrekk = { hvem:hvem, id:t.id, dato:t.dato, belop:t.belop, motpart:t.motpart || t.tekst || '', konto:t.kontoNavn };
       brukt[t.id] = true;
       endret = true;
+    }
+    if(!kandidater.some(x => !x.oppgjor)) continue;
+    /* Overfoeringen som er notert paa kvitteringen. */
+    for(const f of mine){
+      if(!notertOverfort(f, poster)) continue;
+      const fraDato = Date.parse(f.dato) - 3 * 86400000, tilDato = Date.parse(f.lagtInn || f.dato) + 3 * 86400000;
+      const t = trekk.find(x => x.belop > 0 && !brukt[x.id] && Math.abs(x.belop - f.overfort) < 0.005 && Date.parse(x.dato) >= fraDato && Date.parse(x.dato) <= tilDato && motpost(x));
+      if(t) knytt(motpost(t), t, hvem, [f.id], true);
+    }
+    /* Andre overfoeringer mens felles skylder personen penger: i innboksen. */
+    const d = await lesPrivat(env, hvem);
+    const hand = Object.keys(d.poster).reduce((sum, id) => sum + (d.poster[id].belop > 0 && d.poster[id].betaltHand ? d.poster[id].belop : 0), 0);
+    for(const t of trekk){
+      if(!(t.belop > 0) || brukt[t.id]) continue;
+      const p = motpost(t);
+      if(!p) continue;
+      const rest = oppgjorRest(mine, poster, hvem, hand);
+      const aapent = rest.reduce((sum, r) => sum + r.rest, 0);
+      if(!rest.length || t.belop > aapent + OPPGJOR_RUNDING || String(t.dato) < String(rest[0].f.dato)) continue;
+      const ider = [];
+      let igjen = t.belop;
+      for(const r of rest){
+        if(igjen < 0.005) break;
+        ider.push(r.f.id);
+        igjen -= r.rest;
+      }
+      knytt(p, t, hvem, ider, false);
     }
   }
   return endret;
@@ -1285,7 +1384,7 @@ async function innboks(env, okt, fersk, psu){
   /* Egne kontonavn i svaret - postene har navnet fra da de kom inn. */
   const kn = await lesJson(env, KONTONAVN_NOKKEL, {});
   const medNavn = p => {
-    const ut = Object.assign({}, p);
+    const ut = Object.assign({}, p, { forb:forbindelser(p, poster) });
     if(kn[p.konto]) ut.kontoNavn = kn[p.konto];
     if(p.bankId && poster[p.bankId] && kn[poster[p.bankId].konto]) ut.bankKonto = kn[poster[p.bankId].konto];
     return ut;
@@ -1655,7 +1754,7 @@ async function foringer(env, mnd, kat, eksakt){
         kilde: p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? (p.utlegg || 'Lagt inn for hånd') : 'Kvittering fra bilde') : (kn[p.konto] || p.kontoNavn || ''),
         betaltFra: bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
         kategori:d.kategori, del:deler.length > 1, harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false,
-        harFil:!!p.harFil, filType:p.filType || '', overstyrt:!!p.overstyrt, merke:p.merke || '',
+        harFil:!!p.harFil, filType:p.filType || '', overstyrt:!!p.overstyrt, merke:p.merke || '', forbN:forbindelser(p, poster).length,
         belop: Math.round((d.kategori.indexOf('Inntekter') === 0 ? d.belop : -d.belop) * 100) / 100 });
     }
   }
@@ -1688,7 +1787,7 @@ async function postDetaljer(env, id){
     status:p.status || '', auto:!!p.auto, kilde:p.kilde || '', fra:p.fra || '', forHand:!!p.forHand, utlegg:p.utlegg || '', faktura:!!p.faktura, avsluttet:p.avsluttet || '',
     konto:p.konto ? (kn[p.konto] || p.kontoNavn || '') : '', betaltFra:bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
     behandlet:p.behandlet || '', av:p.av ? masker(p.av) : '', deler:(p.deler || []).map(d => ({ kategori:d.kategori, belop:d.belop })),
-    harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, vedlegg:vedleggListe(p) } });
+    harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, vedlegg:vedleggListe(p), forb:forbindelser(p, poster) } });
 }
 async function postEndre(env, kropp){
   const poster = await lesJson(env, POST_NOKKEL, {});
@@ -1793,7 +1892,7 @@ async function allePoster(env){
       konto:p.konto || '', kontoNavn:kn[p.konto] || p.kontoNavn || '', betaltFra:bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
       deler:p.deler && p.deler.length > 1 ? p.deler.length : 0,
       harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, harFil:!!p.harFil, filType:p.filType || '',
-      overstyrt:!!p.overstyrt, merke:p.merke || '', avsluttet:p.avsluttet || '' });
+      overstyrt:!!p.overstyrt, merke:p.merke || '', avsluttet:p.avsluttet || '', forbN:forbindelser(p, poster).length });
   }
   ut.sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
   return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', poster:ut });
@@ -1883,6 +1982,11 @@ async function nyKvittering(env, kropp, epost){
   const poster = await lesJson(env, POST_NOKKEL, {});
   const fil = kropp.fil || {};
   const filOk = KVITTERING_FILTYPER.indexOf(fil.type) !== -1 && typeof fil.data === 'string' && fil.data.length < 14e6 && /^[A-Za-z0-9+/]/.test(fil.data);
+  /* Betalt fra egen konto (Magne, 9. november 2026): kvitteringen blir et
+     utlegg. Er pengene alt overfoert tilbake, foeres den med en gang. */
+  const eier = String(kropp.eier || '');
+  if(eier && personerFor(epost).indexOf(eier) === -1) return svar({ ok:false, feil:'Du kan ikke legge inn utlegg for denne personen' });
+  const overfort = eier && kropp.tilbakebetalt ? Math.round((Number(kropp.overfort) > 0 ? Number(kropp.overfort) : sum) * 100) / 100 : 0;
   /* Hoerer kvitteringen til en transaksjon som alt ligger der, legges den
      VED den i stedet for aa bli en ny post (Magne, 6. november 2026):
        1. samme kvittering lagt inn paa nytt, men uten fil
@@ -1908,7 +2012,7 @@ async function nyKvittering(env, kropp, epost){
     return svar({ ok:false, feil:'Denne kvitteringen er allerede lagt inn (' + butikk + ', ' + dato + ')' });
   }
   /* En faktura legges ved trekket som alt ligger der, ellers venter den (over). */
-  const faktura = k.type === 'faktura' && !kropp.forHand;
+  const faktura = k.type === 'faktura' && !kropp.forHand && !eier;
   if(faktura){
     const trekk = fakturaTrekk(poster, { belop:-sum, dato:dato });
     const ledig = trekk.filter(b => !b.harFil)[0];
@@ -1920,7 +2024,7 @@ async function nyKvittering(env, kropp, epost){
     }
     if(trekk.some(b => b.faktura)) return svar({ ok:false, feil:'Denne fakturaen er allerede lagt inn (' + butikk + ', ' + dato + ')' });
   }
-  if(filOk && !kropp.forHand && !faktura){
+  if(filOk && !kropp.forHand && !faktura && !eier){
     const forsoek = { id:id, belop:-sum, dato:dato };
     const bank = Object.keys(poster).map(x => poster[x])
       .filter(b => !b.fra && b.status === 'godkjent' && !b.harFil && b.belop < 0 && erLik(b, forsoek))[0];
@@ -1934,6 +2038,10 @@ async function nyKvittering(env, kropp, epost){
     harKvittering: linjer.length > 0, status:'ny', lagtInnAv:epost, lagtInn:new Date().toISOString() };
   /* Lagt inn for haand - av Neam etter en beskjed, uten kvittering. */
   if(kropp.forHand){ p.forHand = true; p.kontoNavn = 'Lagt inn for hånd'; }
+  if(eier){
+    Object.assign(p, { forHand:true, manuell:true, eier:eier, utlegg:'Utlegg fra ' + PERSONER[eier], konto:'utlegg', kontoNavn:'Utlegg fra ' + PERSONER[eier] });
+    if(overfort) p.overfort = overfort;
+  }
   if(faktura){ p.faktura = true; p.kontoNavn = 'Faktura'; p.status = 'venter'; }
   const f = foreslaa(p, laert, omdopt);
   p.kategori = f.kategori; p.kilde = f.kilde;
@@ -1944,10 +2052,11 @@ async function nyKvittering(env, kropp, epost){
     p.harFil = true; p.filType = fil.type;
   }
   if(!faktura){
-    kobleKvittering(poster, p);
+    if(!eier) kobleKvittering(poster, p);
     const ligner = await finnLignende(env, poster, p, linjer);
     if(ligner) p.lignerPaa = ligner;
   }
+  if(overfort && p.kategori && !p.lignerPaa && !p.mulDobbel) Object.assign(p, { status:'godkjent', behandlet:new Date().toISOString(), av:epost });
   poster[id] = p;
   if(linjer.length) await env.FAMILIE_KV.put(kvitteringNokkel(p), JSON.stringify({ id:id, belop:sum, linjer:linjer }));
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
@@ -2336,6 +2445,19 @@ async function privat(env, okt, epost, hvem, fersk, psu){
   }
   /* 3. Oppgjoeret: det som er betalt tilbake, dekker de eldste foerte utleggene. */
   const alle = () => Object.keys(d.poster).map(id => d.poster[id]);
+  /* Trekket Neam har kjent igjen som kjoepet bak et utlegg, og motsatt. */
+  let fellesEndret = false;
+  for(const id of Object.keys(felles)){
+    const f = felles[id];
+    if(!f.egetTrekk || f.egetTrekk.hvem !== hvem) continue;
+    const p = d.poster[f.egetTrekk.id] || alle().find(x => (x.bankIder || []).indexOf(f.egetTrekk.id) !== -1);
+    if(p && !p.sendt){ p.sendt = f.id; endret = true; }
+  }
+  for(const p of alle()){
+    const f = p.sendt && felles[p.sendt];
+    if(f && !f.egetTrekk){ f.egetTrekk = { hvem:hvem, id:p.id, dato:p.dato, belop:p.belop, motpart:p.motpart || p.tekst || '', konto:kn[p.konto] || p.kontoNavn || '' }; fellesEndret = true; }
+  }
+  if(fellesEndret) await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(felles));
   const refusjon = {};
   let sumBetalt = 0;
   for(const id of Object.keys(felles)){
@@ -2346,7 +2468,9 @@ async function privat(env, okt, epost, hvem, fersk, psu){
   }
   const refusjonAv = p => [p.id].concat(p.bankIder || []).map(i => refusjon[i]).filter(Boolean)[0] || '';
   for(const p of alle()) if(p.belop > 0 && p.betaltHand && !refusjonAv(p)) sumBetalt += p.belop;
-  const utlegg = alle().filter(p => privatStatus(p, felles) === 'fort').sort((a, b) => String(a.dato).localeCompare(String(b.dato)));
+  const foerte = Object.keys(felles).map(id => felles[id]).filter(f => f.eier === hvem && erUtleggFoert(f));
+  for(const f of foerte) sumBetalt += notertOverfort(f, felles);
+  const utlegg = foerte.sort((a, b) => String(a.dato).localeCompare(String(b.dato)));
   const sumUtlegg = utlegg.reduce((sum, p) => sum + Math.abs(p.belop), 0);
   const dekket = {};
   let igjen = sumBetalt;
@@ -2366,16 +2490,36 @@ async function privat(env, okt, epost, hvem, fersk, psu){
     const s = r && r.ok ? ((r.data && r.data.balances) || []).slice().sort((a, b) => velg.indexOf(a.balance_type) - velg.indexOf(b.balance_type))[0] : null;
     return { uid:k.uid, navn:kn[k.uid] || k.navn, saldo:s ? Number(s.balance_amount.amount) : null };
   });
-  const erDekket = p => dekket[p.id] != null && dekket[p.id] >= Math.abs(p.belop) - 0.005;
+  const dekketAvP = p => p.sendt ? dekket[p.sendt] : undefined;
+  const erDekket = p => dekketAvP(p) != null && dekketAvP(p) >= Math.abs(p.belop) - 0.005;
   const poster = alle().map(p => ({ id:p.id, konto:kn[p.konto] || p.kontoNavn || '', dato:p.dato, belop:p.belop, tekst:p.tekst || '', motpart:p.motpart || '',
-    status:erDekket(p) ? 'refundert' : privatStatus(p, felles), delvis:!erDekket(p) && dekket[p.id] ? Math.round(dekket[p.id] * 100) / 100 : 0,
+    status:erDekket(p) ? 'refundert' : privatStatus(p, felles), delvis:!erDekket(p) && dekketAvP(p) ? Math.round(dekketAvP(p) * 100) / 100 : 0,
     refusjon:p.belop > 0 ? refusjonAv(p) : '', betaltHand:!!(p.belop > 0 && p.betaltHand && !refusjonAv(p)),
-    vedlegg:privatVedleggListe(p), kvittering:p.kv ? { kilde:privatKvKilde(p.kv), navn:p.kv.motpart || p.kv.tekst || '' } : null }))
+    vedlegg:privatVedleggListe(p), forb:forbPrivat(p, felles, hvem), kvittering:p.kv ? { kilde:privatKvKilde(p.kv), navn:p.kv.motpart || p.kv.tekst || '' } : null }))
     .sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
   const skylder = { sum:Math.round((sumUtlegg - sumBetalt) * 100) / 100, antall:poster.filter(p => p.status === 'fort').length, utlegg:Math.round(sumUtlegg * 100) / 100, betalt:Math.round(sumBetalt * 100) / 100 };
   return svar({ ok:true, hvem:hvem, navn:PERSONER[hvem], kontoer:kontoer, poster:poster, maal:d.maal,
     skylder:skylder,
     fra:await env.FAMILIE_KV.get(FRA_NOKKEL) || '', flyttet:flyttet || undefined, kvFlyttet:kvFlyttet || undefined, advarsel:advarsel || undefined });
+}
+/* Det samme sett fra et trekk i den egne fanen. */
+function forbPrivat(p, felles, hvem){
+  const ut = [];
+  if(p.kv) ut.push(forbLenke('Kvitteringen', p.kv));
+  const f = p.sendt && felles[p.sendt];
+  if(f){
+    ut.push(forbLenke('Utlegget i felles', f));
+    forbindelser(f, felles).filter(x => !x.eget).forEach(x => ut.push(x));
+  }
+  if(p.belop > 0){
+    const ider = [p.id].concat(p.bankIder || []);
+    const o = Object.keys(felles).map(id => felles[id]).find(x => x.oppgjor && x.oppgjor.hvem === hvem && ider.indexOf(x.oppgjor.trekk) !== -1);
+    if(o){
+      ut.push(forbLenke('Overføringen fra felles', o));
+      (o.oppgjor.utlegg || []).map(id => felles[id]).filter(Boolean).forEach(x => ut.push(forbLenke('Utlegget i felles', x)));
+    }
+  }
+  return ut;
 }
 /* Vedleggene paa et eget trekk: de som er lagt ved her (fil:<trekket>), og
    kvitteringens (fil:<kvitteringen>, laast - de hoerer til kvitteringen).
