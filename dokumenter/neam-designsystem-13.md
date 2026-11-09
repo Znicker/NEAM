@@ -2079,12 +2079,22 @@ først, Sparing sist. Bare tallene skiller dem:
   med kategorien ferdig valgt og hintet «Tilbakebetaling til Magne – går av
   på det felles skylder …». Er beløpet notert på kvitteringen, føres den
   med en gang.
-  **Betalt fra egen konto** (fra 9. november 2026, `15337f8`): under «Legg til
-  kvittering» i Innboks, som avkrysning (`.ok-kv-kryss`, 18 px, aksentfargen):
-  «Betalt fra min konto» (for sys@ «Betalt fra egen konto» med valg av
-  person), så «Jeg har alt overført pengene til meg», så «Overført … kr» med
-  hele beløpet som forvalg. Valgene gjelder neste kvittering og nullstilles
-  når den er lagret. Valgt uten skisse.
+  **Vinduet når en kvittering legges til** (fra 9. november 2026, `c282324`,
+  `.ok-kv-kort`): butikk, dato og sum øverst, så «Er dette et utlegg – betalt
+  med egne penger?» med avkrysningen «Ja, det er et utlegg» (`.ok-kv-kryss`,
+  18 px, aksentfargen). Krysses den av, vokser vinduet (`.ok-kvs-mer`,
+  etikett over feltet, `.ok-kvs-rad`): Hvem betalte (bare for sys@), Hva gjelder
+  det, Kategori, Sum (kr), avkrysningen «Det er alt betalt tilbake til meg» og
+  Hvor mye (kr) med «Hele summen» som forvalg. Under: **Legg til** (`.btn-ny`)
+  og **Avbryt** (`.btn-ghost ok-smal`) etter Avbryt-regelen – den spør bare når
+  noe er skrevet inn. Valgt uten skisse.
+  **Nye kategorier og merker** (fra 9. november 2026, `85b6ba5`, Magne:
+  «uansett hvor det skal settes kategorier og merker bør man få lov til å lage
+  nye»): en velger som setter kategori eller merke på en føring, har et siste
+  valg «+ Ny kategori …» / «+ Nytt merke …» (i føringsvinduet «+ Ny post …» /
+  «+ Ny linje …»). Det åpner et lite vindu (`.ok-kv-kort`) med Navn, Hører
+  hjemme når plassen ikke er gitt, **Legg til** (`.btn-ny`) og **Avbryt**
+  (`.btn-ghost ok-smal`). Filtre («Alle kategorier») har ikke valget.
   **Forbindelser** (fra 9. november 2026, `15337f8`, Magne: «et lite pluss
   symbol»): en rad med transaksjoner som hører sammen, har en liten **+**
   etter navnet (`.ok-forb-pluss`, fet, aksentfargen – fargen er valgt uten å

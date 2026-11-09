@@ -552,7 +552,10 @@ refusjon og sparemål (`5851452`), og egne trekk i føringsvinduet med
 vedlegg og kvitteringene koblet til (`a786fd2`), og oppgjøret som en
 løpende saldo, med overføringer fra felles til person i innboksen
 (`a58914c`), og kvittering betalt fra egen konto koblet til kjøp og
-overføring, med forbindelser på transaksjonene (`15337f8`).
+overføring, med forbindelser på transaksjonene (`15337f8`), «Lim inn» som
+sier at en PDF må velges som fil (`5f23002`), og vinduet som spør om utlegg
+når en kvittering legges til (`c282324`), og nye kategorier og merker der
+de velges (`85b6ba5`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -561,7 +564,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 97 commits, `0e0050a`–`15337f8`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 100 commits, `0e0050a`–`85b6ba5`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1345,9 +1348,11 @@ oppgi kode.»
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
-- **Utleggsflyten med ekte DNB** (`15337f8`): at oktober-overføringene
-  forsvinner fra innboksen og er ført som vanlig; at en kvittering krysset av
-  som betalt fra egen konto kobles til kjøpet og overføringen; og at
+- **Nye kategorier og merker** (`85b6ba5`): på telefon, i høyreklikkmenyene
+  og på neam.no.
+- **Utleggsflyten med ekte DNB** (`15337f8`, `c282324`): at
+  oktober-overføringene forsvinner fra innboksen og er ført som vanlig; at
+  vinduet kommer når en kvittering legges til; at et utlegg kobles til kjøpet og overføringen; og at
   Godkjenn-knappen trekker en tilbakebetaling av saldoen i den egne fanen.
   Godkjenningen er bare kjørt mot serveren, ikke med knappen.
 - **De egne fanene på neam.no** (8. november): at de rundt 80 trekkene fra
@@ -4567,7 +4572,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 97 commits fra `0e0050a` til `15337f8` (dialogen med
+verdier. Bygget i 100 commits fra `0e0050a` til `85b6ba5` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5012,6 +5017,42 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Nye kategorier og merker der de velges** (`85b6ba5`). Magne: «uansett
+  hvor det skal settes kategorier og merker bør man få lov til å lage nye.
+  det er slik det må vokse i starten».
+  - **Kategori:** `okKatVelg` (Innboks, utleggsvinduet, varelinjer, fakturaer,
+    «Rydd opp», «Endre kategori») har «+ Ny kategori …» nederst. Vinduet
+    (`#ok-ny-bak`, `okNyVindu`) spør om navn og hvor den hører hjemme: ny post
+    i en gruppe eller linje under en post. Føringsvinduet (`okFrKatVelger`,
+    tre lister) har «+ Ny post …» og «+ Ny linje …», der plassen er gitt.
+    Alt går gjennom `kategori-ny` (`okLagKategori`).
+  - **Merke:** `okMerkeNyKrok` gir «+ Nytt merke …» i føringsvinduet og i
+    «Velg merke» i Budsjett-menyen (fantes fra før på postene i Budsjett).
+    Går gjennom `merke-ny`, med eget hovedmerke eller under et annet.
+  - Valget fanges før sidens egen `change`, og den nye velges der man sto og
+    sendes videre som et vanlig valg. Avbryt setter valget tilbake.
+    «Utenfor budsjett» tar ikke imot nye (serveren nekter).
+  - Testet i testserveren på PC: Innboks og føringsvinduet, ny post, linje og
+    merke, Avbryt, manglende plass. Ikke på telefon, i høyreklikkmenyene
+    eller på neam.no.
+- **Vinduet som spør om utlegg** (`c282324`). Magne: «valget bør komme
+  allerede der om dette er utlegg. krysser man ja vokse vinduet med spørsmål
+  om hva det gjelder, kategori og su + om det er tilbakebetalt og hvor mye».
+  - **Rekkefølgen:** Neam leser kvitteringen, vinduet (`#ok-kvs-bak`,
+    `okKvSpor`) spør, og først så lagres den. Avbryt lagrer ingenting. Fil,
+    bilde og «Lim inn» går hit; Dropbox og fakturaer spør ikke, og heller
+    ikke når innloggingen ikke har en egen fane.
+  - **Svarene** går med `kvittering-ny`: `eier`, `kategori`, `notat` (Hva
+    gjelder det), `tilbakebetalt`, `overfort`, og summen erstatter den som ble
+    lest. Forslaget til kategori kommer fra `?hva=kategori-forslag`.
+  - **Står åpent:** en endret sum finner ikke kjøpet i DNB, som kobles på
+    likt beløp. «Betalt tilbake» uten kategori går til innboksen.
+  - Testet i testserveren: vinduet, Avbryt, vanlig kvittering, utlegg med og
+    uten feil sum, PC og 375 px. Ikke prøvd på neam.no.
+- **«Lim inn» og PDF** (`5f23002`). Magne kopierte en PDF i Coop-appen og fikk
+  beskjed om at det ikke var noe å lese. Nettsider får bare tekst og bilder
+  fra utklippstavla, ikke PDF, så meldingen sier nå at en PDF må velges som
+  fil. Ikke målt på telefonen; hjelpeteksten under knappene er ikke endret.
 - **Kvittering betalt fra egen konto, koblet til kjøp og overføring**
   (`15337f8`). Magne: «Jeg vil da at Neam skal registrere det og samkjøre det
   med transaksjonene fra dnb. både kjøpet men også overføringen» og «alle
@@ -5028,8 +5069,8 @@ ligge under høyre tommelknapp»).
     innboksen, blir den ført (`auto`, `behandlet` satt til trekkets dato, så
     den ikke fyller «Ført automatisk»).
   - **Kvitteringen** (`kvittering-ny` med `eier`, `tilbakebetalt`, `overfort`):
-    avkrysningen under «Legg til kvittering» gjelder neste kvittering som
-    legges inn der, ikke dem Dropbox henter. Posten får `eier`, `utlegg`,
+    valgene sto først som avkrysning under knappen og ble flyttet til et eget
+    vindu i `c282324`. Posten får `eier`, `utlegg`,
     `forHand`, `manuell` og konto `utlegg`, og kobles ikke til et felles
     banktrekk. Med `overfort` føres den med en gang, hvis den har kategori og
     ikke kan være dobbel – ellers innboksen. Tomt beløp er hele kvitteringen.
