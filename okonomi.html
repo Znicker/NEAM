@@ -345,10 +345,12 @@ select.ok-tre-velg{ pointer-events:none; }
 .ok-liste-kort.ok-rutenett .ok-mnd-kat:nth-of-type(n){ background:var(--paper); border-top:0; border-radius:14px; box-shadow:var(--shadow); margin:0; padding:2px 16px 10px; min-width:0; }
 .ok-rutenett .ok-under-rader > .ok-bl-rad{ border-top:1px solid var(--line); padding-top:8px; padding-bottom:8px; }
 @container (min-width:620px){ .ok-rutenett-liste{ grid-template-columns:repeat(2, minmax(0,1fr)); } }
-@container (min-width:1100px){
-  .ok-rutenett-liste{ grid-template-columns:repeat(6, minmax(0,1fr)); }
-  .ok-rutenett-liste > .ok-mnd-kat{ grid-column:span 2; }
-  .ok-rutenett-liste > .ok-mnd-kat[data-g="Inntekter"], .ok-rutenett-liste > .ok-mnd-kat[data-g="Sparing"]{ grid-column:span 3; }
+@container (min-width:620px) and (max-width:1099.98px){ .ok-rs-liste.ok-rutenett-liste{ grid-template-columns:minmax(0,1fr); } }
+.ok-rs-liste .ok-mnd-kat summary .ok-rs-hode{ grid-column:1 / -1; order:-1; }
+/* Tre tall i 62 px paa telefon: gruppetallene i metaskrift, som postene. */
+@media (max-width:560px){
+  .ok-liste-kort .ok-rs-liste .ok-mnd-kat summary, .ok-liste-kort .ok-rs-liste .ok-mnd-kat summary .ok-avvik{ font-size:var(--t-meta); }
+  .ok-liste-kort .ok-rs-liste .ok-mnd-kat-navn{ font-size:var(--t-brod); }
 }
 .ok-liste-kort .ok-mnd-kat summary{ font-size:var(--t-stor); }
 .ok-liste-kort .ok-mnd-kat summary .ok-avvik{ font-size:var(--t-stor); }
@@ -1068,7 +1070,8 @@ button.ok-dr-rad{ cursor:pointer; }
   <div class="ok-vis" id="ok-vis-regnskap" role="tabpanel" aria-labelledby="ok-fane-regnskap" hidden>
     <div class="ok-sumrad" id="ok-rg-sum"></div>
     <section class="ok-kort ok-fold-gruppe">
-      <div class="ok-fold" data-fold="rg-trend" data-apen="ja">
+      <!-- Søylene er tatt ut enn så lenge (Magne, 9. november 2026). -->
+      <div class="ok-fold" data-fold="rg-trend" data-apen="ja" hidden>
         <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Utgifter per måned</span><span class="ok-fold-sum" id="ok-rg-diagram-meta"></span></button>
         <div class="ok-fold-innhold">
           <div class="ok-diagram" id="ok-rg-diagram"><p class="ok-meta">Henter …</p></div>
@@ -1099,7 +1102,8 @@ button.ok-dr-rad{ cursor:pointer; }
          kategoriene, og en kategori for postene - tre stolper hver:
          regnskap, budsjett og snitt (Magne, 8. november 2026). -->
     <section class="ok-kort ok-fold-gruppe">
-      <div class="ok-fold" data-fold="rs-drill" data-apen="ja">
+      <!-- Søylene er tatt ut enn så lenge (Magne, 9. november 2026). -->
+      <div class="ok-fold" data-fold="rs-drill" data-apen="ja" hidden>
         <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Utgifter mot budsjett</span><span class="ok-fold-sum"></span></button>
         <div class="ok-fold-innhold">
           <div id="ok-rs-drill"><p class="ok-meta">Henter …</p></div>
@@ -1121,10 +1125,10 @@ button.ok-dr-rad{ cursor:pointer; }
       </div>
     </section>
     <!-- Samme liste som Regnskap og Budsjett, med tre kolonner (8. november 2026). -->
-    <section class="ok-kort ok-liste-kort">
+    <section class="ok-kort ok-liste-kort ok-rutenett">
       <div class="ok-kort-hode"><h2>Budsjett mot regnskap</h2></div>
       <p class="ok-meta">Trykk en post for linjene og føringene, og en føring for detaljene. Høyreklikk – eller hold fingeren – for å endre. Avviket er rødt når det er brukt mer enn budsjettet.</p>
-      <div class="ok-rs-liste" id="ok-rs-liste"><p class="ok-meta">Henter …</p></div>
+      <div class="ok-rs-liste ok-rutenett-liste" id="ok-rs-liste"><p class="ok-meta">Henter …</p></div>
     </section>
   </div>
 
@@ -1136,7 +1140,8 @@ button.ok-dr-rad{ cursor:pointer; }
     <div class="ok-sumrad" id="ok-bs-sum"></div>
     <div class="ok-bu-listevis" id="ok-bu-listevis">
       <section class="ok-kort ok-fold-gruppe">
-        <div class="ok-fold" data-fold="bu-trend" data-apen="ja">
+        <!-- Søylene er tatt ut enn så lenge (Magne, 9. november 2026). -->
+        <div class="ok-fold" data-fold="bu-trend" data-apen="ja" hidden>
           <button type="button" class="ok-fold-knapp"><svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="ok-fold-prikk" hidden></span><span class="ok-fold-tittel">Budsjett per måned</span><span class="ok-fold-sum" id="ok-bu-diagram-meta"></span></button>
           <div class="ok-fold-innhold">
             <div class="ok-diagram" id="ok-bu-diagram"><p class="ok-meta">Henter …</p></div>
@@ -5820,7 +5825,6 @@ button.ok-dr-rad{ cursor:pointer; }
     var boks = document.getElementById('ok-rs-liste');
     if(!boks) return;
     boks.innerHTML = '';
-    boks.appendChild(okEl('div', 'ok-rs-hode', '<span></span><span>Budsjett</span><span>Regnskap</span><span>Avvik</span>'));
     var noe = false;
     okMndGrupper(c.poster).forEach(function(g){
       var snu = g === 'Inntekter' || g === 'Sparing';
@@ -5830,10 +5834,12 @@ button.ok-dr-rad{ cursor:pointer; }
       if(!b && !r && !okRgAlle[g]) return;
       noe = true;
       var d = okEl('details', 'ok-mnd-kat');
-      d.open = !!okMnd.apneKjop['rs:' + g];
+      d.dataset.g = g;
+      d.open = okMnd.apneKjop['rs:' + g] !== false;
       d.addEventListener('toggle', function(){ okMnd.apneKjop['rs:' + g] = d.open; });
       var s = document.createElement('summary'); s.dataset.k = g;
-      s.innerHTML = '<span class="ok-mnd-kat-navn">' + okGruppeIkon(g) + okVask(g) + '</span>' + okRsTall(c, b, r, snu);
+      s.innerHTML = '<span class="ok-mnd-kat-navn">' + okGruppeIkon(g) + okVask(g) + '</span>' + okRsTall(c, b, r, snu)
+        + '<div class="ok-rs-hode"><span></span><span>Budsjett</span><span>Regnskap</span><span>Avvik</span></div>';
       d.appendChild(s);
       var ur = okEl('div', 'ok-under-rader');
       gp.forEach(function(k){
