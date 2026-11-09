@@ -1164,7 +1164,7 @@ button.ok-dr-rad{ cursor:pointer; }
         <div class="ok-al-liste" id="ok-pe-liste"></div>
       </section>
       <section class="ok-kort" id="ok-pe-skylder-kort" hidden>
-        <span class="ok-etikett">Felles skylder deg</span>
+        <span class="ok-etikett" id="ok-pe-skylder-navn">Felles skylder deg</span>
         <div class="ok-stort" id="ok-pe-skylder"></div>
         <span class="ok-meta" id="ok-pe-skylder-meta"></span>
       </section>
@@ -1816,6 +1816,7 @@ button.ok-dr-rad{ cursor:pointer; }
     var tekst = p.mulDobbel ? 'Mulig dobbel: et banktrekk med samme beløp fra ' + (p.bankKonto || 'banken') + ' er alt godkjent. Strøket til du tar den med.'
       : p.lignerPaa ? 'Mulig dobbel: ' + okLignerTekst(p.lignerPaa) + ' Strøket til du tar den med.'
       : p.ute ? 'Føres ikke'
+      : p.oppgjor ? 'Tilbakebetaling til ' + p.oppgjor.navn + ' – går av på det felles skylder. Velg en annen kategori eller stryk den hvis det ikke er det.'
       : !p.kategori ? 'Trenger kategori – blir liggende til den har en'
       : p.kilde === 'ai-usikker' ? 'Neam er usikker – sjekk at kategorien stemmer'
       : p.kilde === 'laert' ? 'Forslag: samme som sist'
@@ -3663,8 +3664,9 @@ button.ok-dr-rad{ cursor:pointer; }
      "refundert" der. Før dette er gjort skal ingenting inn i
      fellesregnskap». Fanen heter navnet og viser det felles skylder,
      kontoene med saldo, sparemaalene og en kontoutskrift per maaned. Et
-     kjoep sendes til felles (privat-send) og merkes refundert av seg selv
-     naar en overfoering med samme beloep kommer inn, eller for haand. */
+     kjoep sendes til felles (privat-send). Oppgjoeret er en loepende saldo:
+     foerte utlegg minus det som er betalt tilbake, saa avrunding tas med
+     til neste gang. */
   var okPe = { hvem:'', data:null, mnd:'', lastet:{}, redigerer:false, utkast:null, start:'' };
   var OK_PE_STATUS = { innboks:'sendt til felles – venter i innboksen', fort:'ført i felles – felles skylder deg', avvist:'avvist i felles – kan sendes igjen' };
   function okPeMelding(tekst, feil){
@@ -3707,10 +3709,11 @@ button.ok-dr-rad{ cursor:pointer; }
   }
   function okPeTegn(){
     var r = okPe.data;
-    var sk = r.skylder || { sum:0, antall:0 };
-    document.getElementById('ok-pe-skylder-kort').hidden = !sk.antall;
-    document.getElementById('ok-pe-skylder').textContent = okKrHel(sk.sum) + ' kr';
-    document.getElementById('ok-pe-skylder-meta').textContent = sk.antall + ' utlegg ført i felles og ikke betalt tilbake ennå. Neam merker det selv når en overføring med samme beløp kommer inn.';
+    var sk = r.skylder || { sum:0, antall:0, utlegg:0, betalt:0 };
+    document.getElementById('ok-pe-skylder-kort').hidden = !sk.utlegg && !sk.betalt;
+    document.getElementById('ok-pe-skylder-navn').textContent = sk.sum < 0 ? 'Du skylder felles' : 'Felles skylder deg';
+    document.getElementById('ok-pe-skylder').textContent = okKr0.format(Math.abs(sk.sum)) + ' kr';
+    document.getElementById('ok-pe-skylder-meta').textContent = 'Ført i felles ' + okKr0.format(sk.utlegg) + ' kr, betalt tilbake ' + okKr0.format(sk.betalt) + ' kr. Avrunding tas med til neste oppgjør.';
     document.getElementById('ok-pe-meta').textContent = r.advarsel ? 'Fikk ikke hentet alt: ' + r.advarsel : '';
     var kb = document.getElementById('ok-pe-kontoer');
     kb.innerHTML = '';
@@ -3724,12 +3727,17 @@ button.ok-dr-rad{ cursor:pointer; }
     okPeTegnListe();
   }
   function okPeStatus(p){
-    return p.status === 'refundert'
-      ? 'refundert' + (p.refundertDato ? ' ' + okKort.format(new Date(p.refundertDato)) : '') + (p.refundertHand ? ' (merket for hånd)' : '')
-      : OK_PE_STATUS[p.status] || '';
+    if(p.status === 'refundert') return 'betalt tilbake';
+    if(p.delvis) return 'ført i felles – ' + okKr0.format(p.delvis) + ' kr av ' + okKr0.format(Math.abs(p.belop)) + ' kr betalt tilbake';
+    return OK_PE_STATUS[p.status] || '';
+  }
+  function okPeRefusjon(p){
+    return p.refusjon === 'innboks' ? 'tilbakebetaling fra felles – venter i innboksen'
+      : p.refusjon ? 'tilbakebetaling fra felles'
+      : p.betaltHand ? 'tilbakebetaling (regnet med for hånd)' : '';
   }
   function okPeRad(p){
-    var meta = [p.konto, p.kvittering ? p.kvittering.kilde : '', p.refusjon ? 'tilbakebetaling fra felles' : '', okPeStatus(p)].filter(Boolean).join(' · ');
+    var meta = [p.konto, p.kvittering ? p.kvittering.kilde : '', okPeRefusjon(p), okPeStatus(p)].filter(Boolean).join(' · ');
     /* Trykk aapner samme vindu som en foering i Regnskap (Magne, 8. november
        2026: «jeg ønsker at transaksjonene også linkes til vedlegg på samme
        måte som i regnskapet. det er i denne menyen man kan sende det over
@@ -3800,7 +3808,7 @@ button.ok-dr-rad{ cursor:pointer; }
     rad('Konto', p.konto);
     rad('Tekst fra banken', p.tekst && p.tekst !== p.motpart ? p.tekst : '');
     rad('Kvittering', p.kvittering ? p.kvittering.kilde + (p.kvittering.navn ? ' – ' + p.kvittering.navn : '') : '');
-    rad('Status', okPeStatus(p) || (p.refusjon ? 'Tilbakebetaling fra felles' : p.belop < 0 ? 'Ikke sendt til felles' : ''));
+    rad('Status', okPeStatus(p) || okPeRefusjon(p) || (p.belop < 0 ? 'Ikke sendt til felles' : ''));
     venstre.appendChild(dl);
     /* Varelinjene fra kvitteringen som er koblet til trekket. */
     if(p.kvittering){
@@ -3831,11 +3839,8 @@ button.ok-dr-rad{ cursor:pointer; }
       return okPeSkriv({ hva:'privat-send', hvem:okPe.hvem, ider:[p.id] }, navn + ' ligger nå i innboksen i felles. Når det er godkjent der, skylder felles deg beløpet.');
     });
     knapp('Rediger', 'btn-endre', function(){ okPeRediger(p); return true; });
-    if(p.status === 'fort') knapp('Merk som refundert', 'btn-ghost ok-smal', function(){
-      return okPeSkriv({ hva:'privat-refundert', hvem:okPe.hvem, id:p.id, refundert:true }, navn + ' er merket som betalt tilbake.');
-    });
-    if(p.status === 'refundert') knapp('Ikke refundert', 'btn-ghost ok-smal', function(){
-      return okPeSkriv({ hva:'privat-refundert', hvem:okPe.hvem, id:p.id, refundert:false }, 'Felles skylder deg ' + navn + ' igjen.');
+    if(p.belop > 0 && !p.refusjon) knapp(p.betaltHand ? 'Ikke tilbakebetaling' : 'Regn som tilbakebetaling', 'btn-ghost ok-smal', function(){
+      return okPeSkriv({ hva:'privat-oppgjor', hvem:okPe.hvem, id:p.id, oppgjor:!p.betaltHand }, p.betaltHand ? navn + ' regnes ikke lenger som tilbakebetaling.' : navn + ' er regnet som tilbakebetaling.');
     });
     if(p.kvittering && apen) knapp('Kvitteringen hører til felles', 'btn-ghost ok-smal', function(){
       return bekreft('Flytte kvitteringen tilbake til felles? Den kobles ikke til dette trekket igjen.', { jaTekst:'Flytt tilbake' }).then(function(ja){

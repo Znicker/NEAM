@@ -36,7 +36,7 @@
      POST /api/bank {hva:'merke-ny', navn, fast, forelder} / {hva:'merke-endre', id, navn, fast, forelder} / {hva:'merke-slett', id} - merkene selv
      GET /api/bank?hva=varsler          - det som trenger noen (kortet paa forsiden)
      GET /api/bank?hva=privat[&hvem=<navn>] - den enkeltes egen del (personene man ser, eller én persons kontoer og trekk)
-     POST {hva:'privat-send', hvem, ider} / {hva:'privat-refundert', hvem, id, refundert} / {hva:'privat-maal', hvem, maal}
+     POST {hva:'privat-send', hvem, ider} / {hva:'privat-oppgjor', hvem, id, oppgjor} / {hva:'privat-maal', hvem, maal}
      GET /api/bank?hva=privat-kvittering&hvem=&id= - varelinjene i kvitteringen som er koblet til et eget trekk
      POST {hva:'privat-vedlegg', hvem, id, type, data, navn} / {hva:'privat-vedlegg-slett', hvem, id, n} / {hva:'privat-kv-tilbake', hvem, id}
      GET /api/bank?hva=laert / POST {hva:'laert', motpart, kategori} - «Neam husker» (tom kategori glemmer)
@@ -1122,6 +1122,43 @@ function kobleKvittering(poster, kv){
   }
 }
 
+/* Overfoeringer fra felles til en voksens egen konto (Magne, 8. november
+   2026: «Slike overføringer fra felles til bruker bør komme i innboksen»).
+   Kjennetegnet er samme overfoering paa begge sider: ut av felleskontoen og
+   inn paa personens konto, samme beloep, hoeyst tre dager mellom. Den
+   foeres aldri av seg selv; en som alt er foert automatisk siste 14 dager,
+   hentes tilbake. Barna er ikke med (ikke i TILGANG). Teller som
+   tilbakebetaling naar den er godkjent som Utenfor budsjett. */
+const OPPGJOR_KATEGORI = 'Utenfor budsjett · Overføring mellom egne kontoer';
+function oppgjorTeller(p){ return !!p.oppgjor && p.status === 'godkjent' && String(p.kategori || '').indexOf('Utenfor budsjett') === 0; }
+async function finnOppgjor(env, okt, roller, poster, fra, fersk, psu){
+  const grense = new Date(Date.now() - 14 * 86400000).toISOString();
+  const alle = Object.keys(poster).map(id => poster[id]);
+  const kandidater = alle.filter(p => !p.fra && !p.oppgjor && !p.dekketAv && p.belop < 0 && roller[p.konto] === 'felles'
+    && (p.status === 'ny' || (p.status === 'godkjent' && p.auto && (p.behandlet || '') >= grense)));
+  if(!kandidater.length) return false;
+  const brukt = {};
+  for(const p of alle) if(p.oppgjor) brukt[p.oppgjor.trekk] = true;
+  let endret = false;
+  for(const k of okt.kontoer){
+    const hvem = roller[k.uid];
+    if(!PERSONER[hvem] || TILGANG.indexOf(hvem + '@neam.no') === -1) continue;
+    const r = await hentTransaksjoner(env, k.uid, fra, fersk, psu);
+    if(!r.ok) continue;
+    for(const t of r.liste){
+      if(!(t.belop > 0) || brukt[t.id] || (t.status && t.status !== 'BOOK')) continue;
+      const p = kandidater.find(x => !x.oppgjor && Math.abs(Math.abs(x.belop) - t.belop) < 0.005 && dagerMellom(x.dato, t.dato) <= 3);
+      if(!p) continue;
+      p.oppgjor = { hvem:hvem, navn:PERSONER[hvem], trekk:t.id };
+      p.manuell = true; p.kategori = OPPGJOR_KATEGORI; p.kilde = 'oppgjor';
+      if(p.status === 'godkjent'){ p.status = 'ny'; delete p.auto; delete p.behandlet; delete p.av; }
+      brukt[t.id] = true;
+      endret = true;
+    }
+  }
+  return endret;
+}
+
 async function innboks(env, okt, fersk, psu){
   const roller = await lesRoller(env);
   const felles = okt.kontoer.filter(k => roller[k.uid] === 'felles');
@@ -1215,6 +1252,7 @@ async function innboks(env, okt, fersk, psu){
   }
   /* Fakturaer som venter, legges ved trekket naar det er kommet. */
   if(await synkFakturaer(env, poster)) nye++;
+  if(await finnOppgjor(env, okt, roller, poster, fra, fersk, psu)) oppdatert = true;
   /* «Spoer bare naar den er usikker» (Magne, 29. oktober). En post Neam
      kjenner - samme motpart foert foer, eller et kjent navn - foeres med en
      gang og merkes `auto`. Den vises under «Foert automatisk» og kan angres;
@@ -2182,10 +2220,14 @@ async function ryddForslag(env, mnd){
      (fra:'utlegg', forHand, utlegg:'Utlegg fra <navn>', eier). Den foeres
      aldri av seg selv (manuell) - noen godkjenner den. Foert der: felles
      skylder beloepet. Stroeket der: avvist, kan sendes paa nytt.
-   - Refundert: en overfoering inn paa en av personens kontoer som er like
-     stor som ett utlegg felles har foert, eller som alle til sammen. Kan
-     ogsaa merkes for haand, og angres (inngangen havner da i `ikke` og
-     brukes ikke igjen).
+   - Oppgjoeret er en loepende saldo (Magne, 8. november 2026: «vi runder av
+     beløp i tilbakebetalingen. Slik må det være»): foerte utlegg minus det
+     som er betalt tilbake. En overfoering fra en felleskonto til personens
+     konto (samme beloep ut og inn, hoeyst tre dager) kommer i innboksen
+     (`oppgjor`, finnOppgjor) og teller naar den er godkjent som Utenfor
+     budsjett. En annen innbetaling kan regnes med for haand (`betaltHand`).
+     Pengene dekker de eldste utleggene foerst; avrundingen blir staaende i
+     saldoen og tas med til neste oppgjoer.
    - Sparemaal: navn, maal og enten en av personens kontoer eller et tall.
    Ingenting herfra gaar til Neam. Loggen (som alle voksne ser) faar bare
    utlegget som havner i felles og én linje om flyttingen - ikke trekkene. */
@@ -2205,7 +2247,6 @@ async function lagrePrivat(env, hvem, d){
 }
 /* Hvor et trekk staar sett fra felles. */
 function privatStatus(p, felles){
-  if(p.refundert) return 'refundert';
   if(!p.sendt) return '';
   const f = felles[p.sendt];
   if(!f) return '';
@@ -2293,22 +2334,27 @@ async function privat(env, okt, epost, hvem, fersk, psu){
     await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(felles));
     try{ await logg(env, [{ kilde:'Neam', tekst:'Koblet ' + kvFlyttet + (kvFlyttet === 1 ? ' kvittering' : ' kvitteringer') + ' til trekk fra ' + PERSONER[hvem] + 's kontoer og flyttet ' + (kvFlyttet === 1 ? 'den' : 'dem') + ' til ' + PERSONER[hvem] + 's egen del – de telles ikke i felles' }]); }catch(e){}
   }
-  /* 3. Refusjon: en overfoering inn som er like stor som ett utlegg felles
-     har foert - eller alle til sammen. Eldste foerst. */
-  const brukt = {};
-  d.ikke.forEach(id => { brukt[id] = true; });
-  for(const id of Object.keys(d.poster)){ const x = d.poster[id].refundert; if(x && x.id) brukt[x.id] = true; }
+  /* 3. Oppgjoeret: det som er betalt tilbake, dekker de eldste foerte utleggene. */
   const alle = () => Object.keys(d.poster).map(id => d.poster[id]);
-  const inn = alle().filter(x => x.belop > 0 && !brukt[x.id]).sort((a, b) => String(a.dato).localeCompare(String(b.dato)));
-  for(const t of inn){
-    const aapne = alle().filter(p => privatStatus(p, felles) === 'fort' && String(p.dato) <= String(t.dato));
-    if(!aapne.length) continue;
-    const en = aapne.filter(p => Math.abs(Math.abs(p.belop) - t.belop) < 0.005)[0];
-    const sum = aapne.reduce((s, p) => s + Math.abs(p.belop), 0);
-    const treff = en ? [en] : Math.abs(sum - t.belop) < 0.005 ? aapne : [];
-    if(!treff.length) continue;
-    treff.forEach(p => { p.refundert = { id:t.id, dato:t.dato }; });
-    brukt[t.id] = true; endret = true;
+  const refusjon = {};
+  let sumBetalt = 0;
+  for(const id of Object.keys(felles)){
+    const f = felles[id];
+    if(!f.oppgjor || f.oppgjor.hvem !== hvem) continue;
+    if(oppgjorTeller(f)){ refusjon[f.oppgjor.trekk] = 'fort'; sumBetalt += Math.abs(f.belop); }
+    else if(f.status === 'ny') refusjon[f.oppgjor.trekk] = 'innboks';
+  }
+  const refusjonAv = p => [p.id].concat(p.bankIder || []).map(i => refusjon[i]).filter(Boolean)[0] || '';
+  for(const p of alle()) if(p.belop > 0 && p.betaltHand && !refusjonAv(p)) sumBetalt += p.belop;
+  const utlegg = alle().filter(p => privatStatus(p, felles) === 'fort').sort((a, b) => String(a.dato).localeCompare(String(b.dato)));
+  const sumUtlegg = utlegg.reduce((sum, p) => sum + Math.abs(p.belop), 0);
+  const dekket = {};
+  let igjen = sumBetalt;
+  for(const p of utlegg){
+    const b = Math.abs(p.belop);
+    if(igjen < 0.005) break;
+    dekket[p.id] = Math.min(b, igjen);
+    igjen -= dekket[p.id];
   }
   if(endret) await lagrePrivat(env, hvem, d);
   /* Saldoen - samme buffer og samme valg av saldo som kontoene i Oppsett. */
@@ -2320,13 +2366,15 @@ async function privat(env, okt, epost, hvem, fersk, psu){
     const s = r && r.ok ? ((r.data && r.data.balances) || []).slice().sort((a, b) => velg.indexOf(a.balance_type) - velg.indexOf(b.balance_type))[0] : null;
     return { uid:k.uid, navn:kn[k.uid] || k.navn, saldo:s ? Number(s.balance_amount.amount) : null };
   });
+  const erDekket = p => dekket[p.id] != null && dekket[p.id] >= Math.abs(p.belop) - 0.005;
   const poster = alle().map(p => ({ id:p.id, konto:kn[p.konto] || p.kontoNavn || '', dato:p.dato, belop:p.belop, tekst:p.tekst || '', motpart:p.motpart || '',
-    status:privatStatus(p, felles), refundertDato:p.refundert ? p.refundert.dato || '' : '', refundertHand:!!(p.refundert && p.refundert.hand), refusjon:!!brukt[p.id] && p.belop > 0 && d.ikke.indexOf(p.id) === -1,
+    status:erDekket(p) ? 'refundert' : privatStatus(p, felles), delvis:!erDekket(p) && dekket[p.id] ? Math.round(dekket[p.id] * 100) / 100 : 0,
+    refusjon:p.belop > 0 ? refusjonAv(p) : '', betaltHand:!!(p.belop > 0 && p.betaltHand && !refusjonAv(p)),
     vedlegg:privatVedleggListe(p), kvittering:p.kv ? { kilde:privatKvKilde(p.kv), navn:p.kv.motpart || p.kv.tekst || '' } : null }))
     .sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
-  const skylder = poster.filter(p => p.status === 'fort');
+  const skylder = { sum:Math.round((sumUtlegg - sumBetalt) * 100) / 100, antall:poster.filter(p => p.status === 'fort').length, utlegg:Math.round(sumUtlegg * 100) / 100, betalt:Math.round(sumBetalt * 100) / 100 };
   return svar({ ok:true, hvem:hvem, navn:PERSONER[hvem], kontoer:kontoer, poster:poster, maal:d.maal,
-    skylder:{ sum:skylder.reduce((s, p) => s + Math.abs(p.belop), 0), antall:skylder.length },
+    skylder:skylder,
     fra:await env.FAMILIE_KV.get(FRA_NOKKEL) || '', flyttet:flyttet || undefined, kvFlyttet:kvFlyttet || undefined, advarsel:advarsel || undefined });
 }
 /* Vedleggene paa et eget trekk: de som er lagt ved her (fil:<trekket>), og
@@ -2388,16 +2436,14 @@ async function privatSend(env, epost, kropp){
   await lagrePrivat(env, hvem, d);
   return svar({ ok:true, sendt:sendt.length });
 }
-async function privatRefundert(env, epost, kropp){
+/* En innbetaling som ikke kom fra felleskontoen (Vipps og lignende) regnes med for haand. */
+async function privatOppgjor(env, epost, kropp){
   const hvem = String(kropp.hvem || '');
   if(personerFor(epost).indexOf(hvem) === -1) return svar({ ok:false, feil:'Ingen tilgang til denne delen' });
   const d = await lesPrivat(env, hvem), p = d.poster[String(kropp.id || '')];
-  if(!p) return svar({ ok:false, feil:'Fant ikke trekket' });
-  if(kropp.refundert) p.refundert = { hand:true, dato:new Date().toISOString().slice(0, 10) };
-  else {
-    if(p.refundert && p.refundert.id && d.ikke.indexOf(p.refundert.id) === -1) d.ikke.push(p.refundert.id);
-    delete p.refundert;
-  }
+  if(!p || !(p.belop > 0)) return svar({ ok:false, feil:'Bare en innbetaling kan regnes som tilbakebetaling' });
+  if(kropp.oppgjor) p.betaltHand = { dato:new Date().toISOString().slice(0, 10) };
+  else delete p.betaltHand;
   await lagrePrivat(env, hvem, d);
   return svar({ ok:true });
 }
@@ -3022,7 +3068,7 @@ async function postHandling(request, env, v, kropp){
   if(kropp && kropp.hva === 'faktura-kategori') return await fakturaKategori(env, kropp);
   if(kropp && kropp.hva === 'faktura-avslutt') return await fakturaAvslutt(env, kropp);
   if(kropp && kropp.hva === 'privat-send') return await privatSend(env, v.epost, kropp);
-  if(kropp && kropp.hva === 'privat-refundert') return await privatRefundert(env, v.epost, kropp);
+  if(kropp && kropp.hva === 'privat-oppgjor') return await privatOppgjor(env, v.epost, kropp);
   if(kropp && kropp.hva === 'privat-maal') return await privatMaal(env, v.epost, kropp);
   if(kropp && kropp.hva === 'privat-vedlegg') return await privatVedleggNy(env, v.epost, kropp);
   if(kropp && kropp.hva === 'privat-vedlegg-slett') return await privatVedleggSlett(env, v.epost, kropp);
