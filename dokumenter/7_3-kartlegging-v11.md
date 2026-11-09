@@ -561,7 +561,8 @@ bredden (`b4493b2`), og to kort i bredden også i Resultat, med søylene skjult
 (`cf98c9a`), fanene Lån og Verdier med Resultat etter Transaksjoner (`9d6637a`),
 og kvitteringer og fakturaer delt på flere kategorier når de legges inn
 (`a608f4a`), lister som ikke får fokus på trykkskjerm (`d6cbd20`), Neams søk i
-transaksjonene rettet (`ba264fe`), og søk på tvers av varelinjer (`fd86809`).
+transaksjonene rettet (`ba264fe`), søk på tvers av varelinjer (`fd86809`), og
+varelinjer lest fra vedlegg (`ab9d7a4`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -570,7 +571,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 108 commits, `0e0050a`–`fd86809`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 109 commits, `0e0050a`–`ab9d7a4`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1354,6 +1355,8 @@ oppgi kode.»
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **Varelinjer fra vedlegg** (`ab9d7a4`) med ekte kvitteringer: hvor godt Neam
+  leser dem, og at `tolk_okonomi_vedlegg` bekreftes i panelet.
 - **Neams søk på tvers av varelinjer** (`fd86809`) i en ekte samtale på
   neam.no: at Neam velger verktøyet selv, og Trumf-rabattene i summen.
 - **Neams søk i transaksjonene** (`ba264fe`) på neam.no.
@@ -4592,7 +4595,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 108 commits fra `0e0050a` til `fd86809` (dialogen med
+verdier. Bygget i 109 commits fra `0e0050a` til `ab9d7a4` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5037,6 +5040,22 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Varelinjer fra vedlegg** (`ab9d7a4`), etter forslaget om at kjøp med vedlegg
+  ble usynlige for varesøket.
+  - `les_okonomi_varer` svarer med `uleste_vedlegg` når perioden har transaksjoner
+    med vedlegg som ikke er lest (`harUlestVedlegg`), også ved andre treff.
+  - `tolk_okonomi_vedlegg` (`neamSkriver`) henter lista fra `?hva=vedlegg-uleste`,
+    leser hver transaksjons filer og lagrer med `vedlegg-linjer`, høyst 20 om
+    gangen. `p.vedleggLest` hindrer at et dokument uten varelinjer leses igjen.
+    Det som feiler, står som ulest. Beløp og kategorier endres ikke.
+  - Nye vedlegg leses ved opplasting (`okVedleggBak`), ett kall til Claude per
+    fil. Feiler det, står vedlegget som ulest.
+  - **Ingen bakgrunnsjobb:** repoet har ingen `wrangler`-fil og Pages Functions
+    har ingen tidsstyring. Gamle vedlegg leses derfor når noen ber Neam om det.
+  - Ikke med: vedlegg på en post som alt har varelinjer, kjøp uten vedlegg og
+    vedlegg i personfanene.
+  - Testet i testserveren med liksom-svar fra Neam: PDF og bilde, uten
+    varelinjer, feil, opplasting. Ikke med ekte dokumenter eller på neam.no.
 - **Neam søker på tvers av varelinjer** (`fd86809`). Magne: «Jeg ønsker st neam
   kan søke på tvers av kvitteringer og regninger».
   - `les_okonomi_varer` kaller `?hva=vare-sok` (`vareSok`) med sok, fra og til.
