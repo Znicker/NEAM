@@ -549,7 +549,10 @@ regningsvalgene, bare felleskontoer, ingen stolper og grønn stjerne
 uten innboksen i Økonomi-kortet (`53bc10e`), «Rydd opp» uten sletting
 (`db642f4`), og egne faner for den enkelte – kontoer, «Send til felles»,
 refusjon og sparemål (`5851452`), og egne trekk i føringsvinduet med
-vedlegg og kvitteringene koblet til (`a786fd2`).
+vedlegg og kvitteringene koblet til (`a786fd2`), og oppgjøret som en
+løpende saldo, med overføringer fra felles til person i innboksen
+(`a58914c`), og kvittering betalt fra egen konto koblet til kjøp og
+overføring, med forbindelser på transaksjonene (`15337f8`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -558,7 +561,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 95 commits, `0e0050a`–`a786fd2`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 97 commits, `0e0050a`–`15337f8`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1342,11 +1345,15 @@ oppgi kode.»
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **Utleggsflyten med ekte DNB** (`15337f8`): at oktober-overføringene
+  forsvinner fra innboksen og er ført som vanlig; at en kvittering krysset av
+  som betalt fra egen konto kobles til kjøpet og overføringen; og at
+  Godkjenn-knappen trekker en tilbakebetaling av saldoen i den egne fanen.
+  Godkjenningen er bare kjørt mot serveren, ikke med knappen.
 - **De egne fanene på neam.no** (8. november): at de rundt 80 trekkene fra
   Forbrukskonto flyttes til Magnes fane første gang den åpnes, at
   kvitteringene som hører til dem kobles riktig (og ingen som hører til
-  felles), at «Send til felles» havner i innboksen med vedleggene, og at
-  refusjonen gjenkjennes med ekte DNB.
+  felles), og at «Send til felles» havner i innboksen med vedleggene.
   Som Nina og med pinkoden er bare tilgangsregelen prøvd, i node.
 - **Økonomi med pinkoden på kjøkkenskjermen** (8. november): Magnes kode
   gir flisen og sida, Emmas ikke; sida går til forsiden når skjermen
@@ -4560,7 +4567,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 95 commits fra `0e0050a` til `a786fd2` (dialogen med
+verdier. Bygget i 97 commits fra `0e0050a` til `15337f8` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5005,6 +5012,86 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Kvittering betalt fra egen konto, koblet til kjøp og overføring**
+  (`15337f8`). Magne: «Jeg vil da at Neam skal registrere det og samkjøre det
+  med transaksjonene fra dnb. både kjøpet men også overføringen» og «alle
+  transaksjoner som har noe med hverandre å gjøre linkes». Svarte også:
+  kvitteringsbeløpet føres i felles, krysset «alt overført» føres rett i
+  regnskapet, og en overføring som ikke hører til et utlegg, føres som vanlig.
+  - **Bakgrunnen:** `a58914c` hentet inn alle overføringer fra felles til en
+    voksen. 14-dagersgrensen målte når Neam førte dem (`behandlet`), ikke
+    trekkets dato, så oktober-overføringene havnet i innboksen merket som
+    tilbakebetaling. Kategorien de hadde, ble overskrevet og kan ikke hentes
+    tilbake.
+  - **Reparasjonen:** en post med `oppgjor` uten `oppgjor.utlegg` er fra
+    den gamle regelen. `finnOppgjor` fjerner koblingen; står posten i
+    innboksen, blir den ført (`auto`, `behandlet` satt til trekkets dato, så
+    den ikke fyller «Ført automatisk»).
+  - **Kvitteringen** (`kvittering-ny` med `eier`, `tilbakebetalt`, `overfort`):
+    avkrysningen under «Legg til kvittering» gjelder neste kvittering som
+    legges inn der, ikke dem Dropbox henter. Posten får `eier`, `utlegg`,
+    `forHand`, `manuell` og konto `utlegg`, og kobles ikke til et felles
+    banktrekk. Med `overfort` føres den med en gang, hvis den har kategori og
+    ikke kan være dobbel – ellers innboksen. Tomt beløp er hele kvitteringen.
+  - **Kjøpet:** trekket på personens konto (`erLik`) huskes som `egetTrekk`, og
+    trekket i den egne fanen får `sendt`, så det ikke kan sendes på nytt.
+  - **Overføringen:** samme beløp ut av felles og inn hos personen, høyst tre
+    dager. Er beløpet notert, føres den med en gang og knyttes til utlegget
+    (`overforing` og `oppgjor.utlegg`). Ellers kommer den i innboksen når
+    felles skylder penger og den er høyst `OPPGJOR_RUNDING` (100 kr, valgt
+    uten å spørre) over det, og ikke er eldre enn det eldste åpne utlegget.
+  - **Saldoen** regnes nå fra utleggene i felles (`eier`), ikke fra de egne
+    trekkene, så et utlegg teller før kjøpet har kommet fra DNB. Et notert
+    beløp teller til overføringen er funnet (`notertOverfort`), aldri begge.
+  - **Forbindelser** (`forbindelser`, `forbPrivat`): banktrekk og kvittering,
+    kjøpet, overføringen og pengene inn hos personen. `forb` i svarene med
+    hele raden, `forbN` i listene. Vises som + etter navnet og som «Hører
+    sammen med» i Innboks, føringsvinduet og den egne fanen.
+  - **Står åpent:** barna er ikke med. Har et kjøp alt vært sendt med «Send
+    til felles» og en kvittering for det samme krysses av, kan det bli to
+    utlegg – fanges bare hvis Neam merker den som mulig dobbel.
+  - Testet i testserveren: utlegg til innboksen og rett i regnskapet, kjøp og
+    overføring koblet, avrunding, notert beløp telt én gang, overføring uten
+    utlegg og uten motpost, reparasjonen, avvist person, skjemaet nullstilt
+    bare etter lagring, plusstegn og vindu, PC og 375 px. Ikke prøvd med
+    ekte DNB, som Nina eller på neam.no.
+- **Oppgjøret som løpende saldo, og overføringer fra felles i innboksen**
+  (`a58914c`; hvilke overføringer som hentes inn, ble endret i `15337f8`, se
+  over). Magne: «vi runder av løp i tilbakebetalingen. Slik må det
+  være. hvordan kan vi gjøre dette så regnskapet går i balanse?» og «Slike
+  overføringer fra felles til bruker bør komme i innboksen».
+  - **Saldoen:** førte utlegg minus det som er betalt tilbake, så
+    avrundingen blir stående og tas med til neste oppgjør. Felles regnskap
+    er nøyaktig på øret. `skylder` er `{sum, antall, utlegg, betalt}`, med
+    fortegn: er det betalt for mye, står det «Du skylder felles». Pengene
+    dekker de eldste utleggene først; et helt dekket utlegg har status
+    `refundert`, et delvis dekket `delvis`.
+  - **I innboksen** (`finnOppgjor`, kalt i `innboks` etter `synkFakturaer`):
+    et trekk fra en felleskonto og en innbetaling på kontoen til en voksen,
+    samme beløp og høyst tre dager mellom (status `ny`, eller ført
+    automatisk de siste 14 dagene – den hentes tilbake). Posten får
+    `oppgjor:{hvem,navn,trekk}`, `manuell`, kilde `oppgjor` og kategorien
+    «Utenfor budsjett · Overføring mellom egne kontoer», og føres aldri av
+    seg selv. Hintet: «Tilbakebetaling til Magne – går av på det felles
+    skylder …». Den teller først når den er godkjent under Utenfor budsjett
+    (`oppgjorTeller`); annen kategori eller Stryk betyr at det ikke var en
+    tilbakebetaling.
+  - **For hånd:** en innbetaling som ikke kom fra felleskontoen (Vipps og
+    lignende) regnes med med «Regn som tilbakebetaling» i føringsvinduet
+    (`privat-oppgjor`, `betaltHand`), og kan angres. Bare på innbetalinger.
+  - **Tatt ut:** den automatiske koblingen på nøyaktig beløp, «Merk som
+    refundert» / «Ikke refundert» og `privat-refundert`. `p.refundert` og
+    `ikke` leses ikke lenger av oppgjøret.
+  - **Står åpent:** det som alt var merket refundert, regnes ikke og må
+    merkes på innbetalingen. Barna er ikke med (ikke i `TILGANG`). Bare
+    penger fra felles til person teller – tilbakebetaling til felles kommer
+    ikke inn i saldoen. Overføringer som er ført for hånd eller er eldre enn
+    14 dager, hentes ikke tilbake. Når innboksen har nye trekk, hentes nå
+    også de voksnes egne kontoer (samme buffer som før).
+  - Testet i testserveren: overføring med og uten motpost, ført automatisk
+    og hentet tilbake, saldo før og etter godkjenning, delvis dekket utlegg,
+    godkjent under annen kategori, innbetaling regnet med for hånd og angret,
+    avvist på et trekk. Ikke prøvd med ekte DNB, som Nina eller på neam.no.
 - **Egne trekk i føringsvinduet, og kvitteringene koblet til** (`a786fd2`).
   Magne: «jeg ønsker at transaksjonene også linkes til vedlegg på samme
   måte som i regnskapet. det er i denne menyen man kan sende det over for
@@ -5013,8 +5100,8 @@ ligge under høyre tommelknapp»).
     som en føring i Regnskap (`#ok-fr-bak`, `okPeVindu`/`okPeVis`): dato,
     konto, tekst fra banken, kvitteringen, status og varene til venstre,
     vedleggene side for side til høyre. Valgene ligger der: «Send til
-    felles», Rediger, «Merk som refundert» / «Ikke refundert», og
-    «Kvitteringen hører til felles». Dialogen foran hvert valg (fra
+    felles», Rediger, «Merk som refundert» / «Ikke refundert» (byttet ut
+    i `a58914c`), og «Kvitteringen hører til felles». Dialogen foran hvert valg (fra
     `5851452`) er tatt ut – vinduet er bekreftelsen, som Stryk i Regnskap;
     bare «Kvitteringen hører til felles» spør.
   - **Rediger** viser bare vedleggene (`privat-vedlegg`,
@@ -5085,7 +5172,8 @@ ligge under høyre tommelknapp»).
   - **Statusen** leses av felles hver gang: sendt – venter i innboksen;
     ført (godkjent eller slått sammen) – felles skylder deg; strøket – kan
     sendes igjen; forsvinner posten fra felles, regnes den som ikke sendt.
-  - **Refusjon – «Føres, og følges opp».** En innbetaling på en av
+  - **Refusjon – «Føres, og følges opp»** (erstattet av den løpende saldoen
+    i `a58914c`, se over). En innbetaling på en av
     personens kontoer, ikke brukt før, som er lik ett ført utlegg eller
     summen av alle førte utlegg datert før den, merker dem refundert.
     «Merk som refundert» gjør det for hånd; «Ikke refundert» angrer og

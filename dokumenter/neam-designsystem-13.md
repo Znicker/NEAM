@@ -2052,8 +2052,10 @@ først, Sparing sist. Bare tallene skiller dem:
   (`#ok-vis-person`), én spalte: **Kontoene** med saldo; **Kontoutskrift**
   med ‹ måned › og en hjelpetekst, radene som i Logg (`.ok-pe-rad`: dato
   foran, kontoen, kvitteringen og statusen i meta-linja, beløp med fortegn);
-  **alle radene kan trykkes** og åpner føringsvinduet (se under); **«Felles
-  skylder deg»** som `.ok-stort`, bare når noe er ført; og **sparemålene**
+  **alle radene kan trykkes** og åpner føringsvinduet (se under); **saldoen**
+  som `.ok-stort`, med «Felles skylder deg» eller «Du skylder felles» som
+  etikett og ført og betalt tilbake i meta-linja, når noe er ført eller
+  betalt; og **sparemålene**
   som familiemålet (`.ok-kort.ok-maal` med stolpen), med «Endre
   sparemålene» / «+ Legg til et sparemål» som `.ok-lenke` og skjemaet med
   Lagre (`.btn-ny`) og Avbryt etter Avbryt-regelen. Trekk og kvitteringer
@@ -2062,15 +2064,32 @@ først, Sparing sist. Bare tallene skiller dem:
   samme vindu som i Regnskap (`.ok-fr-stor`, to spalter) – infoen,
   kvitteringen og varene til venstre, vedleggene side for side til høyre.
   Valgene under: **«Send til felles»** (`.btn-ny`, først – det er det
-  vinduet er til), **Rediger** (`.btn-endre`), og etter status «Merk som
-  refundert» / «Ikke refundert» / «Kvitteringen hører til felles»
-  (`.btn-ghost ok-smal`). Valgene spør ikke – vinduet er bekreftelsen, som
+  vinduet er til), **Rediger** (`.btn-endre`), og etter trekket «Regn som
+  tilbakebetaling» / «Ikke tilbakebetaling» (på en innbetaling som ikke kom
+  fra felleskontoen) og «Kvitteringen hører til felles» (`.btn-ghost
+  ok-smal`). Valgene spør ikke – vinduet er bekreftelsen, som
   Stryk i Regnskap; bare «Kvitteringen hører til felles» spør med
   `bekreft()`. Rediger viser bare vedleggene (Fjern og «+ Legg til
   vedlegg», lagres med en gang) og **«Ferdig»** (`.btn-ghost ok-smal`) i
   stedet for Lagre og Avbryt, siden ingenting venter på å lagres.
   Kvitteringens filer er låst – uten Fjern, med en linje som sier det.
   (Valgt uten skisse; Magne har ikke sett vinduet ennå.)
+  **Oppgjøret i innboksen** (`a58914c`, `15337f8`): en overføring fra felles
+  til en voksen som hører til et utlegg, ligger under «Klare til godkjenning»
+  med kategorien ferdig valgt og hintet «Tilbakebetaling til Magne – går av
+  på det felles skylder …». Er beløpet notert på kvitteringen, føres den
+  med en gang.
+  **Betalt fra egen konto** (fra 9. november 2026, `15337f8`): under «Legg til
+  kvittering» i Innboks, som avkrysning (`.ok-kv-kryss`, 18 px, aksentfargen):
+  «Betalt fra min konto» (for sys@ «Betalt fra egen konto» med valg av
+  person), så «Jeg har alt overført pengene til meg», så «Overført … kr» med
+  hele beløpet som forvalg. Valgene gjelder neste kvittering og nullstilles
+  når den er lagret. Valgt uten skisse.
+  **Forbindelser** (fra 9. november 2026, `15337f8`, Magne: «et lite pluss
+  symbol»): en rad med transaksjoner som hører sammen, har en liten **+**
+  etter navnet (`.ok-forb-pluss`, fet, aksentfargen – fargen er valgt uten å
+  spørre). I vinduet og detaljpanelet står de under etiketten **«Hører sammen
+  med»**, som varelinjer: navn, hva det er og dato, beløp til høyre.
 
 **Regler:**
 
