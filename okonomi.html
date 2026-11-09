@@ -252,6 +252,16 @@ input.ok-regnefeil{ border-color:var(--danger) !important; }
 .ok-meny-valg:hover, .ok-meny-valg:focus-visible{ background:var(--aksent-lys); outline:none; }
 .ok-meny-valg[disabled]{ color:var(--ink-soft); opacity:.6; cursor:default; background:none; }
 .ok-meny-valg.fare{ color:var(--danger); }
+select.ok-tre-velg{ pointer-events:none; }
+.ok-tre-boks{ z-index:125; }
+.ok-tre-boks .ok-meny-valg{ padding:10px; font-size:var(--t-brod); }
+.ok-tre-boks .ok-meny-valg.valgt{ background:var(--aksent-lys); font-weight:600; }
+.ok-tre-rad{ display:flex; align-items:center; }
+.ok-tre-rad > .ok-meny-valg{ flex:1 1 auto; min-width:0; }
+.ok-tre-boks .ok-tre-hode{ display:flex; align-items:center; gap:6px; font-weight:600; }
+.ok-tre-boks .ok-tre-hode.pil{ flex:none; width:auto; }
+.ok-tre-hode[aria-expanded="true"] .ok-fold-pil{ transform:rotate(90deg); }
+.ok-tre-boks .ok-tre-under .ok-meny-valg{ padding-left:32px; }
 .ok-meny-felt{ margin:4px 6px; font-family:inherit; font-size:16px; padding:6px 8px; border:1.5px solid var(--aksent); border-radius:8px; background:#fff; color:var(--ink); }
 /* Budsjettlista: poster med linjer aapnes, og menyens felt for maanedene (8. november 2026). */
 .ok-bl-rad[role="button"]{ cursor:pointer; }
@@ -1927,6 +1937,108 @@ button.ok-dr-rad{ cursor:pointer; }
       });
     });
   }
+  /* Foldbar liste for kategori og merke (Magne, 9. november 2026: «i valg av
+     kategori og merker må vi kunne lukke kollapse hovedkategorier. listen i
+     rullgardinmenyen blir for lang»). En ekte nedtrekksliste kan ikke foldes,
+     saa den blir staaende (og beholder verdien og change), men aapner denne
+     lista i stedet. Lista leses av valgene hver gang den aapnes. */
+  var okTreBoks = null, okTreSel = null;
+  var OK_TRE_PIL = '<svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  function okTreLukk(fokus){
+    if(!okTreBoks) return;
+    var s = okTreSel;
+    okTreBoks.remove(); okTreBoks = null; okTreSel = null;
+    document.removeEventListener('keydown', okTreTast, true);
+    if(fokus && s) s.focus();
+  }
+  function okTreTast(ev){
+    if(ev.key === 'Escape' || ev.key === 'Tab'){ ev.preventDefault(); ev.stopImmediatePropagation(); okTreLukk(true); return; }
+    if(ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
+    ev.preventDefault(); ev.stopImmediatePropagation();
+    var k = Array.prototype.filter.call(okTreBoks.querySelectorAll('button'), function(x){ return x.offsetParent; });
+    var i = k.indexOf(document.activeElement) + (ev.key === 'ArrowDown' ? 1 : -1);
+    if(k[i]) k[i].focus();
+  }
+  function okTreGrupper(sel){
+    var ut = [];
+    Array.prototype.forEach.call(sel.children, function(c){
+      if(c.tagName === 'OPTGROUP'){
+        ut.push({ navn:c.label, valg:Array.prototype.map.call(c.children, function(o){ return { o:o, tekst:o.text }; }) });
+        return;
+      }
+      /* Undermerker staar som «Hovedmerke › Undermerke» rett etter hovedmerket. */
+      var d = c.text.split(' › '), siste = ut[ut.length - 1];
+      if(d.length > 1 && siste && siste.enkel && siste.navn === d[0]){ siste.valg.push({ o:c, tekst:d.slice(1).join(' › ') }); return; }
+      ut.push({ enkel:c, navn:c.text, valg:[] });
+    });
+    return ut;
+  }
+  function okTreApne(sel){
+    okTreLukk();
+    okTreSel = sel;
+    var boks = okEl('div', 'ok-meny ok-tre-boks');
+    boks.setAttribute('aria-label', sel.getAttribute('aria-label') || 'Velg');
+    var valg = function(o, tekst){
+      var b = okEl('button', 'ok-meny-valg' + (o.selected ? ' valgt' : ''), okVask(tekst)); b.type = 'button';
+      b.addEventListener('click', function(){
+        okTreLukk(true);
+        if(sel.value === o.value) return;
+        sel.value = o.value;
+        sel.dispatchEvent(new Event('change', { bubbles:true }));
+      });
+      return b;
+    };
+    okTreGrupper(sel).forEach(function(g){
+      if(!g.valg.length){ boks.appendChild(valg(g.enkel, g.navn)); return; }
+      var hode = okEl('button', 'ok-meny-valg ok-tre-hode' + (g.enkel ? ' pil' : ''), OK_TRE_PIL + (g.enkel ? '' : okVask(g.navn))); hode.type = 'button';
+      if(g.enkel) hode.setAttribute('aria-label', 'Vis undermerkene til ' + g.navn);
+      var under = okEl('div', 'ok-tre-under');
+      g.valg.forEach(function(v){ under.appendChild(valg(v.o, v.tekst)); });
+      var sett = function(a){ hode.setAttribute('aria-expanded', String(a)); under.hidden = !a; };
+      sett(g.valg.some(function(v){ return v.o.selected; }));
+      hode.addEventListener('click', function(){ sett(under.hidden); });
+      if(g.enkel){ var rad = okEl('div', 'ok-tre-rad'); rad.appendChild(hode); rad.appendChild(valg(g.enkel, g.navn)); boks.appendChild(rad); }
+      else boks.appendChild(hode);
+      boks.appendChild(under);
+    });
+    /* Menyene i Budsjett og Regnskap lukker seg ved trykk utenfor dem. */
+    ['mousedown', 'touchstart'].forEach(function(t){ boks.addEventListener(t, function(e){ e.stopPropagation(); }, { passive:true }); });
+    document.body.appendChild(boks);
+    okTreBoks = boks;
+    var r = sel.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight, under = vh - r.bottom - 12;
+    boks.style.minWidth = Math.min(Math.max(230, r.width), vw - 16) + 'px';
+    if(under >= 240 || under >= r.top - 12){ boks.style.top = (r.bottom + 4) + 'px'; boks.style.maxHeight = Math.min(under, 420) + 'px'; }
+    else { boks.style.bottom = (vh - r.top + 4) + 'px'; boks.style.maxHeight = Math.min(r.top - 12, 420) + 'px'; }
+    boks.style.left = Math.max(8, Math.min(r.left, vw - boks.offsetWidth - 8)) + 'px';
+    document.addEventListener('keydown', okTreTast, true);
+    var v = boks.querySelector('.valgt') || boks.querySelector('button');
+    if(v){ v.focus({ preventScroll:true }); v.scrollIntoView({ block:'nearest' }); }
+  }
+  /* Velgeren tar ikke imot trykk selv (CSS), saa telefonens egen liste aldri
+     aapnes. Trykket finnes paa punktet - og bare om ingenting ligger over. */
+  function okTreUnder(x, y){
+    var over = document.elementFromPoint(x, y);
+    if(!over) return null;
+    return Array.prototype.filter.call(document.querySelectorAll('select.ok-tre-velg'), function(s){
+      if(s.disabled || !s.offsetParent || !over.contains(s)) return false;
+      var r = s.getBoundingClientRect();
+      return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    })[0] || null;
+  }
+  document.addEventListener('click', function(ev){
+    if(okTreBoks && okTreBoks.contains(ev.target)) return;
+    var s = okTreUnder(ev.clientX, ev.clientY);
+    if(!s){ okTreLukk(); return; }
+    ev.preventDefault(); ev.stopPropagation();
+    if(okTreSel === s) okTreLukk(true); else okTreApne(s);
+  }, true);
+  document.addEventListener('keydown', function(ev){
+    var s = ev.target;
+    if(!s || s.tagName !== 'SELECT' || !s.classList.contains('ok-tre-velg') || s.disabled) return;
+    if(ev.key === 'Enter' || ev.key === ' ' || ev.key === 'ArrowDown' || ev.key === 'ArrowUp'){ ev.preventDefault(); okTreApne(s); }
+  });
+  window.addEventListener('scroll', function(e){ if(okTreBoks && !okTreBoks.contains(e.target)) okTreLukk(); }, true);
+  window.addEventListener('resize', function(){ okTreLukk(); });
   function okKatVelg(id, verdi, tomTekst, etikett){
     var s = document.createElement('select');
     s.id = id;
@@ -1939,6 +2051,7 @@ button.ok-dr-rad{ cursor:pointer; }
       grupper[g].appendChild(new Option(k.split(' · ').slice(1).join(' · ') || k, k));
     });
     s.appendChild(new Option('+ Ny kategori …', '__ny'));
+    s.classList.add('ok-tre-velg');
     s.value = verdi || '';
     var forrige = s.value;
     s.addEventListener('change', function(ev){
@@ -2487,6 +2600,7 @@ button.ok-dr-rad{ cursor:pointer; }
       sel.appendChild(new Option(h.navn, h.id));
       okUndermerker(h.id).forEach(function(u){ sel.appendChild(new Option(h.navn + ' › ' + u.navn, u.id)); });
     });
+    sel.classList.add('ok-tre-velg');
   }
   function okBuMerke(k){
     var d = String(k || '').split(' · ');
