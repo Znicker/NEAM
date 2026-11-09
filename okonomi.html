@@ -1972,7 +1972,7 @@ button.ok-dr-rad{ cursor:pointer; }
           return { id:r.id };
         });
       }).then(function(r){
-        if(!r){ sel.focus(); return; }
+        if(!r){ okTreFokus(sel); return; }
         sel.insertBefore(new Option(okMerkeFullNavn(r.id), r.id), sel.querySelector('option[value="__ny"]'));
         sel.value = r.id; forrige = r.id;
         sel.dispatchEvent(new Event('change', { bubbles:true }));
@@ -1986,12 +1986,15 @@ button.ok-dr-rad{ cursor:pointer; }
      lista i stedet. Lista leses av valgene hver gang den aapnes. */
   var okTreBoks = null, okTreSel = null;
   var OK_TRE_PIL = '<svg class="ok-fold-pil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  /* Paa en trykkskjerm aapner fokus telefonens egen rulleliste, saa velgeren
+     faar fokus bare med mus og tastatur. */
+  function okTreFokus(s){ if(s && !window.matchMedia('(hover:none)').matches) s.focus(); }
   function okTreLukk(fokus){
     if(!okTreBoks) return;
     var s = okTreSel;
     okTreBoks.remove(); okTreBoks = null; okTreSel = null;
     document.removeEventListener('keydown', okTreTast, true);
-    if(fokus && s) s.focus();
+    if(fokus) okTreFokus(s);
   }
   function okTreTast(ev){
     if(ev.key === 'Escape' || ev.key === 'Tab'){ ev.preventDefault(); ev.stopImmediatePropagation(); okTreLukk(true); return; }
@@ -2101,7 +2104,7 @@ button.ok-dr-rad{ cursor:pointer; }
       ev.stopImmediatePropagation();
       s.value = forrige;
       okNyKategori(forrige).then(function(r){
-        if(!r){ s.focus(); return; }
+        if(!r){ okTreFokus(s); return; }
         var d = r.k.split(' · ');
         var o = new Option(d.slice(1).join(' · ') || r.k, r.k);
         var gr = Array.prototype.filter.call(s.querySelectorAll('optgroup'), function(x){ return x.label === d[0]; })[0];
@@ -3690,7 +3693,7 @@ button.ok-dr-rad{ cursor:pointer; }
           if(!forste) forste = s;
         });
         visSteg(2);
-        if(forste) forste.focus();
+        okTreFokus(forste);
       };
       e('ok-kvs-utlegg').onchange = tegn;
       e('ok-kvs-betalt').onchange = tegn;
@@ -6620,7 +6623,7 @@ button.ok-dr-rad{ cursor:pointer; }
     punkt('Åpne', function(){ okBuMenyLukk(); okForVindu(f); });
     if(!f.del) punkt('Endre kategori …', function(b){
       var s = okKatVelg('ok-fm-kat', f.kategori, null, 'Ny kategori for ' + (f.tekst || 'føringen'));
-      b.replaceWith(s); s.focus();
+      b.replaceWith(s); okTreFokus(s);
       s.addEventListener('change', function(){ okForEndre(f.venter ? { hva:'faktura-kategori', id:f.id, kategori:s.value } : { hva:'godkjenn', godkjenn:[{ id:f.id, kategori:s.value }], strok:[] }, info).then(ferdig); });
     });
     if(f.harKvittering) punkt('Se kvittering', function(){ okBuMenyLukk(); okVisKvittering({ id:f.id, tittel:f.tekst, dato:f.dato, kilde:f.kilde, belop:-f.belop, harFil:f.harFil, filType:f.filType }); });
@@ -6813,7 +6816,7 @@ button.ok-dr-rad{ cursor:pointer; }
         okMerkeValg(sel);
         sel.value = okMerkeAv(okBu.merker[k]) ? okBu.merker[k] : '';
         okMerkeNyKrok(sel);
-        b.replaceWith(sel); sel.focus();
+        b.replaceWith(sel); okTreFokus(sel);
         sel.addEventListener('change', function(){ post({ hva:'kategori-merke', kategori:k, merke:sel.value }).then(ferdig); });
       });
       punkt('Velg måneder', function(b){
