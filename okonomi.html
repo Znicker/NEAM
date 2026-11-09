@@ -7646,8 +7646,9 @@ button.ok-dr-rad{ cursor:pointer; }
     if(navn === 'les_okonomi_transaksjoner'){
       var al = await okNeamPost2('?hva=alle-poster');
       if(!al.ok) throw new Error(al.feil);
-      var fl = { sok:String(arg.sok || '').trim().toLowerCase(), konto:'', type:String(arg.type || ''), fra:String(arg.fra || ''), til:String(arg.til || ''),
-        kat:arg.kategori ? (String(arg.kategori).indexOf(' · ') === -1 ? 'g:' + arg.kategori : String(arg.kategori)) : '' };
+      /* Samme form som okAlFilter: konto, kat, merke og type er lister. */
+      var fl = { sok:String(arg.sok || '').trim().toLowerCase(), konto:[], merke:[], type:arg.type ? [String(arg.type)] : [], fra:String(arg.fra || ''), til:String(arg.til || ''),
+        kat:arg.kategori ? [String(arg.kategori).indexOf(' · ') === -1 ? 'g:' + arg.kategori : String(arg.kategori)] : [] };
       var kn2 = String(arg.konto || '').trim().toLowerCase();
       /* Kontonavnet, aldri kontonummeret - det skal ikke til Neam (les_okonomi_kontoer). */
       var kilde = function(x){ return x.fra ? okAlKildeNavn(x) : (x.kontoNavn || 'Banken'); };
