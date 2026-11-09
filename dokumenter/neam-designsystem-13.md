@@ -2095,6 +2095,13 @@ først, Sparing sist. Bare tallene skiller dem:
   «+ Ny linje …»). Det åpner et lite vindu (`.ok-kv-kort`) med Navn, Hører
   hjemme når plassen ikke er gitt, **Legg til** (`.btn-ny`) og **Avbryt**
   (`.btn-ghost ok-smal`). Filtre («Alle kategorier») har ikke valget.
+  **Foldbar velger** (fra 9. november 2026, `7e85730`): kategori og merke på
+  en føring velges i en liste som ser ut som menyene (`.ok-meny`,
+  `.ok-tre-boks`), ikke i en nedtrekksliste. Hovedkategoriene er lukket med
+  `.ok-fold-pil`, unntatt den som er valgt, og det valgte er markert med
+  `--aksent-lys`. Et merke med undermerker har egen pil, og navnet velger
+  merket. Valgt uten skisse. Føringsvinduets tre lister og filtrene er vanlige
+  nedtrekkslister.
   **Forbindelser** (fra 9. november 2026, `15337f8`, Magne: «et lite pluss
   symbol»): en rad med transaksjoner som hører sammen, har en liten **+**
   etter navnet (`.ok-forb-pluss`, fet, aksentfargen – fargen er valgt uten å

@@ -555,7 +555,7 @@ løpende saldo, med overføringer fra felles til person i innboksen
 overføring, med forbindelser på transaksjonene (`15337f8`), «Lim inn» som
 sier at en PDF må velges som fil (`5f23002`), og vinduet som spør om utlegg
 når en kvittering legges til (`c282324`), og nye kategorier og merker der
-de velges (`85b6ba5`).
+de velges (`85b6ba5`), og kategori- og merkevalg som kan foldes (`7e85730`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -564,7 +564,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 100 commits, `0e0050a`–`85b6ba5`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 101 commits, `0e0050a`–`7e85730`, medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1348,6 +1348,8 @@ oppgi kode.»
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **Foldbare kategori- og merkevalg** (`7e85730`) på en ekte telefon: at
+  telefonens egen rulleliste ikke kommer opp i stedet.
 - **Nye kategorier og merker** (`85b6ba5`): på telefon, i høyreklikkmenyene
   og på neam.no.
 - **Utleggsflyten med ekte DNB** (`15337f8`, `c282324`): at
@@ -4572,7 +4574,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 100 commits fra `0e0050a` til `85b6ba5` (dialogen med
+verdier. Bygget i 101 commits fra `0e0050a` til `7e85730` (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5017,6 +5019,19 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Kategori- og merkevalg som kan foldes** (`7e85730`). Magne: «i valg av
+  kategori og merker må vi kunne lukke kollapse hovedkategorier. listen i
+  rullgardinmenyen blir for lang».
+  - En ekte `<select>` kan ikke foldes. Den blir stående, med verdi og
+    `change`, så de som bruker den er uendret, men får klassen `.ok-tre-velg`
+    og `pointer-events:none`. Et trykk finnes på punktet (`okTreUnder`, bare
+    når ingenting ligger over) og åpner lista (`okTreApne`), som leser valgene
+    fra velgeren hver gang. Tastatur: Enter, mellomrom og piltaster åpner,
+    Escape og Tab lukker.
+  - Gjelder `okKatVelg` og `okMerkeValg`. Føringsvinduets tre lister og
+    filtrene er uendret.
+  - Testet i testserveren med klikk: folding, valg, tastatur, merker oppå
+    dialogen, PC og 375 px. Ikke på en ekte telefon eller på neam.no.
 - **Nye kategorier og merker der de velges** (`85b6ba5`). Magne: «uansett
   hvor det skal settes kategorier og merker bør man få lov til å lage nye.
   det er slik det må vokse i starten».
