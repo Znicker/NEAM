@@ -3860,6 +3860,16 @@ Halve jobben blir gjort uansett.
    og åpnet derfra, ikke i en Safari-fane – og hver hjemskjerm-
    installasjon blir sin egen enhet.
 
+**«Hent på nytt» for en annen enhet bygges sammen med push** (Magne,
+10. november 2026). Ikke automatisk – det kan bli krøll om noen holder på
+med noe; den som trykker, bestemmer når. Pushen ber enheten kjøre den
+samme `neamHardReset` som i innstillingene. Alle enhetene har Neam på
+hjemskjermen i iOS, så push når fram. To ting å passe på:
+- **`neamHardReset` melder i dag av ALLE service workers** – da forsvinner
+  push-abonnementet ved første reset. Den må la Neams egen stå.
+- **iOS tillater ikke stille push:** hver push må vise et varsel, så
+  enheten får et synlig «Neam henter nytt».
+
 **Brannalarmen bør IKKE gå via nettpush.** iOS gir ingen garanti for
 leveringstid, varselet kan holdes tilbake i strømsparing, og det kommer som
 et varsel blant alle andre. Til noe som faktisk brenner bør det gå gjennom
