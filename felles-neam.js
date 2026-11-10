@@ -1964,10 +1964,18 @@ window.addEventListener('keydown', function(){ if(!neamPinAapen) neamPinVaaken()
    alarmen som ringer). Sidene merker sitt eget med data-uten-kode, og
    data-med-kode paa det inni som likevel skal be om koden (en
    endre-knapp som aapner et skjema - ellers kom tastaturet midt i
-   skjemaet i stedet). */
-const NEAM_PIN_FRI = '[data-uten-kode], #ntpVaer, .ntp-vb-bak, #ntpKlokke, #ntpTimere, .ntp-tm-bak, .ntp-tm-ringbak';
+   skjemaet i stedet).
+   Enhetsstyringen ogsaa (Magne, 10. november 2026: «Enhetsstyring må
+   også kunne gjøres uten kode»): haandtaket, «Enheter og lys», stabelen
+   med Rommene og Neamow, og de to dialogene. Haandtaket bare naar
+   fireren er nede - andre trykk aapner samtalen, og den skal ha koden.
+   Rediger i Rommene, og alt mens Rommene redigeres, ber om koden: det
+   endrer oppsettet, ikke enhetene. */
+const NEAM_PIN_FRI = '[data-uten-kode], #ntpVaer, .ntp-vb-bak, #ntpKlokke, #ntpTimere, .ntp-tm-bak, .ntp-tm-ringbak'
+                   + ', #neamHandtak:not(.oppe), #neamTLys, #neamEnheter, .hsk-bak, .nmw-bak';
+const NEAM_PIN_MED = '[data-med-kode], .hsk-rediger, .hsk-redigerer';
 function neamPinFri(el){
-  if(!el || !el.closest || el.closest('[data-med-kode]')) return false;
+  if(!el || !el.closest || el.closest(NEAM_PIN_MED)) return false;
   return !!el.closest(NEAM_PIN_FRI);
 }
 window.addEventListener('pointerdown', function(ev){
