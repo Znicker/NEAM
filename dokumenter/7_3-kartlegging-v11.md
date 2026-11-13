@@ -571,7 +571,8 @@ en kvittering legges til (`52565ad`), innboksen som åpner rett i Rediger
 (`7fc4cda`), alle hovedkategoriene i Regnskap og Resultat (`12df3f2`), og
 samlefaktura med flere transaksjoner, penger inn på regninger og full
 redigering ved innlegging (`9ef0300`), og kvitteringer og trekk sammenlignet i
-bankdager («Økonomi: kvitteringer og trekk sammenlignes i bankdager», commiten etter `f432706`).
+bankdager (`3779eec`), og innboksposten som vises med en gang («Økonomi: innboksposten vises med en gang»,
+commiten etter `3779eec`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -580,7 +581,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 114 commits, `0e0050a` til «Økonomi: kvitteringer og trekk sammenlignes i bankdager», medregnet en midlertidig statustest fra en annen økt
+fungerte»). 115 commits, `0e0050a` til «Økonomi: innboksposten vises med en gang», medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1393,7 +1394,7 @@ C marineblå tavle – og Magne valgte **A**.
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
-- **Bankdager** («Økonomi: kvitteringer og trekk sammenlignes i bankdager»): en kvittering fra fredag eller lørdag mot
+- **Bankdager** (`3779eec`): en kvittering fra fredag eller lørdag mot
   trekket som kommer mandag eller tirsdag, med ekte DNB-data.
 - **Penger inn** (`9ef0300`) med en ekte Glitre-regning med strømstøtte:
   at Neam leser minusbeløpet, og at innbetalingen fra banken kobles til den.
@@ -4656,7 +4657,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 114 commits fra `0e0050a` til «Økonomi: kvitteringer og trekk sammenlignes i bankdager» (dialogen med
+verdier. Bygget i 115 commits fra `0e0050a` til «Økonomi: innboksposten vises med en gang» (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5101,7 +5102,18 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
-- **Kvitteringer og trekk sammenlignes i bankdager** («Økonomi: kvitteringer og trekk sammenlignes i bankdager»). Magne: «når
+- **Innboksposten vises med en gang** («Økonomi: innboksposten vises med en gang»). Magne: «når jeg trykker på
+  en til godkjenning, blinker det og så tar det litt tid før jeg ser detaljene».
+  - `okForVindu` åpnet vinduet med «Henter …» og ventet på `?hva=post`, som leser
+    hele føringslista på serveren. Nå bygger `okIbDetalj` posten av det innboksen
+    alt har (samme form som `?hva=post`), og Rediger tegnes med en gang.
+    Detaljene hentes etterpå; vinduet tegnes på nytt bare når `okFrNokkel`
+    viser en forskjell og ingenting er endret.
+  - Varelinjene hentes bare første gang (`ib.linjer`). En samlefaktura i
+    innboksen åpner rett i sitt eget vindu, uten føringsvinduet først.
+  - Testet i testserveren med 1,5 s forsinkelse på serveren: feltene var der
+    etter under 10 ms, uten nytegning, og Godkjenn virket. Ikke på neam.no.
+- **Kvitteringer og trekk sammenlignes i bankdager** (`3779eec`). Magne: «når
   man sammenligner utgifter for sammenslåing må man ta høyde for føring og
   kjøring i helg. bankene kjører ikke i helger».
   - `bankdagerMellom` teller bankdagene etter den tidligste datoen til og med

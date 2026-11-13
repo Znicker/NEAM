@@ -6336,14 +6336,49 @@ button.ok-dr-rad{ cursor:pointer; }
   var OK_AVSLUTTET = { 'slettet':'Regningen er slettet', 'betalt-utenfor':'Betalt utenfor regnskapet' };
   var OK_FR_STATUS = { godkjent:'Ført', ny:'I innboksen', stroket:'Strøket – telles ikke', venter:'Venter på trekket', sammenslatt:'Slått sammen med en annen post' };
   /* rediger: aapne rett i Rediger, ogsaa for en foert post. */
+  /* En post i innboksen bygd av det innboksen alt har, i samme form som
+     ?hva=post - saa vinduet kommer med en gang (Magne, 14. november 2026:
+     «når jeg trykker på en til godkjenning, blinker det og så tar det litt
+     tid før jeg ser detaljene»). */
+  function okIbDetalj(ib){
+    return { id:ib.id, dato:ib.dato, datoBank:ib.datoBank || '', belop:ib.belop, bankBelop:ib.bankBelop != null ? ib.bankBelop : null, overstyrt:!!ib.overstyrt,
+      motpart:ib.motpart || '', tekst:ib.tekst || '', motpartBank:ib.motpartBank || '', notat:ib.notat || '', kategori:ib.kategori || '', merke:ib.merke || '',
+      status:ib.status, auto:!!ib.auto, kilde:ib.kilde || '', fra:ib.fra || '', forHand:!!ib.forHand, utlegg:ib.utlegg || '', faktura:!!ib.faktura, avsluttet:ib.avsluttet || '',
+      konto:ib.fra ? '' : (ib.kontoNavn || ''), betaltFra:ib.bankKonto || '', behandlet:'', av:'', deler:[],
+      harKvittering:(!!ib.fra || !!ib.harLinjer) && ib.harKvittering !== false,
+      vedlegg:(ib.harFil ? [{ n:0, type:ib.filType || '', navn:ib.filNavn || '' }] : []).concat((ib.vedlegg || []).map(function(v){ return { n:v.n, type:v.type, navn:v.navn || '' }; })),
+      forb:ib.forb || [], samleVenter:!!ib.samleVenter, tvil:!!ib.tvil, limt:'', samleId:ib.samleId || '', samleNavn:'', samle:null };
+  }
+  /* Det i detaljene som kan skille seg fra innboksens utgave. */
+  function okFrNokkel(p){
+    return JSON.stringify([p.motpart, p.dato, p.belop, p.kategori, p.merke, p.notat, p.harKvittering, p.betaltFra, p.deler.length, (p.forb || []).length,
+      p.vedlegg.map(function(v){ return v.n + ':' + v.type; })]);
+  }
   function okForVindu(f, fra, rediger){
     if(fra) okFrFra = fra;
     okFrEndret = null;
+    /* Innboksen: vis med en gang, hent detaljene etterpaa. */
+    var ibLok = !rediger && okPoster.filter(function(x){ return x.id === f.id; })[0];
+    if(ibLok && ibLok.samleVenter){ okSfFraPost(ibLok.id); return; }
     var feil = document.getElementById('ok-fr-feil'); feil.hidden = true; feil.style.color = '';
     document.getElementById('ok-fr-kilde').textContent = f.kilde || 'Føring';
     document.getElementById('ok-fr-tittel').textContent = f.tekst || f.motpart || 'Uten tekst';
     document.getElementById('ok-fr-meta').textContent = f.dato ? okDato.format(new Date(f.dato)) : '';
     document.getElementById('ok-fr-belop').textContent = f.belop != null ? okKr0.format(f.belop) + ' kr' : '';
+    if(ibLok){
+      okFrPost = okIbDetalj(ibLok);
+      document.getElementById('ok-fr-bak').hidden = false;
+      okFrRediger(okFrPost);
+      var lokal = okFrNokkel(okFrPost);
+      okHent('/api/bank?hva=post&id=' + encodeURIComponent(f.id)).then(function(r){
+        if(!r.ok || !okFrPost || okFrPost.id !== r.post.id || document.getElementById('ok-fr-bak').hidden) return;
+        /* Tegnes paa nytt bare naar noe faktisk er annerledes, og ingen har begynt aa endre. */
+        if(okFrNokkel(r.post) === lokal || (okFrEndret && okFrEndret())){ okFrPost = r.post; return; }
+        okFrPost = r.post;
+        if(r.post.status === 'ny') okFrRediger(r.post); else okFrVis(r.post);
+      });
+      return;
+    }
     document.getElementById('ok-fr-innhold').innerHTML = '<p class="ok-meta">Henter …</p>';
     document.getElementById('ok-fr-bak').hidden = false;
     document.getElementById('ok-fr-lukk').focus();
@@ -6769,11 +6804,13 @@ button.ok-dr-rad{ cursor:pointer; }
     if(ib && p.harKvittering){
       var kvEt = okEl('span', 'ok-etikett', 'Kvitteringen'), fd = okEl('div', ''), lb = okEl('div', 'ok-fr-linjer', '<p class="ok-meta">Henter varene …</p>');
       inn.appendChild(kvEt); inn.appendChild(fd); inn.appendChild(lb);
-      okHent('/api/bank?hva=kvittering&id=' + encodeURIComponent(p.id)).then(function(kv){
-        if(!kv.ok || !(kv.linjer || []).length){ kvEt.remove(); fd.remove(); lb.remove(); return; }
-        ib.linjer = ib.linjer || kv.linjer;
+      var visLinjer = function(linjer){
+        if(!linjer || !linjer.length){ kvEt.remove(); fd.remove(); lb.remove(); return; }
+        ib.linjer = ib.linjer || linjer;
         okKvRedigerbar(ib, ib.linjer, lb, fd, function(){ okTegnInnboks(); });
-      });
+      };
+      if(ib.linjer) visLinjer(ib.linjer);
+      else okHent('/api/bank?hva=kvittering&id=' + encodeURIComponent(p.id)).then(function(kv){ visLinjer(kv.ok ? kv.linjer : null); });
     }
     /* Vedleggene: lagres med en gang. */
     inn.appendChild(okEl('span', 'ok-etikett', 'Vedlegg'));
