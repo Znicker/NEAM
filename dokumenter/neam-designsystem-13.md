@@ -1859,7 +1859,11 @@ først, Sparing sist. Bare tallene skiller dem:
     **Godkjenn** (`.btn-ny`, av til kategori er valgt) for den ene posten,
     **Rediger**, **Stryk – føres ikke** og, for en strøket post, **Ta med
     likevel** (`.btn-ghost ok-smal`). Knappen under lista godkjenner alle
-    klare. Begge gir Angre-stripa.
+    klare. Begge gir Angre-stripa. **Rett i Rediger** (fra 13. november 2026):
+    en post i innboksen åpnes i redigeringen, med Neams grunn og bankinfo
+    øverst, feltene, kategorien og varelinjene, og knappene **Godkjenn**
+    (`.btn-ny`), **Stryk – føres ikke** og **Avbryt** (`.btn-ghost ok-smal`).
+    Godkjenn lagrer det som er endret. Uten kategori står kategorivalget tomt.
   - **Kontoutskrift** (het Alle) – alt fra nullpunktet. Øverst ‹ måned ›, så et
     kort med søk og **flervalg** (`.ok-flervalg`) for konto, kategori, merke
     og type – «eller» innen ett, «og» mellom – og Fra og Til på én linje,
@@ -2102,14 +2106,17 @@ først, Sparing sist. Bare tallene skiller dem:
   på det felles skylder …». Er beløpet notert på kvitteringen, føres den
   med en gang.
   **Vinduet når en kvittering legges til** (fra 9. november 2026, `c282324`,
-  `.ok-kv-kort`): butikk, dato og sum øverst, så «Er dette et utlegg – betalt
+  `.ok-kv-kort`): butikk, dato og sum øverst, under dem feltene **Butikk**,
+  **Dato** og **Sum (kr)** (`.ok-kvs-rad`, fra 13. november 2026, `52565ad`; for en
+  faktura **Fra** og **Forfall**), så «Er dette et utlegg – betalt
   med egne penger?» med avkrysningen «Ja, det er et utlegg» (`.ok-kv-kryss`,
   18 px, aksentfargen). Krysses den av, vokser vinduet (`.ok-kvs-mer`,
   etikett over feltet, `.ok-kvs-rad`): Hvem betalte (bare for sys@), Hva gjelder
-  det, Kategori, Sum (kr), avkrysningen «Det er alt betalt tilbake til meg» og
+  det, Kategori, avkrysningen «Det er alt betalt tilbake til meg» og
   Hvor mye (kr) med «Hele summen» som forvalg. Under: **Legg til** (`.btn-ny`)
   og **Avbryt** (`.btn-ghost ok-smal`) etter Avbryt-regelen – den spør bare når
-  noe er skrevet inn. Valgt uten skisse.
+  noe er skrevet inn eller endret. Valgt uten skisse. Vinduet kommer alltid når
+  noe legges til fra bilde, PDF eller innliming.
   **Flere kategorier** (fra 9. november 2026, `a608f4a`): under utlegget, med
   minst to linjer, «Er det flere kategorier på denne?» med avkrysningen «Ja,
   flere kategorier» (`.ok-kv-kryss`). Da får hver linje en avkrysning bak

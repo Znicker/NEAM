@@ -563,8 +563,10 @@ bredden (`b4493b2`), og to kort i bredden også i Resultat, med søylene skjult
 (`cf98c9a`), fanene Lån og Verdier med Resultat etter Transaksjoner (`9d6637a`),
 og kvitteringer og fakturaer delt på flere kategorier når de legges inn
 (`a608f4a`), lister som ikke får fokus på trykkskjerm (`d6cbd20`), Neams søk i
-transaksjonene rettet (`ba264fe`), søk på tvers av varelinjer (`fd86809`), og
-varelinjer lest fra vedlegg (`ab9d7a4`).
+transaksjonene rettet (`ba264fe`), søk på tvers av varelinjer (`fd86809`),
+varelinjer lest fra vedlegg (`ab9d7a4`), navn, dato og sum som kan rettes når
+en kvittering legges til (`52565ad`), og innboksen som åpner rett i Rediger
+(«Økonomi: innboksen åpner rett i Rediger», commiten etter `52565ad`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -573,7 +575,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 109 commits, `0e0050a`–`ab9d7a4`, medregnet en midlertidig statustest fra en annen økt
+fungerte»). 111 commits, `0e0050a` til «Økonomi: innboksen åpner rett i Rediger», medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1372,6 +1374,10 @@ sidene). Magne: «Enhetsstyring må også kunne gjøres uten kode.»
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **Innboksen i Rediger** («Økonomi: innboksen åpner rett i Rediger») på telefon og med ekte poster:
+  Godkjenn med endret navn, sum eller dato.
+- **Navn, dato og sum i kvitteringsvinduet** (`52565ad`) på telefon: datofeltet
+  og tastaturet.
 - **Varelinjer fra vedlegg** (`ab9d7a4`) med ekte kvitteringer: hvor godt Neam
   leser dem, og at `tolk_okonomi_vedlegg` bekreftes i panelet.
 - **Neams søk på tvers av varelinjer** (`fd86809`) i en ekte samtale på
@@ -4622,7 +4628,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 109 commits fra `0e0050a` til `ab9d7a4` (dialogen med
+verdier. Bygget i 111 commits fra `0e0050a` til «Økonomi: innboksen åpner rett i Rediger» (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5067,6 +5073,32 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Innboksen åpner rett i Rediger** («Økonomi: innboksen åpner rett i Rediger»). Magne: «når man få opp
+  godkenningsvinduet i innboksen, kan man like gjer ne gå rett inn i rediger og ha
+  full oversikt».
+  - `okForVindu` åpner `okFrRediger` for en post som står i `okPoster`. Øverst
+    Neams grunn (`okPostGrunn`) og Konto, Betalt fra, Tekst fra banken og
+    Opprinnelig navn, så feltene, kategorien (`okFrKatVelger`, startet fra
+    `ib.kategori`), forbindelsene og varelinjene med egen kategori
+    (`okKvRedigerbar`).
+  - Knappene er Godkjenn, Stryk og Avbryt (Ta med likevel for en strøket).
+    Godkjenn lagrer endringene med `post-endre` og godkjenner med
+    `okSendGodkjenning`. Feltsjekken er felles i `samle`.
+  - `okFrKatVelger` står tom når posten ikke har kategori. Før ble første post
+    (Bolig · Boliglån) valgt uten at noen valgte den, også i vanlig Rediger.
+  - Testet i testserveren: tom kategori stopper Godkjenn, endret navn og dato,
+    varelinje på egen kategori, Avbryt etter endring, Stryk, 375 px. Ikke på en
+    ekte telefon eller neam.no.
+- **Navn, dato og sum kan rettes når en kvittering legges til** (`52565ad`).
+  Magne: «når jeg legger til kvitteringer må jeg kunne endre navnet, dato, osv».
+  - `okKvSpor` har feltene `#ok-kvs-navn`, `#ok-kvs-dato` og `#ok-kvs-sum` øverst
+    i steg 1, og tittel, dato og sum over følger dem. `lesTopp` sjekker dem, og
+    `kv` får de rettede verdiene før det sendes.
+  - Vinduet kommer nå alltid ved bilde, PDF og innliming, også uten utlegg eller
+    deling og når Neam ikke fikk lest dato eller sum. Dropbox spør fortsatt ikke.
+  - Sum sto før under utlegget og flyttet opp. Den gjelder også utlegget.
+  - Testet i testserveren: retting av alle tre, uten dato og sum, utlegg med ny
+    sum, Avbryt etter endring. Ikke på telefon eller neam.no.
 - **Varelinjer fra vedlegg** (`ab9d7a4`), etter forslaget om at kjøp med vedlegg
   ble usynlige for varesøket.
   - `les_okonomi_varer` svarer med `uleste_vedlegg` når perioden har transaksjoner

@@ -6110,7 +6110,12 @@ button.ok-dr-rad{ cursor:pointer; }
     document.getElementById('ok-fr-lukk').focus();
     okHent('/api/bank?hva=post&id=' + encodeURIComponent(f.id)).then(function(r){
       if(!r.ok){ document.getElementById('ok-fr-innhold').innerHTML = '<p class="ok-melding feil">' + okVask(r.feil) + '</p>'; return; }
-      okFrPost = r.post; okFrVis(r.post);
+      okFrPost = r.post;
+      /* Innboksen aapner rett i Rediger (Magne, 13. november 2026: «når man få opp
+         godkenningsvinduet i innboksen, kan man like gjerne gå rett inn i rediger
+         og ha full oversikt»). */
+      if(r.post.status === 'ny' && okPoster.some(function(x){ return x.id === r.post.id; })) okFrRediger(r.post);
+      else okFrVis(r.post);
     });
   }
   function okFrKilde(p){ return p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? (p.utlegg || 'Lagt inn for hånd') : p.faktura ? 'Faktura' : 'Kvittering fra bilde') : (p.konto || 'Føring'); }
@@ -6293,10 +6298,14 @@ button.ok-dr-rad{ cursor:pointer; }
     [sg, sp, sl].forEach(function(s){ s.disabled = !!delt; kr3.appendChild(s); });
     var grupper = [];
     kats.forEach(function(k){ var g = k.split(' · ')[0]; if(grupper.indexOf(g) === -1) grupper.push(g); });
+    /* Uten kategori staar velgeren tom - ellers ble foerste post valgt uten at noen valgte den. */
+    if(!kategori) sg.appendChild(new Option('Velg kategori …', ''));
     grupper.forEach(function(g){ sg.appendChild(new Option(g, g)); });
     var spForrige = '', slForrige = '';
     var fyllPoster = function(post){
       sp.innerHTML = '';
+      sp.disabled = !!delt || !sg.value;
+      if(!sg.value){ spForrige = ''; return; }
       kats.filter(function(k){ var d = k.split(' · '); return d.length === 2 && d[0] === sg.value; }).forEach(function(k){ sp.appendChild(new Option(k.split(' · ')[1], k)); });
       if(!delt && sg.value !== 'Utenfor budsjett') sp.appendChild(new Option('+ Ny post …', '__ny'));
       if(post) sp.value = post;
@@ -6309,7 +6318,7 @@ button.ok-dr-rad{ cursor:pointer; }
       sl.value = linje || ''; sl.disabled = !!delt || sl.options.length < 2;
       slForrige = sl.value;
     };
-    sg.value = d0[0] || grupper[0] || '';
+    sg.value = kategori ? d0[0] || grupper[0] || '' : '';
     fyllPoster(d0.length >= 2 ? d0[0] + ' · ' + d0[1] : '');
     fyllLinjer(d0.length === 3 ? kategori : '');
     sg.addEventListener('change', function(){ fyllPoster(''); fyllLinjer(''); });
@@ -6422,6 +6431,18 @@ button.ok-dr-rad{ cursor:pointer; }
     var nr = 0;
     var felt = function(etikett, el){ el.id = el.id || 'ok-fr-f' + (nr++); var w = okEl('div', 'ok-fr-felt'); var l = okEl('label', 'ok-etikett', okVask(etikett)); l.htmlFor = el.id; w.appendChild(l); w.appendChild(el); inn.appendChild(w); return el; };
     var delt = p.deler.length > 1;
+    var ib = p.status === 'ny' ? okPoster.filter(function(x){ return x.id === p.id; })[0] || null : null;
+    if(ib){
+      var ibGrunn = okPostGrunn(ib);
+      if(ibGrunn.tekst) inn.appendChild(okEl('p', 'ok-kilde' + (ibGrunn.varsel ? ' mangler' : ''), okVask(ibGrunn.tekst)));
+      var ibInfo = document.createElement('dl'); ibInfo.className = 'ok-fr-info';
+      var ibRad = function(n, v){ if(!v) return; ibInfo.appendChild(okEl('dt', '', okVask(n))); ibInfo.appendChild(okEl('dd', '', okVask(v))); };
+      ibRad('Konto', p.fra ? '' : p.konto);
+      ibRad('Betalt fra', p.betaltFra);
+      ibRad('Tekst fra banken', p.tekst && p.tekst !== p.motpart ? p.tekst : '');
+      ibRad('Opprinnelig navn', p.motpartBank);
+      if(ibInfo.children.length) inn.appendChild(ibInfo);
+    }
     var navn = document.createElement('input'); navn.type = 'text'; navn.maxLength = 120; navn.value = p.motpart || p.tekst || '';
     felt('Navn', navn);
     var sum = document.createElement('input'); sum.type = 'text'; sum.inputMode = 'decimal'; sum.autocomplete = 'off';
@@ -6446,7 +6467,8 @@ button.ok-dr-rad{ cursor:pointer; }
     }
     if(delt) inn.appendChild(okEl('p', 'ok-meta', 'Kvitteringen er delt på flere kategorier – summen og kategorien endres i kvitteringen.'));
     else if(p.overstyrt && p.bankBelop != null) inn.appendChild(okEl('p', 'ok-meta', okVask((p.konto ? 'Banken viser ' : 'Opprinnelig ') + okFrKr(p.bankBelop) + '. Skriv den inn igjen for å fjerne endringen.')));
-    var nyKat = okFrKatVelger(inn, p.kategori, delt);
+    var nyKat = okFrKatVelger(inn, ib ? (ib.kategori || '') : p.kategori, delt);
+    if(ib) okForbInn(inn, p);
     /* Merket paa foeringen; tomt arver kategoriens. */
     var sm = document.createElement('select');
     var arvNavn = function(){ var a = okBuMerke(nyKat()); return a ? okMerkeFullNavn(a) : ''; };
@@ -6455,6 +6477,16 @@ button.ok-dr-rad{ cursor:pointer; }
     felt('Merke', sm);
     var notat = document.createElement('textarea'); notat.maxLength = 1000; notat.value = p.notat || '';
     felt('Notat', notat);
+    /* I innboksen: varelinjene, der hver vare kan faa sin egen kategori. */
+    if(ib && p.harKvittering){
+      var kvEt = okEl('span', 'ok-etikett', 'Kvitteringen'), fd = okEl('div', ''), lb = okEl('div', 'ok-fr-linjer', '<p class="ok-meta">Henter varene …</p>');
+      inn.appendChild(kvEt); inn.appendChild(fd); inn.appendChild(lb);
+      okHent('/api/bank?hva=kvittering&id=' + encodeURIComponent(p.id)).then(function(kv){
+        if(!kv.ok || !(kv.linjer || []).length){ kvEt.remove(); fd.remove(); lb.remove(); return; }
+        ib.linjer = ib.linjer || kv.linjer;
+        okKvRedigerbar(ib, ib.linjer, lb, fd, function(){ okTegnInnboks(); });
+      });
+    }
     /* Vedleggene: lagres med en gang. */
     inn.appendChild(okEl('span', 'ok-etikett', 'Vedlegg'));
     var vedBoks = okEl('div', '');
@@ -6487,6 +6519,64 @@ button.ok-dr-rad{ cursor:pointer; }
     var start = { navn:navn.value, sum:sum.value, dato:dato.value, kat:nyKat(), merke:sm.value, notat:notat.value };
     okFrEndret = function(){ return navn.value !== start.navn || sum.value !== start.sum || dato.value !== start.dato || nyKat() !== start.kat || sm.value !== start.merke || notat.value !== start.notat || !!(regning && regning.value); };
     var knapper = okEl('div', 'ok-rad-knapper');
+    var visFeil = function(t, el){ feil.textContent = t; feil.style.color = ''; feil.hidden = false; if(el) el.focus(); };
+    /* Endringene i feltene. null: noe maa rettes. */
+    var samle = function(){
+      var endre = { hva:'post-endre', id:p.id }, noe = false;
+      if(navn.value.trim() !== start.navn.trim()){ endre.motpart = navn.value.trim(); noe = true; }
+      if(!delt && sum.value !== start.sum){
+        var v = okRegn(sum.value);
+        if(isNaN(v) || v < 0){ visFeil('Skriv summen som et tall.', sum); return null; }
+        endre.belop = (p.belop < 0 ? -1 : 1) * Math.round(v * 100) / 100; noe = true;
+      }
+      if(dato.value !== start.dato){
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(dato.value)){ visFeil('Velg en dato.', dato); return null; }
+        endre.dato = dato.value; noe = true;
+      }
+      var valg = regning ? regning.value : '';
+      if(valg === 'utsett'){
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(utsett.value)){ visFeil('Velg datoen betalingen er utsatt til.', utsett); return null; }
+        endre.dato = utsett.value; noe = true;
+      }
+      if(sm.value !== start.merke){ endre.merke = sm.value; noe = true; }
+      if(notat.value !== start.notat){ endre.notat = notat.value; noe = true; }
+      return { endre:endre, noe:noe, valg:valg };
+    };
+    if(ib){
+      /* Godkjenn lagrer det som er endret og godkjenner posten. */
+      if(!ib.ute){
+        var ibGod = okEl('button', 'btn btn-ny', 'Godkjenn'); ibGod.type = 'button';
+        ibGod.addEventListener('click', function(){
+          var s = samle(); if(!s) return;
+          var kat = nyKat();
+          if(!kat){ visFeil('Velg kategori.'); return; }
+          ibGod.disabled = true;
+          (s.noe ? okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(s.endre) }) : Promise.resolve({ ok:true })).then(function(r){
+            if(!r.ok){ visFeil('Ble ikke lagret: ' + r.feil); ibGod.disabled = false; return; }
+            if(s.endre.belop != null) ib.belop = s.endre.belop;
+            okSettKategori(ib, kat);
+            okSendGodkjenning([ib], [], function(r2){ if(r2.ok){ okRgFor = {}; okMnd.kjop = {}; okLukkFor(true); } else ibGod.disabled = false; });
+          });
+        });
+        knapper.appendChild(ibGod);
+      } else {
+        var ibMed = okEl('button', 'btn btn-ghost ok-smal', 'Ta med likevel'); ibMed.type = 'button';
+        ibMed.addEventListener('click', function(){ ib.ute = false; okTegnInnboks(); okFrRediger(okFrPost || p); });
+        knapper.appendChild(ibMed);
+      }
+      var ibStryk = okEl('button', 'btn btn-ghost ok-smal', 'Stryk – føres ikke'); ibStryk.type = 'button';
+      ibStryk.addEventListener('click', function(){
+        ibStryk.disabled = true;
+        okSendGodkjenning([], [ib], function(r){ if(r.ok) okLukkFor(true); else ibStryk.disabled = false; });
+      });
+      knapper.appendChild(ibStryk);
+      var ibAvbryt = okEl('button', 'btn btn-ghost ok-smal', 'Avbryt'); ibAvbryt.type = 'button';
+      ibAvbryt.addEventListener('click', function(){ okLukkFor(); });
+      knapper.appendChild(ibAvbryt);
+      inn.appendChild(knapper);
+      okTreFokus(navn);
+      return;
+    }
     var lagre = okEl('button', 'btn btn-ny', 'Lagre'); lagre.type = 'button';
     var avbryt = okEl('button', 'btn btn-ghost ok-smal', 'Avbryt'); avbryt.type = 'button';
     knapper.appendChild(lagre); knapper.appendChild(avbryt); inn.appendChild(knapper);
@@ -6495,24 +6585,8 @@ button.ok-dr-rad{ cursor:pointer; }
       bekreft('Forkaste endringene?', { jaTekst:'Forkast', fare:true }).then(function(ja){ if(ja) okFrVis(okFrPost || p); });
     });
     lagre.addEventListener('click', function(){
-      var endre = { hva:'post-endre', id:p.id }, noe = false;
-      if(navn.value.trim() !== start.navn.trim()){ endre.motpart = navn.value.trim(); noe = true; }
-      if(!delt && sum.value !== start.sum){
-        var v = okRegn(sum.value);
-        if(isNaN(v) || v < 0){ feil.textContent = 'Skriv summen som et tall.'; feil.hidden = false; sum.focus(); return; }
-        endre.belop = (p.belop < 0 ? -1 : 1) * Math.round(v * 100) / 100; noe = true;
-      }
-      if(dato.value !== start.dato){
-        if(!/^\d{4}-\d{2}-\d{2}$/.test(dato.value)){ feil.textContent = 'Velg en dato.'; feil.hidden = false; dato.focus(); return; }
-        endre.dato = dato.value; noe = true;
-      }
-      var valg = regning ? regning.value : '';
-      if(valg === 'utsett'){
-        if(!/^\d{4}-\d{2}-\d{2}$/.test(utsett.value)){ feil.textContent = 'Velg datoen betalingen er utsatt til.'; feil.hidden = false; utsett.focus(); return; }
-        endre.dato = utsett.value; noe = true;
-      }
-      if(sm.value !== start.merke){ endre.merke = sm.value; noe = true; }
-      if(notat.value !== start.notat){ endre.notat = notat.value; noe = true; }
+      var s = samle(); if(!s) return;
+      var endre = s.endre, noe = s.noe, valg = s.valg;
       var kat = nyKat(), katEndret = !delt && kat && kat !== start.kat;
       var avslutt = valg === 'slettet' || valg === 'betalt-utenfor';
       if(!noe && !katEndret && !avslutt){ okFrVis(okFrPost || p); return; }
