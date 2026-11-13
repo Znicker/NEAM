@@ -1867,15 +1867,43 @@ function samleKobleNy(poster, p){
     return;
   }
 }
+/* Forslag: samme sum til oeret og hoeyst SAMLE_DAGER bankdager. Uten treff:
+   den som ligner mest (samme sum lenger unna, eller litt annen sum naer i tid),
+   med hva som skiller - saa den kan kobles for haand (Magne, 14. november
+   2026: «coop fant ingen match, selv om det er det»). */
 async function samleForslag(env, kropp){
   const poster = await bareFelles(env, await lesJson(env, POST_NOKKEL, {}));
   const alle = Object.keys(poster).map(id => poster[id]).filter(samleLedig), tatt = {};
-  return svar({ ok:true, forslag:samleLinjer(kropp.linjer).map(l => {
+  const linjer = samleLinjer(kropp.linjer);
+  const forslag = linjer.map(l => {
     const q = alle.filter(x => !tatt[x.id] && samleLik(x, l)).sort((a, b) => dagerMellom(a.dato, l.dato) - dagerMellom(b.dato, l.dato))[0];
     if(!q) return null;
     tatt[q.id] = true;
     return { id:q.id, sted:q.motpart || q.tekst || '', dato:q.dato, belop:q.belop, status:q.status };
-  }) });
+  });
+  const kr = n => (Math.round(n * 100) / 100).toFixed(2).replace('.', ',') + ' kr';
+  const mulige = Object.keys(poster).map(id => poster[id]).filter(q => q.fra !== 'samle' && q.belop && q.status !== 'stroket' && q.status !== 'sammenslatt');
+  const naer = linjer.map((l, i) => {
+    if(forslag[i] || !(l.belop > 0)) return null;
+    let best = null, bestPoeng = Infinity;
+    for(const q of mulige){
+      if(tatt[q.id]) continue;
+      const avvik = Math.abs(Math.abs(q.belop) - l.belop), bd = bankdagerMellom(q.dato, l.dato);
+      if(!((avvik < 0.005 && bd <= 10) || (avvik <= Math.max(10, l.belop * 0.05) && bd <= SAMLE_DAGER))) continue;
+      const poeng = avvik * 10 + bd;
+      if(poeng < bestPoeng){ bestPoeng = poeng; best = q; }
+    }
+    if(!best) return null;
+    const avvik = Math.abs(Math.abs(best.belop) - l.belop), bd = bankdagerMellom(best.dato, l.dato), grunn = [];
+    if(avvik >= 0.005) grunn.push('summen avviker ' + kr(avvik));
+    if(bd > SAMLE_DAGER) grunn.push(bd + ' bankdager mellom');
+    if(best.belop > 0) grunn.push('står som penger inn');
+    if(best.samleId) grunn.push('koblet til en annen samlefaktura');
+    if(best.status === 'venter') grunn.push('en regning som venter');
+    if(best.dekketAv) grunn.push('slått sammen med en kvittering');
+    return { id:best.id, sted:best.motpart || best.tekst || '', dato:best.dato, belop:best.belop, status:best.status, grunn:grunn.join(', '), kanKobles:samleLedig(best) };
+  });
+  return svar({ ok:true, forslag:forslag, naer:naer });
 }
 async function samleEgen(s, l, nr, kategori, epost, poster, laert){
   const id = 'samledel:' + b64url(await crypto.subtle.digest('SHA-256', tekstTilBytes([s.id, nr, l.dato, l.belop.toFixed(2)].join('|')))).slice(0, 18);
@@ -1912,7 +1940,7 @@ async function samleNy(env, kropp, epost){
     const l = Object.assign({ post:'' }, linjer[i]), v = valg[i] || {};
     s.samle.linjer.push(l);
     const q = v.post && poster[v.post];
-    if(samleLedig(q) && samleLik(q, l)){ q.samleId = id; l.post = q.id; koblet++; }
+    if(samleLedig(q) && (samleLik(q, l) || v.manuell)){ q.samleId = id; l.post = q.id; koblet++; }
     else if(v.kategori && l.belop > 0){ await samleEgen(s, l, i, v.kategori, epost, poster, laert); egne++; }
   }
   if(venter){
@@ -1979,7 +2007,7 @@ async function postDetaljer(env, id){
     konto:p.konto ? (kn[p.konto] || p.kontoNavn || '') : '', betaltFra:bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
     behandlet:p.behandlet || '', av:p.av ? masker(p.av) : '', deler:(p.deler || []).map(d => ({ kategori:d.kategori, belop:d.belop })),
     harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, vedlegg:vedleggListe(p), forb:forbindelser(p, poster),
-    samleVenter:!!p.samleVenter, tvil:!!p.tvil, limt:p.samleVenter ? p.limt || '' : '',
+    samleVenter:!!p.samleVenter, tvil:!!p.tvil, limt:p.samleVenter ? p.limt || '' : '', sfLest:p.samleVenter ? p.sfLest || null : null,
     samleId:p.samleId || '', samleNavn:p.samleId && poster[p.samleId] ? poster[p.samleId].motpart || '' : '',
     samle:p.samle ? { total:p.samle.total, linjer:p.samle.linjer.map(l => {
       const q = l.post && poster[l.post];
@@ -2282,6 +2310,8 @@ async function nyKvittering(env, kropp, epost){
       kv:{ type:k.type === 'kvittering' ? 'kvittering' : 'faktura', butikk:butikk, dato:dato, belop:Number(k.belop), linjer:linjer } };
     if(kropp.tvil) sv.tvil = true;
     if(kropp.limt) sv.limt = String(kropp.limt).slice(0, 40000);
+    if(kropp.sfLest && samleLinjer(kropp.sfLest.handler).length) sv.sfLest = { utsteder:String(kropp.sfLest.utsteder || '').slice(0, 120), dato:String(kropp.sfLest.dato || ''),
+      belop:Number(kropp.sfLest.belop) || 0, handler:samleLinjer(kropp.sfLest.handler) };
     if(filOk){ await env.FAMILIE_KV.put(filNokkel(sid), JSON.stringify({ type:fil.type, data:fil.data })); sv.harFil = true; sv.filType = fil.type; }
     poster[sid] = sv;
     await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));

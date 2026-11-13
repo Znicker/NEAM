@@ -571,8 +571,9 @@ en kvittering legges til (`52565ad`), innboksen som åpner rett i Rediger
 (`7fc4cda`), alle hovedkategoriene i Regnskap og Resultat (`12df3f2`), og
 samlefaktura med flere transaksjoner, penger inn på regninger og full
 redigering ved innlegging (`9ef0300`), og kvitteringer og trekk sammenlignet i
-bankdager (`3779eec`), og innboksposten som vises med en gang («Økonomi: innboksposten vises med en gang»,
-commiten etter `3779eec`).
+bankdager (`3779eec`), innboksposten som vises med en gang (`0eddb8a`), og
+samlefakturaen som leses ved innlegging og viser kvitteringer som ligner
+(«Økonomi: samlefakturaen leses ved innlegging og viser kvitteringer som ligner», commiten etter `0eddb8a`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -581,7 +582,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 115 commits, `0e0050a` til «Økonomi: innboksposten vises med en gang», medregnet en midlertidig statustest fra en annen økt
+fungerte»). 116 commits, `0e0050a` til «Økonomi: samlefakturaen leses ved innlegging og viser kvitteringer som ligner», medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1394,6 +1395,8 @@ C marineblå tavle – og Magne valgte **A**.
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **Samlefaktura med ekte Coop-kvitteringer** («Økonomi: samlefakturaen leses ved innlegging og viser kvitteringer som ligner»): hva «Ligner: …»
+  sier for Coop-handlene som ikke fikk treff 14. november. Grunnen er ukjent.
 - **Bankdager** (`3779eec`): en kvittering fra fredag eller lørdag mot
   trekket som kommer mandag eller tirsdag, med ekte DNB-data.
 - **Penger inn** (`9ef0300`) med en ekte Glitre-regning med strømstøtte:
@@ -4657,7 +4660,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 115 commits fra `0e0050a` til «Økonomi: innboksposten vises med en gang» (dialogen med
+verdier. Bygget i 116 commits fra `0e0050a` til «Økonomi: samlefakturaen leses ved innlegging og viser kvitteringer som ligner» (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5102,7 +5105,27 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
-- **Innboksposten vises med en gang** («Økonomi: innboksposten vises med en gang»). Magne: «når jeg trykker på
+- **Samlefakturaen leses ved innlegging og viser kvitteringer som ligner**
+  («Økonomi: samlefakturaen leses ved innlegging og viser kvitteringer som ligner»). Magne: «neam leser handlene på samlefaktura går veeeldig tregt.
+  og den finner heller ikke utgirftspostene. trumf gikk strøkent coop fant ingen
+  match, selv om det er det».
+  - Tregt: handlene ble lest først når samlefakturaen ble åpnet fra innboksen,
+    med hele dokumentet hos Claude. Nå leses de med `OK_SF_INSTRUKS` med en gang
+    den legges inn (Dropbox, Legg til, Lim inn) og lagres som `sfLest` på
+    posten i innboksen. Da åpner vinduet uten nytt kall. Samlefakturaer lagt inn
+    før dette leses fortsatt ved første åpning.
+  - Coop: grunnen er ikke funnet. Kravet er lik sum til øret og høyst 3
+    bankdager. `samle-forslag` gir nå `naer` for en handel uten treff: den som
+    ligner mest (samme sum innen 10 bankdager, eller sum som avviker høyst 10 kr
+    eller 5 % innen 3 bankdager), med grunnen: avvik i sum, bankdager mellom,
+    penger inn, koblet til en annen samlefaktura, regning som venter. Vinduet
+    viser «Ligner: …» med avkrysning, og `samle-ny` kobler den med
+    `manuell:true`.
+  - Feil underveis: etter lagring fra innboksen lå posten fortsatt i `okPoster`,
+    så vinduet prøvde å lese samlefakturaen på nytt. Tas nå ut lokalt.
+  - Testet i testserveren: åpning på 61 ms uten kall til Neam, «Ligner» for
+    avvik i sum, ni bankdager og penger inn, kobling for hånd.
+- **Innboksposten vises med en gang** (`0eddb8a`). Magne: «når jeg trykker på
   en til godkjenning, blinker det og så tar det litt tid før jeg ser detaljene».
   - `okForVindu` åpnet vinduet med «Henter …» og ventet på `?hva=post`, som leser
     hele føringslista på serveren. Nå bygger `okIbDetalj` posten av det innboksen

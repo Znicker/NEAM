@@ -3567,8 +3567,11 @@ button.ok-dr-rad{ cursor:pointer; }
       tvil = false;
     } else if(tvil) samle = true;
     if(samle){
+      /* Handlene leses naa, saa samlefakturaen aapnes raskt fra innboksen. */
+      var sfLest = null;
+      try{ sfLest = await okKvLes(innhold, OK_SF_INSTRUKS, 8000); }catch(e){ sfLest = null; }
       var ls = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ hva:'kvittering-ny', kvittering:kv, fil:lagres, samleVenter:true, tvil:tvil, limt:limt || undefined }) });
+        body: JSON.stringify({ hva:'kvittering-ny', kvittering:kv, fil:lagres, samleVenter:true, tvil:tvil, limt:limt || undefined, sfLest:sfLest || undefined }) });
       if(!ls.ok){ var sfeil = new Error(ls.feil); sfeil.duplikat = /allerede lagt inn/.test(ls.feil || ''); throw sfeil; }
       return { post:ls.post, samle:true, linjer:0, festet:'samle', kv:kv, lest:lagres, tekst:limt || '' };
     }
@@ -3876,7 +3879,8 @@ button.ok-dr-rad{ cursor:pointer; }
      til hvilke kvitteringer som allerede ligger inne og ligner på dato og
      sum». Handelene uten kvittering kan foeres som egne med kategori; resten
      blir i samlefakturaen, som er en vanlig foert post. */
-  function okSfVindu(sf, forslag, fraInnboks){
+  function okSfVindu(sf, forslag, fraInnboks, naer){
+    naer = naer || [];
     var e = function(id){ return document.getElementById(id); };
     return new Promise(function(ferdig){
       var handler = (sf.handler || []).filter(function(x){ return x && /^\d{4}-\d{2}-\d{2}$/.test(String(x.dato || '')) && Number(x.belop); });
@@ -3898,6 +3902,14 @@ button.ok-dr-rad{ cursor:pointer; }
           lab.style.gridColumn = '1 / -1'; r.appendChild(lab); valg.koble = c;
           c.addEventListener('change', tegn);
         } else if(b > 0){
+          var nf = naer[i];
+          if(nf){
+            var nl = okEl('label', 'ok-kv-kryss', '<span>Ligner: ' + okVask(nf.sted) + ', ' + okVask(okKort.format(new Date(nf.dato))) + ', ' + okVask(okKr0.format(Math.abs(nf.belop)))
+              + ' kr <span class="ok-meta">– ' + okVask(nf.grunn || 'ligner') + (nf.kanKobles ? '' : '. Kan ikke kobles') + '</span></span>');
+            var nc = document.createElement('input'); nc.type = 'checkbox'; nc.disabled = !nf.kanKobles; nl.insertBefore(nc, nl.firstChild);
+            nl.style.gridColumn = '1 / -1'; r.appendChild(nl); valg.naer = nc;
+            nc.addEventListener('change', tegn);
+          }
           var s = okKatVelg('ok-sf-l-' + i, '', 'Mangler kvittering – blir i samlefakturaen', 'Kategori for ' + (x.navn || 'handelen'));
           s.addEventListener('change', tegn); r.appendChild(s); valg.kat = s;
         } else {
@@ -3909,7 +3921,7 @@ button.ok-dr-rad{ cursor:pointer; }
         var total = okKvTall(e('ok-sf-sum').value), egne = 0, med = 0, mangler = 0;
         handler.forEach(function(x, i){
           var v = rader[i], b = Number(x.belop);
-          if(v.koble && v.koble.checked){ egne += b; med++; }
+          if((v.koble && v.koble.checked) || (v.naer && v.naer.checked)){ egne += b; med++; }
           else if(v.kat && v.kat.value){ egne += b; med++; }
           else if(b > 0) mangler++;
         });
@@ -3934,7 +3946,7 @@ button.ok-dr-rad{ cursor:pointer; }
       var sporsmaal = false;
       var avbryt = function(){
         var endret = e('ok-sf-navn').value !== navnStart || e('ok-sf-dato').value !== datoStart || e('ok-sf-sum').value !== sumStart || !!hovedKat.value
-          || rader.some(function(v){ return (v.koble && !v.koble.checked) || (v.kat && v.kat.value); });
+          || rader.some(function(v){ return (v.koble && !v.koble.checked) || (v.naer && v.naer.checked) || (v.kat && v.kat.value); });
         if(!endret){ ut(null); return; }
         if(sporsmaal) return;
         sporsmaal = true;
@@ -3952,7 +3964,7 @@ button.ok-dr-rad{ cursor:pointer; }
         if(!hovedKat.value){ feil('Velg kategori for det som blir i samlefakturaen.'); return; }
         ut({ utsteder:navn, dato:dato, total:Math.round(total * 100) / 100, kategori:hovedKat.value,
           linjer:handler.map(function(x){ return { dato:x.dato, navn:x.navn, belop:Number(x.belop) }; }),
-          valg:rader.map(function(v, i){ return v.koble && v.koble.checked ? { post:forslag[i].id } : v.kat && v.kat.value ? { kategori:v.kat.value } : {}; }) });
+          valg:rader.map(function(v, i){ return v.koble && v.koble.checked ? { post:forslag[i].id } : v.naer && v.naer.checked ? { post:naer[i].id, manuell:true } : v.kat && v.kat.value ? { kategori:v.kat.value } : {}; }) });
       };
       document.addEventListener('keydown', tast);
       e('ok-sf-bak').hidden = false;
@@ -3969,7 +3981,7 @@ button.ok-dr-rad{ cursor:pointer; }
     var fs = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'samle-forslag', linjer:handler }) });
     if(!fs.ok){ status.textContent = 'Samlefakturaen ble ikke lagt inn: ' + fs.feil; return 'ingen'; }
     status.textContent = '';
-    var valgt = await okSfVindu(sf, fs.forslag || [], !!venterId);
+    var valgt = await okSfVindu(sf, fs.forslag || [], !!venterId, fs.naer || []);
     if(valgt && valgt.vanlig){ await okSfVanlig(venterId); return 'vanlig'; }
     if(!valgt){ status.textContent = venterId ? 'Samlefakturaen blir liggende i innboksen.' : ''; return 'avbrutt'; }
     valgt.hva = 'samle-ny';
@@ -3979,6 +3991,8 @@ button.ok-dr-rad{ cursor:pointer; }
     status.textContent = 'Samlefaktura fra ' + r.post.motpart + ' lagt inn: ' + r.koblet + ' koblet til kvitteringer, ' + r.egne + ' ført som egne, '
       + okKr0.format(-r.post.belop) + ' kr står igjen på ' + okNeamKat(r.post.kategori) + '. Kvitteringer som legges inn senere med samme sum og dato, trekkes fra.';
     okRgFor = {}; okMnd.kjop = {};
+    /* Den er ikke lenger i innboksen - ellers ville vinduet tro det. */
+    okPoster = okPoster.filter(function(x){ return x.id !== r.post.id; });
     okLastInnboks(); if(okMnd.lastet) okMndLast();
     okStatusLast();
     okForVindu({ id:r.post.id, kilde:'Samlefaktura', tekst:r.post.motpart, dato:r.post.dato, belop:r.post.belop });
@@ -3988,7 +4002,7 @@ button.ok-dr-rad{ cursor:pointer; }
   async function okSfLes(fil){
     var status = document.getElementById('ok-kv-status'), knapp = document.getElementById('ok-sf-knapp');
     knapp.disabled = true;
-    status.textContent = 'Neam leser samlefakturaen …';
+    status.textContent = 'Neam leser samlefakturaen … Det kan ta et halvt minutt.';
     try{
       var pdf = fil.type === 'application/pdf';
       var data = pdf ? await okSomBase64(fil) : await okKrympBilde(fil);
@@ -4015,11 +4029,13 @@ button.ok-dr-rad{ cursor:pointer; }
       var d = await okHent('/api/bank?hva=post&id=' + encodeURIComponent(id));
       if(!d.ok){ status.textContent = d.feil; return; }
       var p = d.post;
+      if(!p.samleVenter){ okPoster = okPoster.filter(function(x){ return x.id !== p.id; }); okForVindu({ id:p.id, kilde:okFrKilde(p), tekst:p.motpart, dato:p.dato, belop:p.belop }); return; }
       if(p.tvil && !(await bekreft('Neam er usikker: er «' + p.motpart + '» en samlefaktura med flere handler – f.eks. et kredittkort?', { jaTekst:'Ja, samlefaktura', neiTekst:'Nei' }))){
         await okSfVanlig(p.id);
         return;
       }
-      status.textContent = 'Neam leser handlene på samlefakturaen …';
+      if(p.sfLest && (p.sfLest.handler || []).length){ await okSfFlyt(p.sfLest, null, p.id); return; }
+      status.textContent = 'Neam leser handlene på samlefakturaen … Det kan ta et halvt minutt.';
       var innhold;
       if(p.limt) innhold = { type:'text', text:'Teksten under er kopiert fra dokumentet:\n\n' + p.limt };
       else {
