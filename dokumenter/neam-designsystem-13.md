@@ -1852,7 +1852,16 @@ først, Sparing sist. Bare tallene skiller dem:
     **«Fakturaer uten kategori»** med kategorivalg. Øverst «Legg til
     kvittering» (`.btn-ny`) og «Lim inn» (`.btn-blaa`, 7. november 2026):
     bilde, PDF eller tekst fra utklippstavla – eller Ctrl+V på sida, når
-    markøren ikke står i et felt.
+    markøren ikke står i et felt. Så «Legg til samlefaktura» (`.btn-blaa`, 14.
+    november 2026): et vindu som kvitteringsvinduet (`.ok-kv-kort`) med Fra,
+    Dato, Sum, kategori for resten, og handlene som `.ok-kv-linje`. En handel
+    med kvittering har en avkrysning «Kvittering finnes: …», en uten har
+    kategorivalget «Mangler kvittering – blir i samlefakturaen». Linja over
+    viser hvor mye som blir igjen. Valgt uten skisse. En samlefaktura Neam
+    kjenner igjen, eller er usikker på, havner alltid i innboksen; trykk på
+    den åpner vinduet, som da har **«Ikke en samlefaktura»** (`.btn-ghost
+    ok-smal`). Ved tvil spør Neam med `bekreft` («Ja, samlefaktura» / «Nei»),
+    og Nei bekreftes én gang til.
     **Rene linjer** (fra 9. november 2026, `b4493b2`): postene i innboksen
     og fakturaene uten kategori er vanlige føringsrader uten valg på linja.
     Trykk åpner føringsvinduet, der kategori og varelinjer velges, med
@@ -1902,7 +1911,9 @@ først, Sparing sist. Bare tallene skiller dem:
   (`.btn-ghost`); en ført post sendes ikke tilbake til innboksen. Under
   hverandre på telefon. I
   menyen på en post eller linje i Regnskap står **«Før inn ny utgift …»**
-  (i Budsjett «Ny linje under …»); skjemaet åpnes i samme vindu.
+  (i Budsjett «Ny linje under …»); skjemaet åpnes i samme vindu, med Merke og
+  «Penger inn» (forhåndskrysset og kalt «Ny inntekt» på en inntektspost).
+  Rediger har «Penger inn» for det som ikke kommer fra banken.
   Rediger viser feltene: navn, sum, kategori i tre nedtrekk side om side
   (gruppe › post › linje; under hverandre på telefon), merke, notat og
   vedleggene med «Fjern» og «+ Legg til vedlegg»; Lagre (`.btn-ny`) og
@@ -2118,7 +2129,10 @@ først, Sparing sist. Bare tallene skiller dem:
   Hvor mye (kr) med «Hele summen» som forvalg. Under: **Legg til** (`.btn-ny`)
   og **Avbryt** (`.btn-ghost ok-smal`) etter Avbryt-regelen – den spør bare når
   noe er skrevet inn eller endret. Valgt uten skisse. Vinduet kommer alltid når
-  noe legges til fra bilde, PDF eller innliming.
+  noe legges til fra bilde, PDF eller innliming. Under Sum står **«Penger inn
+  (tilbakebetaling, kreditnota)»** (`.ok-kv-kryss`, fra 14. november 2026): da er
+  summen pluss på kategorien (f.eks. strøm med strømstøtte), og utlegget skjules.
+  Etter Legg til åpnes posten i Rediger.
   **Flere kategorier** (fra 9. november 2026, `a608f4a`): under utlegget, med
   minst to linjer, «Er det flere kategorier på denne?» med avkrysningen «Ja,
   flere kategorier» (`.ok-kv-kryss`). Da får hver linje en avkrysning bak

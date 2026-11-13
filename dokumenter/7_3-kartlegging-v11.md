@@ -566,8 +566,9 @@ og kvitteringer og fakturaer delt på flere kategorier når de legges inn
 transaksjonene rettet (`ba264fe`), søk på tvers av varelinjer (`fd86809`),
 varelinjer lest fra vedlegg (`ab9d7a4`), navn, dato og sum som kan rettes når
 en kvittering legges til (`52565ad`), innboksen som åpner rett i Rediger
-(`7fc4cda`), og alle hovedkategoriene i Regnskap og Resultat («Økonomi: alle hovedkategoriene står i Regnskap og Resultat»,
-commiten etter `7fc4cda`).
+(`7fc4cda`), alle hovedkategoriene i Regnskap og Resultat (`12df3f2`), og
+samlefaktura med flere transaksjoner, penger inn på regninger og full
+redigering ved innlegging («Økonomi: samlefaktura, penger inn på regninger og full redigering ved innlegging», commiten etter `12df3f2`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -576,7 +577,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 112 commits, `0e0050a` til «Økonomi: alle hovedkategoriene står i Regnskap og Resultat», medregnet en midlertidig statustest fra en annen økt
+fungerte»). 113 commits, `0e0050a` til «Økonomi: samlefaktura, penger inn på regninger og full redigering ved innlegging», medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1375,6 +1376,11 @@ sidene). Magne: «Enhetsstyring må også kunne gjøres uten kode.»
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **Penger inn** («Økonomi: samlefaktura, penger inn på regninger og full redigering ved innlegging») med en ekte Glitre-regning med strømstøtte:
+  at Neam leser minusbeløpet, og at innbetalingen fra banken kobles til den.
+- **Samlefaktura** («Økonomi: samlefaktura, penger inn på regninger og full redigering ved innlegging») med en ekte Coop Mastercard-faktura: at Neam
+  finner alle handlene med riktig dato og sum, og forslagene til kvitteringer.
+  At Neam kjenner den igjen som samlefaktura fra Dropbox og fra Legg til.
 - **Innboksen i Rediger** (`7fc4cda`) på telefon og med ekte poster:
   Godkjenn med endret navn, sum eller dato.
 - **Navn, dato og sum i kvitteringsvinduet** (`52565ad`) på telefon: datofeltet
@@ -4629,7 +4635,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 112 commits fra `0e0050a` til «Økonomi: alle hovedkategoriene står i Regnskap og Resultat» (dialogen med
+verdier. Bygget i 113 commits fra `0e0050a` til «Økonomi: samlefaktura, penger inn på regninger og full redigering ved innlegging» (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5074,7 +5080,67 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
-- **Alle hovedkategoriene står i Regnskap og Resultat** («Økonomi: alle hovedkategoriene står i Regnskap og Resultat»). Magne:
+- **Penger inn og full redigering ved innlegging** («Økonomi: samlefaktura, penger inn på regninger og full redigering ved innlegging»). Magne: «ved
+  alle anledninger jeg legger til utgifter eller inntekter ønsker jeg å få opp
+  fullt redigeringsmeny. jeg må også kunne legge til positiveregninger dvs fra
+  glitre med strømstøtte … det går ikke som inntekt men som positiv utgift».
+  - Minus på kvitteringen eller regningen betyr penger inn: `nyKvittering`
+    bruker `fortegn`, og posten får plussbeløp på kategorien den føres på, f.eks.
+    Bolig · Strøm. Instruksen ber Neam gi minus for kreditnota og strømstøtte.
+  - `fakturaTrekk` og `kobleKvittering` krever samme fortegn i stedet for minus,
+    så en regning med penger inn kobles til innbetalingen fra banken.
+    `fordelKvittering` følger fortegnet. Et utlegg kan ikke være penger inn.
+  - Avkrysningen «Penger inn (tilbakebetaling, kreditnota)» står under Sum i
+    kvitteringsvinduet (skjuler utlegget), i Rediger for det som ikke kommer fra
+    banken, og i «Før inn ny utgift», som også har fått Merke og heter «Ny
+    inntekt» på en inntektspost.
+  - Etter Legg til åpnes posten i Rediger (`okForVindu(f, fra, true)`), og
+    samlefakturaen i visningen med handlene.
+  - Testet i testserveren: Glitre med minus koblet mot innbetaling og ført på
+    Strøm, vanlig kvittering snudd til penger inn, ny inntekt med merke, utlegg
+    avvist. Ikke med ekte regninger eller på neam.no.
+- **Samlefaktura med flere transaksjoner** («Økonomi: samlefaktura, penger inn på regninger og full redigering ved innlegging»). Magne: «kanskje du lager
+  en funksjon som heter legg til samlefaktura med flere transaksjoner … Denne
+  fakturaen synker i kostnad for hver kvittering som er lagt inn».
+  - «Legg til samlefaktura» i Innboks. Neam leser fakturaen med `OK_SF_INSTRUKS`
+    (utsteder, forfall, sum, handler). `samle-forslag` finner kvitteringer med
+    samme sum til øret og høyst `SAMLE_DAGER` (3) dager mellom, hver brukt én
+    gang. Vinduet `#ok-sf-bak` (`okSfVindu`): forslagene er krysset av, en
+    handel uten kvittering kan få kategori og blir egen post, og kategorien for
+    resten er påkrevd.
+  - `samle-ny` lager posten `fra:'samle'` (ført, `forHand`, egen id `samle:`) med
+    `samle:{ total, linjer:[{ dato, navn, belop, post }] }`. Egne handler blir
+    `samledel:`-poster (ført, `samleDel`). Koblede poster får `samleId`.
+  - `samleRest`: beløpet er totalen minus handlene som har egen post og ikke er
+    strøket. Det kan bli negativt når en refusjon står igjen. Regnes på nytt ved
+    kobling, stryk og angre. Summen kan ikke endres i Rediger.
+  - En ny kvittering som passer en åpen handel, kobles i `nyKvittering`
+    (`samleKobleNy`). `finnLignende` hopper over samlefakturaen.
+  - I føringsvinduet: «Handlene» med status, «Koble fra», og «før som egen» for
+    en åpen handel (`samle-koble`).
+  - Kortregningen fra banken står som før på «Nedbetaling av kortgjeld», så
+    ingenting telles to ganger.
+  - **Gjenkjent overalt og alltid i innboksen** (samme commit). Magne: «når jeg
+    la til en samlefaktura fra dropbox nå fikk jeg ingen prompt om samlefaktura.
+    ai bør analysere og spør meg om tvil. dersom det er samlefaktura må den i
+    innboksen uansett». `OK_KV_INSTRUKS` har typen `samlefaktura` og `tvil`.
+    `nyKvittering` legger en samlefaktura (eller `samleVenter`) i innboksen som
+    `status:'ny'`, `fra:'samle'`, `samleVenter`, med fila og det Neam leste i `kv`.
+    Den er aldri klar til godkjenning og får ikke kategoriforslag fra Neam.
+  - Legg til og Lim inn spør ved tvil, og åpner vinduet med en gang. Dropbox
+    spør ikke, men en samlefaktura eller tvil havner i innboksen. Et trykk på den
+    der leser handlene (`okSfFraPost`), og ved tvil spør Neam først.
+  - Avbrytes vinduet, blir den liggende i innboksen, også fra knappen «Legg til
+    samlefaktura». «Ikke en samlefaktura» og Nei ved tvil bekreftes én gang til
+    før `samle-vanlig` legger den inn som vanlig regning eller kvittering, så
+    Escape aldri gjør det om. `samle-ny` med `venterId` gjør den i innboksen til
+    den førte.
+  - Feil underveis: koblingen i `nyKvittering` sto før `poster[id] = p`, så
+    `samleRest` nullstilte den. Flyttet etter. Ikke i det som er committet.
+  - Testet i testserveren med liksom-svar fra Neam: forslag, egen handel,
+    refusjon, kvittering lagt inn etterpå, stryk, koble fra, dobbel innlegging.
+    Ikke med en ekte faktura eller på neam.no.
+- **Alle hovedkategoriene står i Regnskap og Resultat** (`12df3f2`). Magne:
   «alle hovedkategoriene må alltid stå i de tre resultat, regnskap og budsjett
   slik at jeg kan legge til linjer selv om det ikke er føringer der».
   - `okRgTegn` og `okRsListe` hoppet over en gruppe uten tall. Nå står alle

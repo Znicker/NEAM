@@ -457,6 +457,7 @@ function loggDiff(foer, etter, kilde){
     if(!f){
       if(p.fra === 'trumf') linje('Trumf', 'Ny Trumf-kvittering ' + n + ', ' + loggKr(p.belop) + (p.status === 'godkjent' ? ' – ført automatisk på ' + loggKat(p.kategori) : ' – lagt i innboksen'), id);
       else if(p.faktura && p.status === 'venter') linje(null, 'Regning fra ' + n + ' lagt inn: ' + loggKr(p.belop) + ', forfaller ' + loggDato(p.dato) + ' – venter på trekket fra regningskontoen', id);
+      else if(p.fra === 'samle') linje(null, 'Samlefaktura fra ' + n + ' lagt inn: ' + loggKr(-p.samle.total) + ', ' + loggKr(p.belop) + ' står igjen på ' + loggKat(p.kategori), id);
       else if(p.utlegg) linje(null, p.utlegg + ': ' + n + ', ' + loggKr(p.belop) + ' (' + loggDato(p.dato) + ')' + (p.status === 'godkjent' ? ' – ført, alt betalt tilbake' : ' – lagt i innboksen'), id);
       else if(p.forHand) linje(null, 'Førte inn ' + n + ' for hånd: ' + loggKr(p.belop), id);
       else if(p.fra) linje(null, 'Kvittering fra ' + n + ' lagt inn: ' + loggKr(p.belop) + (p.bankId ? ' – koblet til trekket' : ' – i innboksen'), id);
@@ -514,7 +515,7 @@ function loggAnnet(kropp, s, kilde){
   return [];
 }
 /* Handlingene som kan endre foeringene - da leses de foer, og forskjellen logges. */
-const LOGG_POST = ['privat-send', 'godkjenn', 'angre', 'koble-alle', 'faktura-innboks', 'faktura-kategori', 'faktura-avslutt', 'post-endre', 'post-vedlegg', 'post-vedlegg-slett', 'kvittering-ny', 'forslag'];
+const LOGG_POST = ['privat-send', 'godkjenn', 'angre', 'koble-alle', 'faktura-innboks', 'faktura-kategori', 'faktura-avslutt', 'post-endre', 'post-vedlegg', 'post-vedlegg-slett', 'kvittering-ny', 'forslag', 'samle-ny', 'samle-koble', 'samle-vanlig'];
 /* Bare felleskontoene i husholdningens regnskap (Magne, 8. november 2026:
    «Det er kun kontoer som er lagt inn som felles som skal inn i dissse
    fanene» og «Magne sine transaksjoner er fremdeles å se i transasksjonene
@@ -996,7 +997,7 @@ async function finnLignende(env, poster, kv, linjer){
   const sum = Math.abs(kv.belop);
   for(const id of Object.keys(poster)){
     const a = poster[id];
-    if(id === kv.id || !a.fra || a.status === 'stroket' || a.status === 'sammenslatt' || a.status === 'venter') continue;
+    if(id === kv.id || !a.fra || a.fra === 'samle' || a.status === 'stroket' || a.status === 'sammenslatt' || a.status === 'venter') continue;
     if(a.fra === 'trumf' && kv.fra === 'trumf') continue;
     const avvik = Math.abs(Math.abs(a.belop) - sum);
     if(avvik > 1 || dagerMellom(a.dato, kv.dato) > 3) continue;
@@ -1022,7 +1023,7 @@ function fakturaLik(bank, f){
   return Math.abs(Math.abs(bank.belop) - Math.abs(f.belop)) < 0.005 && d >= -10 && d <= 5;
 }
 function fakturaTrekk(poster, f){
-  return Object.keys(poster).map(x => poster[x]).filter(b => !b.fra && b.belop < 0 && !b.dekketAv
+  return Object.keys(poster).map(x => poster[x]).filter(b => !b.fra && Math.sign(b.belop) === Math.sign(f.belop) && !b.dekketAv
     && (b.status === 'ny' || b.status === 'godkjent') && fakturaLik(b, f));
 }
 async function flyttFaktura(env, f, b, naa){
@@ -1132,7 +1133,7 @@ function kobleKvittering(poster, kv){
   if(kv.bankId || kv.mulDobbel) return;
   for(const id of Object.keys(poster)){
     const b = poster[id];
-    if(b.fra || b.dekketAv || b.belop >= 0 || !erLik(b, kv)) continue;
+    if(b.fra || b.dekketAv || !b.belop || Math.sign(b.belop) !== Math.sign(kv.belop) || !erLik(b, kv)) continue;
     if(b.status === 'ny'){ b.dekketAv = kv.id; kv.bankId = b.id; kv.bankKonto = b.kontoNavn; delete b.lignerPaa; }
     else if(b.status === 'godkjent'){ kv.mulDobbel = b.id; kv.bankKonto = b.kontoNavn; }
     return;
@@ -1437,7 +1438,7 @@ async function lagreForslag(env, kropp){
   const kategorier = await alleKategorier(env);
   for(const f of [].concat(kropp.forslag || []).slice(0, 100)){
     const p = poster[f && f.id];
-    if(!p || p.status !== 'ny') continue;
+    if(!p || p.status !== 'ny' || p.samleVenter) continue;
     p.aiSpurt = true;
     if(!f.kategori || kategorier.indexOf(f.kategori) === -1) continue;
     if(p.kategori && p.kilde !== 'ai-usikker') continue;   /* et menneskes eller en regels valg vinner */
@@ -1769,7 +1770,7 @@ async function foringer(env, mnd, kat, eksakt){
       if(!treff(d.kategori)) continue;
       const bank = p.bankId && poster[p.bankId];
       ut.push({ id:p.id, dato:p.dato, tekst:p.motpart || p.tekst || '', mer:p.motpart && p.tekst && p.tekst !== p.motpart ? p.tekst : '',
-        kilde: p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.forHand ? (p.utlegg || 'Lagt inn for hånd') : 'Kvittering fra bilde') : (kn[p.konto] || p.kontoNavn || ''),
+        kilde: p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.fra === 'samle' ? 'Samlefaktura' : p.forHand ? (p.utlegg || 'Lagt inn for hånd') : 'Kvittering fra bilde') : (kn[p.konto] || p.kontoNavn || ''),
         betaltFra: bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
         kategori:d.kategori, del:deler.length > 1, harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false,
         harFil:!!p.harFil, filType:p.filType || '', overstyrt:!!p.overstyrt, merke:p.merke || '', forbN:forbindelser(p, poster).length,
@@ -1794,6 +1795,149 @@ function vedleggListe(p){
   for(const v of (p.vedlegg || [])) l.push({ n:v.n, type:v.type, navn:v.navn || '' });
   return l;
 }
+/* ---------- Samlefaktura (Magne, 14. november 2026) ----------
+   «Legg til samlefaktura med flere transaksjoner»: en kortfaktura med mange
+   handler. Hver handel kobles til en kvittering som alt ligger inne (samme sum
+   til oeret, hoeyst tre dager mellom), foeres som egen transaksjon, eller blir
+   i samlefakturaen. Samlefakturaen er en vanlig foert post, og beloepet er det
+   som ikke har egen kvittering: «Denne fakturaen synker i kostnad for hver
+   kvittering som er lagt inn». Trekket som betaler kortet, er «Nedbetaling av
+   kortgjeld» (utenfor budsjett), saa ingenting telles dobbelt. */
+const SAMLE_DAGER = 3;
+function samleLinjer(kilde){
+  return [].concat(kilde || []).slice(0, 300).map(l => ({
+    dato: String(l && l.dato || ''), navn: String(l && l.navn || '').trim().slice(0, 120) || 'Handel',
+    belop: Math.round((Number(l && l.belop) || 0) * 100) / 100
+  })).filter(l => /^\d{4}-\d{2}-\d{2}$/.test(l.dato) && l.belop);
+}
+function samleLik(q, l){
+  return l.belop > 0 && q.belop < 0 && Math.abs(Math.abs(q.belop) - l.belop) < 0.005 && dagerMellom(q.dato, l.dato) <= SAMLE_DAGER;
+}
+function samleLedig(q){
+  return q && q.fra !== 'samle' && !q.samleId && q.belop < 0 && !q.dekketAv && q.status !== 'stroket' && q.status !== 'sammenslatt' && q.status !== 'venter';
+}
+/* Beloepet: totalen minus handlene som har sin egen post. */
+function samleRest(poster, s){
+  let koblet = 0;
+  for(const l of s.samle.linjer){
+    const q = l.post && poster[l.post];
+    if(l.post && !q) l.post = '';
+    else if(q && q.status !== 'stroket' && q.status !== 'sammenslatt') koblet += l.belop;
+  }
+  s.belop = -Math.round((s.samle.total - koblet) * 100) / 100;
+}
+/* En ny kvittering som passer en aapen handel, kobles med en gang. */
+function samleKobleNy(poster, p){
+  for(const id of Object.keys(poster)){
+    const s = poster[id];
+    if(s.fra !== 'samle' || s.status !== 'godkjent') continue;
+    const l = s.samle.linjer.filter(x => !x.post && samleLik(p, x))[0];
+    if(!l) continue;
+    l.post = p.id; p.samleId = s.id;
+    samleRest(poster, s);
+    return;
+  }
+}
+async function samleForslag(env, kropp){
+  const poster = await bareFelles(env, await lesJson(env, POST_NOKKEL, {}));
+  const alle = Object.keys(poster).map(id => poster[id]).filter(samleLedig), tatt = {};
+  return svar({ ok:true, forslag:samleLinjer(kropp.linjer).map(l => {
+    const q = alle.filter(x => !tatt[x.id] && samleLik(x, l)).sort((a, b) => dagerMellom(a.dato, l.dato) - dagerMellom(b.dato, l.dato))[0];
+    if(!q) return null;
+    tatt[q.id] = true;
+    return { id:q.id, sted:q.motpart || q.tekst || '', dato:q.dato, belop:q.belop, status:q.status };
+  }) });
+}
+async function samleEgen(s, l, nr, kategori, epost, poster, laert){
+  const id = 'samledel:' + b64url(await crypto.subtle.digest('SHA-256', tekstTilBytes([s.id, nr, l.dato, l.belop.toFixed(2)].join('|')))).slice(0, 18);
+  const naa = new Date().toISOString();
+  poster[id] = { id:id, fra:'foto', forHand:true, manuell:true, samleDel:true, konto:'foto', kontoNavn:'Fra ' + s.motpart, dato:l.dato, belop:-l.belop, tekst:'',
+    motpart:l.navn, harKvittering:false, status:'godkjent', kategori:kategori, kilde:'manuell', behandlet:naa, av:epost, lagtInnAv:epost, lagtInn:naa, samleId:s.id };
+  const n = motpartNokkel(poster[id]);
+  if(n) laert[n] = kategori;
+  l.post = id;
+}
+async function samleNy(env, kropp, epost){
+  const navn = String(kropp.utsteder || '').trim().slice(0, 120) || 'Samlefaktura';
+  const dato = String(kropp.dato || '');
+  const total = Math.round(Math.abs(Number(kropp.total)) * 100) / 100;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(dato) || !(total > 0) || total > 1e7) return svar({ ok:false, feil:'Mangler dato eller sum' });
+  const linjer = samleLinjer(kropp.linjer);
+  if(!linjer.length) return svar({ ok:false, feil:'Fant ingen handler på fakturaen' });
+  const kategorier = await alleKategorier(env);
+  const kat = String(kropp.kategori || '');
+  if(kategorier.indexOf(kat) === -1) return svar({ ok:false, feil:'Velg kategori for det som blir i samlefakturaen' });
+  const valg = [].concat(kropp.valg || []);
+  for(const v of valg) if(v && v.kategori && kategorier.indexOf(v.kategori) === -1) return svar({ ok:false, feil:'Ukjent kategori: ' + v.kategori });
+  const poster = await lesJson(env, POST_NOKKEL, {}), laert = await lesJson(env, LAERT_NOKKEL, {});
+  /* Fra innboksen: samlefakturaen som venter, blir den foerte. */
+  const venter = kropp.venterId ? poster[String(kropp.venterId)] : null;
+  if(kropp.venterId && !(venter && venter.samleVenter)) return svar({ ok:false, feil:'Fant ikke samlefakturaen i innboksen' });
+  const id = venter ? venter.id : 'samle:' + b64url(await crypto.subtle.digest('SHA-256', tekstTilBytes(['samle', navn, dato, total.toFixed(2)].join('|')))).slice(0, 18);
+  if(!venter && poster[id]) return svar({ ok:false, feil:'Denne samlefakturaen er allerede lagt inn (' + navn + ', ' + dato + ')' });
+  const naa = new Date().toISOString();
+  const s = { id:id, fra:'samle', forHand:true, manuell:true, konto:'samle', kontoNavn:'Samlefaktura', dato:dato, belop:-total, tekst:'', motpart:navn,
+    harKvittering:false, status:'godkjent', kategori:kat, kilde:'manuell', behandlet:naa, av:epost, lagtInnAv:epost, lagtInn:naa, samle:{ total:total, linjer:[] } };
+  let koblet = 0, egne = 0;
+  for(let i = 0; i < linjer.length; i++){
+    const l = Object.assign({ post:'' }, linjer[i]), v = valg[i] || {};
+    s.samle.linjer.push(l);
+    const q = v.post && poster[v.post];
+    if(samleLedig(q) && samleLik(q, l)){ q.samleId = id; l.post = q.id; koblet++; }
+    else if(v.kategori && l.belop > 0){ await samleEgen(s, l, i, v.kategori, epost, poster, laert); egne++; }
+  }
+  if(venter){
+    if(venter.harFil){ s.harFil = true; s.filType = venter.filType; }
+    s.lagtInn = venter.lagtInn; s.lagtInnAv = venter.lagtInnAv;
+  }
+  const fil = kropp.fil || {};
+  if(KVITTERING_FILTYPER.indexOf(fil.type) !== -1 && typeof fil.data === 'string' && fil.data.length < 14e6 && /^[A-Za-z0-9+/]/.test(fil.data)){
+    await env.FAMILIE_KV.put(filNokkel(id), JSON.stringify({ type:fil.type, data:fil.data }));
+    s.harFil = true; s.filType = fil.type;
+  }
+  samleRest(poster, s);
+  poster[id] = s;
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  await env.FAMILIE_KV.put(LAERT_NOKKEL, JSON.stringify(laert));
+  return svar({ ok:true, post:s, koblet:koblet, egne:egne });
+}
+/* «Ikke en samlefaktura»: det Neam leste, legges inn som vanlig regning
+   eller kvittering, med fila, og samlefakturaen i innboksen fjernes. */
+async function samleVanlig(env, kropp, epost){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const s = poster[String(kropp.id || '')];
+  if(!s || !s.samleVenter) return svar({ ok:false, feil:'Fant ikke samlefakturaen i innboksen' });
+  const fil = s.harFil ? await lesJson(env, filNokkel(s.id), null) : null;
+  const res = await nyKvittering(env, { kvittering:s.kv || {}, fil:fil || undefined }, epost);
+  const r = await res.clone().json();
+  if(!r.ok) return res;
+  const etter = await lesJson(env, POST_NOKKEL, {});
+  delete etter[s.id];
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(etter));
+  if(s.harFil && !(r.post && r.post.id === s.id)) await env.FAMILIE_KV.delete(filNokkel(s.id));
+  return res;
+}
+/* Etterpaa, fra foeringsvinduet: foer en handel som egen, eller koble den fra. */
+async function samleKoble(env, kropp, epost){
+  const poster = await lesJson(env, POST_NOKKEL, {}), laert = await lesJson(env, LAERT_NOKKEL, {});
+  const s = poster[String(kropp.id || '')];
+  if(!s || s.fra !== 'samle') return svar({ ok:false, feil:'Fant ikke samlefakturaen' });
+  const nr = Number(kropp.nr), l = s.samle.linjer[nr];
+  if(!l) return svar({ ok:false, feil:'Fant ikke handelen' });
+  if(kropp.fjern){
+    if(l.post && poster[l.post]) delete poster[l.post].samleId;
+    l.post = '';
+  } else if(kropp.kategori){
+    if(l.post) return svar({ ok:false, feil:'Handelen har alt sin egen post' });
+    if(!(l.belop > 0)) return svar({ ok:false, feil:'En refusjon blir i samlefakturaen' });
+    if((await alleKategorier(env)).indexOf(String(kropp.kategori)) === -1) return svar({ ok:false, feil:'Ukjent kategori' });
+    await samleEgen(s, l, nr, String(kropp.kategori), epost, poster, laert);
+  } else return svar({ ok:false, feil:'Ingenting å gjøre' });
+  samleRest(poster, s);
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  await env.FAMILIE_KV.put(LAERT_NOKKEL, JSON.stringify(laert));
+  return svar({ ok:true });
+}
 async function postDetaljer(env, id){
   const poster = await lesJson(env, POST_NOKKEL, {});
   const p = poster[String(id || '')];
@@ -1805,7 +1949,13 @@ async function postDetaljer(env, id){
     status:p.status || '', auto:!!p.auto, kilde:p.kilde || '', fra:p.fra || '', forHand:!!p.forHand, utlegg:p.utlegg || '', faktura:!!p.faktura, avsluttet:p.avsluttet || '',
     konto:p.konto ? (kn[p.konto] || p.kontoNavn || '') : '', betaltFra:bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
     behandlet:p.behandlet || '', av:p.av ? masker(p.av) : '', deler:(p.deler || []).map(d => ({ kategori:d.kategori, belop:d.belop })),
-    harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, vedlegg:vedleggListe(p), forb:forbindelser(p, poster) } });
+    harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, vedlegg:vedleggListe(p), forb:forbindelser(p, poster),
+    samleVenter:!!p.samleVenter, tvil:!!p.tvil, limt:p.samleVenter ? p.limt || '' : '',
+    samleId:p.samleId || '', samleNavn:p.samleId && poster[p.samleId] ? poster[p.samleId].motpart || '' : '',
+    samle:p.samle ? { total:p.samle.total, linjer:p.samle.linjer.map(l => {
+      const q = l.post && poster[l.post];
+      return { dato:l.dato, navn:l.navn, belop:l.belop, post:l.post || '', sted:q ? q.motpart || q.tekst || '' : '', status:q ? q.status : '', egen:!!(q && q.samleDel) };
+    }) } : null } });
 }
 async function postEndre(env, kropp){
   const poster = await lesJson(env, POST_NOKKEL, {});
@@ -1835,6 +1985,7 @@ async function postEndre(env, kropp){
     const b = Math.round(Number(kropp.belop) * 100) / 100;
     if(!isFinite(b) || Math.abs(b) > 1e8) return svar({ ok:false, feil:'Ugyldig beløp' });
     if(b !== p.belop){
+      if(p.fra === 'samle') return svar({ ok:false, feil:'Summen på en samlefaktura følger handlene – koble dem eller før dem som egne i stedet' });
       if(p.deler && p.deler.length > 1) return svar({ ok:false, feil:'Kvitteringen er delt på flere kategorier – endre fordelingen i kvitteringen' });
       if(p.bankBelop == null) p.bankBelop = p.belop;
       p.belop = b;
@@ -2064,6 +2215,10 @@ async function nyKvittering(env, kropp, epost){
   const k = kropp.kvittering || {};
   const dato = String(k.dato || '');
   const sum = Math.abs(Number(k.belop));
+  /* Minus paa kvitteringen eller regningen er penger inn - f.eks. stroem med
+     stroemstoette (Magne, 14. november 2026: «det går ikke som inntekt men som
+     positiv utgift»). Posten faar da plussbeloep paa kategorien den foeres paa. */
+  const fortegn = Number(k.belop) < 0 ? 1 : -1;
   if(!/^\d{4}-\d{2}-\d{2}$/.test(dato) || !(sum > 0) || sum > 1e6) return svar({ ok:false, feil:'Mangler dato eller sum – les kvitteringen på nytt eller fyll inn' });
   const butikk = String(k.butikk || '').slice(0, 120) || 'Ukjent butikk';
   const linjer = renLinjer(k.linjer);
@@ -2085,10 +2240,29 @@ async function nyKvittering(env, kropp, epost){
   const poster = await lesJson(env, POST_NOKKEL, {});
   const fil = kropp.fil || {};
   const filOk = KVITTERING_FILTYPER.indexOf(fil.type) !== -1 && typeof fil.data === 'string' && fil.data.length < 14e6 && /^[A-Za-z0-9+/]/.test(fil.data);
+  /* En samlefaktura foeres ikke her. Den legges i innboksen og gaas gjennom
+     der, uansett hvor den kom fra (Magne, 14. november 2026: «dersom det er
+     samlefaktura må den i innboksen uansett»). `tvil`: Neam var usikker, og
+     spoer naar den aapnes. `kv` er det Neam leste, til «Ikke en samlefaktura». */
+  if(kropp.samleVenter || k.type === 'samlefaktura'){
+    const sid = 'samle:' + b64url(await crypto.subtle.digest('SHA-256', tekstTilBytes(['samle', butikk, dato, sum.toFixed(2)].join('|')))).slice(0, 18);
+    if(poster[sid]) return svar({ ok:false, feil:'Denne samlefakturaen er allerede lagt inn (' + butikk + ', ' + dato + ')' });
+    const sNaa = new Date().toISOString();
+    const sv = { id:sid, fra:'samle', forHand:true, manuell:true, samleVenter:true, konto:'samle', kontoNavn:'Samlefaktura', dato:dato, belop:-sum, tekst:'', motpart:butikk,
+      harKvittering:false, status:'ny', lagtInnAv:epost, lagtInn:sNaa,
+      kv:{ type:k.type === 'kvittering' ? 'kvittering' : 'faktura', butikk:butikk, dato:dato, belop:Number(k.belop), linjer:linjer } };
+    if(kropp.tvil) sv.tvil = true;
+    if(kropp.limt) sv.limt = String(kropp.limt).slice(0, 40000);
+    if(filOk){ await env.FAMILIE_KV.put(filNokkel(sid), JSON.stringify({ type:fil.type, data:fil.data })); sv.harFil = true; sv.filType = fil.type; }
+    poster[sid] = sv;
+    await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+    return svar({ ok:true, post:sv, festet:'samle' });
+  }
   /* Betalt fra egen konto (Magne, 9. november 2026): kvitteringen blir et
      utlegg. Er pengene alt overfoert tilbake, foeres den med en gang. */
   const eier = String(kropp.eier || '');
   if(eier && personerFor(epost).indexOf(eier) === -1) return svar({ ok:false, feil:'Du kan ikke legge inn utlegg for denne personen' });
+  if(eier && fortegn > 0) return svar({ ok:false, feil:'Et utlegg kan ikke være penger inn' });
   const overfort = eier && kropp.tilbakebetalt ? Math.round((Number(kropp.overfort) > 0 ? Number(kropp.overfort) : sum) * 100) / 100 : 0;
   /* Hoerer kvitteringen til en transaksjon som alt ligger der, legges den
      VED den i stedet for aa bli en ny post (Magne, 6. november 2026):
@@ -2120,7 +2294,7 @@ async function nyKvittering(env, kropp, epost){
   /* En faktura legges ved trekket som alt ligger der, ellers venter den (over). */
   const faktura = k.type === 'faktura' && !kropp.forHand && !eier;
   if(faktura){
-    const trekk = fakturaTrekk(poster, { belop:-sum, dato:dato });
+    const trekk = fakturaTrekk(poster, { belop:fortegn * sum, dato:dato });
     const ledig = trekk.filter(b => !b.harFil)[0];
     if(ledig){
       if(filOk){ await env.FAMILIE_KV.put(filNokkel(ledig.id), JSON.stringify({ type:fil.type, data:fil.data })); ledig.harFil = true; ledig.filType = fil.type; }
@@ -2136,16 +2310,16 @@ async function nyKvittering(env, kropp, epost){
     if(trekk.some(b => b.faktura)) return svar({ ok:false, feil:'Denne fakturaen er allerede lagt inn (' + butikk + ', ' + dato + ')' });
   }
   if(filOk && !kropp.forHand && !faktura && !eier){
-    const forsoek = { id:id, belop:-sum, dato:dato };
+    const forsoek = { id:id, belop:fortegn * sum, dato:dato };
     const bank = Object.keys(poster).map(x => poster[x])
-      .filter(b => !b.fra && b.status === 'godkjent' && !b.harFil && b.belop < 0 && erLik(b, forsoek))[0];
+      .filter(b => !b.fra && b.status === 'godkjent' && !b.harFil && Math.sign(b.belop) === fortegn && erLik(b, forsoek))[0];
     if(bank) return await leggVed(bank, 'banktrekk');
     const lik = await finnLignende(env, poster, forsoek, linjer);
     const maal = lik && poster[lik.id];
     if(maal && !maal.harFil) return await leggVed(maal, 'kvittering');
   }
   const laert = await lesJson(env, LAERT_NOKKEL, {}), omdopt = await lesOmdopt(env);
-  const p = { id:id, fra:'foto', konto:'foto', kontoNavn:'Kvittering fra bilde', dato:dato, belop:-sum, tekst:'', motpart:butikk,
+  const p = { id:id, fra:'foto', konto:'foto', kontoNavn:'Kvittering fra bilde', dato:dato, belop:fortegn * sum, tekst:'', motpart:butikk,
     harKvittering: linjer.length > 0, status:'ny', lagtInnAv:epost, lagtInn:new Date().toISOString() };
   /* Lagt inn for haand - av Neam etter en beskjed, uten kvittering. */
   if(kropp.forHand){ p.forHand = true; p.kontoNavn = 'Lagt inn for hånd'; }
@@ -2176,6 +2350,7 @@ async function nyKvittering(env, kropp, epost){
   if(linjeKat) await settDeling(env, p, linjer, linjeKat, sum);
   if(overfort && p.kategori && !p.lignerPaa && !p.mulDobbel) Object.assign(p, { status:'godkjent', behandlet:new Date().toISOString(), av:epost });
   poster[id] = p;
+  if(!faktura && !eier) samleKobleNy(poster, p);
   if(linjer.length && !linjeKat) await env.FAMILIE_KV.put(kvitteringNokkel(p), JSON.stringify({ id:id, belop:sum, linjer:linjer }));
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
   return svar({ ok:true, post:p });
@@ -2233,8 +2408,9 @@ async function fordelKvittering(env, p, linjeKat, hovedKat){
     flyttet += b;
   }
   if(!flyttet) return null;
-  const deler = [{ kategori:hovedKat, belop:-(Math.abs(p.belop) - flyttet) }];
-  for(const kat of Object.keys(sum)) deler.push({ kategori:kat, belop:-sum[kat] });
+  const fortegn = p.belop < 0 ? -1 : 1;
+  const deler = [{ kategori:hovedKat, belop:fortegn * (Math.abs(p.belop) - flyttet) }];
+  for(const kat of Object.keys(sum)) deler.push({ kategori:kat, belop:fortegn * sum[kat] });
   return deler.map(d => ({ kategori:d.kategori, belop:Math.round(d.belop * 100) / 100 }));
 }
 
@@ -2292,6 +2468,7 @@ async function godkjenn(env, kropp, epost){
     /* Stryker man kvitteringen, er banktrekket ikke lenger dekket - det
        kommer tilbake i innboksen som vanlig post. */
     if(p.bankId && poster[p.bankId]){ delete poster[p.bankId].dekketAv; delete p.bankId; }
+    if(p.samleId && poster[p.samleId]) samleRest(poster, poster[p.samleId]);
     strok.push(id);
   }
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
@@ -2836,6 +3013,7 @@ async function angre(env, kropp){
     /* En automatisk foert post som angres, foeres aldri automatisk igjen. */
     if(p.auto){ p.manuell = true; delete p.auto; }
     p.status = 'ny'; delete p.behandlet; delete p.av; delete p.deler; delete p.slaattInn; n++;
+    if(p.samleId && poster[p.samleId]) samleRest(poster, poster[p.samleId]);
     /* Banktrekket som ble slaatt sammen, gaar tilbake til «dekket». Ble
        kvitteringen stroeket, mistet den koblingen; da kobles den paa nytt,
        ellers staar kjoepet dobbelt i innboksen. */
@@ -3371,6 +3549,10 @@ async function postHandling(request, env, v, kropp){
   if(kropp && kropp.hva === 'privat-vedlegg-slett') return await privatVedleggSlett(env, v.epost, kropp);
   if(kropp && kropp.hva === 'privat-kv-tilbake') return await privatKvTilbake(env, v.epost, kropp);
   if(kropp && kropp.hva === 'post-endre') return await postEndre(env, kropp);
+  if(kropp && kropp.hva === 'samle-forslag') return await samleForslag(env, kropp);
+  if(kropp && kropp.hva === 'samle-ny') return await samleNy(env, kropp, v.epost);
+  if(kropp && kropp.hva === 'samle-koble') return await samleKoble(env, kropp, v.epost);
+  if(kropp && kropp.hva === 'samle-vanlig') return await samleVanlig(env, kropp, v.epost);
   if(kropp && kropp.hva === 'vedlegg-linjer') return await vedleggLinjer(env, kropp);
   if(kropp && kropp.hva === 'post-vedlegg') return await postVedlegg(env, kropp);
   if(kropp && kropp.hva === 'post-vedlegg-slett') return await postVedleggSlett(env, kropp);
