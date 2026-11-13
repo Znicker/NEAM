@@ -570,7 +570,8 @@ varelinjer lest fra vedlegg (`ab9d7a4`), navn, dato og sum som kan rettes når
 en kvittering legges til (`52565ad`), innboksen som åpner rett i Rediger
 (`7fc4cda`), alle hovedkategoriene i Regnskap og Resultat (`12df3f2`), og
 samlefaktura med flere transaksjoner, penger inn på regninger og full
-redigering ved innlegging («Økonomi: samlefaktura, penger inn på regninger og full redigering ved innlegging», commiten etter `12df3f2`).
+redigering ved innlegging (`9ef0300`), og kvitteringer og trekk sammenlignet i
+bankdager («Økonomi: kvitteringer og trekk sammenlignes i bankdager», commiten etter `f432706`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -579,7 +580,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 113 commits, `0e0050a` til «Økonomi: samlefaktura, penger inn på regninger og full redigering ved innlegging», medregnet en midlertidig statustest fra en annen økt
+fungerte»). 114 commits, `0e0050a` til «Økonomi: kvitteringer og trekk sammenlignes i bankdager», medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1392,9 +1393,11 @@ C marineblå tavle – og Magne valgte **A**.
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
-- **Penger inn** («Økonomi: samlefaktura, penger inn på regninger og full redigering ved innlegging») med en ekte Glitre-regning med strømstøtte:
+- **Bankdager** («Økonomi: kvitteringer og trekk sammenlignes i bankdager»): en kvittering fra fredag eller lørdag mot
+  trekket som kommer mandag eller tirsdag, med ekte DNB-data.
+- **Penger inn** (`9ef0300`) med en ekte Glitre-regning med strømstøtte:
   at Neam leser minusbeløpet, og at innbetalingen fra banken kobles til den.
-- **Samlefaktura** («Økonomi: samlefaktura, penger inn på regninger og full redigering ved innlegging») med en ekte Coop Mastercard-faktura: at Neam
+- **Samlefaktura** (`9ef0300`) med en ekte Coop Mastercard-faktura: at Neam
   finner alle handlene med riktig dato og sum, og forslagene til kvitteringer.
   At Neam kjenner den igjen som samlefaktura fra Dropbox og fra Legg til.
 - **Innboksen i Rediger** (`7fc4cda`) på telefon og med ekte poster:
@@ -4653,7 +4656,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 113 commits fra `0e0050a` til «Økonomi: samlefaktura, penger inn på regninger og full redigering ved innlegging» (dialogen med
+verdier. Bygget i 114 commits fra `0e0050a` til «Økonomi: kvitteringer og trekk sammenlignes i bankdager» (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5098,7 +5101,22 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
-- **Penger inn og full redigering ved innlegging** («Økonomi: samlefaktura, penger inn på regninger og full redigering ved innlegging»). Magne: «ved
+- **Kvitteringer og trekk sammenlignes i bankdager** («Økonomi: kvitteringer og trekk sammenlignes i bankdager»). Magne: «når
+  man sammenligner utgifter for sammenslåing må man ta høyde for føring og
+  kjøring i helg. bankene kjører ikke i helger».
+  - `bankdagerMellom` teller bankdagene etter den tidligste datoen til og med
+    den seneste. Helg og norske bankfridager (`bankfri`: påsken fra skjærtorsdag
+    til 2. påskedag, 1. og 17. mai, Kristi himmelfart, 2. pinsedag, 24., 25.,
+    26. og 31. desember og 1. januar) teller ikke.
+  - Før: høyst 3 kalenderdager. Nå: høyst 3 bankdager i `erLik` (kvittering mot
+    trekk), `sammeTrekk`, `motpost` (oppgjøret) og `samleLik`. `fakturaLik`
+    godtar i tillegg 3 bankdager etter forfall. Kvittering mot kvittering
+    (`finnLignende`, dobbelt i Koble) bruker fortsatt kalenderdager, siden ingen
+    av dem føres av banken.
+  - Testet: datoene i node (fredag–tirsdag 2, påsken 2026 og 2027, jul), og i
+    testserveren et kjøp fredag mot trekk tirsdag (funnet) og torsdag uka etter
+    (ikke funnet).
+- **Penger inn og full redigering ved innlegging** (`9ef0300`). Magne: «ved
   alle anledninger jeg legger til utgifter eller inntekter ønsker jeg å få opp
   fullt redigeringsmeny. jeg må også kunne legge til positiveregninger dvs fra
   glitre med strømstøtte … det går ikke som inntekt men som positiv utgift».
@@ -5117,7 +5135,7 @@ ligge under høyre tommelknapp»).
   - Testet i testserveren: Glitre med minus koblet mot innbetaling og ført på
     Strøm, vanlig kvittering snudd til penger inn, ny inntekt med merke, utlegg
     avvist. Ikke med ekte regninger eller på neam.no.
-- **Samlefaktura med flere transaksjoner** («Økonomi: samlefaktura, penger inn på regninger og full redigering ved innlegging»). Magne: «kanskje du lager
+- **Samlefaktura med flere transaksjoner** (`9ef0300`). Magne: «kanskje du lager
   en funksjon som heter legg til samlefaktura med flere transaksjoner … Denne
   fakturaen synker i kostnad for hver kvittering som er lagt inn».
   - «Legg til samlefaktura» i Innboks. Neam leser fakturaen med `OK_SF_INSTRUKS`

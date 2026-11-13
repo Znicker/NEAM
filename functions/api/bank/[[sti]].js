@@ -971,8 +971,37 @@ async function lesJson(env, nokkel, tom){
    Lik: samme beloep (til oeret) og hoeyst tre dager mellom datoene - et
    kortkjoep bokfoeres gjerne en dag eller to etter. */
 function dagerMellom(a, b){ return Math.abs(Date.parse(a) - Date.parse(b)) / 86400000; }
+/* Bankdager (Magne, 14. november 2026: «når man sammenligner utgifter for
+   sammenslåing må man ta høyde for føring og kjøring i helg. bankene kjører
+   ikke i helger»). Et kjoep fredag kan foeres tirsdag. Helg og norske
+   bankfridager teller ikke: paasken, 1. og 17. mai, Kristi himmelfart,
+   2. pinsedag, 24., 25., 26. og 31. desember og 1. januar. */
+const BANKFRI = {};
+function bankfri(aar){
+  if(BANKFRI[aar]) return BANKFRI[aar];
+  const a = aar % 19, b = Math.floor(aar / 100), c = aar % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const paaske = Date.UTC(aar, Math.floor((h + l - 7 * m + 114) / 31) - 1, ((h + l - 7 * m + 114) % 31) + 1);
+  const fri = new Set(['01-01', '05-01', '05-17', '12-24', '12-25', '12-26', '12-31'].map(x => aar + '-' + x));
+  for(const n of [-3, -2, 1, 39, 50]) fri.add(new Date(paaske + n * 86400000).toISOString().slice(0, 10));
+  return BANKFRI[aar] = fri;
+}
+function erBankdag(t){
+  const d = new Date(t), w = d.getUTCDay();
+  return w !== 0 && w !== 6 && !bankfri(d.getUTCFullYear()).has(d.toISOString().slice(0, 10));
+}
+/* Bankdagene etter den tidligste datoen, til og med den seneste. */
+function bankdagerMellom(a, b){
+  let fra = Date.parse(String(a || '').slice(0, 10)), til = Date.parse(String(b || '').slice(0, 10));
+  if(isNaN(fra) || isNaN(til)) return 99;
+  if(fra > til){ const x = fra; fra = til; til = x; }
+  if(til - fra > 20 * 86400000) return 99;
+  let n = 0;
+  for(let t = fra + 86400000; t <= til; t += 86400000) if(erBankdag(t)) n++;
+  return n;
+}
 function erLik(bank, kv){
-  return Math.abs(Math.abs(bank.belop) - Math.abs(kv.belop)) < 0.005 && dagerMellom(bank.dato, kv.dato) <= 3;
+  return Math.abs(Math.abs(bank.belop) - Math.abs(kv.belop)) < 0.005 && bankdagerMellom(bank.dato, kv.dato) <= 3;
 }
 /* Ligner kvitteringen en som alt er lagt inn? (Magne, 6. november 2026)
    Samme kjoep kan komme to ganger: fra Trumf og som bilde, eller samme
@@ -1020,7 +1049,7 @@ async function finnLignende(env, poster, kv, linjer){
    dager etter (betalt tidlig, eller forfall i en helg). */
 function fakturaLik(bank, f){
   const d = (Date.parse(bank.dato) - Date.parse(f.dato)) / 86400000;
-  return Math.abs(Math.abs(bank.belop) - Math.abs(f.belop)) < 0.005 && d >= -10 && d <= 5;
+  return Math.abs(Math.abs(bank.belop) - Math.abs(f.belop)) < 0.005 && d >= -10 && (d <= 5 || bankdagerMellom(f.dato, bank.dato) <= 3);
 }
 function fakturaTrekk(poster, f){
   return Object.keys(poster).map(x => poster[x]).filter(b => !b.fra && Math.sign(b.belop) === Math.sign(f.belop) && !b.dekketAv
@@ -1127,7 +1156,7 @@ async function fakturaInnboks(env, kropp){
    (`bankIder`), og den gamle faar den rikere teksten. To like kjoep som
    begge staar i banken (to kaffer), roeres ikke. */
 function bankFinnes(p, iBanken){ return iBanken.has(p.id) || (p.bankIder || []).some(i => iBanken.has(i)); }
-function sammeTrekk(a, b){ return Math.abs(a.belop - b.belop) < 0.005 && dagerMellom(a.dato, b.dato) <= 3; }
+function sammeTrekk(a, b){ return Math.abs(a.belop - b.belop) < 0.005 && bankdagerMellom(a.dato, b.dato) <= 3; }
 function lagdId(id){ return /^h[\w-]{10,}$/.test(String(id || '')); }
 function kobleKvittering(poster, kv){
   if(kv.bankId || kv.mulDobbel) return;
@@ -1215,7 +1244,7 @@ async function finnOppgjor(env, okt, roller, poster, fra, fersk, psu){
     if(p.egetTrekk) brukt[p.egetTrekk.id] = true;
   }
   const naa = new Date().toISOString();
-  const motpost = t => kandidater.find(x => !x.oppgjor && Math.abs(Math.abs(x.belop) - t.belop) < 0.005 && dagerMellom(x.dato, t.dato) <= 3);
+  const motpost = t => kandidater.find(x => !x.oppgjor && Math.abs(Math.abs(x.belop) - t.belop) < 0.005 && bankdagerMellom(x.dato, t.dato) <= 3);
   const knytt = (p, t, hvem, ider, foer) => {
     p.oppgjor = { hvem:hvem, navn:PERSONER[hvem], trekk:t.id, utlegg:ider, inn:{ dato:t.dato, belop:t.belop, motpart:t.motpart || t.tekst || '' } };
     p.manuell = true; p.kategori = OPPGJOR_KATEGORI; p.kilde = 'oppgjor';
@@ -1811,7 +1840,7 @@ function samleLinjer(kilde){
   })).filter(l => /^\d{4}-\d{2}-\d{2}$/.test(l.dato) && l.belop);
 }
 function samleLik(q, l){
-  return l.belop > 0 && q.belop < 0 && Math.abs(Math.abs(q.belop) - l.belop) < 0.005 && dagerMellom(q.dato, l.dato) <= SAMLE_DAGER;
+  return l.belop > 0 && q.belop < 0 && Math.abs(Math.abs(q.belop) - l.belop) < 0.005 && bankdagerMellom(q.dato, l.dato) <= SAMLE_DAGER;
 }
 function samleLedig(q){
   return q && q.fra !== 'samle' && !q.samleId && q.belop < 0 && !q.dekketAv && q.status !== 'stroket' && q.status !== 'sammenslatt' && q.status !== 'venter';
