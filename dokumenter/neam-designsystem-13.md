@@ -23,7 +23,9 @@ Mye ligger nå i **fellesfiler** (`felles-rot.css`, `felles-skall.css`,
 `felles-skriv.js`, `felles-hus.js`, `felles-ms.js`, `felles-tale.js`). Det som ennå er kopiert per fil, holdes likt av dette
 dokumentet – det er fortsatt fasiten for hva som skal være likt på tvers.
 
-*Sist oppdatert 8. november 2026: **matlagingen** i Oppskriftssida (se
+*Sist oppdatert 14. november 2026: **klokka er «Rolige tall»** – store
+tall uten kort, med et pustende kolon (se «Bakgrunn og klokke»).
+Forrige oppdatering 8. november 2026: **matlagingen** i Oppskriftssida (se
 der). Samme dag: **topplinja er felles** på alle sidene,
 også dashene, og **klokka har alarm, nedtelling og stoppeklokke** (se
 «Topplinja»). Samme natt: **Økonomi på fellesenheten krever Magnes eller
@@ -207,7 +209,8 @@ Fargen er dempet nok til at den ikke leses som en knapp, og den bor bare
 i kartet (`.nmw-kart`). Et **valgt** område bruker «valgt»-fargen
 (`--aksent-lys` med `--aksent`-kant), ikke en ny farge. Klipperen og
 laderen er messing – det gamle metallet. Klapptavla var samme messing
-til 27. oktober 2026; den er lys nå (se «Bakgrunn og klapptavle»).
+til 27. oktober 2026; den ble lys da, og fra 14. november 2026 er klokka
+tall uten kort (se «Bakgrunn og klokke»).
 
 De fire første gjør noe **her**. Lilla flytter noe **dit** – den er en annen
 kategori, ikke en femte handlingstype. Det er begrunnelsen for at den fikk
@@ -609,7 +612,7 @@ PC er utviklingsflate, ikke bruksflate.
 
 **Alle sidene har samme topp:** sidas ikon på 84 px med navnet ved siden
 av (trykk: startvisningen, hold inne: forsiden), låseikonet på fellesenhetene, været med stedet
-inntil, og klapptavla med dato til høyre – med alarmene og timerne under. Den ligger i `felles-topp.js` og
+inntil, og klokka med dato til høyre – med alarmene og timerne under. Den ligger i `felles-topp.js` og
 `felles-topp.css`; en side får den med
 `<header class="ntp" id="neamTopp" data-ikon="…" data-navn="…">` og fila
 lastet etter `felles-neam.js`. **En ny side skal ha den** – ikke en egen
@@ -2281,7 +2284,7 @@ gjør det ikke.
 skive og tekst (bildeknapper i fireren). Aldri et brutt bildeikon – det ser ut som
 en feil i innholdet, ikke i en fil.
 
-## Bakgrunn og klapptavle
+## Bakgrunn og klokke
 
 *Fra 27. oktober 2026.*
 
@@ -2290,9 +2293,21 @@ rolige gradienten på `html` i `felles-rot.css`. Filene ligger igjen i
 `bilder/`, og sikkerhetskopien av den gamle layouten er grenen
 `backup/layout-steampunk-2026-10-27`.
 
-**Klapptavla er lys.** Hvite kort, nedre halvdel et hakk mørkere, sifre i
-mørk marineblå `#142036` – samme farge som navnene under ikonene. Den
-vipper som før (`neamFlipKlokke()`), og bruker ingen bildefiler lenger.
+**Klokka er «Rolige tall»** (14. november 2026, Magne – forslag A av tre;
+B var fire fliser, C en marineblå tavle). Ingen kort: store tall rett på
+flaten i Figtree 600, farge `--ink`. Kolonet er **to prikker i `--aksent`**
+som puster sakte (2 s), ikke et tegn – et kolon i skrifta står for lavt.
+Et siffer som skifter, glir opp og ut mens det nye glir opp på plass; bare
+sifrene som endrer seg, beveger seg. Med redusert bevegelse står alt stille.
+
+Den samme klokka står overalt: topplinja, dashene, kjøkkenskjermen og
+forsiden. Den bygges av `neamFlipKlokke()` i `felles-neam.js` og styles av
+`.fk` i `felles-neam.css` – navnene er beholdt fra klapptavla, så sidene
+ikke måtte endres. Størrelsen arves fra elementet den står i
+(`--t-display`).
+
+*Før:* den lyse klapptavla fra 27. oktober 2026 – to hvite kort, timer og
+minutter, med sifre i `#142036` og et blad som vippet.
 
 ## Praktiske feller
 

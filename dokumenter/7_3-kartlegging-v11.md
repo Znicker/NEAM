@@ -1,6 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 10. november 2026: på kjøkkenskjermen kan Rommene og Neamow
+*Ført à jour 14. november 2026: klokka er «Rolige tall» – store tall uten
+kort, med et pustende kolon, på alle sidene (se toppblokka).
+Ført à jour 10. november 2026: på kjøkkenskjermen kan Rommene og Neamow
 brukes uten kode; Rediger ber fortsatt om den (se toppblokka).
 Ført à jour 8. november 2026, ettermiddag: på kjøkkenskjermen kan
 kalenderen, været, klokka og julestjerna brukes uten kode (se toppblokka).
@@ -128,8 +130,8 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=93`, `felles-neam.css
-?v=89`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
+**Siste leverte versjoner:** `felles-neam.js ?v=94`, `felles-neam.css
+?v=90`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
 `felles-topp.js ?v=10`, `felles-topp.css ?v=10`;
@@ -150,8 +152,8 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–92; neam.css til og
-med 88; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–93; neam.css til og
+med 89; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
 hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–9**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
@@ -1276,6 +1278,20 @@ sidene). Magne: «Enhetsstyring må også kunne gjøres uten kode.»
 - **Testet** lokalt: `neamPinFri` gir riktig svar for hver knapp. Ikke
   prøvd på kjøkkenskjermen eller mot Homey.
 
+**14. november: klokka er «Rolige tall»** (neam.js `?v=94` og neam.css
+`?v=90` på alle 18 sidene). Magne: «kan du foreslå en litt freshere
+klokke?» Tre forslag i en forhåndsvisning – A rolige tall, B fire fliser,
+C marineblå tavle – og Magne valgte **A**.
+- Klapptavla er byttet ut med store tall uten kort (Figtree 600, `--ink`),
+  et kolon av to `--aksent`-prikker som puster, og sifre som glir opp når
+  de skifter. Se designsystemet, «Bakgrunn og klokke».
+- `neamFlipKlokke()` og `.fk` har beholdt navnene, så ingen side måtte
+  endres utover `?v=`. Klokka i topplinja, på dashene, kjøkkenskjermen og
+  forsiden er den samme.
+- **Testet** lokalt med de ekte fellesfilene på en tom side: bygging,
+  Figtree, et minuttskifte (det gamle sifferet ut, det nye inn, ett igjen
+  etterpå). Ikke sett på iPad, telefon eller kjøkkenskjermen.
+
 ### Åpne tråder
 
 **Besluttet, ikke bygget – fem systemer med begrunnelse i del 47–50 og 52:**
@@ -1464,6 +1480,8 @@ sidene). Magne: «Enhetsstyring må også kunne gjøres uten kode.»
 - **Tid igjen på vaskemaskinen over én time** (1. november): hvordan
   Bosch skriver et langt program – «85:00» eller «1:25:00» – er ikke sett.
   Begge leses, men ingen av dem er prøvd mot en ekte maskin.
+- **Klokka «Rolige tall» på kjøkkenskjermen, iPad og telefon** (14.
+  november): at den leses på avstand, og at et minuttskifte glir pent.
 - **Ikonene og den lyse klapptavla på iPad og telefon** (27. oktober).
   Hard oppdatering. Se særlig fiskebeinet på telefon – navnene under
   gjør knappene tettere – og at Figtree faktisk lastes.

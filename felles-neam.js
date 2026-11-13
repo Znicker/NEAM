@@ -1255,63 +1255,60 @@ function neamFirerUtenfor(ev){
    Er det ingenting aa vise, sies det som det er i stedet for aa aapne en
    tom kolonne - samme regel som for en tom sidefirer. */
 /* ============================================================
-   Flip-klokka
+   Klokka
    ============================================================
-   Bygger og driver klapptavla - se .fk i CSS-en for hvordan halvdelene og
-   bladene henger sammen. Kalles med elementet klokka skal staa i; foerste
-   kall bygger strukturen, senere kall flipper kortene som har endret
-   verdi. Sidene kaller den fra sin egen tegnKlokke, i stedet for aa sette
-   textContent.
+   «Rolige tall» fra 14. november 2026 (Magne, forslag A) - se .fk i
+   CSS-en. Navnet neamFlipKlokke er beholdt fra klapptavla, saa sidene
+   ikke maatte endres. Kalles med elementet klokka skal staa i; foerste
+   kall bygger fire siffervinduer og kolonet, senere kall lar bare
+   sifrene som har endret seg gli.
 
-   Flippen er en ren klasse-paa/av: bladene faar sine tall, .flipp settes,
-   og naar overgangen er ferdig (560 ms, litt over CSS-ens 540) settes de
-   statiske halvdelene til sluttbildet og klassen tas av igjen. Rekker et
-   nytt skifte aa komme foer det - det gjoer det aldri med minutter - tas
-   bare sluttbildet direkte. */
+   Et skifte: det gamle sifferet faar .fk-ut og fjernes etter 460 ms
+   (litt over CSS-ens 450), det nye legges til med .fk-inn. Kommer et nytt
+   skifte foer det gamle er borte, tas de gamle bort med en gang. */
 function neamFlipKlokke(el){
   if(!el) return;
-  if(!el.dataset.fk){
-    el.dataset.fk = '1';
+  if(el.dataset.fk !== '2'){
+    el.dataset.fk = '2';
     el.classList.add('fk');
     el.textContent = '';
-    ['t', 'm'].forEach(function(id){
-      const k = document.createElement('span');
-      k.className = 'fk-kort';
-      k.dataset.kort = id;
-      k.innerHTML = '<span class="fk-halv fk-o"><b></b></span>'
-                  + '<span class="fk-halv fk-n"><b></b></span>'
-                  + '<span class="fk-halv fk-blad-o"><b></b></span>'
-                  + '<span class="fk-halv fk-blad-n"><b></b></span>';
-      el.appendChild(k);
-    });
+    for(let i = 0; i < 4; i++){
+      if(i === 2){
+        const k = document.createElement('span');
+        k.className = 'fk-kolon';
+        k.setAttribute('aria-hidden', 'true');
+        k.innerHTML = '<i></i><i></i>';
+        el.appendChild(k);
+      }
+      const s = document.createElement('span');
+      s.className = 'fk-siffer';
+      s.dataset.siffer = String(i);
+      el.appendChild(s);
+    }
   }
   const n = new Date();
-  const vil = { t: String(n.getHours()).padStart(2, '0'),
-                m: String(n.getMinutes()).padStart(2, '0') };
-  ['t', 'm'].forEach(function(id){
-    const kort = el.querySelector('[data-kort="' + id + '"]');
-    if(!kort) return;
-    const o = kort.querySelector('.fk-o b'),  ned = kort.querySelector('.fk-n b');
-    const bo = kort.querySelector('.fk-blad-o b'), bn = kort.querySelector('.fk-blad-n b');
-    const ny = vil[id], gml = ned.textContent;
+  const tid = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0');
+  el.setAttribute('aria-label', tid);
+  const fire = tid.replace(':', '').split('');
+  el.querySelectorAll('.fk-siffer').forEach(function(s, i){
+    const ny = fire[i];
+    const gml = s.dataset.v || '';
     if(gml === ny) return;
-    if(gml === '' || kort.classList.contains('flipp')){
-      /* Foerste tegning, eller et skifte midt i et paagaaende flipp:
-         rett paa sluttbildet. */
-      kort.classList.remove('flipp');
-      o.textContent = ned.textContent = ny;
-      bo.textContent = bn.textContent = ny;
+    s.dataset.v = ny;
+    s.querySelectorAll('.fk-ut').forEach(function(e){ e.remove(); });
+    const naa = s.querySelector('span');
+    const nyE = document.createElement('span');
+    nyE.textContent = ny;
+    if(gml === '' || !naa){
+      /* Foerste tegning: rett paa plass, ingen gli. */
+      if(naa) naa.remove();
+      s.appendChild(nyE);
       return;
     }
-    bo.textContent = gml;          /* bladet som faller baerer det gamle */
-    bn.textContent = ny;           /* bladet som lander baerer det nye */
-    o.textContent = ny;            /* avdekkes bak det fallende bladet */
-    kort.classList.add('flipp');
-    setTimeout(function(){
-      ned.textContent = ny;
-      bo.textContent = ny;
-      kort.classList.remove('flipp');
-    }, 560);
+    naa.className = 'fk-ut';
+    setTimeout(function(){ naa.remove(); }, 460);
+    nyE.className = 'fk-inn';
+    s.appendChild(nyE);
   });
 }
 
