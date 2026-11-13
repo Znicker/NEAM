@@ -565,8 +565,9 @@ og kvitteringer og fakturaer delt på flere kategorier når de legges inn
 (`a608f4a`), lister som ikke får fokus på trykkskjerm (`d6cbd20`), Neams søk i
 transaksjonene rettet (`ba264fe`), søk på tvers av varelinjer (`fd86809`),
 varelinjer lest fra vedlegg (`ab9d7a4`), navn, dato og sum som kan rettes når
-en kvittering legges til (`52565ad`), og innboksen som åpner rett i Rediger
-(«Økonomi: innboksen åpner rett i Rediger», commiten etter `52565ad`).
+en kvittering legges til (`52565ad`), innboksen som åpner rett i Rediger
+(`7fc4cda`), og alle hovedkategoriene i Regnskap og Resultat («Økonomi: alle hovedkategoriene står i Regnskap og Resultat»,
+commiten etter `7fc4cda`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -575,7 +576,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 111 commits, `0e0050a` til «Økonomi: innboksen åpner rett i Rediger», medregnet en midlertidig statustest fra en annen økt
+fungerte»). 112 commits, `0e0050a` til «Økonomi: alle hovedkategoriene står i Regnskap og Resultat», medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1374,7 +1375,7 @@ sidene). Magne: «Enhetsstyring må også kunne gjøres uten kode.»
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
-- **Innboksen i Rediger** («Økonomi: innboksen åpner rett i Rediger») på telefon og med ekte poster:
+- **Innboksen i Rediger** (`7fc4cda`) på telefon og med ekte poster:
   Godkjenn med endret navn, sum eller dato.
 - **Navn, dato og sum i kvitteringsvinduet** (`52565ad`) på telefon: datofeltet
   og tastaturet.
@@ -4628,7 +4629,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 111 commits fra `0e0050a` til «Økonomi: innboksen åpner rett i Rediger» (dialogen med
+verdier. Bygget i 112 commits fra `0e0050a` til «Økonomi: alle hovedkategoriene står i Regnskap og Resultat» (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5073,7 +5074,16 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
-- **Innboksen åpner rett i Rediger** («Økonomi: innboksen åpner rett i Rediger»). Magne: «når man få opp
+- **Alle hovedkategoriene står i Regnskap og Resultat** («Økonomi: alle hovedkategoriene står i Regnskap og Resultat»). Magne:
+  «alle hovedkategoriene må alltid stå i de tre resultat, regnskap og budsjett
+  slik at jeg kan legge til linjer selv om det ikke er føringer der».
+  - `okRgTegn` og `okRsListe` hoppet over en gruppe uten tall. Nå står alle
+    gruppene fra `okMndGrupper`; postene uten tall er fortsatt skjult til «Vis
+    alle poster». Budsjett viste alle fra før.
+  - «Ny post i …» fra gruppemenyen setter også `okRgAlle`, så den nye posten
+    vises med en gang i Regnskap og Resultat.
+  - Testet i testserveren: samme åtte grupper i alle tre, ny post i en tom gruppe.
+- **Innboksen åpner rett i Rediger** (`7fc4cda`). Magne: «når man få opp
   godkenningsvinduet i innboksen, kan man like gjer ne gå rett inn i rediger og ha
   full oversikt».
   - `okForVindu` åpner `okFrRediger` for en post som står i `okPoster`. Øverst

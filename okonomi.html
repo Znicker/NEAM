@@ -5915,8 +5915,8 @@ button.ok-dr-rad{ cursor:pointer; }
     okMndGrupper(c.poster).forEach(function(g){
       var gp = c.poster.filter(function(k){ return c.gruppe(k) === g; });
       var f = gp.reduce(function(s, k){ return s + c.faktisk(k); }, 0), ff = gp.reduce(function(s, k){ return s + c.forfaller(k); }, 0);
-      if(!f && !ff && !okRgAlle[g]) return;
-      noe = true;
+      /* Alle gruppene staar, ogsaa uten foeringer, saa det kan legges til poster (Magne, 13. november 2026). */
+      if(f || ff) noe = true;
       var d = okMndGruppeLinje(g, kr(f + ff), ff ? 'Herav forfaller ' + kr(ff) : '', true);
       d.querySelector('summary').dataset.k = g;
       var ur = okEl('div', 'ok-under-rader');
@@ -5991,8 +5991,8 @@ button.ok-dr-rad{ cursor:pointer; }
       var gp = c.poster.filter(function(k){ return c.gruppe(k) === g; });
       var b = gp.reduce(function(s, k){ return s + c.budsjett(k); }, 0);
       var r = gp.reduce(function(s, k){ return s + c.faktisk(k) + c.forfaller(k); }, 0);
-      if(!b && !r && !okRgAlle[g]) return;
-      noe = true;
+      /* Alle gruppene staar, ogsaa uten tall (Magne, 13. november 2026). */
+      if(b || r) noe = true;
       var d = okEl('details', 'ok-mnd-kat');
       d.dataset.g = g;
       d.open = okMnd.apneKjop['rs:' + g] !== false;
@@ -6985,7 +6985,7 @@ button.ok-dr-rad{ cursor:pointer; }
       if(hvor === 'regnskap' || hvor === 'resultat') punkt(okRgAlle[k] ? 'Skjul poster uten tall' : 'Vis alle poster', function(){ okRgAlle[k] = !okRgAlle[k]; okBuMenyLukk(); okMndTegn(); });
       else punkt(okBlAlle[k] ? 'Skjul poster uten budsjett' : 'Vis poster uten budsjett', function(){ okBlAlle[k] = !okBlAlle[k]; okBuMenyLukk(); okMndTegn(); });
       punkt('Ny post i ' + k + ' …', function(b){
-        felt(b, 'Navn på posten', '', function(s){ var v = String(s || '').trim(); if(!v) return; post({ hva:'kategori-ny', nye:[{ forelder:k, navn:v }] }).then(function(r){ if(r.ok) okBlAlle[k] = true; ferdig(r); }); });
+        felt(b, 'Navn på posten', '', function(s){ var v = String(s || '').trim(); if(!v) return; post({ hva:'kategori-ny', nye:[{ forelder:k, navn:v }] }).then(function(r){ if(r.ok){ okBlAlle[k] = true; okRgAlle[k] = true; } ferdig(r); }); });
       });
     }
     /* Maanedens budsjett hoerer til Budsjett - ikke i menyen i Regnskap. */

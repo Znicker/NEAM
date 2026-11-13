@@ -1933,7 +1933,9 @@ først, Sparing sist. Bare tallene skiller dem:
   per gruppe (`--paper`, `--shadow`) og Inntekter og Sparing først. To kort i
   bredden fra 620 px sideinnhold, ett under det. Resultat, med tre tall per
   linje, holder ett kort til 1100 px og har kolonnetitlene i hvert kort.
-  Kontoutskrift og Logg er også fulle i bredden. **Søylediagrammene** på de tre
+  Kontoutskrift og Logg er også fulle i bredden. **Alle hovedkategoriene står**
+  i alle tre (fra 13. november 2026), også uten tall, så poster kan legges til
+  fra menyen på gruppen. **Søylediagrammene** på de tre
   fanene er skjult enn så lenge (9. november 2026, `cf98c9a`).
   **Høyreklikk** (hold fingeren på telefon) på
   en føring eller kategori åpner menyen (`.ok-meny`). Kjøpene bak en post i
