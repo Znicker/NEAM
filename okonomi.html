@@ -1001,7 +1001,7 @@ button.ok-dr-rad{ cursor:pointer; }
         <p class="ok-meta" id="ok-innboks-meta"></p>
       </div>
       <div class="ok-rad-knapper">
-        <button type="button" class="btn btn-ny" id="ok-kv-knapp">Legg til kvittering</button>
+        <button type="button" class="btn btn-ny" id="ok-kv-knapp">Legg til transaksjon</button>
         <button type="button" class="btn btn-blaa" id="ok-kv-lim">Lim inn</button>
         <button type="button" class="btn btn-blaa" id="ok-sf-knapp">Legg til samlefaktura</button>
         <input type="file" id="ok-kv-fil" accept="image/*,application/pdf" hidden>
@@ -1332,7 +1332,7 @@ button.ok-dr-rad{ cursor:pointer; }
 <div class="dlg-bak" id="ok-kvs-bak" hidden>
   <div class="dlg-kort ok-kv-kort" role="dialog" aria-modal="true" aria-labelledby="ok-kvs-tittel">
     <div class="ok-kort-hode">
-      <div><span class="ok-etikett" id="ok-kvs-hva">Ny kvittering</span><h2 id="ok-kvs-tittel"></h2><p class="ok-meta" id="ok-kvs-meta"></p></div>
+      <div><span class="ok-etikett" id="ok-kvs-hva">Ny transaksjon</span><h2 id="ok-kvs-tittel"></h2><p class="ok-meta" id="ok-kvs-meta"></p></div>
     </div>
     <div class="ok-kv-total" id="ok-kvs-total"></div>
     <div class="ok-kvs-mer" id="ok-kvs-steg1">
@@ -1340,13 +1340,13 @@ button.ok-dr-rad{ cursor:pointer; }
     <label class="ok-kvs-rad"><span class="ok-etikett" id="ok-kvs-dato-et">Dato</span><input type="date" id="ok-kvs-dato"></label>
     <label class="ok-kvs-rad"><span class="ok-etikett">Sum (kr)</span><input type="text" inputmode="decimal" id="ok-kvs-sum"></label>
     <label class="ok-kv-kryss"><input type="checkbox" id="ok-kvs-inn"><span>Penger inn (tilbakebetaling, kreditnota)</span></label>
+    <div class="ok-kvs-rad"><span class="ok-etikett">Kategori</span><div id="ok-kvs-kat"></div></div>
     <div class="ok-kvs-mer" id="ok-kvs-utlegg-del">
     <p class="ok-meta">Er dette et utlegg – betalt med egne penger?</p>
     <label class="ok-kv-kryss"><input type="checkbox" id="ok-kvs-utlegg"><span>Ja, det er et utlegg</span></label>
     <div class="ok-kvs-mer" id="ok-kvs-mer" hidden>
       <label class="ok-kvs-rad" id="ok-kvs-hvem-rad" hidden><span class="ok-etikett">Hvem betalte</span><select id="ok-kvs-hvem"></select></label>
       <label class="ok-kvs-rad"><span class="ok-etikett">Hva gjelder det</span><input type="text" id="ok-kvs-notat" maxlength="300"></label>
-      <div class="ok-kvs-rad"><span class="ok-etikett">Kategori</span><div id="ok-kvs-kat"></div></div>
       <label class="ok-kv-kryss"><input type="checkbox" id="ok-kvs-betalt"><span>Det er alt betalt tilbake til meg</span></label>
       <label class="ok-kvs-rad" id="ok-kvs-mye-rad" hidden><span class="ok-etikett">Hvor mye (kr)</span><input type="text" inputmode="decimal" id="ok-kvs-mye" placeholder="Hele summen"></label>
     </div>
@@ -3706,7 +3706,7 @@ button.ok-dr-rad{ cursor:pointer; }
       var sumStart = Number(kv.belop) ? String(Math.abs(Number(kv.belop))).replace('.', ',') : '';
       var navnStart = String(kv.butikk || ''), datoStart = /^\d{4}-\d{2}-\d{2}$/.test(String(kv.dato || '')) ? String(kv.dato) : '';
       var steg = 1, kryss = [], valgt = {};
-      e('ok-kvs-hva').textContent = kv.type === 'faktura' ? 'Ny faktura' : 'Ny kvittering';
+      e('ok-kvs-hva').textContent = kv.type === 'faktura' ? 'Ny faktura' : 'Ny transaksjon';
       e('ok-kvs-navn-et').textContent = kv.type === 'faktura' ? 'Fra' : 'Butikk';
       e('ok-kvs-dato-et').textContent = kv.type === 'faktura' ? 'Forfall' : 'Dato';
       e('ok-kvs-navn').value = navnStart; e('ok-kvs-dato').value = datoStart;
@@ -3727,9 +3727,19 @@ button.ok-dr-rad{ cursor:pointer; }
       okKvPersoner.forEach(function(p){ var o = okEl('option', '', okVask(p.navn)); o.value = p.hvem; v.appendChild(o); });
       e('ok-kvs-hvem-rad').hidden = okKvPersoner.length < 2;
       var kat = e('ok-kvs-kat'); kat.innerHTML = '';
-      var velg = okKatVelg('ok-kvs-kat-valg', '', 'Velg kategori', 'Kategori for utlegget');
+      /* Kategorien gjelder alt som legges inn, ogsaa inntekter (Magne, 14.
+         november 2026: «under kategori må også inntekt være»). Uten valg
+         foreslaar Neam som foer. */
+      var velg = okKatVelg('ok-kvs-kat-valg', '', 'Velg kategori – eller la Neam foreslå', 'Kategori');
       kat.appendChild(velg);
-      if(medUtlegg) okHent('/api/bank?hva=kategori-forslag&navn=' + encodeURIComponent(kv.butikk || '')).then(function(r){ if(r.ok && r.kategori && !velg.value) velg.value = r.kategori; });
+      /* Penger inn: Inntekter oeverst i lista. */
+      var innForst = function(){
+        var g = Array.prototype.filter.call(velg.querySelectorAll('optgroup'), function(x){ return x.label === 'Inntekter'; })[0];
+        if(!g) return;
+        if(e('ok-kvs-inn').checked) velg.insertBefore(g, velg.querySelector('optgroup'));
+        else { var sp = Array.prototype.filter.call(velg.querySelectorAll('optgroup'), function(x){ return x.label === 'Sparing'; })[0]; velg.insertBefore(g, sp || velg.querySelector('option[value="__ny"]')); }
+      };
+      okHent('/api/bank?hva=kategori-forslag&navn=' + encodeURIComponent(kv.butikk || '')).then(function(r){ if(r.ok && r.kategori && !velg.value) velg.value = r.kategori; });
       var linjeHtml = function(l){
         return '<span>' + okVask(l.navn) + (Number(l.antall) > 0 && Number(l.antall) !== 1 ? ' <span class="ok-meta">× ' + okVask(Number(l.antall).toLocaleString('nb-NO')) + '</span>' : '') + '</span>'
           + '<b>' + okKr0.format((Number(l.belop) || 0) + (Number(l.rabatt) || 0)) + '</b>';
@@ -3747,6 +3757,7 @@ button.ok-dr-rad{ cursor:pointer; }
       var tegn = function(){
         /* Penger inn er ikke et utlegg. */
         e('ok-kvs-utlegg-del').hidden = !medUtlegg || e('ok-kvs-inn').checked;
+        innForst();
         tegnTopp();
         e('ok-kvs-mer').hidden = !e('ok-kvs-utlegg').checked;
         e('ok-kvs-mye-rad').hidden = !e('ok-kvs-betalt').checked;
@@ -3837,8 +3848,9 @@ button.ok-dr-rad{ cursor:pointer; }
           if(mangler){ feil('Velg kategori på alle linjene.'); return; }
         }
         kv.butikk = topp.navn; kv.dato = topp.dato; kv.belop = e('ok-kvs-inn').checked ? -topp.sum : topp.sum;
-        if(!u && !linjeKat){ ut(null); return; }
-        ut(Object.assign(u || {}, linjeKat ? { linjeKat:linjeKat } : {}));
+        var eget = Object.assign(u || {}, linjeKat ? { linjeKat:linjeKat } : {});
+        if(velg.value) eget.kategori = velg.value;
+        ut(Object.keys(eget).length ? eget : null);
       };
       document.addEventListener('keydown', tast);
       e('ok-kvs-bak').hidden = false;
@@ -4112,7 +4124,7 @@ button.ok-dr-rad{ cursor:pointer; }
   }
   function okKvLimTekst(s){
     s = String(s || '').trim();
-    if(s.length < 10){ document.getElementById('ok-kv-status').textContent = 'Utklippstavla har ingen kvittering å lese – kopier et bilde eller teksten fra regningen. En PDF kan ikke limes inn her: velg den som fil med «Legg til kvittering».'; return; }
+    if(s.length < 10){ document.getElementById('ok-kv-status').textContent = 'Utklippstavla har ingen kvittering å lese – kopier et bilde eller teksten fra regningen. En PDF kan ikke limes inn her: velg den som fil med «Legg til transaksjon».'; return; }
     okLesKvittering(null, s);
   }
   document.addEventListener('paste', function(e){
@@ -4153,7 +4165,7 @@ button.ok-dr-rad{ cursor:pointer; }
 
   /* ---------- Kvitteringer fra Dropbox ----------
      Filene i Dropbox-appens mappe leses naar sida aapnes og med Oppdater,
-     én om gangen, akkurat som «Legg til kvittering». Ferdige flyttes til
+     én om gangen, akkurat som «Legg til transaksjon». Ferdige flyttes til
      «Importert», de Neam ikke klarte til «Ikke lest» - saa ingenting leses
      (og betales) to ganger. Se Dropbox-delen i bank-funksjonen. */
   var okDb = null, okDbKjorer = false;
@@ -6665,6 +6677,7 @@ button.ok-dr-rad{ cursor:pointer; }
       sp.innerHTML = '';
       sp.disabled = !!delt || !sg.value;
       if(!sg.value){ spForrige = ''; return; }
+      if(!post) sp.appendChild(new Option('Velg post …', ''));
       kats.filter(function(k){ var d = k.split(' · '); return d.length === 2 && d[0] === sg.value; }).forEach(function(k){ sp.appendChild(new Option(k.split(' · ')[1], k)); });
       if(!delt && sg.value !== 'Utenfor budsjett') sp.appendChild(new Option('+ Ny post …', '__ny'));
       if(post) sp.value = post;
@@ -7374,7 +7387,7 @@ button.ok-dr-rad{ cursor:pointer; }
         var f0 = rad.querySelector('button'); if(f0) f0.focus();
       });
       /* I Regnskap: foer inn en utgift her, i stedet for ny linje (8. november 2026). */
-      if(hvor === 'regnskap' || hvor === 'resultat') punkt('Før inn ny utgift …', function(){ okBuMenyLukk(); okForNy(k); });
+      if(hvor === 'regnskap' || hvor === 'resultat') punkt(String(k).indexOf('Inntekter') === 0 ? 'Før inn ny inntekt …' : 'Før inn ny utgift …', function(){ okBuMenyLukk(); okForNy(k); });
       else if(d.length === 2) punkt('Ny linje under …', function(b){
         felt(b, 'Navn på linjen', '', function(s){ var v = String(s || '').trim(); if(!v) return; post({ hva:'kategori-ny', nye:[{ forelder:k, navn:v }] }).then(function(r){ if(r.ok){ okBlApen[k] = true; okBlAlle[k.split(' · ')[0]] = true; } ferdig(r); }); });
       });
@@ -7385,6 +7398,8 @@ button.ok-dr-rad{ cursor:pointer; }
       }, 'fare');
     } else {
       skille('Gruppen');
+      /* Foer inn paa gruppen: velg blant postene og linjene som finnes (Magne, 14. november 2026). */
+      if(hvor === 'regnskap' || hvor === 'resultat') punkt(k === 'Inntekter' ? 'Før inn ny inntekt …' : 'Før inn ny utgift …', function(){ okBuMenyLukk(); okForNy(k); });
       if(hvor === 'regnskap' || hvor === 'resultat') punkt(okRgAlle[k] ? 'Skjul poster uten tall' : 'Vis alle poster', function(){ okRgAlle[k] = !okRgAlle[k]; okBuMenyLukk(); okMndTegn(); });
       else punkt(okBlAlle[k] ? 'Skjul poster uten budsjett' : 'Vis poster uten budsjett', function(){ okBlAlle[k] = !okBlAlle[k]; okBuMenyLukk(); okMndTegn(); });
       punkt('Ny post i ' + k + ' …', function(b){

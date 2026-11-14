@@ -1853,7 +1853,7 @@ først, Sparing sist. Bare tallene skiller dem:
     klokka på de andre sidene (se Topplinja). Øverst i innboksen
     **«Forfalte regninger»** (rød statusprikk) og under de andre
     **«Fakturaer uten kategori»** med kategorivalg. Øverst «Legg til
-    kvittering» (`.btn-ny`) og «Lim inn» (`.btn-blaa`, 7. november 2026):
+    transaksjon» (`.btn-ny`, het «Legg til kvittering» til 14. november 2026) og «Lim inn» (`.btn-blaa`, 7. november 2026):
     bilde, PDF eller tekst fra utklippstavla – eller Ctrl+V på sida, når
     markøren ikke står i et felt. Så «Legg til samlefaktura» (`.btn-blaa`, 14.
     november 2026): et vindu som kvitteringsvinduet (`.ok-kv-kort`) med Fra,
@@ -1916,6 +1916,8 @@ først, Sparing sist. Bare tallene skiller dem:
   menyen på en post eller linje i Regnskap står **«Før inn ny utgift …»**
   (i Budsjett «Ny linje under …»); skjemaet åpnes i samme vindu, med Merke og
   «Penger inn» (forhåndskrysset og kalt «Ny inntekt» på en inntektspost).
+  Menyen på en **gruppe** har også «Før inn ny utgift …» («Før inn ny inntekt
+  …» for Inntekter): gruppen er valgt, og posten velges fra «Velg post …».
   Rediger har «Penger inn» for det som ikke kommer fra banken.
   Rediger viser feltene: navn, sum, kategori i tre nedtrekk side om side
   (gruppe › post › linje; under hverandre på telefon), merke, notat og
@@ -2128,14 +2130,16 @@ først, Sparing sist. Bare tallene skiller dem:
   med egne penger?» med avkrysningen «Ja, det er et utlegg» (`.ok-kv-kryss`,
   18 px, aksentfargen). Krysses den av, vokser vinduet (`.ok-kvs-mer`,
   etikett over feltet, `.ok-kvs-rad`): Hvem betalte (bare for sys@), Hva gjelder
-  det, Kategori, avkrysningen «Det er alt betalt tilbake til meg» og
+  det, avkrysningen «Det er alt betalt tilbake til meg» og
   Hvor mye (kr) med «Hele summen» som forvalg. Under: **Legg til** (`.btn-ny`)
   og **Avbryt** (`.btn-ghost ok-smal`) etter Avbryt-regelen – den spør bare når
   noe er skrevet inn eller endret. Valgt uten skisse. Vinduet kommer alltid når
   noe legges til fra bilde, PDF eller innliming. Under Sum står **«Penger inn
   (tilbakebetaling, kreditnota)»** (`.ok-kv-kryss`, fra 14. november 2026): da er
   summen pluss på kategorien (f.eks. strøm med strømstøtte), og utlegget skjules.
-  Etter Legg til åpnes posten i Rediger.
+  Etter Legg til åpnes posten i Rediger. Fra 14. november 2026 heter vinduet
+  **«Ny transaksjon»** og har alltid **Kategori** under Penger inn (også for
+  utlegget); med Penger inn står Inntekter øverst i lista.
   **Flere kategorier** (fra 9. november 2026, `a608f4a`): under utlegget, med
   minst to linjer, «Er det flere kategorier på denne?» med avkrysningen «Ja,
   flere kategorier» (`.ok-kv-kryss`). Da får hver linje en avkrysning bak

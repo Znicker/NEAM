@@ -575,7 +575,8 @@ bankdager (`3779eec`), innboksposten som vises med en gang (`0eddb8a`), og
 samlefakturaen som leses ved innlegging og viser kvitteringer som ligner
 (`429116e`), og dagens dato til Neam når den leser et dokument, spørsmål når
 en kvittering ligner en handel på en samlefaktura, og symboler for vedlegg og
-samlefaktura («Økonomi: dagens dato til Neam, spørsmål om samlefaktura og symboler for vedlegg og samlefaktura», commiten etter `429116e`).
+samlefaktura (`3190fd6`), og ny transaksjon med kategori og Før inn på gruppene
+(«Økonomi: ny transaksjon med kategori, og Før inn på gruppene», commiten etter `3190fd6`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -584,7 +585,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 117 commits, `0e0050a` til «Økonomi: dagens dato til Neam, spørsmål om samlefaktura og symboler for vedlegg og samlefaktura», medregnet en midlertidig statustest fra en annen økt
+fungerte»). 118 commits, `0e0050a` til «Økonomi: ny transaksjon med kategori, og Før inn på gruppene», medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1397,9 +1398,11 @@ C marineblå tavle – og Magne valgte **A**.
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
-- **Spørsmål om samlefaktura** («Økonomi: dagens dato til Neam, spørsmål om samlefaktura og symboler for vedlegg og samlefaktura») med ekte Coop-kvitteringer: at
+- **Lønn som ny transaksjon** («Økonomi: ny transaksjon med kategori, og Før inn på gruppene»): et skjermbilde av en
+  lønnsoverføring – at det legges ved overføringen fra banken, med Inntekter.
+- **Spørsmål om samlefaktura** (`3190fd6`) med ekte Coop-kvitteringer: at
   inntil 1,50 kr kobles av seg selv, og at større avvik gir spørsmål.
-- **«I dag» i et skjermbilde fra DNB-appen** («Økonomi: dagens dato til Neam, spørsmål om samlefaktura og symboler for vedlegg og samlefaktura»): at overføringen
+- **«I dag» i et skjermbilde fra DNB-appen** (`3190fd6`): at overføringen
   får dagens dato.
 - **Samlefaktura med ekte Coop-kvitteringer** (`429116e`): hva «Ligner: …»
   sier for Coop-handlene som ikke fikk treff 14. november. Grunnen er ukjent.
@@ -4666,7 +4669,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 117 commits fra `0e0050a` til «Økonomi: dagens dato til Neam, spørsmål om samlefaktura og symboler for vedlegg og samlefaktura» (dialogen med
+verdier. Bygget i 118 commits fra `0e0050a` til «Økonomi: ny transaksjon med kategori, og Før inn på gruppene» (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5111,7 +5114,23 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
-- **Spørsmål om samlefaktura, og symboler** («Økonomi: dagens dato til Neam, spørsmål om samlefaktura og symboler for vedlegg og samlefaktura»). Magne: «On grei
+- **Ny transaksjon med kategori, og Før inn på gruppene** («Økonomi: ny transaksjon med kategori, og Før inn på gruppene»). Magne: «Ny
+  kvittering må hete ny transaksjon. og under kategori må også inntekt være.
+  f.eks når jeg skal dokumentere overførsel av lønn. når jeg skal legge til noe
+  i regnskapet i regnskapfanen og andre museknapp må jeg få velge i alle kjente
+  underkategorier, ikke bare lage ny».
+  - Vinduet heter «Ny transaksjon», knappen «Legg til transaksjon». Kategori står
+    nå alltid i vinduet (`#ok-kvs-kat`), ikke bare under utlegget; med Penger
+    inn flyttes Inntekter øverst (`innForst`). Uten valg foreslår Neam som før.
+    `nyKvittering` bruker kategorien fra vinduet for alt, ikke bare utlegg.
+  - Inntekter fantes alt i alle lister; det som manglet, var kategorifeltet.
+  - Gruppemenyen i Regnskap og Resultat har «Før inn ny utgift …» (Inntekter:
+    «Før inn ny inntekt …», også på inntektsposter). `okForNy` får gruppen, og
+    `okFrKatVelger` har «Velg post …» når ingen post er gitt, så den første ikke
+    velges av seg selv.
+  - Testet i testserveren: lønn som penger inn på Inntekter · Magne, Inntekter
+    øverst og tilbake, Før inn fra Mat og Inntekter, krav om post.
+- **Spørsmål om samlefaktura, og symboler** (`3190fd6`). Magne: «On grei
   regel er at om summen er mer enn 1,5 kroner så må jeg bli spurt … legg ved et
   vedleggsymbol på alle poster som har vedlegg, legg ved et passende symbol på
   alle poster som tilhører en samlefaktura» og «ta høyde for at summer er
@@ -5137,7 +5156,7 @@ ligge under høyre tommelknapp»).
   - Testet i testserveren: 0,90 kr koblet av seg selv, 5 kr ga spørsmål, Ja
     koblet, spørsmål fra Dropbox i raden og i Rediger, Koble og Koble fra (rest
     95,10 og 179,10 kr), symbolene i Kontoutskrift. Ikke på neam.no.
-- **Neam får dagens dato når den leser et dokument** («Økonomi: dagens dato til Neam, spørsmål om samlefaktura og symboler for vedlegg og samlefaktura»). Magne: «Når
+- **Neam får dagens dato når den leser et dokument** (`3190fd6`). Magne: «Når
   jeg tar screenshot av en overføring i dnb appen må neam forstå at i dag,
   betyr dagens dato på forfallsdato».
   - `okKvLes` legger `okDagensDato()` til instruksen: dagens dato og ukedag

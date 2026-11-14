@@ -2428,6 +2428,8 @@ async function nyKvittering(env, kropp, epost){
   if(faktura){ p.faktura = true; p.kontoNavn = 'Faktura'; p.status = 'venter'; }
   const f = foreslaa(p, laert, omdopt);
   p.kategori = f.kategori; p.kilde = f.kilde;
+  /* Kategorien fra vinduet (14. november 2026: gjelder alt som legges inn). */
+  if(!eier && kropp.kategori && (await alleKategorier(env)).indexOf(kropp.kategori) !== -1){ p.kategori = kropp.kategori; p.kilde = 'manuell'; }
   /* Svarene fra vinduet naar kvitteringen ble lagt inn. */
   if(eier){
     if(kropp.kategori && (await alleKategorier(env)).indexOf(kropp.kategori) !== -1){ p.kategori = kropp.kategori; p.kilde = 'manuell'; }
