@@ -1049,7 +1049,11 @@ async function finnLignende(env, poster, kv, linjer){
    dager etter (betalt tidlig, eller forfall i en helg). */
 function fakturaLik(bank, f){
   const d = (Date.parse(bank.dato) - Date.parse(f.dato)) / 86400000;
-  return Math.abs(Math.abs(bank.belop) - Math.abs(f.belop)) < 0.005 && d >= -10 && (d <= 5 || bankdagerMellom(f.dato, bank.dato) <= 3);
+  /* Totalen, eller noeyaktig minstebeloepet naar det er det som ble betalt
+     (Magne, 15. november 2026: rettingen for vanlige fakturaer). */
+  const b = Math.abs(bank.belop);
+  const sum = Math.abs(b - Math.abs(f.belop)) < 0.005 || (Number(f.minstebelop) > 0 && Math.abs(b - Number(f.minstebelop)) < 0.005);
+  return sum && d >= -10 && (d <= 5 || bankdagerMellom(f.dato, bank.dato) <= 3);
 }
 function fakturaTrekk(poster, f){
   return Object.keys(poster).map(x => poster[x]).filter(b => !b.fra && Math.sign(b.belop) === Math.sign(f.belop) && !b.dekketAv
@@ -2064,6 +2068,7 @@ async function postDetaljer(env, id){
   return svar({ ok:true, post:{ id:p.id, dato:p.dato, datoBank:p.datoBank || '', belop:p.belop, bankBelop:p.bankBelop != null ? p.bankBelop : null, overstyrt:!!p.overstyrt,
     motpart:p.motpart || '', tekst:p.tekst || '', motpartBank:p.motpartBank || '', notat:p.notat || '', kategori:p.kategori || '', merke:p.merke || '',
     status:p.status || '', auto:!!p.auto, kilde:p.kilde || '', fra:p.fra || '', forHand:!!p.forHand, utlegg:p.utlegg || '', faktura:!!p.faktura, avsluttet:p.avsluttet || '',
+    minstebelop:p.minstebelop || 0,
     konto:p.konto ? (kn[p.konto] || p.kontoNavn || '') : '', betaltFra:bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
     behandlet:p.behandlet || '', av:p.av ? masker(p.av) : '', deler:(p.deler || []).map(d => ({ kategori:d.kategori, belop:d.belop })),
     harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, vedlegg:vedleggListe(p), forb:forbindelser(p, poster),
@@ -2416,7 +2421,8 @@ async function nyKvittering(env, kropp, epost){
   /* En faktura legges ved trekket som alt ligger der, ellers venter den (over). */
   const faktura = k.type === 'faktura' && !kropp.forHand && !eier;
   if(faktura){
-    const trekk = fakturaTrekk(poster, { belop:fortegn * sum, dato:dato });
+    const minste = Number(k.minstebelop) > 0 && Number(k.minstebelop) < sum ? Math.round(Number(k.minstebelop) * 100) / 100 : 0;
+    const trekk = fakturaTrekk(poster, { belop:fortegn * sum, dato:dato, minstebelop:minste });
     const ledig = trekk.filter(b => !b.harFil)[0];
     if(ledig){
       if(filOk){ await env.FAMILIE_KV.put(filNokkel(ledig.id), JSON.stringify({ type:fil.type, data:fil.data })); ledig.harFil = true; ledig.filType = fil.type; }
@@ -2449,7 +2455,8 @@ async function nyKvittering(env, kropp, epost){
     Object.assign(p, { forHand:true, manuell:true, eier:eier, utlegg:'Utlegg fra ' + PERSONER[eier], konto:'utlegg', kontoNavn:'Utlegg fra ' + PERSONER[eier] });
     if(overfort) p.overfort = overfort;
   }
-  if(faktura){ p.faktura = true; p.kontoNavn = 'Faktura'; p.status = 'venter'; }
+  if(faktura){ p.faktura = true; p.kontoNavn = 'Faktura'; p.status = 'venter';
+    if(Number(k.minstebelop) > 0 && Number(k.minstebelop) < sum) p.minstebelop = Math.round(Number(k.minstebelop) * 100) / 100; }
   const f = foreslaa(p, laert, omdopt);
   p.kategori = f.kategori; p.kilde = f.kilde;
   /* Kategorien fra vinduet (14. november 2026: gjelder alt som legges inn). */

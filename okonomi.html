@@ -3461,6 +3461,7 @@ button.ok-dr-rad{ cursor:pointer; }
     + '- Er du usikker på om det er en samlefaktura, legg til "tvil": true.\n'
     + '- Får kunden penger tilbake – en kreditnota, et tilgodehavende eller en regning med minusbeløp, f.eks. strøm med strømstøtte – er "belop" negativt.\n'
     + '- For en faktura: "butikk" er den som sender fakturaen, f.eks. "Statens pensjonskasse". "dato" er forfallsdatoen, "belop" er beløpet som skal betales. "linjer" er postene på fakturaen med hvert sitt beløp, f.eks. personforsikring og husforsikring, med gebyr som egen linje. Står det bare én post, eller ikke beløp per post, er "linjer" tom.\n'
+    + '- Står det både et minimumsbeløp og et totalbeløp på en faktura (totalt å betale, totalt skyldig), er "belop" totalbeløpet og "minstebelop" minimumsbeløpet.\n'
     + 'For en kvittering:\n'
     + '- "butikk" er navnet på butikken slik det står øverst, f.eks. "Coop Extra Mandal".\n'
     + '- "belop" er totalsummen kunden betalte, i kroner, med punktum som desimaltegn.\n'
@@ -6496,6 +6497,7 @@ button.ok-dr-rad{ cursor:pointer; }
     rad('Tekst fra banken', p.tekst && p.tekst !== p.motpart ? p.tekst : '');
     rad('Opprinnelig navn', p.motpartBank);
     rad('Opprinnelig dato', p.datoBank ? okDato.format(new Date(p.datoBank)) : '');
+    rad('Minstebeløp', p.minstebelop ? okKr0.format(p.minstebelop) + ' kr – kobles også om det er det som betales' : '');
     if(p.deler.length > 1) rad('Kategorier', p.deler.map(function(d){ return okNeamKat(d.kategori) + ' ' + okKr0.format(Math.abs(d.belop)) + ' kr'; }).join(' · '));
     else if(!ib && !fakUten) rad('Kategori', p.kategori ? okNeamKat(p.kategori) : 'Uten kategori');
     rad('Merke', p.merke ? okMerkeFullNavn(p.merke) : arv ? okMerkeFullNavn(arv) + ' (fra kategorien)' : 'Uten merke');
