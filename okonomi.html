@@ -1820,6 +1820,7 @@ button.ok-dr-rad{ cursor:pointer; }
          hentes paa nytt, ellers viser de tall fra foer foeringen. */
       okVarslerLast(); okStatusLast(); okKilderLast(); okHuskLast();
       okNeamKategoriser();
+      okKortEtterles();
     });
   }
 
@@ -7982,6 +7983,39 @@ button.ok-dr-rad{ cursor:pointer; }
      sikker, foeres posten automatisk; er den usikker, blir den staaende med
      forslaget, og bare da spoer sida. Bare mottaker, tekst, beloep og dato
      sendes - aldri kontonummer. */
+  /* Etterlesing av kortet (Magne, 15. november 2026: «Les av»). Kvitteringer
+     lagt inn foer kortet ble lest, leses én gang til i bakgrunnen - bare
+     betalingsmaaten - og flytter til den kommende kortfakturaen naar det var
+     kredittkort. Én gang per sideåpning; bank-funksjonen merker hver lest. */
+  var OK_KORT_INSTRUKS = 'Se bare etter hvordan denne kvitteringen ble betalt. Svar BARE med JSON på formen {"betaltMed":"…"}: '
+    + 'betalingsmåten eller kortet slik det står, f.eks. "COOPMC", "Coop Mastercard", "BankAxept", "Vipps" eller "Visa" – uten kortnummer. Tom tekst om det ikke står.';
+  var okKortKjort = false;
+  async function okKortEtterles(){
+    if(okKortKjort) return;
+    okKortKjort = true;
+    var r = await okHent('/api/bank?hva=kort-uleste');
+    if(!r.ok || !(r.poster || []).length) return;
+    var flyttet = 0, navn = '';
+    for(var i = 0; i < r.poster.length; i++){
+      var p = r.poster[i], betaltMed = '', innhold;
+      try{
+        var b = await (await fetch('/api/bank?hva=kvittering-fil&id=' + encodeURIComponent(p.id), { credentials:'same-origin' })).blob();
+        if(/json/.test(b.type)) continue;
+        var pdf = b.type === 'application/pdf';
+        innhold = { type:pdf ? 'document' : 'image', source:{ type:'base64', media_type:pdf ? 'application/pdf' : 'image/jpeg', data:await (pdf ? okSomBase64(b) : okKrympBilde(b)) } };
+      }catch(e){ continue; }   /* proeves igjen neste gang */
+      /* Kunne Neam ikke lese den, merkes den likevel - den skal ikke koste igjen. */
+      try{ betaltMed = String((await okKvLes(innhold, OK_KORT_INSTRUKS, 200)).betaltMed || ''); }catch(e){ betaltMed = ''; }
+      var s = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'kort-lest', id:p.id, betaltMed:betaltMed }) });
+      if(s.ok && s.flyttet){ flyttet++; navn = s.kort; }
+    }
+    if(!flyttet) return;
+    var st = document.getElementById('ok-kv-status');
+    if(!document.getElementById('ok-kv-knapp').disabled) st.textContent = 'Neam leste kortet på eldre kvitteringer: ' + flyttet + ' var betalt med ' + navn + (flyttet > 1 ? ' eller et annet kredittkort' : '') + ', og ligger nå under den kommende fakturaen.';
+    okRgFor = {}; okMnd.kjop = {};
+    if(okMnd.lastet) okMndLast();
+    if(okAl.poster) okAlLast();
+  }
   var okAiSendt = {};
   async function okNeamKategoriser(){
     var ukjente = okPoster.filter(function(p){ return !p.kategori && !p.aiSpurt && !p.samleVenter && !okAiSendt[p.id]; }).slice(0, 40);

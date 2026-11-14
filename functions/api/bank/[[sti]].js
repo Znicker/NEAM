@@ -16,6 +16,7 @@
      GET /api/bank?hva=trumf-kvittering&id=<batchId> - varelinjene
      POST /api/bank {hva:'trumf-innlogging', cookie} / {hva:'trumf-koble-fra'}
      POST /api/bank {hva:'kvittering-ny', kvittering, forHand, eier, tilbakebetalt, overfort, kategori, notat, linjeKat} - kvittering lest fra bilde/PDF, eller en foering lagt inn for haand
+     GET /api/bank?hva=kort-uleste / POST {hva:'kort-lest', id, betaltMed} - kortet paa eldre kvitteringer, lest én gang
      POST /api/bank {hva:'avstem', linjer:[{dato, navn, belop, inn, planlagt}], idag} - linjer fra nettbanken mot postene; skriver ingenting
      GET /api/bank?hva=kvittering&id=<postId>         - varelinjene til en kvitteringspost
      GET /api/bank?hva=kvittering-fil&id=<postId>     - selve bildet eller PDF-en
@@ -516,7 +517,7 @@ function loggAnnet(kropp, s, kilde){
   return [];
 }
 /* Handlingene som kan endre foeringene - da leses de foer, og forskjellen logges. */
-const LOGG_POST = ['privat-send', 'godkjenn', 'angre', 'koble-alle', 'faktura-innboks', 'faktura-kategori', 'faktura-avslutt', 'post-endre', 'post-vedlegg', 'post-vedlegg-slett', 'kvittering-ny', 'forslag', 'samle-ny', 'samle-koble', 'samle-vanlig'];
+const LOGG_POST = ['privat-send', 'godkjenn', 'angre', 'koble-alle', 'faktura-innboks', 'faktura-kategori', 'faktura-avslutt', 'post-endre', 'post-vedlegg', 'post-vedlegg-slett', 'kvittering-ny', 'forslag', 'samle-ny', 'samle-koble', 'samle-vanlig', 'kort-lest'];
 /* Bare felleskontoene i husholdningens regnskap (Magne, 8. november 2026:
    «Det er kun kontoer som er lagt inn som felles som skal inn i dissse
    fanene» og «Magne sine transaksjoner er fremdeles å se i transasksjonene
@@ -1903,13 +1904,43 @@ function kortFra(betaltMed){
   const t = String(betaltMed || '');
   return t ? KREDITTKORT.filter(k => k.kjenn.test(t))[0] || null : null;
 }
+/* Er den ekte fakturaen for kortet og forfallet kommet? */
+function kortEkte(poster, kort, forfall){
+  return Object.keys(poster).some(x => { const s = poster[x];
+    return s.fra === 'samle' && !s.kommende && s.status !== 'stroket' && kort.utsteder.test(s.motpart || '') && dagerMellom(s.dato, forfall) <= 10; });
+}
+/* Etterlesing (Magne, 15. november 2026: «Nå ligger det noen november
+   transaksjoner fra coop i november og noen i desember» - «Les av»).
+   Kvitteringer lagt inn foer kortet ble lest, leses én gang til - bare
+   betalingsmaaten. Bare de som kan flytte: med fil, ikke koblet til noe, og
+   der den ekte fakturaen for perioden ikke er kommet. `kortLest` merker dem,
+   saa ingen leses to ganger; nye kvitteringer faar det med en gang. */
+function kortKanLeses(p, poster){
+  return p.fra === 'foto' && p.harFil && !p.kortLest && !p.faktura && !p.forHand && !p.eier && !p.samleId && !p.kommendeId && !p.bankId
+    && !p.mulDobbel && !p.dekketAv && !p.ikkeKort && p.belop < 0 && (p.status === 'ny' || p.status === 'godkjent')
+    && KREDITTKORT.some(k => !kortEkte(poster, k, kortForfall(p.dato)));
+}
+async function kortUleste(env){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const liste = Object.keys(poster).map(x => poster[x]).filter(p => kortKanLeses(p, poster))
+    .sort((a, b) => String(b.dato).localeCompare(String(a.dato))).slice(0, 30);
+  return svar({ ok:true, poster:liste.map(p => ({ id:p.id, dato:p.dato })) });
+}
+async function kortLestLagre(env, kropp){
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const p = poster[String(kropp.id || '')];
+  if(!p || !kortKanLeses(p, poster)) return svar({ ok:false, feil:'Kvitteringen kan ikke leses for kort' });
+  p.kortLest = true;
+  const kort = kortFra(String(kropp.betaltMed || '').slice(0, 80));
+  const flyttet = kort ? kortKoble(poster, p, kort) : false;
+  await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+  return svar({ ok:true, flyttet:flyttet, kort:flyttet ? kort.navn : '' });
+}
 /* Legger kjoepet under den kommende fakturaen. Finnes den ekte fakturaen for
    perioden alt, gjoeres ingenting - da gjelder koblingen til den. */
 function kortKoble(poster, p, kort){
   const forfall = kortForfall(p.dato);
-  const ekte = Object.keys(poster).some(x => { const s = poster[x];
-    return s.fra === 'samle' && !s.kommende && s.status !== 'stroket' && kort.utsteder.test(s.motpart || '') && dagerMellom(s.dato, forfall) <= 10; });
-  if(ekte) return false;
+  if(kortEkte(poster, kort, forfall)) return false;
   const id = 'kommende:' + kort.id + ':' + forfall;
   if(!poster[id]) poster[id] = { id:id, fra:'samle', kommende:true, kort:kort.id, forHand:true, manuell:true, konto:'samle', kontoNavn:'Kommende kortfaktura',
     dato:forfall, belop:0, tekst:'Kommende faktura', motpart:kort.navn, harKvittering:false, status:'godkjent', kategori:'', kilde:'kort',
@@ -2656,6 +2687,7 @@ async function nyKvittering(env, kropp, epost){
   if(overfort && p.kategori && !p.lignerPaa && !p.mulDobbel) Object.assign(p, { status:'godkjent', behandlet:new Date().toISOString(), av:epost });
   poster[id] = p;
   if(!faktura && !eier){
+    p.kortLest = true;
     samleKobleNy(poster, p);
     /* Betalt med kredittkort - og ikke alt funnet som trekk fra banken: under den kommende fakturaen. */
     if(!p.samleId && !p.bankId && !p.mulDobbel && p.belop < 0){ const kort = kortFra(k.betaltMed); if(kort) kortKoble(poster, p, kort); }
@@ -3800,6 +3832,7 @@ export async function onRequestGet({ request, env }){
     if(hva === 'regnskap-aar') return await regnskapAar(env);
     if(hva === 'regningskonto') return await regningskonto(env);
     if(hva === 'alle-poster') return await allePoster(env);
+    if(hva === 'kort-uleste') return await kortUleste(env);
     if(hva === 'vedlegg-uleste') return await vedleggUleste(env, url.searchParams.get('fra') || '', url.searchParams.get('til') || '');
     if(hva === 'vare-sok') return await vareSok(env, url.searchParams.get('sok') || '', url.searchParams.get('fra') || '', url.searchParams.get('til') || '');
     if(hva === 'rydd') return await ryddForslag(env, url.searchParams.get('mnd') || '');
@@ -3878,6 +3911,7 @@ async function postHandling(request, env, v, kropp){
   if(kropp && kropp.hva === 'trumf-innlogging') return await trumfInnlogging(env, kropp, v.epost);
   if(kropp && kropp.hva === 'kvittering-ny') return await nyKvittering(env, kropp, v.epost);
   if(kropp && kropp.hva === 'avstem') return await avstem(env, kropp);
+  if(kropp && kropp.hva === 'kort-lest') return await kortLestLagre(env, kropp);
   if(kropp && kropp.hva === 'budsjett') return await lagreBudsjett(env, kropp, v.epost);
   if(kropp && kropp.hva === 'formue') return await lagreFormue(env, kropp, v.epost);
   if(kropp && kropp.hva === 'forslag') return await lagreForslag(env, kropp);

@@ -583,8 +583,8 @@ fylt firkant i symbolet (`7fc2b0a`), og summer i hele kroner med «herav
 forfaller» på postene og fanen Avstemming under Transaksjoner (`85240ee`), og
 én vei inn der Neam ser selv hva som legges til (`0ddcd3d`), og kredittkortkjøp
 som telles i betalingsmåneden, under en kommende kortfaktura (`7bc2fe7`), og
-Regnskap som viser måneden kortkjøpene telles i («Økonomi: Regnskap viser måneden kortkjøpene telles i», commiten etter
-`7bc2fe7`).
+Regnskap som viser måneden kortkjøpene telles i (`89ccd6b`), og kortet lest på
+eldre kvitteringer én gang («Økonomi: Neam leser kortet på eldre kvitteringer én gang», commiten etter `89ccd6b`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -593,7 +593,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 126 commits, `0e0050a` til «Økonomi: Regnskap viser måneden kortkjøpene telles i», medregnet en midlertidig statustest fra en annen økt
+fungerte»). 127 commits, `0e0050a` til «Økonomi: Neam leser kortet på eldre kvitteringer én gang», medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4635,7 +4635,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 126 commits fra `0e0050a` til «Økonomi: Regnskap viser måneden kortkjøpene telles i» (dialogen med
+verdier. Bygget i 127 commits fra `0e0050a` til «Økonomi: Neam leser kortet på eldre kvitteringer én gang» (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5080,7 +5080,24 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
-- **Regnskap viser måneden kortkjøpene telles i** («Økonomi: Regnskap viser måneden kortkjøpene telles i»). Magne:
+- **Kortet på eldre kvitteringer** («Økonomi: Neam leser kortet på eldre kvitteringer én gang»). Magne: «Nå ligger det
+  noen november transaksjoner fra coop i november og noen i desember». Valgt
+  mellom å lese kortet på nytt og en knapp per kvittering: «Les av».
+  - `kortKanLeses`: fra bilde eller Dropbox, med fil, ikke `kortLest`, ikke
+    faktura, utlegg eller lagt inn for hånd, ikke koblet til banktrekk,
+    samlefaktura eller kommende, ikke «Ikke kredittkort» – og den ekte
+    fakturaen for perioden er ikke kommet for minst ett av kortene
+    (`kortEkte`). `?hva=kort-uleste` gir inntil 30.
+  - Sida (`okKortEtterles`, én gang per sideåpning etter innboksen): henter
+    fila, leser bare betalingsmåten (`OK_KORT_INSTRUKS`, 200 tokens svar) og
+    sender `{hva:'kort-lest', id, betaltMed}`. Den merker `kortLest` og kobler
+    med `kortKoble` når kortet er kjent. Kunne Neam ikke lese den, merkes den
+    likevel – den skal ikke koste igjen. Nye kvitteringer får `kortLest` med en
+    gang.
+  - Testet i testserveren (sida lastet med Claude-svaret satt inn): Coop
+    Mastercard flyttet til desember, BankAxept ble i november og ble merket,
+    oktober ble ikke lest (fakturaen er kommet), ingen uleste igjen.
+- **Regnskap viser måneden kortkjøpene telles i** (`89ccd6b`). Magne:
   «Lager den seg nå en egen regnskapsside for desember?» Nei: lista over
   måneder (`okMndLast`) gikk til i dag, og videre bare til siste forfall på en
   vanlig regning. Nå går den også til siste måned i `regnskap-aar`, så
@@ -5119,9 +5136,9 @@ ligge under høyre tommelknapp»).
   - «Ikke kredittkort» (lenke i Rediger) og «Koble fra» på den kommende:
     `ikkeKort`, så Trumf-regelen ikke legger kjøpet der igjen.
   - Kontoutskriften: kilden «Kommende kortfaktura», uten «Uten kategori».
-  - Ikke gjort: kvitteringer lagt inn før dette har ikke `betaltMed` og leses
-    ikke på nytt. Trumf-regelen gjelder også de som ligger der, ved neste
-    henting.
+  - Kvitteringer lagt inn før dette ble lest uten `betaltMed`; de leses én gang
+    til, se «Kortet på eldre kvitteringer». Trumf-regelen gjelder også de som
+    ligger der, ved neste henting.
   - Testet i testserveren: Coop med kortet (desember), BankAxept (november),
     Trumf uten trekk (kommende), med trekk og ferskt (ikke), «Ikke kredittkort»
     (tilbake til november, den kommende fjernet), den ekte Coop-fakturaen
