@@ -2172,6 +2172,10 @@ først, Sparing sist. Bare tallene skiller dem:
   symbol på enden beskrivelsen»): en **binders** når posten har vedlegg, og
   **stablede ark** når den hører til en samlefaktura (også samlefakturaen selv).
   `.ok-rad-sym`, 13 px, `--ink-soft`, etter plusset. Symbolene er valgt uten skisse.
+  På **samlefakturaen selv** har arkene farge (fra 15. november 2026): **gul**
+  (`--handling-endre`) når handler mangler kvittering eller egen post, **grønn**
+  (`--handling-ny`) når alt er gjort rede for. Forklaringen står når man peker.
+  Gul, ikke rød: det trenger noe, det er ikke feil.
   **Samlefaktura i Rediger:** «Del av samlefakturaen fra … – Koble fra» som
   `.ok-kilde`, og et spørsmål («Kan høre til samlefakturaen fra …», Koble ·
   Ikke denne) som gul boks (`.ok-mangler`).

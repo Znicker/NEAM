@@ -1815,7 +1815,7 @@ async function foringer(env, mnd, kat, eksakt){
         betaltFra: bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
         kategori:d.kategori, del:deler.length > 1, harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false,
         harFil:!!p.harFil, filType:p.filType || '', overstyrt:!!p.overstyrt, merke:p.merke || '', forbN:forbindelser(p, poster).length,
-        vedN:(p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:!!(p.samleId || p.fra === 'samle'),
+        vedN:(p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:!!(p.samleId || p.fra === 'samle'), samleStatus:samleStatus(p, poster),
         belop: Math.round((d.kategori.indexOf('Inntekter') === 0 ? d.belop : -d.belop) * 100) / 100 });
     }
   }
@@ -2050,6 +2050,14 @@ async function samleKoble(env, kropp, epost){
   await env.FAMILIE_KV.put(LAERT_NOKKEL, JSON.stringify(laert));
   return svar({ ok:true });
 }
+/* Handler med beloep, og hvor mange som ikke har sin egen post (kvittering
+   eller foert som egen). Refusjoner teller ikke - de kan ikke kobles. */
+function samleStatus(p, poster){
+  if(p.fra !== 'samle' || !p.samle) return null;
+  const kjop = p.samle.linjer.filter(l => l.belop > 0);
+  const mangler = kjop.filter(l => !l.post || !poster[l.post] || poster[l.post].status === 'stroket' || poster[l.post].status === 'sammenslatt').length;
+  return { antall:kjop.length, mangler:mangler };
+}
 function samleDobbel(p, poster){
   if(p.fra !== 'samle' || p.samleVenter) return null;
   const norm = x => String(x || '').toLowerCase().replace(/[^a-z0-9æøå]/g, '');
@@ -2263,7 +2271,7 @@ async function allePoster(env){
       deler:p.deler && p.deler.length > 1 ? p.deler.length : 0,
       harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, harFil:!!p.harFil, filType:p.filType || '',
       overstyrt:!!p.overstyrt, merke:p.merke || '', avsluttet:p.avsluttet || '', forbN:forbindelser(p, poster).length,
-      vedN:(p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:!!(p.samleId || p.fra === 'samle') });
+      vedN:(p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:!!(p.samleId || p.fra === 'samle'), samleStatus:samleStatus(p, poster) });
   }
   ut.sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
   return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', poster:ut });

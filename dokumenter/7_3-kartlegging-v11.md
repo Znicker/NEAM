@@ -577,8 +577,9 @@ samlefakturaen som leses ved innlegging og viser kvitteringer som ligner
 en kvittering ligner en handel på en samlefaktura, og symboler for vedlegg og
 samlefaktura (`3190fd6`), ny transaksjon med kategori og Før inn på gruppene
 (`4a6d42a`), samlefakturaens total som summen av handlene (`83d767f`), og
-fakturaer som leser totalen og kobles på total eller minstebeløp («Økonomi: fakturaer leser totalen, og kobles på total eller minstebeløp»,
-commiten etter `83d767f`).
+fakturaer som leser totalen og kobles på total eller minstebeløp (`afa120a`), og
+samlefakturaen som er gul til alt er gjort rede for, så grønn («Økonomi: samlefakturaen er gul til alt er gjort rede for, så grønn»,
+commiten etter `afa120a`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -587,7 +588,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 120 commits, `0e0050a` til «Økonomi: fakturaer leser totalen, og kobles på total eller minstebeløp», medregnet en midlertidig statustest fra en annen økt
+fungerte»). 121 commits, `0e0050a` til «Økonomi: samlefakturaen er gul til alt er gjort rede for, så grønn», medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4674,7 +4675,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 120 commits fra `0e0050a` til «Økonomi: fakturaer leser totalen, og kobles på total eller minstebeløp» (dialogen med
+verdier. Bygget i 121 commits fra `0e0050a` til «Økonomi: samlefakturaen er gul til alt er gjort rede for, så grønn» (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5119,7 +5120,20 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
-- **Fakturaer leser totalen, og kobles på total eller minstebeløp** («Økonomi: fakturaer leser totalen, og kobles på total eller minstebeløp»).
+- **Samlefakturaen gul eller grønn** («Økonomi: samlefakturaen er gul til alt er gjort rede for, så grønn»). Magne: «På samlefakturaer
+  kan symbolet være rødt om ikke alle transaksjonene er gjort rede for og grønt
+  om det er det». Avtalt gult i stedet for rødt (designsystemet: gult trenger
+  noe, rødt er feil).
+  - `samleStatus` teller handlene med beløp og hvor mange som mangler egen post
+    (koblet kvittering eller ført som egen; strøket teller som mangler).
+    Refusjoner teller ikke. `foringer` og `alle-poster` gir `samleStatus`.
+  - `okSamleSym`: bare samlefakturaen selv får farge, `.ok-rad-sym.gul`
+    (`--handling-endre`) eller `.gronn` (`--handling-ny`), med forklaringen
+    «2 av 3 handler mangler kvittering» / «Alle 2 handler er gjort rede for».
+    Postene som hører til, beholder det grå symbolet.
+  - Testet i testserveren: grønn med kvittering, egen og refusjon; gul med to av
+    tre som mangler (sett i skjermbilde); grått på postene som hører til.
+- **Fakturaer leser totalen, og kobles på total eller minstebeløp** (`afa120a`).
   Magne: «ja, ta også rettingen for vanlige fakturaer».
   - `OK_KV_INSTRUKS`: står både minimumsbeløp og total på en faktura, er `belop`
     totalen og `minstebelop` minimumsbeløpet. `nyKvittering` lagrer
@@ -5147,7 +5161,7 @@ ligge under høyre tommelknapp»).
     som venter, fra samme avsender og med forfall høyst 3 dager unna. Visningen
     spør «Det ligger også en vanlig faktura …», og «Fjern fakturaen» stryker den
     med `faktura-avslutt` etter `bekreft`. Det kan gjøres om.
-  - Vanlige fakturaer med både minstebeløp og total: se neste punkt («Økonomi: fakturaer leser totalen, og kobles på total eller minstebeløp»).
+  - Vanlige fakturaer med både minstebeløp og total: se neste punkt (`afa120a`).
   - Testet i testserveren med en samlefaktura bygget som Magnes (total 322):
     +1 009,39 ble −100,00 ved henting, dobbel faktura funnet og strøket, ny
     samlefaktura med skyldig og minstebeløp som informasjon.

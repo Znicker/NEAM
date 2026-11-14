@@ -619,6 +619,11 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 /* Smaa symboler bak beskrivelsen: vedlegg og samlefaktura (14. november 2026). */
 .ok-rad-sym{ display:inline-flex; margin-left:5px; color:var(--ink-soft); vertical-align:-2px; }
 .ok-rad-sym svg{ width:13px; height:13px; }
+/* Samlefakturaen selv: gul naar handler mangler egen post, groenn naar alt er
+   gjort rede for (Magne, 15. november 2026). Gul, ikke roed - det trenger noe,
+   det er ikke feil (designsystemet, mangel-boksen). */
+.ok-rad-sym.gul{ color:var(--handling-endre); }
+.ok-rad-sym.gronn{ color:var(--handling-ny); }
 .ok-kvs-mer{ display:flex; flex-direction:column; gap:10px; }
 .ok-kvs-mer[hidden], .ok-kv-kryss[hidden], .ok-kvs-rad[hidden]{ display:none; }
 .ok-kvs-rad{ display:flex; flex-direction:column; gap:4px; }
@@ -2184,7 +2189,15 @@ button.ok-dr-rad{ cursor:pointer; }
   var OK_SYM_SAMLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="12" height="13" rx="2"/><path d="M8 4h11a2 2 0 0 1 2 2v11"/></svg>';
   function okRadSymboler(f){
     return (f.vedN ? '<span class="ok-rad-sym" title="Har vedlegg" aria-label="Har vedlegg">' + OK_SYM_VEDLEGG + '</span>' : '')
-      + (f.iSamle ? '<span class="ok-rad-sym" title="Hører til en samlefaktura" aria-label="Hører til en samlefaktura">' + OK_SYM_SAMLE + '</span>' : '');
+      + (f.iSamle ? okSamleSym(f.samleStatus) : '');
+  }
+  function okSamleSym(st){
+    var klasse = '', tekst = 'Hører til en samlefaktura';
+    if(st && st.antall){
+      klasse = st.mangler ? ' gul' : ' gronn';
+      tekst = st.mangler ? st.mangler + ' av ' + st.antall + (st.antall === 1 ? ' handel mangler' : ' handler mangler') + ' kvittering' : 'Alle ' + st.antall + (st.antall === 1 ? ' handel er' : ' handler er') + ' gjort rede for';
+    }
+    return '<span class="ok-rad-sym' + klasse + '" title="' + okVask(tekst) + '" aria-label="' + okVask(tekst) + '">' + OK_SYM_SAMLE + '</span>';
   }
   function okForbPluss(p){
     return p.forbN || (p.forb && p.forb.length) ? '<span class="ok-forb-pluss" title="Har forbindelser" aria-label="Har forbindelser">+</span>' : '';
@@ -4971,7 +4984,7 @@ button.ok-dr-rad{ cursor:pointer; }
       betaltFra:p.betaltFra, merke:p.merke, overstyrt:p.overstyrt, harKvittering:p.status !== 'venter' && !p.avsluttet && p.harKvittering, harFil:p.harFil, filType:p.filType,
       status:p.status, venter:p.status === 'venter', deler:p.deler, avsluttet:p.avsluttet, forbN:p.forbN || (p.forb || []).length,
       vedN:p.vedN != null ? p.vedN : (p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:p.iSamle != null ? p.iSamle : !!(p.samleId || p.fra === 'samle'),
-      samleSpor:p.samleSporsmaal || null };
+      samleSpor:p.samleSporsmaal || null, samleStatus:p.samleStatus || null };
   }
   ['ok-al-konto', 'ok-al-kat', 'ok-al-merke', 'ok-al-type'].forEach(function(id){
     var d = document.getElementById(id);
