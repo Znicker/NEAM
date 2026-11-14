@@ -1378,7 +1378,8 @@ button.ok-dr-rad{ cursor:pointer; }
     <div class="ok-kv-total" id="ok-sf-total"></div>
     <label class="ok-kvs-rad"><span class="ok-etikett">Fra</span><input type="text" id="ok-sf-navn" maxlength="120"></label>
     <label class="ok-kvs-rad"><span class="ok-etikett">Dato</span><input type="date" id="ok-sf-dato"></label>
-    <label class="ok-kvs-rad"><span class="ok-etikett">Sum (kr)</span><input type="text" inputmode="decimal" id="ok-sf-sum"></label>
+    <label class="ok-kvs-rad"><span class="ok-etikett">Sum av handlene (kr)</span><input type="text" inputmode="decimal" id="ok-sf-sum" readonly></label>
+    <p class="ok-meta" id="ok-sf-info" hidden></p>
     <div class="ok-kvs-rad"><span class="ok-etikett">Kategori for det som blir i samlefakturaen</span><div id="ok-sf-kat"></div></div>
     <p class="ok-meta" id="ok-sf-oppsummer"></p>
     <div class="ok-kv-linjer" id="ok-sf-linjer"></div>
@@ -3522,9 +3523,10 @@ button.ok-dr-rad{ cursor:pointer; }
   }, true);
   /* Neam leser ett dokument og svarer med det som staar paa det. */
   var OK_SF_INSTRUKS = 'Les denne norske kortfakturaen eller samlefakturaen. Svar BARE med JSON på formen\n'
-    + '{"utsteder":"…","dato":"ÅÅÅÅ-MM-DD","belop":0,"handler":[{"dato":"ÅÅÅÅ-MM-DD","navn":"…","belop":0}]}\n\n'
+    + '{"utsteder":"…","dato":"ÅÅÅÅ-MM-DD","skyldig":0,"minstebelop":0,"handler":[{"dato":"ÅÅÅÅ-MM-DD","navn":"…","belop":0}]}\n\n'
     + 'Regler:\n'
-    + '- "utsteder" er den som sender fakturaen, f.eks. "Coop Mastercard". "dato" er forfallsdatoen, "belop" er beløpet som skal betales.\n'
+    + '- "utsteder" er den som sender fakturaen, f.eks. "Coop Mastercard". "dato" er forfallsdatoen.\n'
+    + '- "skyldig" er totalt skyldig beløp og "minstebelop" er minimumsbeløpet å betale, om de står der. De er bare til informasjon.\n'
     + '- "handler" er hvert kjøp på fakturaen, med kjøpsdatoen, stedet slik det står, og beløpet i kroner med punktum som desimaltegn.\n'
     + '- En refusjon eller kreditering blir en handel med negativt beløp. Renter og gebyr blir egne handler.\n'
     + '- Ta ikke med innbetalinger, tidligere saldo eller summer som handler.\n'
@@ -3930,7 +3932,12 @@ button.ok-dr-rad{ cursor:pointer; }
     return new Promise(function(ferdig){
       var handler = (sf.handler || []).filter(function(x){ return x && /^\d{4}-\d{2}-\d{2}$/.test(String(x.dato || '')) && Number(x.belop); });
       var navnStart = String(sf.utsteder || ''), datoStart = /^\d{4}-\d{2}-\d{2}$/.test(String(sf.dato || '')) ? String(sf.dato) : '';
-      var sumStart = Number(sf.belop) > 0 ? String(sf.belop).replace('.', ',') : '';
+      /* Totalen er summen av handlene; skyldig og minstebeloep er bare informasjon. */
+      var hSum = Math.round(handler.reduce(function(t, x){ return t + Number(x.belop); }, 0) * 100) / 100;
+      var sumStart = hSum > 0 ? String(hSum).replace('.', ',') : '';
+      var skyldig = Number(sf.skyldig) || 0, minste = Number(sf.minstebelop) || 0;
+      e('ok-sf-info').textContent = (skyldig || minste) ? [skyldig ? 'Totalt skyldig på fakturaen ' + okKr0.format(skyldig) + ' kr' : '', minste ? 'minstebeløp ' + okKr0.format(minste) + ' kr' : ''].filter(Boolean).join(' · ') + ' – brukes ikke i regnskapet.' : '';
+      e('ok-sf-info').hidden = !(skyldig || minste);
       e('ok-sf-navn').value = navnStart; e('ok-sf-dato').value = datoStart; e('ok-sf-sum').value = sumStart;
       e('ok-sf-feil').hidden = true;
       var kb = e('ok-sf-kat'); kb.innerHTML = '';
@@ -4009,7 +4016,7 @@ button.ok-dr-rad{ cursor:pointer; }
         if(!/^\d{4}-\d{2}-\d{2}$/.test(dato)){ feil('Velg datoen.'); return; }
         if(!(total > 0)){ feil('Skriv summen som et tall.'); return; }
         if(!hovedKat.value){ feil('Velg kategori for det som blir i samlefakturaen.'); return; }
-        ut({ utsteder:navn, dato:dato, total:Math.round(total * 100) / 100, kategori:hovedKat.value,
+        ut({ utsteder:navn, dato:dato, total:Math.round(total * 100) / 100, skyldig:skyldig, minste:minste, kategori:hovedKat.value,
           linjer:handler.map(function(x){ return { dato:x.dato, navn:x.navn, belop:Number(x.belop) }; }),
           valg:rader.map(function(v, i){ return v.koble && v.koble.checked ? { post:forslag[i].id } : v.naer && v.naer.checked ? { post:naer[i].id, manuell:true } : v.kat && v.kat.value ? { kategori:v.kat.value } : {}; }) });
       };
@@ -4058,7 +4065,7 @@ button.ok-dr-rad{ cursor:pointer; }
       var ut = await okSfFlyt(sf, { type:type, data:data }, null);
       if(ut === 'avbrutt' || ut === 'ingen'){
         var v = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'kvittering-ny', samleVenter:true,
-          kvittering:{ type:'samlefaktura', butikk:sf.utsteder || 'Samlefaktura', dato:sf.dato, belop:sf.belop, linjer:[] }, fil:{ type:type, data:data } }) });
+          kvittering:{ type:'samlefaktura', butikk:sf.utsteder || 'Samlefaktura', dato:sf.dato, belop:(sf.handler || []).reduce(function(t, x){ return t + (Number(x.belop) || 0); }, 0), linjer:[] }, fil:{ type:type, data:data } }) });
         status.textContent = v.ok ? 'Samlefakturaen ligger i innboksen – trykk på den for å gå gjennom handlene.' : 'Samlefakturaen ble ikke lagt inn: ' + v.feil;
         if(v.ok) okLastInnboks();
       }
@@ -6501,6 +6508,24 @@ button.ok-dr-rad{ cursor:pointer; }
     if(p.samle){
       venstre.appendChild(okEl('span', 'ok-etikett', 'Handlene'));
       venstre.appendChild(okEl('p', 'ok-meta', okVask(okKr0.format(-p.belop) + ' kr av ' + okKr0.format(p.samle.total) + ' kr står igjen. Kvitteringer som legges inn med samme sum og dato, trekkes fra.')));
+      if(p.samle.skyldig || p.samle.minste) venstre.appendChild(okEl('p', 'ok-meta', okVask([p.samle.skyldig ? 'Totalt skyldig på fakturaen ' + okKr0.format(p.samle.skyldig) + ' kr' : '', p.samle.minste ? 'minstebeløp ' + okKr0.format(p.samle.minste) + ' kr' : ''].filter(Boolean).join(' · ') + ' – brukes ikke i regnskapet.')));
+      /* Samme faktura lagt inn som vanlig regning ogsaa: spoer foer den fjernes. */
+      if(p.dobbelFaktura){
+        var df = p.dobbelFaktura;
+        var dfb = okEl('div', 'ok-mangler', '<span>' + okVask('Det ligger også en vanlig faktura fra ' + df.motpart + ', forfall ' + okKort.format(new Date(df.dato + 'T12:00:00')) + ', ' + okKr0.format(Math.abs(df.belop)) + ' kr. Den er trolig den samme.') + '</span>');
+        var dfk = okEl('button', 'ok-lenke', 'Fjern fakturaen'); dfk.type = 'button';
+        dfk.addEventListener('click', function(){
+          bekreft('Fjerne den vanlige fakturaen fra ' + df.motpart + ' (' + okKr0.format(Math.abs(df.belop)) + ' kr)? Den telles ikke, og det kan gjøres om.', { jaTekst:'Fjern', fare:true }).then(function(ja){
+            if(!ja) return;
+            dfk.disabled = true;
+            okForEndre({ hva:'faktura-avslutt', id:df.id, grunn:'slettet' }, feil).then(function(r){
+              if(!r.ok){ dfk.disabled = false; return; }
+              okHent('/api/bank?hva=post&id=' + encodeURIComponent(p.id)).then(function(d){ if(d.ok){ okFrPost = d.post; okFrVis(d.post); } });
+            });
+          });
+        });
+        dfb.appendChild(dfk); venstre.appendChild(dfb);
+      }
       var sfl = okEl('div', 'ok-kv-linjer');
       p.samle.linjer.forEach(function(l, nr){
         var r = okEl('div', 'ok-kv-linje', '<span>' + okVask(l.navn) + ' <span class="ok-meta">' + okVask(okKort.format(new Date(l.dato + 'T12:00:00'))) + '</span></span><b>' + okKr0.format(l.belop) + '</b>');

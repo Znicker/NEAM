@@ -1407,6 +1407,13 @@ async function innboks(env, okt, fersk, psu){
   const naa = new Date().toISOString();
   let endret = nye > 0 || oppdatert;
   for(const id of Object.keys(poster)){
+    const s = poster[id];
+    if(s.fra !== 'samle' || !s.samle || s.samleVenter) continue;
+    const foer = s.belop + '|' + s.samle.total;
+    samleRest(poster, s);
+    if(foer !== s.belop + '|' + s.samle.total) endret = true;
+  }
+  for(const id of Object.keys(poster)){
     const p = poster[id];
     /* Kan den hoere til en samlefaktura, skal Magne spoerres foerst. */
     if(p.status !== 'ny' || p.dekketAv || p.mulDobbel || p.lignerPaa || p.manuell || p.samleSporsmaal) continue;
@@ -1853,6 +1860,10 @@ function samleLedig(q){
 }
 /* Beloepet: totalen minus handlene som har sin egen post. */
 function samleRest(poster, s){
+  /* Totalen er summen av handlene, med renter, gebyr og refusjoner - aldri
+     minstebeloepet eller saldoen paa fakturaen (Magne, 15. november 2026: en
+     Coop-faktura fikk minstebeloepet 322 kr som total og +19 638 kr i rest). */
+  s.samle.total = Math.round(s.samle.linjer.reduce((t, l) => t + (Number(l.belop) || 0), 0) * 100) / 100;
   let koblet = 0;
   for(const l of s.samle.linjer){
     const q = l.post && poster[l.post];
@@ -1941,10 +1952,10 @@ async function samleEgen(s, l, nr, kategori, epost, poster, laert){
 async function samleNy(env, kropp, epost){
   const navn = String(kropp.utsteder || '').trim().slice(0, 120) || 'Samlefaktura';
   const dato = String(kropp.dato || '');
-  const total = Math.round(Math.abs(Number(kropp.total)) * 100) / 100;
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(dato) || !(total > 0) || total > 1e7) return svar({ ok:false, feil:'Mangler dato eller sum' });
   const linjer = samleLinjer(kropp.linjer);
   if(!linjer.length) return svar({ ok:false, feil:'Fant ingen handler på fakturaen' });
+  const total = Math.round(linjer.reduce((t, l) => t + l.belop, 0) * 100) / 100;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(dato) || !(total > 0) || total > 1e7) return svar({ ok:false, feil:'Mangler dato, eller handlene summerer seg ikke til et beløp' });
   const kategorier = await alleKategorier(env);
   const kat = String(kropp.kategori || '');
   if(kategorier.indexOf(kat) === -1) return svar({ ok:false, feil:'Velg kategori for det som blir i samlefakturaen' });
@@ -1959,6 +1970,9 @@ async function samleNy(env, kropp, epost){
   const naa = new Date().toISOString();
   const s = { id:id, fra:'samle', forHand:true, manuell:true, konto:'samle', kontoNavn:'Samlefaktura', dato:dato, belop:-total, tekst:'', motpart:navn,
     harKvittering:false, status:'godkjent', kategori:kat, kilde:'manuell', behandlet:naa, av:epost, lagtInnAv:epost, lagtInn:naa, samle:{ total:total, linjer:[] } };
+  /* Bare til informasjon: det som staar paa fakturaen. */
+  if(Number(kropp.skyldig) > 0) s.samle.skyldig = Math.round(Number(kropp.skyldig) * 100) / 100;
+  if(Number(kropp.minste) > 0) s.samle.minste = Math.round(Number(kropp.minste) * 100) / 100;
   let koblet = 0, egne = 0;
   for(let i = 0; i < linjer.length; i++){
     const l = Object.assign({ post:'' }, linjer[i]), v = valg[i] || {};
@@ -2032,6 +2046,15 @@ async function samleKoble(env, kropp, epost){
   await env.FAMILIE_KV.put(LAERT_NOKKEL, JSON.stringify(laert));
   return svar({ ok:true });
 }
+function samleDobbel(p, poster){
+  if(p.fra !== 'samle' || p.samleVenter) return null;
+  const norm = x => String(x || '').toLowerCase().replace(/[^a-z0-9æøå]/g, '');
+  const n = norm(p.motpart);
+  if(!n) return null;
+  const f = Object.keys(poster).map(x => poster[x]).filter(q => q.faktura === true && q.status === 'venter' && q.fra !== 'samle' && dagerMellom(q.dato, p.dato) <= 3
+    && norm(q.motpart) && (norm(q.motpart) === n || norm(q.motpart).indexOf(n) !== -1 || n.indexOf(norm(q.motpart)) !== -1))[0];
+  return f ? { id:f.id, motpart:f.motpart || '', dato:f.dato, belop:f.belop } : null;
+}
 async function postDetaljer(env, id){
   const poster = await lesJson(env, POST_NOKKEL, {});
   const p = poster[String(id || '')];
@@ -2045,9 +2068,9 @@ async function postDetaljer(env, id){
     behandlet:p.behandlet || '', av:p.av ? masker(p.av) : '', deler:(p.deler || []).map(d => ({ kategori:d.kategori, belop:d.belop })),
     harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, vedlegg:vedleggListe(p), forb:forbindelser(p, poster),
     samleVenter:!!p.samleVenter, tvil:!!p.tvil, limt:p.samleVenter ? p.limt || '' : '', sfLest:p.samleVenter ? p.sfLest || null : null,
-    samleSporsmaal:p.samleSporsmaal || null,
+    samleSporsmaal:p.samleSporsmaal || null, dobbelFaktura:samleDobbel(p, poster),
     samleId:p.samleId || '', samleNavn:p.samleId && poster[p.samleId] ? poster[p.samleId].motpart || '' : '',
-    samle:p.samle ? { total:p.samle.total, linjer:p.samle.linjer.map(l => {
+    samle:p.samle ? { total:p.samle.total, skyldig:p.samle.skyldig || 0, minste:p.samle.minste || 0, linjer:p.samle.linjer.map(l => {
       const q = l.post && poster[l.post];
       return { dato:l.dato, navn:l.navn, belop:l.belop, post:l.post || '', sted:q ? q.motpart || q.tekst || '' : '', status:q ? q.status : '', egen:!!(q && q.samleDel) };
     }) } : null } });
@@ -2351,6 +2374,7 @@ async function nyKvittering(env, kropp, epost){
     if(kropp.limt) sv.limt = String(kropp.limt).slice(0, 40000);
     if(kropp.sfLest && samleLinjer(kropp.sfLest.handler).length) sv.sfLest = { utsteder:String(kropp.sfLest.utsteder || '').slice(0, 120), dato:String(kropp.sfLest.dato || ''),
       belop:Number(kropp.sfLest.belop) || 0, handler:samleLinjer(kropp.sfLest.handler) };
+    if(sv.sfLest){ const sum = sv.sfLest.handler.reduce((t, l) => t + l.belop, 0); if(sum > 0) sv.belop = -Math.round(sum * 100) / 100; }
     if(filOk){ await env.FAMILIE_KV.put(filNokkel(sid), JSON.stringify({ type:fil.type, data:fil.data })); sv.harFil = true; sv.filType = fil.type; }
     poster[sid] = sv;
     await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));

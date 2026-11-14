@@ -1857,7 +1857,9 @@ først, Sparing sist. Bare tallene skiller dem:
     bilde, PDF eller tekst fra utklippstavla – eller Ctrl+V på sida, når
     markøren ikke står i et felt. Så «Legg til samlefaktura» (`.btn-blaa`, 14.
     november 2026): et vindu som kvitteringsvinduet (`.ok-kv-kort`) med Fra,
-    Dato, Sum, kategori for resten, og handlene som `.ok-kv-linje`. En handel
+    Dato, Sum av handlene (låst – totalen er alltid summen av handlene, fra 15.
+    november 2026; totalt skyldig og minstebeløp står under som informasjon),
+    kategori for resten, og handlene som `.ok-kv-linje`. En handel
     med kvittering har en avkrysning «Kvittering finnes: …», en uten har
     kategorivalget «Mangler kvittering – blir i samlefakturaen». Linja over
     viser hvor mye som blir igjen. Valgt uten skisse. En samlefaktura Neam

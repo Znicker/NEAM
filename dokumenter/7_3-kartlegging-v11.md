@@ -575,8 +575,9 @@ bankdager (`3779eec`), innboksposten som vises med en gang (`0eddb8a`), og
 samlefakturaen som leses ved innlegging og viser kvitteringer som ligner
 (`429116e`), og dagens dato til Neam når den leser et dokument, spørsmål når
 en kvittering ligner en handel på en samlefaktura, og symboler for vedlegg og
-samlefaktura (`3190fd6`), og ny transaksjon med kategori og Før inn på gruppene
-(«Økonomi: ny transaksjon med kategori, og Før inn på gruppene», commiten etter `3190fd6`).
+samlefaktura (`3190fd6`), ny transaksjon med kategori og Før inn på gruppene
+(`4a6d42a`), og samlefakturaens total som summen av handlene («Økonomi: samlefakturaens total er summen av handlene»,
+commiten etter `4a6d42a`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -585,7 +586,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 118 commits, `0e0050a` til «Økonomi: ny transaksjon med kategori, og Før inn på gruppene», medregnet en midlertidig statustest fra en annen økt
+fungerte»). 119 commits, `0e0050a` til «Økonomi: samlefakturaens total er summen av handlene», medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1398,7 +1399,10 @@ C marineblå tavle – og Magne valgte **A**.
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
-- **Lønn som ny transaksjon** («Økonomi: ny transaksjon med kategori, og Før inn på gruppene»): et skjermbilde av en
+- **Coop Mastercard-samlefakturaen** («Økonomi: samlefakturaens total er summen av handlene») etter at innboksen er hentet
+  på neam.no: at resten er rettet fra +19 638 kr til det lille som mangler
+  kvittering, og spørsmålet om den doble fakturaen på 322 kr.
+- **Lønn som ny transaksjon** (`4a6d42a`): et skjermbilde av en
   lønnsoverføring – at det legges ved overføringen fra banken, med Inntekter.
 - **Spørsmål om samlefaktura** (`3190fd6`) med ekte Coop-kvitteringer: at
   inntil 1,50 kr kobles av seg selv, og at større avvik gir spørsmål.
@@ -4669,7 +4673,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 118 commits fra `0e0050a` til «Økonomi: ny transaksjon med kategori, og Før inn på gruppene» (dialogen med
+verdier. Bygget i 119 commits fra `0e0050a` til «Økonomi: samlefakturaens total er summen av handlene» (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5114,7 +5118,28 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
-- **Ny transaksjon med kategori, og Før inn på gruppene** («Økonomi: ny transaksjon med kategori, og Før inn på gruppene»). Magne: «Ny
+- **Samlefakturaens total er summen av handlene** («Økonomi: samlefakturaens total er summen av handlene»). Magne viste
+  en Coop Mastercard-samlefaktura med «+19 638,47 kr» på Drivstoff PHEV, og en
+  vanlig faktura på 322 kr fra samme PDF.
+  - Årsak: `OK_SF_INSTRUKS` ba om «beløpet som skal betales», og Neam tok
+    minimumsbeløpet (322 kr). Med rundt 19 960 kr koblet ble resten
+    322 − 19 960 = −19 638, ført som pluss på kategorien (negativ rest ble tillatt
+    for refusjoner i `9ef0300`).
+  - `samleRest` setter nå totalen til summen av handlene, med renter, gebyr og
+    refusjoner. Instruksen leser `skyldig` og `minstebelop` bare til
+    informasjon (`s.samle.skyldig`, `s.samle.minste`), vist i vinduet og
+    visningen. Summen i vinduet er låst. `innboks()` kjører `samleRest` på alle
+    samlefakturaer, så de som alt ligger inne, rettes ved neste henting.
+  - Samme PDF lagt inn som vanlig faktura også: `samleDobbel` finner en faktura
+    som venter, fra samme avsender og med forfall høyst 3 dager unna. Visningen
+    spør «Det ligger også en vanlig faktura …», og «Fjern fakturaen» stryker den
+    med `faktura-avslutt` etter `bekreft`. Det kan gjøres om.
+  - Ikke endret: vanlige fakturaer med både minstebeløp og total bruker fortsatt
+    det Neam leser som «beløpet som skal betales».
+  - Testet i testserveren med en samlefaktura bygget som Magnes (total 322):
+    +1 009,39 ble −100,00 ved henting, dobbel faktura funnet og strøket, ny
+    samlefaktura med skyldig og minstebeløp som informasjon.
+- **Ny transaksjon med kategori, og Før inn på gruppene** (`4a6d42a`). Magne: «Ny
   kvittering må hete ny transaksjon. og under kategori må også inntekt være.
   f.eks når jeg skal dokumentere overførsel av lønn. når jeg skal legge til noe
   i regnskapet i regnskapfanen og andre museknapp må jeg få velge i alle kjente
