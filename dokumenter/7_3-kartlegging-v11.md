@@ -579,7 +579,9 @@ samlefaktura (`3190fd6`), ny transaksjon med kategori og Før inn på gruppene
 (`4a6d42a`), samlefakturaens total som summen av handlene (`83d767f`), og
 fakturaer som leser totalen og kobles på total eller minstebeløp (`afa120a`), og
 samlefakturaen som er gul til alt er gjort rede for, så grønn (`ad6728a`), og
-fylt firkant i symbolet («Økonomi: fylt firkant i det gule og grønne samlefaktura-symbolet», commiten etter `ad6728a`).
+fylt firkant i symbolet (`7fc2b0a`), og summer i hele kroner med «herav
+forfaller» på postene og fanen Avstemming under Transaksjoner («Økonomi: hele kroner, herav forfaller og avstemming»,
+commiten etter `7fc2b0a`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -588,7 +590,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 122 commits, `0e0050a` til «Økonomi: fylt firkant i det gule og grønne samlefaktura-symbolet», medregnet en midlertidig statustest fra en annen økt
+fungerte»). 123 commits, `0e0050a` til «Økonomi: hele kroner, herav forfaller og avstemming», medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1401,6 +1403,11 @@ C marineblå tavle – og Magne valgte **A**.
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
+- **Avstemming** («Økonomi: hele kroner, herav forfaller og avstemming») med ekte skjermbilder fra DNB-appen og
+  nettbanken – planlagte og gjennomførte: hvor godt Neam leser lista, «I dag» og
+  datoer som overskrift, og at treffene er riktige.
+- **Hele kroner** («Økonomi: hele kroner, herav forfaller og avstemming») på neam.no med ekte poster: at
+  summene leses greit, og at «herav forfaller» står på de riktige postene.
 - **Coop Mastercard-samlefakturaen** (`83d767f`) etter at innboksen er hentet
   på neam.no: at resten er rettet fra +19 638 kr til det lille som mangler
   kvittering, og spørsmålet om den doble fakturaen på 322 kr.
@@ -4675,7 +4682,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 122 commits fra `0e0050a` til «Økonomi: fylt firkant i det gule og grønne samlefaktura-symbolet» (dialogen med
+verdier. Bygget i 123 commits fra `0e0050a` til «Økonomi: hele kroner, herav forfaller og avstemming» (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5120,6 +5127,53 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Avstemming under Transaksjoner** («Økonomi: hele kroner, herav forfaller og avstemming»). Magne: «Jeg ønsker en
+  funksjon der jeg kan ta bilde av, kopiere planlagte betalinger og
+  gjennomførte betalinger i banken og så ser neam over at dette er inne i
+  systemet og promter de som ikke stemmer. Dette kan ligge under en ny fane
+  under transaksjoner som heter avstemming». Tilbakemeldingen før koding:
+  planlagte er det viktigste (Neam får dem ikke fra DNB), gjennomførte henter
+  Neam alt, så der finner avstemmingen bare det som mangler. Avtalt: fanen
+  mellom Kontoutskrift og Logg, og avvikene bare i fanen, ikke i innboksen.
+  - Sida: «Velg bilder» (flere), «Lim inn» og Ctrl+V. `OK_AV_INSTRUKS` gir
+    `{linjer:[{dato, navn, belop, inn, planlagt}]}` med dagens dato. Linjene
+    ligger bare på sida (`okAv`); samme linje i to skjermbilder telles én gang.
+    Bildene lagres ikke. «Begynn på nytt» tømmer.
+  - Serveren: `{hva:'avstem'}` skriver ingenting og logges ikke. Lik: beløpet
+    innen `SAMLE_KRONER` (også minstebeløpet og det som er skyldig på en
+    samlefaktura), datoen som mellom faktura og trekk, ellers høyst
+    `SAMLE_DAGER` bankdager. Planlagte prøves først mot regninger som venter,
+    gjennomførte først mot banktrekk; strøkne sist. Alle par sorteres, og
+    hver linje og post brukes én gang.
+  - **Mangler i banken** (gul prikk): regninger som venter og forfaller fra i
+    dag (eller første planlagte) til siste planlagte, uten treff. Uten
+    planlagte i bildene sjekkes de ikke, og det står i meta-linja.
+  - **Mangler i Neam**: «Legg inn» (`.btn-ny`) åpner vinduet for ny
+    transaksjon utfylt (`okLesKvittering` med `lest`); en planlagt blir en
+    faktura som venter. Etterpå sammenlignes det på nytt.
+  - **Stemmer** er sammenfoldet; trykk åpner posten.
+  - Testet i testserveren med Claude-svaret satt inn: treff på regning og
+    banktrekk, én regning som mangler i banken, to linjer som mangler i Neam,
+    en ulesbar linje, samme liste to ganger, «Legg inn» av en planlagt
+    (Ny faktura, flyttet til Stemmer), PC og telefon.
+- **Summer i hele kroner, og herav forfaller på postene** («Økonomi: hele kroner, herav forfaller og avstemming»).
+  Magne viste et kort der delene ikke så ut til å gå opp («matte er ikke min
+  sterke side, men her ble det noe rart»), og så: «vi må være konsekvente med
+  komma. jeg lurer på om vi fjerner komma på alt bortsett fra selve linjene. og
+  der må vi ha ,00 om det ikke er ører i summen».
+  - `okBuKr` runder til hele kroner. Den brukes i Regnskap, Budsjett og
+    Resultat, og nå også for kontosummer og saldo, forfalte og fakturaer uten
+    kategori, netto i innboksen, fordelingen per kategori, samlefakturaens
+    total og rest, skyldig i personfanen og titlene i diagrammet.
+  - Transaksjoner, varelinjer, føringsvinduet, kvitteringsvinduet og handlene
+    på en samlefaktura har fortsatt to desimaler (`okKr0`), også «,00».
+    Tallfeltene tar fortsatt imot øre.
+  - Avtalt: avrundingen kan gjøre at delene avviker 1 kr fra summen.
+  - `okRgRad`: under en post eller linje med noe ubetalt står «herav forfaller
+    X kr», som på gruppene.
+  - Testet i testserveren: en kvittering på 1 917,37 og en faktura på 870 som
+    forfaller – gruppen og posten 2 787 kr med «herav forfaller 870 kr»,
+    føringene 870,00 og 1 917,37, sumboksene i hele kroner.
 - **Samlefakturaen gul eller grønn** (`ad6728a`). Magne: «På samlefakturaer
   kan symbolet være rødt om ikke alle transaksjonene er gjort rede for og grønt
   om det er det». Avtalt gult i stedet for rødt (designsystemet: gult trenger
@@ -5132,7 +5186,7 @@ ligge under høyre tommelknapp»).
     «2 av 3 handler mangler kvittering» / «Alle 2 handler er gjort rede for».
     Postene som hører til, beholder det grå symbolet.
   - Magne: «grønnfargen er ikke synlig nok. fyll den lille firkanten med farge»
-    («Økonomi: fylt firkant i det gule og grønne samlefaktura-symbolet»): `.ok-rad-sym.gul rect, .gronn rect` får `fill:currentColor`.
+    (`7fc2b0a`): `.ok-rad-sym.gul rect, .gronn rect` får `fill:currentColor`.
   - Testet i testserveren: grønn med kvittering, egen og refusjon; gul med to av
     tre som mangler (sett i skjermbilde); grått på postene som hører til.
 - **Fakturaer leser totalen, og kobles på total eller minstebeløp** (`afa120a`).

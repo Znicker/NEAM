@@ -1891,6 +1891,14 @@ først, Sparing sist. Bare tallene skiller dem:
     gjennomstreket. **Uten filter** vises én måned; **med søk, filter
     eller periode** vises alt som treffer, med måneden som overskrift
     (`.ok-etikett`), og ‹ måned › byttes mot «Søk og filter» og Nullstill.
+  - **Avstemming** (fra 15. november 2026) – skjermbilder eller tekst fra
+    nettbanken, sjekket mot Neam. Øverst «Velg bilder», «Lim inn» og
+    «Begynn på nytt» (alle `.btn-blaa`), så en meta-linje og et foldekort med
+    **Mangler i banken** (gul prikk og gult sammendrag – regninger som venter
+    uten å være planlagt), **Mangler i Neam** (`.btn-ny ok-smal` «Legg inn»
+    på raden) og **Stemmer** (lukket). Radene er `.ok-ib-rad.ok-av-rad`: dato,
+    navn og meta, beløp med øre, knapp. Avvikene vises bare her, ikke i
+    innboksen. Bildene lagres ikke.
   - **Logg** (fra 8. november 2026) – alt som endres og det som skjer av
     seg selv, nyeste øverst, per dag: klokkeslett, teksten og kilden
     (Banken, Trumf, Dropbox, Neam eller den som gjorde det) under. Samme
@@ -2065,8 +2073,13 @@ først, Sparing sist. Bare tallene skiller dem:
     og teksten over sier det.
   - **I redigering står merket og månedene på egen linje under navnet**
     (`.ok-bu-valg`), så navnet aldri kuttes – på PC som på telefon.
-  - **Beløpene har kroner og øre**: «549,90» er 549,90; punktum foran komma
-    er tusenskille. Øre vises bare når de finnes.
+  - **Beløpene har kroner og øre** i feltene: «549,90» er 549,90; punktum
+    foran komma er tusenskille.
+  - **Hele kroner i summer, øre på linjene** (fra 15. november 2026): grupper,
+    poster, sumbokser, Status og budsjettbeløp vises i hele kroner.
+    Transaksjoner og varelinjer har alltid to desimaler, også «870,00».
+    Delene kan avvike 1 kr fra summen på grunn av avrundingen. Under en post
+    med noe ubetalt står «herav forfaller X kr», som på gruppene.
   - **Regnestykker i tallfeltene** (7. november 2026), i alle feltene med
     desimaltastatur på Økonomi – budsjettet og formuen: «1500+2342+112»,
     «3200 x 4 : 12», parenteser. Svaret settes i feltet når det forlates

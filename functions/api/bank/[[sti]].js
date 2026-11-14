@@ -16,6 +16,7 @@
      GET /api/bank?hva=trumf-kvittering&id=<batchId> - varelinjene
      POST /api/bank {hva:'trumf-innlogging', cookie} / {hva:'trumf-koble-fra'}
      POST /api/bank {hva:'kvittering-ny', kvittering, forHand, eier, tilbakebetalt, overfort, kategori, notat, linjeKat} - kvittering lest fra bilde/PDF, eller en foering lagt inn for haand
+     POST /api/bank {hva:'avstem', linjer:[{dato, navn, belop, inn, planlagt}], idag} - linjer fra nettbanken mot postene; skriver ingenting
      GET /api/bank?hva=kvittering&id=<postId>         - varelinjene til en kvitteringspost
      GET /api/bank?hva=kvittering-fil&id=<postId>     - selve bildet eller PDF-en
      GET /api/bank?hva=budsjett / POST {hva:'budsjett', standard} - standardbudsjettet
@@ -2257,6 +2258,79 @@ async function vareSok(env, sok, fra, til){
       vedlegg:p.filType === 'application/pdf' ? 'pdf' : 'bilde' })) });
 }
 
+/* ---------- Avstemming (Magne, 15. november 2026) ----------
+   «Jeg ønsker en funksjon der jeg kan ta bilde av, kopiere planlagte
+   betalinger og gjennomførte betalinger i banken og så ser neam over at
+   dette er inne i systemet og promter de som ikke stemmer». Sida leser
+   skjermbildene; her sammenlignes linjene med postene. Ingenting skrives.
+   Lik: beloepet innen SAMLE_KRONER (totalen, minstebeloepet, eller det som
+   er skyldig paa en samlefaktura), og datoen som mellom en faktura og
+   trekket - eller hoeyst SAMLE_DAGER bankdager. Planlagte proeves foerst mot
+   regningene som venter, gjennomfoerte foerst mot trekkene fra banken.
+   Regninger som venter og forfaller i perioden de planlagte dekker, uten aa
+   vaere planlagt i banken, kommer tilbake som «mangler i banken». */
+function avstemBelop(p){
+  const b = [Math.abs(p.belop)];
+  if(Number(p.minstebelop) > 0) b.push(Number(p.minstebelop));
+  if(p.samle) for(const x of [p.samle.total, p.samle.skyldig, p.samle.minste]) if(Number(x) > 0) b.push(Number(x));
+  return b;
+}
+function avstemAvstand(l, p){
+  if(l.inn ? p.belop < 0 : p.belop > 0) return null;
+  const avvik = Math.min.apply(null, avstemBelop(p).map(b => Math.abs(b - l.belop)));
+  if(avvik > SAMLE_KRONER + 0.005) return null;
+  const regning = p.faktura === true && p.status === 'venter';
+  let dager;
+  if(regning){
+    const d = (Date.parse(l.dato) - Date.parse(p.dato)) / 86400000;
+    if(!(d >= -10 && (d <= 5 || bankdagerMellom(p.dato, l.dato) <= 3))) return null;
+    dager = Math.abs(d);
+  } else {
+    dager = bankdagerMellom(p.dato, l.dato);
+    if(dager > SAMLE_DAGER) return null;
+  }
+  /* Lavest er best: riktig slags post foerst, strøkne sist. */
+  const slag = l.planlagt ? (regning ? 0 : 100) : (!p.fra ? 0 : 100);
+  return slag + (p.status === 'stroket' ? 1000 : 0) + avvik * 10 + dager;
+}
+function avstemKort(p, kn){
+  return { id:p.id, navn:p.motpart || p.tekst || '', dato:p.dato, belop:p.belop, status:p.status, faktura:p.faktura === true,
+    fra:p.fra || '', forHand:!!p.forHand, utlegg:p.utlegg || '', konto:kn[p.konto] || p.kontoNavn || '', avsluttet:p.avsluttet || '' };
+}
+async function avstem(env, kropp){
+  const inn = Array.isArray(kropp.linjer) ? kropp.linjer.slice(0, 400) : [];
+  const linjer = inn.map(l => ({ dato:String(l && l.dato || '').slice(0, 10), navn:String(l && l.navn || '').slice(0, 120),
+    belop:Math.round(Math.abs(Number(l && l.belop)) * 100) / 100, inn:!!(l && l.inn), planlagt:!!(l && l.planlagt) }))
+    .filter(l => /^\d{4}-\d{2}-\d{2}$/.test(l.dato) && l.belop > 0);
+  if(!linjer.length) return svar({ ok:false, feil:'Ingen linjer å sammenligne' });
+  const poster = await lesJson(env, POST_NOKKEL, {});
+  const kn = await lesJson(env, KONTONAVN_NOKKEL, {});
+  const idag = /^\d{4}-\d{2}-\d{2}$/.test(String(kropp.idag || '')) ? String(kropp.idag) : new Date().toISOString().slice(0, 10);
+  const datoer = linjer.map(l => Date.parse(l.dato));
+  const fraT = Math.min.apply(null, datoer) - 25 * 86400000, tilT = Math.max.apply(null, datoer) + 25 * 86400000;
+  const kandidater = Object.keys(poster).map(id => poster[id]).filter(p => p.status !== 'sammenslatt' && typeof p.belop === 'number'
+    && Date.parse(p.dato) >= fraT && Date.parse(p.dato) <= tilT);
+  /* Alle par, beste foerst; hver linje og hver post brukes én gang. */
+  const par = [];
+  linjer.forEach((l, i) => kandidater.forEach(p => { const a = avstemAvstand(l, p); if(a !== null) par.push([a, i, p.id]); }));
+  par.sort((a, b) => a[0] - b[0]);
+  const treff = {}, brukt = new Set();
+  for(const [, i, id] of par){
+    if(treff[i] || brukt.has(id)) continue;
+    treff[i] = id; brukt.add(id);
+  }
+  /* Regningene som venter i perioden de planlagte dekker - fra i dag eller
+     den foerste planlagte, til den siste. */
+  const plan = linjer.filter(l => l.planlagt).map(l => l.dato).sort();
+  let periode = null, mangler = [];
+  if(plan.length){
+    periode = { fra:plan[0] < idag ? plan[0] : idag, til:plan[plan.length - 1] };
+    mangler = Object.keys(poster).map(id => poster[id]).filter(p => p.faktura === true && p.status === 'venter' && !p.dekketAv && !brukt.has(p.id)
+      && String(p.dato).slice(0, 10) >= periode.fra && String(p.dato).slice(0, 10) <= periode.til)
+      .sort((a, b) => String(a.dato).localeCompare(String(b.dato))).map(p => avstemKort(p, kn));
+  }
+  return svar({ ok:true, linjer:linjer.map((l, i) => Object.assign({}, l, { treff:treff[i] ? avstemKort(poster[treff[i]], kn) : null })), mangler:mangler, periode:periode });
+}
 async function allePoster(env){
   const poster = await bareFelles(env, await lesJson(env, POST_NOKKEL, {}));
   const kn = await lesJson(env, KONTONAVN_NOKKEL, {});
@@ -3708,6 +3782,7 @@ async function postHandling(request, env, v, kropp){
   if(kropp && kropp.hva === 'dropbox-koble-fra') return await dropboxKobleFra(env);
   if(kropp && kropp.hva === 'trumf-innlogging') return await trumfInnlogging(env, kropp, v.epost);
   if(kropp && kropp.hva === 'kvittering-ny') return await nyKvittering(env, kropp, v.epost);
+  if(kropp && kropp.hva === 'avstem') return await avstem(env, kropp);
   if(kropp && kropp.hva === 'budsjett') return await lagreBudsjett(env, kropp, v.epost);
   if(kropp && kropp.hva === 'formue') return await lagreFormue(env, kropp, v.epost);
   if(kropp && kropp.hva === 'forslag') return await lagreForslag(env, kropp);
