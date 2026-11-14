@@ -578,8 +578,8 @@ en kvittering ligner en handel på en samlefaktura, og symboler for vedlegg og
 samlefaktura (`3190fd6`), ny transaksjon med kategori og Før inn på gruppene
 (`4a6d42a`), samlefakturaens total som summen av handlene (`83d767f`), og
 fakturaer som leser totalen og kobles på total eller minstebeløp (`afa120a`), og
-samlefakturaen som er gul til alt er gjort rede for, så grønn («Økonomi: samlefakturaen er gul til alt er gjort rede for, så grønn»,
-commiten etter `afa120a`).
+samlefakturaen som er gul til alt er gjort rede for, så grønn (`ad6728a`), og
+fylt firkant i symbolet («Økonomi: fylt firkant i det gule og grønne samlefaktura-symbolet», commiten etter `ad6728a`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -588,7 +588,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 121 commits, `0e0050a` til «Økonomi: samlefakturaen er gul til alt er gjort rede for, så grønn», medregnet en midlertidig statustest fra en annen økt
+fungerte»). 122 commits, `0e0050a` til «Økonomi: fylt firkant i det gule og grønne samlefaktura-symbolet», medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4675,7 +4675,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 121 commits fra `0e0050a` til «Økonomi: samlefakturaen er gul til alt er gjort rede for, så grønn» (dialogen med
+verdier. Bygget i 122 commits fra `0e0050a` til «Økonomi: fylt firkant i det gule og grønne samlefaktura-symbolet» (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5120,7 +5120,7 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
-- **Samlefakturaen gul eller grønn** («Økonomi: samlefakturaen er gul til alt er gjort rede for, så grønn»). Magne: «På samlefakturaer
+- **Samlefakturaen gul eller grønn** (`ad6728a`). Magne: «På samlefakturaer
   kan symbolet være rødt om ikke alle transaksjonene er gjort rede for og grønt
   om det er det». Avtalt gult i stedet for rødt (designsystemet: gult trenger
   noe, rødt er feil).
@@ -5131,6 +5131,8 @@ ligge under høyre tommelknapp»).
     (`--handling-endre`) eller `.gronn` (`--handling-ny`), med forklaringen
     «2 av 3 handler mangler kvittering» / «Alle 2 handler er gjort rede for».
     Postene som hører til, beholder det grå symbolet.
+  - Magne: «grønnfargen er ikke synlig nok. fyll den lille firkanten med farge»
+    («Økonomi: fylt firkant i det gule og grønne samlefaktura-symbolet»): `.ok-rad-sym.gul rect, .gronn rect` får `fill:currentColor`.
   - Testet i testserveren: grønn med kvittering, egen og refusjon; gul med to av
     tre som mangler (sett i skjermbilde); grått på postene som hører til.
 - **Fakturaer leser totalen, og kobles på total eller minstebeløp** (`afa120a`).

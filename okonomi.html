@@ -624,6 +624,8 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
    det er ikke feil (designsystemet, mangel-boksen). */
 .ok-rad-sym.gul{ color:var(--handling-endre); }
 .ok-rad-sym.gronn{ color:var(--handling-ny); }
+/* Den fremste firkanten fylt, saa fargen synes (Magne, 15. november 2026). */
+.ok-rad-sym.gul rect, .ok-rad-sym.gronn rect{ fill:currentColor; }
 .ok-kvs-mer{ display:flex; flex-direction:column; gap:10px; }
 .ok-kvs-mer[hidden], .ok-kv-kryss[hidden], .ok-kvs-rad[hidden]{ display:none; }
 .ok-kvs-rad{ display:flex; flex-direction:column; gap:4px; }
