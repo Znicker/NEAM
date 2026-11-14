@@ -2095,7 +2095,8 @@ først, Sparing sist. Bare tallene skiller dem:
     forfaller. I kontoutskriften står den som en samlefaktura-rad med kilden
     «Kommende kortfaktura» og «Kommende faktura · n kjøp · sum», beløp 0,00.
     I føringsvinduet: «Kommer på fakturaen fra …, forfall …», og under
-    Rediger lenken «Ikke kredittkort» (`.ok-lenke`).
+    Rediger lenken «Ikke kredittkort» (`.ok-lenke`). Regnskap kan blas fram
+    til måneden kjøpene telles i; «Hittil i år» og «Siste 12 mnd» slutter i dag.
   - **Regnestykker i tallfeltene** (7. november 2026), i alle feltene med
     desimaltastatur på Økonomi – budsjettet og formuen: «1500+2342+112»,
     «3200 x 4 : 12», parenteser. Svaret settes i feltet når det forlates

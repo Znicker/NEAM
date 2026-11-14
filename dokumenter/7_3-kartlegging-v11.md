@@ -582,8 +582,9 @@ samlefakturaen som er gul til alt er gjort rede for, så grønn (`ad6728a`), og
 fylt firkant i symbolet (`7fc2b0a`), og summer i hele kroner med «herav
 forfaller» på postene og fanen Avstemming under Transaksjoner (`85240ee`), og
 én vei inn der Neam ser selv hva som legges til (`0ddcd3d`), og kredittkortkjøp
-som telles i betalingsmåneden, under en kommende kortfaktura («Økonomi: kredittkortkjøp i betalingsmåneden, under en kommende kortfaktura»,
-commiten etter `0ddcd3d`).
+som telles i betalingsmåneden, under en kommende kortfaktura (`7bc2fe7`), og
+Regnskap som viser måneden kortkjøpene telles i («Økonomi: Regnskap viser måneden kortkjøpene telles i», commiten etter
+`7bc2fe7`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -592,7 +593,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 125 commits, `0e0050a` til «Økonomi: kredittkortkjøp i betalingsmåneden, under en kommende kortfaktura», medregnet en midlertidig statustest fra en annen økt
+fungerte»). 126 commits, `0e0050a` til «Økonomi: Regnskap viser måneden kortkjøpene telles i», medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4634,7 +4635,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 125 commits fra `0e0050a` til «Økonomi: kredittkortkjøp i betalingsmåneden, under en kommende kortfaktura» (dialogen med
+verdier. Bygget i 126 commits fra `0e0050a` til «Økonomi: Regnskap viser måneden kortkjøpene telles i» (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5079,7 +5080,14 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
-- **Kommende kortfaktura** («Økonomi: kredittkortkjøp i betalingsmåneden, under en kommende kortfaktura», samme commit som
+- **Regnskap viser måneden kortkjøpene telles i** («Økonomi: Regnskap viser måneden kortkjøpene telles i»). Magne:
+  «Lager den seg nå en egen regnskapsside for desember?» Nei: lista over
+  måneder (`okMndLast`) gikk til i dag, og videre bare til siste forfall på en
+  vanlig regning. Nå går den også til siste måned i `regnskap-aar`, så
+  kortkjøp fra november kan sees i desember. «Hittil i år» og «Siste 12 mnd»
+  stopper fortsatt ved dagens måned. Testet i testserveren: desember 2026 med
+  kortkjøpet på 213 kr.
+- **Kommende kortfaktura** (`7bc2fe7`, samme commit som
   punktet under). Magne: «Kan neam identifisere om kvitteringen er ffa
   kredittkort, eller debet? Da kan man jo ha som regrl at jeg ksan legge til en
   kvittering så ide tifiserer neam at det kommer en krefittkortfaktura og
@@ -5119,7 +5127,7 @@ ligge under høyre tommelknapp»).
     (tilbake til november, den kommende fjernet), den ekte Coop-fakturaen
     (koblet, den kommende fjernet), vinduet og kontoutskriften. En testfeil
     underveis var min: et lesekall mot `/__kv` uten verdi tømte testdataene.
-- **Kredittkortkjøp i betalingsmåneden** («Økonomi: kredittkortkjøp i betalingsmåneden, under en kommende kortfaktura»). Magne: «Nå blir
+- **Kredittkortkjøp i betalingsmåneden** (`7bc2fe7`). Magne: «Nå blir
   alle handler på kredittkort lagt i måneden de handles, men ikke når de
   betales». Før delte én samlefaktura seg på to måneder: handlene med egen
   post i kjøpsmåneden, resten på forfallsdatoen. Valgt mellom betalingsmåned

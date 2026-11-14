@@ -6140,9 +6140,11 @@ button.ok-dr-rad{ cursor:pointer; }
       okMnd.merkeAar = r.merker || {};
       okMnd.forfall = r.forfaller || [];
       /* Maanedene fram til i dag - og videre til siste forfall, saa en regning
-         fram i tid kan sees i sin maaned. */
+         fram i tid kan sees i sin maaned. Ogsaa maaneder med foeringer, saa
+         kortkjoep som telles i betalingsmaaneden synes der (15. november 2026). */
       var naa = new Date().toISOString().slice(0, 7), fra = (r.fra || naa).slice(0, 7), d = new Date(fra + '-01T12:00:00');
       var siste = okMnd.forfall.reduce(function(s, f){ return f.mnd > s ? f.mnd : s; }, naa);
+      Object.keys(okMnd.aar).forEach(function(m){ if(/^\d{4}-\d{2}$/.test(m) && m > siste) siste = m; });
       okMnd.liste = [];
       while(d.toISOString().slice(0, 7) <= siste){ okMnd.liste.push(d.toISOString().slice(0, 7)); d.setMonth(d.getMonth() + 1); }
       if(!okMnd.valgt || okMnd.liste.indexOf(okMnd.valgt) === -1) okMnd.valgt = naa;
