@@ -3523,6 +3523,7 @@ button.ok-dr-rad{ cursor:pointer; }
     + '- "type" er "faktura" når det er en regning som skal betales – faktura, e-faktura, giro eller avtalegiro med forfallsdato og beløp å betale. Ellers "kvittering".\n'
     + '- "type" er "samlefaktura" når dokumentet er en kortfaktura eller samlefaktura med mange kjøp fra forskjellige steder, f.eks. fra Coop Mastercard eller et annet kredittkort. Da er "linjer" tom.\n'
     + '- Er du usikker på om det er en samlefaktura, legg til "tvil": true.\n'
+    + '- For en kvittering: "betaltMed" er betalingsmåten eller kortet slik det står, f.eks. "COOPMC", "Coop Mastercard", "BankAxept", "Vipps" eller "Visa" – uten kortnummer. Tom tekst om det ikke står.\n'
     + '- "type" er "bankliste" når det er et skjermbilde eller en utskrift fra nettbanken eller bankappen med en liste over flere betalinger eller transaksjoner – planlagte, forfalte eller gjennomførte – og ikke én enkelt regning, kvittering eller overføring. Da er resten tomt.\n'
     + '- Får kunden penger tilbake – en kreditnota, et tilgodehavende eller en regning med minusbeløp, f.eks. strøm med strømstøtte – er "belop" negativt.\n'
     + '- For en faktura: "butikk" er den som sender fakturaen, f.eks. "Statens pensjonskasse". "dato" er forfallsdatoen, "belop" er beløpet som skal betales. "linjer" er postene på fakturaen med hvert sitt beløp, f.eks. personforsikring og husforsikring, med gebyr som egen linje. Står det bare én post, eller ikke beløp per post, er "linjer" tom.\n'
@@ -3678,7 +3679,7 @@ button.ok-dr-rad{ cursor:pointer; }
     var lagret = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify(Object.assign({ hva:'kvittering-ny', kvittering:kv, fil:lagres }, eget || {})) });
     if(!lagret.ok){ var feil = new Error(lagret.feil); feil.duplikat = /allerede lagt inn/.test(lagret.feil || ''); throw feil; }
-    return { post:lagret.post, samleNavn:lagret.samleNavn || '', linjer:(kv.linjer || []).length, festet:lagret.festet || '', kv:kv, lest:lagres, tekst:limt || '' };
+    return { post:lagret.post, samleNavn:lagret.samleNavn || '', kommendeNavn:lagret.kommendeNavn || '', linjer:(kv.linjer || []).length, festet:lagret.festet || '', kv:kv, lest:lagres, tekst:limt || '' };
   }
   /* ---------- Kopi som PDF i Dropbox ----------
      Alt som legges inn paa sida - valgt fil eller limt inn - lagres ogsaa som
@@ -3967,6 +3968,8 @@ button.ok-dr-rad{ cursor:pointer; }
       /* Samlefakturaen: koblet av seg selv (inntil 1,50 kr avvik), eller spoersmaal. */
       var samleTekst = res.post.samleId ? ' Koblet til samlefakturaen fra ' + (res.samleNavn || '') + ' – trukket fra der.' : '';
       if(!res.post.samleId && res.post.samleSporsmaal) samleTekst = await okSamleSpor(res.post);
+      /* Betalt med kredittkort (15. november 2026). */
+      if(res.post.kommendeId) samleTekst = ' Betalt med ' + (res.kommendeNavn || 'kredittkort') + ' – lagt under den kommende fakturaen, forfall ' + okKort.format(new Date(String(res.post.kommendeId).slice(-10) + 'T12:00:00')).replace(/\.$/, '') + '.';
       var db = '';
       try{ db = await okLagreIDropbox(res); }catch(e){ db = ' Ikke lagret i Dropbox: ' + (e && e.message || e) + '.'; }
       db = samleTekst + db;
@@ -5227,8 +5230,8 @@ button.ok-dr-rad{ cursor:pointer; }
   function okPostTilFor(p){
     return { id:p.id, dato:p.dato, belop:p.belop, kategori:p.kategori,
       tekst:p.motpart || p.tekst || '', mer:p.motpart && p.tekst && p.tekst !== p.motpart ? p.tekst : '',
-      kilde:p.status === 'venter' || p.avsluttet ? 'Faktura' : p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.fra === 'samle' ? 'Samlefaktura' : p.forHand ? (p.utlegg || 'Lagt inn for hånd') : 'Kvittering fra bilde') : (p.kontoNavn || ''),
-      betaltFra:p.betaltFra, merke:p.merke, overstyrt:p.overstyrt, harKvittering:p.status !== 'venter' && !p.avsluttet && p.harKvittering, harFil:p.harFil, filType:p.filType,
+      kilde:p.status === 'venter' || p.avsluttet ? 'Faktura' : p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.fra === 'samle' ? (p.kommende ? 'Kommende kortfaktura' : 'Samlefaktura') : p.forHand ? (p.utlegg || 'Lagt inn for hånd') : 'Kvittering fra bilde') : (p.kontoNavn || ''),
+      kommende:!!p.kommende, betaltFra:p.betaltFra, merke:p.merke, overstyrt:p.overstyrt, harKvittering:p.status !== 'venter' && !p.avsluttet && p.harKvittering, harFil:p.harFil, filType:p.filType,
       status:p.status, venter:p.status === 'venter', deler:p.deler, avsluttet:p.avsluttet, forbN:p.forbN || (p.forb || []).length,
       vedN:p.vedN != null ? p.vedN : (p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:p.iSamle != null ? p.iSamle : !!(p.samleId || p.fra === 'samle'),
       samleSpor:p.samleSporsmaal || null, samleStatus:p.samleStatus || null };
@@ -6639,7 +6642,7 @@ button.ok-dr-rad{ cursor:pointer; }
     okRgForAv[f.id] = f;
     var forfalt = f.venter && okForfalt(f.dato);
     var status = f.status === 'ny' ? (f.iInnboks ? '' : 'venter i innboksen') : f.status === 'stroket' ? (OK_AVSLUTTET[f.avsluttet] || 'strøket').toLowerCase() : forfalt ? 'forfalt – ikke funnet på regningskontoen' : f.venter ? 'forfaller – ikke betalt ennå' : '';
-    var meta = [medKat ? f.kategori || 'Uten kategori' : '', f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''), f.del ? 'del av kvitteringen' : '', f.deler ? 'fordelt på ' + f.deler : '', f.mer, f.merke && okMerkeAv(f.merke) ? 'merke ' + okMerkeFullNavn(f.merke) : '', f.samleSpor && f.status === 'ny' ? 'kan høre til samlefakturaen fra ' + f.samleSpor.samleNavn : '', status].filter(Boolean).join(' · ');
+    var meta = [medKat ? f.kategori || (f.kommende ? '' : 'Uten kategori') : '', f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''), f.del ? 'del av kvitteringen' : '', f.deler ? 'fordelt på ' + f.deler : '', f.mer, f.merke && okMerkeAv(f.merke) ? 'merke ' + okMerkeFullNavn(f.merke) : '', f.samleSpor && f.status === 'ny' ? 'kan høre til samlefakturaen fra ' + f.samleSpor.samleNavn : '', f.betales ? 'betales ' + okKort.format(new Date(f.betales)) : '', status].filter(Boolean).join(' · ');
     var rad = okEl('div', 'ok-under-rad ok-rg-for' + (f.status === 'stroket' ? ' ute' : '') + (f.venter ? ' forfaller' : ''),
       '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.tekst || 'Uten tekst') + okForbPluss(f) + okRadSymboler(f) + '<span class="ok-meta">' + okVask(meta) + '</span></span><b>' + (forfalt ? okUtropForfalt() : f.venter ? okStjerneKommer() : '') + (f.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret – ikke den banken viser">!</span>' : '') + okKr0.format(f.belop) + '</b>');
     rad.dataset.f = f.id; rad.tabIndex = 0; rad.setAttribute('role', 'button');
@@ -6683,7 +6686,7 @@ button.ok-dr-rad{ cursor:pointer; }
       konto:ib.fra ? '' : (ib.kontoNavn || ''), betaltFra:ib.bankKonto || '', behandlet:'', av:'', deler:[],
       harKvittering:(!!ib.fra || !!ib.harLinjer) && ib.harKvittering !== false,
       vedlegg:(ib.harFil ? [{ n:0, type:ib.filType || '', navn:ib.filNavn || '' }] : []).concat((ib.vedlegg || []).map(function(v){ return { n:v.n, type:v.type, navn:v.navn || '' }; })),
-      forb:ib.forb || [], samleVenter:!!ib.samleVenter, tvil:!!ib.tvil, limt:'', samleId:ib.samleId || '', samleNavn:'', samle:null, samleSporsmaal:ib.samleSporsmaal || null };
+      forb:ib.forb || [], samleVenter:!!ib.samleVenter, tvil:!!ib.tvil, limt:'', samleId:ib.samleId || '', samleNavn:'', kommendeId:ib.kommendeId || '', kommendeNavn:'', kommendeDato:'', samle:null, samleSporsmaal:ib.samleSporsmaal || null };
   }
   /* Det i detaljene som kan skille seg fra innboksens utgave. */
   function okFrNokkel(p){
@@ -6769,10 +6772,13 @@ button.ok-dr-rad{ cursor:pointer; }
     rad('Ført', p.behandlet ? okDato.format(new Date(p.behandlet)) + (p.av ? ' av ' + p.av : '') : '');
     venstre.appendChild(dl);
     if(p.samleId && p.samleNavn) venstre.appendChild(okEl('p', 'ok-meta', 'Del av samlefakturaen fra ' + okVask(p.samleNavn) + '.'));
+    if(p.kommendeId && p.kommendeNavn) venstre.appendChild(okEl('p', 'ok-meta', okVask('Kommer på fakturaen fra ' + p.kommendeNavn + (p.kommendeDato ? ', forfall ' + okKort.format(new Date(p.kommendeDato + 'T12:00:00')) : '') + '.').replace(/\.\.$/, '.')));
     /* Samlefakturaen: handlene, og hvilke som har sin egen post. */
     if(p.samle){
       venstre.appendChild(okEl('span', 'ok-etikett', 'Handlene'));
-      venstre.appendChild(okEl('p', 'ok-meta', okVask(okBuKr(-p.belop) + ' kr av ' + okBuKr(p.samle.total) + ' kr står igjen. Kvitteringer som legges inn med samme sum og dato, trekkes fra.')));
+      venstre.appendChild(okEl('p', 'ok-meta', okVask(p.kommende
+        ? 'Kommende faktura – kjøpene med kortet så langt, ' + okBuKr(p.samle.total) + ' kr. Når fakturaen kommer, tar den over, og kjøpene som står på den, kobles til den.'
+        : okBuKr(-p.belop) + ' kr av ' + okBuKr(p.samle.total) + ' kr står igjen. Kvitteringer som legges inn med samme sum og dato, trekkes fra.')));
       if(p.samle.skyldig || p.samle.minste) venstre.appendChild(okEl('p', 'ok-meta', okVask([p.samle.skyldig ? 'Totalt skyldig på fakturaen ' + okKr0.format(p.samle.skyldig) + ' kr' : '', p.samle.minste ? 'minstebeløp ' + okKr0.format(p.samle.minste) + ' kr' : ''].filter(Boolean).join(' · ') + ' – brukes ikke i regnskapet.')));
       /* Samme faktura lagt inn som vanlig regning ogsaa: spoer foer den fjernes. */
       if(p.dobbelFaktura){
@@ -7129,6 +7135,12 @@ button.ok-dr-rad{ cursor:pointer; }
       var sFra = okEl('button', 'ok-lenke', 'Koble fra'); sFra.type = 'button';
       sFra.addEventListener('click', function(){ samleSvar({ hva:'samle-koble', id:p.samleId, post:p.id, fjern:true }, sFra); });
       sKob.appendChild(sFra); inn.appendChild(sKob);
+    } else if(p.kommendeId){
+      /* Betalt med kredittkort (15. november 2026): kan tas ut. */
+      var kKob = okEl('p', 'ok-kilde', okVask('Betalt med ' + (p.kommendeNavn || 'kredittkort') + ' – kommer på fakturaen' + (p.kommendeDato ? ' med forfall ' + okKort.format(new Date(p.kommendeDato + 'T12:00:00')) : '') + ', og telles i den måneden. '));
+      var kFra = okEl('button', 'ok-lenke', 'Ikke kredittkort'); kFra.type = 'button';
+      kFra.addEventListener('click', function(){ samleSvar({ hva:'samle-koble', id:p.kommendeId, post:p.id, fjern:true }, kFra); });
+      kKob.appendChild(kFra); inn.appendChild(kKob);
     } else if(p.samleSporsmaal){
       var sq = p.samleSporsmaal;
       var sSp = okEl('div', 'ok-mangler', '<span>' + okVask('Kan høre til samlefakturaen fra ' + sq.samleNavn + ': «' + sq.navn + '», ' + okKort.format(new Date(sq.dato + 'T12:00:00')) + ', ' + okKr0.format(sq.belop) + ' kr'

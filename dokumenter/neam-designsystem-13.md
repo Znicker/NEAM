@@ -2085,6 +2085,17 @@ først, Sparing sist. Bare tallene skiller dem:
     Transaksjoner og varelinjer har alltid to desimaler, også «870,00».
     Delene kan avvike 1 kr fra summen på grunn av avrundingen. Under en post
     med noe ubetalt står «herav forfaller X kr», som på gruppene.
+  - **Kredittkortkjøp telles i betalingsmåneden** (fra 15. november 2026): en
+    handel som hører til en samlefaktura, står i Regnskap, Resultat og
+    Budsjett i måneden samlefakturaen betales. Raden har kjøpsdatoen først og
+    «betales 25. nov.» i meta-linja. Kontoutskriften og søket bruker
+    kjøpsdatoen.
+  - **Kommende kortfaktura** (fra 15. november 2026): et kjøp betalt med
+    kredittkort ligger under fakturaen som kommer, og telles i måneden den
+    forfaller. I kontoutskriften står den som en samlefaktura-rad med kilden
+    «Kommende kortfaktura» og «Kommende faktura · n kjøp · sum», beløp 0,00.
+    I føringsvinduet: «Kommer på fakturaen fra …, forfall …», og under
+    Rediger lenken «Ikke kredittkort» (`.ok-lenke`).
   - **Regnestykker i tallfeltene** (7. november 2026), i alle feltene med
     desimaltastatur på Økonomi – budsjettet og formuen: «1500+2342+112»,
     «3200 x 4 : 12», parenteser. Svaret settes i feltet når det forlates

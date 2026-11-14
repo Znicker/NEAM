@@ -1416,7 +1416,22 @@ async function innboks(env, okt, fersk, psu){
     if(s.fra !== 'samle' || !s.samle || s.samleVenter) continue;
     const foer = s.belop + '|' + s.samle.total;
     samleRest(poster, s);
+    if(s.kommende && !s.samle.linjer.length){ delete poster[id]; endret = true; continue; }
     if(foer !== s.belop + '|' + s.samle.total) endret = true;
+  }
+  /* Trumf-kjoep uten trekk fra banken er betalt med Trumf-kortet (se
+     KREDITTKORT). Bare naar banken svarte uten feil. «Koble fra» paa den
+     kommende fakturaen merker kjoepet ikkeKort, saa det ikke legges der igjen. */
+  if(!advarsel && felles.length){
+    const idag = new Date().toISOString().slice(0, 10), trumfKort = KREDITTKORT.filter(k => k.id === 'trumf')[0];
+    const bank = Object.keys(poster).map(x => poster[x]).filter(b => !b.fra && b.belop < 0);
+    for(const id of Object.keys(poster)){
+      const p = poster[id];
+      if(p.fra !== 'trumf' || p.samleId || p.kommendeId || p.bankId || p.mulDobbel || p.ikkeKort || p.status === 'stroket' || p.status === 'sammenslatt' || !(p.belop < 0)) continue;
+      if(bankdagerMellom(p.dato, idag) <= SAMLE_DAGER) continue;
+      if(bank.some(b => erLik(b, p))) continue;
+      if(kortKoble(poster, p, trumfKort)) endret = true;
+    }
   }
   for(const id of Object.keys(poster)){
     const p = poster[id];
@@ -1666,6 +1681,18 @@ async function lagreBudsjett(env, kropp, epost){
    et vis, og dette må synces når betalingen er gjennomført»). Naar trekket
    kommer, legges fakturaen ved det (synkFakturaer) og er ikke lenger
    `venter` - da forsvinner den herfra, og trekket teller naar det er godkjent. */
+/* Regnskapsmaaneden (Magne, 15. november 2026: «Nå blir alle handler på
+   kredittkort lagt i måneden de handles, men ikke når de betales» -
+   «Betalingsmåneden må det bli»). En handel som hoerer til en samlefaktura,
+   telles i maaneden samlefakturaen betales - Regnskap, Resultat, Budsjett og
+   foeringene der. Kontoutskriften, soeket og varelinjene bruker fortsatt
+   kjoepsdatoen. En stroeken samlefaktura flytter ingenting. Det samme gjelder
+   den kommende kortfakturaen (`kommendeId`). */
+function regnDato(p, poster){
+  const s = (p.samleId && poster[p.samleId]) || (p.kommendeId && poster[p.kommendeId]);
+  return s && s.fra === 'samle' && s.status !== 'stroket' && s.dato ? s.dato : p.dato;
+}
+function regnMnd(p, poster){ return String(regnDato(p, poster)).slice(0, 7); }
 async function regnskapAar(env){
   const poster = await bareFelles(env, await lesJson(env, POST_NOKKEL, {}));
   const kategorier = await budsjettKategorier(env);
@@ -1687,7 +1714,7 @@ async function regnskapAar(env){
       continue;
     }
     if(p.status !== 'godkjent') continue;
-    const m = String(p.dato).slice(0, 7);
+    const m = regnMnd(p, poster);
     const deler = p.deler && p.deler.length ? p.deler : [{ kategori:p.kategori, belop:p.belop }];
     for(const d of deler){
       if(kategorier.indexOf(d.kategori) === -1) continue;
@@ -1783,7 +1810,7 @@ async function regnskap(env, mnd){
   let antall = 0;
   for(const id of Object.keys(poster)){
     const p = poster[id];
-    if(p.status !== 'godkjent' || String(p.dato).slice(0, 7) !== mnd) continue;
+    if(p.status !== 'godkjent' || regnMnd(p, poster) !== mnd) continue;
     antall++;
     const deler = p.deler && p.deler.length ? p.deler : [{ kategori:p.kategori, belop:p.belop }];
     for(const d of deler){
@@ -1806,17 +1833,17 @@ async function foringer(env, mnd, kat, eksakt){
   const ut = [];
   for(const id of Object.keys(poster)){
     const p = poster[id];
-    if(p.status !== 'godkjent' || String(p.dato).slice(0, 7) !== mnd) continue;
+    if(p.status !== 'godkjent' || regnMnd(p, poster) !== mnd) continue;
     const deler = p.deler && p.deler.length ? p.deler : [{ kategori:p.kategori, belop:p.belop }];
     for(const d of deler){
       if(!treff(d.kategori)) continue;
       const bank = p.bankId && poster[p.bankId];
-      ut.push({ id:p.id, dato:p.dato, tekst:p.motpart || p.tekst || '', mer:p.motpart && p.tekst && p.tekst !== p.motpart ? p.tekst : '',
+      ut.push({ id:p.id, dato:p.dato, betales:regnDato(p, poster) !== p.dato ? regnDato(p, poster) : '', tekst:p.motpart || p.tekst || '', mer:p.motpart && p.tekst && p.tekst !== p.motpart ? p.tekst : '',
         kilde: p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.fra === 'samle' ? 'Samlefaktura' : p.forHand ? (p.utlegg || 'Lagt inn for hånd') : 'Kvittering fra bilde') : (kn[p.konto] || p.kontoNavn || ''),
         betaltFra: bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
         kategori:d.kategori, del:deler.length > 1, harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false,
         harFil:!!p.harFil, filType:p.filType || '', overstyrt:!!p.overstyrt, merke:p.merke || '', forbN:forbindelser(p, poster).length,
-        vedN:(p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:!!(p.samleId || p.fra === 'samle'), samleStatus:samleStatus(p, poster),
+        vedN:(p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:!!(p.samleId || p.kommendeId || p.fra === 'samle'), samleStatus:samleStatus(p, poster),
         belop: Math.round((d.kategori.indexOf('Inntekter') === 0 ? d.belop : -d.belop) * 100) / 100 });
     }
   }
@@ -1851,6 +1878,48 @@ const SAMLE_DAGER = 3;
    1,5 kroner så må jeg bli spurt» og «ta høyde for at summer er rundet opp
    eller ned til nærmeste krone»). */
 const SAMLE_KRONER = 1.5;
+/* ---------- Kredittkortene (Magne, 15. november 2026) ----------
+   «Kan neam identifisere om kvitteringen er fra kredittkort, eller debet? …
+   oppretter en linje for det. Alle transaksjoner som skal inn i den fakturaen
+   kan være underpinkt av denne linja». Kjoep i en kalendermaaned kommer paa
+   fakturaen med forfall den 15. maaneden etter (begge kortene, sett paa
+   fakturaene for oktober). Coop-kvitteringene viser kortet («COOPMC», «Coop
+   Mastercard»); Trumf-kvitteringene viser det ikke, saa et Trumf-kjoep uten
+   trekk fra banken innen SAMLE_DAGER bankdager regnes som Trumf-kortet
+   (Magne: «Ja»). Til den ekte fakturaen kommer, ligger kjoepene under en
+   kommende faktura (fra:'samle', kommende:true) via `kommendeId` - ikke
+   samleId, saa de er ledige naar den ekte fakturaen kobles. */
+const KREDITTKORT = [
+  { id:'coop', navn:'Coop Mastercard', kjenn:/coop\s*mastercard|coop\s*mc\b|coopmc/i, utsteder:/coop/i },
+  { id:'trumf', navn:'Trumf Kredittkort', kjenn:/trumf\s*(mastercard|kredittkort|visa)/i, utsteder:/trumf|norgesgruppen/i }
+];
+const KORT_FORFALL_DAG = '15';
+function kortForfall(dato){
+  const d = new Date(String(dato).slice(0, 7) + '-01T12:00:00Z');
+  d.setUTCMonth(d.getUTCMonth() + 1);
+  return d.toISOString().slice(0, 8) + KORT_FORFALL_DAG;
+}
+function kortFra(betaltMed){
+  const t = String(betaltMed || '');
+  return t ? KREDITTKORT.filter(k => k.kjenn.test(t))[0] || null : null;
+}
+/* Legger kjoepet under den kommende fakturaen. Finnes den ekte fakturaen for
+   perioden alt, gjoeres ingenting - da gjelder koblingen til den. */
+function kortKoble(poster, p, kort){
+  const forfall = kortForfall(p.dato);
+  const ekte = Object.keys(poster).some(x => { const s = poster[x];
+    return s.fra === 'samle' && !s.kommende && s.status !== 'stroket' && kort.utsteder.test(s.motpart || '') && dagerMellom(s.dato, forfall) <= 10; });
+  if(ekte) return false;
+  const id = 'kommende:' + kort.id + ':' + forfall;
+  if(!poster[id]) poster[id] = { id:id, fra:'samle', kommende:true, kort:kort.id, forHand:true, manuell:true, konto:'samle', kontoNavn:'Kommende kortfaktura',
+    dato:forfall, belop:0, tekst:'Kommende faktura', motpart:kort.navn, harKvittering:false, status:'godkjent', kategori:'', kilde:'kort',
+    lagtInn:new Date().toISOString(), samle:{ total:0, linjer:[] } };
+  const s = poster[id];
+  s.samle.linjer.push({ dato:p.dato, navn:p.motpart || p.tekst || 'Handel', belop:Math.abs(p.belop), post:p.id });
+  p.kommendeId = id;
+  samleRest(poster, s);
+  return true;
+}
 function samleLinjer(kilde){
   return [].concat(kilde || []).slice(0, 300).map(l => ({
     dato: String(l && l.dato || ''), navn: String(l && l.navn || '').trim().slice(0, 120) || 'Handel',
@@ -1865,6 +1934,17 @@ function samleLedig(q){
 }
 /* Beloepet: totalen minus handlene som har sin egen post. */
 function samleRest(poster, s){
+  /* Den kommende kortfakturaen: bare kjoepene som fortsatt hoerer dit. */
+  if(s.kommende){
+    s.samle.linjer = s.samle.linjer.filter(l => {
+      const q = l.post && poster[l.post];
+      if(q && q.kommendeId === s.id && q.status !== 'stroket' && q.status !== 'sammenslatt'){ l.belop = Math.abs(q.belop); l.dato = q.dato; l.navn = q.motpart || q.tekst || l.navn; return true; }
+      if(q && q.kommendeId === s.id) delete q.kommendeId;
+      return false;
+    });
+    const n = s.samle.linjer.length, sum = s.samle.linjer.reduce((t, l) => t + l.belop, 0);
+    s.tekst = 'Kommende faktura · ' + n + ' kjøp · ' + (Math.round(sum * 100) / 100).toFixed(2).replace('.', ',') + ' kr';
+  }
   /* Totalen er summen av handlene, med renter, gebyr og refusjoner - aldri
      minstebeloepet eller saldoen paa fakturaen (Magne, 15. november 2026: en
      Coop-faktura fikk minstebeloepet 322 kr som total og +19 638 kr i rest). */
@@ -1972,6 +2052,15 @@ async function samleNy(env, kropp, epost){
   if(kropp.venterId && !(venter && venter.samleVenter)) return svar({ ok:false, feil:'Fant ikke samlefakturaen i innboksen' });
   const id = venter ? venter.id : 'samle:' + b64url(await crypto.subtle.digest('SHA-256', tekstTilBytes(['samle', navn, dato, total.toFixed(2)].join('|')))).slice(0, 18);
   if(!venter && poster[id]) return svar({ ok:false, feil:'Denne samlefakturaen er allerede lagt inn (' + navn + ', ' + dato + ')' });
+  /* Den ekte fakturaen tar over den kommende for samme kort og periode:
+     kjoepene loeses, og kobles paa nytt under - de som staar paa fakturaen. */
+  const kort = KREDITTKORT.filter(k => k.utsteder.test(navn))[0];
+  if(kort) for(const kid of Object.keys(poster)){
+    const k = poster[kid];
+    if(!k.kommende || k.kort !== kort.id || dagerMellom(k.dato, dato) > 10) continue;
+    for(const l of k.samle.linjer){ const q = l.post && poster[l.post]; if(q && q.kommendeId === kid) delete q.kommendeId; }
+    delete poster[kid];
+  }
   const naa = new Date().toISOString();
   const s = { id:id, fra:'samle', forHand:true, manuell:true, konto:'samle', kontoNavn:'Samlefaktura', dato:dato, belop:-total, tekst:'', motpart:navn,
     harKvittering:false, status:'godkjent', kategori:kat, kilde:'manuell', behandlet:naa, av:epost, lagtInnAv:epost, lagtInn:naa, samle:{ total:total, linjer:[] } };
@@ -2034,6 +2123,7 @@ async function samleKoble(env, kropp, epost){
   if(!l) return svar({ ok:false, feil:'Fant ikke handelen' });
   if(kropp.fjern){
     if(l.post && poster[l.post]) delete poster[l.post].samleId;
+    if(s.kommende && l.post && poster[l.post]){ delete poster[l.post].kommendeId; poster[l.post].ikkeKort = true; }
     l.post = '';
   } else if(kropp.post){
     const q = poster[String(kropp.post)];
@@ -2060,7 +2150,7 @@ function samleStatus(p, poster){
   return { antall:kjop.length, mangler:mangler };
 }
 function samleDobbel(p, poster){
-  if(p.fra !== 'samle' || p.samleVenter) return null;
+  if(p.fra !== 'samle' || p.samleVenter || p.kommende) return null;
   const norm = x => String(x || '').toLowerCase().replace(/[^a-z0-9æøå]/g, '');
   const n = norm(p.motpart);
   if(!n) return null;
@@ -2084,6 +2174,8 @@ async function postDetaljer(env, id){
     samleVenter:!!p.samleVenter, tvil:!!p.tvil, limt:p.samleVenter ? p.limt || '' : '', sfLest:p.samleVenter ? p.sfLest || null : null,
     samleSporsmaal:p.samleSporsmaal || null, dobbelFaktura:samleDobbel(p, poster),
     samleId:p.samleId || '', samleNavn:p.samleId && poster[p.samleId] ? poster[p.samleId].motpart || '' : '',
+    kommende:!!p.kommende, kommendeId:p.kommendeId || '', kommendeNavn:p.kommendeId && poster[p.kommendeId] ? poster[p.kommendeId].motpart || '' : '',
+    kommendeDato:p.kommendeId && poster[p.kommendeId] ? poster[p.kommendeId].dato : '',
     samle:p.samle ? { total:p.samle.total, skyldig:p.samle.skyldig || 0, minste:p.samle.minste || 0, linjer:p.samle.linjer.map(l => {
       const q = l.post && poster[l.post];
       return { dato:l.dato, navn:l.navn, belop:l.belop, post:l.post || '', sted:q ? q.motpart || q.tekst || '' : '', status:q ? q.status : '', egen:!!(q && q.samleDel) };
@@ -2345,7 +2437,7 @@ async function allePoster(env){
       deler:p.deler && p.deler.length > 1 ? p.deler.length : 0,
       harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, harFil:!!p.harFil, filType:p.filType || '',
       overstyrt:!!p.overstyrt, merke:p.merke || '', avsluttet:p.avsluttet || '', forbN:forbindelser(p, poster).length,
-      vedN:(p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:!!(p.samleId || p.fra === 'samle'), samleStatus:samleStatus(p, poster) });
+      vedN:(p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:!!(p.samleId || p.kommendeId || p.fra === 'samle'), samleStatus:samleStatus(p, poster), kommende:!!p.kommende });
   }
   ut.sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
   return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', poster:ut });
@@ -2565,11 +2657,14 @@ async function nyKvittering(env, kropp, epost){
   poster[id] = p;
   if(!faktura && !eier){
     samleKobleNy(poster, p);
-    if(!p.samleId){ const sp = samleNaerFor(poster, p); if(sp) p.samleSporsmaal = sp; }
+    /* Betalt med kredittkort - og ikke alt funnet som trekk fra banken: under den kommende fakturaen. */
+    if(!p.samleId && !p.bankId && !p.mulDobbel && p.belop < 0){ const kort = kortFra(k.betaltMed); if(kort) kortKoble(poster, p, kort); }
+    if(!p.samleId && !p.kommendeId){ const sp = samleNaerFor(poster, p); if(sp) p.samleSporsmaal = sp; }
   }
   if(linjer.length && !linjeKat) await env.FAMILIE_KV.put(kvitteringNokkel(p), JSON.stringify({ id:id, belop:sum, linjer:linjer }));
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
-  return svar({ ok:true, post:p, samleNavn:p.samleId && poster[p.samleId] ? poster[p.samleId].motpart || '' : '' });
+  return svar({ ok:true, post:p, samleNavn:p.samleId && poster[p.samleId] ? poster[p.samleId].motpart || '' : '',
+    kommendeNavn:p.kommendeId && poster[p.kommendeId] ? poster[p.kommendeId].motpart || '' : '' });
 }
 const KVITTERING_FILTYPER = ['image/jpeg', 'image/png', 'application/pdf'];
 function renLinjer(kilde){

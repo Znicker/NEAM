@@ -581,8 +581,9 @@ fakturaer som leser totalen og kobles på total eller minstebeløp (`afa120a`), 
 samlefakturaen som er gul til alt er gjort rede for, så grønn (`ad6728a`), og
 fylt firkant i symbolet (`7fc2b0a`), og summer i hele kroner med «herav
 forfaller» på postene og fanen Avstemming under Transaksjoner (`85240ee`), og
-én vei inn der Neam ser selv hva som legges til («Økonomi: én vei inn – Neam ser selv hva som legges til», commiten
-etter `85240ee`).
+én vei inn der Neam ser selv hva som legges til (`0ddcd3d`), og kredittkortkjøp
+som telles i betalingsmåneden, under en kommende kortfaktura («Økonomi: kredittkortkjøp i betalingsmåneden, under en kommende kortfaktura»,
+commiten etter `0ddcd3d`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -591,7 +592,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 124 commits, `0e0050a` til «Økonomi: én vei inn – Neam ser selv hva som legges til», medregnet en midlertidig statustest fra en annen økt
+fungerte»). 125 commits, `0e0050a` til «Økonomi: kredittkortkjøp i betalingsmåneden, under en kommende kortfaktura», medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -4633,7 +4634,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 124 commits fra `0e0050a` til «Økonomi: én vei inn – Neam ser selv hva som legges til» (dialogen med
+verdier. Bygget i 125 commits fra `0e0050a` til «Økonomi: kredittkortkjøp i betalingsmåneden, under en kommende kortfaktura» (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5078,7 +5079,65 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
-- **Én vei inn** («Økonomi: én vei inn – Neam ser selv hva som legges til»). Magne om siden: «Jeg har prøvd alle
+- **Kommende kortfaktura** («Økonomi: kredittkortkjøp i betalingsmåneden, under en kommende kortfaktura», samme commit som
+  punktet under). Magne: «Kan neam identifisere om kvitteringen er ffa
+  kredittkort, eller debet? Da kan man jo ha som regrl at jeg ksan legge til en
+  kvittering så ide tifiserer neam at det kommer en krefittkortfaktura og
+  oppretter en linje for det. Alle transaksjoner som skal inn i den falturaen
+  kan være underpinkt av denne linja». Forfall «15 i mnd på begge», Trumf uten
+  banktrekk som Trumf-kortet: «Ja. Vi har ikke bn kort».
+  - Sjekket i Chrome på neam.no: Coop-kvitteringene (Extra, Prix) viser
+    «COOPMC», maskert kortnummer og «Fordel Coop Mastercard». Trumf-dataene
+    har ingen betalingsmåte. Fakturaene for oktober (Coop Mastercard og
+    «Trumf Kredittkort») har kjøp 1.–30. oktober og forfall 15. november:
+    kalendermåneden, forfall den 15. måneden etter.
+  - `KREDITTKORT` (Coop Mastercard, Trumf Kredittkort) med `kjenn` (teksten
+    på kvitteringen) og `utsteder` (navnet på fakturaen). `kortForfall`,
+    `kortFra`, `kortKoble`. Ingen kortnumre i koden.
+  - `OK_KV_INSTRUKS` gir `betaltMed` (uten kortnummer). `nyKvittering`: ikke
+    koblet til banktrekk eller samlefaktura, og kortet kjent → under den
+    kommende fakturaen.
+  - Trumf: i `innboks`, når banken svarte uten feil – et Trumf-kjøp uten
+    `erLik`-trekk fra banken etter `SAMLE_DAGER` bankdager → Trumf-kortet.
+  - Den kommende er en samlefaktura (`fra:'samle'`, `kommende:true`, id
+    `kommende:<kort>:<forfall>`, beløp 0, uten kategori). Kjøpene har
+    `kommendeId`, ikke `samleId`, så de er ledige når den ekte fakturaen
+    kobles; `regnDato` bruker begge. `samleRest` holder linjene i takt og
+    skriver «Kommende faktura · n kjøp · sum». Tom kommende fjernes ved neste
+    henting av innboksen. Finnes den ekte fakturaen for perioden alt, lages
+    ingen kommende.
+  - `samleNy`: den ekte fakturaen for samme kort (±10 dager) løser opp den
+    kommende; kjøpene kobles på nytt med forslagene som før.
+  - «Ikke kredittkort» (lenke i Rediger) og «Koble fra» på den kommende:
+    `ikkeKort`, så Trumf-regelen ikke legger kjøpet der igjen.
+  - Kontoutskriften: kilden «Kommende kortfaktura», uten «Uten kategori».
+  - Ikke gjort: kvitteringer lagt inn før dette har ikke `betaltMed` og leses
+    ikke på nytt. Trumf-regelen gjelder også de som ligger der, ved neste
+    henting.
+  - Testet i testserveren: Coop med kortet (desember), BankAxept (november),
+    Trumf uten trekk (kommende), med trekk og ferskt (ikke), «Ikke kredittkort»
+    (tilbake til november, den kommende fjernet), den ekte Coop-fakturaen
+    (koblet, den kommende fjernet), vinduet og kontoutskriften. En testfeil
+    underveis var min: et lesekall mot `/__kv` uten verdi tømte testdataene.
+- **Kredittkortkjøp i betalingsmåneden** («Økonomi: kredittkortkjøp i betalingsmåneden, under en kommende kortfaktura»). Magne: «Nå blir
+  alle handler på kredittkort lagt i måneden de handles, men ikke når de
+  betales». Før delte én samlefaktura seg på to måneder: handlene med egen
+  post i kjøpsmåneden, resten på forfallsdatoen. Valgt mellom betalingsmåned
+  (følger kontoen, som debetkjøp) og kjøpsmåned (forbruket): «Betalingsmåneden
+  må det bli».
+  - `regnDato`/`regnMnd` i bank-funksjonen: en post med `samleId` telles på
+    samlefakturaens dato, så lenge den ikke er strøket. Brukt i `regnskapAar`
+    (Regnskap, Resultat, Budsjett), `regnskap` og `foringer`.
+  - `foringer` gir `betales`, og raden viser «betales 25. nov.» i meta-linja.
+    Kjøpsdatoen står fortsatt først på raden.
+  - Ikke endret: Kontoutskriften, varesøket, vedleggene, «Rydd opp» og
+    regningskontoens buffer bruker kjøpsdatoen.
+  - Prisen, sagt til Magne: et kjøp står i kjøpsmåneden til samlefakturaen
+    kommer og det kobles, og flytter da.
+  - Testet i testserveren: en handel 28. oktober på en samlefaktura som
+    forfaller 25. november telles i november (500 kr), oktober har bare
+    debetkjøpet (100 kr), og raden viser «betales 25. nov.».
+- **Én vei inn** (`0ddcd3d`). Magne om siden: «Jeg har prøvd alle
   funksjonene og det ser bra ut. Enig at det er litt mamge veier inn». De
   22 Økonomi-punktene under «Må prøves» fra 9.–15. november er derfor tatt ut;
   de eldre (6.–8. november, pinkoden på kjøkkenskjermen) står.
