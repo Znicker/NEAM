@@ -580,8 +580,9 @@ samlefaktura (`3190fd6`), ny transaksjon med kategori og Før inn på gruppene
 fakturaer som leser totalen og kobles på total eller minstebeløp (`afa120a`), og
 samlefakturaen som er gul til alt er gjort rede for, så grønn (`ad6728a`), og
 fylt firkant i symbolet (`7fc2b0a`), og summer i hele kroner med «herav
-forfaller» på postene og fanen Avstemming under Transaksjoner («Økonomi: hele kroner, herav forfaller og avstemming»,
-commiten etter `7fc2b0a`).
+forfaller» på postene og fanen Avstemming under Transaksjoner (`85240ee`), og
+én vei inn der Neam ser selv hva som legges til («Økonomi: én vei inn – Neam ser selv hva som legges til», commiten
+etter `85240ee`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -590,7 +591,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 123 commits, `0e0050a` til «Økonomi: hele kroner, herav forfaller og avstemming», medregnet en midlertidig statustest fra en annen økt
+fungerte»). 124 commits, `0e0050a` til «Økonomi: én vei inn – Neam ser selv hva som legges til», medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1403,56 +1404,6 @@ C marineblå tavle – og Magne valgte **A**.
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
-- **Avstemming** («Økonomi: hele kroner, herav forfaller og avstemming») med ekte skjermbilder fra DNB-appen og
-  nettbanken – planlagte og gjennomførte: hvor godt Neam leser lista, «I dag» og
-  datoer som overskrift, og at treffene er riktige.
-- **Hele kroner** («Økonomi: hele kroner, herav forfaller og avstemming») på neam.no med ekte poster: at
-  summene leses greit, og at «herav forfaller» står på de riktige postene.
-- **Coop Mastercard-samlefakturaen** (`83d767f`) etter at innboksen er hentet
-  på neam.no: at resten er rettet fra +19 638 kr til det lille som mangler
-  kvittering, og spørsmålet om den doble fakturaen på 322 kr.
-- **Lønn som ny transaksjon** (`4a6d42a`): et skjermbilde av en
-  lønnsoverføring – at det legges ved overføringen fra banken, med Inntekter.
-- **Spørsmål om samlefaktura** (`3190fd6`) med ekte Coop-kvitteringer: at
-  inntil 1,50 kr kobles av seg selv, og at større avvik gir spørsmål.
-- **«I dag» i et skjermbilde fra DNB-appen** (`3190fd6`): at overføringen
-  får dagens dato.
-- **Samlefaktura med ekte Coop-kvitteringer** (`429116e`): hva «Ligner: …»
-  sier for Coop-handlene som ikke fikk treff 14. november. Grunnen er ukjent.
-- **Bankdager** (`3779eec`): en kvittering fra fredag eller lørdag mot
-  trekket som kommer mandag eller tirsdag, med ekte DNB-data.
-- **Penger inn** (`9ef0300`) med en ekte Glitre-regning med strømstøtte:
-  at Neam leser minusbeløpet, og at innbetalingen fra banken kobles til den.
-- **Samlefaktura** (`9ef0300`) med en ekte Coop Mastercard-faktura: at Neam
-  finner alle handlene med riktig dato og sum, og forslagene til kvitteringer.
-  At Neam kjenner den igjen som samlefaktura fra Dropbox og fra Legg til.
-- **Innboksen i Rediger** (`7fc4cda`) på telefon og med ekte poster:
-  Godkjenn med endret navn, sum eller dato.
-- **Navn, dato og sum i kvitteringsvinduet** (`52565ad`) på telefon: datofeltet
-  og tastaturet.
-- **Varelinjer fra vedlegg** (`ab9d7a4`) med ekte kvitteringer: hvor godt Neam
-  leser dem, og at `tolk_okonomi_vedlegg` bekreftes i panelet.
-- **Neams søk på tvers av varelinjer** (`fd86809`) i en ekte samtale på
-  neam.no: at Neam velger verktøyet selv, og Trumf-rabattene i summen.
-- **Neams søk i transaksjonene** (`ba264fe`) på neam.no.
-- **Deling på flere kategorier** (`a608f4a`) med en ekte forsikringsfaktura:
-  at Neam finner postene. Finner den ingen, kommer ikke spørsmålet. Så
-  faktura delt mot et ekte trekk fra banken.
-- **Fanene Lån og Verdier** (`9d6637a`) på neam.no og på telefon. Faneraden er
-  for trang på andre skjermer enn PC, og det ryddes senere.
-- **Kortene i Budsjett, Regnskap og Resultat** (`b4493b2`, `cf98c9a`) med
-  ekte poster, på en ekte telefon og på neam.no.
-- **Innboksen som linjer** (`b4493b2`): en faktura uten kategori i vinduet,
-  og Godkjenn og Stryk på en ekte telefon.
-- **Foldbare kategori- og merkevalg** (`7e85730`, `d6cbd20`) på en ekte telefon:
-  at telefonens egen rulleliste ikke kommer opp i stedet.
-- **Nye kategorier og merker** (`85b6ba5`): på telefon, i høyreklikkmenyene
-  og på neam.no.
-- **Utleggsflyten med ekte DNB** (`15337f8`, `c282324`): at
-  oktober-overføringene forsvinner fra innboksen og er ført som vanlig; at
-  vinduet kommer når en kvittering legges til; at et utlegg kobles til kjøpet og overføringen; og at
-  Godkjenn-knappen trekker en tilbakebetaling av saldoen i den egne fanen.
-  Godkjenningen er bare kjørt mot serveren, ikke med knappen.
 - **De egne fanene på neam.no** (8. november): at de rundt 80 trekkene fra
   Forbrukskonto flyttes til Magnes fane første gang den åpnes, at
   kvitteringene som hører til dem kobles riktig (og ingen som hører til
@@ -4682,7 +4633,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 123 commits fra `0e0050a` til «Økonomi: hele kroner, herav forfaller og avstemming» (dialogen med
+verdier. Bygget i 124 commits fra `0e0050a` til «Økonomi: én vei inn – Neam ser selv hva som legges til» (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5127,7 +5078,28 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
-- **Avstemming under Transaksjoner** («Økonomi: hele kroner, herav forfaller og avstemming»). Magne: «Jeg ønsker en
+- **Én vei inn** («Økonomi: én vei inn – Neam ser selv hva som legges til»). Magne om siden: «Jeg har prøvd alle
+  funksjonene og det ser bra ut. Enig at det er litt mamge veier inn». De
+  22 Økonomi-punktene under «Må prøves» fra 9.–15. november er derfor tatt ut;
+  de eldre (6.–8. november, pinkoden på kjøkkenskjermen) står.
+  - Innboksen har «Legg til» (het «Legg til transaksjon») og «Lim inn».
+    Flere filer kan velges og leses etter hverandre.
+  - `OK_KV_INSTRUKS` har typen `bankliste`: en liste med flere betalinger fra
+    nettbanken eller bankappen, ikke én overføring. `okTolkKvittering` gir
+    `{bankliste, innhold}`, og `okLesKvittering` bytter til Avstemming og
+    leser linjene der (`okAvLes` tar `{innhold}`). Fra Dropbox kastes den, og
+    fila havner i «Ikke lest» med beskjed om Avstemming. To lesinger fra
+    innboksen, én fra Avstemming, der alt leses som bankliste.
+  - «Legg til samlefaktura» og `okSfLes` er borte. Vinduet for ny transaksjon
+    har lenken «Dette er en samlefaktura ›» (`#ok-kvs-samle`, bare når det
+    finnes en fil eller tekst å lese handlene fra). Den svarer `'samle'`, og
+    `okTolkKvittering` går samme vei som når Neam kjenner den igjen
+    (`somSamle`).
+  - I Avstemming heter «Velg bilder» nå «Legg til».
+  - Testet i testserveren med Claude-svaret satt inn: en bankliste limt inn i
+    innboksen (til Avstemming, to kall), lenken (samlefaktura-vinduet med
+    handlene, to kall), og to filer etter hverandre.
+- **Avstemming under Transaksjoner** (`85240ee`). Magne: «Jeg ønsker en
   funksjon der jeg kan ta bilde av, kopiere planlagte betalinger og
   gjennomførte betalinger i banken og så ser neam over at dette er inne i
   systemet og promter de som ikke stemmer. Dette kan ligge under en ny fane
@@ -5135,7 +5107,7 @@ ligge under høyre tommelknapp»).
   planlagte er det viktigste (Neam får dem ikke fra DNB), gjennomførte henter
   Neam alt, så der finner avstemmingen bare det som mangler. Avtalt: fanen
   mellom Kontoutskrift og Logg, og avvikene bare i fanen, ikke i innboksen.
-  - Sida: «Velg bilder» (flere), «Lim inn» og Ctrl+V. `OK_AV_INSTRUKS` gir
+  - Sida: «Legg til» (flere filer), «Lim inn» og Ctrl+V. `OK_AV_INSTRUKS` gir
     `{linjer:[{dato, navn, belop, inn, planlagt}]}` med dagens dato. Linjene
     ligger bare på sida (`okAv`); samme linje i to skjermbilder telles én gang.
     Bildene lagres ikke. «Begynn på nytt» tømmer.
@@ -5156,7 +5128,7 @@ ligge under høyre tommelknapp»).
     banktrekk, én regning som mangler i banken, to linjer som mangler i Neam,
     en ulesbar linje, samme liste to ganger, «Legg inn» av en planlagt
     (Ny faktura, flyttet til Stemmer), PC og telefon.
-- **Summer i hele kroner, og herav forfaller på postene** («Økonomi: hele kroner, herav forfaller og avstemming»).
+- **Summer i hele kroner, og herav forfaller på postene** (`85240ee`).
   Magne viste et kort der delene ikke så ut til å gå opp («matte er ikke min
   sterke side, men her ble det noe rart»), og så: «vi må være konsekvente med
   komma. jeg lurer på om vi fjerner komma på alt bortsett fra selve linjene. og

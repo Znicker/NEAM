@@ -1852,11 +1852,16 @@ først, Sparing sist. Bare tallene skiller dem:
     ikke innboksen) og som Økonomi-ikonet ved
     klokka på de andre sidene (se Topplinja). Øverst i innboksen
     **«Forfalte regninger»** (rød statusprikk) og under de andre
-    **«Fakturaer uten kategori»** med kategorivalg. Øverst «Legg til
-    transaksjon» (`.btn-ny`, het «Legg til kvittering» til 14. november 2026) og «Lim inn» (`.btn-blaa`, 7. november 2026):
+    **«Fakturaer uten kategori»** med kategorivalg. Øverst «Legg
+    til» (`.btn-ny`, het «Legg til kvittering» til 14. november og «Legg til
+    transaksjon» til 15. november 2026) og «Lim inn» (`.btn-blaa`, 7. november 2026):
     bilde, PDF eller tekst fra utklippstavla – eller Ctrl+V på sida, når
-    markøren ikke står i et felt. Så «Legg til samlefaktura» (`.btn-blaa`, 14.
-    november 2026): et vindu som kvitteringsvinduet (`.ok-kv-kort`) med Fra,
+    markøren ikke står i et felt. Flere filer leses etter hverandre. **Neam
+    ser selv hva det er** (fra 15. november 2026): kvittering, faktura,
+    samlefaktura, eller en liste fra nettbanken, som går til Avstemming. Det
+    finnes ingen egen samlefaktura-knapp; leser Neam en samlefaktura som
+    vanlig, har vinduet for ny transaksjon lenken «Dette er en samlefaktura ›»
+    (`.ok-lenke`) under datoen. Samlefaktura-vinduet er et vindu som kvitteringsvinduet (`.ok-kv-kort`) med Fra,
     Dato, Sum av handlene (låst – totalen er alltid summen av handlene, fra 15.
     november 2026; totalt skyldig og minstebeløp står under som informasjon),
     kategori for resten, og handlene som `.ok-kv-linje`. En handel
@@ -1892,7 +1897,7 @@ først, Sparing sist. Bare tallene skiller dem:
     eller periode** vises alt som treffer, med måneden som overskrift
     (`.ok-etikett`), og ‹ måned › byttes mot «Søk og filter» og Nullstill.
   - **Avstemming** (fra 15. november 2026) – skjermbilder eller tekst fra
-    nettbanken, sjekket mot Neam. Øverst «Velg bilder», «Lim inn» og
+    nettbanken, sjekket mot Neam. Øverst «Legg til», «Lim inn» og
     «Begynn på nytt» (alle `.btn-blaa`), så en meta-linje og et foldekort med
     **Mangler i banken** (gul prikk og gult sammendrag – regninger som venter
     uten å være planlagt), **Mangler i Neam** (`.btn-ny ok-smal` «Legg inn»

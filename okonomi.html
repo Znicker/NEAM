@@ -981,13 +981,13 @@ button.ok-dr-rad{ cursor:pointer; }
           <p class="ok-meta">Ta skjermbilder av planlagte eller gjennomførte betalinger i nettbanken – eller kopier teksten – og legg dem til her. Neam sjekker at alt er i Neam, og at regningene som venter, er planlagt i banken. Bildene lagres ikke.</p>
         </div>
         <div class="ok-rad-knapper">
-          <button type="button" class="btn btn-blaa" id="ok-av-knapp">Velg bilder</button>
+          <button type="button" class="btn btn-blaa" id="ok-av-knapp">Legg til</button>
           <button type="button" class="btn btn-blaa" id="ok-av-lim">Lim inn</button>
           <button type="button" class="btn btn-blaa" id="ok-av-tom" hidden>Begynn på nytt</button>
           <input type="file" id="ok-av-fil" accept="image/*,application/pdf" multiple hidden>
         </div>
       </div>
-      <p class="ok-meta" id="ok-av-status" aria-live="polite">Velg ett eller flere bilder, eller kopier og lim inn (Ctrl+V). Går lista over flere skjermbilder, legg dem til etter hverandre.</p>
+      <p class="ok-meta" id="ok-av-status" aria-live="polite">Legg til ett eller flere bilder, eller kopier og lim inn (Ctrl+V). Her leses alt som en liste fra nettbanken. Går lista over flere skjermbilder, legg dem til etter hverandre.</p>
       <p class="ok-meta" id="ok-av-meta" hidden></p>
       <section class="ok-kort ok-fold-gruppe">
         <div class="ok-fold" data-fold="av-banken" data-apen="ja" id="ok-av-banken-kort" hidden>
@@ -1057,14 +1057,12 @@ button.ok-dr-rad{ cursor:pointer; }
         <p class="ok-meta" id="ok-innboks-meta"></p>
       </div>
       <div class="ok-rad-knapper">
-        <button type="button" class="btn btn-ny" id="ok-kv-knapp">Legg til transaksjon</button>
+        <button type="button" class="btn btn-ny" id="ok-kv-knapp">Legg til</button>
         <button type="button" class="btn btn-blaa" id="ok-kv-lim">Lim inn</button>
-        <button type="button" class="btn btn-blaa" id="ok-sf-knapp">Legg til samlefaktura</button>
-        <input type="file" id="ok-kv-fil" accept="image/*,application/pdf" hidden>
-        <input type="file" id="ok-sf-fil" accept="image/*,application/pdf" hidden>
+        <input type="file" id="ok-kv-fil" accept="image/*,application/pdf" multiple hidden>
       </div>
     </div>
-    <p class="ok-meta" id="ok-kv-status" aria-live="polite">Bilde, PDF eller tekst – velg en fil, eller kopier og lim inn (Ctrl+V). Neam leser butikk, dato, sum og varer. En faktura venter på trekket fra banken og legges ved det.</p>
+    <p class="ok-meta" id="ok-kv-status" aria-live="polite">Bilde, PDF eller tekst – velg én eller flere filer, eller kopier og lim inn (Ctrl+V). Neam ser selv om det er en kvittering, en faktura, en samlefaktura eller en liste fra nettbanken. En faktura venter på trekket fra banken og legges ved det.</p>
     <div class="ok-filter" id="ok-filter" hidden></div>
     <div id="ok-innboks"></div>
     <div class="ok-ib-to">
@@ -1388,7 +1386,7 @@ button.ok-dr-rad{ cursor:pointer; }
 <div class="dlg-bak" id="ok-kvs-bak" hidden>
   <div class="dlg-kort ok-kv-kort" role="dialog" aria-modal="true" aria-labelledby="ok-kvs-tittel">
     <div class="ok-kort-hode">
-      <div><span class="ok-etikett" id="ok-kvs-hva">Ny transaksjon</span><h2 id="ok-kvs-tittel"></h2><p class="ok-meta" id="ok-kvs-meta"></p></div>
+      <div><span class="ok-etikett" id="ok-kvs-hva">Ny transaksjon</span><h2 id="ok-kvs-tittel"></h2><p class="ok-meta" id="ok-kvs-meta"></p><button type="button" class="ok-lenke" id="ok-kvs-samle" hidden>Dette er en samlefaktura ›</button></div>
     </div>
     <div class="ok-kv-total" id="ok-kvs-total"></div>
     <div class="ok-kvs-mer" id="ok-kvs-steg1">
@@ -3525,6 +3523,7 @@ button.ok-dr-rad{ cursor:pointer; }
     + '- "type" er "faktura" når det er en regning som skal betales – faktura, e-faktura, giro eller avtalegiro med forfallsdato og beløp å betale. Ellers "kvittering".\n'
     + '- "type" er "samlefaktura" når dokumentet er en kortfaktura eller samlefaktura med mange kjøp fra forskjellige steder, f.eks. fra Coop Mastercard eller et annet kredittkort. Da er "linjer" tom.\n'
     + '- Er du usikker på om det er en samlefaktura, legg til "tvil": true.\n'
+    + '- "type" er "bankliste" når det er et skjermbilde eller en utskrift fra nettbanken eller bankappen med en liste over flere betalinger eller transaksjoner – planlagte, forfalte eller gjennomførte – og ikke én enkelt regning, kvittering eller overføring. Da er resten tomt.\n'
     + '- Får kunden penger tilbake – en kreditnota, et tilgodehavende eller en regning med minusbeløp, f.eks. strøm med strømstøtte – er "belop" negativt.\n'
     + '- For en faktura: "butikk" er den som sender fakturaen, f.eks. "Statens pensjonskasse". "dato" er forfallsdatoen, "belop" er beløpet som skal betales. "linjer" er postene på fakturaen med hvert sitt beløp, f.eks. personforsikring og husforsikring, med gebyr som egen linje. Står det bare én post, eller ikke beløp per post, er "linjer" tom.\n'
     + '- Står det både et minimumsbeløp og et totalbeløp på en faktura (totalt å betale, totalt skyldig), er "belop" totalbeløpet og "minstebelop" minimumsbeløpet.\n'
@@ -3648,6 +3647,12 @@ button.ok-dr-rad{ cursor:pointer; }
     /* Den samme fila Neam leste, lagres med kvitteringen - det krympede bildet, eller PDF-en som den er. */
     var lagres = lest || limt ? null : { type:innhold.source.media_type, data:innhold.source.data };
     var kv = lest || await okKvLes(innhold);
+    /* En liste fra nettbanken går til Avstemming (Magne, 15. november 2026:
+       «Enig at det er litt mamge veier inn»). Fra Dropbox havner den i «Ikke lest». */
+    if(kv.type === 'bankliste'){
+      if(!spor) throw new Error('dette er en liste fra nettbanken – legg den inn under Transaksjoner › Avstemming');
+      return { bankliste:true, innhold:innhold };
+    }
     /* Samlefaktura: til innboksen. Er Neam usikker, spoer den naa - eller,
        fra Dropbox, naar samlefakturaen aapnes i innboksen. */
     var samle = kv.type === 'samlefaktura', tvil = !samle && !!kv.tvil;
@@ -3655,7 +3660,7 @@ button.ok-dr-rad{ cursor:pointer; }
       samle = await bekreft('Neam er usikker: er «' + (kv.butikk || 'dette') + '» en samlefaktura med flere handler – f.eks. et kredittkort?', { jaTekst:'Ja, samlefaktura', neiTekst:'Nei, vanlig' });
       tvil = false;
     } else if(tvil) samle = true;
-    if(samle){
+    var somSamle = async function(){
       /* Handlene leses naa, saa samlefakturaen aapnes raskt fra innboksen. */
       var sfLest = null;
       try{ sfLest = await okKvLes(innhold, OK_SF_INSTRUKS, 8000); }catch(e){ sfLest = null; }
@@ -3663,10 +3668,13 @@ button.ok-dr-rad{ cursor:pointer; }
         body: JSON.stringify({ hva:'kvittering-ny', kvittering:kv, fil:lagres, samleVenter:true, tvil:tvil, limt:limt || undefined, sfLest:sfLest || undefined }) });
       if(!ls.ok){ var sfeil = new Error(ls.feil); sfeil.duplikat = /allerede lagt inn/.test(ls.feil || ''); throw sfeil; }
       return { post:ls.post, samle:true, linjer:0, festet:'samle', kv:kv, lest:lagres, tekst:limt || '' };
-    }
+    };
+    if(samle) return await somSamle();
     /* Dropbox spoer ikke; det som legges inn for haand, gjoer det. */
-    var eget = spor ? await spor(kv) : null;
+    var eget = spor ? await spor(kv, { kanSamle:!lest }) : null;
     if(eget === false) return null;
+    /* «Dette er en samlefaktura» i vinduet - naar Neam leste den som vanlig. */
+    if(eget === 'samle'){ kv.type = 'samlefaktura'; kv.linjer = []; tvil = false; return await somSamle(); }
     var lagret = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify(Object.assign({ hva:'kvittering-ny', kvittering:kv, fil:lagres }, eget || {})) });
     if(!lagret.ok){ var feil = new Error(lagret.feil); feil.duplikat = /allerede lagt inn/.test(lagret.feil || ''); throw feil; }
@@ -3764,7 +3772,7 @@ button.ok-dr-rad{ cursor:pointer; }
      (Magne, 9. november 2026: «Jeg ønsker spørsmål om det er flere kategorier
      som toggles på da blir det avmerkingspunkter bak hver linje. Trykker neste
      og da står disse linjene med rullgardinmenyen over kategorier»). */
-  function okKvSpor(kv){
+  function okKvSpor(kv, valg){
     /* Bare linjer med navn - serveren teller dem likt naar kategoriene sendes. */
     kv.linjer = (kv.linjer || []).filter(function(l){ return l && l.navn; });
     var medUtlegg = kv.type !== 'faktura' && okKvPersoner.length > 0, kanDele = kv.linjer.length > 1;
@@ -3780,6 +3788,7 @@ button.ok-dr-rad{ cursor:pointer; }
       e('ok-kvs-navn-et').textContent = kv.type === 'faktura' ? 'Fra' : 'Butikk';
       e('ok-kvs-dato-et').textContent = kv.type === 'faktura' ? 'Forfall' : 'Dato';
       e('ok-kvs-navn').value = navnStart; e('ok-kvs-dato').value = datoStart;
+      e('ok-kvs-samle').hidden = !(valg && valg.kanSamle);
       var tegnTopp = function(){
         var d = e('ok-kvs-dato').value, s = okKvTall(e('ok-kvs-sum').value);
         e('ok-kvs-tittel').textContent = e('ok-kvs-navn').value.trim() || 'Ukjent butikk';
@@ -3846,7 +3855,7 @@ button.ok-dr-rad{ cursor:pointer; }
       var ut = function(svar){
         e('ok-kvs-bak').hidden = true;
         e('ok-kvs-utlegg').onchange = e('ok-kvs-betalt').onchange = e('ok-kvs-flere').onchange = e('ok-kvs-ja').onclick = e('ok-kvs-nei').onclick = null;
-        e('ok-kvs-navn').oninput = e('ok-kvs-dato').oninput = e('ok-kvs-sum').oninput = e('ok-kvs-inn').onchange = null;
+        e('ok-kvs-navn').oninput = e('ok-kvs-dato').oninput = e('ok-kvs-sum').oninput = e('ok-kvs-inn').onchange = e('ok-kvs-samle').onclick = null;
         document.removeEventListener('keydown', tast);
         var k = e('ok-kv-knapp'); if(k) k.focus();
         ferdig(svar);
@@ -3893,6 +3902,7 @@ button.ok-dr-rad{ cursor:pointer; }
       e('ok-kvs-flere').onchange = tegn;
       e('ok-kvs-inn').onchange = tegn;
       e('ok-kvs-nei').onclick = tilbake;
+      e('ok-kvs-samle').onclick = function(){ ut('samle'); };
       /* Navn, dato og sum oeverst. null: noe maa rettes. */
       var lesTopp = function(){
         var navn = e('ok-kvs-navn').value.trim(), dato = e('ok-kvs-dato').value, sum = okKvTall(e('ok-kvs-sum').value);
@@ -3944,6 +3954,12 @@ button.ok-dr-rad{ cursor:pointer; }
     try{
       var res = await okTolkKvittering(fil, tekst, okKvSpor, lest);
       if(!res){ status.textContent = 'Kvitteringen ble ikke lagt inn.'; return; }
+      if(res.bankliste){
+        status.textContent = 'Det var en liste fra nettbanken – den er sjekket under Avstemming.';
+        okTrVis('avstemming');
+        await okAvLes([{ innhold:res.innhold }]);
+        return;
+      }
       /* Det som ble lagt inn, aapnes i full redigering (Magne, 14. november 2026:
          «ved alle anledninger jeg legger til utgifter eller inntekter ønsker jeg å
          få opp fullt redigeringsmeny»). */
@@ -4062,7 +4078,7 @@ button.ok-dr-rad{ cursor:pointer; }
         e('ok-sf-ja').onclick = e('ok-sf-nei').onclick = e('ok-sf-vanlig').onclick = null;
         e('ok-sf-navn').oninput = e('ok-sf-dato').oninput = e('ok-sf-sum').oninput = null;
         document.removeEventListener('keydown', tast);
-        var k = e('ok-sf-knapp'); if(k) k.focus();
+        var k = e('ok-kv-knapp'); if(k) k.focus();
         ferdig(svar);
       };
       var sporsmaal = false;
@@ -4120,30 +4136,6 @@ button.ok-dr-rad{ cursor:pointer; }
     okForVindu({ id:r.post.id, kilde:'Samlefaktura', tekst:r.post.motpart, dato:r.post.dato, belop:r.post.belop });
     return 'lagret';
   }
-  /* Knappen «Legg til samlefaktura». Avbrytes vinduet, legges den i innboksen. */
-  async function okSfLes(fil){
-    var status = document.getElementById('ok-kv-status'), knapp = document.getElementById('ok-sf-knapp');
-    knapp.disabled = true;
-    status.textContent = 'Neam leser samlefakturaen … Det kan ta et halvt minutt.';
-    try{
-      var pdf = fil.type === 'application/pdf';
-      var data = pdf ? await okSomBase64(fil) : await okKrympBilde(fil);
-      var type = pdf ? 'application/pdf' : 'image/jpeg';
-      var sf = await okKvLes({ type:pdf ? 'document' : 'image', source:{ type:'base64', media_type:type, data:data } }, OK_SF_INSTRUKS, 8000);
-      var ut = await okSfFlyt(sf, { type:type, data:data }, null);
-      if(ut === 'avbrutt' || ut === 'ingen'){
-        var v = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'kvittering-ny', samleVenter:true,
-          kvittering:{ type:'samlefaktura', butikk:sf.utsteder || 'Samlefaktura', dato:sf.dato, belop:(sf.handler || []).reduce(function(t, x){ return t + (Number(x.belop) || 0); }, 0), linjer:[] }, fil:{ type:type, data:data } }) });
-        status.textContent = v.ok ? 'Samlefakturaen ligger i innboksen – trykk på den for å gå gjennom handlene.' : 'Samlefakturaen ble ikke lagt inn: ' + v.feil;
-        if(v.ok) okLastInnboks();
-      }
-    }catch(e){
-      status.textContent = 'Samlefakturaen ble ikke lagt inn: ' + (e && e.message || e);
-    }finally{
-      knapp.disabled = false;
-      document.getElementById('ok-sf-fil').value = '';
-    }
-  }
   /* Trykk paa en samlefaktura i innboksen. Var Neam usikker, spoer den foerst. */
   async function okSfFraPost(id){
     var status = document.getElementById('ok-kv-status');
@@ -4181,9 +4173,10 @@ button.ok-dr-rad{ cursor:pointer; }
     okRgFor = {}; okMnd.kjop = {};
     okLastInnboks().then(function(){ okForVindu({ id:r.post.id, kilde:okFrKilde(r.post), tekst:r.post.motpart, dato:r.post.dato, belop:r.post.belop }, null, true); });
   }
-  document.getElementById('ok-sf-knapp').addEventListener('click', function(){ document.getElementById('ok-sf-fil').click(); });
-  document.getElementById('ok-sf-fil').addEventListener('change', function(){ if(this.files && this.files[0]) okSfLes(this.files[0]); });
-  document.getElementById('ok-kv-fil').addEventListener('change', function(){ if(this.files && this.files[0]) okLesKvittering(this.files[0]); });
+  document.getElementById('ok-kv-fil').addEventListener('change', async function(){
+    var filer = Array.prototype.slice.call(this.files || []);
+    for(var i = 0; i < filer.length; i++) await okLesKvittering(filer[i]);
+  });
 
   /* ---------- Lim inn bilde, PDF eller tekst ----------
      «Det må være mulig å kopiere inn bilder, tekst og pdf når jeg skal legge
@@ -4199,7 +4192,7 @@ button.ok-dr-rad{ cursor:pointer; }
   }
   function okKvLimTekst(s){
     s = String(s || '').trim();
-    if(s.length < 10){ document.getElementById('ok-kv-status').textContent = 'Utklippstavla har ingen kvittering å lese – kopier et bilde eller teksten fra regningen. En PDF kan ikke limes inn her: velg den som fil med «Legg til transaksjon».'; return; }
+    if(s.length < 10){ document.getElementById('ok-kv-status').textContent = 'Utklippstavla har ingen kvittering å lese – kopier et bilde eller teksten fra regningen. En PDF kan ikke limes inn her: velg den som fil med «Legg til».'; return; }
     okLesKvittering(null, s);
   }
   document.addEventListener('paste', function(e){
@@ -4577,7 +4570,7 @@ button.ok-dr-rad{ cursor:pointer; }
         status.textContent = 'Neam leser ' + (tekst ? 'teksten' : deler.length > 1 ? 'bilde ' + (i + 1) + ' av ' + deler.length : 'bildet') + ' …';
         try{
           var f = deler[i];
-          var innhold = tekst ? { type:'text', text:'Teksten under er kopiert fra nettbanken:\n\n' + String(tekst).slice(0, 40000) }
+          var innhold = f && f.innhold ? f.innhold : tekst ? { type:'text', text:'Teksten under er kopiert fra nettbanken:\n\n' + String(tekst).slice(0, 40000) }
             : f.type === 'application/pdf' ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data: await okSomBase64(f) } }
             : { type:'image', source:{ type:'base64', media_type:'image/jpeg', data: await okKrympBilde(f) } };
           var lest = await okKvLes(innhold, OK_AV_INSTRUKS, 8000);
