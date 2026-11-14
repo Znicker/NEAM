@@ -573,7 +573,9 @@ samlefaktura med flere transaksjoner, penger inn på regninger og full
 redigering ved innlegging (`9ef0300`), og kvitteringer og trekk sammenlignet i
 bankdager (`3779eec`), innboksposten som vises med en gang (`0eddb8a`), og
 samlefakturaen som leses ved innlegging og viser kvitteringer som ligner
-(«Økonomi: samlefakturaen leses ved innlegging og viser kvitteringer som ligner», commiten etter `0eddb8a`).
+(`429116e`), og dagens dato til Neam når den leser et dokument, spørsmål når
+en kvittering ligner en handel på en samlefaktura, og symboler for vedlegg og
+samlefaktura («Økonomi: dagens dato til Neam, spørsmål om samlefaktura og symboler for vedlegg og samlefaktura», commiten etter `429116e`).
 `797e6bb` fikk med en annen økts uferdige ikonendringer i ti sider; tatt
 ut i `00e02c8`, og den andre økta pushet sitt like etter (`ce94b26`) – se
 del 57. **Foreslått, venter på Magne** (han tester og kommer
@@ -582,7 +584,7 @@ DNB hver gang (8,5 og 4,4 s), og én åpning gir 24 kall med budsjett,
 varsler og kilder tre ganger – vis det Neam har først og hent i
 bakgrunnen; og åpne linjer i budsjettet (lagre uten Rediger/Lagre, Angre i
 stedet). SPK-fakturaen ble lest på nytt etter `8a21f18` («det
-fungerte»). 116 commits, `0e0050a` til «Økonomi: samlefakturaen leses ved innlegging og viser kvitteringer som ligner», medregnet en midlertidig statustest fra en annen økt
+fungerte»). 117 commits, `0e0050a` til «Økonomi: dagens dato til Neam, spørsmål om samlefaktura og symboler for vedlegg og samlefaktura», medregnet en midlertidig statustest fra en annen økt
 (`ce3c32b`, fjernet i `9dc8799`).
 **`?v=`:** til 30. oktober ble ingen fellesfiler rørt. 6. november gikk
 `felles-lesalt.js` og `felles-skriv.js` til `?v=8` (`47b39df`) og så til
@@ -1395,7 +1397,11 @@ C marineblå tavle – og Magne valgte **A**.
   Nettleserstemmen blir stående som reserve.
 
 **Må prøves:**
-- **Samlefaktura med ekte Coop-kvitteringer** («Økonomi: samlefakturaen leses ved innlegging og viser kvitteringer som ligner»): hva «Ligner: …»
+- **Spørsmål om samlefaktura** («Økonomi: dagens dato til Neam, spørsmål om samlefaktura og symboler for vedlegg og samlefaktura») med ekte Coop-kvitteringer: at
+  inntil 1,50 kr kobles av seg selv, og at større avvik gir spørsmål.
+- **«I dag» i et skjermbilde fra DNB-appen** («Økonomi: dagens dato til Neam, spørsmål om samlefaktura og symboler for vedlegg og samlefaktura»): at overføringen
+  får dagens dato.
+- **Samlefaktura med ekte Coop-kvitteringer** (`429116e`): hva «Ligner: …»
   sier for Coop-handlene som ikke fikk treff 14. november. Grunnen er ukjent.
 - **Bankdager** (`3779eec`): en kvittering fra fredag eller lørdag mot
   trekket som kommer mandag eller tirsdag, med ekte DNB-data.
@@ -4660,7 +4666,7 @@ godkjente oppsettet i skissen 29. oktober («dette oppsettet var bra»), og
 Status, Innboks, Måned og Budsjett er bygget etter det. Seks faner:
 **Status, Innboks, Måned, År, Budsjett, Oppsett** – Oppsett står igjen som
 sjette, fordi skissen ikke har noe sted for bank, Trumf, kontoer og
-verdier. Bygget i 116 commits fra `0e0050a` til «Økonomi: samlefakturaen leses ved innlegging og viser kvitteringer som ligner» (dialogen med
+verdier. Bygget i 117 commits fra `0e0050a` til «Økonomi: dagens dato til Neam, spørsmål om samlefaktura og symboler for vedlegg og samlefaktura» (dialogen med
 kjøpene kom med i pinkode-øktas `be1e0ca`).
 
 ### Banken – Enable Banking
@@ -5105,8 +5111,45 @@ ligge under høyre tommelknapp»).
   En kvittering åpnet derfra legger seg over; Escape lukker kvitteringen
   først. Endringen ble committet av pinkode-økta (`be1e0ca`) mens den lå
   uncommittet her; bare stor forbokstav i perioden kom i `9339f30`.
+- **Spørsmål om samlefaktura, og symboler** («Økonomi: dagens dato til Neam, spørsmål om samlefaktura og symboler for vedlegg og samlefaktura»). Magne: «On grei
+  regel er at om summen er mer enn 1,5 kroner så må jeg bli spurt … legg ved et
+  vedleggsymbol på alle poster som har vedlegg, legg ved et passende symbol på
+  alle poster som tilhører en samlefaktura» og «ta høyde for at summer er
+  rundet opp eller ned til nærmeste krone».
+  - `SAMLE_KRONER` (1,50): `samleLik` godtar inntil 1,50 kr avvik og høyst 3
+    bankdager, så avrunding til hele kroner er med. Kvittering mot banktrekk
+    krever fortsatt lik sum til øret (`erLik`), siden kortet trekkes nøyaktig.
+  - `samleRest` trekker fra kvitteringens eget beløp, ikke handelens, så alt til
+    sammen alltid er lik kortregningen. Avviket havner i resten.
+  - Kobles en ny kvittering av seg selv, sier statuslinja det, og Rediger viser
+    «Del av samlefakturaen fra … – Koble fra». Ligner den uten å passe
+    (`samleNaerFor`), får posten `samleSporsmaal`: ved Legg til og Lim inn spør
+    Neam med `bekreft` (`okSamleSpor`); fra Dropbox står spørsmålet i raden og
+    som gul boks i Rediger med Koble og Ikke denne. En post med spørsmål føres
+    ikke automatisk, verken av reglene eller av Neams forslag.
+  - `samle-koble` kan nå koble en post (`post`), svare nei (`avvis`) og koble fra
+    via posten. `foringer` og `alle-poster` gir `vedN` og `iSamle`.
+  - Symbolene (`okRadSymboler`): binders for vedlegg og stablede ark for alt som
+    hører til en samlefaktura, også samlefakturaen selv, bak beskrivelsen etter
+    plusset for forbindelser.
+  - Feil underveis: en kvittering fra Dropbox med spørsmål ble ført automatisk
+    fordi butikken var kjent, så spørsmålet ville aldri blitt sett. Stoppet.
+  - Testet i testserveren: 0,90 kr koblet av seg selv, 5 kr ga spørsmål, Ja
+    koblet, spørsmål fra Dropbox i raden og i Rediger, Koble og Koble fra (rest
+    95,10 og 179,10 kr), symbolene i Kontoutskrift. Ikke på neam.no.
+- **Neam får dagens dato når den leser et dokument** («Økonomi: dagens dato til Neam, spørsmål om samlefaktura og symboler for vedlegg og samlefaktura»). Magne: «Når
+  jeg tar screenshot av en overføring i dnb appen må neam forstå at i dag,
+  betyr dagens dato på forfallsdato».
+  - `okKvLes` legger `okDagensDato()` til instruksen: dagens dato og ukedag
+    (`okIDag`, lokal tid), at «I dag», «I går» og «I morgen» regnes ut fra
+    den, og at en dato uten årstall er i år. Gjelder kvitteringer, regninger,
+    samlefakturaer og vedlegg.
+  - Feil underveis: skriptet skrev et ekte linjeskift inn i JavaScript-strengen;
+    `node --check` fanget det før noe ble testet.
+  - Testet i testserveren: instruksen som sendes, slutter med dagens dato.
+    Ikke prøvd med et ekte skjermbilde.
 - **Samlefakturaen leses ved innlegging og viser kvitteringer som ligner**
-  («Økonomi: samlefakturaen leses ved innlegging og viser kvitteringer som ligner»). Magne: «neam leser handlene på samlefaktura går veeeldig tregt.
+  (`429116e`). Magne: «neam leser handlene på samlefaktura går veeeldig tregt.
   og den finner heller ikke utgirftspostene. trumf gikk strøkent coop fant ingen
   match, selv om det er det».
   - Tregt: handlene ble lest først når samlefakturaen ble åpnet fra innboksen,

@@ -1408,7 +1408,8 @@ async function innboks(env, okt, fersk, psu){
   let endret = nye > 0 || oppdatert;
   for(const id of Object.keys(poster)){
     const p = poster[id];
-    if(p.status !== 'ny' || p.dekketAv || p.mulDobbel || p.lignerPaa || p.manuell) continue;
+    /* Kan den hoere til en samlefaktura, skal Magne spoerres foerst. */
+    if(p.status !== 'ny' || p.dekketAv || p.mulDobbel || p.lignerPaa || p.manuell || p.samleSporsmaal) continue;
     if(!p.kategori){ const f = foreslaa(p, laert, omdopt); if(f.kategori){ p.kategori = f.kategori; p.kilde = f.kilde; } }
     if(!p.kategori || (p.kilde !== 'laert' && p.kilde !== 'ord')) continue;
     autoFoer(poster, p, naa);
@@ -1472,7 +1473,7 @@ async function lagreForslag(env, kropp){
     if(!f.kategori || kategorier.indexOf(f.kategori) === -1) continue;
     if(p.kategori && p.kilde !== 'ai-usikker') continue;   /* et menneskes eller en regels valg vinner */
     p.kategori = f.kategori;
-    if(f.sikker && !p.mulDobbel && !p.lignerPaa && !p.manuell){
+    if(f.sikker && !p.mulDobbel && !p.lignerPaa && !p.manuell && !p.samleSporsmaal){
       p.kilde = 'ai'; autoFoer(poster, p, naa); foert++;
       const n = motpartNokkel(p);
       if(n) laert[n] = f.kategori;
@@ -1803,6 +1804,7 @@ async function foringer(env, mnd, kat, eksakt){
         betaltFra: bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
         kategori:d.kategori, del:deler.length > 1, harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false,
         harFil:!!p.harFil, filType:p.filType || '', overstyrt:!!p.overstyrt, merke:p.merke || '', forbN:forbindelser(p, poster).length,
+        vedN:(p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:!!(p.samleId || p.fra === 'samle'),
         belop: Math.round((d.kategori.indexOf('Inntekter') === 0 ? d.belop : -d.belop) * 100) / 100 });
     }
   }
@@ -1833,6 +1835,10 @@ function vedleggListe(p){
    kvittering som er lagt inn». Trekket som betaler kortet, er «Nedbetaling av
    kortgjeld» (utenfor budsjett), saa ingenting telles dobbelt. */
 const SAMLE_DAGER = 3;
+/* Avvik som kobles av seg selv (Magne, 14. november 2026: «om summen er mer enn
+   1,5 kroner så må jeg bli spurt» og «ta høyde for at summer er rundet opp
+   eller ned til nærmeste krone»). */
+const SAMLE_KRONER = 1.5;
 function samleLinjer(kilde){
   return [].concat(kilde || []).slice(0, 300).map(l => ({
     dato: String(l && l.dato || ''), navn: String(l && l.navn || '').trim().slice(0, 120) || 'Handel',
@@ -1840,7 +1846,7 @@ function samleLinjer(kilde){
   })).filter(l => /^\d{4}-\d{2}-\d{2}$/.test(l.dato) && l.belop);
 }
 function samleLik(q, l){
-  return l.belop > 0 && q.belop < 0 && Math.abs(Math.abs(q.belop) - l.belop) < 0.005 && bankdagerMellom(q.dato, l.dato) <= SAMLE_DAGER;
+  return l.belop > 0 && q.belop < 0 && Math.abs(Math.abs(q.belop) - l.belop) <= SAMLE_KRONER + 0.005 && bankdagerMellom(q.dato, l.dato) <= SAMLE_DAGER;
 }
 function samleLedig(q){
   return q && q.fra !== 'samle' && !q.samleId && q.belop < 0 && !q.dekketAv && q.status !== 'stroket' && q.status !== 'sammenslatt' && q.status !== 'venter';
@@ -1851,9 +1857,27 @@ function samleRest(poster, s){
   for(const l of s.samle.linjer){
     const q = l.post && poster[l.post];
     if(l.post && !q) l.post = '';
-    else if(q && q.status !== 'stroket' && q.status !== 'sammenslatt') koblet += l.belop;
+    else if(q && q.status !== 'stroket' && q.status !== 'sammenslatt') koblet += Math.abs(q.belop);
   }
   s.belop = -Math.round((s.samle.total - koblet) * 100) / 100;
+}
+/* Ligner kvitteringen en aapen handel uten aa passe (mer enn SAMLE_KRONER i
+   avvik, eller lenger mellom), skal Magne spoerres. Gir den som ligner mest. */
+function samleNaerFor(poster, p){
+  if(!(p.belop < 0)) return null;
+  let best = null, bestPoeng = Infinity;
+  for(const id of Object.keys(poster)){
+    const s = poster[id];
+    if(s.fra !== 'samle' || s.status !== 'godkjent' || !s.samle) continue;
+    s.samle.linjer.forEach((l, nr) => {
+      if(l.post || !(l.belop > 0)) return;
+      const avvik = Math.abs(Math.abs(p.belop) - l.belop), bd = bankdagerMellom(p.dato, l.dato);
+      if(!((avvik <= SAMLE_KRONER + 0.005 && bd <= 10) || (avvik <= Math.max(10, l.belop * 0.05) && bd <= SAMLE_DAGER))) return;
+      const poeng = avvik * 10 + bd;
+      if(poeng < bestPoeng){ bestPoeng = poeng; best = { samleId:s.id, nr:nr, navn:l.navn, dato:l.dato, belop:l.belop, samleNavn:s.motpart || 'samlefakturaen', avvik:Math.round(avvik * 100) / 100, dager:bd }; }
+    });
+  }
+  return best;
 }
 /* En ny kvittering som passer en aapen handel, kobles med en gang. */
 function samleKobleNy(poster, p){
@@ -1889,7 +1913,7 @@ async function samleForslag(env, kropp){
     for(const q of mulige){
       if(tatt[q.id]) continue;
       const avvik = Math.abs(Math.abs(q.belop) - l.belop), bd = bankdagerMellom(q.dato, l.dato);
-      if(!((avvik < 0.005 && bd <= 10) || (avvik <= Math.max(10, l.belop * 0.05) && bd <= SAMLE_DAGER))) continue;
+      if(!((avvik <= SAMLE_KRONER + 0.005 && bd <= 10) || (avvik <= Math.max(10, l.belop * 0.05) && bd <= SAMLE_DAGER))) continue;
       const poeng = avvik * 10 + bd;
       if(poeng < bestPoeng){ bestPoeng = poeng; best = q; }
     }
@@ -1979,11 +2003,24 @@ async function samleKoble(env, kropp, epost){
   const poster = await lesJson(env, POST_NOKKEL, {}), laert = await lesJson(env, LAERT_NOKKEL, {});
   const s = poster[String(kropp.id || '')];
   if(!s || s.fra !== 'samle') return svar({ ok:false, feil:'Fant ikke samlefakturaen' });
-  const nr = Number(kropp.nr), l = s.samle.linjer[nr];
+  /* Nei paa spoersmaalet: det tas bort. */
+  if(kropp.avvis){
+    const q = poster[String(kropp.post || '')];
+    if(q) delete q.samleSporsmaal;
+    await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
+    return svar({ ok:true });
+  }
+  const nr = kropp.nr != null && kropp.nr !== '' ? Number(kropp.nr) : s.samle.linjer.findIndex(x => !!kropp.post && x.post === kropp.post);
+  const l = s.samle.linjer[nr];
   if(!l) return svar({ ok:false, feil:'Fant ikke handelen' });
   if(kropp.fjern){
     if(l.post && poster[l.post]) delete poster[l.post].samleId;
     l.post = '';
+  } else if(kropp.post){
+    const q = poster[String(kropp.post)];
+    if(l.post) return svar({ ok:false, feil:'Handelen har alt sin egen post' });
+    if(!samleLedig(q)) return svar({ ok:false, feil:'Posten kan ikke kobles til samlefakturaen' });
+    q.samleId = s.id; delete q.samleSporsmaal; l.post = q.id;
   } else if(kropp.kategori){
     if(l.post) return svar({ ok:false, feil:'Handelen har alt sin egen post' });
     if(!(l.belop > 0)) return svar({ ok:false, feil:'En refusjon blir i samlefakturaen' });
@@ -2008,6 +2045,7 @@ async function postDetaljer(env, id){
     behandlet:p.behandlet || '', av:p.av ? masker(p.av) : '', deler:(p.deler || []).map(d => ({ kategori:d.kategori, belop:d.belop })),
     harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, vedlegg:vedleggListe(p), forb:forbindelser(p, poster),
     samleVenter:!!p.samleVenter, tvil:!!p.tvil, limt:p.samleVenter ? p.limt || '' : '', sfLest:p.samleVenter ? p.sfLest || null : null,
+    samleSporsmaal:p.samleSporsmaal || null,
     samleId:p.samleId || '', samleNavn:p.samleId && poster[p.samleId] ? poster[p.samleId].motpart || '' : '',
     samle:p.samle ? { total:p.samle.total, linjer:p.samle.linjer.map(l => {
       const q = l.post && poster[l.post];
@@ -2196,7 +2234,8 @@ async function allePoster(env){
       konto:p.konto || '', kontoNavn:kn[p.konto] || p.kontoNavn || '', betaltFra:bank ? (kn[bank.konto] || bank.kontoNavn || '') : '',
       deler:p.deler && p.deler.length > 1 ? p.deler.length : 0,
       harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, harFil:!!p.harFil, filType:p.filType || '',
-      overstyrt:!!p.overstyrt, merke:p.merke || '', avsluttet:p.avsluttet || '', forbN:forbindelser(p, poster).length });
+      overstyrt:!!p.overstyrt, merke:p.merke || '', avsluttet:p.avsluttet || '', forbN:forbindelser(p, poster).length,
+      vedN:(p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:!!(p.samleId || p.fra === 'samle') });
   }
   ut.sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
   return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', poster:ut });
@@ -2409,10 +2448,13 @@ async function nyKvittering(env, kropp, epost){
   if(linjeKat) await settDeling(env, p, linjer, linjeKat, sum);
   if(overfort && p.kategori && !p.lignerPaa && !p.mulDobbel) Object.assign(p, { status:'godkjent', behandlet:new Date().toISOString(), av:epost });
   poster[id] = p;
-  if(!faktura && !eier) samleKobleNy(poster, p);
+  if(!faktura && !eier){
+    samleKobleNy(poster, p);
+    if(!p.samleId){ const sp = samleNaerFor(poster, p); if(sp) p.samleSporsmaal = sp; }
+  }
   if(linjer.length && !linjeKat) await env.FAMILIE_KV.put(kvitteringNokkel(p), JSON.stringify({ id:id, belop:sum, linjer:linjer }));
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
-  return svar({ ok:true, post:p });
+  return svar({ ok:true, post:p, samleNavn:p.samleId && poster[p.samleId] ? poster[p.samleId].motpart || '' : '' });
 }
 const KVITTERING_FILTYPER = ['image/jpeg', 'image/png', 'application/pdf'];
 function renLinjer(kilde){

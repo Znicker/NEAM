@@ -2162,6 +2162,13 @@ først, Sparing sist. Bare tallene skiller dem:
   etter navnet (`.ok-forb-pluss`, fet, aksentfargen – fargen er valgt uten å
   spørre). I vinduet og detaljpanelet står de under etiketten **«Hører sammen
   med»**, som varelinjer: navn, hva det er og dato, beløp til høyre.
+  **Symboler bak beskrivelsen** (fra 14. november 2026, Magne: «kun et lite
+  symbol på enden beskrivelsen»): en **binders** når posten har vedlegg, og
+  **stablede ark** når den hører til en samlefaktura (også samlefakturaen selv).
+  `.ok-rad-sym`, 13 px, `--ink-soft`, etter plusset. Symbolene er valgt uten skisse.
+  **Samlefaktura i Rediger:** «Del av samlefakturaen fra … – Koble fra» som
+  `.ok-kilde`, og et spørsmål («Kan høre til samlefakturaen fra …», Koble ·
+  Ikke denne) som gul boks (`.ok-mangler`).
 
 **Regler:**
 

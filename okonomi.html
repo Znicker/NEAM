@@ -616,6 +616,9 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-ib-rad:focus-visible{ outline:2px solid var(--aksent); outline-offset:-2px; }
 .ok-ib-rad .ok-dato{ color:var(--ink-soft); font-size:var(--t-meta); }
 .ok-forb-pluss{ margin-left:5px; font-weight:700; color:var(--aksent); }
+/* Smaa symboler bak beskrivelsen: vedlegg og samlefaktura (14. november 2026). */
+.ok-rad-sym{ display:inline-flex; margin-left:5px; color:var(--ink-soft); vertical-align:-2px; }
+.ok-rad-sym svg{ width:13px; height:13px; }
 .ok-kvs-mer{ display:flex; flex-direction:column; gap:10px; }
 .ok-kvs-mer[hidden], .ok-kv-kryss[hidden], .ok-kvs-rad[hidden]{ display:none; }
 .ok-kvs-rad{ display:flex; flex-direction:column; gap:4px; }
@@ -2174,6 +2177,14 @@ button.ok-dr-rad{ cursor:pointer; }
   /* Forbindelser (Magne, 9. november 2026): «alle transaksjoner som har noe
      med hverandre å gjøre linkes, så man ser dem når man trykker på en
      transaksjon. på oversikten kan transaksjonen ha et lite pluss symbol». */
+  /* Binders for vedlegg, stablede ark for samlefaktura - smaa, bak beskrivelsen
+     (Magne, 14. november 2026: «kun et lite symbol på enden beskrivelsen»). */
+  var OK_SYM_VEDLEGG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5l-8.3 8.3a5 5 0 0 1-7.1-7.1l8.3-8.3a3.3 3.3 0 0 1 4.7 4.7l-8.3 8.3a1.7 1.7 0 0 1-2.4-2.4l7.6-7.6"/></svg>';
+  var OK_SYM_SAMLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="12" height="13" rx="2"/><path d="M8 4h11a2 2 0 0 1 2 2v11"/></svg>';
+  function okRadSymboler(f){
+    return (f.vedN ? '<span class="ok-rad-sym" title="Har vedlegg" aria-label="Har vedlegg">' + OK_SYM_VEDLEGG + '</span>' : '')
+      + (f.iSamle ? '<span class="ok-rad-sym" title="Hører til en samlefaktura" aria-label="Hører til en samlefaktura">' + OK_SYM_SAMLE + '</span>' : '');
+  }
   function okForbPluss(p){
     return p.forbN || (p.forb && p.forb.length) ? '<span class="ok-forb-pluss" title="Har forbindelser" aria-label="Har forbindelser">+</span>' : '';
   }
@@ -3518,11 +3529,19 @@ button.ok-dr-rad{ cursor:pointer; }
     + '- En refusjon eller kreditering blir en handel med negativt beløp. Renter og gebyr blir egne handler.\n'
     + '- Ta ikke med innbetalinger, tidligere saldo eller summer som handler.\n'
     + '- Klarer du ikke å lese et tall sikkert, sett det til null. Gjett aldri.';
+  /* Dagens dato til Neam, saa «I dag» i et skjermbilde fra DNB-appen blir en
+     dato (Magne, 14. november 2026: «neam forstå at i dag, betyr dagens dato
+     på forfallsdato»). */
+  function okDagensDato(){
+    var d = okIDag();
+    return '\n- Dagens dato er ' + d + ' (' + new Intl.DateTimeFormat('nb-NO', { weekday:'long' }).format(new Date(d + 'T12:00:00')) + '). '
+      + 'Står det «I dag», «I går» eller «I morgen» i stedet for en dato, regn den ut fra dagens dato. En dato uten årstall er i år.';
+  }
   async function okKvLes(innhold, instruks, maks){
     var r = await fetch('/api/claude', { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({ model:OK_MODELL, max_tokens:maks || 4000,
         system:'Du leser butikkvitteringer og fakturaer og svarer bare med JSON. Du gjetter aldri tall du ikke kan lese.',
-        messages:[{ role:'user', content:[ innhold, { type:'text', text:instruks || OK_KV_INSTRUKS } ] }] }) });
+        messages:[{ role:'user', content:[ innhold, { type:'text', text:(instruks || OK_KV_INSTRUKS) + okDagensDato() } ] }] }) });
     var d = await r.json();
     if(d.error) throw new Error(d.error.message || 'Neam kunne ikke lese kvitteringen');
     var tekst = (d.content || []).filter(function(c){ return c.type === 'text'; }).map(function(c){ return c.text; }).join('');
@@ -3581,7 +3600,7 @@ button.ok-dr-rad{ cursor:pointer; }
     var lagret = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify(Object.assign({ hva:'kvittering-ny', kvittering:kv, fil:lagres }, eget || {})) });
     if(!lagret.ok){ var feil = new Error(lagret.feil); feil.duplikat = /allerede lagt inn/.test(lagret.feil || ''); throw feil; }
-    return { post:lagret.post, linjer:(kv.linjer || []).length, festet:lagret.festet || '', kv:kv, lest:lagres, tekst:limt || '' };
+    return { post:lagret.post, samleNavn:lagret.samleNavn || '', linjer:(kv.linjer || []).length, festet:lagret.festet || '', kv:kv, lest:lagres, tekst:limt || '' };
   }
   /* ---------- Kopi som PDF i Dropbox ----------
      Alt som legges inn paa sida - valgt fil eller limt inn - lagres ogsaa som
@@ -3826,6 +3845,16 @@ button.ok-dr-rad{ cursor:pointer; }
       okTreFokus(e('ok-kvs-navn'));
     });
   }
+  /* Ligner kvitteringen en handel paa en samlefaktura uten aa passe: spoer. */
+  async function okSamleSpor(p){
+    var sq = p.samleSporsmaal;
+    var ja = await bekreft('Er dette handelen «' + sq.navn + '», ' + okKort.format(new Date(sq.dato + 'T12:00:00')) + ', ' + okKr0.format(sq.belop) + ' kr på samlefakturaen fra ' + sq.samleNavn + '?'
+      + (sq.avvik >= 0.005 ? ' Summen avviker ' + okKr0.format(sq.avvik) + ' kr.' : '') + (sq.dager > 3 ? ' Det er ' + sq.dager + ' bankdager mellom.' : ''), { jaTekst:'Ja, koble', neiTekst:'Nei' });
+    var r = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' },
+      body:JSON.stringify(ja ? { hva:'samle-koble', id:sq.samleId, nr:sq.nr, post:p.id } : { hva:'samle-koble', id:sq.samleId, post:p.id, avvis:true }) });
+    if(!r.ok) return ' Ble ikke koblet: ' + r.feil + '.';
+    return ja ? ' Koblet til samlefakturaen fra ' + sq.samleNavn + ' – trukket fra der.' : '';
+  }
   async function okLesKvittering(fil, tekst){
     var status = document.getElementById('ok-kv-status'), knapp = document.getElementById('ok-kv-knapp'), lim = document.getElementById('ok-kv-lim');
     knapp.disabled = true; lim.disabled = true;
@@ -3837,8 +3866,12 @@ button.ok-dr-rad{ cursor:pointer; }
          «ved alle anledninger jeg legger til utgifter eller inntekter ønsker jeg å
          få opp fullt redigeringsmeny»). */
       var apne = function(){ okForVindu({ id:res.post.id, kilde:okFrKilde(res.post), tekst:res.post.motpart, dato:res.post.dato, belop:res.post.belop }, null, true); };
+      /* Samlefakturaen: koblet av seg selv (inntil 1,50 kr avvik), eller spoersmaal. */
+      var samleTekst = res.post.samleId ? ' Koblet til samlefakturaen fra ' + (res.samleNavn || '') + ' – trukket fra der.' : '';
+      if(!res.post.samleId && res.post.samleSporsmaal) samleTekst = await okSamleSpor(res.post);
       var db = '';
       try{ db = await okLagreIDropbox(res); }catch(e){ db = ' Ikke lagret i Dropbox: ' + (e && e.message || e) + '.'; }
+      db = samleTekst + db;
       if(res.samle){
         status.textContent = 'Samlefaktura fra ' + res.post.motpart + ' lagt i innboksen. Gå gjennom handlene nå – eller senere ved å trykke på den i innboksen.' + db;
         okLastInnboks().then(function(){ okSfFraPost(res.post.id); });
@@ -3897,7 +3930,8 @@ button.ok-dr-rad{ cursor:pointer; }
         var r = okEl('div', 'ok-kv-linje', '<span>' + okVask(x.navn || 'Handel') + ' <span class="ok-meta">' + okVask(okKort.format(new Date(x.dato + 'T12:00:00'))) + '</span></span><b>' + okKr0.format(b) + '</b>');
         var valg = { koble:null, kat:null };
         if(f){
-          var lab = okEl('label', 'ok-kv-kryss', '<span>Kvittering finnes: ' + okVask(f.sted) + ', ' + okVask(okKort.format(new Date(f.dato))) + '</span>');
+          var lab = okEl('label', 'ok-kv-kryss', '<span>Kvittering finnes: ' + okVask(f.sted) + ', ' + okVask(okKort.format(new Date(f.dato)))
+            + (Math.abs(Math.abs(f.belop) - b) >= 0.005 ? ', ' + okVask(okKr0.format(Math.abs(f.belop))) + ' kr' : '') + '</span>');
           var c = document.createElement('input'); c.type = 'checkbox'; c.checked = true; lab.insertBefore(c, lab.firstChild);
           lab.style.gridColumn = '1 / -1'; r.appendChild(lab); valg.koble = c;
           c.addEventListener('change', tegn);
@@ -3921,7 +3955,8 @@ button.ok-dr-rad{ cursor:pointer; }
         var total = okKvTall(e('ok-sf-sum').value), egne = 0, med = 0, mangler = 0;
         handler.forEach(function(x, i){
           var v = rader[i], b = Number(x.belop);
-          if((v.koble && v.koble.checked) || (v.naer && v.naer.checked)){ egne += b; med++; }
+          if(v.koble && v.koble.checked){ egne += Math.abs(forslag[i].belop); med++; }
+          else if(v.naer && v.naer.checked){ egne += Math.abs(naer[i].belop); med++; }
           else if(v.kat && v.kat.value){ egne += b; med++; }
           else if(b > 0) mangler++;
         });
@@ -4914,7 +4949,9 @@ button.ok-dr-rad{ cursor:pointer; }
       tekst:p.motpart || p.tekst || '', mer:p.motpart && p.tekst && p.tekst !== p.motpart ? p.tekst : '',
       kilde:p.status === 'venter' || p.avsluttet ? 'Faktura' : p.fra ? (p.fra === 'trumf' ? 'Trumf-kvittering' : p.fra === 'samle' ? 'Samlefaktura' : p.forHand ? (p.utlegg || 'Lagt inn for hånd') : 'Kvittering fra bilde') : (p.kontoNavn || ''),
       betaltFra:p.betaltFra, merke:p.merke, overstyrt:p.overstyrt, harKvittering:p.status !== 'venter' && !p.avsluttet && p.harKvittering, harFil:p.harFil, filType:p.filType,
-      status:p.status, venter:p.status === 'venter', deler:p.deler, avsluttet:p.avsluttet, forbN:p.forbN || (p.forb || []).length };
+      status:p.status, venter:p.status === 'venter', deler:p.deler, avsluttet:p.avsluttet, forbN:p.forbN || (p.forb || []).length,
+      vedN:p.vedN != null ? p.vedN : (p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:p.iSamle != null ? p.iSamle : !!(p.samleId || p.fra === 'samle'),
+      samleSpor:p.samleSporsmaal || null };
   }
   ['ok-al-konto', 'ok-al-kat', 'ok-al-merke', 'ok-al-type'].forEach(function(id){
     var d = document.getElementById(id);
@@ -6319,9 +6356,9 @@ button.ok-dr-rad{ cursor:pointer; }
     okRgForAv[f.id] = f;
     var forfalt = f.venter && okForfalt(f.dato);
     var status = f.status === 'ny' ? (f.iInnboks ? '' : 'venter i innboksen') : f.status === 'stroket' ? (OK_AVSLUTTET[f.avsluttet] || 'strøket').toLowerCase() : forfalt ? 'forfalt – ikke funnet på regningskontoen' : f.venter ? 'forfaller – ikke betalt ennå' : '';
-    var meta = [medKat ? f.kategori || 'Uten kategori' : '', f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''), f.del ? 'del av kvitteringen' : '', f.deler ? 'fordelt på ' + f.deler : '', f.mer, f.merke && okMerkeAv(f.merke) ? 'merke ' + okMerkeFullNavn(f.merke) : '', status].filter(Boolean).join(' · ');
+    var meta = [medKat ? f.kategori || 'Uten kategori' : '', f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''), f.del ? 'del av kvitteringen' : '', f.deler ? 'fordelt på ' + f.deler : '', f.mer, f.merke && okMerkeAv(f.merke) ? 'merke ' + okMerkeFullNavn(f.merke) : '', f.samleSpor && f.status === 'ny' ? 'kan høre til samlefakturaen fra ' + f.samleSpor.samleNavn : '', status].filter(Boolean).join(' · ');
     var rad = okEl('div', 'ok-under-rad ok-rg-for' + (f.status === 'stroket' ? ' ute' : '') + (f.venter ? ' forfaller' : ''),
-      '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.tekst || 'Uten tekst') + okForbPluss(f) + '<span class="ok-meta">' + okVask(meta) + '</span></span><b>' + (forfalt ? okUtropForfalt() : f.venter ? okStjerneKommer() : '') + (f.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret – ikke den banken viser">!</span>' : '') + okKr0.format(f.belop) + '</b>');
+      '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.tekst || 'Uten tekst') + okForbPluss(f) + okRadSymboler(f) + '<span class="ok-meta">' + okVask(meta) + '</span></span><b>' + (forfalt ? okUtropForfalt() : f.venter ? okStjerneKommer() : '') + (f.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret – ikke den banken viser">!</span>' : '') + okKr0.format(f.belop) + '</b>');
     rad.dataset.f = f.id; rad.tabIndex = 0; rad.setAttribute('role', 'button');
     rad.setAttribute('aria-label', (f.tekst || 'Føring') + (forfalt ? ', forfalt og ikke betalt' : '') + ', ' + okKort.format(new Date(f.dato)) + ', ' + okKr0.format(f.belop) + ' kr. Trykk for detaljene.');
     rad.addEventListener('click', function(){ okForVindu(f, rad); });
@@ -6363,12 +6400,12 @@ button.ok-dr-rad{ cursor:pointer; }
       konto:ib.fra ? '' : (ib.kontoNavn || ''), betaltFra:ib.bankKonto || '', behandlet:'', av:'', deler:[],
       harKvittering:(!!ib.fra || !!ib.harLinjer) && ib.harKvittering !== false,
       vedlegg:(ib.harFil ? [{ n:0, type:ib.filType || '', navn:ib.filNavn || '' }] : []).concat((ib.vedlegg || []).map(function(v){ return { n:v.n, type:v.type, navn:v.navn || '' }; })),
-      forb:ib.forb || [], samleVenter:!!ib.samleVenter, tvil:!!ib.tvil, limt:'', samleId:ib.samleId || '', samleNavn:'', samle:null };
+      forb:ib.forb || [], samleVenter:!!ib.samleVenter, tvil:!!ib.tvil, limt:'', samleId:ib.samleId || '', samleNavn:'', samle:null, samleSporsmaal:ib.samleSporsmaal || null };
   }
   /* Det i detaljene som kan skille seg fra innboksens utgave. */
   function okFrNokkel(p){
     return JSON.stringify([p.motpart, p.dato, p.belop, p.kategori, p.merke, p.notat, p.harKvittering, p.betaltFra, p.deler.length, (p.forb || []).length,
-      p.vedlegg.map(function(v){ return v.n + ':' + v.type; })]);
+      p.vedlegg.map(function(v){ return v.n + ':' + v.type; }), p.samleId || '', !!p.samleSporsmaal]);
   }
   function okForVindu(f, fra, rediger){
     if(fra) okFrFra = fra;
@@ -6774,6 +6811,30 @@ button.ok-dr-rad{ cursor:pointer; }
       ibRad('Tekst fra banken', p.tekst && p.tekst !== p.motpart ? p.tekst : '');
       ibRad('Opprinnelig navn', p.motpartBank);
       if(ibInfo.children.length) inn.appendChild(ibInfo);
+    }
+    /* Samlefakturaen (14. november 2026): koblet - med Koble fra - eller et spoersmaal. */
+    var samleSvar = function(kropp, el){
+      if(el) el.disabled = true;
+      okForEndre(kropp, feil).then(function(r){
+        if(!r.ok){ if(el) el.disabled = false; return; }
+        okLastInnboks();
+        okForVindu({ id:p.id, kilde:okFrKilde(p), tekst:p.motpart || p.tekst, dato:p.dato, belop:p.belop }, null, true);
+      });
+    };
+    if(p.samleId){
+      var sKob = okEl('p', 'ok-kilde', okVask('Del av samlefakturaen' + (p.samleNavn ? ' fra ' + p.samleNavn : '') + ' – beløpet er trukket fra der. '));
+      var sFra = okEl('button', 'ok-lenke', 'Koble fra'); sFra.type = 'button';
+      sFra.addEventListener('click', function(){ samleSvar({ hva:'samle-koble', id:p.samleId, post:p.id, fjern:true }, sFra); });
+      sKob.appendChild(sFra); inn.appendChild(sKob);
+    } else if(p.samleSporsmaal){
+      var sq = p.samleSporsmaal;
+      var sSp = okEl('div', 'ok-mangler', '<span>' + okVask('Kan høre til samlefakturaen fra ' + sq.samleNavn + ': «' + sq.navn + '», ' + okKort.format(new Date(sq.dato + 'T12:00:00')) + ', ' + okKr0.format(sq.belop) + ' kr'
+        + (sq.avvik >= 0.005 ? ' – summen avviker ' + okKr0.format(sq.avvik) + ' kr' : '') + (sq.dager > 3 ? ' – ' + sq.dager + ' bankdager mellom' : '') + '.') + '</span>');
+      var sJa = okEl('button', 'ok-lenke', 'Koble'), sNei = okEl('button', 'ok-lenke', 'Ikke denne'); sJa.type = sNei.type = 'button';
+      sJa.addEventListener('click', function(){ samleSvar({ hva:'samle-koble', id:sq.samleId, nr:sq.nr, post:p.id }, sJa); });
+      sNei.addEventListener('click', function(){ samleSvar({ hva:'samle-koble', id:sq.samleId, post:p.id, avvis:true }, sNei); });
+      var sKn = okEl('span', ''); sKn.appendChild(sJa); sKn.appendChild(document.createTextNode(' · ')); sKn.appendChild(sNei);
+      sSp.appendChild(sKn); inn.appendChild(sSp);
     }
     var navn = document.createElement('input'); navn.type = 'text'; navn.maxLength = 120; navn.value = p.motpart || p.tekst || '';
     felt('Navn', navn);
