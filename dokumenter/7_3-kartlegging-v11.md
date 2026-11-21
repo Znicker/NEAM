@@ -2,8 +2,9 @@
 
 *Ført à jour 21. november 2026: pinkodene på fellesenhetene er slått av
 foreløpig, og bare sys@ og Magne kommer inn på Økonomi. Samme dag: ett
-trykk på ikonet oppe til venstre går til forsiden, og dashene er
-tilpasset telefon (se toppblokka).
+trykk på ikonet oppe til venstre går til forsiden, dashene er
+tilpasset telefon, og Kalender viser måneden på stående telefon (se
+toppblokka).
 Ført à jour 14. november 2026: klokka er «Rolige tall» – store tall uten
 kort, med et pustende kolon, på alle sidene (se toppblokka).
 Ført à jour 10. november 2026: på kjøkkenskjermen kan Rommene og Neamow
@@ -1362,6 +1363,19 @@ mobil) det er uansett ikke brukelig nå».
   la dialogene fylle telefonskjermen, *foran* grunnregelen for
   `.avtale-boks`, så den taper. I Kjøkken dash er den skrevet så den
   vinner.
+
+**21. november: måned på stående telefon i Kalender** (bare
+`kalender.html`, ingen fellesfil). Magne sendte et skjermbilde fra
+WeekCal: «kunne tenke meg en slik visning på mobil på måned».
+- Under 560 px stående: tett rutenett, tynne linjer mellom dagene, og
+  avtalene som én linje i kalenderfargen (`--ev-farge`, satt per rad i
+  `fyllAvtaler`) uten initial og klokkeslett. Se designsystemet,
+  «Kalender».
+- `sjekkSnu` ber bare om liggende skjerm for **uka** nå.
+- Rutenettet tar høyden innholdet trenger (`.shell` har `min-height`),
+  så sida ruller litt; nederst ligger det over visningsvalget.
+- **Testet** i Chrome med den ekte kalenderen i en 390 × 780-ramme og de
+  nye reglene lagt på. Ikke sett på en ekte telefon.
 
 ### Åpne tråder
 

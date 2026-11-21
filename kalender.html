@@ -1302,6 +1302,32 @@ button.cal-swatch{width:16px;height:16px;border:none;padding:0;cursor:pointer;bo
   .dagtid-felt{left:42px;right:4px}
 }
 
+/* ---------- Maaned paa staaende telefon ----------
+   Magne, 21. november 2026, med et skjermbilde fra WeekCal: «kunne
+   tenke meg en slik visning på mobil på måned». Til da ba sida om at
+   telefonen ble snudd. Naa: tett rutenett, tynne linjer mellom dagene,
+   og hver avtale som én linje i kalenderens farge - uten initial og
+   klokkeslett, klippet i cellekanten. Baandene for heldags- og
+   fleredagsavtaler staar som foer, bare lavere. Trykk paa en dag
+   aapner dagen som foer. */
+@media (max-width:560px) and (orientation:portrait){
+  .cal{grid-template-columns:16px repeat(7,minmax(0,1fr));border-radius:8px}
+  .cal-wk{font-size:9px}
+  .cal-dow{padding:6px 0;letter-spacing:.02em;font-size:10px}
+  .cal-cell{padding:2px 2px 3px;gap:1px;border-right:1px solid var(--grid)}
+  .cal-cell:nth-child(8n){border-right:none}
+  .cal-num{font-size:12px}
+  .cal-cell.today .cal-num{min-width:18px;height:18px}
+  .cal-helg{font-size:9px}
+  .cal-evs{gap:0;overflow:hidden}
+  .cal-ev{font-size:11px;font-weight:600;line-height:1.32;color:var(--ev-farge, var(--ink))}
+  .cal-ev-dot,.cal-ev-t,.cal-ev .vedlegg-merke{display:none}
+  .cal-ev-x{text-overflow:clip}
+  .cal-bars{margin:0 -2px 2px;gap:1px}
+  .cal-band{height:14px;font-size:10px}
+  .cal-tittel{font-size:10px;padding:0 3px}
+}
+
 /* Liggende telefon: lite hoeyde, men god bredde. Uke/dato legges til
    venstre og initialene til hoeyre paa samme linje, saa navigasjonen tar
    én linje i stedet for tre - og kalenderen faar plassen. */
@@ -1475,15 +1501,17 @@ input,select,textarea{font-size:16px}
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4l8 8-8 8"/></svg>
 </button>
 
-<!-- Maaned og uke trenger sju kolonner. Paa en telefon i staaende
-     visning blir de uleselige, saa vi ber om at telefonen snus. -->
+<!-- Uka trenger sju brede kolonner. Paa en telefon i staaende visning
+     blir de uleselige, saa vi ber om at telefonen snus. Maaneden har
+     fra 21. november 2026 sin egen staaende telefonvisning (se
+     «Maaned paa staaende telefon» i stilene) og ber ikke om det. -->
 <div class="snu" id="snu" hidden>
   <div class="snu-kort">
     <span class="snu-ikon" aria-hidden="true">
       <img src="/bilder/ikoner/snu-telefonen.png?v=2" alt="" width="512" height="461">
     </span>
     <span class="snu-tekst">Snu telefonen</span>
-    <span class="snu-under">Måned og uke trenger liggende skjerm</span>
+    <span class="snu-under">Uka trenger liggende skjerm</span>
     <button type="button" class="snu-knapp" onclick="settVisning('day')">Vis dagen i stedet</button>
   </div>
 </div>
@@ -2638,6 +2666,9 @@ function fyllAvtaler(){
       timed.forEach(function(e){
         const row = document.createElement('div');
         row.className = 'cal-ev';
+        /* Kalenderfargen som tekstfarge paa staaende telefon - se
+           «Maaned paa staaende telefon». Ellers brukes den ikke. */
+        row.style.setProperty('--ev-farge', e.color);
         const dot = document.createElement('span');
         dot.className = 'cal-ev-dot';
         dot.style.background = e.color;
@@ -3304,7 +3335,7 @@ function sjekkSnu(){
   const el = $('snu');
   if(!el) return;
   const staaende = window.matchMedia('(max-width:560px) and (orientation:portrait)').matches;
-  const trengerBredde = (S.vis !== 'liste') && (S.modus === 'month' || S.modus === 'week');
+  const trengerBredde = (S.vis !== 'liste') && S.modus === 'week';
   el.hidden = !(staaende && trengerBredde && (S.token || S.oekt));
 }
 

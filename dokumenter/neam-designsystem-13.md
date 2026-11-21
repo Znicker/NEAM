@@ -1668,6 +1668,16 @@ ikke kan gjøre noe med, er en feil man slutter å lese.
 
 ## Kalender
 
+**Måned på stående telefon** (21. november 2026, Magne med et
+skjermbilde fra WeekCal: «kunne tenke meg en slik visning på mobil på
+måned»). Under 560 px i stående format: tett rutenett med tynne linjer
+mellom dagene, og hver avtale som **én linje i kalenderens farge** –
+uten initial og klokkeslett, klippet i cellekanten. Båndene for heldags-
+og fleredagsavtaler står som før, 14 px høye. Måneden ber ikke lenger om
+at telefonen snus; **uka gjør det fortsatt** («Uka trenger liggende
+skjerm»). Rutenettet blir så høyt innholdet trenger, og sida ruller litt
+om nødvendig.
+
 **Fireren tok over hjørnet** (12. oktober 2026). `ved` = Ny avtale
 (grønn, med `avtale`-merket som på dashene), `skraa` = Oppdater – navnet
 bærer når kalenderen sist ble hentet – og `opp` = Kalendere, **bare for
