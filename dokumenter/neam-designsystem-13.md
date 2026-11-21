@@ -1277,7 +1277,11 @@ Ingenting lagres før «Legg inn».
 **Mobil (< 700 px):** sida ruller, kortene gjør det ikke. Rulling inni
 rulling er det ene som aldri fungerer på berøringsskjerm. Ukesvisningen
 ruller sidelengs med hode og innhold i samme rullefelt. Dialoger fyller
-skjermen. `touch-action:pan-y` på kort med sveip.
+skjermen. `touch-action:pan-y` på kort med sveip. **Gjelder alle tre
+dashene** fra 21. november 2026 – Kjøkken dash fikk samme blokk (Magne:
+«lage dash lettere med innhold bedre for mobil»). Lettere kort på telefon:
+14/16 px luft, radius 16, svak skygge. Bunnen har 96 px luft, så det siste
+kortet kan rulles fram over tommelknappene.
 
 ## Andrea dash
 

@@ -2,7 +2,8 @@
 
 *Ført à jour 21. november 2026: pinkodene på fellesenhetene er slått av
 foreløpig, og bare sys@ og Magne kommer inn på Økonomi. Samme dag: ett
-trykk på ikonet oppe til venstre går til forsiden (se toppblokka).
+trykk på ikonet oppe til venstre går til forsiden, og dashene er
+tilpasset telefon (se toppblokka).
 Ført à jour 14. november 2026: klokka er «Rolige tall» – store tall uten
 kort, med et pustende kolon, på alle sidene (se toppblokka).
 Ført à jour 10. november 2026: på kjøkkenskjermen kan Rommene og Neamow
@@ -137,7 +138,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 ?v=90`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
-`felles-topp.js ?v=11`, `felles-topp.css ?v=10`;
+`felles-topp.js ?v=11`, `felles-topp.css ?v=11`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
@@ -157,7 +158,7 @@ gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–94; neam.css til og
 med 89; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
-hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–10**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–10, topp.css 1–10**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -1338,6 +1339,29 @@ et enkelt klikk på ikonet opp til venstre. ikke hold».
   sidehåndtaket.
 - **Testet** lokalt på Kalender: lenka er `/`, `?v=11` lastes, og ett
   trykk gikk til forsiden. Ikke prøvd på kjøkkenskjermen eller iPad.
+
+**21. november: dashene på telefon** (topp.css `?v=11` på alle 18
+sidene; `dashboard.html`, `emma.html`, `andrea.html`). Magne: «kan du lage
+dash lettere med innhold bedre for mobil. gi det et forsøk og push (kun
+mobil) det er uansett ikke brukelig nå».
+- **Kjøkken dash** hadde ingen telefonblokk: påminnelsene sto side om
+  side i hver sin smale rute, middagen var skjøvet ut av skjermen, og
+  kalenderkortet var 574 px bredt på 390. Den har nå samme blokk som
+  Emma og Andrea dash (under 700 px): sida ruller, kortene i én stabel.
+- **Alle tre:** lettere kort (14/16 px luft, radius 16, svak skygge),
+  tomt kalenderkort 110 px høyt i stedet for 140, og 96 px luft nederst
+  så det siste kortet kommer fram over tommelknappene.
+- **Topplinja på telefon:** navnet kuttes i stedet for å skli under
+  ikonene, og står det matlaging eller økonomi ved klokka under 480 px,
+  tas navnet bort (ikonet sier hvor man er). Økonomi-ikonet legger seg
+  inntil klokka. Gjelder alle sidene, bare på smal skjerm.
+- **Testet** i Chrome med de ekte dashene i 390 px-rammer og de nye
+  reglene lagt på: ingen sidelengs rulling, Uke ruller i kortet. Ikke
+  sett på en ekte telefon.
+- **Merket, ikke rettet:** i Emma og Andrea dash står regelen som skal
+  la dialogene fylle telefonskjermen, *foran* grunnregelen for
+  `.avtale-boks`, så den taper. I Kjøkken dash er den skrevet så den
+  vinner.
 
 ### Åpne tråder
 

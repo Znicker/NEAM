@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <link rel="stylesheet" href="/felles-neam.css?v=90">
-<link rel="stylesheet" href="/felles-topp.css?v=10">
+<link rel="stylesheet" href="/felles-topp.css?v=11">
 <style>
   /* Sidespesifikke variabler. Palett og typeskala ligger i
      felles-rot.css. */
@@ -1092,7 +1092,7 @@ body{
   body{ overflow-x:hidden; }
   .skjerm{
     height:auto; min-height:100dvh;
-    padding:14px 14px 20px; gap:12px;
+    padding:14px 14px 96px; gap:12px;   /* bunnen: plass til tommelknappene (21. november 2026) */
   }
 
   /* Toppen: merket paa egen linje, vaer og klokke under. Alle tre paa
@@ -1112,6 +1112,9 @@ body{
   .hoyre{ display:block; }
   .kort{ margin-bottom:12px; }
   .hoyre > .kort{ margin-bottom:12px; }
+  /* Lettere kort paa telefon (Magne, 21. november 2026: «lage dash lettere»). */
+  .kort{ padding:14px 16px; border-radius:16px; box-shadow:0 1px 8px rgba(0,0,0,.05); }
+  .kort-tittel{ margin-bottom:10px; }
 
   /* Kortene ruller ikke lenger - sida gjoer det. */
   .kort-kropp{ overflow:visible; min-height:0; flex:none; }
@@ -1122,7 +1125,7 @@ body{
   #fag{ padding-bottom:4px; }
 
   /* Litt hoeyde saa et tomt kort ikke blir en stripe, men ingen tak. */
-  #plan{ min-height:140px; }
+  #plan{ min-height:110px; }
   #uke{ min-height:180px; }
 
   /* Ukesvisningen har sju doegnsoeyler. Paa 390px blir de 50px hver, og

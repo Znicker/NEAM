@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <link rel="stylesheet" href="/felles-neam.css?v=90">
-<link rel="stylesheet" href="/felles-topp.css?v=10">
+<link rel="stylesheet" href="/felles-topp.css?v=11">
 <style>
   /* Sidespesifikke variabler. Palett og typeskala ligger i
      felles-rot.css. */
@@ -529,6 +529,54 @@ a.middag:active{opacity:.72}
   .rutenett.bred{grid-template-rows:1fr}
   .hoyre{flex-direction:row}
   .hoyre .kort{flex:1}
+}
+
+/* ============================================================
+   Telefon (Magne, 21. november 2026: «lage dash lettere med innhold
+   bedre for mobil ... det er uansett ikke brukelig nå»)
+   ------------------------------------------------------------
+   Samme grep som Emma og Andrea dash: under 700px ruller SIDA, og
+   kortene tar hoeyden innholdet trenger, i én stabel. Foer dette laa
+   paaminnelsene side om side i hver sin smale rute med egen rulling,
+   middagen var skjoevet ut av skjermen, og kalenderkortet var bredere
+   enn telefonen.
+   ============================================================ */
+@media(max-width:700px){
+  html, body{ height:auto; overflow-y:auto; }
+  body{ overflow-x:hidden; }
+  .skjerm{
+    height:auto; min-height:100dvh;
+    /* Bunnen gir plass til tommelknappene, saa det siste kortet kan
+       rulles fram over dem. */
+    padding:14px 14px 96px; gap:12px;
+  }
+
+  /* Kolonnene blir en stabel. */
+  .rutenett, .rutenett.bred{ display:block; }
+  .hoyre{ display:block; }
+  .rutenett.bred .hoyre{ display:none; }
+  .kort, .hoyre > .kort{ margin-bottom:12px; min-width:0; }
+  /* Lettere kort: litt mindre luft inni og en svakere skygge. */
+  .kort{ padding:14px 16px; border-radius:16px; box-shadow:0 1px 8px rgba(0,0,0,.05); }
+  .kort-tittel{ margin-bottom:10px; }
+
+  /* Kortene ruller ikke lenger - sida gjoer det. */
+  .kort-kropp{ overflow:visible; min-height:0; flex:none; }
+  #middag{ overflow:visible; }
+  /* touch-action:pan-y lar sida rulle loddrett selv om sveipen ligger
+     paa kortet - en skraa dragning nedover skal ikke bytte dag. */
+  .kort{ touch-action:pan-y; }
+
+  /* Litt hoeyde saa et tomt kort ikke blir en stripe, men ingen tak. */
+  #plan{ min-height:110px; }
+  #uke{ min-height:180px; }
+
+  /* Dialogene fyller skjermen. .skjerm foran: grunnregelen for
+     .avtale-boks staar lenger ned i fila og ville ellers vunnet. */
+  .skjerm .avtale-boks{
+    width:100vw; max-width:none; border-radius:0;
+    left:0; transform:none; padding:16px 14px 12px;
+  }
 }
 
 /* ---------- Laast ramme ----------

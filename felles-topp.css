@@ -251,4 +251,15 @@
   .ntp-matrad:not([hidden]) ~ .ntp-okrad{ margin-left:6px; }
   .ntp-ok-prikk{ width:12px; height:12px; top:1px; right:1px; }
   .ntp-timere:not([hidden]) ~ .ntp-klokke{ margin-left:10px !important; }
+  /* Navnet kuttes heller enn aa skli inn under ikonene ved klokka. */
+  .ntp-merke{ flex-shrink:1; }
+  .ntp-navn{ overflow:hidden; text-overflow:ellipsis; }
+  /* Oekonomi-ikonet legger seg inntil klokka, som matlagingen. */
+  .ntp-okrad:not([hidden]) ~ .ntp-timere, .ntp-okrad:not([hidden]) ~ .ntp-klokke{ margin-left:10px !important; }
+}
+/* Telefon med matlaging eller oekonomi ved klokka: ikonet sier hvor man
+   er, saa navnet tas bort (21. november 2026 - «Kjøkken dash» laa under
+   innboks-ikonet paa 390px). */
+@container (max-width:480px){
+  .ntp-rad:has(.ntp-matrad:not([hidden])) .ntp-navn{ display:none; }
 }
