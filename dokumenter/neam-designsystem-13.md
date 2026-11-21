@@ -611,20 +611,20 @@ PC er utviklingsflate, ikke bruksflate.
 *Fra 8. november 2026.*
 
 **Alle sidene har samme topp:** sidas ikon på 84 px med navnet ved siden
-av (trykk: startvisningen, hold inne: forsiden), låseikonet på fellesenhetene, været med stedet
+av (trykk: forsiden), låseikonet på fellesenhetene, været med stedet
 inntil, og klokka med dato til høyre – med alarmene og timerne under. Den ligger i `felles-topp.js` og
 `felles-topp.css`; en side får den med
 `<header class="ntp" id="neamTopp" data-ikon="…" data-navn="…">` og fila
 lastet etter `felles-neam.js`. **En ny side skal ha den** – ikke en egen
 variant.
 
-- **Ikonet er flisen man trykket på** for å komme dit. **Kort trykk** er
-  tilbake til sidas startvisning og til toppen – det samme som andre trykk
-  på sidehåndtaket (`window.neamSideAndreTrykk`). Spill- og øvingssidene
-  lenker tilbake til dashet sitt (`data-hjem`). **Hold inne i to sekunder**
-  er forsiden, uten å slippe; at sida bytter er tegnet på at tiden er gått
-  (8. november 2026, Magne). **En ny side med faner eller visninger skal
-  sette `neamSideAndreTrykk`** – uten den ruller trykket bare til toppen.
+- **Ikonet er flisen man trykket på** for å komme dit. **Ett trykk er
+  forsiden** – ingen holding (21. november 2026, Magne: «bare et enkelt
+  klikk på ikonet opp til venstre. ikke hold»). Spill- og øvingssidene
+  lenker tilbake til dashet sitt (`data-hjem`). På forsiden selv ruller
+  trykket til toppen. Sidas startvisning er andre trykk på sidehåndtaket
+  (`window.neamSideAndreTrykk`). **En ny side med faner eller visninger
+  skal sette `neamSideAndreTrykk`.**
 - **Forsiden viser bare logoen** (`data-navn=""`) – NEAM-logoen sier
   navnet selv.
 - **Navnet på den innloggede står ikke i toppen**, verken her eller på

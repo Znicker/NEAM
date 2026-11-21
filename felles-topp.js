@@ -10,8 +10,8 @@
      <header class="ntp" id="neamTopp" data-ikon="sikkerhet" data-navn="Sikkerhet"></header>
    og fila lastet ETTER felles-neam.js (klapptavla, ikonene og laasen
    kommer derfra). data-hjem setter hvor ikonet lenker (spillene gaar
-   tilbake til dashet sitt); uten den gaar et trykk til sidas
-   startvisning, se ntpMerkeTrykk(). Tomt data-navn gir bare
+   tilbake til dashet sitt); uten den gaar et trykk til forsiden,
+   se ntpMerkeTrykk(). Tomt data-navn gir bare
    ikonet. Toppen tegnes med en gang fila leses.
 
    Vaeret viser i dag. En side som blar i dager (dashene) setter
@@ -79,7 +79,7 @@ function ntpTegn(){
      en smal spalte ogsaa paa PC. */
   t.innerHTML = '<div class="ntp-rad">'
     + '<a class="ntp-merke" href="' + ntpEsc(hjem) + '" aria-label="' + ntpEsc(navn || 'Neam')
-    +   (hjem === '/' ? ' – til start, hold inne for forsiden' : ' – tilbake, hold inne for forsiden') + '">'
+    +   (hjem === '/' ? ' – til forsiden' : ' – tilbake') + '">'
     +   '<span class="ntp-ikon">' + bilde + '</span>'
     +   (navn ? '<span class="ikon-navn ntp-navn">' + ntpEsc(navn) + '</span>' : '')
     + '</a>'
@@ -130,31 +130,19 @@ function ntpTegn(){
   ntpOkStart();
 }
 
-/* Ikonet oppe til venstre (Magne, 8. november 2026): et kort trykk er
-   tilbake til sidas startvisning, et langt trykk paa to sekunder er
-   forsiden. Startvisningen er det samme som andre trykk paa
-   sidehaandtaket - window.neamSideAndreTrykk, som sida setter selv.
-   Undersidene (spillene, fagene) har data-hjem og lenker dit som foer.
-   Uten noen av delene ruller trykket til toppen. Forsiden naas uten aa
-   slippe: man ser at to sekunder er gaatt ved at sida bytter. */
-const NTP_LANGT_MS = 2000;
+/* Ikonet oppe til venstre: ett trykk er forsiden (Magne, 21. november
+   2026: «for å komme tilbake til hovedmenyen trenges bare et enkelt klikk
+   på ikonet opp til venstre. ikke hold»). Til da var et kort trykk sidas
+   startvisning og to sekunder holdt inne forsiden - startvisningen naas
+   fortsatt med andre trykk paa sidehaandtaket. Undersidene (spillene,
+   fagene) har data-hjem og lenker til dashet sitt som foer. Paa forsiden
+   selv er trykket forsidens startvisning (window.neamSideAndreTrykk, om
+   den er satt) og rulling til toppen. */
 function ntpMerkeTrykk(a, harHjem){
   if(!a) return;
-  let tid = null, lang = false;
-  a.addEventListener('pointerdown', function(ev){
-    if(ev.button) return;
-    lang = false;
-    clearTimeout(tid);
-    tid = setTimeout(function(){ lang = true; location.href = '/'; }, NTP_LANGT_MS);
-  });
-  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function(n){
-    a.addEventListener(n, function(){ clearTimeout(tid); });
-  });
-  /* Ellers legger iOS og Android lenkemenyen oppaa det lange trykket. */
-  a.addEventListener('contextmenu', function(ev){ ev.preventDefault(); });
   a.addEventListener('click', function(ev){
-    if(lang){ ev.preventDefault(); return; }
     if(harHjem || ev.metaKey || ev.ctrlKey || ev.shiftKey) return;
+    if(location.pathname !== '/' && location.pathname !== '/index.html') return;
     ev.preventDefault();
     if(typeof window.neamSideAndreTrykk === 'function'){
       try{ window.neamSideAndreTrykk(); }

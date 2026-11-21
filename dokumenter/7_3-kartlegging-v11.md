@@ -1,7 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
 *Ført à jour 21. november 2026: pinkodene på fellesenhetene er slått av
-foreløpig, og bare sys@ og Magne kommer inn på Økonomi (se toppblokka).
+foreløpig, og bare sys@ og Magne kommer inn på Økonomi. Samme dag: ett
+trykk på ikonet oppe til venstre går til forsiden (se toppblokka).
 Ført à jour 14. november 2026: klokka er «Rolige tall» – store tall uten
 kort, med et pustende kolon, på alle sidene (se toppblokka).
 Ført à jour 10. november 2026: på kjøkkenskjermen kan Rommene og Neamow
@@ -136,7 +137,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 ?v=90`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
-`felles-topp.js ?v=10`, `felles-topp.css ?v=10`;
+`felles-topp.js ?v=11`, `felles-topp.css ?v=10`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
@@ -156,7 +157,7 @@ gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–94; neam.css til og
 med 89; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
-hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–9**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–10**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -1326,6 +1327,17 @@ dem. kun sys og magne kan inn på økonomi».
 - **Slå på igjen:** `NEAM_PIN_PAA = true`, `PIN_PAA = true` og Nina inn i
   `INNGANG`, og ny `?v=`.
 - **Testet:** syntaksen i begge filene. Ikke prøvd på kjøkkenskjermen.
+
+**21. november: ett trykk på ikonet er forsiden** (topp.js `?v=11` på
+alle 18 sidene). Magne: «for å komme tilbake til hovedmenyen trenges bare
+et enkelt klikk på ikonet opp til venstre. ikke hold».
+- Holdingen er borte. Ikonet er en vanlig lenke til forsiden; spill- og
+  øvingssidene går fortsatt til dashet sitt (`data-hjem`). På forsiden
+  selv ruller trykket til toppen som før.
+- Sidas startvisning nås ikke lenger fra ikonet, bare med andre trykk på
+  sidehåndtaket.
+- **Testet** lokalt på Kalender: lenka er `/`, `?v=11` lastes, og ett
+  trykk gikk til forsiden. Ikke prøvd på kjøkkenskjermen eller iPad.
 
 ### Åpne tråder
 
