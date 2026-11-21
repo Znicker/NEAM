@@ -136,6 +136,13 @@ const HENT_TILGANG = TILGANG.concat(FELLES);
    ligger i KV under pin:okt:<id>, med id-en i kaka neam_pin. Regelen
    for naar den er ute, er den samme som i pin.js (oktGyldig der). */
 const PIN_TILGANG = { magne:'magne@neam.no', nina:'nina@neam.no' };
+/* Inn paa oekonomien foreloepig bare sys@ og Magne, og pinkoden slipper
+   ingen inn (Magne, 21. november 2026: «fjern alle koder, eller deaktivere
+   dem. kun sys og magne kan inn på økonomi»). TILGANG over staar urørt -
+   den styrer ogsaa regnskapet (oppgjoeret og personfanene), ikke bare
+   hvem som slipper inn. Tilbake: Nina inn i INNGANG og PIN_PAA = true. */
+const INNGANG = ['sys@neam.no', 'magne@neam.no'];
+const PIN_PAA = false;
 const PIN_OKT_HVILE_MS = 4 * 60 * 1000;
 async function pinPerson(request, env){
   const id = cookieAv(request, 'neam_pin');
@@ -241,9 +248,9 @@ async function verifisertEpost(request, env){
 async function voksen(request, env){
   const id = await verifisertEpost(request, env);
   if(!id.epost) return { ok:false, feil:'Ingen gyldig innlogging (' + id.grunn + ')' };
-  if(TILGANG.indexOf(id.epost) === -1){
+  if(INNGANG.indexOf(id.epost) === -1){
     /* Fellesenheten med Magnes eller Ninas kode: de er den som spoer. */
-    if(FELLES.indexOf(id.epost) !== -1){
+    if(PIN_PAA && FELLES.indexOf(id.epost) !== -1){
       const p = await pinPerson(request, env);
       if(p) return { ok:true, epost:p };
     }

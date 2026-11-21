@@ -1,6 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
-*Ført à jour 14. november 2026: klokka er «Rolige tall» – store tall uten
+*Ført à jour 21. november 2026: pinkodene på fellesenhetene er slått av
+foreløpig, og bare sys@ og Magne kommer inn på Økonomi (se toppblokka).
+Ført à jour 14. november 2026: klokka er «Rolige tall» – store tall uten
 kort, med et pustende kolon, på alle sidene (se toppblokka).
 Ført à jour 10. november 2026: på kjøkkenskjermen kan Rommene og Neamow
 brukes uten kode; Rediger ber fortsatt om den (se toppblokka).
@@ -130,7 +132,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=94`, `felles-neam.css
+**Siste leverte versjoner:** `felles-neam.js ?v=95`, `felles-neam.css
 ?v=90`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
@@ -152,7 +154,7 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–93; neam.css til og
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–94; neam.css til og
 med 89; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
 hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–9**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
@@ -1305,6 +1307,25 @@ C marineblå tavle – og Magne valgte **A**.
 - **Testet** lokalt med de ekte fellesfilene på en tom side: bygging,
   Figtree, et minuttskifte (det gamle sifferet ut, det nye inn, ett igjen
   etterpå). Ikke sett på iPad, telefon eller kjøkkenskjermen.
+
+**21. november: pinkodene er slått av** (neam.js `?v=95` på alle 18
+sidene, og bank-funksjonen). Magne: «det er for mange sperrer. jeg må
+tenke litt nøyere igjennom det» – og «fjern alle koder, eller deaktivere
+dem. kun sys og magne kan inn på økonomi».
+- **Slått av, ikke fjernet.** `NEAM_PIN_PAA = false` i `felles-neam.js`:
+  ingen tastatur ved første trykk, intet låseikon, ingen Pinkoder i
+  menyen for sys@, og `neamHvemStaar()` gir alltid `null` – Neam vet ikke
+  hvem som står ved fellesskjermen, og skolearbeid for en person åpnes
+  ikke der. Kodene ligger fortsatt i KV, og `pin.js` er urørt.
+- **Økonomi:** `INNGANG` (sys@ og magne@) og `PIN_PAA = false` i
+  `functions/api/bank/[[sti]].js` avgjør hvem `voksen()` slipper inn.
+  **Nina kommer ikke inn lenger.** `TILGANG` står urørt med vilje: den
+  styrer også oppgjøret og personfanene, så Ninas utlegg regnes som før.
+  Økonomi-sida på en fellesenhet går fortsatt til forsiden
+  (`NEAM_PIN_SIDER`).
+- **Slå på igjen:** `NEAM_PIN_PAA = true`, `PIN_PAA = true` og Nina inn i
+  `INNGANG`, og ny `?v=`.
+- **Testet:** syntaksen i begge filene. Ikke prøvd på kjøkkenskjermen.
 
 ### Åpne tråder
 

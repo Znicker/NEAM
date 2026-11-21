@@ -1605,7 +1605,7 @@ function neamSystemValg(){
   };
   /* sys@ er administrator og faar Pinkoder under Husregisteret (Magne,
      8. november 2026). Alle andre ser knappen som foer. */
-  const opp = neamErAdmin()
+  const opp = (neamErAdmin() && NEAM_PIN_PAA)
     ? { plass:'opp', navn:'Husregisteret', behold:true, merke:true, ikon:knappMerke('husregister'),
         gjor: function(){
           neamSideStabel('opp', [
@@ -1875,6 +1875,13 @@ async function neamPinkoder(){
 /* kitchen@ er tilbake: Microsoft oppga fortsatt det gamle navnet etter byttet. */
 const NEAM_FELLES = ['felles@neam.no', 'kitchen@neam.no'];
 const NEAM_PIN_HVILE_MS = 3 * 60 * 1000;
+/* Kodene er slaatt av foreloepig (Magne, 21. november 2026: «det er for
+   mange sperrer ... fjern alle koder, eller deaktivere dem»). Ingen
+   tastatur ved foerste trykk, intet laaseikon, ingen Pinkoder i menyen,
+   og ingen person ved skjermen. Koden ellers staar, og kodene ligger
+   fortsatt i KV: true slaar alt paa igjen. Bank-funksjonen har sin egen
+   bryter (PIN_PAA i functions/api/bank/[[sti]].js). */
+const NEAM_PIN_PAA = false;
 let neamPinPerson = null;
 let neamPinSistTrykk = 0;
 /* Valgt aapningstid fra laaseikonet (Magne, 8. november 2026: «trykker
@@ -1893,7 +1900,7 @@ function neamPinLagre(){
 (function(){
   try{
     const d = JSON.parse(sessionStorage.getItem(NEAM_PIN_LAGER) || 'null');
-    if(d){
+    if(d && NEAM_PIN_PAA){
       neamPinPerson = d.person || null; neamPinSistTrykk = Number(d.sist) || 0;
       neamPinAapenTil = Number(d.til) || 0; neamPinVarslet = Number(d.varslet) || 0;
     }
@@ -1941,6 +1948,7 @@ function neamPinSovn(){
   neamPinMeld();
 }
 function neamHvemStaar(){
+  if(!NEAM_PIN_PAA) return null;
   if(neamPinPerson && neamPinSover(Date.now())) neamPinSovn();
   return neamPinPerson;
 }
@@ -1978,6 +1986,7 @@ function neamPinFri(el){
 window.addEventListener('pointerdown', function(ev){
   const kjokken = neamErKjokken();
   if(kjokken) neamPinLyd();
+  if(!NEAM_PIN_PAA) return;
   const naa = Date.now();
   const sover = neamPinSover(naa);
   if(sover && neamPinPerson) neamPinSovn();
@@ -2042,7 +2051,7 @@ const NEAM_LAAS_TIDER = [ { navn:'15 minutter', min:15 }, { navn:'30 minutter', 
 function neamLaasTegn(){
   const b = document.getElementById('neamLaas');
   if(!b) return;
-  const vis = neamErKjokken();
+  const vis = NEAM_PIN_PAA && neamErKjokken();
   b.hidden = !vis;
   if(!vis) return;
   if(!b.dataset.klar){

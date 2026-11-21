@@ -1012,6 +1012,12 @@ ruller – som runden i mattespillet – må krympe noe annet enn knappene
 når skjermen er lav (8. november 2026: robotfeltet i mattespillet).
 Sjekk på 390×660, som er omtrent det en iPhone viser i Safari.
 
+**Slått av foreløpig** (21. november 2026, Magne: «det er for mange
+sperrer»). `NEAM_PIN_PAA = false` i `felles-neam.js` skjuler tastaturet,
+låseikonet og Pinkoder; reglene under gjelder når den slås på igjen.
+Økonomi er i mellomtiden bare for sys@ og Magne – se kartleggingen,
+«21. november».
+
 **Pinkoden på kjøkkenskjermen** (8. november 2026). Bare når sida er logget
 inn som felles@ (fellesenhetene – het kitchen@ til 8. november 2026).
 Første trykk etter tre minutter i ro – eller første trykk
