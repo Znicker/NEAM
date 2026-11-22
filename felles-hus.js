@@ -1447,26 +1447,73 @@ function hskFargeNaa(e){
   return { h: Number(o.light_hue && o.light_hue.value) || 0,
            s: Number(o.light_saturation && o.light_saturation.value) || 0 };
 }
-function hskHjulPunkt(h, s){
-  const a = h * 2 * Math.PI;
-  return { x: 50 + 50 * s * Math.sin(a), y: 50 - 50 * s * Math.cos(a) };
+/* ---------- Fargevalget ----------
+   Samme som julelysene paa Kjoekken dash (Magne, 22. november 2026:
+   «fargevalg blir likt i enheter fanen også»): en ring for fargetonen med
+   fargen stor i midten, og en glider fra hvitt til full farge under.
+   Roedt oeverst og med klokka. Begge sender mens fingeren drar.
+   Velgeren gjelder én lampe, eller de valgte i en gruppe med fargelamper
+   («samme system som på twinklylysene»). Noekkelen er lampas id, eller
+   'g:' + gruppas foerste id. */
+function hskFargeAv(id){
+  const o = (enheter[id] && enheter[id].capabilitiesObj) || {};
+  return { h: Number(o.light_hue && o.light_hue.value) || 0,
+           s: Number(o.light_saturation && o.light_saturation.value) || 0 };
 }
-/* Trykket i hjulet som {h, s}. */
-function hskHjulLes(hjul, ev){
-  const r = hjul.getBoundingClientRect();
-  const dx = ev.clientX - (r.left + r.width / 2);
-  const dy = ev.clientY - (r.top + r.height / 2);
-  const s = Math.min(1, Math.sqrt(dx * dx + dy * dy) / (r.width / 2));
-  let h = Math.atan2(dx, -dy) / (2 * Math.PI);
+/* Trykket i ringen som fargetone (0-1). */
+function hskRingLes(ring, ev){
+  const r = ring.getBoundingClientRect();
+  let h = Math.atan2(ev.clientX - (r.left + r.width / 2), -(ev.clientY - (r.top + r.height / 2))) / (2 * Math.PI);
   if(h < 0) h += 1;
-  return { h: Math.round(h * 1000) / 1000, s: Math.round(s * 1000) / 1000 };
+  return Math.round(h * 1000) / 1000;
 }
-function hskHjulVis(hjul, f){
-  const m = hjul.querySelector('.hsk-hjul-merke');
-  const p = hskHjulPunkt(f.h, f.s);
-  if(m){ m.style.left = p.x + '%'; m.style.top = p.y + '%'; m.style.background = hskFargeCss(f.h, f.s); }
-  const vis = hskBak && hskBak.querySelector('[data-fargevis="' + hjul.dataset.hjul + '"]');
-  if(vis) vis.style.background = hskFargeCss(f.h, f.s);
+function hskVelgerHtml(nokkel, ider, hint){
+  const tom = !ider.length;
+  const f = tom ? { h:0, s:1 } : hskFargeAv(ider[0]);
+  const a = f.h * 2 * Math.PI;
+  const data = ' data-velger="' + hskVask(nokkel) + '" data-ider="' + hskVask(ider.join(',')) + '"';
+  return (hint ? '<p class="hsk-fv-hint">' + hint + '</p>' : '')
+       + '<div class="hsk-ring' + (tom ? ' tomt' : '') + '"' + data + ' data-h="' + f.h + '" role="img" aria-label="Fargering">'
+       +   '<span class="hsk-ring-farge" style="background:' + hskFargeCss(f.h, f.s) + '"></span>'
+       +   '<span class="hsk-ring-merke" style="left:' + (50 + 43.5 * Math.sin(a)) + '%;top:' + (50 - 43.5 * Math.cos(a))
+       +     '%;background:' + hskFargeCss(f.h, 1) + '"></span></div>'
+       + '<div class="hsk-metning-rad' + (tom ? ' tomt' : '') + '"><span class="hsk-metning-navn">Hvit</span>'
+       +   '<input type="range" class="hsk-metning"' + data + ' min="0" max="100" step="1" value="' + Math.round(f.s * 100) + '"'
+       +   (tom ? ' disabled' : '') + ' aria-label="Fra hvitt til full farge"'
+       +   ' style="--hsk-full:' + hskFargeCss(f.h, 1) + ';--hsk-naa:' + hskFargeCss(f.h, f.s) + '">'
+       +   '<span class="hsk-metning-navn">Farge</span></div>';
+}
+/* Viser en farge i velgeren (ringen og glideren) og paa prikkene til
+   lampene den gjelder - uten aa tegne kortet paa nytt. */
+function hskVelgerVis(nokkel, f){
+  if(!hskBak) return;
+  const sel = '[data-velger="' + nokkel + '"]';
+  const ring = hskBak.querySelector('.hsk-ring' + sel);
+  const gl = hskBak.querySelector('.hsk-metning' + sel);
+  if(ring){
+    ring.dataset.h = f.h;
+    const a = f.h * 2 * Math.PI;
+    const m = ring.querySelector('.hsk-ring-merke');
+    m.style.left = (50 + 43.5 * Math.sin(a)) + '%';
+    m.style.top = (50 - 43.5 * Math.cos(a)) + '%';
+    m.style.background = hskFargeCss(f.h, 1);
+    ring.querySelector('.hsk-ring-farge').style.background = hskFargeCss(f.h, f.s);
+    (ring.dataset.ider || '').split(',').forEach(function(id){
+      hskBak.querySelectorAll('[data-fargevis="' + id + '"]').forEach(function(v){ v.style.background = hskFargeCss(f.h, f.s); });
+    });
+  }
+  if(gl){
+    gl.style.setProperty('--hsk-full', hskFargeCss(f.h, 1));
+    gl.style.setProperty('--hsk-naa', hskFargeCss(f.h, f.s));
+  }
+}
+
+/* Hvilke lamper i en gruppe fargen gjelder: alle fargelampene til man
+   velger annerledes. Huskes til sida lastes paa nytt. */
+let hskFvValg = {};
+function hskFvValgte(nokkel, fargeIder){
+  const v = hskFvValg[nokkel];
+  return v ? fargeIder.filter(function(id){ return v[id]; }) : fargeIder.slice();
 }
 
 /* ---------- Kortet ---------- */
@@ -1558,6 +1605,20 @@ function hskBygg(){
       return;
     }
 
+    /* Et trykk paa et lampekort i gruppas fargevalg (ikke paa knappene)
+       velger lampa - eller tar den ut. */
+    const fvKort = t.closest('[data-fv-kort]');
+    if(fvKort && !t.closest('button')){
+      const nk = fvKort.dataset.fvGruppe, id = fvKort.dataset.fvKort;
+      const alle = [].map.call(hskBak.querySelectorAll('[data-fv-gruppe="' + nk + '"]'), function(k){ return k.dataset.fvKort; });
+      const v = {};
+      hskFvValgte(nk, alle).forEach(function(x){ v[x] = true; });
+      if(v[id]) delete v[id]; else v[id] = true;
+      hskFvValg[nk] = v;
+      hskTegn();
+      return;
+    }
+
     const b = t.closest('button[data-kap]');
     if(!b) return;
     const d = enheter[b.dataset.hsk];
@@ -1614,24 +1675,31 @@ function hskBygg(){
   });
 
   /* Kortet tegnes paa nytt hvert tiende sekund. Midt i et drag ville
-     glideren eller merket i hjulet hoppe tilbake under fingeren. */
-  let hjul = null;
-  /* Lyset foelger hjulet mens fingeren drar (Magne, 22. november 2026) -
-     ikke foerst naar den slippes. Bare den nyeste fargen venter mens en
-     sending er ute, saa det aldri hoper seg opp en koe mot Homey. Slippet
-     gaar gjennom samme koe, saa det alltid kommer sist. */
-  let hjulSender = false, hjulNeste = null, hjulSist = null;
-  const hjulSend = async function(id, f, slutt){
-    hjulSist = f;
-    hjulNeste = { id:id, f:f, slutt:!!slutt };
-    if(hjulSender) return;
-    hjulSender = true;
-    while(hjulNeste){
-      const n = hjulNeste; hjulNeste = null;
-      await hskSettFarge(n.id, n.f, !n.slutt);
+     glideren eller merket i ringen hoppe tilbake under fingeren. */
+  let ring = null;
+  /* Lampene foelger ringen og glideren mens fingeren drar (Magne,
+     22. november 2026) - ikke foerst naar den slippes. Bare den nyeste
+     fargen venter mens en sending er ute, saa det aldri hoper seg opp en
+     koe mot Homey. Slippet gaar gjennom samme koe, saa det alltid kommer
+     sist og sender hele fargen. */
+  let fvSender = false, fvNeste = null;
+  const fvSend = async function(ider, f, slutt){
+    fvNeste = { ider:ider, f:f, slutt:!!slutt };
+    if(fvSender) return;
+    fvSender = true;
+    while(fvNeste){
+      const n = fvNeste; fvNeste = null;
+      await Promise.all(n.ider.map(function(id){ return hskSettFarge(id, n.f, !n.slutt); }));
     }
-    hjulSender = false;
+    fvSender = false;
   };
+  /* Fargen i velgeren naa: tonen fra ringen, metningen fra glideren. */
+  const fvFarge = function(nokkel){
+    const r = hskBak.querySelector('.hsk-ring[data-velger="' + nokkel + '"]');
+    const g = hskBak.querySelector('.hsk-metning[data-velger="' + nokkel + '"]');
+    return { h: r ? Number(r.dataset.h) || 0 : 0, s: g ? Number(g.value) / 100 : 1 };
+  };
+  const fvIder = function(el){ return (el.dataset.ider || '').split(',').filter(Boolean); };
   hskBak.addEventListener('pointerdown', function(ev){
     if(hskRediger){
       const baand = ev.target.closest && ev.target.closest('.hsk-romnavn');
@@ -1639,36 +1707,72 @@ function hskBygg(){
       const grep = ev.target.closest && ev.target.closest('.hsk-grep-enhet');
       if(grep){ hskDraStart(grep, ev, 'enhet'); return; }
     }
-    if(ev.target.classList && ev.target.classList.contains('hsk-glider')){ hskRor = true; return; }
-    const h = ev.target.closest && ev.target.closest('.hsk-hjul');
-    if(!h) return;
+    if(ev.target.classList && (ev.target.classList.contains('hsk-glider') || ev.target.classList.contains('hsk-metning'))){ hskRor = true; return; }
+    const r = ev.target.closest && ev.target.closest('.hsk-ring');
+    if(!r || r.classList.contains('tomt')) return;
+    /* Et trykk i midten (paa fargen) er ikke et valg - bare selve ringen
+       og litt innenfor teller. */
+    const b = r.getBoundingClientRect();
+    const dx = ev.clientX - (b.left + b.width / 2), dy = ev.clientY - (b.top + b.height / 2);
+    if(Math.sqrt(dx * dx + dy * dy) < b.width * 0.3) return;
     ev.preventDefault();
-    hjul = h;
+    ring = r;
     hskRor = true;
-    try{ h.setPointerCapture(ev.pointerId); }catch(e){}
-    const f = hskHjulLes(h, ev);
-    hskHjulVis(h, f);
-    hjulSend(h.dataset.hjul, f, false);
+    try{ r.setPointerCapture(ev.pointerId); }catch(e){}
+    const f = fvFarge(r.dataset.velger);
+    f.h = hskRingLes(r, ev);
+    hskVelgerVis(r.dataset.velger, f);
+    fvSend(fvIder(r), f, false);
   });
   hskBak.addEventListener('pointermove', function(ev){
     if(hskDrag){ hskDraFlytt(ev); return; }
-    if(!hjul) return;
-    const f = hskHjulLes(hjul, ev);
-    hskHjulVis(hjul, f);
-    hjulSend(hjul.dataset.hjul, f, false);
+    if(!ring) return;
+    const f = fvFarge(ring.dataset.velger);
+    f.h = hskRingLes(ring, ev);
+    hskVelgerVis(ring.dataset.velger, f);
+    fvSend(fvIder(ring), f, false);
   });
   const slipp = function(ev, send){
     if(hskDrag){ hskDraSlipp(); return; }
+    /* Glideren fra hvitt til farge slipper selv i «change» - slippes den
+       her, kunne kortet tegnes paa nytt foer den rakk aa sende. */
+    if(!ring){
+      if(!(ev.target.classList && ev.target.classList.contains('hsk-metning'))) hskRor = false;
+      return;
+    }
     hskRor = false;
-    if(!hjul) return;
-    const h = hjul;
-    hjul = null;
-    /* Ogsaa ved avbrudd: lyset har alt fulgt fingeren, saa siste farge
+    const r = ring;
+    ring = null;
+    /* Ogsaa ved avbrudd: lampene har alt fulgt fingeren, saa siste farge
        sendes helt og kortet tegnes paa nytt. */
-    hjulSend(h.dataset.hjul, send ? hskHjulLes(h, ev) : hjulSist, true);
+    const f = fvFarge(r.dataset.velger);
+    if(send) f.h = hskRingLes(r, ev);
+    fvSend(fvIder(r), f, true);
   };
   hskBak.addEventListener('pointerup', function(ev){ slipp(ev, true); });
   hskBak.addEventListener('pointercancel', function(ev){ slipp(ev, false); });
+  /* Glideren fra hvitt til farge: sender mens den dras, og hele fargen
+     naar den slippes. */
+  hskBak.addEventListener('input', function(ev){
+    const g = ev.target;
+    if(!g.classList || !g.classList.contains('hsk-metning')) return;
+    hskRor = true;
+    const f = fvFarge(g.dataset.velger);
+    hskVelgerVis(g.dataset.velger, f);
+    fvSend(fvIder(g), f, false);
+  });
+  hskBak.addEventListener('change', function(ev){
+    const g = ev.target;
+    if(!g.classList || !g.classList.contains('hsk-metning')) return;
+    hskRor = false;
+    g.blur();
+    fvSend(fvIder(g), fvFarge(g.dataset.velger), true);
+  });
+  hskBak.addEventListener('keydown', function(ev){
+    if((ev.key === 'Enter' || ev.key === ' ') && ev.target.dataset && ev.target.dataset.fvKort){
+      ev.preventDefault(); ev.target.click();
+    }
+  });
   return hskBak;
 }
 
@@ -1927,14 +2031,7 @@ function hskStyring(e){
         + ' aria-expanded="' + aapen + '">Fargevalg</button>'
         + '</div>';
   }
-  if(e.farge && hskApenFarge === e.id){
-    const f = hskFargeNaa(e);
-    const p = hskHjulPunkt(f.h, f.s);
-    ut += '<div class="hsk-hjul" data-hjul="' + hskVask(e.id) + '" role="img" aria-label="Fargehjul">'
-        +   '<span class="hsk-hjul-merke" style="left:' + p.x + '%;top:' + p.y + '%;background:'
-        +     hskFargeCss(f.h, f.s) + '"></span>'
-        + '</div>';
-  }
+  if(e.farge && hskApenFarge === e.id) ut += hskVelgerHtml(e.id, [e.id], '');
   return ut;
 }
 
@@ -2278,6 +2375,12 @@ function hskGruppeHtml(r, medl, gNavn){
   const art = HSK_ART[medl[0].art] || HSK_ART.annet;
   const aapen = !!hskApneGrupper[medl[0].id];
   const navn = gNavn || hskNavneliste(medl.map(function(e){ return e.kort; }));
+  /* To eller flere fargelamper i gruppa: «Fargevalg» ved siden av
+     «N enheter» aapner lampene som kort - trykk velger - og én ring for
+     de valgte, som julelysene paa Kjoekken dash (Magne, 22. november 2026). */
+  const fargeMedl = medl.filter(function(e){ return e.farge; });
+  const fNokkel = 'g:' + medl[0].id;
+  const fAapen = fargeMedl.length >= 2 && hskApenFarge === fNokkel;
   return '<div class="hsk-enhet hsk-med-bryter hsk-gruppe-rad">'
        +   '<span class="hsk-ikon" title="' + art.navn + '">' + hskSymbol(medl[0].art) + '</span>'
        +   '<div class="hsk-kropp">'
@@ -2287,12 +2390,48 @@ function hskGruppeHtml(r, medl, gNavn){
        +   '<div class="hsk-hoyre"><button type="button" role="switch" class="hsk-bryter"'
        +     ' data-gruppe-av="' + hskVask(medl.map(function(e){ return e.id; }).join(',')) + '"'
        +     ' aria-checked="' + (paa > 0) + '" aria-label="' + hskVask(navn) + '"><span></span></button></div>'
-       +   '<div class="hsk-under"><div class="hsk-styr">'
+       +   '<div class="hsk-under"><div class="hsk-styr' + (fargeMedl.length >= 2 ? ' hsk-fargerad' : '') + '">'
        +     '<button type="button" class="dlg-knapp nei hsk-knapp hsk-gruppe-vis" data-gruppe-vis="' + hskVask(medl[0].id) + '"'
        +     ' aria-expanded="' + aapen + '">' + (aapen ? 'Skjul enhetene' : medl.length + ' enheter') + '</button>'
+       +     (fargeMedl.length >= 2
+              ? '<button type="button" class="dlg-knapp ja hsk-knapp' + (fAapen ? ' aapen' : '') + '" data-farge="' + hskVask(fNokkel) + '"'
+              + ' aria-expanded="' + fAapen + '">Fargevalg</button>' : '')
        +   '</div></div>'
        + '</div>'
+       + (fAapen ? hskGruppeFargeHtml(fNokkel, fargeMedl) : '')
        + (aapen ? '<div class="hsk-gruppe-innhold">' + medl.map(hskEnhetHtml).join('') + '</div>' : '');
+}
+
+/* Fargevalget for en gruppe: lampene som kort - navn, fargen naa, av/paa
+   og «Naturlig hvitt» der lampa har det - og ringen under for de valgte. */
+function hskGruppeFargeHtml(nokkel, fargeMedl){
+  const alle = fargeMedl.map(function(e){ return e.id; });
+  const valgt = hskFvValgte(nokkel, alle);
+  const kort = fargeMedl.map(function(e){
+    const o = e.d.capabilitiesObj || {};
+    const paa = !!(o.onoff || {}).value;
+    const er = valgt.indexOf(e.id) !== -1;
+    const f = hskFargeNaa(e);
+    return '<div class="hsk-fv-ett' + (er ? ' valgt' : '') + '" data-fv-kort="' + hskVask(e.id) + '" data-fv-gruppe="' + hskVask(nokkel) + '"'
+         +   ' role="checkbox" aria-checked="' + er + '" aria-label="Velg ' + hskVask(e.kort) + '" tabindex="0">'
+         +   '<div class="hsk-fv-navnrad"><span class="hsk-fv-velg" aria-hidden="true"></span>'
+         +     '<span class="hsk-fv-navn">' + hskVask(e.kort) + '</span>'
+         +     '<span class="hsk-fargevis' + (paa ? '' : ' hsk-fv-av') + '" data-fargevis="' + hskVask(e.id) + '" role="img" aria-label="Fargen nå"'
+         +       ' style="background:' + (hskErHvit(e) ? HSK_HVITT_CSS : hskFargeCss(f.h, f.s)) + '"></span>'
+         +     (o.onoff && o.onoff.setable
+                ? '<button type="button" role="switch" class="hsk-bryter" data-hsk="' + hskVask(e.id) + '" data-kap="onoff"'
+                + ' aria-checked="' + paa + '" aria-label="' + hskVask(e.kort) + ' av/på"><span></span></button>' : '')
+         +   '</div>'
+         +   (o.light_temperature && o.light_temperature.setable
+              ? '<div class="hsk-styr hsk-fargerad"><button type="button" class="dlg-knapp ja hsk-knapp" data-hvitt="' + hskVask(e.id) + '">Naturlig hvitt</button></div>' : '')
+         + '</div>';
+  }).join('');
+  const navn = fargeMedl.filter(function(e){ return valgt.indexOf(e.id) !== -1; }).map(function(e){ return e.kort; });
+  const hint = navn.length ? 'Fargen gjelder ' + hskVask(hskNavneliste(navn)) + '.' : 'Velg lampene fargen skal gjelde.';
+  return '<div class="hsk-fv">'
+       +   '<div class="hsk-fv-lys">' + kort + '</div>'
+       +   hskVelgerHtml(nokkel, valgt, hint)
+       + '</div>';
 }
 
 const HSK_GREP = '<img src="/bilder/ikoner/flytt.png?v=2" alt="" width="277" height="426">';

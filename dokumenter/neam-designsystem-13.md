@@ -1125,8 +1125,8 @@ Menyen: ett kort per lys øverst (trykk velger, «valgt» som ellers:
 knapp i **#FFE059** – Magnes farge, bare her. Under kortene **en
 fargering** (tonen rundt, fargen stor i midten) og **en glider fra hvitt
 til full farge**, som i Twinkly-appen, men uten svart ende og uten Lagre.
-Ringen sender mens fingeren drar, så lysene følger med (bare den nyeste
-tonen venter – ingen kø); glideren sender når den slippes. Under dem **Styrke** – glideren fra
+Begge sender mens fingeren drar, så lysene følger med (bare den nyeste
+fargen venter – ingen kø). Samme velger som i Rommene. Under dem **Styrke** – glideren fra
 Rommene. Alt gjelder de valgte. Øverst til høyre for tittelen: **Alle
 varmhvit**, samme knapp, for alle lysene uansett valg.
 
@@ -1560,12 +1560,18 @@ endrer eller sletter, samme som Neamow. På fargelampene står **fargen lampa ha
 prikk til høyre for glideren – den viser, den er ingen knapp. Under
 bryteren tok den en hel linje på telefonen. Under glideren står
 **«Naturlig hvitt»** (`HSK_HVITT`, `light_temperature` 0,8) og
-**«Fargevalg»**, som åpner fargehjulet (fargetone rundt, hvitt i midten),
+**«Fargevalg»**, som åpner fargevalget – samme som julelysene: en ring for
+fargetonen med fargen stor i midten og en glider fra hvitt til full farge
+(fra 22. november 2026; før var det et hjul med hvitt i midten),
 side om side: de deler linja likt og krymper (`--t-meta`) heller enn å
-legge seg under hverandre. Begge tenner lampa om den var av. **Hjulet
-sender mens fingeren drar** – lampa følger med, bare den nyeste fargen
-venter, og kortet tegnes ikke på nytt under fingeren (22. november
-2026, som fargeringen på julelysene). **Glider,
+legge seg under hverandre. Begge tenner lampa om den var av. **Ringen
+og glideren sender mens fingeren drar** – lampa følger med, bare den
+nyeste fargen venter, og kortet tegnes ikke på nytt under fingeren
+(22. november 2026, som julelysene). **En gruppe med to eller flere
+fargelamper** får «Fargevalg» ved siden av «N enheter»: lampene som
+kort (trykk velger, «valgt» som ellers), hvert med fargen nå, av/på og
+«Naturlig hvitt», og én ring under for de valgte – samme system som
+julelysene. **Glider,
 knapper og hjul går under hele raden, også under bryteren** – i
 navnefeltet alene ble det for trangt (1. november 2026).
 

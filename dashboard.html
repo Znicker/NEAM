@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=6">
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=90">
+<link rel="stylesheet" href="/felles-neam.css?v=91">
 <link rel="stylesheet" href="/felles-topp.css?v=15">
 <style>
   /* Sidespesifikke variabler. Palett og typeskala ligger i
@@ -1257,7 +1257,7 @@ select.hu-felt{
 </div>
 
 <!-- Felles filviser: maa lastes FOER sidens eget skript. -->
-<script src="/felles-hus.js?v=29"></script>
+<script src="/felles-hus.js?v=30"></script>
 <script src="/felles-ms.js?v=2"></script>
 <script src="/felles-data.js?v=5"></script>
 <script src="/felles-lesalt.js?v=16"></script>
@@ -4206,11 +4206,12 @@ async function julSettFarge(id, f, stille){
   const t = julEnh[id] || {};
   const endr = [];
   if(t.modus && t.modus !== 'color') endr.push(['light_mode', 'color']);
-  endr.push(['light_hue', f.h]);
-  /* «stille»: ringen sender mens fingeren drar og henter selv etterpaa.
-     Da sendes metningen bare naar den er en annen - halv ventetid. */
+  /* «stille»: ringen og glideren sender mens fingeren drar og henter selv
+     etterpaa. Da sendes bare det som er endret - halv ventetid. */
+  if(!stille || t.h !== f.h) endr.push(['light_hue', f.h]);
   if(!stille || t.s !== f.s) endr.push(['light_saturation', f.s]);
   if(!t.paa) endr.push(['onoff', true]);
+  if(!endr.length) return;
   await julSett(id, endr);
   if(!stille) setTimeout(jstHent, 1500);
 }
@@ -4278,13 +4279,14 @@ function julBygg(){
   m.addEventListener('pointerdown', function(ev){ if(ev.target.id === 'julDim' || ev.target.id === 'julMetning') julDrar = true; });
   m.addEventListener('input', function(ev){
     if(ev.target.id === 'julDim') $('julDimTall').textContent = ev.target.value + ' %';
-    if(ev.target.id === 'julMetning'){ julFarge.s = Number(ev.target.value) / 100; julFargeVis(); }
+    /* Glideren fra hvitt til farge sender mens den dras, som ringen. */
+    if(ev.target.id === 'julMetning'){ julDrar = true; julFarge.s = Number(ev.target.value) / 100; julFargeVis(); ringSend(false); }
   });
   m.addEventListener('change', function(ev){
     if(ev.target.id === 'julMetning'){
       julDrar = false;
       julFarge.s = Number(ev.target.value) / 100;
-      julValgteOk().forEach(function(id){ julSettFarge(id, { h:julFarge.h, s:julFarge.s }); });
+      ringSend(true);
       return;
     }
     if(ev.target.id !== 'julDim') return;
@@ -4300,19 +4302,21 @@ function julBygg(){
   });
   /* Ringen: fargetonen foelger fingeren rundt, og lysene foelger med mens
      fingeren drar (Magne, 22. november 2026) - ikke foerst naar den
-     slippes. Bare den nyeste tonen ventes paa: mens en sending er ute,
+     slippes. Bare den nyeste fargen ventes paa: mens en sending er ute,
      overskrives neste, saa det aldri hoper seg opp en koe mot Homey.
+     Glideren fra hvitt til farge bruker samme koe.
      Et trykk i midten (paa fargen) er ikke et valg - bare selve ringen
      og litt innenfor teller. */
   let ring = null, ringSender = false, ringNeste = null, ringSist = null, ringHent = false;
-  const ringSend = async function(h, slutt){
+  const ringSend = async function(slutt){
     if(slutt) ringHent = true;
-    if(h !== ringSist) ringNeste = h;
+    const naa = julFarge.h + '|' + julFarge.s;
+    if(naa !== ringSist) ringNeste = { h:julFarge.h, s:julFarge.s };
     if(ringSender) return;
     ringSender = true;
     while(ringNeste !== null){
-      const f = { h:ringNeste, s:julFarge.s };
-      ringSist = ringNeste; ringNeste = null;
+      const f = ringNeste;
+      ringSist = f.h + '|' + f.s; ringNeste = null;
       await Promise.all(julValgteOk().map(function(id){ return julSettFarge(id, f, true); }));
     }
     ringSender = false;
@@ -4328,12 +4332,12 @@ function julBygg(){
     ring = r; julDrar = true;
     try{ r.setPointerCapture(ev.pointerId); }catch(e){}
     julFarge.h = julRingLes(r, ev); julFargeVis();
-    ringSend(julFarge.h, false);
+    ringSend(false);
   });
   m.addEventListener('pointermove', function(ev){
     if(!ring) return;
     julFarge.h = julRingLes(ring, ev); julFargeVis();
-    ringSend(julFarge.h, false);
+    ringSend(false);
   });
   const slipp = function(ev, send){
     if(!ring) return;
@@ -4341,7 +4345,7 @@ function julBygg(){
     if(send) julFarge.h = julRingLes(r, ev);
     /* Ogsaa ved avbrudd: lysene har alt fulgt fingeren, saa siste tone
        sendes og tilstanden hentes paa nytt. */
-    ringSend(julFarge.h, true);
+    ringSend(true);
   };
   m.addEventListener('pointerup', function(ev){ slipp(ev, true); });
   m.addEventListener('pointercancel', function(ev){ slipp(ev, false); });
