@@ -1789,6 +1789,18 @@ skrift og mindre luft; alle ukene (ett skoleår per fag).
 - Testet på neam.no med Spansk (ti uker, åtte med stempel), uten å skrive
   noe.
 
+**22. november, natt: Dag-visningen strammet inn** (`emma.html`,
+`andrea.html` – like endringer). Magne: «Tilbake til i dag får plass til
+venstre for dag/uke/fag. Lag avtalene på en linje. Prøver må få egen
+ramme. Lekser trenger bare en linje og en liten ramme per fag.»
+- `#tilIdag` flyttet foran `#visBytt` i kortets tittel.
+- Avtalene: CSS under `#plan` (fra–til på rad med «–» foran til-tiden,
+  tittel og sted på én linje med «…»); «Hele<br>dagen» ble «Hele dagen».
+  **Kjøkken dash har fortsatt to linjer per avtale** – ikke rørt.
+- `skoleukeHtml()`: prøvene i `.sku-ramme`; leksene gruppert per fag i
+  `.sku-fagramme` (rutenett), én `.sku-linje` per lekse med `fristTekst()`.
+- Testet på neam.no med Emmas data (sju fag i tre rader på PC-bredde).
+
 ### Åpne tråder
 
 **Fra 22. november 2026, kveld – små, ingen haster:**

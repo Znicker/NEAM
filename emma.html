@@ -266,16 +266,31 @@ body{
    avtaler - og skoleuka resten. Begge ruller hver for seg paa iPad; paa
    telefon ruller sida (se mobilblokka). */
 #plan{ flex:0 1 auto; max-height:55%; }
+/* Avtalene paa én linje i Dag (Magne, 22. november 2026: «Lag avtalene
+   på en linje»): fra–til, initial, tittel og sted ved siden av hverandre.
+   Stedet kuttes foerst naar plassen tar slutt. */
+#plan .plan-rad{ align-items:center; padding:7px 11px; margin-bottom:5px; }
+#plan .plan-tid{ width:auto; white-space:nowrap; padding-top:0; }
+#plan .plan-til{ display:inline; font-size:inherit; font-weight:600; }
+#plan .plan-til::before{ content:'–'; }
+#plan .plan-tid.hel{ line-height:1.25; }
+#plan .plan-rad .ini{ margin-top:0; }
+#plan .plan-inn{ display:flex; align-items:baseline; gap:10px; min-width:0; }
+#plan .plan-tittel{ flex-shrink:0; max-width:70%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#plan .plan-meta{ margin-top:0; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .sku{ border-top:1px solid var(--line); margin-top:10px; padding-top:14px; }
 .sku[hidden]{ display:none; }
 .sku-tittel{
   font-size:var(--t-meta);font-weight:700;text-transform:uppercase;letter-spacing:.1em;
   color:var(--ink);margin:0 0 8px;
 }
-.sku-blokk + .sku-blokk{ margin-top:18px; }
+.sku-blokk + .sku-blokk{ margin-top:14px; }
+/* Proevene i egen ramme (Magne: «Prøver må få egen ramme»), samme
+   ramme som ukene i fagvinduet. */
+.sku-ramme{ border:1px solid var(--line); border-radius:14px; padding:10px 12px 8px; background:var(--paper); }
 .sku-rad{
-  border-left:3px solid transparent; padding:6px 0 6px 10px; margin-bottom:4px;
-  cursor:pointer; -webkit-tap-highlight-color:transparent; border-radius:2px;
+  border-left:3px solid transparent; padding:4px 0 4px 9px; margin-bottom:2px;
+  cursor:pointer; -webkit-tap-highlight-color:transparent; border-radius:0;
 }
 .sku-rad:active{ background:rgba(44,62,80,.05); }
 .sku-rad.gul{ border-left-color:var(--handling-endre); }
@@ -283,14 +298,29 @@ body{
 .sku-topp{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
 .sku-fag{ font-size:var(--t-brod); font-weight:700; }
 .sku-topp .lekse-frist{ padding-top:0; white-space:normal; }
-/* Teksten faar tre linjer. Resten staar i fagvinduet, som et trykk aapner. */
-.sku-rad .lekse-tekst{
-  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3;
-  overflow:hidden; margin-top:2px;
+/* Leksene: én liten ramme per fag, to i bredden der det er plass
+   (Magne: «Lekser trenger bare en linje og en liten ramme per fag»).
+   Hver lekse er én linje - frist og tekst - og resten staar i
+   fagvinduet, som et trykk aapner. */
+.sku-fagene{ display:grid; grid-template-columns:repeat(auto-fill, minmax(250px, 1fr)); gap:8px; }
+.sku-fagramme{
+  border:1px solid var(--line); border-radius:12px; padding:7px 10px 5px;
+  background:var(--paper); cursor:pointer; -webkit-tap-highlight-color:transparent; min-width:0;
 }
-/* Gjort: graa og strøket, nederst i lista - samme form som i Fag. */
-.sku-rad.ferdig .sku-fag, .sku-rad.ferdig .lekse-tekst{ opacity:.45; }
-.sku-rad.ferdig .lekse-tekst{ text-decoration:line-through; }
+.sku-fagramme:active{ background:rgba(44,62,80,.04); }
+.sku-fagramme .sku-fag{ display:block; margin-bottom:2px; }
+.sku-linje{
+  display:flex; align-items:baseline; gap:8px; min-width:0;
+  border-left:3px solid transparent; padding:2px 0 2px 7px;
+}
+.sku-linje.gul{ border-left-color:var(--handling-endre); }
+.sku-linje.rod{ border-left-color:var(--danger); }
+.sku-linje .lekse-frist{ padding-top:0; flex-shrink:0; }
+.sku-linje .lekse-tekst{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* Gjort: graa og strøket. Et fag der alt er gjort, dempes helt. */
+.sku-linje.ferdig .lekse-tekst, .sku-linje.ferdig .lekse-frist{ opacity:.45; }
+.sku-linje.ferdig .lekse-tekst{ text-decoration:line-through; }
+.sku-fagramme.ferdig .sku-fag{ opacity:.45; }
 .sku-ferdig{
   font-size:var(--t-etikett);font-weight:700;letter-spacing:.05em;text-transform:uppercase;
   color:var(--handling-ny);
@@ -1770,14 +1800,14 @@ select.hu-felt{
     <div class="kort">
       <div class="kort-tittel">
         <span class="dag-navn" id="dagLabel">I dag</span>
+        <button class="til-idag" id="tilIdag" onclick="tilbakeTilStandard()" hidden>
+          Tilbake til i dag
+        </button>
         <span class="vis-bytt" id="visBytt" role="group" aria-label="Visning">
           <button class="vis-knapp aktiv" data-vis="dag" onclick="settVisning('dag')">Dag</button>
           <button class="vis-knapp" data-vis="uke" onclick="settVisning('uke')">Uke</button>
           <button class="vis-knapp" data-vis="fag" onclick="settVisning('fag')">Fag</button>
         </span>
-        <button class="til-idag" id="tilIdag" onclick="tilbakeTilStandard()" hidden>
-          Tilbake til i dag
-        </button>
         <span class="dag-piler" id="dagPiler">
           <button class="dag-pil" onclick="byttDag(-1)" aria-label="Forrige">&#8249;</button>
           <button class="dag-pil" onclick="byttDag(1)" aria-label="Neste">&#8250;</button>
@@ -2334,7 +2364,7 @@ function tegnPlan(res){
       + ' onclick="visDetalj(' + i + ')" role="button" tabindex="0">'
       + '<div class="plan-tid' + (e.heleDagen ? ' hel' : '') + '">'
       +   (e.heleDagen
-            ? 'Hele<br>dagen'
+            ? 'Hele dagen'
             : esc(kl(e.start)) + '<span class="plan-til">' + esc(kl(e.slutt)) + '</span>')
       + '</div>'
       + initial(e.kalender, e.farge)
@@ -6433,7 +6463,7 @@ function skoleukeHtml(){
     return p.dato && p.dato >= iDag;
   }).sort(function(a, b){ return a.dato.localeCompare(b.dato); });
 
-  let ut = '<div class="sku-blokk"><div class="sku-tittel">Prøver</div>';
+  let ut = '<div class="sku-blokk sku-ramme"><div class="sku-tittel">Prøver</div>';
   if(!prover.length){
     ut += '<div class="tom">Ingen prøver lagt inn.</div>';
   }else{
@@ -6454,33 +6484,47 @@ function skoleukeHtml(){
   }
   ut += '</div>';
 
-  /* ---- Leksene ---- */
+  /* ---- Leksene, én ramme per fag ---- */
   const lekser = fagData.lekser.filter(function(l){
     if(!l.frist) return true;
     if(l.frist >= uStart && l.frist <= uSlutt) return true;
     return naaUke && !l.ferdig && l.frist < iDag;        /* etterslep */
-  }).sort(function(a, b){
-    if(!!a.ferdig !== !!b.ferdig) return a.ferdig ? 1 : -1;
-    return fristSort(a, b);
   });
+  const perFag = {};
+  lekser.forEach(function(l){ (perFag[l.fagId] = perFag[l.fagId] || []).push(l); });
+  /* Fagene i fristrekkefoelge: det med den tidligste AAPNE leksa foerst,
+     fag der alt er gjort nederst. */
+  function forst(id){
+    const aapne = perFag[id].filter(function(l){ return !l.ferdig; });
+    if(!aapne.length) return '9999-99-99';
+    return aapne.map(function(l){ return l.frist || '9999-99-98'; }).sort()[0];
+  }
+  const fagene = Object.keys(perFag).sort(function(a, b){ return forst(a).localeCompare(forst(b)); });
 
   ut += '<div class="sku-blokk"><div class="sku-tittel">Lekser · uke ' + isoUke(start).uke + '</div>';
-  if(!lekser.length){
+  if(!fagene.length){
     ut += '<div class="tom">Ingen lekser denne uka.</div>';
   }else{
-    ut += lekser.map(function(l){
-      const fr = fristFullt(l.frist);
-      const hast = lekseHast(l);
-      return '<div class="sku-rad' + (l.ferdig ? ' ferdig' : '') + (hast ? ' ' + hast : '') + '"'
-        + ' onclick="apneFagVis(\'' + esc(l.fagId) + '\')" role="button" tabindex="0">'
-        + '<div class="sku-topp">'
-        +   '<span class="sku-fag">' + esc(fagNavnAv(l.fagId) || 'Lekse') + '</span>'
-        +   (l.ferdig ? '<span class="sku-ferdig">Ferdig</span>'
-             : fr.tekst ? '<span class="lekse-frist ' + hast + '">' + esc(fr.tekst) + '</span>' : '')
-        + '</div>'
-        + '<div class="lekse-tekst">' + esc(l.tekst) + '</div>'
+    ut += '<div class="sku-fagene">' + fagene.map(function(id){
+      const liste = perFag[id].slice().sort(function(a, b){
+        if(!!a.ferdig !== !!b.ferdig) return a.ferdig ? 1 : -1;
+        return fristSort(a, b);
+      });
+      const alt = liste.every(function(l){ return l.ferdig; });
+      return '<div class="sku-fagramme' + (alt ? ' ferdig' : '') + '"'
+        + ' onclick="apneFagVis(\'' + esc(id) + '\')" role="button" tabindex="0">'
+        + '<span class="sku-fag">' + esc(fagNavnAv(id) || 'Lekser') + '</span>'
+        + liste.map(function(l){
+            const fr = fristTekst(l.frist);
+            const hast = lekseHast(l);
+            return '<div class="sku-linje' + (l.ferdig ? ' ferdig' : '') + (hast ? ' ' + hast : '') + '">'
+              + (l.ferdig ? '<span class="sku-ferdig">Ferdig</span>'
+                 : fr.tekst ? '<span class="lekse-frist ' + hast + '">' + esc(fr.tekst) + '</span>' : '')
+              + '<span class="lekse-tekst">' + esc(l.tekst) + '</span>'
+              + '</div>';
+          }).join('')
         + '</div>';
-    }).join('');
+    }).join('') + '</div>';
   }
   return ut + '</div>';
 }
