@@ -1930,6 +1930,16 @@ liggende i et lite felt som ikke vokser»): `tegnFagVis()` kjører mens
 vinduet er skjult, og et skjult felt har ingen høyde å måle. `apneFagVis()`
 måler nå alle feltene på nytt når vinduet er synlig. Målt på neam.no:
 Samfunnsfag-målet sto i 52 px med 64 px tekst, etterpå 64 px.
+Lekser og prøver vises i høyre kolonne i stedet for å folde seg ut (Magne:
+«Gjør på samme måte med lekser som ved kalenderføringer. Bruk høyre side
+til å vise. Ikke under leksene.»): `skoleDetalj()` fyller `#detalj` som
+`visDetalj()` gjør for avtaler, `skoleInnhold` holder innholdet per rad,
+`detaljEndre()` sender «Endre» til avtalen eller leksa/prøven, og
+`lukkDetalj()`/`visDetalj()` nullstiller hverandres valg. Klikk utenfor
+lukker ikke når det er en skolerad som trykkes (`.sku-rad` i
+`kobleLukking()`). Utfoldingen (`skoleAapen`, `skoleVeksl()`, `.sku-post`,
+`.sku-detalj`) er fjernet. Testet på neam.no: åpne, lukke med nytt trykk,
+«Gå til faget».
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke

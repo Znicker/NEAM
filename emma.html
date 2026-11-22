@@ -300,19 +300,17 @@ body{
 .sku-rad.ferdig .hu-innen{ color:var(--handling-ny); }
 /* Utfoldet: raden og beskrivelsen henger sammen - samme farge, og
    raden mister de nederste hjoernene. */
-.sku-post.aapen > .hu-linje{ margin-bottom:0; }
-.sku-post.aapen .sku-rad{ border-bottom-left-radius:0; border-bottom-right-radius:0; }
-.sku-detalj{
-  border:1px solid transparent; border-top:none; border-radius:0 0 11px 11px;
-  padding:6px 12px 10px 37px; margin-bottom:6px;
-}
-.sku-detalj[hidden]{ display:none; }
+/* Raden som vises i hoeyre kolonne. Omriss, ikke skygge: skyggen er
+   opptatt av hastestripa og ringene. */
+.sku-rad.valgt{ outline:2px solid rgba(44,62,80,.45); outline-offset:-2px; }
+#detaljInn .sku-beskrivelse{ margin-top:12px; }
+#detaljInn .sku-fakta{ font-size:var(--t-brod); margin-top:8px; }
 .sku-beskrivelse{
   font-size:var(--t-brod); line-height:1.45; white-space:pre-wrap; overflow-wrap:anywhere;
 }
 .sku-fakta{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:4px; }
 .sku-fakta span{ font-weight:700; color:var(--ink); }
-.sku-detalj-fot{ display:flex; justify-content:flex-end; margin-top:8px; }
+.sku-detalj-fot{ display:flex; justify-content:flex-end; margin-top:14px; }
 /* Blaa: «alt annet» i knappeklassene - den gaar et sted, den endrer ikke. */
 .sku-gaa{
   border:none; color:#FFFFFF; background:var(--aksent);
@@ -1930,7 +1928,7 @@ select.hu-felt{
       <div class="kort detaljkort" id="detalj" hidden>
         <div class="kort-tittel">
           <span class="detalj-ini" id="detaljMerke"></span>
-          <button class="knapp-endre" onclick="redigerAvtale()">Endre</button>
+          <button class="knapp-endre" onclick="detaljEndre()">Endre</button>
           <button class="detalj-lukk" onclick="lukkDetalj()" aria-label="Lukk">×</button>
         </div>
         <div class="kort-kropp" id="detaljInn"></div>
@@ -2527,6 +2525,10 @@ function visDetalj(i){
   const e = dagensAvtaler[i];
   if(!e) return;
   detaljIndeks = i;
+  /* En lekse eller proeve kan ha staatt i kortet - den er ikke valgt lenger. */
+  skoleDetaljId = null;
+  Array.from(document.querySelectorAll('.sku-rad.valgt'))
+    .forEach(function(r){ r.classList.remove('valgt'); });
 
   const tid = e.heleDagen ? 'Hele dagen' : kl(e.start) + '–' + kl(e.slutt);
 
@@ -2573,6 +2575,9 @@ function visDetalj(i){
 
 function lukkDetalj(){
   detaljIndeks = null;
+  skoleDetaljId = null;
+  Array.from(document.querySelectorAll('.sku-rad.valgt'))
+    .forEach(function(r){ r.classList.remove('valgt'); });
   if($('detalj')){
     $('detalj').hidden = true;
     $('detalj').style.background = '';
@@ -6759,48 +6764,84 @@ function tegnSkoleuke(){
 /* Én rad i samme form som paaminnelsene og avtalene: hennes farge, hennes
    initial, tittelen paa én linje og en merkelapp til hoeyre. Ingen hake -
    et trykk aapner faget, der den krysses av (se tegnSkoleuke). */
-/* Ett trykk paa raden folder den ut: hele beskrivelsen og en knapp til
-   faget (Magne, 23. november 2026: «Når man trykker en gang ekspanderer
-   man leksen eller prøven. Der står beskrivelsen. + en knapp, gå til
-   fag.»). Ett trykk til folder den sammen. Bare én er aapen om gangen,
-   og den blir staaende aapen naar lista tegnes paa nytt. */
-let skoleAapen = null;
+/* Et trykk paa en lekse eller proeve viser den i HOEYRE KOLONNE, som en
+   avtale (Magne, 23. november 2026: «Gjør på samme måte med lekser som ved
+   kalenderføringer. Bruk høyre side til å vise. Ikke under leksene.»).
+   Samme detaljkort (#detalj), i hennes farge; «Endre» aapner leksa eller
+   proeven i skjemaet, «Gå til faget» aapner fagvinduet, × lukker. Trykk
+   paa samme rad igjen lukker ogsaa. */
+const skoleInnhold = {};       /* rad-id -> { fagId, detalj } */
+let skoleDetaljId = null;      /* «l:<id>» eller «p:<id>», eller null */
 
 function skoleRad(tittel, merke, fagId, klasse, id, detalj){
   const farge = huskeFarge(EIER);
-  const aapen = skoleAapen === id;
-  return '<div class="sku-post' + (aapen ? ' aapen' : '') + '" data-sku="' + esc(id) + '">'
-    + '<div class="hu-linje' + (klasse.indexOf('ferdig') !== -1 ? ' ferdig' : '') + '">'
-    + '<div class="hu-rad sku-rad ' + klasse + '" style="' + fyll(farge) + '"'
-    +   ' onclick="skoleVeksl(\'' + esc(id) + '\')" role="button" tabindex="0"'
-    +   ' aria-expanded="' + (aapen ? 'true' : 'false') + '">'
+  skoleInnhold[id] = { fagId: fagId, detalj: detalj };
+  return '<div class="hu-linje' + (klasse.indexOf('ferdig') !== -1 ? ' ferdig' : '') + '">'
+    + '<div class="hu-rad sku-rad ' + klasse + (skoleDetaljId === id ? ' valgt' : '') + '"'
+    +   ' data-sku="' + esc(id) + '" style="' + fyll(farge) + '"'
+    +   ' onclick="skoleDetalj(\'' + esc(id) + '\')" role="button" tabindex="0">'
     +   initial(EIER, farge)
     +   '<span class="hu-tittel">' + esc(tittel) + '</span>'
     +   (merke ? '<span class="hu-innen">' + esc(merke) + '</span>' : '')
     + '</div>'
-    + '</div>'
-    + '<div class="sku-detalj" style="' + fyll(farge) + '"' + (aapen ? '' : ' hidden') + '>'
-    +   detalj
-    +   '<div class="sku-detalj-fot"><button type="button" class="sku-gaa"'
-    +     ' onclick="event.stopPropagation(); skoleAapen = null; apneFagVis(\'' + esc(fagId) + '\')">'
-    +     'Gå til faget</button></div>'
-    + '</div>'
     + '</div>';
 }
 
-function skoleVeksl(id){
-  skoleAapen = skoleAapen === id ? null : id;
-  Array.from(document.querySelectorAll('.sku-post')).forEach(function(p){
-    const ja = p.dataset.sku === skoleAapen;
-    p.classList.toggle('aapen', ja);
-    const d = p.querySelector('.sku-detalj');
-    if(d) d.hidden = !ja;
-    const r = p.querySelector('.sku-rad');
-    if(r) r.setAttribute('aria-expanded', ja ? 'true' : 'false');
+function skoleDetalj(id){
+  if(skoleDetaljId === id && !$('detalj').hidden){ lukkDetalj(); return; }
+  const inn = skoleInnhold[id];
+  if(!inn) return;
+  detaljIndeks = null;
+  skoleDetaljId = id;
+  const erProve = id.charAt(0) === 'p';
+  const farge = huskeFarge(EIER);
+
+  const merke = $('detaljMerke');
+  if(merke){
+    merke.textContent = EIER.charAt(0).toUpperCase();
+    merke.style.background = farge;
+    merke.title = EIER;
+  }
+  const kort = $('detalj');
+  kort.style.background = tett(farge, .16);
+  kort.style.boxShadow = 'inset 0 0 0 1px ' + dus(farge, .34)
+    + ', 0 2px 14px rgba(0,0,0,.06)';
+
+  $('detaljInn').innerHTML =
+      '<div class="detalj-tittel">' + esc(fagNavnAv(inn.fagId) || (erProve ? 'Prøve' : 'Lekse')) + '</div>'
+    + '<div class="detalj-tid">' + (erProve ? 'Prøve' : 'Lekse') + '</div>'
+    + inn.detalj
+    + '<div class="sku-detalj-fot"><button type="button" class="sku-gaa" onclick="skoleTilFag()">'
+    +   'Gå til faget</button></div>';
+  kort.hidden = false;
+  HOYRE_KORT.forEach(function(k){ if($(k)) $(k).hidden = true; });
+  settBredde();
+
+  Array.from(document.querySelectorAll('[data-avtale].valgt'))
+    .forEach(function(r){ r.classList.remove('valgt'); });
+  Array.from(document.querySelectorAll('.sku-rad[data-sku]')).forEach(function(r){
+    r.classList.toggle('valgt', r.dataset.sku === id);
   });
+  visTilIdag();
 }
 
-/* Linjene i den utfoldede delen: «Frist: …», «Lagt inn av …». */
+function skoleTilFag(){
+  const inn = skoleInnhold[skoleDetaljId];
+  lukkDetalj();
+  if(inn) apneFagVis(inn.fagId);
+}
+
+/* «Endre» i detaljkortet: avtalen, eller leksa/proeven som staar der. */
+function detaljEndre(){
+  if(skoleDetaljId){
+    const id = skoleDetaljId.slice(2);
+    if(skoleDetaljId.charAt(0) === 'p') redigerProve(id); else redigerLekse(id);
+    return;
+  }
+  redigerAvtale();
+}
+
+/* Faktalinjene i detaljkortet: «Frist: …», «Lagt inn av …». */
 function skoleFakta(par){
   return par.filter(function(x){ return x[1]; }).map(function(x){
     return '<div class="sku-fakta"><span>' + esc(x[0]) + '</span> ' + esc(x[1]) + '</div>';
@@ -6837,7 +6878,6 @@ function skoleProverHtml(){
     const fr = fristFullt(p.dato);
     const detalj = '<div class="sku-beskrivelse">' + esc(String(p.type || 'Prøve')) + '</div>'
       + skoleFakta([
-          ['Fag:', fag],
           ['Dato:', fr.tekst + (dager >= 2 ? ' – om ' + dager + ' dager' : '')],
           ['Karakter:', p.karakter],
           ['Kommentar:', p.kommentar],
@@ -6882,8 +6922,7 @@ function skoleukeHtml(){
       const fr = fristFullt(l.frist);
       const detalj = '<div class="sku-beskrivelse">' + esc(l.tekst) + '</div>'
         + skoleFakta([
-            ['Fag:', fag],
-            ['Frist:', fr.tekst || 'ingen'],
+              ['Frist:', fr.tekst || 'ingen'],
             ['Status:', l.ferdig ? 'Ferdig' : ''],
             ['Lagt inn av', l.av ? (l.av + (l.laget ? ' ' + datoKort(datoFraTekst(l.laget)) : '')) : '']
           ]);
@@ -7598,7 +7637,7 @@ function kobleLukking(){
     const t = ev.target;
     if(huBobleId && !t.closest('.hu-boble') && !t.closest('.hu-rad')) lukkHuskeBoble();
     if($('detalj') && !$('detalj').hidden && !skjemaAapent()
-       && !t.closest('#detalj') && !t.closest('.plan-rad')
+       && !t.closest('#detalj') && !t.closest('.plan-rad') && !t.closest('.sku-rad')
        && !t.closest('#avtaleBoks') && !t.closest('#huskeBoks')
        && !t.closest('#filviser')) lukkDetalj();
   });
