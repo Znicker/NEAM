@@ -1738,6 +1738,14 @@ så det.
   **To sekunder ble valgt bort:** et halvt sekund i snitt, og hver
   spørring henter hele enhetslista fra Athoms sky – Roborock sperret oss
   på 2 s.
+- **Prompten testet** med testbilder: tomt tun (ekte kamera) NEI, bil
+  med lys og åpne dører som flytter seg JA, parkert bil foran garasje
+  NEI – under ett sekund hver.
+- **Feil funnet og rettet:** opprydningen av dashenes vær (`4bf3d2e`)
+  tok med CSS-en til bilvaktvinduet (`.bv-bak`, `.bv-kort`, `.bv-bilde`) –
+  den lå midt i værboble-CSS-en. Varselet kom da som et løst bilde øverst
+  i sida, uten bakteppe. Lagt tilbake uendret; ingen andre fjernede klasser
+  er i bruk på noen av de tre dashene (sjekket med grep).
 - Ikke testet på ekte ankomst ennå. Bommer den fortsatt, er det
   kameraets egen forsinkelse, ikke takten.
 
