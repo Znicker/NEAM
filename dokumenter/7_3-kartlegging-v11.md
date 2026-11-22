@@ -1549,9 +1549,13 @@ hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
     mot ekte lamper.
 
 - **Samme dag: varmhvit er #FFF868** (bare `dashboard.html`). Magne:
-  «#FFF868 dette skal være standard hvit ute». `JUL_VARM` er nå tone
-  0,159 og metning 0,592 (før #FFE059, 0,136/0,651); knappene heter
-  fortsatt «Varmhvit» og «Alle varmhvit».
+  «#FFF868 dette skal være standard hvit ute». Knappene heter fortsatt
+  «Varmhvit» og «Alle varmhvit». Først regnet rett fra koden (tone
+  0,159, metning 0,592) – «mye hvitere enn når twinkly gjør det selv».
+  **Twinkly bruker metningen på sin egen måte:** Magne satte #FFF868 i
+  Twinkly-appen, og Homey leste tone 0,16 og **metning 0,89** tilbake.
+  `JUL_VARM` er nå de tallene. Det betyr også at ringen og glideren
+  viser en farge som lyset gjengir hvitere – ikke rettet, ikke bedt om.
 
 **22. november: varsel om «Ikke lest» i innboksen** (`okonomi.html` og
 `functions/api/bank/[[sti]].js`). Magne fant en fil i Dropbox-mappa «Ikke

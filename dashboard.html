@@ -4107,9 +4107,11 @@ const JUL_LYS = [
 ];
 const JUL_HOLD_MS = 600;
 /* «Varmhvit» er #FFF868 - «standard hvit ute» (Magne, 22. november 2026;
-   foer #FFE059) - som tone og metning slik Homey vil ha dem:
-   hsv(57°, 59 %, 100 %). */
-const JUL_VARM = { h:0.159, s:0.592 };
+   foer #FFE059). Tallene er de Twinkly-appen selv gir den fargen, lest
+   av garasjelyset gjennom Homey: tone 0,16 og metning 0,89. Regnet om
+   rett fra koden (metning 0,59) ble lyset mye hvitere enn i appen -
+   Twinkly bruker metningen paa sin egen maate. */
+const JUL_VARM = { h:0.16, s:0.89 };
 let julEnh = {};          /* id -> { ok, paa, h, s, modus } fra Homey */
 let julDrar = false;      /* fingeren ligger i et fargehjul - ikke tegn paa nytt */
 
