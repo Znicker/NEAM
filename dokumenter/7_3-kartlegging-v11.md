@@ -1827,6 +1827,27 @@ venstre i kortet.» Kortet 360 → 180 px; `.fagvis-boks .hub-lukk` rødt og
 `.fv-dager` legges inn i merkets span i `tegnFagVis()` (også i reserven
 uten merke). Testet på neam.no med Norsk (fire dager).
 
+**Natt til 23. november: påminnelsene slått sammen, prøvene til høyre,
+lekser som rader** (`emma.html`, `andrea.html` – like endringer). Magne:
+«Vi slår sammen påminnelser i den øverste rammen. Ukes påminnelser merkes
+med uke, resten med forkortelser for dag. Prøver kan inn der
+ukespåminnelser står i dag. Lekser skrives i en kolonne under hverandre.
+Alle linjer bør stå likt som avtaler og påminnelser mtp farge og layout.»
+- `tegnHuskeInner()`: én gruppe i `#huskeIdag` (dagens + ukas), dagens
+  først; `huskeRad()` merker «Uke» eller dagens forkortelse. `#huskeUken`
+  og `#ukeMerke` er borte; `#kortUken` har nå `#skoleProver` (id-en er
+  beholdt for `HOYRE_KORT`).
+- `skoleRad()`, `skoleMerke()`, `skoleProverHtml()` nye; `skoleukeHtml()`
+  tegner bare leksene. CSS-en for fagrammene (`.sku-fagramme`,
+  `.sku-linje`, `.sku-ramme`) er fjernet.
+- **Funnet under testen:** lange linjer med `nowrap` dyttet venstre
+  kolonne ut over hele skjermen – `.rutenett > .kort{min-width:0}` retter
+  det. Og hastestripa som `border-left` ble overstyrt av `fyll()`s
+  `border-color` – nå `box-shadow:inset`.
+- Testet på neam.no med Emmas data og en midlertidig prøve i minnet (ikke
+  lagret).
+- **Kjøkken dash har fortsatt to påminnelsesbokser** – ikke rørt.
+
 ### Åpne tråder
 
 **Fra 22. november 2026, kveld – små, ingen haster:**

@@ -1315,13 +1315,20 @@ langt fram, med «om N dager») og **Lekser · uke N** (samme uke og utvalg
 som Fag, etter frist, de gjorte grå og strøket nederst med «Ferdig» i
 grønt). Kalenderen tar høyden den trenger (høyst 55 %), skoleuka resten.
 Lekser står **ikke** lenger i «Påminnelser i dag» – ett sted for skole.
-Ingen hake: trykk åpner faget. Fra samme kveld, kompakt: **Prøver i egen
-ramme**; **lekser som én liten ramme per fag** (rutenett, minst 250 px
-bred), én linje per lekse med kort frist og tekst som kuttes med «…».
-Fagene i rekkefølgen til den tidligste åpne fristen, ferdige fag dempet
-nederst. **Avtalene i Dag står på én linje** (fra–til, initial, tittel,
-sted – stedet kuttes først). «Tilbake til i dag» står til venstre for
-Dag/Uke/Fag.
+Ingen hake: trykk åpner faget. **Avtalene i Dag står på én linje**
+(fra–til, initial, tittel, sted – stedet kuttes først). «Tilbake til i
+dag» står til venstre for Dag/Uke/Fag.
+
+**Høyre kolonne og leksene, fra natt til 23. november 2026:** én boks
+**«Påminnelser»** med både dagens og ukas – ukas merket **«Uke»**, dagens
+med forkortelsen for dagen (MAN, TIR …), dagens først. **«Prøver»** står i
+boksen der ukas påminnelser sto. **Lekser og prøver er rader i samme form
+som påminnelsene og avtalene** (`.hu-rad` med hennes farge og initial,
+«Fag: tekst» på én linje kuttet med «…», merkelapp til høyre: I dag, I
+morgen, ukedag, eller dag og dato lenger fram – prøver lenger enn en uke
+fram får «om N d»). Leksene står i én kolonne under kalenderen. Ingen
+hake; trykk åpner faget. Hastestripa er en innfelt skygge
+(`box-shadow:inset 3px 0 0`), fordi `fyll()` setter kantfargen på raden.
 
 **Fagvinduet i to kolonner** (fra 22. november 2026): toppen har bare
 faglæreren – ingen teller for gjorte lekser. **Krysset er større og rødt**
