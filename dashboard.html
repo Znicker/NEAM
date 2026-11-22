@@ -927,7 +927,11 @@ select.hu-felt{
 .jul-knapp{
   display:flex;flex-shrink:0;background:none;border:none;padding:0;margin-left:auto;cursor:pointer;
   touch-action:manipulation;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
+  /* iPaden merket knappen kort ved trykk, det gjorde den ikke med stjerna
+     (Magne, 22. november 2026) - samme grep som de andre trykkflatene her. */
+  -webkit-tap-highlight-color:transparent;
 }
+.jul-knapp:focus:not(:focus-visible){outline:none}
 .jul-knapp[hidden]{display:none}
 .jul-knapp img{width:var(--ntp-flis,84px);height:var(--ntp-flis,84px);object-fit:contain;display:block;pointer-events:none;-webkit-user-drag:none}
 .jul-knapp:active img,.jul-knapp.holder img{transform:scale(.96)}

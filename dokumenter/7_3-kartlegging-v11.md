@@ -1446,6 +1446,12 @@ hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
   full under 900 px: der viker sidenavnet, og boksene og luften strammes
   (bare i `dashboard.html`). Sjekket med de bredeste tallene (−14,8°,
   15,8°) på iPad stående: 26 px klaring til klokka.
+- **Samme dag: julelysknappen ble merket kort ved trykk** på iPaden, det
+  ble ikke stjerna. `-webkit-tap-highlight-color:transparent` som de
+  andre trykkflatene på dashet, og fokusringen bare ved tastatur. Ikke
+  mulig å se i Chrome på PC – må sjekkes på iPaden.
+- Etter push: garasjen virker, **Julelys Terrasse er uten kontakt** i
+  Homey (svarte om morgenen). Twinkly-koblingen, ikke Neam.
 
 ### Åpne tråder
 
