@@ -1512,6 +1512,34 @@ hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
 
 ### Åpne tråder
 
+**Twinkly-effekter i julelysmenyen – venter på Magne (22. november 2026).**
+Magne legger inn effekter fra galleriet på lysene selv i Twinkly-appen
+(«Jeg har jo mappet lysene» – galleriets effekter følger kartleggingen,
+egne effekter fra Neam ville ikke gjort det). Når det er gjort:
+- **Veien:** «Set effect» er et flytkort per enhet
+  (`homey:device:<id>:changeMovie`, argumentet `movie` er autocomplete),
+  og Neam kan ikke kjøre flytkort (homey.flow, «Missing Scopes»). Samme
+  omvei som TV-tastene: Neam skriver en Logic-variabel, en flyt kjører et
+  HomeyScript, skriptet kjører kortet. **Krever ja til å endre
+  `functions/api/homey.js`**, og en ny flyt og et nytt skript i Homey –
+  ikke `neam-tast`, som ikke skal røres.
+- **Effektlista** kommer fra
+  `Homey.flow.getFlowCardAutocomplete({ uri:'homey:device:<id>', id:'homey:device:<id>:changeMovie', name:'movie', query:'', type:'flowcardaction' })`
+  – bare effekter **lagret på lyset**. Garasjen hadde 11 (+ «[CHOOSE
+  RANDOM]»), terrassen svarte «No stored effects found!». Skriptet kan
+  legge lista i en variabel, så Neam alltid viser det som finnes.
+- **Ikke prøvd ennå:** å kjøre kortet fra et skript
+  (`runFlowCardAction`). Første steg er en test på garasjen.
+- **Galleriet** i Twinkly-skyen kan ikke hentes fra Homey eller Neam.
+- **Avklart underveis, til senere bruk:** Homey (192.168.86.247) når
+  lysene direkte på hjemmenettet – `GET /xled/v1/gestalt` uten innlogging.
+  Funnet 22. november: «6 Garasje» .51, «3 Veranda vest 3 strips» .56 og
+  «1 Veranda front» .57, alle TWS250STP, 250 lys, fw F. Navnene i Twinkly
+  er ikke Homeys («Julelys Terrasse» er trolig en av verandaene). To av
+  Homeys fem svarte ikke. **HomeyScript-feller:** ingen `AbortController`
+  eller `clearTimeout`; bruk `fetch(url, { timeout })`. Mer enn ~16
+  samtidige forespørsler gjorde at alle gikk ut på tid.
+
 **Besluttet, ikke bygget – fem systemer med begrunnelse i del 47–50 og 52:**
 - **Belønningssystemet** (del 47). XP for gjøremål og lekser, ukesterskel
   som utløser ukepenger, overskudd i egen pool per barn mot en milepæl.
