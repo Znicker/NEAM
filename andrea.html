@@ -918,14 +918,40 @@ body{
 #fagVisMeta[hidden]{ display:none; }
 
 .fv-kolonner{
-  display:grid; grid-template-columns:minmax(0, 1.55fr) minmax(0, 1fr);
+  display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1.55fr);
   gap:18px; align-items:start;
 }
+/* Synlige rammer rundt alt (Magne, 22. november 2026: «alt må få synlige
+   rammer»). --line alene forsvant mot papiret; blekkfargen med 22 %
+   dekning holder kontrasten uten aa bli en ny farge. */
+.fagvis-boks{ --fv-ramme:rgba(44,62,80,.22); }
+.fv-boks{
+  border:1.5px solid var(--fv-ramme); border-radius:14px;
+  padding:10px 14px 12px; background:var(--paper); margin-bottom:12px;
+}
+.fagvis-boks .fv-boks h4{ border-bottom:none; padding-bottom:0; }
+.fv-side .fagvis-notat.fv-boks{ margin-top:0; }
+/* Kortet: fagmerket stort oeverst i venstre kolonne. */
+.fv-kort{ display:block; width:100%; max-width:360px; margin:0 auto 12px; }
+.fv-kort img{ width:100%; height:auto; display:block; border-radius:14px; }
+.fv-kort-tom{
+  border:1.5px solid var(--fv-ramme); border-radius:14px; padding:28px 14px;
+  text-align:center; font-size:calc(var(--t-stor) * 1.5); font-weight:700;
+}
+.fv-ukenotat{
+  width:100%; min-height:38px; resize:vertical; overflow-y:hidden; margin-top:4px;
+  border:1.5px solid var(--fv-ramme); border-radius:10px; background:#fff;
+  color:var(--ink); font-family:'Archivo',sans-serif; font-size:var(--t-brod);
+  line-height:1.4; padding:7px 10px;
+}
+.fv-ukenotat:focus{ outline:2px solid var(--aksent); outline-offset:1px; }
+.fagvis-boks .fagvis-maal textarea, .fagvis-boks .fagvis-notat textarea{ border-color:var(--fv-ramme); }
 .fv-uke{
-  position:relative; border:1px solid var(--line); border-radius:14px;
+  position:relative; border:1.5px solid var(--fv-ramme); border-radius:14px;
   padding:12px 14px 10px; margin-bottom:10px; background:var(--paper);
 }
 .fv-uke.naa{ border:2.5px solid var(--aksent); padding:11px 13px 9px; }
+.fv-uke-topp .notat-status, .fv-under .notat-status{ margin-left:auto; }
 .fv-uke-topp{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; padding-right:4px; }
 .fv-uke-navn{ font-size:var(--t-stor); font-weight:700; }
 .fv-uke-dato{ font-size:var(--t-meta); color:var(--ink-soft); }
@@ -971,6 +997,7 @@ body{
 @media(max-width:700px){
   .fv-kolonner{ grid-template-columns:1fr; }
   .fagvis-boks .fagvis-bilde{ width:84px; }
+  .fv-kort{ max-width:200px; }
   .fv-navn, .fv-teller b{ font-size:calc(var(--t-stor) * 1.2); }
 }
 
@@ -3300,9 +3327,18 @@ function ryddFag(d){
         if(/^\d{4}-W\d{2}$/.test(u) && t) maal[u] = t;
       });
     }
+    /* Notater per uke (22. november 2026), samme noekkel som maalene.
+       Tomme felt tas ikke vare paa. */
+    const ukenotat = {};
+    if(f.ukenotat && typeof f.ukenotat === 'object'){
+      Object.keys(f.ukenotat).forEach(function(u){
+        const t = String(f.ukenotat[u] || '');
+        if(/^\d{4}-W\d{2}$/.test(u) && t.trim()) ukenotat[u] = t;
+      });
+    }
     return { id:String(f.id), navn:String(f.navn).trim(),
              laerer:String(f.laerer || '').trim(),
-             notat:String(f.notat || ''), maal:maal,
+             notat:String(f.notat || ''), maal:maal, ukenotat:ukenotat,
              dager:dager.sort(function(a,b){ return a - b; }) };
   });
 
@@ -4378,6 +4414,7 @@ async function lukkFagVis(){
      foer forsinkelsen loep ut. */
   if(notatVent) await notatLagre();
   if(maalVent)  await maalLagre();
+  await ukeNotatLagreAlle();
   fagVisId = null;
   $('fagVisBoks').hidden = true;
   $('fagVisBak').hidden  = true;
@@ -4386,6 +4423,11 @@ async function lukkFagVis(){
 function tegnFagVis(){
   const f = fagAv(fagVisId);
   if(!f){ lukkFagVis(); return; }
+  /* Staar markoeren i et av feltene (maal, notat, ukenotat), tegnes det
+     ikke om: lagringen gaar gjennom endreFag(), som tegner vinduet paa
+     nytt, og da ville feltet forsvunnet under fingrene midt i en setning. */
+  const aktiv = document.activeElement;
+  if(aktiv && aktiv.tagName === 'TEXTAREA' && $('fagVisKropp').contains(aktiv)) return;
 
   const ukeN = ukeNokkel(fagDag());
   const lekser = fagData.lekser.filter(function(l){ return l.fagId === f.id; });
@@ -4398,8 +4440,9 @@ function tegnFagVis(){
   const denne = lekser.filter(function(l){ return l.frist && ukeAv(l.frist) === ukeN; });
   const gjort = denne.filter(function(l){ return l.ferdig; }).length;
   const ukeNr = isoUke(fagDag()).uke;
-  $('fagVisNavn').innerHTML = fagMerkeHtml(f.navn, 'fagvis-bilde', '')
-    + '<div class="fv-hode"><span class="fv-navn">' + esc(f.navn) + '</span>'
+  /* Navnet og merket staar i det store kortet til venstre - Magne:
+     «Fagnavnet står i kortet og kan fjernes på siden.» */
+  $('fagVisNavn').innerHTML = '<div class="fv-hode">'
     +   '<div class="fagvis-meta">' + (meta.join('')
           || '<span class="fagvis-tom">Faglærer og ukedager er ikke lagt inn.</span>') + '</div>'
     + '</div>'
@@ -4491,6 +4534,10 @@ function tegnFagVis(){
     }else if(naa){
       r += '<div class="fv-under">Lekser</div><div class="fagvis-tom">Ingen lekser denne uka.</div>';
     }
+    r += '<div class="fv-under">Notater <span class="notat-status" data-ukestatus="' + esc(u) + '"></span></div>'
+      + '<textarea class="fv-ukenotat" data-uke="' + esc(u) + '" rows="1"'
+      + ' placeholder="Notater for uka – lagres av seg selv"'
+      + ' oninput="ukeNotatEndret(this)" onblur="ukeNotatLagre(this)"></textarea>';
     if(ps.length){
       r += '<div class="fv-under">Prøve</div>' + ps.map(function(p){
         const d = datoFraTekst(p.dato);
@@ -4527,7 +4574,12 @@ function tegnFagVis(){
       + '</div>';
   }
 
-  let hoyre = '<div class="fagvis-bolk"><h4>Prøver</h4>';
+  /* Kortet stort oeverst, notatene rett under, saa proevene (Magne).
+     Har faget ikke merke, staar navnet i en ramme i stedet. */
+  const kort = fagMerkeHtml(f.navn, 'fv-kort', '')
+    || '<div class="fv-kort fv-kort-tom">' + esc(f.navn) + '</div>';
+  let hoyre = '';
+  hoyre += '<div class="fagvis-bolk fv-boks"><h4>Prøver</h4>';
   if(!prover.length) hoyre += '<div class="fagvis-tom">Ingen prøver lagt inn.</div>';
   hoyre += kommer.map(function(p){ return proveHtml(p, false); }).join('')
          + forbi.map(function(p){ return proveHtml(p, true); }).join('')
@@ -4535,16 +4587,20 @@ function tegnFagVis(){
   /* Notatfeltet bygges som markup her, men verdien settes ETTER at
      innerHTML er skrevet - en value i en HTML-streng maa unnslippes, og
      et notat med anfoerselstegn i ville brutt taggen. */
-  hoyre += '<div class="fagvis-notat">'
-      + '<h4>Notater <span class="notat-status" id="notatStatus"></span></h4>'
+  const notat = '<div class="fagvis-notat fv-boks">'
+      + '<h4>Notater i faget <span class="notat-status" id="notatStatus"></span></h4>'
       + '<textarea id="fagNotat" placeholder="Skriv rett inn her — det lagres av seg selv."'
       + ' oninput="notatEndret(); voksFelt(this, 520)" onblur="notatLagre()"></textarea>'
       + '</div>';
 
   $('fagVisKropp').innerHTML = '<div class="fv-kolonner">'
+    + '<div class="fv-side">' + kort + notat + hoyre + '</div>'
     + '<div class="fv-uker">' + venstre + '</div>'
-    + '<div class="fv-side">' + hoyre + '</div>'
     + '</div>';
+  Array.from($('fagVisKropp').querySelectorAll('.fv-ukenotat')).forEach(function(t){
+    t.value = (f.ukenotat && f.ukenotat[t.dataset.uke]) || '';
+    voksFelt(t);
+  });
   fvSprett = null;
   $('fagMaal').value  = (f.maal && f.maal[ukeN]) || '';
   $('fagNotat').value = f.notat || '';
@@ -4554,6 +4610,58 @@ function tegnFagVis(){
   voksFelt($('fagMaal'));
   voksFelt($('fagNotat'), 520);
   tegnLekseBilder($('fagVisKropp'));
+}
+
+/* ---- Notater per uke ----
+   Som notatet paa faget: lagres 600 ms etter siste tastetrykk og naar
+   feltet forlates. Én ventetid per uke, saa to felt kan skrives i etter
+   hverandre uten at det ene sluker det andre. */
+const fvUkeVent = {};
+
+function ukeNotatEndret(el){
+  const u = el.dataset.uke;
+  const s = $('fagVisKropp').querySelector('[data-ukestatus="' + u + '"]');
+  if(s){ s.textContent = 'skriver …'; s.style.color = ''; }
+  voksFelt(el);
+  clearTimeout(fvUkeVent[u]);
+  fvUkeVent[u] = setTimeout(function(){ ukeNotatLagre(el); }, 600);
+}
+
+async function ukeNotatLagre(el){
+  const u = el.dataset.uke;
+  clearTimeout(fvUkeVent[u]);
+  delete fvUkeVent[u];
+  const id = fagVisId;
+  if(!id) return;
+  const tekst = el.value;
+  const f = fagAv(id);
+  const s = $('fagVisKropp').querySelector('[data-ukestatus="' + u + '"]');
+  if(f && ((f.ukenotat && f.ukenotat[u]) || '') === tekst){
+    if(s) s.textContent = '';
+    return;
+  }
+  try{
+    await endreFag(function(d){
+      d.fag = d.fag.map(function(x){
+        if(x.id !== id) return x;
+        const n = Object.assign({}, x.ukenotat || {});
+        if(tekst.trim()) n[u] = tekst; else delete n[u];
+        return Object.assign({}, x, {ukenotat:n});
+      });
+      return d;
+    });
+    if(s){ s.textContent = 'lagret'; s.style.color = ''; }
+    setTimeout(function(){ if(s && s.textContent === 'lagret') s.textContent = ''; }, 1600);
+  }catch(e){
+    if(s){ s.textContent = 'ikke lagret'; s.style.color = 'var(--danger)'; }
+  }
+}
+
+async function ukeNotatLagreAlle(){
+  const felt = Array.from(($('fagVisKropp') || document).querySelectorAll('.fv-ukenotat'));
+  for(const el of felt){
+    if(fvUkeVent[el.dataset.uke]) await ukeNotatLagre(el);
+  }
 }
 
 /* Mandagen i en ISO-uke («2026-W48»). 4. januar ligger alltid i uke 1. */

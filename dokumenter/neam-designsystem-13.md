@@ -1323,16 +1323,20 @@ nederst. **Avtalene i Dag står på én linje** (fra–til, initial, tittel,
 sted – stedet kuttes først). «Tilbake til i dag» står til venstre for
 Dag/Uke/Fag.
 
-**Fagvinduet i to kolonner** (fra 22. november 2026): toppen har stort
-merke, navn med lærer og dager, og en teller til høyre («0 av 1 – lekser
-gjort uke 48», grønn når alt er gjort). Venstre: **én ramme per uke,
-nyeste øverst, alle ukene i skoleåret** – læringsmål, lekser og ukas
-prøve. **Denne uka har tykk ramme i aksentfargen**, de andre tynn grå; bare
-denne ukas læringsmål kan skrives i. Er alle ukas lekser gjort, får ramma
-et grønt «Ferdig»-stempel i hjørnet. Høyre: prøvene (kommende øverst med
-«om N dager», så de som har vært) og notater. Haken spretter én gang når
-en lekse krysses av (av ved `prefers-reduced-motion`). En kolonne under
-700 px.
+**Fagvinduet i to kolonner** (fra 22. november 2026): toppen har lærer og
+dager til venstre og en teller til høyre («0 av 1 – lekser gjort uke 48»,
+grønn når alt er gjort). **Venstre kolonne: fagkortet stort øverst** (opptil
+360 px; navnet står i kortet og ikke i toppen), **«Notater i faget»** rett
+under, så **prøvene** (kommende øverst med «om N dager», så de som har
+vært). **Høyre kolonne: én ramme per uke, nyeste øverst, alle ukene i
+skoleåret** – læringsmål, lekser, **notater for uka** og ukas prøve.
+**Denne uka har tykk ramme i aksentfargen**; bare denne ukas læringsmål kan
+skrives i, ukenotatene kan skrives i alle uker. **Alt står i synlige
+rammer:** 1,5 px `rgba(44,62,80,.22)` (blekkfargen med 22 % dekning,
+`--fv-ramme`) – `--line` alene forsvant mot papiret. Er alle ukas lekser
+gjort, får ramma et grønt «Ferdig»-stempel i hjørnet. Haken spretter én
+gang når en lekse krysses av (av ved `prefers-reduced-motion`). En kolonne
+under 700 px.
 
 **Fristen skrives fullt ut** («Mandag 7. september») på egen linje over
 teksten; teksten har hele bredden. Ukedager på fag skrives fullt ut. Korte

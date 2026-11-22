@@ -1801,6 +1801,24 @@ ramme. Lekser trenger bare en linje og en liten ramme per fag.»
   `.sku-fagramme` (rutenett), én `.sku-linje` per lekse med `fristTekst()`.
 - Testet på neam.no med Emmas data (sju fag i tre rader på PC-bredde).
 
+**22. november, natt: fagkortet stort, og notater per uke** (`emma.html`,
+`andrea.html` – like endringer). Magne: «Gjør kortet MYE større, la det
+stå over prøver på venstre side … Fagnavnet står i kortet og kan fjernes
+på siden. Notater i faget kan få plass like under kortet. Notater kan også
+få et felt per uke. Alt må få synlige rammer.»
+- Kolonnene byttet: kort, notater og prøver til venstre; ukene til høyre.
+- **Nytt felt i fagdataene: `fag.ukenotat` = `{ "2026-W48": tekst }`**
+  (samme nøkkel som `maal`). `ryddFag()` i begge dashene tar vare på det –
+  uten det ville feltet blitt strøket ved neste skriving. Ingen andre
+  bygger fagene på nytt (`felles-skriv.js` og skjemaene bruker
+  `Object.assign`). Lagres som notatet: 600 ms etter siste tastetrykk og
+  ved blur; `lukkFagVis()` lagrer det som venter (`ukeNotatLagreAlle()`).
+- `tegnFagVis()` tegner ikke om mens markøren står i et felt i vinduet –
+  lagringen går gjennom `endreFag()`, som tegner vinduet på nytt, og feltet
+  ville forsvunnet midt i skrivingen. Gjelder også mål og fagnotat.
+- Testet visningen på neam.no med Spansk (uten skrivende knapper). Selve
+  lagringen av ukenotat er ikke testet mot ekte data.
+
 ### Åpne tråder
 
 **Fra 22. november 2026, kveld – små, ingen haster:**
