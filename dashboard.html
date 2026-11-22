@@ -995,6 +995,10 @@ select.hu-felt{
 .jul-hint{margin:4px 0 0;text-align:center;font-size:var(--t-meta);color:var(--ink-soft);font-weight:600}
 .jul-hjul{margin:10px auto 14px}
 .jul-hjul.tomt{opacity:.35;cursor:default}
+.jul-dim{display:flex;align-items:center;gap:12px;max-width:360px;margin:0 auto 16px}
+.jul-dim.tomt{opacity:.35}
+.jul-dim-navn{font-size:var(--t-meta);font-weight:700;color:var(--ink-soft)}
+.jul-dim-tall{min-width:44px;text-align:right;font-size:var(--t-meta);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
 .jul-hjul .hsk-hjul-merke[hidden]{display:none}
 </style>
 </head>
@@ -3985,7 +3989,8 @@ function julLes(alle){
       paa: !!(o.onoff && o.onoff.value),
       h: Number(o.light_hue && o.light_hue.value) || 0,
       s: Number(o.light_saturation && o.light_saturation.value) || 0,
-      modus: o.light_mode ? o.light_mode.value : null
+      modus: o.light_mode ? o.light_mode.value : null,
+      dim: (o.dim && typeof o.dim.value === 'number') ? o.dim.value : 1
     };
   });
   julTegn();
@@ -4048,6 +4053,7 @@ async function julSett(id, endringer){
       if(x[0] === 'light_hue') t.h = x[1];
       if(x[0] === 'light_saturation') t.s = x[1];
       if(x[0] === 'light_mode') t.modus = x[1];
+      if(x[0] === 'dim'){ t.dim = x[1]; t.paa = true; }   /* Homey tenner ved dimming */
     });
   }
   julTegn();
@@ -4096,6 +4102,11 @@ function julBygg(){
     + '<p class="jul-hint" id="julHint"></p>'
     + '<div class="hsk-hjul jul-hjul" id="julHjul" role="img" aria-label="Fargehjul for de valgte lysene">'
     +   '<span class="hsk-hjul-merke"></span></div>'
+    /* Styrken under fargene (Magne, 22. november 2026) - samme glider som
+       i Rommene, og den styrer de valgte, som hjulet. Sendes naar den slippes. */
+    + '<div class="jul-dim"><span class="jul-dim-navn">Styrke</span>'
+    +   '<input type="range" class="hsk-glider" id="julDim" min="1" max="100" step="1" aria-label="Styrke for de valgte lysene">'
+    +   '<span class="jul-dim-tall" id="julDimTall"></span></div>'
     + '<div class="dlg-rad"><button type="button" class="dlg-knapp nei" data-jul-lukk>Lukk</button></div></div>';
   m.addEventListener('click', function(ev){
     if(ev.target === m || ev.target.closest('[data-jul-lukk]')){ julLukk(); return; }
@@ -4126,6 +4137,19 @@ function julBygg(){
       if(valgt.has(id)) valgt.delete(id); else valgt.add(id);
       julMenyTegn();
     }
+  });
+  /* Styrken: tallet foelger gliden, verdien sendes til de valgte naar den
+     slippes. Mens fingeren ligger paa, tegnes ikke menyen paa nytt. */
+  m.addEventListener('pointerdown', function(ev){ if(ev.target.id === 'julDim') julDrar = true; });
+  m.addEventListener('input', function(ev){
+    if(ev.target.id === 'julDim') $('julDimTall').textContent = ev.target.value + ' %';
+  });
+  m.addEventListener('change', function(ev){
+    if(ev.target.id !== 'julDim') return;
+    julDrar = false;
+    const v = Number(ev.target.value) / 100;
+    julValgteOk().forEach(function(id){ julSett(id, [['dim', v]]); });
+    setTimeout(jstHent, 1500);
   });
   m.addEventListener('keydown', function(ev){
     if((ev.key === 'Enter' || ev.key === ' ') && ev.target.hasAttribute && ev.target.hasAttribute('data-jul-kort')){
@@ -4206,6 +4230,16 @@ function julMenyTegn(){
       const p = hskHjulPunkt(t.h, t.s);
       merke.style.left = p.x + '%'; merke.style.top = p.y + '%'; merke.style.background = hskFargeCss(t.h, t.s);
     }
+  }
+  /* Styrken viser det foerste valgte lysets. */
+  const dim = $('julDim'), dimTall = $('julDimTall');
+  if(dim){
+    const t = ider.length ? julEnh[ider[0]] : null;
+    dim.disabled = !t;
+    const v = t ? Math.max(1, Math.round(t.dim * 100)) : 100;
+    dim.value = v;
+    dimTall.textContent = t ? v + ' %' : '';
+    dim.closest('.jul-dim').classList.toggle('tomt', !t);
   }
   if(hint){
     const navn = JUL_LYS.filter(function(l){ return ider.indexOf(l.id) !== -1; }).map(function(l){ return l.navn; });

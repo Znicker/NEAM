@@ -1486,6 +1486,12 @@ hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
   Magne: «Må ha en alle varmhvit-knapp i toppen.» Til høyre for
   tittelen, samme gule knapp. Gjelder **alle lysene som svarer**, ikke
   bare de valgte, og tenner dem som er av. Testet lokalt.
+- **Samme dag: styrke under fargene** (bare `dashboard.html`). Magne: «Vi
+  må ha en dimmeslider under fargene.» Samme glider som i Rommene
+  (`.hsk-glider`, 1–100 %), med tallet ved siden av. Den styrer **de
+  valgte**, som hjulet, viser det første valgte lysets styrke, og sendes
+  når den slippes (`dim`; Homey tenner lyset). Menyen tegnes ikke på nytt
+  mens fingeren ligger på. Testet lokalt.
 
 ### Åpne tråder
 
