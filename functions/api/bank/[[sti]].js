@@ -46,7 +46,9 @@
      GET /api/bank?hva=dropbox          - er Dropbox koblet
      GET /api/bank?hva=dropbox-filer    - kvitteringsfilene som ligger i appmappa
      GET /api/bank?hva=dropbox-fil&id=<id> - selve fila (bilde eller PDF)
+     GET /api/bank?hva=dropbox-ikke-lest - filene i «Ikke lest» (varselet i innboksen)
      POST {hva:'dropbox-ferdig', id, navn, mappe} / {hva:'dropbox-koble-fra'}
+     POST {hva:'dropbox-prov-igjen', id, navn} - fra «Ikke lest» tilbake til appmappa
      POST {hva:'dropbox-lagre', navn, data} - en PDF (base64) til «Importert»
      GET /api/bank?hva=regnskap-aar     - godkjente poster per maaned og kategori, hele perioden,
                                           og fakturaene som venter (forfaller)
@@ -503,6 +505,7 @@ function loggDiff(foer, etter, kilde){
 function loggAnnet(kropp, s, kilde){
   const k = kropp || {}, h = k.hva, L = (tekst, kk) => [{ kilde:kk || kilde, tekst:tekst }];
   if(h === 'dropbox-ferdig') return L(k.mappe === 'Ikke lest' ? '«' + k.navn + '» kunne ikke leses – flyttet til mappa Ikke lest i Dropbox' : 'Hentet «' + k.navn + '» fra Dropbox, Neam leste den, og fila er flyttet til mappa Importert', 'Dropbox');
+  if(h === 'dropbox-prov-igjen') return L('«' + k.navn + '» flyttet tilbake fra Ikke lest i Dropbox for å leses på nytt', 'Dropbox');
   if(h === 'dropbox-lagre') return L('Lagret «' + ((s && s.navn) || k.navn) + '» i Dropbox, mappa Importert', 'Dropbox');
   if(h === 'dropbox-koble-fra') return L('Koblet fra Dropbox');
   if(h === 'trumf-innlogging') return L('Logget inn på Trumf');
@@ -3717,6 +3720,34 @@ async function dropboxFerdig(env, kropp){
   if(!r.ok) return svar(r);
   return svar({ ok:true, mappe:mappe });
 }
+/* «Ikke lest»: det Neam ikke klarte. Innboksen varsler om det som ligger
+   der, med «Prøv igjen» (Magne, 22. november 2026: «Vi må ha en advarsel
+   under innboks at noe ligger der og velge prøv igjen»). Finnes ikke
+   mappa, ligger det ingenting der - det er ikke en feil. */
+async function dropboxIkkeLest(env){
+  const t = await dropboxToken(env);
+  if(!t.ok) return svar(t);
+  const r = await dropboxApi(t.token, 'files/list_folder', { path:'/Ikke lest', recursive:false });
+  if(!r.ok){
+    if(r.status === 409 && /not_found/.test(String(r.feil))) return svar({ ok:true, filer:[] });
+    return svar(r);
+  }
+  const filer = (r.data.entries || []).filter(e => e['.tag'] === 'file')
+    .map(e => ({ id:e.id, navn:e.name, endret:e.server_modified }))
+    .sort((a, b) => String(a.endret).localeCompare(String(b.endret)));
+  return svar({ ok:true, filer:filer.slice(0, 50), flere:filer.length > 50 });
+}
+/* «Prøv igjen»: tilbake til appmappa, saa neste henting leser den paa nytt.
+   Klarer Neam den ikke da heller, havner den i «Ikke lest» igjen. */
+async function dropboxProvIgjen(env, kropp){
+  const id = String(kropp.id || ''), navn = String(kropp.navn || '').replace(/[\/\\]/g, '_').slice(0, 200);
+  if(!/^id:[\w-]{1,80}$/.test(id) || !navn) return svar({ ok:false, feil:'Mangler fil' });
+  const t = await dropboxToken(env);
+  if(!t.ok) return svar(t);
+  const r = await dropboxApi(t.token, 'files/move_v2', { from_path:id, to_path:'/' + navn, autorename:true });
+  if(!r.ok) return svar(r);
+  return svar({ ok:true });
+}
 /* Det som legges inn paa sida - valgt fil eller limt inn - lagres som PDF i
    «Importert», saa alle kvitteringene og regningene ligger samlet i Dropbox
    (Magne, 7. november 2026). Sida lager PDF-en; her lastes den bare opp.
@@ -3816,6 +3847,7 @@ export async function onRequestGet({ request, env }){
     if(hva === 'laert') return svar({ ok:true, laert:await lesJson(env, LAERT_NOKKEL, {}) });
     if(hva === 'dropbox') return await dropboxStatus(env);
     if(hva === 'dropbox-filer') return await dropboxFiler(env);
+    if(hva === 'dropbox-ikke-lest') return await dropboxIkkeLest(env);
     if(hva === 'dropbox-fil') return await dropboxFil(env, url.searchParams.get('id') || '');
     if(hva === 'kvittering-fil') return await kvitteringFil(env, url.searchParams.get('id') || '', url.searchParams.get('n') || '');
     if(hva === 'post') return await postDetaljer(env, url.searchParams.get('id') || '');
@@ -3913,6 +3945,7 @@ async function postHandling(request, env, v, kropp){
   if(kropp && (kropp.hva === 'merke-ny' || kropp.hva === 'merke-endre' || kropp.hva === 'merke-slett')) return await endreMerkeliste(env, kropp);
   if(kropp && kropp.hva === 'laert') return await lagreLaert(env, kropp);
   if(kropp && kropp.hva === 'dropbox-ferdig') return await dropboxFerdig(env, kropp);
+  if(kropp && kropp.hva === 'dropbox-prov-igjen') return await dropboxProvIgjen(env, kropp);
   if(kropp && kropp.hva === 'dropbox-lagre') return await dropboxLagre(env, kropp);
   if(kropp && kropp.hva === 'dropbox-koble-fra') return await dropboxKobleFra(env);
   if(kropp && kropp.hva === 'trumf-innlogging') return await trumfInnlogging(env, kropp, v.epost);

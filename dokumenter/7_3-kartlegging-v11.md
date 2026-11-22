@@ -1510,6 +1510,21 @@ hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
   Testet lokalt: midten, ringen, glideren, iPad og telefon (678 av 800
   px høyde).
 
+**22. november: varsel om «Ikke lest» i innboksen** (`okonomi.html` og
+`functions/api/bank/[[sti]].js`). Magne fant en fil i Dropbox-mappa «Ikke
+lest» og: «Vi må ha en advarsel under innboks at noe ligger der og velge
+prøv igjen.» Før dette ble det Neam ikke klarte, liggende uten at noen
+så det.
+- `GET ?hva=dropbox-ikke-lest` lister mappa (finnes den ikke, er lista
+  tom – ikke en feil). `POST {hva:'dropbox-prov-igjen', id, navn}` flytter
+  en fil tilbake til appmappa, og loggen får en linje.
+- Varselet (`.ok-varsel`, som varslene på Status) står rett under
+  innboks-hodet: «N filer i Dropbox ble ikke lest: «…»» og **Prøv igjen**,
+  som flytter filene tilbake og henter med en gang. Klarer Neam dem ikke
+  da heller, havner de i «Ikke lest» igjen, og varselet står der fortsatt.
+  Sjekkes hver gang Dropbox-statusen leses (åpning, Oppdater, etter henting).
+- Ikke testet lokalt (funksjonene kjører ikke der); syntaks sjekket.
+
 ### Åpne tråder
 
 **Twinkly-effekter i julelysmenyen – venter på Magne (22. november 2026).**
