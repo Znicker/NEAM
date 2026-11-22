@@ -1913,6 +1913,10 @@ skjult i skjemaet, fagvinduet er som før, og Neam får «Andrea får ikke
 karakterer – sett aldri karakter»). Magne: «Neam må også ta høyde for prøver
 og påminnelser. Vi må ordne slik at Emma kan legge inn karakterene sine.
 Og velge A–F, bestått, ikke bestått, lav, middels og høy måloppnåelse.»
+Rettet samme dag: «Hun har ikke bokstaver men tallkarakterer. 1-6.» –
+lista er 1–6, Bestått, Ikke bestått og de tre måloppnåelsene. Og: «Kan ta
+høyde for + og - også» – 1, 1+, 2-, 2, 2+ … 5+, 6-, 6 (1- og 6+ finnes
+ikke); `karakterRens()` gjør «5 +», «5−» og «5–» om til «5+»/«5-».
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke

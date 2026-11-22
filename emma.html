@@ -4623,12 +4623,19 @@ async function ukeNotatLagreAlle(){
    en nedtrekksliste; Neams verktoey godtar bare disse (store og smaa
    bokstaver spiller ingen rolle). En gammel karakter som ikke staar i
    lista, blir staaende - den legges inn som eget valg naar skjemaet
-   aapnes, saa den ikke forsvinner ved en lagring. */
-const KARAKTERER = ['A', 'B', 'C', 'D', 'E', 'F', 'Bestått', 'Ikke bestått',
+   aapnes, saa den ikke forsvinner ved en lagring.
+
+   Rettet samme dag: «Hun har ikke bokstaver men tallkarakterer. 1-6.» Og:
+   «Kan ta høyde for + og - også» - 1 til 6 med pluss og minus imellom.
+   1- og 6+ finnes ikke. */
+const KARAKTERER = ['1', '1+', '2-', '2', '2+', '3-', '3', '3+', '4-', '4', '4+',
+                    '5-', '5', '5+', '6-', '6', 'Bestått', 'Ikke bestått',
                     'Lav måloppnåelse', 'Middels måloppnåelse', 'Høy måloppnåelse'];
 
 function karakterRens(v){
-  const t = String(v === undefined || v === null ? '' : v).trim();
+  /* «5 +», «5−» og «5–» er det samme som «5+» og «5-». */
+  let t = String(v === undefined || v === null ? '' : v).trim().replace(/[−–]/g, '-');
+  if(/^[1-6]\s*[+-]$/.test(t)) t = t.replace(/\s+/g, '');
   if(!t) return '';
   const k = KARAKTERER.find(function(x){ return x.toLowerCase() === t.toLowerCase(); });
   if(!k) throw new Error('Karakteren må være en av: ' + KARAKTERER.join(', ') + '.');
@@ -5672,9 +5679,10 @@ window.neamBakgrunn = async function(){
     + 'og påminnelsene står like synlig som leksene, og et svar uten dem er halvt. '
     + 'Ikke gjett, og ikke svar av hukommelsen fra tidligere i samtalen hvis noe '
     + 'kan ha endret seg siden.\n\n'
-    + 'KARAKTERER settes med endre_prove og er en av: A, B, C, D, E, F, Bestått, '
-    + 'Ikke bestått, Lav måloppnåelse, Middels måloppnåelse, Høy måloppnåelse. '
-    + 'Står det noe annet - et tall, «M+» - spør du hvilken av dem det er.\n\n'
+    + 'KARAKTERER settes med endre_prove og er en av: tallkarakterene 1-6 med pluss '
+    + 'og minus (1, 1+, 2-, 2, 2+ … 5+, 6-, 6; 6 er best), Bestått, Ikke bestått, '
+    + 'Lav måloppnåelse, Middels måloppnåelse, Høy måloppnåelse. Står det noe '
+    + 'annet - en bokstav, «M+» - spør du hvilken av dem det er.\n\n'
     + 'UKEPLANEN LIGGER PÅ SKOLENS SIDE og kan hentes med hent_skoleplan. '
     + 'Uten argument får du den nyeste for 8. trinn. Timeplanene ligger i '
     + 'samme liste - bruk list_skoleplaner og send url hvis du skal ha en av dem.\n\n'
