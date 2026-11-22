@@ -1557,6 +1557,13 @@ hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
   `JUL_VARM` er nå de tallene. Det betyr også at ringen og glideren
   viser en farge som lyset gjengir hvitere – ikke rettet, ikke bedt om.
 
+- **Samme dag: inngangspartiet er med under julelysknappen** (bare
+  `dashboard.html`). Magne: «Legg til julelys inngangsparti under
+  knappen.» `JUL_LYS` finner det på `/inngangsparti/i` («5 Inngangsparti
+  5 strips» i Homey). Kort trykk slår nå tre lys av og på, og menyen har
+  tre kort. «veranda mot tunet» og «Juletre» er også Twinkly, men var
+  uten kontakt og er ikke med.
+
 **22. november: varsel om «Ikke lest» i innboksen** (`okonomi.html` og
 `functions/api/bank/[[sti]].js`). Magne fant en fil i Dropbox-mappa «Ikke
 lest» og: «Vi må ha en advarsel under innboks at noe ligger der og velge

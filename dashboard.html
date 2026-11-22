@@ -4083,8 +4083,8 @@ async function jstTrykk(){
    ------------------------------------------------------------
    Magne, 22. november 2026: en knapp ved siden av julestjerna for
    Twinkly-lysene ute, med Magnes egne ikoner (julelys tent, julelys-av
-   slukket). Bare garasjen og terrassen - de tre andre Twinkly-enhetene
-   (Inngangsparti, veranda mot tunet, Juletre) er utenfor med vilje.
+   slukket). Garasjen, terrassen og (fra samme kveld) inngangspartiet -
+   veranda mot tunet og Juletre er utenfor med vilje.
 
    Trykk: samme regel som stjerna - er noen paa, slaas alle av, ellers
    alle paa. Langt trykk (0,6 sek) aapner menyen: hvert lys med av/paa,
@@ -4103,7 +4103,10 @@ async function jstTrykk(){
 const JUL_TWINKLY = /^homey:app:com\.twinkly:/;
 const JUL_LYS = [
   { finn:/garasje/i,  navn:'Garasje',  id:null },
-  { finn:/terrasse/i, navn:'Terrasse', id:null }
+  { finn:/terrasse/i, navn:'Terrasse', id:null },
+  /* Inngangspartiet lagt til 22. november 2026 (Magne: «Legg til julelys
+     inngangsparti under knappen») - i Homey «5 Inngangsparti 5 strips». */
+  { finn:/inngangsparti/i, navn:'Inngangsparti', id:null }
 ];
 const JUL_HOLD_MS = 600;
 /* «Varmhvit» er #FFF868 - «standard hvit ute» (Magne, 22. november 2026;
