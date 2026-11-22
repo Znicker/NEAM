@@ -611,8 +611,8 @@ PC er utviklingsflate, ikke bruksflate.
 *Fra 8. november 2026.*
 
 **Alle sidene har samme topp:** sidas ikon på 84 px med navnet ved siden
-av (trykk: forsiden), låseikonet på fellesenhetene, været med stedet
-inntil, og klokka med dato til høyre – med alarmene og timerne under. Den ligger i `felles-topp.js` og
+av (trykk: forsiden), låseikonet på fellesenhetene, Inne og Ute med
+sjøen ved siden av, og klokka med dato til høyre – med alarmene og timerne under. Den ligger i `felles-topp.js` og
 `felles-topp.css`; en side får den med
 `<header class="ntp" id="neamTopp" data-ikon="…" data-navn="…">` og fila
 lastet etter `felles-neam.js`. **En ny side skal ha den** – ikke en egen
@@ -629,13 +629,22 @@ variant.
   navnet selv.
 - **Navnet på den innloggede står ikke i toppen**, verken her eller på
   dashene.
-- **Været er alltid nå** utenfor dashene. På dashene følger det dagen man
-  ser på (`window.ntpVaerDag`). **Trykk på været** åpner værboblen: døgnet
-  hver tredje time og langtidsvarselet.
-- **Kompakt under 700 px:** ikon på 56 px, navn og liten klokke; været og
-  stedet vises ikke. Bredden som måles er **toppens egen** (container
+- **Inne og Ute i stedet for været og stedet** (22. november 2026, Magne:
+  «erstatte vær og lokasjon med temperatur og luftfuktighet inne og ute.
+  Skriv inne og ute, ikke navnet på enheten»). Tallene er Netatmo-stasjonen
+  i Homey (`/api/homey?hva=enheter`), hentet hvert kvarter. Enhetene finnes
+  på appen og målingene, aldri på navnet: inne har CO₂ og lufttrykk, ute
+  har temperatur uten CO₂. **Store tall, svakere skrift:** etiketten i
+  `--t-etikett` versaler og fuktigheten i `--t-meta`, begge `--ink-soft`;
+  temperaturen i `--t-stor`, fet, med én desimal. En måling eldre enn to
+  timer, eller en enhet uten kontakt, står grå – som sjøen. Uten svar fra
+  Homey står «–».
+- **Trykk på Inne/Ute** åpner værboblen: døgnet hver tredje time og
+  langtidsvarselet. Boblen følger dagen dashet viser (`window.ntpVaerDag`);
+  Inne og Ute er alltid nå.
+- **Kompakt under 700 px:** ikon på 56 px, navn og liten klokke; Inne/Ute
+  og sjøen vises ikke. Bredden som måles er **toppens egen** (container
   query), ikke skjermens – en side i smal spalte på PC blir også kompakt.
-  Stedet faller bort under 780 px, vinden under 900 px.
 - **Kalender skjuler toppen** i fullskjerm og på liggende telefon, der
   høyden trengs til kalenderen.
 - **Låst ved rulling** (8. november 2026, Magne). Toppen står øverst hele

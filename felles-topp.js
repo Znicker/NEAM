@@ -2,7 +2,8 @@
    felles-topp.js - topplinja, lik paa alle sidene
    ------------------------------------------------------------
    Fra 8. november 2026. Sidas ikon og navn (lenke til forsiden),
-   laaseikonet paa fellesenhetene, vaeret med stedet ved siden av, og
+   laaseikonet paa fellesenhetene, Inne og Ute (Netatmo via Homey) med
+   vaerboblen bak et trykk, og
    klapptavla med dato - og til venstre for den alarmene, nedtellingene
    og stoppeklokkene som gaar.
 
@@ -58,10 +59,6 @@ function ntpEsc(s){
 }
 function ntpTo(n){ return String(n).padStart(2, '0'); }
 function ntpDatoNokkel(d){ return d.getFullYear() + '-' + ntpTo(d.getMonth() + 1) + '-' + ntpTo(d.getDate()); }
-
-const NTP_STED_SVG = '<svg class="ntp-sted-ikon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"'
-  + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
-  + '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>';
 
 function ntpTegn(){
   const t = document.getElementById('neamTopp');
@@ -231,36 +228,61 @@ async function ntpVaer(){
   ntpVaerTegn();
   ntpSjo();
 }
-function ntpVaerTegn(){
-  const d = ntpVaerData, el = document.getElementById('ntpVaer');
-  if(!d || !el || !d.current) return;
-  const dag = ntpDag(), nokkel = ntpDatoNokkel(dag);
-  const idag = nokkel === ntpDatoNokkel(new Date());
-  const i = d.daily ? d.daily.time.indexOf(nokkel) : -1;
-  let ikon, stort, tekst, under;
-  if(idag){
-    const n = d.current, iv = ntpVkode(n.weather_code);
-    ikon = iv[0]; tekst = iv[1]; stort = ntpRund(n.temperature_2m) + '°';
-    under = 'Føles som ' + ntpRund(n.apparent_temperature) + '° · '
-      + ntpVindPil(n.wind_direction_10m) + ntpRund(n.wind_speed_10m) + ' km/t';
-  }else if(i >= 0){
-    const iv = ntpVkode(d.daily.weather_code[i]);
-    ikon = iv[0]; tekst = iv[1]; stort = ntpRund(d.daily.temperature_2m_max[i]) + '°';
-    under = 'Lavest ' + ntpRund(d.daily.temperature_2m_min[i]) + '° · '
-      + ntpVindPil(d.daily.wind_direction_10m_dominant[i]) + ntpRund(d.daily.wind_speed_10m_max[i]) + ' km/t';
-  }else{
-    ikon = '·'; tekst = 'Ingen værmelding så langt fram'; stort = '–'; under = '';
+/* ---------- Inne og ute ----------
+   Fra 22. november 2026 (Magne): «erstatte vær og lokasjon med temperatur
+   og luftfuktighet inne og ute. Skriv inne og ute, ikke navnet på enheten».
+   Tallene kommer fra Netatmo-stasjonen i Homey via /api/homey. Enhetene
+   finnes paa appen og maalingene, ikke paa navnet - navnene er endret
+   foer: inne er stasjonen (CO2 og lufttrykk), ute er modulen med
+   temperatur uten CO2. Trykk aapner fortsatt vaerboblen, og sjoeen
+   staar ved siden av. Hentes sammen med vaeret, hvert kvarter. */
+const NTP_IU_GAMMEL = 2 * 3600000;   /* eldre maaling vises graa, som sjoeen */
+let ntpIu = null;
+async function ntpInneUte(){
+  let e = null;
+  try{
+    const r = await fetch('/api/homey?hva=enheter', { cache:'no-store' });
+    e = r.ok ? await r.json() : null;
+  }catch(err){ e = null; }
+  if(!e || !e.ok || !e.enheter) return;
+  const ut = { inne:null, ute:null };
+  Object.keys(e.enheter).forEach(function(id){
+    const d = e.enheter[id] || {};
+    if(!/^homey:app:com\.netatmo:/.test(String(d.driverId || d.driverUri || ''))) return;
+    const o = d.capabilitiesObj || {};
+    if(!o.measure_temperature) return;
+    const m = { t:o.measure_temperature, f:o.measure_humidity || null, borte: d.available === false };
+    if(o.measure_co2 && o.measure_pressure){ if(!ut.inne) ut.inne = m; }
+    else if(!o.measure_co2){ if(!ut.ute) ut.ute = m; }
+  });
+  ntpIu = ut;
+  ntpVaerTegn();
+}
+function ntpIuDel(navn, m){
+  let grad = '–', fukt = '', gammel = false;
+  if(m && m.t && typeof m.t.value === 'number'){
+    grad = m.t.value.toFixed(1).replace('.', ',') + '°';
+    const naar = m.t.lastUpdated ? new Date(m.t.lastUpdated).getTime() : NaN;
+    gammel = m.borte || (!isNaN(naar) && Date.now() - naar > NTP_IU_GAMMEL);
   }
+  if(m && m.f && typeof m.f.value === 'number') fukt = Math.round(m.f.value) + ' %';
+  return '<span class="ntp-iu' + (gammel ? ' gammel' : '') + '">'
+    + '<span class="ntp-iu-navn">' + navn + '</span>'
+    + '<span class="ntp-iu-grad">' + grad + '</span>'
+    + '<span class="ntp-iu-fukt">' + (fukt || '&nbsp;') + '</span>'
+    + '</span>';
+}
+
+/* Toppens felt mellom navnet og klokka: Inne og Ute, sjoeen ved siden av.
+   Navnet ntpVaerTegn er beholdt - dashene kaller den naar dagen skifter. */
+function ntpVaerTegn(){
+  const el = document.getElementById('ntpVaer');
+  if(!el || (!ntpIu && !ntpVaerData)) return;
+  const iu = ntpIu || {};
   el.innerHTML =
-      '<button type="button" class="ntp-vaer-naa" aria-label="Værmeldingen">'
-    +   '<span class="ntp-vaer-ikon">' + ikon + '</span>'
-    +   '<span class="ntp-vaer-tall">'
-    +     '<span class="ntp-grad">' + stort + '</span>'
-    +     '<span class="ntp-tekst">' + ntpEsc(tekst) + '</span>'
-    +     (under ? '<span class="ntp-vind">' + under + '</span>' : '')
-    +   '</span>'
+      '<button type="button" class="ntp-vaer-naa ntp-iu-knapp" aria-label="Inne og ute – trykk for værmeldingen">'
+    +   ntpIuDel('Inne', iu.inne) + ntpIuDel('Ute', iu.ute)
     + '</button>'
-    + '<span class="ntp-sted">' + NTP_STED_SVG + '<span>' + ntpEsc(ntpPos.navn) + '</span></span>'
     + '<span class="ntp-sjo" id="ntpSjo"></span>';
   el.hidden = false;
   el.querySelector('.ntp-vaer-naa').addEventListener('click', ntpVaerBoble);
@@ -354,13 +376,14 @@ function ntpSjoTegn(d){
 }
 
 async function ntpVaerStart(){
+  ntpInneUte();
   await ntpFinnPos();
   ntpVaer();
-  setInterval(function(){ if(!document.hidden) ntpVaer(); }, NTP_VAER_MAKS);
+  setInterval(function(){ if(!document.hidden){ ntpVaer(); ntpInneUte(); } }, NTP_VAER_MAKS);
   document.addEventListener('visibilitychange', function(){
     if(!document.hidden){
       ntpKlokke();
-      if(Date.now() - ntpVaerHentet > NTP_VAER_MAKS) ntpVaer();
+      if(Date.now() - ntpVaerHentet > NTP_VAER_MAKS){ ntpVaer(); ntpInneUte(); }
     }
   });
 }

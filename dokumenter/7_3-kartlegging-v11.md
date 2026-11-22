@@ -1,5 +1,7 @@
 # 7.3 – kartlegging, revidert (v11)
 
+*Ført à jour 22. november 2026: topplinja viser Inne og Ute fra
+Netatmo i stedet for været og stedet (se toppblokka).*
 *Ført à jour 21. november 2026: pinkodene på fellesenhetene er slått av
 foreløpig, og bare sys@ og Magne kommer inn på Økonomi. Samme dag: ett
 trykk på ikonet oppe til venstre går til forsiden, dashene er
@@ -139,7 +141,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 ?v=90`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
-`felles-topp.js ?v=11`, `felles-topp.css ?v=11`;
+`felles-topp.js ?v=12`, `felles-topp.css ?v=12`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
@@ -159,7 +161,7 @@ gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–94; neam.css til og
 med 89; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
-hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–10, topp.css 1–10**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–11, topp.css 1–11**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -1376,6 +1378,22 @@ WeekCal: «kunne tenke meg en slik visning på mobil på måned».
   så sida ruller litt; nederst ligger det over visningsvalget.
 - **Testet** i Chrome med den ekte kalenderen i en 390 × 780-ramme og de
   nye reglene lagt på. Ikke sett på en ekte telefon.
+
+**22. november: Inne og Ute i topplinja** (topp.js og topp.css `?v=12` på
+alle 18 sidene). Magne: «erstatte vær og lokasjon med temperatur og
+luftfuktighet inne og ute. Skriv inne og ute, ikke navnet på enheten».
+- Netatmo ligger i Homey (appen `com.netatmo` 5.8.8): stasjonen inne og
+  utemodulen på terrassen, begge med driveren `weatherstation`. Navnene er
+  endret, så `ntpInneUte()` finner dem på målingene: inne har CO₂ og
+  lufttrykk, ute har temperatur uten CO₂.
+- Hentes fra `/api/homey?hva=enheter` sammen med været, hvert kvarter.
+  Svaret er hele enhetslista, **rundt 400 kB**. `homey.js` er ikke rørt.
+- Værboblen og sjøen er beholdt (Magnes valg); trykk på Inne/Ute åpner
+  boblen. Stedsnavnet, vinden og «føles som» er borte fra toppen.
+- **Testet** lokalt med oppdiktede tall (grå for gammel måling, boblen
+  åpner), og formen på det ekte svaret lest på neam.no.
+- 22. november morgen viste utemåleren 12,7 °C og 30 % – senere 6,4 °C.
+  Følg med på om plasseringen gir sol eller husvarme.
 
 ### Åpne tråder
 
