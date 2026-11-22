@@ -911,8 +911,22 @@ select.hu-felt{
   display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;
   background:none;border:none;padding:0;margin-left:auto;cursor:pointer;
   color:var(--ink);font:inherit;touch-action:manipulation;
+  /* Langt trykk aapner menyen (Magne, 22. november 2026), som julelysene. */
+  -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
 }
 .jst-knapp[hidden]{display:none}
+.jst-knapp:focus:not(:focus-visible){outline:none}
+.jst-ikon img{pointer-events:none;-webkit-user-drag:none}
+.jst-knapp.holder .jst-ikon{transform:scale(.96)}
+/* Menyen: hver stjerne paa en linje med av/paa, «Alle på» oeverst. */
+.jst-liste{margin:0 0 16px}
+.jst-rad{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.jst-rad:first-child{border-top:none}
+.jst-rad.borte{opacity:.55}
+.jst-rad-navn{font-size:var(--t-brod);font-weight:700;color:var(--ink);min-width:0}
+.jst-rad-ute{display:block;font-size:var(--t-meta);font-weight:600;color:var(--ink-soft)}
+.jst-alle{width:auto;padding:8px 18px;font-size:var(--t-meta)}
+.jst-alle:disabled{opacity:.4;cursor:default}
 /* Like stor som sidas ikon (--ntp-flis i felles-topp.css): «Alt bør være
    lik størrelse på topplinja» (Magne, 22. november 2026). Var 64 px. */
 .jst-ikon{width:var(--ntp-flis,84px);height:var(--ntp-flis,84px);display:block}
@@ -3837,6 +3851,7 @@ async function oppdaterAlt(manuelt){
 const JST_NAVN = /julestjern/i;
 const JST_OPPDATER = 60 * 1000;
 let jstTilstand = {};       /* enhets-id -> true/false, fra Homey */
+let jstInfo = {};           /* enhets-id -> { navn, ok } til menyen */
 let jstMeldt = false;
 
 function jstIder(){
@@ -3873,9 +3888,30 @@ function jstKnapp(){
      med en gang, saa bildet ikke blinker tomt foerste gang det byttes. */
   b.innerHTML = '<span class="jst-ikon">' + neamIkonImg('julestjerne-av', ' width="511" height="512"') + '</span>';
   new Image().src = neamIkonUrl('julestjerne');
-  b.addEventListener('click', jstTrykk);
+  /* Kort trykk: alle av/paa. Langt trykk: menyen med hver stjerne
+     (Magne, 22. november 2026). */
+  julHold(b, jstTrykk, jstApne);
   vaer.parentNode.insertBefore(b, vaer);
   return b;
+}
+
+/* Kort og langt trykk paa en knapp i toppen - stjerna og julelysene.
+   Menyen aapnes mens fingeren ligger paa (JUL_HOLD_MS), og klikket
+   etterpaa svelges, saa et langt trykk aldri ogsaa slaar av. */
+function julHold(b, kort, langt){
+  let hold = null, varLangt = false;
+  const slipp = function(){ if(hold){ clearTimeout(hold); hold = null; } b.classList.remove('holder'); };
+  b.addEventListener('pointerdown', function(){
+    varLangt = false;
+    b.classList.add('holder');
+    hold = setTimeout(function(){ hold = null; varLangt = true; b.classList.remove('holder'); langt(); }, JUL_HOLD_MS);
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(function(t){ b.addEventListener(t, slipp); });
+  b.addEventListener('contextmenu', function(ev){ ev.preventDefault(); });
+  b.addEventListener('click', function(ev){
+    if(varLangt){ varLangt = false; ev.preventDefault(); return; }
+    kort();
+  });
 }
 
 function jstTegn(){
@@ -3896,7 +3932,8 @@ function jstTegn(){
   const img = b.querySelector('.jst-ikon img');
   const src = neamIkonUrl(paa > 0 ? 'julestjerne' : 'julestjerne-av');
   if(img && img.getAttribute('src') !== src) img.setAttribute('src', src);
-  b.setAttribute('aria-label', 'Julestjernene: ' + (tekst === '…' ? 'henter' : tekst) + '. Trykk for å slå ' + (paa > 0 ? 'av' : 'på'));
+  b.setAttribute('aria-label', 'Julestjernene: ' + (tekst === '…' ? 'henter' : tekst) + '. Trykk for å slå ' + (paa > 0 ? 'av' : 'på') + ', hold for hver enkelt');
+  if(jstAapen()) jstMenyTegn();
 }
 
 /* Henter ogsaa for julelysene (se «Julelysene ute» under) - ett svar fra
@@ -3916,12 +3953,86 @@ async function jstHent(){
   const alle = e.enheter || {};
   julLes(alle);
   jstTilstand = {};
+  jstInfo = {};
   (jstIder() || []).forEach(function(id){
-    const o = alle[id] && alle[id].capabilitiesObj && alle[id].capabilitiesObj.onoff;
+    const d = alle[id];
+    const o = d && d.capabilitiesObj && d.capabilitiesObj.onoff;
     if(o) jstTilstand[id] = !!o.value;
+    /* Navnet uten stedet foran: «Stue - Julestjerne vindu» blir
+       «Julestjerne vindu» - menyen gjelder bare stjernene uansett. */
+    if(d) jstInfo[id] = { navn: String(d.name || 'Julestjerne').split(' - ').pop().trim(), ok: d.available !== false };
   });
   jstTegn();
 }
+
+/* ---------- Menyen: hver stjerne for seg ----------
+   Langt trykk paa stjerna (Magne, 22. november 2026: «får man opp de
+   enkelte enhetene og kan velge av og på individuelt. Alle på må være
+   med»). Samme dialog og bryter som julelysene og Rommene. */
+function jstAapen(){ const m = $('jstBak'); return !!(m && !m.hidden); }
+
+function jstBygg(){
+  let m = $('jstBak');
+  if(m) return m;
+  m = document.createElement('div');
+  m.id = 'jstBak';
+  m.className = 'dlg-bak';
+  m.hidden = true;
+  m.innerHTML = '<div class="dlg-kort jul-kort" role="dialog" aria-label="Julestjerner">'
+    + '<div class="jul-topp"><h2 class="jul-tittel">Julestjerner</h2>'
+    +   '<button type="button" class="dlg-knapp ja jst-alle" data-jst-alle>Alle på</button></div>'
+    + '<div class="jst-liste" id="jstListe"></div>'
+    + '<div class="dlg-rad"><button type="button" class="dlg-knapp nei" data-jst-lukk>Lukk</button></div></div>';
+  m.addEventListener('click', function(ev){
+    if(ev.target === m || ev.target.closest('[data-jst-lukk]')){ jstLukk(); return; }
+    if(ev.target.closest('[data-jst-alle]')){
+      const av = Object.keys(jstInfo).filter(function(id){ return jstInfo[id].ok && !jstTilstand[id]; });
+      av.forEach(function(id){ jstSett(id, true); });
+      return;
+    }
+    const br = ev.target.closest('[data-jst-paa]');
+    if(br){
+      const id = br.getAttribute('data-jst-paa');
+      if(jstInfo[id] && jstInfo[id].ok) jstSett(id, !jstTilstand[id]);
+    }
+  });
+  document.body.appendChild(m);
+  return m;
+}
+
+async function jstSett(id, verdi){
+  jstTilstand[id] = verdi;
+  jstTegn();
+  const r = await post({ hva:'sett', enhet:id, kapabilitet:'onoff', verdi:verdi }).catch(function(){ return { ok:false }; });
+  if(!r || !r.ok) console.warn('Julestjernene: fikk ikke slått ' + ((jstInfo[id] || {}).navn || id) + ' ' + (verdi ? 'på' : 'av') + ':', r && r.feil);
+  setTimeout(jstHent, 1500);
+}
+
+function jstMenyTegn(){
+  const liste = $('jstListe');
+  if(!liste) return;
+  const ider = jstIder() || [];
+  if(!ider.length){ liste.innerHTML = '<div class="jst-rad"><span class="jst-rad-ute">Fant ingen gruppe «Julestjerner» i Rommene.</span></div>'; return; }
+  liste.innerHTML = ider.map(function(id){
+    const i = jstInfo[id];
+    if(!i) return '<div class="jst-rad borte"><span class="jst-rad-navn">Julestjerne<span class="jst-rad-ute">Henter …</span></span></div>';
+    const navn = esc(i.navn);
+    if(!i.ok) return '<div class="jst-rad borte"><span class="jst-rad-navn">' + navn + '<span class="jst-rad-ute">Uten kontakt</span></span></div>';
+    const paa = !!jstTilstand[id];
+    return '<div class="jst-rad"><span class="jst-rad-navn">' + navn + '</span>'
+      + '<button type="button" role="switch" class="hsk-bryter" data-jst-paa="' + id + '" aria-checked="' + paa + '"'
+      + ' aria-label="' + navn + ' av/på"><span></span></button></div>';
+  }).join('');
+  const alle = liste.closest('.dlg-kort').querySelector('[data-jst-alle]');
+  alle.disabled = !ider.some(function(id){ return jstInfo[id] && jstInfo[id].ok && !jstTilstand[id]; });
+}
+
+function jstApne(){
+  jstBygg().hidden = false;
+  jstMenyTegn();
+  jstHent();
+}
+function jstLukk(){ const m = $('jstBak'); if(m) m.hidden = true; }
 
 async function jstTrykk(){
   const ider = (jstIder() || []).filter(function(id){ return id in jstTilstand; });
@@ -4010,21 +4121,8 @@ function julKnapp(){
   b.hidden = true;
   b.innerHTML = neamIkonImg('julelys-av', ' width="512" height="511"');
   new Image().src = neamIkonUrl('julelys');
-  /* Kort trykk slaar av/paa, langt trykk aapner menyen. Menyen aapnes
-     mens fingeren ligger paa, og klikket etterpaa svelges. */
-  let hold = null, langt = false;
-  const slipp = function(){ if(hold){ clearTimeout(hold); hold = null; } b.classList.remove('holder'); };
-  b.addEventListener('pointerdown', function(){
-    langt = false;
-    b.classList.add('holder');
-    hold = setTimeout(function(){ hold = null; langt = true; b.classList.remove('holder'); julApne(); }, JUL_HOLD_MS);
-  });
-  ['pointerup', 'pointercancel', 'pointerleave'].forEach(function(t){ b.addEventListener(t, slipp); });
-  b.addEventListener('contextmenu', function(ev){ ev.preventDefault(); });
-  b.addEventListener('click', function(ev){
-    if(langt){ langt = false; ev.preventDefault(); return; }
-    julTrykk();
-  });
+  /* Kort trykk slaar av/paa, langt trykk aapner menyen - se julHold(). */
+  julHold(b, julTrykk, julApne);
   vaer.parentNode.insertBefore(b, vaer);
   return b;
 }
@@ -4554,6 +4652,7 @@ function bvLukk(){
 document.addEventListener('keydown', function(e){
   if(e.key !== 'Escape') return;
   if(julAapen()){ julLukk(); return; }
+  if(jstAapen()){ jstLukk(); return; }
   if(bvAapen()){ bvLukk(); return; }
   if($('filviser') && !$('filviser').hidden){ lukkViser(); return; }
   if(avtaleAapen){ lukkAvtale(); return; }

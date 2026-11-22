@@ -1114,9 +1114,10 @@ langt trykk – to sekunder til innstillingene (se over). Det er langt nok
 til ikke å forveksles med stemmens ~0,5 sek, og et vanlig trykk på en side
 uten handlinger sier at grepet finnes.
 
-**Unntak nummer to, Magnes valg 22. november 2026:** julelysknappen i
-toppen på Kjøkken dash har et langt trykk (0,6 sek) som åpner menyen med
-lysene og fargehjulet. Den står i toppen, langt fra tommelknappene, så
+**Unntak nummer to, Magnes valg 22. november 2026:** julelysknappen og
+julestjerna i toppen på Kjøkken dash har et langt trykk (0,6 sek) som
+åpner en meny – julelysene med fargehjulet, stjernene hver for seg med
+av/på og «Alle på». Den står i toppen, langt fra tommelknappene, så
 hånden blander dem ikke. Menyen åpnes mens fingeren ligger på, og klikket
 etterpå slår ikke lysene av. `aria-label` sier «hold for farger».
 Menyen: ett kort per lys øverst (trykk velger, «valgt» som ellers:

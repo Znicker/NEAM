@@ -1492,6 +1492,14 @@ hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
   valgte**, som hjulet, viser det første valgte lysets styrke, og sendes
   når den slippes (`dim`; Homey tenner lyset). Menyen tegnes ikke på nytt
   mens fingeren ligger på. Testet lokalt.
+- **Samme dag: holdemeny på julestjerna** (bare `dashboard.html`). Magne:
+  «Kan du legge til en holdmeny på julestjerner også. Da får man opp de
+  enkelte enhetene og kan velge av og på individuelt. Alle på må være
+  med.» Langt trykk åpner en liste over stjernene i gruppa «Julestjerner»
+  (navnet uten stedet foran), hver med bryteren fra Rommene, og **Alle
+  på** øverst til høyre (blekner når alle alt er på). Kort trykk er som
+  før. Hold-grepet er nå én funksjon, `julHold()`, for begge knappene.
+  Testet lokalt med en oppdiktet gruppe; begge knappene kort og langt.
 
 ### Åpne tråder
 
