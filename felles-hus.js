@@ -1616,6 +1616,22 @@ function hskBygg(){
   /* Kortet tegnes paa nytt hvert tiende sekund. Midt i et drag ville
      glideren eller merket i hjulet hoppe tilbake under fingeren. */
   let hjul = null;
+  /* Lyset foelger hjulet mens fingeren drar (Magne, 22. november 2026) -
+     ikke foerst naar den slippes. Bare den nyeste fargen venter mens en
+     sending er ute, saa det aldri hoper seg opp en koe mot Homey. Slippet
+     gaar gjennom samme koe, saa det alltid kommer sist. */
+  let hjulSender = false, hjulNeste = null, hjulSist = null;
+  const hjulSend = async function(id, f, slutt){
+    hjulSist = f;
+    hjulNeste = { id:id, f:f, slutt:!!slutt };
+    if(hjulSender) return;
+    hjulSender = true;
+    while(hjulNeste){
+      const n = hjulNeste; hjulNeste = null;
+      await hskSettFarge(n.id, n.f, !n.slutt);
+    }
+    hjulSender = false;
+  };
   hskBak.addEventListener('pointerdown', function(ev){
     if(hskRediger){
       const baand = ev.target.closest && ev.target.closest('.hsk-romnavn');
@@ -1630,11 +1646,16 @@ function hskBygg(){
     hjul = h;
     hskRor = true;
     try{ h.setPointerCapture(ev.pointerId); }catch(e){}
-    hskHjulVis(h, hskHjulLes(h, ev));
+    const f = hskHjulLes(h, ev);
+    hskHjulVis(h, f);
+    hjulSend(h.dataset.hjul, f, false);
   });
   hskBak.addEventListener('pointermove', function(ev){
     if(hskDrag){ hskDraFlytt(ev); return; }
-    if(hjul) hskHjulVis(hjul, hskHjulLes(hjul, ev));
+    if(!hjul) return;
+    const f = hskHjulLes(hjul, ev);
+    hskHjulVis(hjul, f);
+    hjulSend(hjul.dataset.hjul, f, false);
   });
   const slipp = function(ev, send){
     if(hskDrag){ hskDraSlipp(); return; }
@@ -1642,7 +1663,9 @@ function hskBygg(){
     if(!hjul) return;
     const h = hjul;
     hjul = null;
-    if(send) hskSettFarge(h.dataset.hjul, hskHjulLes(h, ev));
+    /* Ogsaa ved avbrudd: lyset har alt fulgt fingeren, saa siste farge
+       sendes helt og kortet tegnes paa nytt. */
+    hjulSend(h.dataset.hjul, send ? hskHjulLes(h, ev) : hjulSist, true);
   };
   hskBak.addEventListener('pointerup', function(ev){ slipp(ev, true); });
   hskBak.addEventListener('pointercancel', function(ev){ slipp(ev, false); });
@@ -2332,7 +2355,9 @@ async function hskSett(id, endringer){
     if(x[0] === 'dim' && o.onoff) o.onoff.value = true;
   });
   hskFeil = '';
-  hskTegn();
+  /* Mens fargehjulet holdes, sender det underveis - da tegnes ikke kortet
+     paa nytt under fingeren. */
+  if(!hskRor) hskTegn();
   for(const x of endringer){
     const r = await post({ hva:'sett', enhet:id, kapabilitet:x[0], verdi:x[1] });
     if(!r.ok){ hskFeil = 'Fikk det ikke til (' + ((d && d.name) || 'enheten') + '): ' + r.feil; break; }
@@ -2343,15 +2368,19 @@ async function hskSett(id, endringer){
 /* Fargen: lyset settes i fargemodus foerst - ellers kan en lampe som
    staar paa hvitt ta imot fargetonen uten aa vise den - og tennes til
    slutt om den var av. Man velger ikke farge paa et lys man vil ha av. */
-function hskSettFarge(id, f){
+function hskSettFarge(id, f, underveis){
   const d = enheter[id];
   const o = (d && d.capabilitiesObj) || {};
   const endr = [];
   if(o.light_mode && o.light_mode.setable && o.light_mode.value !== 'color') endr.push(['light_mode', 'color']);
-  endr.push(['light_hue', f.h], ['light_saturation', f.s]);
+  /* «underveis»: hjulet sender mens fingeren drar - da bare det som er
+     endret, for kortere ventetid. */
+  if(!underveis || !o.light_hue || o.light_hue.value !== f.h) endr.push(['light_hue', f.h]);
+  if(!underveis || !o.light_saturation || o.light_saturation.value !== f.s) endr.push(['light_saturation', f.s]);
   if(o.onoff && o.onoff.setable && !o.onoff.value) endr.push(['onoff', true]);
+  if(!endr.length) return Promise.resolve();
   hskHuskHvit(id, false);
-  hskSett(id, endr);
+  return hskSett(id, endr);
 }
 
 /* «Naturlig hvitt»: tilbake fra farge til varmt hvitt, som en vanlig

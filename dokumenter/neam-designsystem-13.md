@@ -1562,7 +1562,10 @@ bryteren tok den en hel linje på telefonen. Under glideren står
 **«Naturlig hvitt»** (`HSK_HVITT`, `light_temperature` 0,8) og
 **«Fargevalg»**, som åpner fargehjulet (fargetone rundt, hvitt i midten),
 side om side: de deler linja likt og krymper (`--t-meta`) heller enn å
-legge seg under hverandre. Begge tenner lampa om den var av. **Glider,
+legge seg under hverandre. Begge tenner lampa om den var av. **Hjulet
+sender mens fingeren drar** – lampa følger med, bare den nyeste fargen
+venter, og kortet tegnes ikke på nytt under fingeren (22. november
+2026, som fargeringen på julelysene). **Glider,
 knapper og hjul går under hele raden, også under bryteren** – i
 navnefeltet alene ble det for trangt (1. november 2026).
 

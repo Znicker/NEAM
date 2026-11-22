@@ -2,7 +2,9 @@
 
 *Ført à jour 22. november 2026: topplinja viser Inne og Ute fra
 Netatmo i stedet for været og stedet, sjøtemperaturen er tilbake, og
-Kjøkken dash har fått en julelysknapp ved stjerna (se toppblokka).*
+Kjøkken dash har fått en julelysknapp ved stjerna (se toppblokka).
+Senere samme dag: fargelysene – julelysene og fargehjulet i Rommene –
+følger fingeren mens den drar (`felles-hus.js ?v=29`).*
 *Ført à jour 21. november 2026: pinkodene på fellesenhetene er slått av
 foreløpig, og bare sys@ og Magne kommer inn på Økonomi. Samme dag: ett
 trykk på ikonet oppe til venstre går til forsiden, dashene er
@@ -140,7 +142,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 
 **Siste leverte versjoner:** `felles-neam.js ?v=95`, `felles-neam.css
 ?v=90`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
-?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
+?v=16`, `felles-hus.js ?v=29`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
 `felles-topp.js ?v=13`, `felles-topp.css ?v=15`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
@@ -162,7 +164,7 @@ gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–94; neam.css til og
 med 89; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
-hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–12, topp.css 1–14**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+hus `?v=1–28`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–12, topp.css 1–14**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -1517,6 +1519,14 @@ hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
   tilstanden hentes på nytt. Glideren fra hvitt til farge og styrken
   sender fortsatt ved slipp. **Ikke testet mot ekte lys:** hvor fort
   Twinkly gjennom Homey henger med.
+- **Samme dag: fargehjulet i Rommene gjør det samme** (`felles-hus.js
+  ?v=29`, alle 18 sidene). Magne: «lag samme løsningen med alle
+  fargelys». Hjulet sender tone og metning under draget – bare det som
+  er endret – og slippet går gjennom samme kø, så det alltid kommer
+  sist og sender hele fargen. `hskSett` tegner ikke kortet på nytt mens
+  `hskRor` står (bare hjulet sender mens det holdes). Testet lokalt med
+  en oppdiktet fargelampe: ingen ny tegning under draget, siste farge
+  riktig. Ikke testet mot ekte lamper.
 
 **22. november: varsel om «Ikke lest» i innboksen** (`okonomi.html` og
 `functions/api/bank/[[sti]].js`). Magne fant en fil i Dropbox-mappa «Ikke
