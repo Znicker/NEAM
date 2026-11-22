@@ -1355,7 +1355,10 @@ skjult i skjemaet hennes og Neam setter aldri karakter der): tallkarakterene
 1–6 med pluss og minus (1, 1+, 2-, 2, 2+ … 5+, 6-, 6), Bestått, Ikke bestått, Lav, Middels og Høy måloppnåelse – i skjemaet og
 i Neams verktøy. I fagvinduet vises «… måloppnåelse» som «Lav/Middels/Høy»
 i mindre skrift, og en prøve som har vært uten karakter får en blå «Sett
-karakter» (trykk på raden åpner skjemaet).
+karakter» (trykk på raden åpner skjemaet). **Ved tallkarakteren står et
+fjes – bare i prøvene i fagvinduet:** 1 😵‍💫, 2 😡, 3 🤔, 4 👏, 5 🥳, 6 👸🏼
+(«5+» og «5-» får fjeset til 5); Bestått 👏, Ikke bestått 😵‍💫, Høy 🥳,
+Middels 👏, Lav 😵‍💫.
 
 **Fagvinduet i to kolonner** (fra 22. november 2026): toppen har bare
 faglæreren – ingen teller for gjorte lekser. **Krysset er større og rødt**

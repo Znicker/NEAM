@@ -328,6 +328,8 @@ body{
   color:var(--aksent); min-width:0; white-space:nowrap;
 }
 .fagvis-boks .prove-karakter.mangler{ font-size:var(--t-etikett); }
+.karakter-fjes{ font-size:.8em; margin-left:6px; vertical-align:.05em; }
+.fagvis-boks .prove-karakter:has(.karakter-fjes){ white-space:nowrap; }
 /* Toning nederst naar en liste har mer under seg (Magne, 23. november
    2026). Rullefeltene er skjult, saa uten den saa man ikke at det fantes
    mer. Forsvinner naar man har rullet til bunnen. */
@@ -4662,9 +4664,18 @@ function karakterHtml(p, harVaert){
                     : '<span class="prove-karakter"></span>';
   }
   const kort = k.replace(/ måloppnåelse$/i, '');
+  /* Et fjes ved karakteren - bare her, i proevene i fagvinduet
+     (Magne, 23. november 2026). «5+» og «5-» faar fjeset til 5; ordene
+     slaas opp som de staar. */
+  const fjes = /^[1-6][+-]?$/.test(k) ? KARAKTER_FJES[k.charAt(0)] : (KARAKTER_FJES[k] || '');
   return '<span class="prove-karakter' + (kort.length > 2 ? ' lang' : '') + '" title="'
-       + esc(k) + '">' + esc(kort) + '</span>';
+       + esc(k) + '">' + esc(kort)
+       + (fjes ? '<span class="karakter-fjes" aria-hidden="true">' + fjes + '</span>' : '')
+       + '</span>';
 }
+const KARAKTER_FJES = { '1':'😵‍💫', '2':'😡', '3':'🤔', '4':'👏', '5':'🥳', '6':'👸🏼',
+  'Bestått':'👏', 'Ikke bestått':'😵‍💫',
+  'Høy måloppnåelse':'🥳', 'Middels måloppnåelse':'👏', 'Lav måloppnåelse':'😵‍💫' };
 
 /* Mandagen i en ISO-uke («2026-W48»). 4. januar ligger alltid i uke 1. */
 function fvUkeMandag(nokkel){

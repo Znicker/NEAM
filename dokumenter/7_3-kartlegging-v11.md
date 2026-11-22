@@ -1917,6 +1917,9 @@ Rettet samme dag: «Hun har ikke bokstaver men tallkarakterer. 1-6.» –
 lista er 1–6, Bestått, Ikke bestått og de tre måloppnåelsene. Og: «Kan ta
 høyde for + og - også» – 1, 1+, 2-, 2, 2+ … 5+, 6-, 6 (1- og 6+ finnes
 ikke); `karakterRens()` gjør «5 +», «5−» og «5–» om til «5+»/«5-».
+Fjes ved tallkarakteren i fagvinduets prøver (`KARAKTER_FJES` i
+`karakterHtml()`): 1 😵‍💫, 2 😡, 3 🤔, 4 👏, 5 🥳, 6 👸🏼; Bestått 👏, Ikke
+bestått 😵‍💫, Høy 🥳, Middels 👏, Lav 😵‍💫 måloppnåelse.
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke
