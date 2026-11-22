@@ -1574,6 +1574,16 @@ hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
   lysene skifter litt i utakt, er Twinklys sky – hvert lys svarer i sitt
   tempo; det rettes ikke herfra.
 
+
+**22. november, kveld: Emma og Andrea dash åpne for kjøkkenskjermen**
+(bare `emma.html` og `andrea.html`). Magne: «Åpne emma og andrea dash for
+kjøkken.» `felles@neam.no` og `kitchen@neam.no` er lagt til i
+`DASH_TILGANG` på begge, som på Kjøkken dash. Flisene på forsiden står
+åpne for alle fra før. Serveren har ingen egen sperre for dashene
+(`data.js` og `_middleware.js` nevner dem ikke). **Ikke prøvd på
+kjøkkenskjermen:** om felles@ ser Emmas og Andreas kalendere og
+lekser – dashene leser med kontoen som er logget inn.
+
 **22. november: varsel om «Ikke lest» i innboksen** (`okonomi.html` og
 `functions/api/bank/[[sti]].js`). Magne fant en fil i Dropbox-mappa «Ikke
 lest» og: «Vi må ha en advarsel under innboks at noe ligger der og velge
