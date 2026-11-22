@@ -1,5 +1,16 @@
 # 7.3 – kartlegging, revidert (v11)
 
+*Ført à jour 23. november 2026 (natt og morgen): Emma og Andrea dash er
+bygget om for skolen – avtalene på én linje, leksene som rader under
+kalenderen, påminnelsene i én boks og prøvene der ukas påminnelser sto,
+med rød roterende ramme på prøver denne uka og blå på dagens påminnelser;
+lekser og prøver folder seg ut med ett trykk; fagvinduet har ukene i
+rammer med læringsmål, lekser og notater per uke (nytt felt
+`fag.ukenotat`); karakterliste på Emma dash (ikke Andrea); toning nederst
+i lange lister. Neam legger prøver inn som prøver, leser kalenderen og
+slår opp ukedager i en datotabell (`felles-neam.js ?v=96`). Bilvakta får
+bevegelse fra Tapo og spør hvert 3. sekund; kontoen har Workers Paid.
+Detaljene står i toppblokka under 22.–23. november.*
 *Ført à jour 22. november 2026: topplinja viser Inne og Ute fra
 Netatmo i stedet for været og stedet, sjøtemperaturen er tilbake, og
 Kjøkken dash har fått en julelysknapp ved stjerna (se toppblokka).
@@ -1945,6 +1956,22 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   (se «sen kveld» over), takten er 3 s. Magne tester med bil som kommer
   inn på tunet mens kjøkkendashen er framme. Kjøretøy fra Tapo går
   fortsatt bare via en Tapo-plugg som Smart Action-mål.
+
+**Fra 23. november 2026 – skoledashene, ikke testet mot ekte bruk:**
+- **Ukenotatene i fagvinduet** – visningen er testet, lagringen er ikke.
+  Skriv en linje, lukk, åpne igjen.
+- **Spretten i haken** når en lekse krysses av – animasjonen er på plass,
+  selve trykket er ikke prøvd (det ville skrevet til dataene).
+- **Neam og datotabellen** – Emmas Mock exam lå på lørdag 28.11 da
+  tabellen kom; Magne svarer Neam «torsdag 26.». Se om Neam regner riktig
+  heretter.
+- **Påminnelsene som nå står dobbelt** (heldagsprøvene og gloseprøven lå
+  som påminnelser før Neam la dem inn som prøver) – Neam skal si fra og
+  slette bare med ja.
+- **Modellen på jentenes skjermer** står på Haiku; Magne bytter til Sonnet
+  med knappen i samtalen (Sonnet er allerede standard der ingen har valgt).
+- **Kjøkken dash** har fortsatt to påminnelsesbokser, avtaler på to linjer
+  og ingen ringer – med vilje ikke rørt.
 - **Steketermometer i Neam:** venter på kjøp. Meater Pro XL (Wi-Fi i
   basen, offisiell sky-API) er anbefalt for «alt på iPaden»; Inkbird
   IBT-2X/4XS + ESP32 (ESPHome → Homey) er den billige veien. Pinne med
