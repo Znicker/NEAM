@@ -1395,6 +1395,15 @@ luftfuktighet inne og ute. Skriv inne og ute, ikke navnet på enheten».
 - 22. november morgen viste utemåleren 12,7 °C og 30 % – senere 6,4 °C.
   Følg med på om plasseringen gir sol eller husvarme.
 
+**22. november: sjøtemperaturen er tilbake** (bare `functions/api/sjo.js`).
+Magne hadde ikke sett den på en stund: HI har flyttet endepunktet til
+`…/temperatur_flodevigen/ajax/updateLastReadings.ajx?boey=1`, og den gamle
+adressen svarte 404 på alle forsøkene. KV-nøkkelen `sjo` var tom, så
+ingenting sto. Samme XML som før; `KILDE` er rettet. Testet med `?url=`
+på neam.no før endringen: 5,79 °C på 1 m, rent GET. Gjelder toppen og
+dashene, som bruker samme kilde. Finnes tallet ikke igjen: åpne
+`draw.map?boey=1`, se hva sida henter, og prøv med `/api/sjo?url=`.
+
 ### Åpne tråder
 
 **Besluttet, ikke bygget – fem systemer med begrunnelse i del 47–50 og 52:**

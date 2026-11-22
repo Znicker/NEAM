@@ -31,8 +31,10 @@ const VERT  = 'www.imr.no';
 /* Dataendepunktet sida selv henter tabellen fra - funnet i Network-fanen
    5. september 2026: updateLatest.js kaller updateLastReadings.ajx og
    faar 1,1 kB tilbake. draw.map, som var foerste gjetning, er bare
-   visningssida og har ingen tall i seg. */
-const KILDE = 'https://www.imr.no/forskning/forskningsdata/temperatur_flodevigen/updateLastReadings.ajx?boey=1';
+   visningssida og har ingen tall i seg.
+   22. november 2026: HI har flyttet endepunktet inn i ajax/ - den gamle
+   adressen svarte 404, og sjoeen var borte fra toppen. Samme XML. */
+const KILDE = 'https://www.imr.no/forskning/forskningsdata/temperatur_flodevigen/ajax/updateLastReadings.ajx?boey=1';
 /* Sida endepunktet hoerer til. Sendes som Referer, og hentes foerst hvis
    endepunktet krever en sesjonskake. */
 const SIDEN = 'https://www.imr.no/forskning/forskningsdata/temperatur_flodevigen/draw.map?boey=1';
