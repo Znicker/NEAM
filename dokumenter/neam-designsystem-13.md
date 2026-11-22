@@ -612,7 +612,7 @@ PC er utviklingsflate, ikke bruksflate.
 
 **Alle sidene har samme topp:** sidas ikon på 84 px med navnet ved siden
 av (trykk: forsiden), låseikonet på fellesenhetene, Inne og Ute med
-sjøen ved siden av, og klokka med dato til høyre – med alarmene og timerne under. Den ligger i `felles-topp.js` og
+sjøen og yr.no ved siden av, og klokka med dato til høyre – med alarmene og timerne under. Den ligger i `felles-topp.js` og
 `felles-topp.css`; en side får den med
 `<header class="ntp" id="neamTopp" data-ikon="…" data-navn="…">` og fila
 lastet etter `felles-neam.js`. **En ny side skal ha den** – ikke en egen
@@ -652,9 +652,27 @@ variant.
   Sjøen står med etiketten «Sjø», ikke bølgen. En måling eldre enn to
   timer, eller en enhet uten kontakt, står grå (sjøen etter et døgn).
   Uten svar fra Homey står «–».
-- **Trykk på Inne/Ute** åpner værboblen: døgnet hver tredje time og
-  langtidsvarselet. Boblen følger dagen dashet viser (`window.ntpVaerDag`);
-  Inne og Ute er alltid nå.
+- **Tre bobler bak et trykk** (22. november 2026, Magne), samme boble
+  (`ntpBoble`), lukkes med kryss, trykk utenfor eller Escape:
+  - **Inne/Ute:** målerne – alt Netatmo melder (temperatur, fuktighet,
+    CO₂, lyd, lufttrykk, batteri) med *når* hver måling sist kom.
+  - **Sjø:** alle dybdene bøyen måler (1, 19 og 75 m) og når de ble målt.
+  - **YR.no** – en egen boks med en liten illustrasjon (**yr.no sine egne
+    værsymboler**, `/bilder/vaer/<symbolkode>.svg`, MIT-lisens fra
+    github.com/metno/weathericons – **ikke Yr-logoen**: MET sine vilkår
+    forbyr den), temperaturen og et ord. Den **vises bare der det er god
+    plass** (toppen minst 1100 px – iPad på tvers og PC); smalere dyttet
+    den Sjø og klokka sammen. Trykk åpner værmeldingen, **bred** (760 px),
+    **bygd som yr.no sin «daglig tabell»** (Magne: «trykke seg videre på
+    været slik som her»): «nå» øverst, så dagene med natt, morgen,
+    ettermiddag og kveld, maks/min, nedbør og vind. **Hver dag er et trykk
+    videre** til time for time (vindstyrken også med ord, «Lett bris fra
+    nord»), med «‹ Forrige dag», «Neste dag ›» og «‹ Alle dager». Lenger
+    fram enn et par døgn er det seks-timersbolker. Dagen dashet viser
+    (`window.ntpVaerDag`) er uthevet. Kreditten «Værdata fra MET Norge
+    (yr.no)» står nederst. Vind i m/s. **Stedet** er skjermens posisjon
+    når den er nøyaktig nok, og Ospefjell hjemme og ellers.
+  Inne, Ute og Sjø er alltid nå.
 - **Kompakt under 700 px:** ikon på 56 px, navn og liten klokke; Inne/Ute
   og sjøen vises ikke. Bredden som måles er **toppens egen** (container
   query), ikke skjermens – en side i smal spalte på PC blir også kompakt.

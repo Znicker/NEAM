@@ -9,7 +9,12 @@
 
    HVA DEN GIR:
      { temp: 16.7, dybde: 1, tid: "2026-09-05T06:00:00+02:00",
+       dybder: [ { dybde:1, temp:16.7, salt:31.4 }, { dybde:19, ... },
+                 { dybde:75, ... } ],
        kilde: "..." }
+   `dybder` (fra 22. november 2026) er alle dybdene boeyen maaler - HI
+   viser 1, 19 og 75 m - til sjoeboblen i toppen. temp/dybde er fortsatt
+   1 m, saa det som leste dem foer, virker som foer.
    eller { feil: "..." } naar den ikke finner et tall.
 
    HVOR TALLET KOMMER FRA: sida draw.map?boey=1 laster tabellen
@@ -113,8 +118,8 @@ function fraXml(xml){
     const m = new RegExp('<' + navn + '>\\s*(?:<!\\[CDATA\\[)?([^<\\]]*?)(?:\\]\\]>)?\\s*</' + navn + '>').exec(bit);
     return m ? m[1].trim() : null;
   };
-  const dybder = xml.split(/<depth>/).slice(1);
-  for(const d of dybder){
+  const dybderXml = xml.split(/<depth>/).slice(1);
+  for(const d of dybderXml){
     const dv = tall(cd('dval', d));
     if(dv === null || Math.abs(dv - DYBDE) > 0.6) continue;
     /* Temperaturen er maalingen med type 0. */
@@ -125,6 +130,7 @@ function fraXml(xml){
     }
     if(temp === null || temp < -3 || temp > 35) continue;
     const dato = cd('date', d), kl = cd('time', d);
+    const dybder = alleDybder(dybderXml, cd);
     let tid = null;
     if(dato && kl){
       /* Europe/Oslo: sommertid fra siste soendag i mars til siste soendag
@@ -136,9 +142,27 @@ function fraXml(xml){
       const sommer = dt >= s && dt < e;
       tid = dato + 'T' + kl + (sommer ? '+02:00' : '+01:00');
     }
-    return { temp: temp, dybde: DYBDE, tid: tid };
+    return { temp: temp, dybde: DYBDE, tid: tid, dybder: dybder };
   }
   return null;
+}
+
+/* Alle dybdene med temperatur (type 0) og saltholdighet (type 1). */
+function alleDybder(biter, cd){
+  const ut = [];
+  biter.forEach(function(d){
+    const dv = tall(cd('dval', d));
+    if(dv === null) return;
+    let temp = null, salt = null;
+    d.split(/<measure>/).slice(1).forEach(function(m){
+      const ty = cd('type', m), v = tall(cd('value', m));
+      if(ty === '0') temp = v;
+      if(ty === '1') salt = v;
+    });
+    if(temp === null || temp < -3 || temp > 35) return;
+    ut.push({ dybde: dv, temp: temp, salt: salt });
+  });
+  return ut.sort(function(a, b){ return a.dybde - b.dybde; });
 }
 
 function fraHtml(html){

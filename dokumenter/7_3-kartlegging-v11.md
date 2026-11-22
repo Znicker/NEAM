@@ -145,7 +145,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 ?v=91`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=30`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
-`felles-topp.js ?v=13`, `felles-topp.css ?v=15`;
+`felles-topp.js ?v=14`, `felles-topp.css ?v=16`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
@@ -165,7 +165,7 @@ gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–94; neam.css til og
 med 90; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
-hus `?v=1–29`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–12, topp.css 1–14**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+hus `?v=1–29`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–13, topp.css 1–15**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -1610,6 +1610,73 @@ farge (ingen medaljer), og når tiden går ut «får hun en grå stjerne».
   inn igjen neste gang hun spiller (se «Sletting fletter først» over).
 - Testet lokalt: valget, linja, tiden ute på Medium, resultat og rekorder
   i alle tre metaller. Ikke prøvd på Andreas iPad.
+
+
+**22. november, kveld: yr.no i toppen, og målerne og sjøen bak et trykk**
+(`felles-topp.js ?v=14`, `felles-topp.css ?v=16`, alle 18 sidene; ny
+`functions/api/yr.js`; `functions/api/sjo.js` utvidet). Magne: «Det er
+plass til været på siden. Lag en egen boks der det står YR.no med en liten
+illustrasjon. Når man trykker kan vi få en utvidet utgave av været. Er god
+plass på Ipad. Trykker man på temperatur fra netatmo får man opp info fra de
+sensorene inkl. oppdatert sist. Trykker man på sjøtemp vil jeg gjerne ha
+sjøtemp på de tre meterintervallene det er på deres nettsider og når sist
+oppdatert.»
+- **Været kommer nå fra yr.no (MET Norge),** ikke open-meteo, gjennom
+  `/api/yr?lat=&lon=` – MET krever User-Agent («neam.no husapp
+  https://neam.no», ingen personer), og svaret mellomlagres 30 min hos
+  Cloudflare. Funksjonen korter ned locationforecast/compact til
+  `{ok, oppdatert, tider:[{t, temp, vind, retning, fukt, sym1, mm1, sym6,
+  mm6, sym12}]}`; alltid 200, `{feil}` ved feil. Koordinatene rundes til
+  tre desimaler, så skjermene deler mellomlagringen.
+- **YR.no-boksen** står etter Sjø: yr.no sitt værsymbol, temperaturen og
+  et ord («Lettskyet»).
+- **Symbolene er yr.no sine egne** (Magne: «Kan du inkludere yr sin logo
+  også?» – nei: MET sine vilkår sier at tjenester ikke kan bruke Yr-logoen
+  eller se ut som Yr/NRK/MET; logoen krever tillatelse). Symbolene er
+  laget for å pakkes med appen: 83 SVG-er fra github.com/metno/weathericons
+  (`weather/svg`, MIT-lisens, `LICENSE` med i mappa), lagt i
+  `/bilder/vaer/` med symbolkoden som navn (`NTP_VAER_V = 1`, filene
+  `?v=1`). To av kodene har en skrivefeil hos MET
+  (`lightssleetshowersandthunder`, `lightssnowshowersandthunder`) – filene
+  heter det samme, så de treffer. Emojien er reserve når en kode mangler. Bare når toppen er minst 1100 px bred – på 1036 px
+  (iPad 10,9″ på tvers, med julelysene) ble navnet kuttet og boksen gikk
+  inn i klokka. Kjøkken dash på 1180 px har plass.
+- **Værboblen** er bygd som yr.no sin «daglig tabell» (Magne sendte
+  yr-sida for Ospefjell: «jeg ønsker at man kan trykke seg videre på været
+  slik som her»): «nå» øverst, så alle dagene i varselet med natt, morgen,
+  ettermiddag og kveld (seks-timerssymbolet som starter i den delen –
+  lenger fram kommer bolkene kl. 01, 07, 13 og 19 om vinteren, så det er
+  delen som teller), maks/min, nedbør (timesummer, ellers seks-timers) og
+  sterkeste vind. **Et trykk på en dag** gir time for time – eller
+  seks-timersbolker lenger fram – med vindstyrken i ord (Beaufort,
+  «Lett bris fra nordvest»), «‹ Forrige dag», «Neste dag ›» og «‹ Alle
+  dager». Dagen dashet viser er uthevet. Kreditt «Værdata fra MET Norge
+  (yr.no)» med når varselet ble laget. Uten vindkast og sol opp/ned – de
+  finnes ikke i compact-varselet.
+- **Inne/Ute-trykk** viser målerne: alt Netatmo melder per enhet (inne:
+  temperatur, fuktighet, CO₂, lyd, lufttrykk; ute: temperatur, fuktighet,
+  batteri) og når hver måling sist kom. Før åpnet det værboblen.
+- **Sjø-trykk** viser 1, 19 og 75 m (det HI viser) og når de ble målt.
+  `/api/sjo` gir nå også `dybder: [{dybde, temp, salt}]`; `temp`/`dybde`
+  er fortsatt 1 m. KV-reserven «sjo» har ikke dybdene – da står bare 1 m.
+- Testet lokalt med tenkte data på Kjøkken dash i 1180, 1080 og 820 px,
+  værboblen med ekte svar fra api.met.no (dagene, en dag, forrige/neste,
+  tilbake, telefonbredde), og funksjonene med en kopi av ekte svar fra
+  api.met.no og HI.
+- **Stedet** (Magne: «gjerne der man er (om det er nøyaktig nok) skal bli
+  ospefjell her»): skjermens posisjon når den er nøyaktigere enn 5 km
+  (`NTP_GROV_M`); innenfor 2 km fra Ospefjell (`NTP_HJEM_M`) brukes
+  Ospefjell selv med yr.no sine koordinater (sted 1-2359843: 58,4968 N,
+  8,8975 Ø), så varselet er det samme som på yr. Uten posisjon, eller med en
+  for grov, er det også Ospefjell – før Arendal (`NTP_STED`). Toppen legger
+  `noy` (nøyaktigheten i meter) i `fh_pos` når den lagrer; en grov posisjon
+  lagres ikke. **Merk:** en `fh_pos` som en dash alt har lagret, har ingen
+  `noy` og brukes som den er – ligger den mer enn 2 km fra Ospefjell (for
+  eksempel Arendal sentrum, 8,3 km unna), står det stedet til `fh_pos`
+  tømmes på den skjermen. Dashenes eget vær (`STED`, Arendal) er ikke rørt.
+- **MET-identiteten** «neam.no husapp https://neam.no» er godkjent av
+  Magne. **Ikke
+  sett mot ekte /api/yr på neam.no før push.**
 
 **22. november: varsel om «Ikke lest» i innboksen** (`okonomi.html` og
 `functions/api/bank/[[sti]].js`). Magne fant en fil i Dropbox-mappa «Ikke

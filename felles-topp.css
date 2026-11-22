@@ -75,6 +75,21 @@
 .ntp-iu.gammel .ntp-iu-grad{ color:var(--ink-soft); }
 .ntp-pil{ width:1.1em; height:1.1em; vertical-align:-.18em; margin-right:1px; }
 .ntp-sjo:empty{ display:none; }
+/* Sjø og yr.no er knapper (22. november 2026): et trykk viser dybdene
+   og vaermeldingen. Samme boks som Inne og Ute. */
+button.ntp-iu{ font:inherit; color:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+button.ntp-iu:active{ transform:scale(.98); }
+button.ntp-iu:focus-visible, .ntp-iu-knapp:focus-visible{ outline:3px solid var(--aksent); outline-offset:3px; }
+.ntp-yr-sym{ font-size:.8em; margin-right:.18em; vertical-align:.06em; }
+/* yr.no sine symboler: like store som teksten de staar i. */
+.ntp-yr-ikon{ width:1.25em; height:1.25em; vertical-align:middle; display:inline-block; }
+.ntp-yr-sym .ntp-yr-ikon{ width:1.3em; height:1.3em; vertical-align:-.22em; }
+.ntp-yr-naa-sym .ntp-yr-ikon{ width:56px; height:56px; }
+.ntp-yr-del .ntp-yr-ikon{ width:30px; height:30px; }
+.ntp-yr .ntp-iu-fukt{ max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* yr.no-boksen bare der det er plass - paa iPad paa tvers og PC.
+   Smalere enn dette dyttet den Sjø og klokka sammen (iPad paa hoeykant). */
+@container (max-width:1099px){ .ntp-yr{ display:none !important; } }
 
 
 /* ---------- Matlagingen som gaar ----------
@@ -235,6 +250,37 @@
 .ntp-vb-regn{ color:var(--aksent); white-space:nowrap; }
 .ntp-vb-vind{ color:var(--ink-soft); white-space:nowrap; text-align:right; }
 .ntp-vb-tom{ color:var(--ink-soft); font-size:var(--t-meta); }
+/* Vaermeldingen fra yr.no er bred paa iPad (22. november 2026). */
+.ntp-vb.bred{ width:min(760px, 100%); }
+.ntp-yr-naa{ display:flex; align-items:center; gap:14px; margin-top:12px; padding:10px 14px; border-radius:14px; background:var(--boks-mild); }
+.ntp-yr-naa-sym{ font-size:44px; line-height:1; }
+.ntp-yr-naa-gr{ font-size:calc(var(--t-stor) * 1.8); font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.ntp-yr-naa-tekst{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; line-height:1.45; }
+.ntp-yr-naa-tekst b{ color:var(--ink); font-size:var(--t-brod); }
+.ntp-vb-kilde{ margin-top:12px; font-size:var(--t-etikett); color:var(--ink-soft); font-weight:600; }
+/* Dagene som i yr.no sin daglig tabell: natt, morgen, ettermiddag og
+   kveld, og hver rad er et trykk videre til time for time. */
+.ntp-vb-tabell th{ padding:4px 6px; font-size:var(--t-etikett); font-weight:700; color:var(--ink-soft); text-align:left; white-space:nowrap; }
+.ntp-yr-dager{ margin-top:14px; }
+.ntp-yr-del{ text-align:center; font-size:1.25em; }
+th.ntp-yr-del{ font-size:var(--t-etikett); }
+.ntp-yr-dagrad{ cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.ntp-yr-dagrad td{ padding-top:8px; padding-bottom:8px; }
+.ntp-yr-dagrad:active td{ background:var(--boks-mild); }
+.ntp-yr-dagrad:focus-visible{ outline:3px solid var(--aksent); outline-offset:-3px; }
+.ntp-yr-pil{ color:var(--ink-soft); font-size:1.2em; text-align:right; }
+.ntp-yr-vindord{ color:var(--ink-soft); }
+.ntp-yr-tilbake{ border:0; background:none; padding:0 0 6px; font:inherit; font-size:var(--t-meta); font-weight:700; color:var(--aksent); cursor:pointer; }
+.ntp-yr-blad{ display:flex; justify-content:space-between; gap:10px; margin-top:12px; }
+.ntp-yr-knapp{ border:1px solid var(--line); background:var(--paper); border-radius:999px; padding:8px 16px;
+  font:inherit; font-size:var(--t-meta); font-weight:700; color:var(--ink); cursor:pointer; }
+/* Paa telefon: dagdelene og vindordene tar for mye plass - symbolet midt
+   paa dagen og tallene holder. */
+@media (max-width:600px){
+  .ntp-yr-dager .ntp-yr-del:not(:nth-child(4)), .ntp-yr-vindord, .ntp-yr-pil{ display:none; }
+  .ntp-yr-dager td, .ntp-yr-dager th{ padding-left:3px; padding-right:3px; }
+  .ntp-yr-dager th{ white-space:normal; }
+}
 
 @container (max-width:699px){
   .ntp-rad{ gap:10px; --ntp-flis:56px; }
