@@ -636,9 +636,12 @@ variant.
   på appen og målingene, aldri på navnet: inne har CO₂ og lufttrykk, ute
   har temperatur uten CO₂. **Store tall, svakere skrift:** etiketten i
   `--t-etikett` versaler og fuktigheten i `--t-meta`, begge `--ink-soft`;
-  temperaturen i `--t-stor`, fet, med én desimal. En måling eldre enn to
-  timer, eller en enhet uten kontakt, står grå – som sjøen. Uten svar fra
-  Homey står «–».
+  temperaturen fet, med én desimal, i `calc(var(--t-stor) * 1.45)`
+  (29/32 px). **Hver i sin lille boks** – Inne, Ute og Sjø – som
+  grupperingsbokser (`--boks-mild`, kant `--boks-kant`, radius 14 px).
+  Sjøen står med etiketten «Sjø», ikke bølgen. En måling eldre enn to
+  timer, eller en enhet uten kontakt, står grå (sjøen etter et døgn).
+  Uten svar fra Homey står «–».
 - **Trykk på Inne/Ute** åpner værboblen: døgnet hver tredje time og
   langtidsvarselet. Boblen følger dagen dashet viser (`window.ntpVaerDag`);
   Inne og Ute er alltid nå.

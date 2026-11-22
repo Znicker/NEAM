@@ -369,9 +369,12 @@ function ntpSjoTegn(d){
   if(!d){ el.innerHTML = ''; return; }
   const naar = d.tid ? new Date(d.tid) : null;
   const gammel = naar && !isNaN(naar) && (Date.now() - naar.getTime()) > 24 * 3600000;
-  el.className = 'ntp-sjo' + (gammel ? ' gammel' : '');
-  el.innerHTML = '<span class="ntp-sjo-ikon">🌊</span>'
-    + '<span class="ntp-sjo-grad">' + d.temp.toFixed(1).replace('.', ',') + '°</span>';
+  /* Samme boks som Inne og Ute, med «Sjø» i stedet for bølgen
+     (22. november 2026, Magne). Linja under står tom så tallene står likt. */
+  el.className = 'ntp-iu ntp-sjo' + (gammel ? ' gammel' : '');
+  el.innerHTML = '<span class="ntp-iu-navn">Sjø</span>'
+    + '<span class="ntp-iu-grad">' + d.temp.toFixed(1).replace('.', ',') + '°</span>'
+    + '<span class="ntp-iu-fukt">&nbsp;</span>';
   el.title = 'Sjøen' + (d.dybde ? ', ' + d.dybde + ' m' : '') + (gammel ? ' – gammel måling' : '');
 }
 

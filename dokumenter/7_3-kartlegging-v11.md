@@ -141,7 +141,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 ?v=90`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
-`felles-topp.js ?v=12`, `felles-topp.css ?v=12`;
+`felles-topp.js ?v=13`, `felles-topp.css ?v=13`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
@@ -161,7 +161,7 @@ gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–94; neam.css til og
 med 89; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
-hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–11, topp.css 1–11**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–12, topp.css 1–12**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -1403,6 +1403,14 @@ ingenting sto. Samme XML som før; `KILDE` er rettet. Testet med `?url=`
 på neam.no før endringen: 5,79 °C på 1 m, rent GET. Gjelder toppen og
 dashene, som bruker samme kilde. Finnes tallet ikke igjen: åpne
 `draw.map?boey=1`, se hva sida henter, og prøv med `/api/sjo?url=`.
+
+**22. november: Inne, Ute og Sjø i hver sin boks** (topp.js og topp.css
+`?v=13` på alle 18 sidene). Magne, etter et bilde fra kjøkkenskjermen:
+«Det er bedre plass for større tall og du kan skrive sjø i stedet for
+symbol. Kan skille dem med egne små bokser.» Tallene er 1,45 × `--t-stor`,
+boksene grupperingsbokser (`--boks-mild`, `--boks-kant`). Toppen er like
+høy som før (106 px på iPad liggende), og alle tre får plass på iPad
+stående.
 
 ### Åpne tråder
 

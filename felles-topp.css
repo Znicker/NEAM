@@ -41,7 +41,7 @@
 .ntp-navn{ font-size:var(--t-stor); text-align:left; white-space:nowrap; }
 
 .ntp-vaer{
-  display:flex; align-items:center; gap:18px; flex-shrink:1; min-width:0;
+  display:flex; align-items:stretch; gap:10px; flex-shrink:1; min-width:0;
   margin-left:auto; margin-right:auto;
 }
 .ntp-vaer[hidden]{ display:none; }
@@ -50,21 +50,24 @@
   font:inherit; color:inherit; text-align:left; cursor:pointer; border-radius:12px;
 }
 .ntp-vaer-naa:active{ transform:scale(.98); }
-/* Inne og Ute (22. november 2026, Magne): store tall, svakere skrift.
-   Etiketten i versaler som de andre merkelappene, fuktigheten under. */
-.ntp-iu-knapp{ gap:22px; align-items:flex-start; }
-.ntp-iu{ display:flex; flex-direction:column; line-height:1.1; }
+/* Inne, Ute og Sjø (22. november 2026, Magne): store tall, svakere skrift,
+   hver i sin lille grupperingsboks. Etiketten i versaler som de andre
+   merkelappene, fuktigheten under. Tallene er 1,45 x --t-stor (29/32 px)
+   - toppen har hoeyde til det, og de skal leses fra kjoekkenbenken. */
+.ntp-iu-knapp{ gap:10px; align-items:stretch; }
+.ntp-iu{
+  display:flex; flex-direction:column; line-height:1.1;
+  background:var(--boks-mild); border:1px solid var(--boks-kant);
+  border-radius:14px; padding:6px 14px 7px; min-width:84px;
+}
 .ntp-iu-navn{ font-size:var(--t-etikett); color:var(--ink-soft); font-weight:700;
-  text-transform:uppercase; letter-spacing:.08em; margin-bottom:2px; }
-.ntp-iu-grad{ font-size:var(--t-stor); font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  text-transform:uppercase; letter-spacing:.08em; margin-bottom:1px; }
+.ntp-iu-grad{ font-size:calc(var(--t-stor) * 1.45); font-weight:700; letter-spacing:-.02em;
+  line-height:1.05; font-variant-numeric:tabular-nums; white-space:nowrap; }
 .ntp-iu-fukt{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; font-variant-numeric:tabular-nums; margin-top:2px; }
 .ntp-iu.gammel .ntp-iu-grad{ color:var(--ink-soft); }
 .ntp-pil{ width:1.1em; height:1.1em; vertical-align:-.18em; margin-right:1px; }
-.ntp-sjo{ display:flex; align-items:center; gap:8px; }
 .ntp-sjo:empty{ display:none; }
-.ntp-sjo-ikon{ font-size:24px; line-height:1; }
-.ntp-sjo-grad{ font-size:var(--t-stor); font-weight:700; line-height:1; }
-.ntp-sjo.gammel .ntp-sjo-grad{ color:var(--ink-soft); }
 
 
 /* ---------- Matlagingen som gaar ----------
