@@ -146,7 +146,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=95`, `felles-neam.css
+**Siste leverte versjoner:** `felles-neam.js ?v=96`, `felles-neam.css
 ?v=91`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=30`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
@@ -171,7 +171,7 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet;
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–94; neam.css til og
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–95; neam.css til og
 med 90; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
 hus `?v=1–29`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–13, topp.css 1–15**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
@@ -1884,6 +1884,16 @@ ut/sammen uten å tegne lista på nytt; `skoleAapen` husker den åpne
 gjennom en ny tegning; `skoleFakta()` lager faktalinjene. Knappen
 `.sku-gaa` (blå, `--aksent`) lukker utfoldingen og kaller `apneFagVis()`.
 Testet på neam.no: Engelsk-leksa foldet ut, «Gå til faget» åpnet Engelsk.
+
+**23. november: datotabell til Neam** (`felles-neam.js ?v=96`, alle 18
+sidene). Magne viste en samtale der Neam la Emmas Mock exam inn som
+«torsdag 28. november» – 28. er lørdag – og deretter regnet seg videre
+feil («25. november er en mandag»). Neam fikk bare dagens dato og måtte
+regne ukedager selv, og Haiku bommer på det. `neamNaaTekst()` legger nå
+ved `neamDatoTabell()`: ukedag og ISO-dato for denne uka og fem til, med
+ukenummer, og regelen «står en ukedag og en dato sammen, sjekk dem mot
+tabellen; spriker de, spør». Gjelder alle sidene. Den feilplasserte
+prøven (28.11) er ikke rettet – Magne svarer Neam.
 
 ### Åpne tråder
 

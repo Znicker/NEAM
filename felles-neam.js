@@ -404,7 +404,34 @@ function neamNaaTekst(){
        + '. Dato paa ISO-form: ' + iso + '. Uke ' + neamUkeNr(d) + '.\n'
        + 'Regn ut datoer herfra - «i morgen», «paa fredag», «neste uke». Ikke spoer '
        + 'brukeren hvilken dag det er, og ikke gjett. Verktoeyene vil ha ISO-formen '
-       + '2026-09-08.\n\n';
+       + '2026-09-08.\n\n'
+       + neamDatoTabell(d);
+}
+
+/* Ukedag og dato for denne uka og fem til, ferdig utregnet. Neam regnet
+   selv og bommet: «torsdag 28. november» ble lagt inn, og 28. er en
+   loerdag (Magne, 23. november 2026). En tabell aa slaa opp i er
+   tryggere enn kalenderregning i modellen - saerlig paa Haiku. */
+function neamDatoTabell(d){
+  const DAGER = ['mandag','tirsdag','onsdag','torsdag','fredag','lørdag','søndag'];
+  const p = function(n){ return String(n).padStart(2, '0'); };
+  const man = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  man.setDate(man.getDate() - ((man.getDay() + 6) % 7));
+  const linjer = [];
+  for(let u = 0; u < 6; u++){
+    const dager = [];
+    let uke = 0;
+    for(let i = 0; i < 7; i++){
+      const x = new Date(man.getFullYear(), man.getMonth(), man.getDate() + u * 7 + i);
+      if(i === 0) uke = neamUkeNr(x);
+      dager.push(DAGER[i] + ' ' + x.getFullYear() + '-' + p(x.getMonth() + 1) + '-' + p(x.getDate()));
+    }
+    linjer.push('Uke ' + uke + ': ' + dager.join(', '));
+  }
+  return 'DATOTABELL - slaa opp her i stedet for aa regne ut ukedager selv:\n'
+       + linjer.join('\n') + '\n'
+       + 'Staar en ukedag og en dato sammen i det du leser eller skriver, sjekk '
+       + 'dem mot tabellen. Spriker de, si fra og spoer - ikke velg selv.\n\n';
 }
 
 function neamSystem(k, harVerktoy, bakgrunn){

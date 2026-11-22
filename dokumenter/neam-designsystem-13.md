@@ -2650,6 +2650,12 @@ filer.
 *Skrevet 13. september 2026, da verktøyene ble flyttet fra sidene til
 fellesfiler.*
 
+**Datoer slås opp, de regnes ikke** (fra 23. november 2026). Hver samtale
+får en datotabell – ukedag og ISO-dato for denne uka og fem til
+(`neamDatoTabell()` i `felles-neam.js`). Neam skal slå opp ukedager der, og
+spørre når en ukedag og en dato i kilden ikke stemmer. Grunnen: Haiku la en
+prøve på «torsdag 28. november», som er en lørdag.
+
 **Neambot skal ha samme verktøy overalt.** Han hører til skallet, ikke til
 sida han tilfeldigvis står på. En bruker som får til noe på kjøkkenskjermen
 og ikke på telefonen, har møtt en grense vi har laget – ikke en grense som
