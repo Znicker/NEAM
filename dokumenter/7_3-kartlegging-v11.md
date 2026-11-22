@@ -5,7 +5,12 @@ Netatmo i stedet for været og stedet, sjøtemperaturen er tilbake, og
 Kjøkken dash har fått en julelysknapp ved stjerna (se toppblokka).
 Senere samme dag: fargelysene – julelysene og fargehjulet i Rommene –
 følger fingeren mens den drar, og Rommene har fått julelysenes
-fargevalg, også for grupper (`felles-hus.js ?v=30`, `felles-neam.css ?v=91`).*
+fargevalg, også for grupper (`felles-hus.js ?v=30`, `felles-neam.css ?v=91`).
+Kveld: toppen har fått yr.no (egen boks og en værmelding man trykker seg
+videre i, `/api/yr`), målerne og sjødybdene bak et trykk, og Ospefjell som
+sted hjemme (`felles-topp.js ?v=14`, `felles-topp.css ?v=16`); dashenes
+gamle værkode er fjernet; mattespillet har timer og stjerner i tre metaller
+(`andrea-matte:v2`); Emma og Andrea dash slipper inn kjøkkenskjermen.*
 *Ført à jour 21. november 2026: pinkodene på fellesenhetene er slått av
 foreløpig, og bare sys@ og Magne kommer inn på Økonomi. Samme dag: ett
 trykk på ikonet oppe til venstre går til forsiden, dashene er
@@ -150,8 +155,8 @@ alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
 `functions/api/` med `hent.js`, `sandnes.js`, `sjo.js`, `claude.js`,
-`data.js`, `ms.js`, `homey.js`, `roborock.js`, `turn.js`, `pin.js` og
-`bank/[[sti]].js`.
+`data.js`, `ms.js`, `homey.js`, `roborock.js`, `turn.js`, `pin.js`,
+`yr.js` (fra 22. november) og `bank/[[sti]].js`.
 Bildeversjoner: **`IKON_V=2`** (i `felles-neam.js`) for ikonene i
 `bilder/ikoner/` og `bilder/ikoner/sikkerhet/` – sidene som lenker dem
 direkte, skriver `?v=2` selv. `?v=1` gjaldt ikonene fra 27. oktober og er
@@ -159,7 +164,10 @@ brent for alle som ble byttet 7. november; `neam-logo.png` fikk ikke nytt
 bilde og står fortsatt med `?v=1`. `FAG_MERKE_V=3` (fagmerkene, fortsatt i
 bruk), `NMW_SYMBOL_V=1` (klippersymbolet i kartet, i `felles-hus.js`),
 hagebildet `NMW_HAGE` er `null` fra 1. november (se del 56; brukte `v=1`),
-spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet).
+spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet;
+`stjerne-bronse.webp` og `stjerne-solv.webp` fra 22. november).
+`NTP_VAER_V=1` (i `felles-topp.js`) for yr.no sine værsymboler i
+`bilder/vaer/` (22. november).
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
@@ -1712,6 +1720,31 @@ så det.
 - Ikke testet lokalt (funksjonene kjører ikke der); syntaks sjekket.
 
 ### Åpne tråder
+
+**Fra 22. november 2026, kveld – små, ingen haster:**
+- **Rommene kan «sprette» etter et fargevalg**, som julelysene gjorde:
+  `hskSett` henter tilstanden 1,5 s etter, og Homey kan svare med gamle
+  tall. Julelysene fikk `julLokal` (10 s). Ikke sett i Rommene ennå –
+  rettes om Magne ser det.
+- **Varmhvit på de eldre julelysene:** garasjen og inngangspartiet
+  gjengir samme tall (0,16/0,89) litt annerledes enn terrassen (eldre
+  `hw_id`, samme modell TWS250STP). Magne tester først samme farge i
+  Twinkly-appen på begge; ser de ulike ut der også, får hvert lys egne
+  tall i `JUL_LYS`.
+- **Dashenes gamle sjødel** (`lastSjo`, `.vt-sjo`) står igjen – henter
+  ingenting (`#vtSjo` finnes ikke). Fjernes på ordre.
+- **Tapo-kameraet på tunet melder ikke bevegelse til Homey:**
+  `alarm_motion` er `null` uten `lastUpdated` (Tapo-appen 2.1.16, bare
+  bevegelseskort, ingen kjøretøy). Bilvakta på Kjøkken dash har derfor
+  trolig aldri slått til. Magne sjekker i Homey om «Bevegelse» slår seg
+  på. Kjøretøy fra Tapo går bare via en Tapo-plugg som Smart Action-mål.
+- **Steketermometer i Neam:** venter på kjøp. Meater Pro XL (Wi-Fi i
+  basen, offisiell sky-API) er anbefalt for «alt på iPaden»; Inkbird
+  IBT-2X/4XS + ESP32 (ESPHome → Homey) er den billige veien. Pinne med
+  bare Bluetooth (CHEFBBQ, MeatStick V Core) kan ikke kobles på.
+- **Spotify i Neam:** fjernkontroll med søk via Spotify Web API, lyden på
+  en Spotify Connect-høyttaler (anbefalt Sonos). Venter på høyttaler og
+  en utviklerapp hos Spotify.
 
 **Twinkly-effekter i julelysmenyen – venter på Magne (22. november 2026).**
 Magne legger inn effekter fra galleriet på lysene selv i Twinkly-appen
