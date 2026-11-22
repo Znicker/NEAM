@@ -977,7 +977,7 @@ select.hu-felt{
 .jul-tittel{margin:0;font-size:var(--t-meta);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
 /* Menyen (Magne, 22. november 2026): lysene som kort oeverst - trykk
    velger, valgt er --aksent-lys med --aksent kant (designsystemet: «valgt»).
-   Hvert kort har fargen naa, av/paa og Varmhvit (#FFE059, Magnes farge).
+   Hvert kort har fargen naa, av/paa og Varmhvit (#FFF868, Magnes farge).
    Under kortene fargeringen, og de valgte foelger den. */
 .jul-lys{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:12px}
 .jul-ett{
@@ -1001,7 +1001,7 @@ select.hu-felt{
 .jul-farge.av{opacity:.35}
 .jul-varm{
   align-self:flex-start;border:none;border-radius:999px;padding:8px 18px;cursor:pointer;
-  background:#FFE059;color:var(--ink);font-family:inherit;font-size:var(--t-meta);font-weight:700;
+  background:#FFF868;color:var(--ink);font-family:inherit;font-size:var(--t-meta);font-weight:700;
   box-shadow:0 0 0 1px rgba(0,0,0,.1);
 }
 .jul-varm:active{transform:scale(.97)}
@@ -4106,9 +4106,10 @@ const JUL_LYS = [
   { finn:/terrasse/i, navn:'Terrasse', id:null }
 ];
 const JUL_HOLD_MS = 600;
-/* «Varmhvit» er #FFE059 (Magne, 22. november 2026), som tone og metning
-   slik Homey vil ha dem: hsv(49°, 65 %, 100 %). */
-const JUL_VARM = { h:0.136, s:0.651 };
+/* «Varmhvit» er #FFF868 - «standard hvit ute» (Magne, 22. november 2026;
+   foer #FFE059) - som tone og metning slik Homey vil ha dem:
+   hsv(57°, 59 %, 100 %). */
+const JUL_VARM = { h:0.159, s:0.592 };
 let julEnh = {};          /* id -> { ok, paa, h, s, modus } fra Homey */
 let julDrar = false;      /* fingeren ligger i et fargehjul - ikke tegn paa nytt */
 

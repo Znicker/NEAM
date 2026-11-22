@@ -1548,6 +1548,11 @@ hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
     valg av kort, én lampe, julelysglideren, telefonbredde. Ikke testet
     mot ekte lamper.
 
+- **Samme dag: varmhvit er #FFF868** (bare `dashboard.html`). Magne:
+  «#FFF868 dette skal være standard hvit ute». `JUL_VARM` er nå tone
+  0,159 og metning 0,592 (før #FFE059, 0,136/0,651); knappene heter
+  fortsatt «Varmhvit» og «Alle varmhvit».
+
 **22. november: varsel om «Ikke lest» i innboksen** (`okonomi.html` og
 `functions/api/bank/[[sti]].js`). Magne fant en fil i Dropbox-mappa «Ikke
 lest» og: «Vi må ha en advarsel under innboks at noe ligger der og velge

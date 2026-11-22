@@ -1122,7 +1122,8 @@ hånden blander dem ikke. Menyen åpnes mens fingeren ligger på, og klikket
 etterpå slår ikke lysene av. `aria-label` sier «hold for farger».
 Menyen: ett kort per lys øverst (trykk velger, «valgt» som ellers:
 `--aksent-lys` og `--aksent`), med fargen nå, av/på og en **Varmhvit**-
-knapp i **#FFE059** – Magnes farge, bare her. Under kortene **en
+knapp i **#FFF868** – Magnes «standard hvit ute», bare her (før
+#FFE059). Under kortene **en
 fargering** (tonen rundt, fargen stor i midten) og **en glider fra hvitt
 til full farge**, som i Twinkly-appen, men uten svart ende og uten Lagre.
 Begge sender mens fingeren drar, så lysene følger med (bare den nyeste
