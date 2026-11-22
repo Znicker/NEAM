@@ -1925,6 +1925,11 @@ begge dashene: **nytt felt `prove.kommentar`**, tatt vare på i `ryddFag()`;
 eget felt i skjemaet, under datoen i fagvinduet, i utfoldingen på dashen;
 `les_prover`, `legg_til_prove` og `endre_prove` leser og skriver det.
 Testet skjemaet på neam.no (lukket uten å lagre).
+Feltene i fagvinduet vokste ikke med teksten (Magne: «Læringsmålene blir
+liggende i et lite felt som ikke vokser»): `tegnFagVis()` kjører mens
+vinduet er skjult, og et skjult felt har ingen høyde å måle. `apneFagVis()`
+måler nå alle feltene på nytt når vinduet er synlig. Målt på neam.no:
+Samfunnsfag-målet sto i 52 px med 64 px tekst, etterpå 64 px.
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke

@@ -4376,6 +4376,13 @@ function apneFagVis(id){
   $('fagVisBak').hidden  = false;
   $('fagVisBoks').hidden = false;
   passSkjema();
+  /* Feltene maales FOERST naa. tegnFagVis() kjoerer mens vinduet er
+     skjult, og et skjult felt har ingen hoeyde - da ble laeringsmaalet
+     staaende i minstehoeyden med teksten gjemt (Magne, 23. november
+     2026: «Læringsmålene blir liggende i et lite felt som ikke vokser»). */
+  Array.from($('fagVisKropp').querySelectorAll('textarea')).forEach(function(t){
+    voksFelt(t, t.id === 'fagNotat' ? 520 : undefined);
+  });
 }
 
 async function lukkFagVis(){
