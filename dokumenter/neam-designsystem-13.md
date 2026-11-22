@@ -1309,6 +1309,14 @@ avkryssing skjer i fagvinduet der leksa står med hele teksten. Stempel på
 skrå over merket: «Ingen lekser» rødt, «Ferdig» grønt. Grønt er gjort, som
 haken; rødt er sletter. **En farge betyr én ting.**
 
+**Skoleuka under kalenderen** (fra 22. november 2026): i Dag står to
+blokker under avtalene – **Prøver** (alle som ikke har vært, uansett hvor
+langt fram, med «om N dager») og **Lekser · uke N** (samme uke og utvalg
+som Fag, etter frist, de gjorte grå og strøket nederst med «Ferdig» i
+grønt). Kalenderen tar høyden den trenger (høyst 55 %), skoleuka resten.
+Lekser står **ikke** lenger i «Påminnelser i dag» – ett sted for skole.
+Ingen hake: trykk åpner faget. Teksten kuttes etter tre linjer.
+
 **Fristen skrives fullt ut** («Mandag 7. september») på egen linje over
 teksten; teksten har hele bredden. Ukedager på fag skrives fullt ut. Korte
 former beholdes bare der sju står på rad (ukesvisningen) og i merkelapper.

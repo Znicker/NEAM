@@ -259,14 +259,42 @@ body{
 /* ---------- Vær ---------- */
 .vaer-t{flex:1;text-align:center;padding:8px 2px;border-radius:11px;background:#F7F9FA}
 
-/* En lekse i huskeboksen. Stripa er den samme hastefargen som i Fag, saa
-   det er samme sak som ser lik ut to steder. */
-/* Uten hake tar raden hele bredden. Uten denne ville den stoppet der
-   haken pleide aa begynne, og lista hadde faatt en ujevn hoeyrekant. */
-.hu-linje.uten-hake{ padding-right:34px; }
-.hu-rad.hu-lekse{ border-left:3px solid transparent; }
-.hu-rad.hu-lekse.gul{ border-left-color:var(--handling-endre); }
-.hu-rad.hu-lekse.rod{ border-left-color:var(--danger); }
+/* ---------- Skoleuka ----------
+   Proevene og ukas lekser under kalenderen i Dag (Magne, 22. november
+   2026: «De trenger mye tydeligere oversikt over hva de skal gjøre en
+   uke.»). Kalenderen tar hoeyden den trenger - sjelden mer enn fem
+   avtaler - og skoleuka resten. Begge ruller hver for seg paa iPad; paa
+   telefon ruller sida (se mobilblokka). */
+#plan{ flex:0 1 auto; max-height:55%; }
+.sku{ border-top:1px solid var(--line); margin-top:10px; padding-top:14px; }
+.sku[hidden]{ display:none; }
+.sku-tittel{
+  font-size:var(--t-meta);font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--ink);margin:0 0 8px;
+}
+.sku-blokk + .sku-blokk{ margin-top:18px; }
+.sku-rad{
+  border-left:3px solid transparent; padding:6px 0 6px 10px; margin-bottom:4px;
+  cursor:pointer; -webkit-tap-highlight-color:transparent; border-radius:2px;
+}
+.sku-rad:active{ background:rgba(44,62,80,.05); }
+.sku-rad.gul{ border-left-color:var(--handling-endre); }
+.sku-rad.rod{ border-left-color:var(--danger); }
+.sku-topp{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.sku-fag{ font-size:var(--t-brod); font-weight:700; }
+.sku-topp .lekse-frist{ padding-top:0; white-space:normal; }
+/* Teksten faar tre linjer. Resten staar i fagvinduet, som et trykk aapner. */
+.sku-rad .lekse-tekst{
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3;
+  overflow:hidden; margin-top:2px;
+}
+/* Gjort: graa og strøket, nederst i lista - samme form som i Fag. */
+.sku-rad.ferdig .sku-fag, .sku-rad.ferdig .lekse-tekst{ opacity:.45; }
+.sku-rad.ferdig .lekse-tekst{ text-decoration:line-through; }
+.sku-ferdig{
+  font-size:var(--t-etikett);font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--handling-ny);
+}
 
 /* ---------- Spillene ----------
    Snarveien til emma-spill.html (fra 2. november 2026; foer det
@@ -1061,7 +1089,7 @@ body{
   #fag{ padding-bottom:4px; }
 
   /* Litt hoeyde saa et tomt kort ikke blir en stripe, men ingen tak. */
-  #plan{ min-height:110px; }
+  #plan{ min-height:110px; max-height:none; }
   #uke{ min-height:180px; }
 
   /* Ukesvisningen har sju doegnsoeyler. Paa 390px blir de 50px hver, og
@@ -1680,6 +1708,9 @@ select.hu-felt{
       <div class="kort-kropp" id="fag" hidden>
         <div class="tom">Henter …</div>
       </div>
+      <!-- Proevene og ukas lekser under kalenderen, bare i Dag. Se
+           «Skoleuka» i skriptet. -->
+      <div class="kort-kropp sku" id="skoleuke"></div>
       <!-- «Legg til avtale i kalenderen» sto her til 4. september. Den
            gjoer det samme som oeverste plass i hoeyre tommelknapp, og to
            veier til samme handling er én for mye naar den ene ligger fast
@@ -2884,6 +2915,8 @@ function settVisning(ny){
     const el = $(VIS_BOKS[v]);
     if(el) el.hidden = (v !== ny);
   });
+  /* Skoleuka hoerer til dagsplanen - Fag viser det samme i full bredde. */
+  if($('skoleuke')) $('skoleuke').hidden = (ny !== 'dag');
 
   /* Fag blar i uker, som ukesvisningen - pilene staar i alle tre. */
 
@@ -4746,10 +4779,6 @@ function datoIUken(basisdato, nr){
 }
 
 function huskeRad(m){
-  /* En utledet lekse har ingen merknad bak seg: boblen, blyanten og
-     sletting hoerer til Fag, ikke hit. Haken virker - den er det samme
-     spoersmaalet begge steder. */
-  if(m.lekse) return lekseRadIHuske(m);
   const uke = m.omfang === 'uke';
   const ferdig = !!m.ferdig;
   const harTekst = !!(m.tekst || '').trim();
@@ -5012,31 +5041,11 @@ function tegnHuskeInner(){
      treff: mine.filter(function(m){ return m.omfang === 'uke' && ukeAv(m.frist) === uke; })}
   ];
 
-  /* Leksene med frist paa denne dagen staar ogsaa som paaminnelser.
-     UTLEDET, ikke kopiert: en lekse som ogsaa ble skrevet inn i
-     huskelista ville vaert to sannheter om samme sak, og de to ville
-     kommet fra hverandre foerste gang en frist ble flyttet eller en lekse
-     huket av. Her finnes den ett sted og VISES to steder.
-
-     Konsekvensen er at haken virker begge veier: huker hun av leksa her,
-     er den gjort i Fag ogsaa, og den forsvinner fra denne lista i morgen
-     sammen med dagen. */
-  const lekserIdag = (fagData ? fagData.lekser : []).filter(function(l){
-    return l.frist === dag;
-  }).map(function(l){
-    return {
-      id: 'lekse:' + l.id,
-      lekse: true,
-      gjelder: EIER,
-      overskrift: fagNavnAv(l.fagId) + ': ' + l.tekst,
-      tekst: '',
-      frist: l.frist,
-      omfang: 'dag',
-      ferdig: l.ferdig
-    };
-  });
-
-  grupper[0].treff = grupper[0].treff.concat(lekserIdag);
+  /* Leksene sto ogsaa her paa fristdagen fram til 22. november 2026. Naa
+     har de egen blokk under kalenderen (tegnSkoleuke), og paaminnelsene er
+     bare paaminnelser - Magne: «Ut av påminnelsene». Skoleuka tegnes
+     herfra fordi alle veiene som endrer fag eller dag allerede gaar hit. */
+  tegnSkoleuke();
 
   grupper.forEach(function(g){
     /* Avhukede punkter synker til bunnen - de er gjort, men blir staaende
@@ -6209,29 +6218,100 @@ async function lagreForslag(){
   }
 }
 
-/* En lekse tegnet som en paaminnelse. Samme form som en merknad, men
-   uten blyant og uten boble - trykket gaar til lekseskjemaet i Fag, der
-   leksa faktisk bor. Merket «lekse» sier hvorfor den ser litt annerledes
-   ut enn naboen. */
-function lekseRadIHuske(m){
-  const id = m.id.slice(6);                    /* «lekse:» av */
-  const hast = lekseHast({ frist:m.frist, ferdig:m.ferdig });
-  /* INGEN HAKE. Leksa krysses ut under Fag, der den staar med hele
-     teksten sin og med faget rundt seg. To steder aa huke av det samme
-     er to steder aa gjoere det ved et uhell, og her - i en liste sammen
-     med paaminnelser som har sin egen hake - ville de to hakene sett
-     like ut og betydd forskjellige ting.
+/* ============================================================
+   Skoleuka - proevene og ukas lekser under kalenderen
+   ------------------------------------------------------------
+   Magne, 22. november 2026: «Prøver må stå på dash selv om det er
+   langt frem. Lekse må også stå tydelig hele uken.» Fag-fanen hadde alt
+   dette, men den ligger bak et trykk, og skjermen gaar tilbake til Dag
+   av seg selv.
 
-     Raden er fortsatt et trykk verdt: den aapner leksa i Fag. */
-  return '<div class="hu-linje uten-hake' + (m.ferdig ? ' ferdig' : '') + '">'
-    +   '<div class="hu-rad hu-lekse' + (hast ? ' ' + hast : '') + '" '
-    +     'style="' + fyll(huskeFarge(m.gjelder)) + '" '
-    +     'onclick="redigerLekse(\'' + esc(id) + '\')">'
-    +     initial(m.gjelder, huskeFarge(m.gjelder))
-    +     '<span class="hu-tittel">' + esc(m.overskrift) + '</span>'
-    +     '<span class="hu-innen">lekse</span>'
-    +   '</div>'
-    + '</div>';
+   PROEVENE: alle som ikke har vaert ennaa, uansett hvor langt fram, i
+   datorekkefoelge. «Om 12 dager» staar ved datoen.
+
+   LEKSENE: samme uke og samme utvalg som Fag (tegnFag): fra fredag 18
+   er det uka som kommer, lekser uten frist er med, og en glemt lekse fra
+   foer staar til den er huket av. Blar man i dagene, er det uka til dagen
+   som staar. Etter frist; de som er gjort staar graa nederst.
+
+   Ingen hake, som i Fag: et trykk aapner faget, og der krysser hun av
+   med hele teksten foran seg (designsystemet, «Fagkortet»).
+   ============================================================ */
+function skoleukeStart(){
+  return ukeStart(dagOffset === 0 ? fagDag() : dagenViser());
+}
+
+function tegnSkoleuke(){
+  const boks = $('skoleuke');
+  if(!boks) return;
+  try{ boks.innerHTML = skoleukeHtml(); }
+  catch(e){ console.error('Skoleuka kunne ikke tegnes:', e); }
+}
+
+function skoleukeHtml(){
+  if(!fagData) return '<div class="tom">Henter lekser …</div>';
+  const iDag = datoNokkel(idag0());
+  const start = skoleukeStart();
+  const uStart = datoNokkel(start);
+  const uSlutt = datoNokkel(new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6));
+  const naaUke = uStart === datoNokkel(ukeStart(idag0()))
+              || uStart === datoNokkel(ukeStart(fagDag()));
+
+  /* ---- Proevene ---- */
+  const prover = fagData.prover.filter(function(p){
+    return p.dato && p.dato >= iDag;
+  }).sort(function(a, b){ return a.dato.localeCompare(b.dato); });
+
+  let ut = '<div class="sku-blokk"><div class="sku-tittel">Prøver</div>';
+  if(!prover.length){
+    ut += '<div class="tom">Ingen prøver lagt inn.</div>';
+  }else{
+    ut += prover.map(function(p){
+      const fr = fristFullt(p.dato);
+      const dager = Math.round((datoFraTekst(p.dato) - idag0()) / 86400000);
+      const om = dager >= 2 ? ' · om ' + dager + ' dager' : '';
+      const fag = fagNavnAv(p.fagId);
+      const type = String(p.type || 'Prøve');
+      return '<div class="sku-rad" onclick="apneFagVis(\'' + esc(p.fagId) + '\')" role="button" tabindex="0">'
+        + '<div class="sku-topp">'
+        +   '<span class="sku-fag">' + esc(fag || 'Prøve') + '</span>'
+        +   '<span class="lekse-frist ' + fr.klasse + '">' + esc(fr.tekst + om) + '</span>'
+        + '</div>'
+        + '<div class="lekse-tekst">' + esc(type) + '</div>'
+        + '</div>';
+    }).join('');
+  }
+  ut += '</div>';
+
+  /* ---- Leksene ---- */
+  const lekser = fagData.lekser.filter(function(l){
+    if(!l.frist) return true;
+    if(l.frist >= uStart && l.frist <= uSlutt) return true;
+    return naaUke && !l.ferdig && l.frist < iDag;        /* etterslep */
+  }).sort(function(a, b){
+    if(!!a.ferdig !== !!b.ferdig) return a.ferdig ? 1 : -1;
+    return fristSort(a, b);
+  });
+
+  ut += '<div class="sku-blokk"><div class="sku-tittel">Lekser · uke ' + isoUke(start).uke + '</div>';
+  if(!lekser.length){
+    ut += '<div class="tom">Ingen lekser denne uka.</div>';
+  }else{
+    ut += lekser.map(function(l){
+      const fr = fristFullt(l.frist);
+      const hast = lekseHast(l);
+      return '<div class="sku-rad' + (l.ferdig ? ' ferdig' : '') + (hast ? ' ' + hast : '') + '"'
+        + ' onclick="apneFagVis(\'' + esc(l.fagId) + '\')" role="button" tabindex="0">'
+        + '<div class="sku-topp">'
+        +   '<span class="sku-fag">' + esc(fagNavnAv(l.fagId) || 'Lekse') + '</span>'
+        +   (l.ferdig ? '<span class="sku-ferdig">Ferdig</span>'
+             : fr.tekst ? '<span class="lekse-frist ' + hast + '">' + esc(fr.tekst) + '</span>' : '')
+        + '</div>'
+        + '<div class="lekse-tekst">' + esc(l.tekst) + '</div>'
+        + '</div>';
+    }).join('');
+  }
+  return ut + '</div>';
 }
 
 /* ---------------- Skolens side ----------------

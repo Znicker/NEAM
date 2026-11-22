@@ -1749,6 +1749,29 @@ så det.
 - Ikke testet på ekte ankomst ennå. Bommer den fortsatt, er det
   kameraets egen forsinkelse, ikke takten.
 
+**22. november, sen kveld: skoleuka under kalenderen på Emma og Andrea
+dash** (`emma.html`, `andrea.html` – like endringer, ingen fellesfil, ingen
+`?v=`). Magne: «Lekser og fag fungerer ikke helt som tenkt. De trenger mye
+tydeligere oversikt over hva de skal gjøre en uke. Prøver må stå på dash
+selv om det er langt frem.» Fag-fanen hadde alt, men lå bak et trykk, og
+skjermen går tilbake til Dag av seg selv.
+- **Valgt av Magne:** to blokker, prøver og lekser, kronologisk; gjorte
+  lekser står grå nederst; lekser ut av «Påminnelser i dag»; trykk åpner
+  faget (ingen hake).
+- `tegnSkoleuke()` / `skoleukeHtml()`, kalt fra `tegnHuskeInner()` – alle
+  veier som endrer fag eller dag går dit fra før. Uka er `fagDag()` når man
+  ikke har bladd (fredag 18 → neste uke), ellers uka til dagen som vises.
+  Utvalget er det samme som `tegnFag()`: uten frist med, glemte lekser
+  (etterslep) med til de er huket av.
+- `lekseRadIHuske()`, grenen i `huskeRad()` og CSS-en `.hu-lekse` /
+  `.uten-hake` er fjernet. **Kjøkken dash viser fortsatt barnas lekser** i
+  sine påminnelser (del 28) – ikke rørt.
+- Testet på neam.no ved å legge koden inn i en fane, med ekte data: Emma
+  sju lekser, Andrea tre, ingen kommende prøver hos noen av dem.
+- **Prøvene står bare der hvis de er lagt inn som prøve.** Emmas
+  gloseprøve 20.11 sto bare inne i leksteksten («Øv til gloseprøven»), og
+  ville ikke kommet i Prøver-blokka.
+
 ### Åpne tråder
 
 **Fra 22. november 2026, kveld – små, ingen haster:**
