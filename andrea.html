@@ -1023,6 +1023,10 @@ body{
 .fv-prove-topp .prove-type{ font-weight:700; }
 .fv-prove-dato{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:2px; }
 .fv-prove-dato.naer{ color:var(--handling-endre); font-weight:700; }
+.fv-prove-kommentar{
+  font-size:var(--t-meta); line-height:1.4; margin-top:3px; white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
 .prove-linje.forbi .prove-type{ font-weight:400; color:var(--ink-soft); }
 .fv-side .fagvis-notat{ margin-top:18px; }
 
@@ -1758,6 +1762,12 @@ select.hu-felt{
         </label>
         <label class="av-felt" id="fagKarakterFelt" hidden>Karakter
           <input class="hu-felt" id="fagKarakter" maxlength="12" placeholder="Står tom til den er satt">
+        </label>
+        <!-- Kommentar paa en proeve (Magne, 23. november 2026: «Må kunne
+             skrive kommentar på prøver også»). -->
+        <label class="av-felt" id="fagKommentarFelt" hidden>Kommentar
+          <textarea class="hu-felt hu-omr" id="fagKommentar" rows="2"
+                    placeholder="Hva gikk bra, hva må øves på …"></textarea>
         </label>
         <label class="av-felt" id="fagAvFelt" hidden>Lagt inn av
           <select class="hu-felt" id="fagAv"></select>
@@ -3429,6 +3439,7 @@ function ryddFag(d){
   }).map(function(p){
     return { id:String(p.id), fagId:String(p.fagId), type:String(p.type).trim(),
              dato:String(p.dato || ''), karakter:String(p.karakter || '').trim(),
+             kommentar:String(p.kommentar || '').trim(),
              av:String(p.av || '') };
   });
 
@@ -4629,6 +4640,7 @@ function tegnFagVis(){
       + '<div class="fv-prove-topp"><span class="prove-type">' + esc(p.type) + '</span>'
       +   '<span class="prove-karakter">' + esc(p.karakter) + '</span></div>'
       + '<div class="fv-prove-dato' + (naer ? ' naer' : '') + '">' + esc(dato) + '</div>'
+      + (p.kommentar ? '<div class="fv-prove-kommentar">' + esc(p.kommentar) + '</div>' : '')
       + (p.av ? '<span class="lekse-av">Lagt inn av ' + esc(p.av) + '</span>' : '')
       + '</div>';
   }
@@ -4803,6 +4815,7 @@ function visFagSkjema(modus, id, fagId){
      lagringen er lik Emmas, men vises aldri. */
   $('fagKarakterFelt').hidden = true;
   /* Hvem og naar hoerer til en lekse eller en proeve, ikke til et fag. */
+  $('fagKommentarFelt').hidden = !erProve;
   $('fagAvFelt').hidden       = erFag;
   $('fagNarFelt').hidden      = !erLekse;
   $('fagFristFelt').hidden    = erFag;
@@ -4940,17 +4953,18 @@ async function lagreFagSkjema(){
       const fagId    = $('fagVelg').value;
       const dato     = $('fagFrist').value || '';
       const karakter = $('fagKarakter').value.trim();
+      const kommentar = $('fagKommentar').value.trim();
       const avP = $('fagAv').value || EIER;
       await endreFag(function(d){
         if(id){
           d.prover = d.prover.map(function(p){
             return p.id === id
               ? Object.assign({}, p, {fagId:fagId, type:type, dato:dato,
-                                      karakter:karakter, av:avP}) : p;
+                                      karakter:karakter, kommentar:kommentar, av:avP}) : p;
           });
         }else{
           d.prover.push({ id:nyId(), fagId:fagId, type:type, dato:dato,
-                          karakter:karakter, av:avP });
+                          karakter:karakter, kommentar:kommentar, av:avP });
         }
         return d;
       });
@@ -6244,6 +6258,7 @@ const FAG_VERKTOY = [
       properties:{
         fag:      { type:'string', description:'Navnet på faget.' },
         type:     { type:'string', description:'Hva slags prøve. For eksempel «kapittelprøve» eller «muntlig framføring».' },
+        kommentar:{ type:'string', description:'Valgfritt: en kommentar til prøven - hva den gjelder, hva som må øves på, hvordan den gikk.' },
         dato:     { type:'string', description:'Dato på formen 2026-09-08.' },
         karakter: { type:'string', description:'Bare hvis den alt er satt.' }
       },
@@ -6252,7 +6267,8 @@ const FAG_VERKTOY = [
     neamSkriver: true,
     neamBeskriv: function(arg){
       return 'Legge til ' + arg.type + ' i ' + arg.fag
-           + neamFelter(arg, [{n:'dato',t:'dato', v:neamDato}, {n:'karakter',t:'karakter'}]);
+           + neamFelter(arg, [{n:'dato',t:'dato', v:neamDato}, {n:'karakter',t:'karakter'},
+                              {n:'kommentar',t:'kommentar'}]);
     }
   },
   {
@@ -6263,6 +6279,7 @@ const FAG_VERKTOY = [
       type:'object',
       properties:{
         id:       { type:'string', description:'Prøvens id fra les_prover.' },
+        kommentar:{ type:'string', description:'Kommentaren til prøven. Tom tekst fjerner den.' },
         type:     { type:'string' },
         dato:     { type:'string', description:'Dato på formen 2026-09-08.' },
         karakter: { type:'string' }
@@ -6273,7 +6290,7 @@ const FAG_VERKTOY = [
     neamBeskriv: function(arg){
       return 'Endre ' + neamProvenavn(arg.id)
            + neamFelter(arg, [{n:'type',t:'type'}, {n:'dato',t:'dato', v:neamDato},
-                              {n:'karakter',t:'karakter'}]);
+                              {n:'karakter',t:'karakter'}, {n:'kommentar',t:'kommentar'}]);
     }
   },
   {
@@ -6866,6 +6883,7 @@ function skoleProverHtml(){
           ['Fag:', fag],
           ['Dato:', fr.tekst + (dager >= 2 ? ' – om ' + dager + ' dager' : '')],
           ['Karakter:', p.karakter],
+          ['Kommentar:', p.kommentar],
           ['Lagt inn av', p.av]
         ]);
     return skoleRad((fag ? fag + ': ' : '') + String(p.type || 'Prøve'),
@@ -7270,7 +7288,8 @@ async function fagUtfor(navn, arg){
       .slice().sort(function(a, b){ return (a.dato || '').localeCompare(b.dato || ''); });
     return { antall: liste.length, prover: liste.map(function(p){
       return { id:p.id, fag:fagNavnAv(p.fagId), type:p.type,
-               dato:p.dato || null, karakter:p.karakter || null };
+               dato:p.dato || null, karakter:p.karakter || null,
+               kommentar:p.kommentar || null };
     })};
   }
 
@@ -7455,7 +7474,7 @@ async function fagUtfor(navn, arg){
     const dato = datoKrev(arg.dato, 'Datoen');
     await endreFag(function(d){
       d.prover.push({ id:nyId(), fagId:f.id, type:type, dato:dato,
-                      karakter:String(arg.karakter || '').trim(), av:'Neam' });
+                      karakter:String(arg.karakter || '').trim(), kommentar:String(arg.kommentar || '').trim(), av:'Neam' });
       return d;
     });
     return { lagt:{ fag:f.navn, type:type, dato:dato || null } };
@@ -7468,6 +7487,7 @@ async function fagUtfor(navn, arg){
     if(arg.type !== undefined)     endring.type = String(arg.type).trim();
     if(arg.dato !== undefined)     endring.dato = datoKrev(arg.dato, 'Datoen');
     if(arg.karakter !== undefined) endring.karakter = String(arg.karakter).trim();
+    if(arg.kommentar !== undefined) endring.kommentar = String(arg.kommentar).trim();
     if(!Object.keys(endring).length) throw new Error('Ingenting å endre.');
     await endreFag(function(d){
       d.prover = d.prover.map(function(x){
@@ -7477,7 +7497,8 @@ async function fagUtfor(navn, arg){
     });
     const ny = fagData.prover.find(function(x){ return x.id === arg.id; });
     return { endret:{ fag:fagNavnAv(ny.fagId), type:ny.type,
-                      dato:ny.dato || null, karakter:ny.karakter || null } };
+                      dato:ny.dato || null, karakter:ny.karakter || null,
+                      kommentar:ny.kommentar || null } };
   }
 
   if(navn === 'endre_fag'){

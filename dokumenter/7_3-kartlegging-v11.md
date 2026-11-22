@@ -1920,6 +1920,11 @@ ikke); `karakterRens()` gjør «5 +», «5−» og «5–» om til «5+»/«5-»
 Fjes ved tallkarakteren i fagvinduets prøver (`KARAKTER_FJES` i
 `karakterHtml()`): 1 😵‍💫, 2 😡, 3 🤔, 4 👏, 5 🥳, 6 👸🏼; Bestått 👏, Ikke
 bestått 😵‍💫, Høy 🥳, Middels 👏, Lav 😵‍💫 måloppnåelse.
+Kommentar på prøver (Magne: «Må kunne skrive kommentar på prøver også»),
+begge dashene: **nytt felt `prove.kommentar`**, tatt vare på i `ryddFag()`;
+eget felt i skjemaet, under datoen i fagvinduet, i utfoldingen på dashen;
+`les_prover`, `legg_til_prove` og `endre_prove` leser og skriver det.
+Testet skjemaet på neam.no (lukket uten å lagre).
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke

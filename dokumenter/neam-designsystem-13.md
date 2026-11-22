@@ -1360,6 +1360,11 @@ fjes – bare i prøvene i fagvinduet:** 1 😵‍💫, 2 😡, 3 🤔, 4 👏, 
 («5+» og «5-» får fjeset til 5); Bestått 👏, Ikke bestått 😵‍💫, Høy 🥳,
 Middels 👏, Lav 😵‍💫.
 
+**Prøver har en kommentar** (fra 23. november 2026, begge dashene): eget
+felt i prøveskjemaet under karakteren, vises under datoen i fagvinduets
+prøveliste og som «Kommentar:» når en prøve foldes ut på dashen. Neam kan
+lese og skrive den.
+
 **Fagvinduet i to kolonner** (fra 22. november 2026): toppen har bare
 faglæreren – ingen teller for gjorte lekser. **Krysset er større og rødt**
 i fagvinduet (Magne valgte det; ellers betyr rødt «slett»). **Venstre
