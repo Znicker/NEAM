@@ -1509,6 +1509,14 @@ hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
   Et trykk på fargen i midten er ikke et valg. Begge gjelder de valgte.
   Testet lokalt: midten, ringen, glideren, iPad og telefon (678 av 800
   px høyde).
+- **Samme dag: lysene følger ringen mens fingeren drar** (bare
+  `dashboard.html`). Magne: «ordne sånn at fargehjulet på lysene forandres
+  før man slipper». Tonen sendes under draget, ikke først ved slipp. Bare
+  den nyeste tonen venter mens en sending er ute, så det hoper seg ikke
+  opp en kø mot Homey; ved slipp (og avbrudd) sendes siste tone og
+  tilstanden hentes på nytt. Glideren fra hvitt til farge og styrken
+  sender fortsatt ved slipp. **Ikke testet mot ekte lys:** hvor fort
+  Twinkly gjennom Homey henger med.
 
 **22. november: varsel om «Ikke lest» i innboksen** (`okonomi.html` og
 `functions/api/bank/[[sti]].js`). Magne fant en fil i Dropbox-mappa «Ikke

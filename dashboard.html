@@ -4202,14 +4202,17 @@ async function julTrykk(){
 
 /* Fargen: fargemodus foerst, saa tone og metning, og tennes til slutt om
    den var av - samme rekkefoelge som hskSettFarge i Rommene. */
-async function julSettFarge(id, f){
+async function julSettFarge(id, f, stille){
   const t = julEnh[id] || {};
   const endr = [];
   if(t.modus && t.modus !== 'color') endr.push(['light_mode', 'color']);
-  endr.push(['light_hue', f.h], ['light_saturation', f.s]);
+  endr.push(['light_hue', f.h]);
+  /* «stille»: ringen sender mens fingeren drar og henter selv etterpaa.
+     Da sendes metningen bare naar den er en annen - halv ventetid. */
+  if(!stille || t.s !== f.s) endr.push(['light_saturation', f.s]);
   if(!t.paa) endr.push(['onoff', true]);
   await julSett(id, endr);
-  setTimeout(jstHent, 1500);
+  if(!stille) setTimeout(jstHent, 1500);
 }
 
 /* ---------- Menyen ---------- */
@@ -4295,10 +4298,26 @@ function julBygg(){
       ev.preventDefault(); ev.target.click();
     }
   });
-  /* Ringen: fargetonen foelger fingeren rundt, og sendes til alle de
-     valgte naar fingeren slippes. Et trykk i midten (paa fargen) er ikke
-     et valg - bare selve ringen og litt innenfor teller. */
-  let ring = null;
+  /* Ringen: fargetonen foelger fingeren rundt, og lysene foelger med mens
+     fingeren drar (Magne, 22. november 2026) - ikke foerst naar den
+     slippes. Bare den nyeste tonen ventes paa: mens en sending er ute,
+     overskrives neste, saa det aldri hoper seg opp en koe mot Homey.
+     Et trykk i midten (paa fargen) er ikke et valg - bare selve ringen
+     og litt innenfor teller. */
+  let ring = null, ringSender = false, ringNeste = null, ringSist = null, ringHent = false;
+  const ringSend = async function(h, slutt){
+    if(slutt) ringHent = true;
+    if(h !== ringSist) ringNeste = h;
+    if(ringSender) return;
+    ringSender = true;
+    while(ringNeste !== null){
+      const f = { h:ringNeste, s:julFarge.s };
+      ringSist = ringNeste; ringNeste = null;
+      await Promise.all(julValgteOk().map(function(id){ return julSettFarge(id, f, true); }));
+    }
+    ringSender = false;
+    if(ringHent){ ringHent = false; ringSist = null; setTimeout(jstHent, 1500); }
+  };
   m.addEventListener('pointerdown', function(ev){
     const r = ev.target.closest && ev.target.closest('#julRing');
     if(!r || !julValgteOk().length) return;
@@ -4309,14 +4328,20 @@ function julBygg(){
     ring = r; julDrar = true;
     try{ r.setPointerCapture(ev.pointerId); }catch(e){}
     julFarge.h = julRingLes(r, ev); julFargeVis();
+    ringSend(julFarge.h, false);
   });
-  m.addEventListener('pointermove', function(ev){ if(ring){ julFarge.h = julRingLes(ring, ev); julFargeVis(); } });
+  m.addEventListener('pointermove', function(ev){
+    if(!ring) return;
+    julFarge.h = julRingLes(ring, ev); julFargeVis();
+    ringSend(julFarge.h, false);
+  });
   const slipp = function(ev, send){
     if(!ring) return;
     const r = ring; ring = null; julDrar = false;
-    if(!send) return;
-    julFarge.h = julRingLes(r, ev);
-    julValgteOk().forEach(function(id){ julSettFarge(id, { h:julFarge.h, s:julFarge.s }); });
+    if(send) julFarge.h = julRingLes(r, ev);
+    /* Ogsaa ved avbrudd: lysene har alt fulgt fingeren, saa siste tone
+       sendes og tilstanden hentes paa nytt. */
+    ringSend(julFarge.h, true);
   };
   m.addEventListener('pointerup', function(ev){ slipp(ev, true); });
   m.addEventListener('pointercancel', function(ev){ slipp(ev, false); });
