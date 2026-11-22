@@ -1482,6 +1482,10 @@ hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
   Er det to treff, vinner den som svarer. Finnes ingen, står «Fant ikke
   lyset i Homey» i stedet for «Henter …» for alltid. Testet lokalt med
   en gammel kopi og billaderen i garasjen ved siden av.
+- **Samme dag: «Alle varmhvit» øverst i menyen** (bare `dashboard.html`).
+  Magne: «Må ha en alle varmhvit-knapp i toppen.» Til høyre for
+  tittelen, samme gule knapp. Gjelder **alle lysene som svarer**, ikke
+  bare de valgte, og tenner dem som er av. Testet lokalt.
 
 ### Åpne tråder
 

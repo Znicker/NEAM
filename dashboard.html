@@ -958,7 +958,9 @@ select.hu-felt{
   .ntp-rad:has(.jul-knapp:not([hidden])) .ntp-klokke{margin-left:auto !important}
 }
 .jul-kort{max-width:600px}
-.jul-tittel{margin:0 0 14px;font-size:var(--t-meta);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
+.jul-topp{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}
+.jul-topp .jul-varm{align-self:center}
+.jul-tittel{margin:0;font-size:var(--t-meta);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
 /* Menyen (Magne, 22. november 2026): lysene som kort oeverst - trykk
    velger, valgt er --aksent-lys med --aksent kant (designsystemet: «valgt»).
    Hvert kort har fargen naa, av/paa og Varmhvit (#FFE059, Magnes farge).
@@ -4086,7 +4088,11 @@ function julBygg(){
   m.className = 'dlg-bak';
   m.hidden = true;
   m.innerHTML = '<div class="dlg-kort jul-kort" role="dialog" aria-label="Julelys ute">'
-    + '<h2 class="jul-tittel">Julelys ute</h2><div class="jul-lys" id="julLys"></div>'
+    /* «Alle varmhvit» i toppen (Magne, 22. november 2026) - alle lysene
+       som svarer, ikke bare de valgte. */
+    + '<div class="jul-topp"><h2 class="jul-tittel">Julelys ute</h2>'
+    +   '<button type="button" class="jul-varm" data-jul-alle-varm>Alle varmhvit</button></div>'
+    + '<div class="jul-lys" id="julLys"></div>'
     + '<p class="jul-hint" id="julHint"></p>'
     + '<div class="hsk-hjul jul-hjul" id="julHjul" role="img" aria-label="Fargehjul for de valgte lysene">'
     +   '<span class="hsk-hjul-merke"></span></div>'
@@ -4099,6 +4105,10 @@ function julBygg(){
       const t = julEnh[id];
       if(!t || !t.ok) return;
       julSett(id, [['onoff', !t.paa]]).then(function(){ setTimeout(jstHent, 1500); });
+      return;
+    }
+    if(ev.target.closest('[data-jul-alle-varm]')){
+      julKjente().forEach(function(l){ julSettFarge(l.id, JUL_VARM); });
       return;
     }
     const varm = ev.target.closest('[data-jul-varm]');
