@@ -1327,7 +1327,12 @@ som påminnelsene og avtalene** (`.hu-rad` med hennes farge og initial,
 «Fag: tekst» på én linje kuttet med «…», merkelapp til høyre: I dag, I
 morgen, ukedag, eller dag og dato lenger fram – prøver lenger enn en uke
 fram får «om N d»). Leksene står i én kolonne under kalenderen. Ingen
-hake; trykk åpner faget. Hastestripa er en innfelt skygge
+hake. **Ett trykk folder raden ut** (fra 23. november 2026): hele
+beskrivelsen, fag, frist eller dato, karakter og hvem som la den inn, i
+samme farge rett under raden (raden mister de nederste hjørnene), og en
+blå **«Gå til faget»** nederst til høyre – blå fordi den går et sted, ikke
+endrer noe. Ett trykk til folder sammen; bare én er åpen om gangen, og den
+blir stående åpen når lista tegnes på nytt. Raden selv beholder én linje. Hastestripa er en innfelt skygge
 (`box-shadow:inset 3px 0 0`), fordi `fyll()` setter kantfargen på raden.
 **Prøver denne uka** (til og med søndag) får en **rød ramme med en lysere
 bue som går rundt** (2,6 s per runde) og et svakt rødt skjær – Magne: «som

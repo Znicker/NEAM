@@ -1876,6 +1876,15 @@ kalender/påminnelser men det virket ikke.»
 - Ikke testet: at Neam faktisk følger den nye teksten – det må prøves i
   samtalen.
 
+**23. november: lekser og prøver folder seg ut** (`emma.html`,
+`andrea.html` – like endringer). Magne: «Når man trykker en gang
+ekspanderer man leksen eller prøven. Der står beskrivelsen. + en knapp,
+gå til fag.» `skoleRad()` tar nå `id` og `detalj`; `skoleVeksl()` folder
+ut/sammen uten å tegne lista på nytt; `skoleAapen` husker den åpne
+gjennom en ny tegning; `skoleFakta()` lager faktalinjene. Knappen
+`.sku-gaa` (blå, `--aksent`) lukker utfoldingen og kaller `apneFagVis()`.
+Testet på neam.no: Engelsk-leksa foldet ut, «Gå til faget» åpnet Engelsk.
+
 ### Åpne tråder
 
 **Fra 22. november 2026, kveld – små, ingen haster:**

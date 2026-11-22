@@ -298,6 +298,29 @@ body{
 .rutenett > .kort{ min-width:0; }
 .sku-rad.naer .hu-innen{ color:var(--handling-endre); }
 .sku-rad.ferdig .hu-innen{ color:var(--handling-ny); }
+/* Utfoldet: raden og beskrivelsen henger sammen - samme farge, og
+   raden mister de nederste hjoernene. */
+.sku-post.aapen > .hu-linje{ margin-bottom:0; }
+.sku-post.aapen .sku-rad{ border-bottom-left-radius:0; border-bottom-right-radius:0; }
+.sku-detalj{
+  border:1px solid transparent; border-top:none; border-radius:0 0 11px 11px;
+  padding:6px 12px 10px 37px; margin-bottom:6px;
+}
+.sku-detalj[hidden]{ display:none; }
+.sku-beskrivelse{
+  font-size:var(--t-brod); line-height:1.45; white-space:pre-wrap; overflow-wrap:anywhere;
+}
+.sku-fakta{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:4px; }
+.sku-fakta span{ font-weight:700; color:var(--ink); }
+.sku-detalj-fot{ display:flex; justify-content:flex-end; margin-top:8px; }
+/* Blaa: «alt annet» i knappeklassene - den gaar et sted, den endrer ikke. */
+.sku-gaa{
+  border:none; color:#FFFFFF; background:var(--aksent);
+  font-family:'Archivo',sans-serif; font-weight:700; font-size:var(--t-etikett);
+  letter-spacing:.06em; text-transform:uppercase; line-height:1.2;
+  padding:7px 15px; border-radius:999px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.sku-gaa:active{ filter:brightness(.9); }
 /* Proeve denne uka: roed ramme med en lysere bue som gaar rundt, og et
    svakt roedt skjaer utenfor. Vinkelen er en registrert egenskap, saa den
    kan animeres; masken lar bare kanten vaere synlig. Uten bevegelse
@@ -6707,16 +6730,52 @@ function tegnSkoleuke(){
 /* Én rad i samme form som paaminnelsene og avtalene: hennes farge, hennes
    initial, tittelen paa én linje og en merkelapp til hoeyre. Ingen hake -
    et trykk aapner faget, der den krysses av (se tegnSkoleuke). */
-function skoleRad(tittel, merke, fagId, klasse){
+/* Ett trykk paa raden folder den ut: hele beskrivelsen og en knapp til
+   faget (Magne, 23. november 2026: «Når man trykker en gang ekspanderer
+   man leksen eller prøven. Der står beskrivelsen. + en knapp, gå til
+   fag.»). Ett trykk til folder den sammen. Bare én er aapen om gangen,
+   og den blir staaende aapen naar lista tegnes paa nytt. */
+let skoleAapen = null;
+
+function skoleRad(tittel, merke, fagId, klasse, id, detalj){
   const farge = huskeFarge(EIER);
-  return '<div class="hu-linje' + (klasse.indexOf('ferdig') !== -1 ? ' ferdig' : '') + '">'
+  const aapen = skoleAapen === id;
+  return '<div class="sku-post' + (aapen ? ' aapen' : '') + '" data-sku="' + esc(id) + '">'
+    + '<div class="hu-linje' + (klasse.indexOf('ferdig') !== -1 ? ' ferdig' : '') + '">'
     + '<div class="hu-rad sku-rad ' + klasse + '" style="' + fyll(farge) + '"'
-    +   ' onclick="apneFagVis(\'' + esc(fagId) + '\')" role="button" tabindex="0">'
+    +   ' onclick="skoleVeksl(\'' + esc(id) + '\')" role="button" tabindex="0"'
+    +   ' aria-expanded="' + (aapen ? 'true' : 'false') + '">'
     +   initial(EIER, farge)
     +   '<span class="hu-tittel">' + esc(tittel) + '</span>'
     +   (merke ? '<span class="hu-innen">' + esc(merke) + '</span>' : '')
     + '</div>'
+    + '</div>'
+    + '<div class="sku-detalj" style="' + fyll(farge) + '"' + (aapen ? '' : ' hidden') + '>'
+    +   detalj
+    +   '<div class="sku-detalj-fot"><button type="button" class="sku-gaa"'
+    +     ' onclick="event.stopPropagation(); skoleAapen = null; apneFagVis(\'' + esc(fagId) + '\')">'
+    +     'Gå til faget</button></div>'
+    + '</div>'
     + '</div>';
+}
+
+function skoleVeksl(id){
+  skoleAapen = skoleAapen === id ? null : id;
+  Array.from(document.querySelectorAll('.sku-post')).forEach(function(p){
+    const ja = p.dataset.sku === skoleAapen;
+    p.classList.toggle('aapen', ja);
+    const d = p.querySelector('.sku-detalj');
+    if(d) d.hidden = !ja;
+    const r = p.querySelector('.sku-rad');
+    if(r) r.setAttribute('aria-expanded', ja ? 'true' : 'false');
+  });
+}
+
+/* Linjene i den utfoldede delen: «Frist: …», «Lagt inn av …». */
+function skoleFakta(par){
+  return par.filter(function(x){ return x[1]; }).map(function(x){
+    return '<div class="sku-fakta"><span>' + esc(x[0]) + '</span> ' + esc(x[1]) + '</div>';
+  }).join('');
 }
 
 /* Merkelappen for en dato: dagen innen en uke, ellers dag og dato. */
@@ -6746,9 +6805,18 @@ function skoleProverHtml(){
     const fag = fagNavnAv(p.fagId);
     const dager = Math.round((datoFraTekst(p.dato) - idag0()) / 86400000);
     const om = dager >= 7 ? ' · om ' + dager + ' d' : '';
+    const fr = fristFullt(p.dato);
+    const detalj = '<div class="sku-beskrivelse">' + esc(String(p.type || 'Prøve')) + '</div>'
+      + skoleFakta([
+          ['Fag:', fag],
+          ['Dato:', fr.tekst + (dager >= 2 ? ' – om ' + dager + ' dager' : '')],
+          ['Karakter:', p.karakter],
+          ['Lagt inn av', p.av]
+        ]);
     return skoleRad((fag ? fag + ': ' : '') + String(p.type || 'Prøve'),
                     skoleMerke(p.dato) + om, p.fagId,
-                    (dager <= 1 ? 'naer' : '') + (p.dato <= ukeSlutt ? ' denne-uka' : ''));
+                    (dager <= 1 ? 'naer' : '') + (p.dato <= ukeSlutt ? ' denne-uka' : ''),
+                    'p:' + p.id, detalj);
   }).join('');
 }
 
@@ -6781,9 +6849,18 @@ function skoleukeHtml(){
     ut += lekser.map(function(l){
       const fag = fagNavnAv(l.fagId);
       const hast = lekseHast(l);
+      const fr = fristFullt(l.frist);
+      const detalj = '<div class="sku-beskrivelse">' + esc(l.tekst) + '</div>'
+        + skoleFakta([
+            ['Fag:', fag],
+            ['Frist:', fr.tekst || 'ingen'],
+            ['Status:', l.ferdig ? 'Ferdig' : ''],
+            ['Lagt inn av', l.av ? (l.av + (l.laget ? ' ' + datoKort(datoFraTekst(l.laget)) : '')) : '']
+          ]);
       return skoleRad((fag ? fag + ': ' : '') + l.tekst,
                       l.ferdig ? 'Ferdig' : skoleMerke(l.frist), l.fagId,
-                      (l.ferdig ? 'ferdig' : '') + (hast ? ' ' + hast : ''));
+                      (l.ferdig ? 'ferdig' : '') + (hast ? ' ' + hast : ''),
+                      'l:' + l.id, detalj);
     }).join('');
   }
   return ut + '</div>';
