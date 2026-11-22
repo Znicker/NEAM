@@ -638,7 +638,14 @@ variant.
   `--t-etikett` versaler og fuktigheten i `--t-meta`, begge `--ink-soft`;
   temperaturen fet, med én desimal, i `calc(var(--t-stor) * 1.45)`
   (29/32 px). **Hver i sin lille boks** – Inne, Ute og Sjø – som
-  grupperingsbokser (`--boks-mild`, kant `--boks-kant`, radius 14 px).
+  grupperingsbokser (`--boks-mild`, kant `--boks-kant`, radius 14 px),
+  **like høye som sidas ikon**.
+- **Alt i toppen er like høyt** (22. november 2026, Magne: «Alt bør være
+  lik størrelse på topplinja»): `--ntp-flis` på `.ntp-rad`, 84 px og 56 px
+  i kompakt topp. Sidas ikon, boksene og knappene en side legger i toppen
+  (julestjerna og julelysene på Kjøkken dash) bruker den. **En ny knapp i
+  toppen skal også bruke den.** Blir det for trangt, viker sidenavnet
+  før noe krymper.
   Sjøen står med etiketten «Sjø», ikke bølgen. En måling eldre enn to
   timer, eller en enhet uten kontakt, står grå (sjøen etter et døgn).
   Uten svar fra Homey står «–».
@@ -1103,6 +1110,12 @@ blir en hemmelighet folk ikke finner.
 langt trykk – to sekunder til innstillingene (se over). Det er langt nok
 til ikke å forveksles med stemmens ~0,5 sek, og et vanlig trykk på en side
 uten handlinger sier at grepet finnes.
+
+**Unntak nummer to, Magnes valg 22. november 2026:** julelysknappen i
+toppen på Kjøkken dash har et langt trykk (0,6 sek) som åpner menyen med
+lysene og fargehjulet. Den står i toppen, langt fra tommelknappene, så
+hånden blander dem ikke. Menyen åpnes mens fingeren ligger på, og klikket
+etterpå slår ikke lysene av. `aria-label` sier «hold for farger».
 
 ### Fast til høyre på PC (fra 6. november 2026)
 

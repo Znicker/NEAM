@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <link rel="stylesheet" href="/felles-neam.css?v=90">
-<link rel="stylesheet" href="/felles-topp.css?v=13">
+<link rel="stylesheet" href="/felles-topp.css?v=14">
 <style>
   /* Sidespesifikke variabler. Palett og typeskala ligger i
      felles-rot.css. */
@@ -913,10 +913,44 @@ select.hu-felt{
   color:var(--ink);font:inherit;touch-action:manipulation;
 }
 .jst-knapp[hidden]{display:none}
-.jst-ikon{width:64px;height:64px;display:block}
+/* Like stor som sidas ikon (--ntp-flis i felles-topp.css): «Alt bør være
+   lik størrelse på topplinja» (Magne, 22. november 2026). Var 64 px. */
+.jst-ikon{width:var(--ntp-flis,84px);height:var(--ntp-flis,84px);display:block}
 .jst-ikon img{width:100%;height:100%;object-fit:contain;display:block}
 .jst-knapp:active .jst-ikon{transform:scale(.96)}
 .jst-knapp:not([hidden]) + .ntp-vaer{margin-left:24px}
+
+/* ---------- Julelysene ute ----------
+   Ved siden av stjerna (Magne, 22. november 2026), like stor som den.
+   Langt trykk aapner menyen - bildet skal ikke kunne dras eller gi
+   iPadens bildemeny. */
+.jul-knapp{
+  display:flex;flex-shrink:0;background:none;border:none;padding:0;margin-left:auto;cursor:pointer;
+  touch-action:manipulation;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
+}
+.jul-knapp[hidden]{display:none}
+.jul-knapp img{width:var(--ntp-flis,84px);height:var(--ntp-flis,84px);object-fit:contain;display:block;pointer-events:none;-webkit-user-drag:none}
+.jul-knapp:active img,.jul-knapp.holder img{transform:scale(.96)}
+.jst-knapp:not([hidden]) + .jul-knapp{margin-left:14px}
+.jul-knapp:not([hidden]) + .ntp-vaer{margin-left:24px}
+/* Med stjerna og julelysene i full stoerrelse er toppen full under 900 px
+   (iPad staaende, telefon): sidas navn viker - ikonet sier det samme - og
+   luften mellom knappene blir bare radens eget mellomrom. */
+@container (max-width:899px){
+  .ntp-rad:has(.jul-knapp:not([hidden])) .ntp-navn{display:none}
+  .jst-knapp:not([hidden]) + .jul-knapp{margin-left:0}
+  .jul-knapp:not([hidden]) + .ntp-vaer{margin-left:0}
+  .ntp-rad:has(.jul-knapp:not([hidden])) .ntp-iu{padding:0 10px;min-width:0}
+  .ntp-rad:has(.jul-knapp:not([hidden])) .ntp-vaer ~ .ntp-klokke{margin-left:10px}
+}
+.jul-kort{max-width:600px}
+.jul-tittel{margin:0 0 14px;font-size:var(--t-meta);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
+.jul-lys{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-bottom:16px}
+.jul-ett{display:flex;flex-direction:column}
+.jul-ett.borte{opacity:.55}
+.jul-navnrad{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.jul-navn{font-size:var(--t-brod);font-weight:700;color:var(--ink)}
+.jul-ute{margin-top:10px;font-size:var(--t-meta);color:var(--ink-soft);font-weight:600}
 </style>
 </head>
 <body>
@@ -3816,20 +3850,24 @@ function jstTegn(){
   b.setAttribute('aria-label', 'Julestjernene: ' + (tekst === '…' ? 'henter' : tekst) + '. Trykk for å slå ' + (paa > 0 ? 'av' : 'på'));
 }
 
+/* Henter ogsaa for julelysene (se «Julelysene ute» under) - ett svar fra
+   Homey er rundt 400 kB, og det holder aa hente det én gang i minuttet. */
 async function jstHent(){
-  if(document.hidden || !jstIder()){ jstTegn(); return; }
+  if(document.hidden){ jstTegn(); julTegn(); return; }
   let e;
   try{ e = await api('?hva=enheter'); }catch(err){ e = null; }
   if(!e || !e.ok){
-    if(!jstMeldt) console.warn('Julestjernene: fikk ikke kontakt med Homey:', e && e.feil);
+    if(!jstMeldt) console.warn('Julestjernene og julelysene: fikk ikke kontakt med Homey:', e && e.feil);
     jstMeldt = true;
     jstTegn();
+    julTegn();
     return;
   }
   jstMeldt = false;
   const alle = e.enheter || {};
+  julLes(alle);
   jstTilstand = {};
-  jstIder().forEach(function(id){
+  (jstIder() || []).forEach(function(id){
     const o = alle[id] && alle[id].capabilitiesObj && alle[id].capabilitiesObj.onoff;
     if(o) jstTilstand[id] = !!o.value;
   });
@@ -3849,6 +3887,205 @@ async function jstTrykk(){
   if(feil.length) console.warn('Julestjernene: fikk ikke slått alle ' + (nytt ? 'på' : 'av') + ':', feil);
   setTimeout(jstHent, 1500);
 }
+
+/* ============================================================
+   Julelysene ute
+   ------------------------------------------------------------
+   Magne, 22. november 2026: en knapp ved siden av julestjerna for
+   Twinkly-lysene ute, med Magnes egne ikoner (julelys tent, julelys-av
+   slukket). Bare garasjen og terrassen - de tre andre Twinkly-enhetene
+   (Inngangsparti, veranda mot tunet, Juletre) er utenfor med vilje.
+
+   Trykk: samme regel som stjerna - er noen paa, slaas alle av, ellers
+   alle paa. Langt trykk (0,6 sek) aapner menyen: hvert lys med av/paa
+   og fargehjulet fra Rommene (hskHjulLes og .hsk-hjul i fellesfilene).
+   Bare én farge per slynge: Twinkly-effektene er flytkort i Homey, og
+   Neam kan ikke kjoere dem (se homey.js om «Missing Scopes»).
+
+   Lysene staar paa id, ikke navn - navnene i Homey endres. Tilstanden
+   kommer fra jstHent hvert minutt, og rett etter et trykk.
+   ============================================================ */
+const JUL_LYS = [
+  { id:'38514576-b583-4e1f-ba1e-277aa9c1df97', navn:'Garasje' },
+  { id:'6fc4423e-3a7e-49fc-8b65-9597c7059578', navn:'Terrasse' }
+];
+const JUL_HOLD_MS = 600;
+let julEnh = {};          /* id -> { ok, paa, h, s, modus } fra Homey */
+let julDrar = false;      /* fingeren ligger i et fargehjul - ikke tegn paa nytt */
+
+function julLes(alle){
+  julEnh = {};
+  JUL_LYS.forEach(function(l){
+    const d = alle[l.id];
+    if(!d) return;
+    const o = d.capabilitiesObj || {};
+    julEnh[l.id] = {
+      ok: d.available !== false,
+      paa: !!(o.onoff && o.onoff.value),
+      h: Number(o.light_hue && o.light_hue.value) || 0,
+      s: Number(o.light_saturation && o.light_saturation.value) || 0,
+      modus: o.light_mode ? o.light_mode.value : null
+    };
+  });
+  julTegn();
+}
+
+function julKnapp(){
+  let b = $('julKnapp');
+  if(b) return b;
+  const vaer = $('ntpVaer');
+  if(!vaer) return null;
+  jstKnapp();               /* stjerna foerst, saa julelysene staar etter den */
+  b = document.createElement('button');
+  b.type = 'button';
+  b.id = 'julKnapp';
+  b.className = 'jul-knapp';
+  b.setAttribute('data-uten-kode', '');
+  b.hidden = true;
+  b.innerHTML = neamIkonImg('julelys-av', ' width="512" height="511"');
+  new Image().src = neamIkonUrl('julelys');
+  /* Kort trykk slaar av/paa, langt trykk aapner menyen. Menyen aapnes
+     mens fingeren ligger paa, og klikket etterpaa svelges. */
+  let hold = null, langt = false;
+  const slipp = function(){ if(hold){ clearTimeout(hold); hold = null; } b.classList.remove('holder'); };
+  b.addEventListener('pointerdown', function(){
+    langt = false;
+    b.classList.add('holder');
+    hold = setTimeout(function(){ hold = null; langt = true; b.classList.remove('holder'); julApne(); }, JUL_HOLD_MS);
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(function(t){ b.addEventListener(t, slipp); });
+  b.addEventListener('contextmenu', function(ev){ ev.preventDefault(); });
+  b.addEventListener('click', function(ev){
+    if(langt){ langt = false; ev.preventDefault(); return; }
+    julTrykk();
+  });
+  vaer.parentNode.insertBefore(b, vaer);
+  return b;
+}
+
+function julKjente(){ return JUL_LYS.filter(function(l){ return julEnh[l.id] && julEnh[l.id].ok; }); }
+
+function julTegn(){
+  const b = julKnapp();
+  if(!b) return;
+  b.hidden = false;
+  const kjent = julKjente();
+  const paa = kjent.filter(function(l){ return julEnh[l.id].paa; }).length;
+  const img = b.querySelector('img');
+  const src = neamIkonUrl(paa > 0 ? 'julelys' : 'julelys-av');
+  if(img && img.getAttribute('src') !== src) img.setAttribute('src', src);
+  const tekst = !kjent.length ? 'henter' : paa === 0 ? 'av' : paa === kjent.length ? 'på' : paa + ' av ' + kjent.length + ' på';
+  b.setAttribute('aria-label', 'Julelysene ute: ' + tekst + '. Trykk for å slå ' + (paa > 0 ? 'av' : 'på') + ', hold for farger');
+  if(julAapen() && !julDrar) julMenyTegn();
+}
+
+async function julSett(id, endringer){
+  const t = julEnh[id];
+  if(t){
+    endringer.forEach(function(x){
+      if(x[0] === 'onoff') t.paa = x[1];
+      if(x[0] === 'light_hue') t.h = x[1];
+      if(x[0] === 'light_saturation') t.s = x[1];
+      if(x[0] === 'light_mode') t.modus = x[1];
+    });
+  }
+  julTegn();
+  for(const x of endringer){
+    const r = await post({ hva:'sett', enhet:id, kapabilitet:x[0], verdi:x[1] }).catch(function(){ return { ok:false }; });
+    if(!r || !r.ok){ console.warn('Julelysene: fikk ikke satt ' + x[0] + ':', r && r.feil); break; }
+  }
+}
+
+async function julTrykk(){
+  const kjent = julKjente();
+  if(!kjent.length){ jstHent(); return; }
+  const nytt = !kjent.some(function(l){ return julEnh[l.id].paa; });
+  await Promise.all(kjent.map(function(l){ return julSett(l.id, [['onoff', nytt]]); }));
+  setTimeout(jstHent, 1500);
+}
+
+/* Fargen: fargemodus foerst, saa tone og metning, og tennes til slutt om
+   den var av - samme rekkefoelge som hskSettFarge i Rommene. */
+async function julSettFarge(id, f){
+  const t = julEnh[id] || {};
+  const endr = [];
+  if(t.modus && t.modus !== 'color') endr.push(['light_mode', 'color']);
+  endr.push(['light_hue', f.h], ['light_saturation', f.s]);
+  if(!t.paa) endr.push(['onoff', true]);
+  await julSett(id, endr);
+  setTimeout(jstHent, 1500);
+}
+
+/* ---------- Menyen ---------- */
+function julAapen(){ const m = $('julBak'); return !!(m && !m.hidden); }
+
+function julBygg(){
+  let m = $('julBak');
+  if(m) return m;
+  m = document.createElement('div');
+  m.id = 'julBak';
+  m.className = 'dlg-bak';
+  m.hidden = true;
+  m.innerHTML = '<div class="dlg-kort jul-kort" role="dialog" aria-label="Julelys ute">'
+    + '<h2 class="jul-tittel">Julelys ute</h2><div class="jul-lys" id="julLys"></div>'
+    + '<div class="dlg-rad"><button type="button" class="dlg-knapp nei" data-jul-lukk>Lukk</button></div></div>';
+  m.addEventListener('click', function(ev){
+    if(ev.target === m || ev.target.closest('[data-jul-lukk]')){ julLukk(); return; }
+    const br = ev.target.closest('[data-jul-paa]');
+    if(br){
+      const id = br.getAttribute('data-jul-paa');
+      const t = julEnh[id];
+      if(!t || !t.ok) return;
+      julSett(id, [['onoff', !t.paa]]).then(function(){ setTimeout(jstHent, 1500); });
+    }
+  });
+  /* Fargehjulet: merket foelger fingeren, fargen sendes naar den slippes. */
+  let hjul = null;
+  m.addEventListener('pointerdown', function(ev){
+    const h = ev.target.closest && ev.target.closest('.hsk-hjul');
+    if(!h || !julEnh[h.getAttribute('data-jul-hjul')] || !julEnh[h.getAttribute('data-jul-hjul')].ok) return;
+    ev.preventDefault();
+    hjul = h; julDrar = true;
+    try{ h.setPointerCapture(ev.pointerId); }catch(e){}
+    hskHjulVis(h, hskHjulLes(h, ev));
+  });
+  m.addEventListener('pointermove', function(ev){ if(hjul) hskHjulVis(hjul, hskHjulLes(hjul, ev)); });
+  const slipp = function(ev, send){
+    if(!hjul) return;
+    const h = hjul; hjul = null; julDrar = false;
+    if(send) julSettFarge(h.getAttribute('data-jul-hjul'), hskHjulLes(h, ev));
+  };
+  m.addEventListener('pointerup', function(ev){ slipp(ev, true); });
+  m.addEventListener('pointercancel', function(ev){ slipp(ev, false); });
+  document.body.appendChild(m);
+  return m;
+}
+
+function julMenyTegn(){
+  const boks = $('julLys');
+  if(!boks) return;
+  boks.innerHTML = JUL_LYS.map(function(l){
+    const t = julEnh[l.id];
+    if(!t || !t.ok){
+      return '<div class="jul-ett borte"><div class="jul-navnrad"><span class="jul-navn">' + l.navn + '</span></div>'
+        + '<div class="jul-ute">' + (t ? 'Uten kontakt' : 'Henter …') + '</div></div>';
+    }
+    const p = hskHjulPunkt(t.h, t.s);
+    return '<div class="jul-ett"><div class="jul-navnrad"><span class="jul-navn">' + l.navn + '</span>'
+      + '<button type="button" role="switch" class="hsk-bryter" data-jul-paa="' + l.id + '" aria-checked="' + t.paa + '"'
+      + ' aria-label="' + l.navn + ' av/på"><span></span></button></div>'
+      + '<div class="hsk-hjul" data-jul-hjul="' + l.id + '" role="img" aria-label="Fargehjul for ' + l.navn + '">'
+      +   '<span class="hsk-hjul-merke" style="left:' + p.x + '%;top:' + p.y + '%;background:' + hskFargeCss(t.h, t.s) + '"></span>'
+      + '</div></div>';
+  }).join('');
+}
+
+function julApne(){
+  julBygg().hidden = false;
+  julMenyTegn();
+  jstHent();
+}
+function julLukk(){ const m = $('julBak'); if(m) m.hidden = true; julDrar = false; }
 
 /* ============================================================
    Bilvakt – bil paa tunet
@@ -4140,13 +4377,15 @@ function bvLukk(){
   setInterval(bvSjekk, BV_SJEKK_MS);
   bvSjekk();
 
-  /* Julestjernene ved vaeret - se «Julestjernene i stua» over. */
+  /* Julestjernene og julelysene ved vaeret - se «Julestjernene i stua» og
+     «Julelysene ute» over. jstHent henter for begge. */
   jstHent();
   setInterval(jstHent, JST_OPPDATER);
 })();
 
 document.addEventListener('keydown', function(e){
   if(e.key !== 'Escape') return;
+  if(julAapen()){ julLukk(); return; }
   if(bvAapen()){ bvLukk(); return; }
   if($('filviser') && !$('filviser').hidden){ lukkViser(); return; }
   if(avtaleAapen){ lukkAvtale(); return; }

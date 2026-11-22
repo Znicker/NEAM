@@ -15,7 +15,11 @@
   align-self:stretch;   /* full bredde ogsaa i en sentrert flex-kolonne */
   font-family:'Archivo',system-ui,-apple-system,sans-serif; color:var(--ink);
 }
-.ntp-rad{ display:flex; align-items:center; gap:16px; }
+/* --ntp-flis: hoeyden alt i toppen foelger - sidas ikon, boksene Inne/Ute/
+   Sjø og knappene sidene legger inn (julestjerna og julelysene paa
+   Kjoekken dash). «Alt bør være lik størrelse på topplinja» (Magne,
+   22. november 2026). 56 px i kompakt topp, se containerspoerringen. */
+.ntp-rad{ display:flex; align-items:center; gap:16px; --ntp-flis:84px; }
 
 /* Laast ved rulling (Magne, 8. november 2026). Bakgrunn og skygge bare
    naar sida er rullet - samme oppskrift som .topbar i felles-skall.css.
@@ -34,14 +38,14 @@
    tekstmarkering mens man holder. */
 .ntp-merke{ -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }
 .ntp-ikon{
-  width:84px; height:84px; flex-shrink:0;
+  width:var(--ntp-flis); height:var(--ntp-flis); flex-shrink:0;
   display:flex; align-items:center; justify-content:center;
 }
 .ntp-ikon img{ width:100%; height:100%; object-fit:contain; display:block; }
 .ntp-navn{ font-size:var(--t-stor); text-align:left; white-space:nowrap; }
 
 .ntp-vaer{
-  display:flex; align-items:stretch; gap:10px; flex-shrink:1; min-width:0;
+  display:flex; align-items:center; gap:10px; flex-shrink:1; min-width:0;
   margin-left:auto; margin-right:auto;
 }
 .ntp-vaer[hidden]{ display:none; }
@@ -54,11 +58,12 @@
    hver i sin lille grupperingsboks. Etiketten i versaler som de andre
    merkelappene, fuktigheten under. Tallene er 1,45 x --t-stor (29/32 px)
    - toppen har hoeyde til det, og de skal leses fra kjoekkenbenken. */
-.ntp-iu-knapp{ gap:10px; align-items:stretch; }
+.ntp-iu-knapp{ gap:10px; align-items:center; }
 .ntp-iu{
-  display:flex; flex-direction:column; line-height:1.1;
+  display:flex; flex-direction:column; justify-content:center; line-height:1.1;
+  box-sizing:border-box; height:var(--ntp-flis);   /* like hoey som sidas ikon */
   background:var(--boks-mild); border:1px solid var(--boks-kant);
-  border-radius:14px; padding:6px 14px 7px; min-width:84px;
+  border-radius:14px; padding:0 14px; min-width:84px;
 }
 .ntp-iu-navn{ font-size:var(--t-etikett); color:var(--ink-soft); font-weight:700;
   text-transform:uppercase; letter-spacing:.08em; margin-bottom:1px; }
@@ -230,8 +235,7 @@
 .ntp-vb-tom{ color:var(--ink-soft); font-size:var(--t-meta); }
 
 @container (max-width:699px){
-  .ntp-rad{ gap:10px; }
-  .ntp-ikon{ width:56px; height:56px; }
+  .ntp-rad{ gap:10px; --ntp-flis:56px; }
   .ntp-vaer{ display:none !important; }
   .ntp-klokke{ margin-left:auto !important; }   /* vaeret skjoeves ikke lenger mot hoeyre */
   /* Matlagingen legger seg inntil klokka ogsaa her. */

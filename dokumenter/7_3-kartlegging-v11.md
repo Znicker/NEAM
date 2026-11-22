@@ -1,7 +1,8 @@
 # 7.3 – kartlegging, revidert (v11)
 
 *Ført à jour 22. november 2026: topplinja viser Inne og Ute fra
-Netatmo i stedet for været og stedet (se toppblokka).*
+Netatmo i stedet for været og stedet, sjøtemperaturen er tilbake, og
+Kjøkken dash har fått en julelysknapp ved stjerna (se toppblokka).*
 *Ført à jour 21. november 2026: pinkodene på fellesenhetene er slått av
 foreløpig, og bare sys@ og Magne kommer inn på Økonomi. Samme dag: ett
 trykk på ikonet oppe til venstre går til forsiden, dashene er
@@ -141,7 +142,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 ?v=90`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
-`felles-topp.js ?v=13`, `felles-topp.css ?v=13`;
+`felles-topp.js ?v=13`, `felles-topp.css ?v=14`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
@@ -161,7 +162,7 @@ gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–94; neam.css til og
 med 89; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
-hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–12, topp.css 1–12**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–12, topp.css 1–13**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -1411,6 +1412,40 @@ symbol. Kan skille dem med egne små bokser.» Tallene er 1,45 × `--t-stor`,
 boksene grupperingsbokser (`--boks-mild`, `--boks-kant`). Toppen er like
 høy som før (106 px på iPad liggende), og alle tre får plass på iPad
 stående.
+
+**22. november: julelysene ute på Kjøkken dash** (bare `dashboard.html`
+og to nye bilder). Magne: «Ved siden av julestjerna kan du få lagd en
+knapp for julelys ute? … longpress som åpner en meny der man kan velge
+hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
+- **Bare Julelys garasje og Julelys Terrasse** (Magnes valg), på id i
+  `JUL_LYS` – navnene i Homey endres. De tre andre Twinkly-enhetene
+  (Inngangsparti, veranda mot tunet, Juletre) var uten kontakt og er
+  utenfor med vilje.
+- **Trykk** slår alle av hvis noen lyser, ellers alle på – som stjerna.
+  **Langt trykk** (0,6 sek) åpner menyen: hvert lys med av/på-bryteren og
+  fargehjulet fra Rommene (`hskHjulLes`, `.hsk-hjul`). Lyset settes i
+  fargemodus først og tennes om det var av, som `hskSettFarge`.
+- **Bare én farge per slynge.** Twinkly-effektene (flerfarget) er
+  flytkort; Neam kan ikke kjøre dem uten en omvei som TV-tastene. Magne
+  valgte én farge nå.
+- **Ikonene** er Magnes, klippet fra ett bilde med to: `julelys.png`
+  (tent) og `julelys-av.png`, 512 × 511, 256 farger som stjerna.
+  Nye filer, så `?v=2` (IKON_V) er ubrukt for dem.
+- **Én henting for begge:** `jstHent` leser nå Homey også når stjerne-
+  gruppa mangler, og gir svaret til `julLes` – ikke to svar på 400 kB i
+  minuttet.
+- **Testet** lokalt med oppdiktede enheter: menyen, bryteren, hjulet,
+  langt mot kort trykk, ikonbytte og telefonbredde (390 px: sidenavnet
+  viker, alt får plass). Ikke testet mot de ekte lysene før push.
+- **Samme dag: alt i toppen er like høyt** (topp.css `?v=14` på alle 18
+  sidene). Magne: «Lag alle boksene like høye som logoen til kjøkkendash.
+  Alt bør være lik størrelse på topplinja.» Ny variabel `--ntp-flis` på
+  `.ntp-rad` (84 px, 56 px i kompakt topp) styrer sidas ikon, boksene
+  Inne/Ute/Sjø og stjerna og julelysene på dashet (var 64 px). Toppen er
+  fortsatt 106 px på iPad liggende. Med to knapper á 84 px er dashets topp
+  full under 900 px: der viker sidenavnet, og boksene og luften strammes
+  (bare i `dashboard.html`). Sjekket med de bredeste tallene (−14,8°,
+  15,8°) på iPad stående: 26 px klaring til klokka.
 
 ### Åpne tråder
 
