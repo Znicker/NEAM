@@ -27,6 +27,12 @@
    flytter ham ett skritt; et galt svar flytter ham ingenting.
    Hvor langt han kom er stjernene.
 
+   TIMEREN (Magne, 22. november 2026): hun velger i tillegg hvor raskt -
+   God tid 10 sekunder, Medium 6, Pro 3 - per oppgave. Fargen paa
+   stjernene sier hvilken: bronse, soelv eller gull. Gaar tiden ut, er
+   oppgaven feil - en graa stjerne mindre. Rekordene ble nullstilt samme
+   dag ved aa bytte til andrea-matte:v2 (v1 ligger urørt i KV).
+
    Tre visninger paa én side: oppsett, spill og resultat. Scenen
    med roboten er felles for alle tre - det er samme robot som
    venter, gaar og kommer fram.
@@ -334,6 +340,13 @@ body.spiller .rekorder{ display:none; }
 }
 .niva-navn{ font-size:clamp(16px, 4.4vw, 20px); }
 .niva-sub{ font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); line-height:1.3; }
+/* Hvor raskt: samme knapper som vanskeligheten. */
+.farter{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; }
+.fart{
+  min-height:76px; padding:10px 4px; text-align:center;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+}
+.fart .mini{ width:22px; margin-top:2px; }
 
 .start-rad{ margin-top:22px; }
 .start-hint{
@@ -360,6 +373,10 @@ body.spiller .rekorder{ display:none; }
   padding:8px 16px; font-size:var(--t-meta); font-weight:700; color:var(--ink-soft);
 }
 .spill-inn{ display:flex; flex-direction:column; align-items:center; gap:14px; }
+/* Tiden paa oppgaven: en linje som krymper fra full til tom. Noeytral
+   farge - den er en klokke, ikke en betydning. */
+.tid{ height:8px; border-radius:4px; background:var(--boks-mild); box-shadow:inset 0 0 0 1px var(--line); overflow:hidden; }
+.tid-fyll{ display:block; height:100%; width:100%; border-radius:4px; background:var(--ink-soft); }
 @media(min-width:900px) and (min-aspect-ratio:5/4){
   .spill-inn{ flex-direction:row; justify-content:space-around; align-items:center; }
 }
@@ -565,6 +582,9 @@ body.spiller .rekorder{ display:none; }
       <h2 class="kort-h" style="margin-top:22px">Hvor vanskelig?</h2>
       <div class="nivaer" id="nivaer" role="radiogroup" aria-label="Vanskelighet"></div>
 
+      <h2 class="kort-h" style="margin-top:22px">Hvor raskt?</h2>
+      <div class="farter" id="farter" role="radiogroup" aria-label="Tid per oppgave"></div>
+
       <div class="start-rad">
         <p class="start-hint" id="startHint" aria-live="polite"></p>
         <button type="button" class="knapp-blaa start-knapp" id="startKnapp">Start</button>
@@ -577,6 +597,7 @@ body.spiller .rekorder{ display:none; }
         <span class="teller" id="teller"></span>
         <button type="button" class="avslutt" id="avsluttKnapp">Avslutt</button>
       </div>
+      <div class="tid" id="tid" role="progressbar" aria-label="Tid igjen"><span class="tid-fyll" id="tidFyll"></span></div>
       <div class="spill-inn">
         <div class="oppgave" id="oppgave">
           <span id="stykke"></span><span aria-hidden="true">=</span>
@@ -645,10 +666,10 @@ body.spiller .rekorder{ display:none; }
 /* KV-noekkelen. Samme form som andrea-fag:v1. Hele historikken ligger
    i én verdi - rekordene er utledet av rundene, ikke lagret ved siden
    av dem, saa de to kan aldri bli uenige. */
-const NOKKEL = 'andrea-matte:v1';
+const NOKKEL = 'andrea-matte:v2';
 /* Speil paa enheten. Ikke en egen sannhet: det er det siste vi vet om
    KV-verdien, pluss runder som ikke kom fram. */
-const LOKAL_NOKKEL = 'neam-andrea-matte:v1';
+const LOKAL_NOKKEL = 'neam-andrea-matte:v2';
 /* Tusen runder a ti oppgaver er aar med spilling. Taket er der saa
    verdien ikke vokser uten grense; de eldste gaar foerst. */
 const MAKS_RUNDER = 1000;
@@ -662,6 +683,17 @@ const NIVAER = {
   vanskelig: { navn:'Vanskelig', maks:10, antall:15, rang:3 }
 };
 const NIVA_REKKE = ['lett', 'middels', 'vanskelig'];
+
+/* Tiden per oppgave, og stjernenes metall (Magne, 22. november 2026). */
+/* Stjerna i tre metaller: gull er den gamle fila, bronse og soelv er
+   laget av den (samme form og lys, fargen byttet). En tom stjerne er
+   alltid gullfila avfarget - graa uansett tid. */
+const FARTER = {
+  god:    { navn:'God tid', sek:10, bilde:'/bilder/spill/stjerne-bronse.webp?v=1', stjerne:'bronsestjerner', rang:1 },
+  medium: { navn:'Medium',  sek:6,  bilde:'/bilder/spill/stjerne-solv.webp?v=1',   stjerne:'sølvstjerner',   rang:2 },
+  pro:    { navn:'Pro',     sek:3,  bilde:'/bilder/spill/stjerne.webp?v=1',        stjerne:'gullstjerner',   rang:3 }
+};
+const FART_REKKE = ['god', 'medium', 'pro'];
 
 /* Tegnene er de skolen bruker: ekte minustegn (U+2212), ikke
    bindestrek, og halvhoeyt punktum for gange. */
@@ -695,6 +727,11 @@ const REPLIKK = {
     'Strålende! Laderen er nærmere nå.',
     'Ja, det stemmer på prikken.'
   ],
+  tid: [
+    'Tiden rant ut, men det gjør ingenting. Her er svaret.',
+    'Å, klokken min tikket for fort! Se på svaret, så tar vi neste.',
+    'Hm, den rakk vi ikke. Neste gang, Andrea!'
+  ],
   feil: [
     'Å, du godeste. Den var lur!',
     'Nesten, Andrea. Se på svaret, så tar vi neste.',
@@ -707,8 +744,8 @@ const REPLIKK = {
    Tilstand
    ============================================================ */
 
-let valg = { arter:['pluss'], tabeller:[], niva:'lett' };
-let data = { versjon:1, runder:[] };
+let valg = { arter:['pluss'], tabeller:[], niva:'lett', fart:'god' };
+let data = { versjon:2, runder:[] };
 /* Paagaaende runde, eller null. */
 let runde = null;
 /* Siste avsluttede runde, til resultatvisningen. */
@@ -748,7 +785,7 @@ async function kvSkriv(nokkel, verdi){
 }
 
 function gyldigRunde(r){
-  return r && typeof r.id === 'string' && NIVAER[r.niva]
+  return r && typeof r.id === 'string' && NIVAER[r.niva] && FARTER[r.fart]
       && Array.isArray(r.arter) && typeof r.riktige === 'number'
       && typeof r.antall === 'number' && r.antall > 0;
 }
@@ -762,7 +799,7 @@ function flettData(a, b){
   let runder = Array.from(kart.values())
     .sort(function(x, y){ return x.tid < y.tid ? -1 : x.tid > y.tid ? 1 : 0; });
   if(runder.length > MAKS_RUNDER) runder = runder.slice(-MAKS_RUNDER);
-  return { versjon:1, runder:runder };
+  return { versjon:2, runder:runder };
 }
 
 function lokalLes(){
@@ -996,6 +1033,15 @@ function byggOppsett(){
       + '</button>';
   }).join('');
 
+  $('farter').innerHTML = FART_REKKE.map(function(k){
+    const v = FARTER[k];
+    return '<button type="button" class="valg fart" role="radio" aria-checked="false" data-fart="' + k + '">'
+      + '<span class="niva-navn">' + v.navn + '</span>'
+      + '<span class="niva-sub">' + v.sek + ' sekunder</span>'
+      + '<img class="mini fylt" src="' + v.bilde + '" alt="" width="128" height="122">'
+      + '</button>';
+  }).join('');
+
   document.querySelectorAll('.art').forEach(function(b){
     b.addEventListener('click', function(){
       const a = b.dataset.art;
@@ -1027,6 +1073,13 @@ function byggOppsett(){
       tegnValg();
     });
   });
+  document.querySelectorAll('.fart').forEach(function(b){
+    b.addEventListener('click', function(){
+      valg.fart = b.dataset.fart;
+      valgRort = true;
+      tegnValg();
+    });
+  });
   $('startKnapp').addEventListener('click', function(){ startSpill(false); });
 }
 
@@ -1049,6 +1102,9 @@ function tegnValg(){
   $('alleTabeller').textContent = valg.tabeller.length === 10 ? 'Fjern alle' : 'Velg alle';
   document.querySelectorAll('.niva').forEach(function(b){
     b.setAttribute('aria-checked', b.dataset.niva === valg.niva ? 'true' : 'false');
+  });
+  document.querySelectorAll('.fart').forEach(function(b){
+    b.setAttribute('aria-checked', b.dataset.fart === valg.fart ? 'true' : 'false');
   });
   const m = mangler();
   $('startHint').textContent = m;
@@ -1073,7 +1129,8 @@ function brukSisteValg(){
     tabeller: (r.tabeller || []).map(Number)
                 .filter(function(n){ return n >= 1 && n <= 10; })
                 .sort(function(x, y){ return x - y; }),
-    niva: NIVAER[r.niva] ? r.niva : 'lett'
+    niva: NIVAER[r.niva] ? r.niva : 'lett',
+    fart: FARTER[r.fart] ? r.fart : 'god'
   };
   tegnValg();
 }
@@ -1134,6 +1191,7 @@ window.addEventListener('popstate', async function(ev){
 
 function avbrytRunde(){
   if(runde && runde.timer) clearTimeout(runde.timer);
+  stoppKlokka();
   runde = null;
 }
 
@@ -1156,7 +1214,9 @@ function startSpill(igjen){
     venter: null,          /* null | 'riktig' | 'feil' */
     timer: null,
     avbrytGodkjent: false,
-    valg: { arter:valg.arter.slice(), tabeller:valg.tabeller.slice(), niva:valg.niva }
+    frist: null,           /* klokka paa oppgaven */
+    tidUte: 0,
+    valg: { arter:valg.arter.slice(), tabeller:valg.tabeller.slice(), niva:valg.niva, fart:valg.fart }
   };
   if(igjen) history.replaceState({ fh:true, visning:'spill' }, '');
   else      history.pushState({ fh:true, visning:'spill' }, '');
@@ -1180,6 +1240,49 @@ function visOppgave(){
   settTaster(true);
   const opp = $('oppgave');
   opp.classList.remove('ny'); void opp.offsetWidth; opp.classList.add('ny');
+  startKlokka();
+}
+
+/* ---------- Klokka paa hver oppgave ----------
+   Linja krymper med en CSS-overgang over hele tiden; fristen er en
+   setTimeout. Naar hun svarer, fryses linja der den er. */
+function startKlokka(){
+  stoppKlokka();
+  const ms = FARTER[runde.valg.fart].sek * 1000;
+  const f = $('tidFyll');
+  f.style.transition = 'none';
+  f.style.width = '100%';
+  void f.offsetWidth;
+  f.style.transition = 'width ' + ms + 'ms linear';
+  f.style.width = '0%';
+  runde.frist = setTimeout(tidenUte, ms);
+}
+function stoppKlokka(){
+  if(runde && runde.frist){ clearTimeout(runde.frist); runde.frist = null; }
+  const f = $('tidFyll');
+  if(!f) return;
+  const w = getComputedStyle(f).width;
+  f.style.transition = 'none';
+  f.style.width = w;
+}
+
+/* Tiden gikk ut: oppgaven er feil, riktig svar vises, og hun trykker
+   Neste i ro - som ved et galt svar. */
+function tidenUte(){
+  if(!runde || runde.venter) return;
+  runde.frist = null;
+  const o = runde.oppgaver[runde.i];
+  settTaster(false);
+  runde.tidUte++;
+  runde.feil.push({ stykke:stykkeTekst(o), riktig:o.svar, svar:null, tidUte:true });
+  runde.venter = 'feil';
+  const boks = $('svarBoks');
+  boks.className = 'svar-boks feil';
+  boks.innerHTML = '<span>' + o.svar + '</span>';
+  boks.setAttribute('aria-label', 'Tiden gikk ut. Riktig svar er ' + o.svar);
+  spill1($('robot'), 'rister');
+  si(tilfeldig(REPLIKK.tid));
+  $('tastSvar').textContent = 'Neste';
 }
 
 function settTaster(paa){
@@ -1214,6 +1317,7 @@ function sendSvar(){
 
   const o = runde.oppgaver[runde.i];
   const svar = Number(runde.svar);
+  stoppKlokka();
   settTaster(false);
 
   if(svar === o.svar){
@@ -1282,8 +1386,11 @@ $('avsluttKnapp').addEventListener('click', async function(){
    Resultatet
    ============================================================ */
 
+/* Flest stjerner foerst, saa det edleste metallet, saa flest riktige. */
 function bedre(x, y){
   if(x.stjerner !== y.stjerner) return x.stjerner > y.stjerner;
+  const fx = FARTER[x.fart].rang, fy = FARTER[y.fart].rang;
+  if(fx !== fy) return fx > fy;
   return x.riktige / x.antall > y.riktige / y.antall;
 }
 
@@ -1295,6 +1402,8 @@ function ferdig(){
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
     tid: new Date().toISOString(),
     niva: rd.valg.niva,
+    fart: rd.valg.fart,
+    tidUte: rd.tidUte,
     arter: ART_REKKE.filter(function(a){ return rd.valg.arter.indexOf(a) !== -1; }),
     tabeller: rd.valg.arter.indexOf('gange') !== -1 ? rd.valg.tabeller.slice() : [],
     riktige: rd.riktige,
@@ -1337,16 +1446,16 @@ function visResultat(r, ny){
   let s = '';
   for(let i = 0; i < 5; i++){
     s += '<img class="stjerne' + (i < r.stjerner ? ' fylt' : '') + '" style="--i:' + i
-       + '" src="' + STJERNE + '" alt="" width="128" height="122">';
+       + '" src="' + (i < r.stjerner ? FARTER[r.fart].bilde : STJERNE) + '" alt="" width="128" height="122">';
   }
   const sb = $('stjerner');
   sb.innerHTML = s;
   sb.setAttribute('role', 'img');
-  sb.setAttribute('aria-label', r.stjerner + ' av 5 stjerner');
+  sb.setAttribute('aria-label', r.stjerner + ' av 5 ' + FARTER[r.fart].stjerne);
   sb.classList.remove('vis');
   if(ny){ void sb.offsetWidth; sb.classList.add('vis'); }
 
-  $('poeng').textContent = r.riktige + ' av ' + r.antall + ' riktige';
+  $('poeng').textContent = r.riktige + ' av ' + r.antall + ' riktige · ' + FARTER[r.fart].navn;
   $('rekordMelding').textContent = r.melding || '';
   $('rekordMelding').hidden = !r.melding;
 
@@ -1354,7 +1463,7 @@ function visResultat(r, ny){
   $('ovBolk').hidden = !feil.length;
   $('ovListe').innerHTML = feil.map(function(f){
     return '<li><span class="ov-stykke">' + esc(f.stykke) + ' = ' + f.riktig + '</span>'
-         + '<span class="ov-du">du svarte ' + f.svar + '</span></li>';
+         + '<span class="ov-du">' + (f.tidUte ? 'tiden gikk ut' : 'du svarte ' + f.svar) + '</span></li>';
   }).join('');
   if(ny) $('lagring').hidden = true;
   tegnRekorder(r.id);
@@ -1392,10 +1501,11 @@ $('endreKnapp').addEventListener('click', function(){
 /* Stjerna er ett bilde. Tom stjerne er den samme fila avfarget i CSS. */
 const STJERNE = '/bilder/spill/stjerne.webp?v=1';
 
-function miniStjerner(n){
+function miniStjerner(n, fart){
+  const fylt = FARTER[fart] ? FARTER[fart].bilde : STJERNE;
   let s = '';
   for(let i = 0; i < 5; i++){
-    s += '<img class="mini' + (i < n ? ' fylt' : '') + '" src="' + STJERNE + '" alt="" width="128" height="122">';
+    s += '<img class="mini' + (i < n ? ' fylt' : '') + '" src="' + (i < n ? fylt : STJERNE) + '" alt="" width="128" height="122">';
   }
   return s;
 }
@@ -1523,9 +1633,10 @@ function tegnRekorder(nyId){
       const g = paa.filter(function(r){ return r.stjerner === 5; }).length;
       detalj = g === 1 ? 'Fem stjerner én gang' : 'Fem stjerner ' + g + ' ganger';
     }else detalj = 'Beste: ' + best.riktige + ' av ' + best.antall;
+    if(best) detalj += ' · ' + FARTER[best.fart].navn;
     return '<li class="nr">'
-      + '<span class="nr-stjerner" aria-label="' + (best ? best.stjerner : 0) + ' av 5 stjerner">'
-      + miniStjerner(best ? best.stjerner : 0) + '</span>'
+      + '<span class="nr-stjerner" aria-label="' + (best ? best.stjerner + ' av 5 ' + FARTER[best.fart].stjerne : 'Ingen stjerner') + '">'
+      + miniStjerner(best ? best.stjerner : 0, best && best.fart) + '</span>'
       + '<span class="nr-navn">' + NIVAER[k].navn + '</span>'
       + '<span class="nr-detalj">' + detalj + '</span></li>';
   }).join('');
@@ -1546,8 +1657,8 @@ function tegnRekorder(nyId){
     ? siste.map(function(r){
         const klasser = (r.id === nyId ? 'ny ' : '') + (redigerer ? 'rad-redigeres' : '');
         return '<li' + (klasser.trim() ? ' class="' + klasser.trim() + '"' : '') + '>'
-          + '<span class="s-stjerner" aria-label="' + r.stjerner + ' av 5 stjerner">' + miniStjerner(r.stjerner) + '</span>'
-          + '<span class="s-topp">' + NIVAER[r.niva].navn + ', ' + r.riktige + ' av ' + r.antall + '</span>'
+          + '<span class="s-stjerner" aria-label="' + r.stjerner + ' av 5 ' + FARTER[r.fart].stjerne + '">' + miniStjerner(r.stjerner, r.fart) + '</span>'
+          + '<span class="s-topp">' + NIVAER[r.niva].navn + ', ' + FARTER[r.fart].navn + ', ' + r.riktige + ' av ' + r.antall + '</span>'
           + (redigerer ? '<button type="button" class="slett-rad" data-id="' + esc(r.id)
                + '" aria-label="Slett denne runden">&times;</button>' : '')
           + '<span class="s-under">' + esc(beskriv(r)) + ', ' + kortDato(r.tid) + '</span></li>';

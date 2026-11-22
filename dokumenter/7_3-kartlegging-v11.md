@@ -1584,6 +1584,33 @@ kjøkken.» `felles@neam.no` og `kitchen@neam.no` er lagt til i
 kjøkkenskjermen:** om felles@ ser Emmas og Andreas kalendere og
 lekser – dashene leser med kontoen som er logget inn.
 
+
+**22. november, kveld: timer i mattespillet, stjerner i tre metaller, og
+rekordene nullstilt** (`andrea-matte.html`, nye bilder
+`bilder/spill/stjerne-bronse.webp` og `stjerne-solv.webp`, `?v=1`).
+Magne: «Legg inn timer. Som hun velger i tillegg. God tid 10 sekunder,
+medium tid er 6 sekunder. Pro er 3 sekunder. Hun får gullstjerne ved pro,
+medium sølv og god bronse. Nullstill highscore.» På spørsmål: det er
+mattespillet på Andrea dash (Emma har ikke noe), stjernene skal skifte
+farge (ingen medaljer), og når tiden går ut «får hun en grå stjerne».
+- **«Hvor raskt?»** under vanskeligheten: God tid (10 s), Medium (6 s),
+  Pro (3 s), hver med sin stjerne. Huskes fra forrige runde som de andre
+  valgene. Tiden gjelder hver oppgave; en linje under telleren krymper.
+- **Tiden ute** = feil: riktig svar vises, Neam sier noe vennlig, og hun
+  trykker Neste i ro. I «Disse kan vi øve mer på» står «tiden gikk ut».
+- **Stjernene** fylles i bronse, sølv eller gull etter tiden; tomme er
+  grå som før. Bronse og sølv er laget av gullstjerna (samme form og lys,
+  fargen byttet i Python) – CSS-filtre ga olivengrønn bronse og sølv som
+  lignet tomme stjerner.
+- **Rekorden** per vanskelighet: flest stjerner først, så det edleste
+  metallet, så flest riktige. Fem bronse slår altså fire gull.
+- **Nullstilt** ved å bytte til `andrea-matte:v2` (og
+  `neam-andrea-matte:v2` lokalt). De gamle rundene ligger urørt i v1 –
+  sletting ville ikke holdt: speilet på Andreas iPad fletter gamle runder
+  inn igjen neste gang hun spiller (se «Sletting fletter først» over).
+- Testet lokalt: valget, linja, tiden ute på Medium, resultat og rekorder
+  i alle tre metaller. Ikke prøvd på Andreas iPad.
+
 **22. november: varsel om «Ikke lest» i innboksen** (`okonomi.html` og
 `functions/api/bank/[[sti]].js`). Magne fant en fil i Dropbox-mappa «Ikke
 lest» og: «Vi må ha en advarsel under innboks at noe ligger der og velge
@@ -3138,12 +3165,14 @@ Vanskelig (0–10, femten). **Nivå og regneart er uavhengige** – en
 gangetabell går alltid 1–10 uansett nivå. Det var et uttrykkelig valg: det
 er tabellen man øver på, ikke et intervall.
 
-**Ingen klokke.** Bevisst.
+**Ingen klokke.** Bevisst. **Opphevet 22. november 2026:** Magne ville ha
+timer som hun velger selv – se loggen samme dag.
 
 **Stjerner:** 5 for alt riktig, så ned i femtedeler, med 1 som gulv – hun
 har hjulpet ham uansett.
 
-**Lagring i `andrea-matte:v1`,** med et speil i `localStorage`. Rekordene
+**Lagring i `andrea-matte:v1`** (fra 22. november 2026 `andrea-matte:v2`,
+se loggen), med et speil i `localStorage`. Rekordene
 er **utledet av rundene**, ikke lagret ved siden av dem, så de to kan ikke
 bli uenige. Ved skriving flettes alltid minnet inn i det KV svarer, på
 rundens id – KV cacher lesinger i 60 sekunder, og to korte runder etter
