@@ -321,32 +321,43 @@ body{
   padding:7px 15px; border-radius:999px; cursor:pointer; -webkit-tap-highlight-color:transparent;
 }
 .sku-gaa:active{ filter:brightness(.9); }
+/* Toning nederst naar en liste har mer under seg (Magne, 23. november
+   2026). Rullefeltene er skjult, saa uten den saa man ikke at det fantes
+   mer. Forsvinner naar man har rullet til bunnen. */
+.mer-under{
+  -webkit-mask-image:linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+          mask-image:linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+}
 /* Proeve denne uka: roed ramme med en lysere bue som gaar rundt, og et
    svakt roedt skjaer utenfor. Vinkelen er en registrert egenskap, saa den
    kan animeres; masken lar bare kanten vaere synlig. Uten bevegelse
    (prefers-reduced-motion) staar rammen stille. */
 @property --sku-vinkel{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
-.sku-rad.denne-uka{
+.sku-rad.denne-uka{ --ring:var(--danger); }
+/* Dagens paaminnelser fra klokka 20 dagen foer til de er huket av: samme
+   ramme i blaatt (Magne, 23. november 2026). */
+.hu-rad.ring-blaa{ --ring:var(--aksent); }
+.sku-rad.denne-uka, .hu-rad.ring-blaa{
   position:relative;
-  box-shadow:0 0 10px color-mix(in srgb, var(--danger) 35%, transparent);
+  box-shadow:0 0 10px color-mix(in srgb, var(--ring) 35%, transparent);
 }
-.sku-rad.denne-uka::after{
+.sku-rad.denne-uka::after, .hu-rad.ring-blaa::after{
   content:''; position:absolute; inset:-2px; border-radius:13px; padding:2.5px;
   pointer-events:none;
   background:conic-gradient(from var(--sku-vinkel),
-    var(--danger) 0deg,
-    color-mix(in srgb, var(--danger) 25%, #fff) 60deg,
-    var(--danger) 120deg,
-    var(--danger) 180deg,
-    color-mix(in srgb, var(--danger) 25%, #fff) 240deg,
-    var(--danger) 300deg);
+    var(--ring) 0deg,
+    color-mix(in srgb, var(--ring) 25%, #fff) 60deg,
+    var(--ring) 120deg,
+    var(--ring) 180deg,
+    color-mix(in srgb, var(--ring) 25%, #fff) 240deg,
+    var(--ring) 300deg);
   -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite:xor; mask-composite:exclude;
   animation:skuRoter 2.6s linear infinite;
 }
 .sku-rad.denne-uka .hu-innen{ color:var(--danger); }
 @keyframes skuRoter{ to{ --sku-vinkel:360deg; } }
-@media (prefers-reduced-motion:reduce){ .sku-rad.denne-uka::after{ animation:none; } }
+@media (prefers-reduced-motion:reduce){ .sku-rad.denne-uka::after, .hu-rad.ring-blaa::after{ animation:none; } }
 
 /* ---------- Spillene ----------
    Snarveien til spillene, nederst i hoeyrekolonnen. Den tar bare
@@ -2453,7 +2464,28 @@ function tegnPlan(res){
   }
 
   rullTilNaa(boks);
+  kortToning();
 }
+
+/* Setter .mer-under paa listene som har mer under det som synes, og
+   kobler rullingen én gang per liste. Paa telefon ruller sida, listene
+   er like hoeye som innholdet, og da blir det aldri noen toning. */
+const KORT_TONING = ['plan', 'skoleuke', 'huskeIdag', 'skoleProver'];
+function kortToning(){
+  KORT_TONING.forEach(function(id){
+    const el = $(id);
+    if(!el) return;
+    if(!el.dataset.toning){
+      el.dataset.toning = '1';
+      el.addEventListener('scroll', function(){ kortToningEn(el); }, { passive:true });
+    }
+    kortToningEn(el);
+  });
+}
+function kortToningEn(el){
+  el.classList.toggle('mer-under', el.scrollTop + el.clientHeight < el.scrollHeight - 4);
+}
+window.addEventListener('resize', function(){ kortToning(); });
 
 /* Det som er unnagjort skal ikke ta plassen til det som gjenstaar. Passerte
    avtaler blir staaende - de ruller bare opp av seg selv, saa neste avtale
@@ -4760,7 +4792,10 @@ function visFagSkjema(modus, id, fagId){
   $('fagLarerFelt').hidden    = !erFag;
   $('fagDagerFelt').hidden    = !erFag;
   $('fagTypeFelt').hidden     = !erProve;
-  $('fagKarakterFelt').hidden = !erProve;
+  /* Andrea faar ikke karakterer paa barneskolen (Magne, 23. november
+     2026: «Andrea trenger ikke karakterer»). Feltet blir i skjemaet saa
+     lagringen er lik Emmas, men vises aldri. */
+  $('fagKarakterFelt').hidden = true;
   /* Hvem og naar hoerer til en lekse eller en proeve, ikke til et fag. */
   $('fagAvFelt').hidden       = erFag;
   $('fagNarFelt').hidden      = !erLekse;
@@ -5238,11 +5273,19 @@ function datoIUken(basisdato, nr){
 function huskeRad(m){
   const uke = m.omfang === 'uke';
   const ferdig = !!m.ferdig;
+  /* Blaa ramme som gaar rundt: en dagspaaminnelse som ikke er huket av,
+     fra klokka 20 dagen foer. Samme klokkeslett som doegnskiftet, saa den
+     kommer paa skjermen og faar rammen samtidig. */
+  let ring = false;
+  if(!uke && !ferdig && m.frist){
+    const f = datoFraTekst(m.frist);
+    ring = new Date() >= new Date(f.getFullYear(), f.getMonth(), f.getDate() - 1, 20);
+  }
   const harTekst = !!(m.tekst || '').trim();
   /* Bare overskriften staar i lista - plassen er knapp. Resten kommer i
      boblen ved trykk. Haken ligger utenfor boksen, til hoeyre. */
   return '<div class="hu-linje' + (ferdig ? ' ferdig' : '') + '">'
-    +   '<div class="hu-rad" data-id="' + esc(m.id) + '"'
+    +   '<div class="hu-rad' + (ring ? ' ring-blaa' : '') + '" data-id="' + esc(m.id) + '"'
     +     ' style="' + fyll(huskeFarge(m.gjelder)) + '"'
     +     ' onclick="vekslHuskeBoble(\'' + esc(m.id) + '\', event)">'
     +     initial(m.gjelder, huskeFarge(m.gjelder))
@@ -5521,6 +5564,7 @@ function tegnHuskeInner(){
       ? g.treff.map(huskeRad).join('')
       : '<div class="tom">Ingenting notert ennå.</div>';
   });
+  kortToning();
 }
 
 /* Avtrykket av lista slik den sist ble hentet. Poenget er aa kunne se at
@@ -5695,9 +5739,14 @@ window.neamBakgrunn = async function(){
         : 'TIMEPLANEN ER IKKE LAGT INN ENNÅ. Ukedagene som står på fagene i '
           + 'les_fagene er det eneste du vet om når fagene har time.\n\n')
     + 'DU EIER FAG, LEKSER OG PRØVER på denne siden og kan både lese og skrive '
-    + 'dem. Slå alltid opp med les_fagene eller les_lekser før du svarer på hva '
-    + 'hun har - ikke gjett, og ikke svar av hukommelsen fra tidligere i '
-    + 'samtalen hvis noe kan ha endret seg siden.\n\n'
+    + 'dem. Spør hun hva hun har, hva hun skal gjøre eller hvordan uka ser ut, '
+    + 'leser du ALT som står på skjermen før du svarer: les_lekser, les_prover og '
+    + 'les_paaminnelser - og les_kalender når det gjelder bestemte dager. Prøvene '
+    + 'og påminnelsene står like synlig som leksene, og et svar uten dem er halvt. '
+    + 'Ikke gjett, og ikke svar av hukommelsen fra tidligere i samtalen hvis noe '
+    + 'kan ha endret seg siden.\n\n'
+    + 'ANDREA FÅR IKKE KARAKTERER - hun går på barneskolen. Sett aldri karakter '
+    + 'på en prøve, og spør ikke etter den.\n\n'
     + 'UKEPLANEN ER EN PDF PÅ SKOLENS SIDE. Du kan ikke hente den selv, men '
     + 'huset kan: «Hent fra nett» under Ukeplan-knappen i hjørnet henter den og '
     + 'gir den til deg som PDF. Den kan også komme som bilde («Skann ark») eller '

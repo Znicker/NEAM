@@ -1895,6 +1895,38 @@ ukenummer, og regelen «står en ukedag og en dato sammen, sjekk dem mot
 tabellen; spriker de, spør». Gjelder alle sidene. Den feilplasserte
 prøven (28.11) er ikke rettet – Magne svarer Neam.
 
+**23. november: karakterer, toning og Neam leser alt** (`emma.html`,
+`andrea.html` – toningen og «les alt» likt; **karakterene bare hos Emma**:
+Magne, «Andrea trenger ikke karakterer». Hos Andrea er karakterfeltet
+skjult i skjemaet, fagvinduet er som før, og Neam får «Andrea får ikke
+karakterer – sett aldri karakter»). Magne: «Neam må også ta høyde for prøver
+og påminnelser. Vi må ordne slik at Emma kan legge inn karakterene sine.
+Og velge A–F, bestått, ikke bestått, lav, middels og høy måloppnåelse.»
+- `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
+  og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
+  gammel karakter utenfor lista legges til som eget valg så den ikke
+  forsvinner), `karakterHtml()` (kort visning i fagvinduet, «Sett
+  karakter» på prøver som har vært).
+- Neams bakgrunn: spør hun hva hun har eller skal gjøre, leses lekser,
+  prøver, påminnelser – og kalenderen for bestemte dager – før han svarer.
+  Og karakterlista.
+- `kortToning()` / `.mer-under` på `#plan`, `#skoleuke`, `#huskeIdag`,
+  `#skoleProver`; kalles etter `tegnPlan()` og `tegnHuskeInner()`, ved
+  rulling og ved endret vindusstørrelse.
+- Testet på neam.no: toningen var der med 21 lekser og forsvant ved
+  bunnen; skjemaet viste de tolv valgene; lukket uten å lagre. **Samme
+  test viste at Neam nå hadde lagt inn Emmas prøver** (Mock exam, heldag
+  matte og norsk, spansk) – den nye bakgrunnsteksten virket.
+
+**23. november: blå ramme på dagens påminnelser** (`emma.html`,
+`andrea.html` – like endringer). Magne: «Påminnelser dag kan få en blå
+sirkulerende ramme fra kl 20 dagen før som blir stående til den er huket
+av.» `huskeRad()` setter `.ring-blaa` på en dagspåminnelse som ikke er
+huket av når klokka har passert 20 dagen før fristen. CSS-en for den røde
+prøverammen tar nå fargen fra `--ring`, så begge bruker samme regel.
+Testet på neam.no: «Hent matavfall …» (i dag) fikk rammen, ukas «Fulladet
+pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
+
 ### Åpne tråder
 
 **Fra 22. november 2026, kveld – små, ingen haster:**

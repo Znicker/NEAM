@@ -321,32 +321,50 @@ body{
   padding:7px 15px; border-radius:999px; cursor:pointer; -webkit-tap-highlight-color:transparent;
 }
 .sku-gaa:active{ filter:brightness(.9); }
+/* Karakterer som er ord, ikke én bokstav. */
+.fagvis-boks .prove-karakter.lang{ font-size:var(--t-meta); min-width:0; white-space:nowrap; }
+.prove-karakter.mangler{
+  font-size:var(--t-etikett); font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--aksent); min-width:0; white-space:nowrap;
+}
+.fagvis-boks .prove-karakter.mangler{ font-size:var(--t-etikett); }
+/* Toning nederst naar en liste har mer under seg (Magne, 23. november
+   2026). Rullefeltene er skjult, saa uten den saa man ikke at det fantes
+   mer. Forsvinner naar man har rullet til bunnen. */
+.mer-under{
+  -webkit-mask-image:linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+          mask-image:linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+}
 /* Proeve denne uka: roed ramme med en lysere bue som gaar rundt, og et
    svakt roedt skjaer utenfor. Vinkelen er en registrert egenskap, saa den
    kan animeres; masken lar bare kanten vaere synlig. Uten bevegelse
    (prefers-reduced-motion) staar rammen stille. */
 @property --sku-vinkel{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
-.sku-rad.denne-uka{
+.sku-rad.denne-uka{ --ring:var(--danger); }
+/* Dagens paaminnelser fra klokka 20 dagen foer til de er huket av: samme
+   ramme i blaatt (Magne, 23. november 2026). */
+.hu-rad.ring-blaa{ --ring:var(--aksent); }
+.sku-rad.denne-uka, .hu-rad.ring-blaa{
   position:relative;
-  box-shadow:0 0 10px color-mix(in srgb, var(--danger) 35%, transparent);
+  box-shadow:0 0 10px color-mix(in srgb, var(--ring) 35%, transparent);
 }
-.sku-rad.denne-uka::after{
+.sku-rad.denne-uka::after, .hu-rad.ring-blaa::after{
   content:''; position:absolute; inset:-2px; border-radius:13px; padding:2.5px;
   pointer-events:none;
   background:conic-gradient(from var(--sku-vinkel),
-    var(--danger) 0deg,
-    color-mix(in srgb, var(--danger) 25%, #fff) 60deg,
-    var(--danger) 120deg,
-    var(--danger) 180deg,
-    color-mix(in srgb, var(--danger) 25%, #fff) 240deg,
-    var(--danger) 300deg);
+    var(--ring) 0deg,
+    color-mix(in srgb, var(--ring) 25%, #fff) 60deg,
+    var(--ring) 120deg,
+    var(--ring) 180deg,
+    color-mix(in srgb, var(--ring) 25%, #fff) 240deg,
+    var(--ring) 300deg);
   -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite:xor; mask-composite:exclude;
   animation:skuRoter 2.6s linear infinite;
 }
 .sku-rad.denne-uka .hu-innen{ color:var(--danger); }
 @keyframes skuRoter{ to{ --sku-vinkel:360deg; } }
-@media (prefers-reduced-motion:reduce){ .sku-rad.denne-uka::after{ animation:none; } }
+@media (prefers-reduced-motion:reduce){ .sku-rad.denne-uka::after, .hu-rad.ring-blaa::after{ animation:none; } }
 
 /* ---------- Spillene ----------
    Snarveien til emma-spill.html (fra 2. november 2026; foer det
@@ -1737,7 +1755,7 @@ select.hu-felt{
           <input class="hu-felt" id="fagType" maxlength="40" placeholder="Kapittelprøve, muntlig, innlevering …">
         </label>
         <label class="av-felt" id="fagKarakterFelt" hidden>Karakter
-          <input class="hu-felt" id="fagKarakter" maxlength="12" placeholder="Står tom til den er satt">
+          <select class="hu-felt" id="fagKarakter"></select>
         </label>
         <label class="av-felt" id="fagAvFelt" hidden>Lagt inn av
           <select class="hu-felt" id="fagAv"></select>
@@ -2441,7 +2459,28 @@ function tegnPlan(res){
   }
 
   rullTilNaa(boks);
+  kortToning();
 }
+
+/* Setter .mer-under paa listene som har mer under det som synes, og
+   kobler rullingen én gang per liste. Paa telefon ruller sida, listene
+   er like hoeye som innholdet, og da blir det aldri noen toning. */
+const KORT_TONING = ['plan', 'skoleuke', 'huskeIdag', 'skoleProver'];
+function kortToning(){
+  KORT_TONING.forEach(function(id){
+    const el = $(id);
+    if(!el) return;
+    if(!el.dataset.toning){
+      el.dataset.toning = '1';
+      el.addEventListener('scroll', function(){ kortToningEn(el); }, { passive:true });
+    }
+    kortToningEn(el);
+  });
+}
+function kortToningEn(el){
+  el.classList.toggle('mer-under', el.scrollTop + el.clientHeight < el.scrollHeight - 4);
+}
+window.addEventListener('resize', function(){ kortToning(); });
 
 /* Det som er unnagjort skal ikke ta plassen til det som gjenstaar. Passerte
    avtaler blir staaende - de ruller bare opp av seg selv, saa neste avtale
@@ -4444,7 +4483,7 @@ function tegnFagVis(){
         const d = datoFraTekst(p.dato);
         return '<div class="prove-linje" onclick="redigerProve(\'' + esc(p.id) + '\')">'
           + '<span class="prove-type">' + esc(p.type) + ' · ' + esc(UKEDAGER[ukedagNr(d)] + ' ' + d.getDate() + '. ' + MND[d.getMonth()]) + '</span>'
-          + '<span class="prove-karakter">' + esc(p.karakter) + '</span></div>';
+          + karakterHtml(p, false) + '</div>';
       }).join('');
     }
     venstre += r + '</div>';
@@ -4469,7 +4508,7 @@ function tegnFagVis(){
     }
     return '<div class="prove-linje' + (harVaert ? ' forbi' : '') + '" onclick="redigerProve(\'' + esc(p.id) + '\')">'
       + '<div class="fv-prove-topp"><span class="prove-type">' + esc(p.type) + '</span>'
-      +   '<span class="prove-karakter">' + esc(p.karakter) + '</span></div>'
+      +   karakterHtml(p, harVaert) + '</div>'
       + '<div class="fv-prove-dato' + (naer ? ' naer' : '') + '">' + esc(dato) + '</div>'
       + (p.av ? '<span class="lekse-av">Lagt inn av ' + esc(p.av) + '</span>' : '')
       + '</div>';
@@ -4570,6 +4609,48 @@ async function ukeNotatLagreAlle(){
   for(const el of felt){
     if(fvUkeVent[el.dataset.uke]) await ukeNotatLagre(el);
   }
+}
+
+/* ---- Karakterene ----
+   Magne, 23. november 2026: «Emma kan legge inn karakterene … velge A-F,
+   bestått, ikke bestått, lav, middels og høy måloppnåelse.» Skjemaet har
+   en nedtrekksliste; Neams verktoey godtar bare disse (store og smaa
+   bokstaver spiller ingen rolle). En gammel karakter som ikke staar i
+   lista, blir staaende - den legges inn som eget valg naar skjemaet
+   aapnes, saa den ikke forsvinner ved en lagring. */
+const KARAKTERER = ['A', 'B', 'C', 'D', 'E', 'F', 'Bestått', 'Ikke bestått',
+                    'Lav måloppnåelse', 'Middels måloppnåelse', 'Høy måloppnåelse'];
+
+function karakterRens(v){
+  const t = String(v === undefined || v === null ? '' : v).trim();
+  if(!t) return '';
+  const k = KARAKTERER.find(function(x){ return x.toLowerCase() === t.toLowerCase(); });
+  if(!k) throw new Error('Karakteren må være en av: ' + KARAKTERER.join(', ') + '.');
+  return k;
+}
+
+function karakterVelger(verdi){
+  const v = String(verdi || '');
+  const valg = [''].concat(KARAKTERER);
+  if(v && valg.indexOf(v) === -1) valg.push(v);
+  $('fagKarakter').innerHTML = valg.map(function(k){
+    return '<option value="' + esc(k) + '"' + (k === v ? ' selected' : '') + '>'
+         + esc(k || 'Ikke satt ennå') + '</option>';
+  }).join('');
+}
+
+/* I fagvinduet: «Middels måloppnåelse» vises som «Middels», lange ord i
+   mindre skrift. En proeve som har vaert og mangler karakter faar «Sett
+   karakter» - et trykk paa raden aapner skjemaet. */
+function karakterHtml(p, harVaert){
+  const k = String(p.karakter || '');
+  if(!k){
+    return harVaert ? '<span class="prove-karakter mangler">Sett karakter</span>'
+                    : '<span class="prove-karakter"></span>';
+  }
+  const kort = k.replace(/ måloppnåelse$/i, '');
+  return '<span class="prove-karakter' + (kort.length > 2 ? ' lang' : '') + '" title="'
+       + esc(k) + '">' + esc(kort) + '</span>';
 }
 
 /* Mandagen i en ISO-uke («2026-W48»). 4. januar ligger alltid i uke 1. */
@@ -4705,7 +4786,7 @@ function visFagSkjema(modus, id, fagId){
     }
     if(erProve){
       $('fagType').value     = p ? p.type : '';
-      $('fagKarakter').value = p ? p.karakter : '';
+      karakterVelger(p ? p.karakter : '');
     }
   }
 
@@ -5118,11 +5199,19 @@ function datoIUken(basisdato, nr){
 function huskeRad(m){
   const uke = m.omfang === 'uke';
   const ferdig = !!m.ferdig;
+  /* Blaa ramme som gaar rundt: en dagspaaminnelse som ikke er huket av,
+     fra klokka 20 dagen foer. Samme klokkeslett som doegnskiftet, saa den
+     kommer paa skjermen og faar rammen samtidig. */
+  let ring = false;
+  if(!uke && !ferdig && m.frist){
+    const f = datoFraTekst(m.frist);
+    ring = new Date() >= new Date(f.getFullYear(), f.getMonth(), f.getDate() - 1, 20);
+  }
   const harTekst = !!(m.tekst || '').trim();
   /* Bare overskriften staar i lista - plassen er knapp. Resten kommer i
      boblen ved trykk. Haken ligger utenfor boksen, til hoeyre. */
   return '<div class="hu-linje' + (ferdig ? ' ferdig' : '') + '">'
-    +   '<div class="hu-rad" data-id="' + esc(m.id) + '"'
+    +   '<div class="hu-rad' + (ring ? ' ring-blaa' : '') + '" data-id="' + esc(m.id) + '"'
     +     ' style="' + fyll(huskeFarge(m.gjelder)) + '"'
     +     ' onclick="vekslHuskeBoble(\'' + esc(m.id) + '\', event)">'
     +     initial(m.gjelder, huskeFarge(m.gjelder))
@@ -5401,6 +5490,7 @@ function tegnHuskeInner(){
       ? g.treff.map(huskeRad).join('')
       : '<div class="tom">Ingenting notert ennå.</div>';
   });
+  kortToning();
 }
 
 /* Avtrykket av lista slik den sist ble hentet. Poenget er aa kunne se at
@@ -5570,9 +5660,15 @@ window.neamBakgrunn = async function(){
     + 'du sender noe til et verktøy.\n\n'
     + 'TIMEPLANEN:\n' + timeplanTekst() + '\n\n'
     + 'DU EIER FAG, LEKSER OG PRØVER på denne siden og kan både lese og skrive '
-    + 'dem. Slå alltid opp med les_fagene eller les_lekser før du svarer på hva '
-    + 'hun har - ikke gjett, og ikke svar av hukommelsen fra tidligere i '
-    + 'samtalen hvis noe kan ha endret seg siden.\n\n'
+    + 'dem. Spør hun hva hun har, hva hun skal gjøre eller hvordan uka ser ut, '
+    + 'leser du ALT som står på skjermen før du svarer: les_lekser, les_prover og '
+    + 'les_paaminnelser - og les_kalender når det gjelder bestemte dager. Prøvene '
+    + 'og påminnelsene står like synlig som leksene, og et svar uten dem er halvt. '
+    + 'Ikke gjett, og ikke svar av hukommelsen fra tidligere i samtalen hvis noe '
+    + 'kan ha endret seg siden.\n\n'
+    + 'KARAKTERER settes med endre_prove og er en av: A, B, C, D, E, F, Bestått, '
+    + 'Ikke bestått, Lav måloppnåelse, Middels måloppnåelse, Høy måloppnåelse. '
+    + 'Står det noe annet - et tall, «M+» - spør du hvilken av dem det er.\n\n'
     + 'UKEPLANEN LIGGER PÅ SKOLENS SIDE og kan hentes med hent_skoleplan. '
     + 'Uten argument får du den nyeste for 8. trinn. Timeplanene ligger i '
     + 'samme liste - bruk list_skoleplaner og send url hvis du skal ha en av dem.\n\n'
@@ -6071,7 +6167,8 @@ const FAG_VERKTOY = [
         fag:      { type:'string', description:'Navnet på faget.' },
         type:     { type:'string', description:'Hva slags prøve. For eksempel «kapittelprøve» eller «muntlig framføring».' },
         dato:     { type:'string', description:'Dato på formen 2026-09-08.' },
-        karakter: { type:'string', description:'Bare hvis den alt er satt.' }
+        karakter: { type:'string', description:'Bare hvis den alt er satt. En av: '
+                                    + KARAKTERER.join(', ') + '.' }
       },
       required:['fag','type']
     },
@@ -6091,7 +6188,8 @@ const FAG_VERKTOY = [
         id:       { type:'string', description:'Prøvens id fra les_prover.' },
         type:     { type:'string' },
         dato:     { type:'string', description:'Dato på formen 2026-09-08.' },
-        karakter: { type:'string' }
+        karakter: { type:'string', description:'En av: ' + KARAKTERER.join(', ')
+                                    + '. Tom tekst fjerner karakteren.' }
       },
       required:['id']
     },
@@ -7338,7 +7436,7 @@ async function fagUtfor(navn, arg){
     const dato = datoKrev(arg.dato, 'Datoen');
     await endreFag(function(d){
       d.prover.push({ id:nyId(), fagId:f.id, type:type, dato:dato,
-                      karakter:String(arg.karakter || '').trim(), av:'Neam' });
+                      karakter:karakterRens(arg.karakter), av:'Neam' });
       return d;
     });
     return { lagt:{ fag:f.navn, type:type, dato:dato || null } };
@@ -7350,7 +7448,7 @@ async function fagUtfor(navn, arg){
     const endring = {};
     if(arg.type !== undefined)     endring.type = String(arg.type).trim();
     if(arg.dato !== undefined)     endring.dato = datoKrev(arg.dato, 'Datoen');
-    if(arg.karakter !== undefined) endring.karakter = String(arg.karakter).trim();
+    if(arg.karakter !== undefined) endring.karakter = karakterRens(arg.karakter);
     if(!Object.keys(endring).length) throw new Error('Ingenting å endre.');
     await endreFag(function(d){
       d.prover = d.prover.map(function(x){

@@ -1339,6 +1339,23 @@ bue som går rundt** (2,6 s per runde) og et svakt rødt skjær – Magne: «som
 pågående effekter i WoW». `@property --sku-vinkel` + `conic-gradient` med
 maske, så bare kanten vises; står stille ved `prefers-reduced-motion`.
 Rødt betyr ellers «slett» – her er det Magnes valg for «dette er nå».
+**Dagens påminnelser** får samme ramme **i blått** (`--aksent`) fra klokka
+20 dagen før og til de er huket av; ukas påminnelser får den ikke. Rammen
+tar fargen fra `--ring`, så de to deler én regel.
+
+**Toning nederst i lister som har mer** (fra 23. november 2026): avtalene,
+leksene, påminnelsene og prøvene får en 40 px toning nederst
+(`.mer-under`, en `mask-image`) så lenge det finnes mer å rulle til, og
+den forsvinner ved bunnen. Rullefeltene er skjult, så uten den så man ikke
+at lista fortsatte. Aldri på telefon – der ruller sida.
+
+**Karakterer velges fra en liste – bare på Emma dash** (fra 23. november
+2026; Andrea går på barneskolen og får ikke karakterer, så feltet er
+skjult i skjemaet hennes og Neam setter aldri karakter der): A, B, C, D, E,
+F, Bestått, Ikke bestått, Lav, Middels og Høy måloppnåelse – i skjemaet og
+i Neams verktøy. I fagvinduet vises «… måloppnåelse» som «Lav/Middels/Høy»
+i mindre skrift, og en prøve som har vært uten karakter får en blå «Sett
+karakter» (trykk på raden åpner skjemaet).
 
 **Fagvinduet i to kolonner** (fra 22. november 2026): toppen har bare
 faglæreren – ingen teller for gjorte lekser. **Krysset er større og rødt**
