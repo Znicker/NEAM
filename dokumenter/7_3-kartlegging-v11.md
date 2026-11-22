@@ -1819,6 +1819,14 @@ få et felt per uke. Alt må få synlige rammer.»
 - Testet visningen på neam.no med Spansk (uten skrivende knapper). Selve
   lagringen av ukenotat er ikke testet mot ekte data.
 
+**Samme natt, justert:** Magne: «Kortet ble i overkant … Halveres. Krysset
+… bør være større og rødt. Lekser gjort trenger ikke å stå. Ukedagene kan
+stå som stempel i rødt på kortet. Dagene under hverandre midt på til
+venstre i kortet.» Kortet 360 → 180 px; `.fagvis-boks .hub-lukk` rødt og
+1,7 × større; telleren (`.fv-teller`) og ukedagene ut av toppen;
+`.fv-dager` legges inn i merkets span i `tegnFagVis()` (også i reserven
+uten merke). Testet på neam.no med Norsk (fire dager).
+
 ### Åpne tråder
 
 **Fra 22. november 2026, kveld – små, ingen haster:**

@@ -904,17 +904,13 @@ body{
 /* fagVisNavn er en span i .av-tittel - den maa selv legge merke, navn og
    teller paa rad. Telleren skyves helt til hoeyre. */
 #fagVisNavn{ display:flex; align-items:center; gap:18px; flex:1; min-width:0; flex-wrap:wrap; }
-.fv-teller{ margin-left:auto; }
 .fv-hode{ flex:1; min-width:200px; }
-.fv-navn{ display:block; font-size:calc(var(--t-stor) * 1.5); line-height:1.1; }
 .fv-hode .fagvis-meta{ padding:6px 0 0; font-weight:400; }
-.fv-teller{ text-align:right; flex-shrink:0; line-height:1.1; }
-.fv-teller b{ display:block; font-size:calc(var(--t-stor) * 1.5); font-variant-numeric:tabular-nums; }
-.fv-teller span{
-  display:block; margin-top:4px; font-size:var(--t-etikett); font-weight:700;
-  letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft);
+/* Krysset stoerre og roedt i fagvinduet (Magne, 22. november 2026). */
+.fagvis-boks .hub-lukk{
+  color:var(--danger); font-size:calc(var(--t-pil) * 1.7); font-weight:700;
+  top:6px; right:12px; padding:2px 8px;
 }
-.fv-teller.alt b{ color:var(--handling-ny); }
 #fagVisMeta[hidden]{ display:none; }
 
 .fv-kolonner{
@@ -932,7 +928,17 @@ body{
 .fagvis-boks .fv-boks h4{ border-bottom:none; padding-bottom:0; }
 .fv-side .fagvis-notat.fv-boks{ margin-top:0; }
 /* Kortet: fagmerket stort oeverst i venstre kolonne. */
-.fv-kort{ display:block; width:100%; max-width:360px; margin:0 auto 12px; }
+.fv-kort{ display:block; position:relative; width:100%; max-width:180px; margin:0 auto 12px; }
+/* Ukedagene som roedt stempel paa kortet, under hverandre, midt paa
+   til venstre (Magne). Samme gummistempel som «Ingen lekser». */
+.fv-dager{
+  position:absolute; left:6%; top:50%; transform:translateY(-50%) rotate(-8deg);
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  color:var(--danger); border:2.5px solid currentColor; border-radius:6px;
+  background:rgba(251,249,245,.9); padding:4px 8px; pointer-events:none;
+  font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
+  text-transform:uppercase; letter-spacing:.05em; line-height:1.2;
+}
 .fv-kort img{ width:100%; height:auto; display:block; border-radius:14px; }
 .fv-kort-tom{
   border:1.5px solid var(--fv-ramme); border-radius:14px; padding:28px 14px;
@@ -997,8 +1003,7 @@ body{
 @media(max-width:700px){
   .fv-kolonner{ grid-template-columns:1fr; }
   .fagvis-boks .fagvis-bilde{ width:84px; }
-  .fv-kort{ max-width:200px; }
-  .fv-navn, .fv-teller b{ font-size:calc(var(--t-stor) * 1.2); }
+  .fv-kort{ max-width:140px; }
 }
 
 .lim-hjelp{font-size:var(--t-meta);color:var(--ink-soft);line-height:1.5;margin-bottom:10px}
@@ -4433,24 +4438,14 @@ function tegnFagVis(){
   const lekser = fagData.lekser.filter(function(l){ return l.fagId === f.id; });
   const prover = fagData.prover.filter(function(p){ return p.fagId === f.id; });
 
-  /* ---- Toppen: stort merke, navn, laerer og dager, teller for uka ---- */
-  const meta = [];
-  if(f.laerer) meta.push('<span>Faglærer: <b>' + esc(f.laerer) + '</b></span>');
-  if(f.dager.length) meta.push('<span>Ukedager: <b>' + esc(dagerTekst(f.dager)) + '</b></span>');
-  const denne = lekser.filter(function(l){ return l.frist && ukeAv(l.frist) === ukeN; });
-  const gjort = denne.filter(function(l){ return l.ferdig; }).length;
-  const ukeNr = isoUke(fagDag()).uke;
-  /* Navnet og merket staar i det store kortet til venstre - Magne:
-     «Fagnavnet står i kortet og kan fjernes på siden.» */
-  $('fagVisNavn').innerHTML = '<div class="fv-hode">'
-    +   '<div class="fagvis-meta">' + (meta.join('')
-          || '<span class="fagvis-tom">Faglærer og ukedager er ikke lagt inn.</span>') + '</div>'
-    + '</div>'
-    + '<div class="fv-teller' + (denne.length && gjort === denne.length ? ' alt' : '') + '">'
-    +   (denne.length
-          ? '<b>' + gjort + ' av ' + denne.length + '</b><span>lekser gjort · uke ' + ukeNr + '</span>'
-          : '<b>–</b><span>ingen lekser uke ' + ukeNr + '</span>')
-    + '</div>';
+  /* ---- Toppen: bare laereren ----
+     Navnet staar i kortet, ukedagene som stempel paa kortet, og telleren
+     for gjorte lekser ble tatt ut (Magne, 22. november 2026: «Lekser gjort
+     trenger ikke å stå»). */
+  $('fagVisNavn').innerHTML = '<div class="fv-hode"><div class="fagvis-meta">'
+    + (f.laerer ? '<span>Faglærer: <b>' + esc(f.laerer) + '</b></span>'
+                : '<span class="fagvis-tom">Faglærer er ikke lagt inn.</span>')
+    + '</div></div>';
   $('fagVisMeta').innerHTML = '';
   $('fagVisMeta').hidden = true;
 
@@ -4576,8 +4571,15 @@ function tegnFagVis(){
 
   /* Kortet stort oeverst, notatene rett under, saa proevene (Magne).
      Har faget ikke merke, staar navnet i en ramme i stedet. */
-  const kort = fagMerkeHtml(f.navn, 'fv-kort', '')
-    || '<div class="fv-kort fv-kort-tom">' + esc(f.navn) + '</div>';
+  const dagStempel = f.dager.length
+    ? '<span class="fv-dager">' + f.dager.map(function(n){
+        return '<span>' + esc(UKEDAGER[n]) + '</span>';
+      }).join('') + '</span>'
+    : '';
+  const merke = fagMerkeHtml(f.navn, 'fv-kort', '');
+  const kort = merke
+    ? merke.replace(/<\/span>$/, dagStempel + '</span>')
+    : '<div class="fv-kort fv-kort-tom">' + esc(f.navn) + dagStempel + '</div>';
   let hoyre = '';
   hoyre += '<div class="fagvis-bolk fv-boks"><h4>Prøver</h4>';
   if(!prover.length) hoyre += '<div class="fagvis-tom">Ingen prøver lagt inn.</div>';

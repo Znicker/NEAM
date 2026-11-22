@@ -1323,10 +1323,13 @@ nederst. **Avtalene i Dag står på én linje** (fra–til, initial, tittel,
 sted – stedet kuttes først). «Tilbake til i dag» står til venstre for
 Dag/Uke/Fag.
 
-**Fagvinduet i to kolonner** (fra 22. november 2026): toppen har lærer og
-dager til venstre og en teller til høyre («0 av 1 – lekser gjort uke 48»,
-grønn når alt er gjort). **Venstre kolonne: fagkortet stort øverst** (opptil
-360 px; navnet står i kortet og ikke i toppen), **«Notater i faget»** rett
+**Fagvinduet i to kolonner** (fra 22. november 2026): toppen har bare
+faglæreren – ingen teller for gjorte lekser. **Krysset er større og rødt**
+i fagvinduet (Magne valgte det; ellers betyr rødt «slett»). **Venstre
+kolonne: fagkortet øverst** (opptil 180 px, 140 px på telefon; navnet står
+i kortet og ikke i toppen), med **ukedagene som rødt stempel** – under
+hverandre, midt på til venstre i kortet, svakt skrått som «Ingen
+lekser»-stempelet. **«Notater i faget»** rett
 under, så **prøvene** (kommende øverst med «om N dager», så de som har
 vært). **Høyre kolonne: én ramme per uke, nyeste øverst, alle ukene i
 skoleåret** – læringsmål, lekser, **notater for uka** og ukas prøve.
