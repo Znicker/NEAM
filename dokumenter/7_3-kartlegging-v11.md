@@ -1719,6 +1719,28 @@ så det.
   Sjekkes hver gang Dropbox-statusen leses (åpning, Oppdater, etter henting).
 - Ikke testet lokalt (funksjonene kjører ikke der); syntaks sjekket.
 
+**22. november, sen kveld: bilvakta får bevegelse, og raskere takt**
+(bare `dashboard.html` – ingen fellesfil, ingen `?v=`).
+- **Tapo → Homey virker:** bevegelsesdeteksjonen var slått av i
+  Tapo-appen. Med den på (og Tapos egne bevegelsesvarsler av, så telefonen
+  ikke maser) får Homey `alarm_motion` med `lastUpdated` – sett 22:53 og
+  22:56. Resten av kjeden målt fra PC-en: to bilder på ca. 4 s, Haiku-svar
+  under 1 s.
+- **Første test bommet:** Magne kjørte ut av garasjen og inn igjen på
+  5–10 s. Med ti sekunders takt kom bildene etter at bilen var borte, og
+  svaret ble riktig NEI. Bilene kjører ofte rett inn i garasjen.
+- **Endret:** takten `BV_SJEKK_MS` 10 → **3 s**, ett sekund mellom
+  bildene (før to, teksten til Haiku følger), og varselet viser **det
+  første** bildet – det andre viser ofte bare garasjeporten.
+- **Kvoten:** kontoen har **Workers Paid** (fornyes 20. desember), ikke
+  gratisnivået som Roborock-avsnittet regner med. Tre sekunder fra
+  kjøkkenskjermen er ca. 870 000 kall i måneden, godt innenfor.
+  **To sekunder ble valgt bort:** et halvt sekund i snitt, og hver
+  spørring henter hele enhetslista fra Athoms sky – Roborock sperret oss
+  på 2 s.
+- Ikke testet på ekte ankomst ennå. Bommer den fortsatt, er det
+  kameraets egen forsinkelse, ikke takten.
+
 ### Åpne tråder
 
 **Fra 22. november 2026, kveld – små, ingen haster:**
@@ -1733,11 +1755,10 @@ så det.
   tall i `JUL_LYS`.
 - **Dashenes gamle sjødel** (`lastSjo`, `.vt-sjo`) står igjen – henter
   ingenting (`#vtSjo` finnes ikke). Fjernes på ordre.
-- **Tapo-kameraet på tunet melder ikke bevegelse til Homey:**
-  `alarm_motion` er `null` uten `lastUpdated` (Tapo-appen 2.1.16, bare
-  bevegelseskort, ingen kjøretøy). Bilvakta på Kjøkken dash har derfor
-  trolig aldri slått til. Magne sjekker i Homey om «Bevegelse» slår seg
-  på. Kjøretøy fra Tapo går bare via en Tapo-plugg som Smart Action-mål.
+- **Bilvakta trenger en ekte ankomst-test:** bevegelsen kommer nå fram
+  (se «sen kveld» over), takten er 3 s. Magne tester med bil som kommer
+  inn på tunet mens kjøkkendashen er framme. Kjøretøy fra Tapo går
+  fortsatt bare via en Tapo-plugg som Smart Action-mål.
 - **Steketermometer i Neam:** venter på kjøp. Meater Pro XL (Wi-Fi i
   basen, offisiell sky-API) er anbefalt for «alt på iPaden»; Inkbird
   IBT-2X/4XS + ESP32 (ESPHome → Homey) er den billige veien. Pinne med

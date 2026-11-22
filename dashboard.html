@@ -4151,15 +4151,22 @@ function julLukk(){ const m = $('julBak'); if(m) m.hidden = true; julDrar = fals
    del 32), og det finnes ingen kjoeretoey-utloeser i flowene heller.
    Skjermen avgjoer derfor selv:
 
-   1. Hvert tiende sekund spoerres Homey om kameraet melder bevegelse.
+   1. Hvert tredje sekund spoerres Homey om kameraet melder bevegelse.
       Homey kan ikke si fra til sida - sida maa spoerre.
    2. Naar en NY bevegelse dukker opp, kobles kameraet opp over WebRTC
-      som paa sikkerhetssida, to stillbilder tas med to sekunders
+      som paa sikkerhetssida, to stillbilder tas med ett sekunds
       mellomrom, og forbindelsen legges ned igjen.
    3. Claude ser paa de to bildene og svarer JA eller NEI. To bilder,
       fordi en bil som staar parkert paa tunet ellers ville gitt JA
       hver gang en katt gikk forbi.
-   4. JA: bildet dekker tre firedeler av skjermen til noen lukker det.
+   4. JA: det FOERSTE bildet dekker tre firedeler av skjermen til noen
+      lukker det. Det andre viser ofte bare garasjeporten.
+
+   Takten (22. november 2026): bilene kjoerer ofte rett inn i garasjen
+   og er ute av bildet etter 5-10 sekunder. Med ti sekunder kom bildene
+   for sent. Tre sekunder er ca. 870 000 kall i maaneden - godt innenfor
+   Workers Paid. To sekunder ble valgt bort: et halvt sekund i snitt,
+   og hver spoerring henter hele enhetslista fra Athoms sky.
 
    Bare STUN: skjermen staar paa hjemmenettet, og der velger
    nettleseren den direkte veien uansett (del 32). Tilbudet inneholder
@@ -4169,7 +4176,7 @@ function julLukk(){ const m = $('julBak'); if(m) m.hidden = true; julDrar = fals
    vaaker naar ingen ser paa (del 49).
    ============================================================ */
 const BV_KAMERA = (VISES.find(function(v){ return v.art === 'kamera'; }) || {}).id;
-const BV_SJEKK_MS = 10 * 1000;
+const BV_SJEKK_MS = 3 * 1000;
 const BV_PAUSE_MS = 60 * 1000;   /* minst saa lenge mellom to tester */
 const BV_STUN = [{ urls:'stun:stun.l.google.com:19302' }];
 let bvForrige = null;            /* { verdi, tid } fra forrige svar */
@@ -4214,7 +4221,7 @@ async function bvSjekk(){
   bvSist = Date.now();
   try{
     const bilder = await bvToBilder(videoId);
-    if(await bvErBil(bilder)) bvVis(bilder[1]);
+    if(await bvErBil(bilder)) bvVis(bilder[0]);
   }catch(err){
     console.warn('Bilvakt:', err && err.message);
   }finally{
@@ -4265,7 +4272,7 @@ async function bvToBilder(videoId){
        vaere graa til en hel ramme har kommet. */
     await bvVent(1000);
     const a = bvTaBilde(el);
-    await bvVent(2000);
+    await bvVent(1000);
     return [a, bvTaBilde(el)];
   }finally{
     try{ pc.close(); }catch(e){}
@@ -4295,7 +4302,7 @@ async function bvErBil(bilder){
       max_tokens: 5,
       messages: [{ role:'user', content: [
         { type:'text', text:'Bilde 1:' }, bilde(bilder[0]),
-        { type:'text', text:'Bilde 2, tatt to sekunder senere:' }, bilde(bilder[1]),
+        { type:'text', text:'Bilde 2, tatt ett sekund senere:' }, bilde(bilder[1]),
         { type:'text', text:'Dette er to stillbilder fra overvåkingskameraet på tunet '
           + 'foran et hus, tatt rett etter at kameraet merket bevegelse. Kommer det en '
           + 'bil eller et annet kjøretøy – altså et kjøretøy som kjører, står med lysene '
