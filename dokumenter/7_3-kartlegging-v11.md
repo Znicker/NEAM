@@ -1500,6 +1500,15 @@ hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
   på** øverst til høyre (blekner når alle alt er på). Kort trykk er som
   før. Hold-grepet er nå én funksjon, `julHold()`, for begge knappene.
   Testet lokalt med en oppdiktet gruppe; begge knappene kort og langt.
+- **Samme dag: fargeringen fra Twinkly-appen** (bare `dashboard.html`).
+  Magne sendte Twinkly-appens fargevelger: «Hva med denne løsningen?» –
+  og «Ja, og push» på forslaget. Hjulet er byttet ut med **en ring for
+  fargetonen** og fargen stor i midten, og **en glider fra hvitt til full
+  farge** under. Tatt bort fra Twinkly: den svarte enden (styrken har sin
+  egen glider), Save/Cancel (sendes når fingeren slippes) og HEX-feltet.
+  Et trykk på fargen i midten er ikke et valg. Begge gjelder de valgte.
+  Testet lokalt: midten, ringen, glideren, iPad og telefon (678 av 800
+  px høyde).
 
 ### Åpne tråder
 

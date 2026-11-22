@@ -978,7 +978,7 @@ select.hu-felt{
 /* Menyen (Magne, 22. november 2026): lysene som kort oeverst - trykk
    velger, valgt er --aksent-lys med --aksent kant (designsystemet: «valgt»).
    Hvert kort har fargen naa, av/paa og Varmhvit (#FFE059, Magnes farge).
-   Under kortene ett hjul, og de valgte foelger det. */
+   Under kortene fargeringen, og de valgte foelger den. */
 .jul-lys{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:12px}
 .jul-ett{
   display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:14px;cursor:pointer;
@@ -1007,13 +1007,43 @@ select.hu-felt{
 .jul-varm:active{transform:scale(.97)}
 .jul-ute{font-size:var(--t-meta);color:var(--ink-soft);font-weight:600}
 .jul-hint{margin:4px 0 0;text-align:center;font-size:var(--t-meta);color:var(--ink-soft);font-weight:600}
-.jul-hjul{margin:10px auto 14px}
-.jul-hjul.tomt{opacity:.35;cursor:default}
+/* Fargen (Magne, 22. november 2026, etter Twinkly-appen): en ring for
+   fargetonen med fargen stor i midten, og under den en glider fra hvitt
+   til full farge. Ingen svart ende - styrken har sin egen glider - og
+   ingen Lagre: fargen sendes naar fingeren slippes. Roedt oeverst og med
+   klokka, som hjulet i Rommene. */
+.jul-ring{
+  position:relative;width:min(230px,70vw);aspect-ratio:1;margin:10px auto 14px;border-radius:50%;
+  touch-action:none;cursor:pointer;-webkit-tap-highlight-color:transparent;
+  background:conic-gradient(#FF0000,#FFFF00,#00FF00,#00FFFF,#0000FF,#FF00FF,#FF0000);
+}
+.jul-ring::before{content:'';position:absolute;inset:13%;border-radius:50%;background:var(--paper)}
+.jul-ring-farge{position:absolute;inset:22%;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.12);pointer-events:none}
+.jul-ring-merke{
+  position:absolute;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;pointer-events:none;
+  border:3px solid #FFFFFF;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.3);
+}
+.jul-ring.tomt{opacity:.35;cursor:default}
+.jul-ring.tomt .jul-ring-merke{display:none}
+.jul-metning-rad{display:flex;align-items:center;gap:12px;max-width:360px;margin:0 auto 14px}
+.jul-metning-rad.tomt{opacity:.35}
+.jul-metning{
+  flex:1;min-width:0;margin:0;-webkit-appearance:none;appearance:none;height:14px;border-radius:7px;cursor:pointer;
+  background:linear-gradient(90deg,#FFFFFF,var(--jul-full,#FF0000));box-shadow:inset 0 0 0 1px rgba(0,0,0,.15);
+}
+.jul-metning::-webkit-slider-thumb{
+  -webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:var(--jul-naa,#FFFFFF);
+  border:3px solid #FFFFFF;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.3);
+}
+.jul-metning::-moz-range-thumb{
+  width:22px;height:22px;border-radius:50%;background:var(--jul-naa,#FFFFFF);
+  border:3px solid #FFFFFF;box-shadow:0 0 0 1px rgba(0,0,0,.35),0 2px 6px rgba(0,0,0,.3);
+}
+.jul-metning:disabled{cursor:default}
 .jul-dim{display:flex;align-items:center;gap:12px;max-width:360px;margin:0 auto 16px}
 .jul-dim.tomt{opacity:.35}
-.jul-dim-navn{font-size:var(--t-meta);font-weight:700;color:var(--ink-soft)}
+.jul-dim-navn{min-width:48px;font-size:var(--t-meta);font-weight:700;color:var(--ink-soft)}
 .jul-dim-tall{min-width:44px;text-align:right;font-size:var(--t-meta);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
-.jul-hjul .hsk-hjul-merke[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -4057,8 +4087,9 @@ async function jstTrykk(){
    (Inngangsparti, veranda mot tunet, Juletre) er utenfor med vilje.
 
    Trykk: samme regel som stjerna - er noen paa, slaas alle av, ellers
-   alle paa. Langt trykk (0,6 sek) aapner menyen: hvert lys med av/paa
-   og fargehjulet fra Rommene (hskHjulLes og .hsk-hjul i fellesfilene).
+   alle paa. Langt trykk (0,6 sek) aapner menyen: hvert lys med av/paa,
+   og under dem en fargering med glider fra hvitt til farge (som i
+   Twinkly-appen) og styrken.
    Bare én farge per slynge: Twinkly-effektene er flytkort i Homey, og
    Neam kan ikke kjoere dem (se homey.js om «Missing Scopes»).
 
@@ -4198,8 +4229,11 @@ function julBygg(){
     +   '<button type="button" class="jul-varm" data-jul-alle-varm>Alle varmhvit</button></div>'
     + '<div class="jul-lys" id="julLys"></div>'
     + '<p class="jul-hint" id="julHint"></p>'
-    + '<div class="hsk-hjul jul-hjul" id="julHjul" role="img" aria-label="Fargehjul for de valgte lysene">'
-    +   '<span class="hsk-hjul-merke"></span></div>'
+    + '<div class="jul-ring" id="julRing" role="img" aria-label="Fargering for de valgte lysene">'
+    +   '<span class="jul-ring-farge" id="julRingFarge"></span><span class="jul-ring-merke" id="julRingMerke"></span></div>'
+    + '<div class="jul-metning-rad"><span class="jul-dim-navn">Hvit</span>'
+    +   '<input type="range" class="jul-metning" id="julMetning" min="0" max="100" step="1" aria-label="Fra hvitt til full farge">'
+    +   '<span class="jul-dim-navn">Farge</span></div>'
     /* Styrken under fargene (Magne, 22. november 2026) - samme glider som
        i Rommene, og den styrer de valgte, som hjulet. Sendes naar den slippes. */
     + '<div class="jul-dim"><span class="jul-dim-navn">Styrke</span>'
@@ -4238,11 +4272,18 @@ function julBygg(){
   });
   /* Styrken: tallet foelger gliden, verdien sendes til de valgte naar den
      slippes. Mens fingeren ligger paa, tegnes ikke menyen paa nytt. */
-  m.addEventListener('pointerdown', function(ev){ if(ev.target.id === 'julDim') julDrar = true; });
+  m.addEventListener('pointerdown', function(ev){ if(ev.target.id === 'julDim' || ev.target.id === 'julMetning') julDrar = true; });
   m.addEventListener('input', function(ev){
     if(ev.target.id === 'julDim') $('julDimTall').textContent = ev.target.value + ' %';
+    if(ev.target.id === 'julMetning'){ julFarge.s = Number(ev.target.value) / 100; julFargeVis(); }
   });
   m.addEventListener('change', function(ev){
+    if(ev.target.id === 'julMetning'){
+      julDrar = false;
+      julFarge.s = Number(ev.target.value) / 100;
+      julValgteOk().forEach(function(id){ julSettFarge(id, { h:julFarge.h, s:julFarge.s }); });
+      return;
+    }
     if(ev.target.id !== 'julDim') return;
     julDrar = false;
     const v = Number(ev.target.value) / 100;
@@ -4254,24 +4295,28 @@ function julBygg(){
       ev.preventDefault(); ev.target.click();
     }
   });
-  /* Fargehjulet: merket foelger fingeren, fargen sendes til alle de valgte
-     naar fingeren slippes. */
-  let hjul = null;
+  /* Ringen: fargetonen foelger fingeren rundt, og sendes til alle de
+     valgte naar fingeren slippes. Et trykk i midten (paa fargen) er ikke
+     et valg - bare selve ringen og litt innenfor teller. */
+  let ring = null;
   m.addEventListener('pointerdown', function(ev){
-    const h = ev.target.closest && ev.target.closest('#julHjul');
-    if(!h || !julValgteOk().length) return;
+    const r = ev.target.closest && ev.target.closest('#julRing');
+    if(!r || !julValgteOk().length) return;
+    const b = r.getBoundingClientRect();
+    const dx = ev.clientX - (b.left + b.width / 2), dy = ev.clientY - (b.top + b.height / 2);
+    if(Math.sqrt(dx * dx + dy * dy) < b.width * 0.3) return;
     ev.preventDefault();
-    hjul = h; julDrar = true;
-    try{ h.setPointerCapture(ev.pointerId); }catch(e){}
-    hskHjulVis(h, hskHjulLes(h, ev));
+    ring = r; julDrar = true;
+    try{ r.setPointerCapture(ev.pointerId); }catch(e){}
+    julFarge.h = julRingLes(r, ev); julFargeVis();
   });
-  m.addEventListener('pointermove', function(ev){ if(hjul) hskHjulVis(hjul, hskHjulLes(hjul, ev)); });
+  m.addEventListener('pointermove', function(ev){ if(ring){ julFarge.h = julRingLes(ring, ev); julFargeVis(); } });
   const slipp = function(ev, send){
-    if(!hjul) return;
-    const h = hjul; hjul = null; julDrar = false;
+    if(!ring) return;
+    const r = ring; ring = null; julDrar = false;
     if(!send) return;
-    const f = hskHjulLes(h, ev);
-    julValgteOk().forEach(function(id){ julSettFarge(id, f); });
+    julFarge.h = julRingLes(r, ev);
+    julValgteOk().forEach(function(id){ julSettFarge(id, { h:julFarge.h, s:julFarge.s }); });
   };
   m.addEventListener('pointerup', function(ev){ slipp(ev, true); });
   m.addEventListener('pointercancel', function(ev){ slipp(ev, false); });
@@ -4279,7 +4324,33 @@ function julBygg(){
   return m;
 }
 
-/* Hvilke lys hjulet styrer. Alle som svarer er valgt naar menyen
+/* Fargen i ringen og glideren: tonen (0-1, roedt oeverst, med klokka)
+   og metningen (0 hvitt - 1 full farge), slik Homey vil ha dem. */
+let julFarge = { h:0, s:1 };
+function julRingLes(r, ev){
+  const b = r.getBoundingClientRect();
+  let h = Math.atan2(ev.clientX - (b.left + b.width / 2), -(ev.clientY - (b.top + b.height / 2))) / (2 * Math.PI);
+  if(h < 0) h += 1;
+  return Math.round(h * 1000) / 1000;
+}
+function julFargeVis(){
+  const merke = $('julRingMerke'), midt = $('julRingFarge'), gl = $('julMetning');
+  const farge = hskFargeCss(julFarge.h, julFarge.s);
+  if(merke){
+    /* Merket staar midt i ringen (ytre kant 50 %, indre 37 %). */
+    const a = julFarge.h * 2 * Math.PI;
+    merke.style.left = (50 + 43.5 * Math.sin(a)) + '%';
+    merke.style.top = (50 - 43.5 * Math.cos(a)) + '%';
+    merke.style.background = hskFargeCss(julFarge.h, 1);
+  }
+  if(midt) midt.style.background = farge;
+  if(gl){
+    gl.style.setProperty('--jul-full', hskFargeCss(julFarge.h, 1));
+    gl.style.setProperty('--jul-naa', farge);
+  }
+}
+
+/* Hvilke lys fargen gjelder. Alle som svarer er valgt naar menyen
    aapnes foerste gang; etterpaa husker sida valget til den lastes paa nytt. */
 let julValg = null;
 function julValgte(){
@@ -4316,18 +4387,17 @@ function julMenyTegn(){
       + '<button type="button" class="jul-varm" data-jul-varm="' + l.id + '">Varmhvit</button>'
       + '</div>';
   }).join('');
-  /* Hjulet viser fargen til det foerste valgte lyset. */
+  /* Ringen og glideren viser fargen til det foerste valgte lyset. */
   const ider = julValgteOk();
-  const hjul = $('julHjul'), hint = $('julHint');
-  if(hjul){
-    hjul.classList.toggle('tomt', !ider.length);
-    const merke = hjul.querySelector('.hsk-hjul-merke');
+  const ring = $('julRing'), hint = $('julHint'), met = $('julMetning');
+  if(ring){
     const t = ider.length ? julEnh[ider[0]] : null;
-    merke.hidden = !t;
-    if(t){
-      const p = hskHjulPunkt(t.h, t.s);
-      merke.style.left = p.x + '%'; merke.style.top = p.y + '%'; merke.style.background = hskFargeCss(t.h, t.s);
-    }
+    ring.classList.toggle('tomt', !t);
+    met.disabled = !t;
+    met.closest('.jul-metning-rad').classList.toggle('tomt', !t);
+    if(t) julFarge = { h:t.h, s:t.s };
+    met.value = Math.round(julFarge.s * 100);
+    julFargeVis();
   }
   /* Styrken viser det foerste valgte lysets. */
   const dim = $('julDim'), dimTall = $('julDimTall');
@@ -4342,7 +4412,7 @@ function julMenyTegn(){
   if(hint){
     const navn = JUL_LYS.filter(function(l){ return ider.indexOf(l.id) !== -1; }).map(function(l){ return l.navn; });
     hint.textContent = !navn.length ? 'Trykk på et lys for å velge det.'
-      : 'Hjulet styrer ' + (navn.length > 1 ? navn.slice(0, -1).join(', ') + ' og ' + navn[navn.length - 1] : navn[0]) + '.';
+      : 'Fargen gjelder ' + (navn.length > 1 ? navn.slice(0, -1).join(', ') + ' og ' + navn[navn.length - 1] : navn[0]) + '.';
   }
 }
 
