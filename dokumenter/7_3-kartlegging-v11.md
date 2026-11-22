@@ -1564,6 +1564,16 @@ hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
   tre kort. «veranda mot tunet» og «Juletre» er også Twinkly, men var
   uten kontakt og er ikke med.
 
+- **Samme dag: ingen sprett etter valg** (bare `dashboard.html`). Magne:
+  «Den spretter litt frem og tilbake etter valg. Og lysene endrer seg
+  forskjellig, men ender opp rett etter ett par sekunder.» Homey svarer
+  en stund med gamle tall (eller en av fargene ringen sendte underveis)
+  før Twinkly har meldt tilbake, og hentingen 1,5 sekund etter slipp
+  tegnet dem. Nå gjelder det Neam selv satte i 10 sekunder etter siste
+  sending (`JUL_LOKAL_MS`, `julLokal`), før Homeys tall tar over. At
+  lysene skifter litt i utakt, er Twinklys sky – hvert lys svarer i sitt
+  tempo; det rettes ikke herfra.
+
 **22. november: varsel om «Ikke lest» i innboksen** (`okonomi.html` og
 `functions/api/bank/[[sti]].js`). Magne fant en fil i Dropbox-mappa «Ikke
 lest» og: «Vi må ha en advarsel under innboks at noe ligger der og velge

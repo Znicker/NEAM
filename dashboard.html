@@ -4118,7 +4118,15 @@ const JUL_VARM = { h:0.16, s:0.89 };
 let julEnh = {};          /* id -> { ok, paa, h, s, modus } fra Homey */
 let julDrar = false;      /* fingeren ligger i et fargehjul - ikke tegn paa nytt */
 
+/* Etter et valg svarer Homey en stund med det lyset var - eller en av
+   fargene ringen sendte underveis - foer Twinkly har meldt tilbake. Da
+   spratt merket og kortene fram og tilbake (Magne, 22. november 2026).
+   Det Neam selv nettopp satte, gjelder derfor i JUL_LOKAL_MS etter siste
+   sending; deretter er det Homeys tall som teller. */
+const JUL_LOKAL_MS = 10000;
+let julLokal = {};        /* id -> tidspunkt Neams egne verdier gjelder til */
 function julLes(alle){
+  const gml = julEnh;
   julEnh = {};
   const twinkly = Object.keys(alle).map(function(k){ return alle[k]; }).filter(function(d){
     return d && JUL_TWINKLY.test(String(d.driverId || d.driverUri || ''));
@@ -4140,6 +4148,10 @@ function julLes(alle){
       modus: o.light_mode ? o.light_mode.value : null,
       dim: (o.dim && typeof o.dim.value === 'number') ? o.dim.value : 1
     };
+    const g = gml[l.id];
+    if(g && (julLokal[l.id] || 0) > Date.now()){
+      ['paa', 'h', 's', 'modus', 'dim'].forEach(function(k){ julEnh[l.id][k] = g[k]; });
+    }
   });
   julTegn();
 }
@@ -4182,6 +4194,7 @@ function julTegn(){
 
 async function julSett(id, endringer){
   const t = julEnh[id];
+  julLokal[id] = Date.now() + JUL_LOKAL_MS;
   if(t){
     endringer.forEach(function(x){
       if(x[0] === 'onoff') t.paa = x[1];
