@@ -1484,6 +1484,12 @@ select.hu-felt{
   display:grid;grid-template-columns:1fr 1fr;gap:9px 18px;align-items:stretch;
   flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
+  /* Luft til fokusrammen: et rullefelt klipper alt utenfor kanten, og
+     nettleserens blaa ramme rundt et valgt felt ligger et par piksler
+     utenfor feltet. Den negative margen holder feltene der de sto
+     (Magne, 23. november 2026: «kuttes den blå merkingen bittelitt på
+     venstre side»). */
+  padding:4px; margin:-4px;
 }
 /* Avtaleskjemaet: navn og sted deler venstre halvdel, dato og kalender
    staar under dem, klokkeslettene under der igjen. Notatet faar hele

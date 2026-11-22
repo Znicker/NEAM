@@ -1971,7 +1971,9 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
 - **Modellen på jentenes skjermer** står på Haiku; Magne bytter til Sonnet
   med knappen i samtalen (Sonnet er allerede standard der ingen har valgt).
 - **Kjøkken dash** har fortsatt to påminnelsesbokser, avtaler på to linjer
-  og ingen ringer – med vilje ikke rørt.
+  og ingen ringer – med vilje ikke rørt. Fokusrammen som ble klippet i
+  skjemaene (`.av-skjema`), er rettet på alle tre dashene 23. november
+  (`padding:4px; margin:-4px`).
 - **Steketermometer i Neam:** venter på kjøp. Meater Pro XL (Wi-Fi i
   basen, offisiell sky-API) er anbefalt for «alt på iPaden»; Inkbird
   IBT-2X/4XS + ESP32 (ESPHome → Homey) er den billige veien. Pinne med

@@ -1383,6 +1383,11 @@ former beholdes bare der sju står på rad (ukesvisningen) og i merkelapper.
 igjen, rød ved 15 %, forfalt eller i dag. Samme stripe i kortet,
 fagvinduet og Påminnelser i dag.
 
+**Rullefelt i skjemaer har 4 px luft til fokusrammen** (`padding:4px;
+margin:-4px` på `.av-skjema`, fra 23. november 2026): et rullefelt klipper
+alt utenfor kanten, og nettleserens blå ramme rundt et valgt felt ligger
+litt utenfor feltet. Den negative margen holder feltene på plass.
+
 **Felt som lagres av seg selv** (notat, læringsmål): 600 ms etter siste
 tastetrykk, ved blur, og ved lukking. Ingen lagreknapp – en knapp man må
 huske er en knapp man glemmer. «lagret»/«ikke lagret» i overskriften.
