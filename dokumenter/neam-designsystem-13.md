@@ -645,7 +645,10 @@ variant.
   i kompakt topp. Sidas ikon, boksene og knappene en side legger i toppen
   (julestjerna og julelysene på Kjøkken dash) bruker den. **En ny knapp i
   toppen skal også bruke den.** Blir det for trangt, viker sidenavnet
-  før noe krymper.
+  før noe krymper, og sidas ikon dekkes aldri (`.ntp-merke` har
+  `min-width:var(--ntp-flis)`). Er det fortsatt for trangt, krymper alt
+  likt: Kjøkken dash under 480 px har 44 px for alt – det minste som er
+  godt å trykke på.
   Sjøen står med etiketten «Sjø», ikke bølgen. En måling eldre enn to
   timer, eller en enhet uten kontakt, står grå (sjøen etter et døgn).
   Uten svar fra Homey står «–».

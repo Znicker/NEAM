@@ -33,7 +33,9 @@
 /* Inne i skallets egen topplinje (Handleliste, Matlaging) er det den som
    er laast, saa toppen selv staar stille i den. */
 .topbar .ntp{ position:static; padding:0; background:none; box-shadow:none; flex:1; min-width:0; }
-.ntp-merke{ display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit; min-width:0; }
+/* min-width: navnet kan krympe, ikonet aldri - med 0 her la julestjerna
+   seg over sidas ikon paa telefon (Magne, 22. november 2026). */
+.ntp-merke{ display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit; min-width:var(--ntp-flis); }
 /* Et langt trykk er forsiden (felles-topp.js): ingen lenkemeny og ingen
    tekstmarkering mens man holder. */
 .ntp-merke{ -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; }

@@ -142,7 +142,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 ?v=90`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=28`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
-`felles-topp.js ?v=13`, `felles-topp.css ?v=14`;
+`felles-topp.js ?v=13`, `felles-topp.css ?v=15`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
@@ -162,7 +162,7 @@ gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–94; neam.css til og
 med 89; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
-hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–12, topp.css 1–13**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+hus `?v=1–27`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–12, topp.css 1–14**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -1417,8 +1417,9 @@ stående.
 og to nye bilder). Magne: «Ved siden av julestjerna kan du få lagd en
 knapp for julelys ute? … longpress som åpner en meny der man kan velge
 hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
-- **Bare Julelys garasje og Julelys Terrasse** (Magnes valg), på id i
-  `JUL_LYS` – navnene i Homey endres. De tre andre Twinkly-enhetene
+- **Bare Julelys garasje og Julelys Terrasse** (Magnes valg), funnet på
+  Twinkly-appen og stedsordet i navnet (`JUL_LYS`, se under – først sto
+  de på id). De tre andre Twinkly-enhetene
   (Inngangsparti, veranda mot tunet, Juletre) var uten kontakt og er
   utenfor med vilje.
 - **Trykk** slår alle av hvis noen lyser, ellers alle på – som stjerna.
@@ -1464,6 +1465,23 @@ hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
   Terrasse.»). Alle som svarer er valgt første gang; valget huskes til
   sida lastes på nytt. Varmhvit gjelder bare sitt eget kort. Testet
   lokalt med oppdiktede lys, også på telefonbredde.
+- **Samme dag: «Ble rotete på mobil»** (topp.css `?v=15` på alle 18
+  sidene, og `dashboard.html`). Magnes skjermbilde: julestjerna lå over
+  kjøleskapsikonet. To feil: `.ntp-merke` hadde `min-width:0`, så ikonet
+  ble skjøvet inn under neste knapp når raden var full – nå
+  `min-width:var(--ntp-flis)`, alle sidene. Og på telefonen hans står
+  stjerna (gruppa finnes i Rommene der), julelysene og Økonomi-innboksen
+  samtidig: 4 × 56 px og klokka får ikke plass. Under 480 px er dashets
+  topp derfor 44 px for alt, innboksen også. Målt uten overlapp på 393
+  og 375 px.
+- **Samme dag: «Garasje henter … enda den er tilgjengelig i Homey».**
+  Garasjelyset var lagt inn på nytt og hadde fått ny id
+  (`e93136e6-…`, var `38514576-…`), og knappen lette etter den gamle.
+  Nå finnes lysene på driveren `com.twinkly` og stedet i navnet
+  (`/garasje/i`, `/terrasse/i`) – stedet står i enhetsnavnet med vilje.
+  Er det to treff, vinner den som svarer. Finnes ingen, står «Fant ikke
+  lyset i Homey» i stedet for «Henter …» for alltid. Testet lokalt med
+  en gammel kopi og billaderen i garasjen ved siden av.
 
 ### Åpne tråder
 

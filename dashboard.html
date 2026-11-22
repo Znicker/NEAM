@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
 <link rel="stylesheet" href="/felles-neam.css?v=90">
-<link rel="stylesheet" href="/felles-topp.css?v=14">
+<link rel="stylesheet" href="/felles-topp.css?v=15">
 <style>
   /* Sidespesifikke variabler. Palett og typeskala ligger i
      felles-rot.css. */
@@ -946,6 +946,16 @@ select.hu-felt{
   .jul-knapp:not([hidden]) + .ntp-vaer{margin-left:0}
   .ntp-rad:has(.jul-knapp:not([hidden])) .ntp-iu{padding:0 10px;min-width:0}
   .ntp-rad:has(.jul-knapp:not([hidden])) .ntp-vaer ~ .ntp-klokke{margin-left:10px}
+}
+/* Telefon: ikonet, stjerna, julelysene og innboksen i Oekonomi faar ikke
+   plass i 56 px ved siden av klokka (Magne, 22. november 2026: «Ble rotete
+   på mobil»). Alt blir like stort som foer, bare 44 px - det minste som er
+   godt aa trykke paa - og innboksen foelger samme maal. */
+@container (max-width:480px){
+  .ntp-rad:has(.jul-knapp:not([hidden])){--ntp-flis:44px;gap:8px}
+  .ntp-rad:has(.jul-knapp:not([hidden])) .ntp-ok .ntp-mat-ikon{width:var(--ntp-flis);height:var(--ntp-flis)}
+  .ntp-rad:has(.jul-knapp:not([hidden])) .ntp-ok .ntp-mat-ikon img{width:32px;height:32px}
+  .ntp-rad:has(.jul-knapp:not([hidden])) .ntp-klokke{margin-left:auto !important}
 }
 .jul-kort{max-width:600px}
 .jul-tittel{margin:0 0 14px;font-size:var(--t-meta);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
@@ -3935,12 +3945,17 @@ async function jstTrykk(){
    Bare én farge per slynge: Twinkly-effektene er flytkort i Homey, og
    Neam kan ikke kjoere dem (se homey.js om «Missing Scopes»).
 
-   Lysene staar paa id, ikke navn - navnene i Homey endres. Tilstanden
-   kommer fra jstHent hvert minutt, og rett etter et trykk.
+   Lysene finnes paa Twinkly-appen og STEDET i navnet, ikke paa id:
+   garasjelyset fikk ny id da det ble lagt inn paa nytt i Homey samme dag,
+   og sto paa «Henter …» for alltid. Stedet staar i enhetsnavnet med vilje
+   i Homey, saa det overlever baade ny id og nytt navn ellers. Id-en settes
+   av julLes() hver gang. Tilstanden kommer fra jstHent hvert minutt, og
+   rett etter et trykk.
    ============================================================ */
+const JUL_TWINKLY = /^homey:app:com\.twinkly:/;
 const JUL_LYS = [
-  { id:'38514576-b583-4e1f-ba1e-277aa9c1df97', navn:'Garasje' },
-  { id:'6fc4423e-3a7e-49fc-8b65-9597c7059578', navn:'Terrasse' }
+  { finn:/garasje/i,  navn:'Garasje',  id:null },
+  { finn:/terrasse/i, navn:'Terrasse', id:null }
 ];
 const JUL_HOLD_MS = 600;
 /* «Varmhvit» er #FFE059 (Magne, 22. november 2026), som tone og metning
@@ -3951,9 +3966,17 @@ let julDrar = false;      /* fingeren ligger i et fargehjul - ikke tegn paa nytt
 
 function julLes(alle){
   julEnh = {};
+  const twinkly = Object.keys(alle).map(function(k){ return alle[k]; }).filter(function(d){
+    return d && JUL_TWINKLY.test(String(d.driverId || d.driverUri || ''));
+  });
   JUL_LYS.forEach(function(l){
-    const d = alle[l.id];
+    /* Den som svarer foerst, hvis det skulle ligge en gammel kopi igjen. */
+    const treff = twinkly.filter(function(d){ return l.finn.test(String(d.name || '')); })
+                         .sort(function(a, b){ return (b.available !== false) - (a.available !== false); });
+    const d = treff[0];
+    l.mangler = !d;
     if(!d) return;
+    l.id = d.id;
     const o = d.capabilitiesObj || {};
     julEnh[l.id] = {
       ok: d.available !== false,
@@ -4147,7 +4170,7 @@ function julMenyTegn(){
     if(!t || !t.ok){
       return '<div class="jul-ett borte"><div class="jul-navnrad"><span class="jul-velg" aria-hidden="true"></span>'
         + '<span class="jul-navn">' + l.navn + '</span></div>'
-        + '<div class="jul-ute">' + (t ? 'Uten kontakt' : 'Henter …') + '</div></div>';
+        + '<div class="jul-ute">' + (t ? 'Uten kontakt' : l.mangler ? 'Fant ikke lyset i Homey' : 'Henter …') + '</div></div>';
     }
     const er = valgt.has(l.id);
     return '<div class="jul-ett' + (er ? ' valgt' : '') + '" data-jul-kort="' + l.id + '" role="checkbox" aria-checked="' + er + '"'
