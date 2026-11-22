@@ -1848,6 +1848,34 @@ Alle linjer bør stå likt som avtaler og påminnelser mtp farge og layout.»
   lagret).
 - **Kjøkken dash har fortsatt to påminnelsesbokser** – ikke rørt.
 
+**23. november: Neam og prøvene, og rød roterende ramme** (`emma.html`,
+`andrea.html` – like endringer utenom navnet). Magne: «Neam må steppe opp
+litt ved vurdering av hva som skal inn. Trenger også tilgang til å lese
+kalender og påminnelser. Jeg bad han legge inn prøver basert på
+kalender/påminnelser men det virket ikke.»
+- **Årsaken var bakgrunnsteksten, ikke tilgangen.** `les_kalender` og
+  `les_paaminnelser` fantes allerede på begge dashene, men `neamBakgrunn()`
+  sa «DU HAR INGEN KALENDERVERKTØY … si at du ikke kan lese avtalene».
+  Og regelen for ukeplanen sendte alt med dato som ikke var lekse, til
+  `legg_til_paaminnelse` – derfor lå Emmas heldagsprøver (engelsk 26.11,
+  matte 1.12, norsk 3.12) og gloseprøven 20.11 som påminnelser.
+- Teksten sier nå: skjermen slik den er (Lekser under kalenderen,
+  Påminnelser og Prøver til høyre); **«PRØVER ER IKKE BESKJEDER»** – prøve,
+  test, heldagsprøve, framføring, innlevering med dato går til
+  `legg_til_prove` på faget, faget leses ut av teksten; og en fast
+  oppskrift når han blir bedt om å finne prøver: les `les_prover`,
+  `les_paaminnelser` og `les_kalender`, legg inn det som mangler uten å
+  spørre om hver, si hvilke påminnelser som står dobbelt og slett bare
+  med ja. Kalenderregelen er snudd: bruk `les_kalender`.
+- `les_paaminnelser` sier `hvor` med de nye navnene.
+- **Neam står på Haiku** på disse skjermene (modellvelgeren øverst i
+  samtalen). Vurdering av en hel ukeplan er der Haiku er svakest – bytt
+  modell for slike jobber hvis det fortsatt bommer.
+- **Rød roterende ramme** på prøver denne uka (`.sku-rad.denne-uka`),
+  testet på neam.no: vinkelen gikk fra 74° til 171° på 0,7 s.
+- Ikke testet: at Neam faktisk følger den nye teksten – det må prøves i
+  samtalen.
+
 ### Åpne tråder
 
 **Fra 22. november 2026, kveld – små, ingen haster:**

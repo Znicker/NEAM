@@ -1329,6 +1329,11 @@ morgen, ukedag, eller dag og dato lenger fram – prøver lenger enn en uke
 fram får «om N d»). Leksene står i én kolonne under kalenderen. Ingen
 hake; trykk åpner faget. Hastestripa er en innfelt skygge
 (`box-shadow:inset 3px 0 0`), fordi `fyll()` setter kantfargen på raden.
+**Prøver denne uka** (til og med søndag) får en **rød ramme med en lysere
+bue som går rundt** (2,6 s per runde) og et svakt rødt skjær – Magne: «som
+pågående effekter i WoW». `@property --sku-vinkel` + `conic-gradient` med
+maske, så bare kanten vises; står stille ved `prefers-reduced-motion`.
+Rødt betyr ellers «slett» – her er det Magnes valg for «dette er nå».
 
 **Fagvinduet i to kolonner** (fra 22. november 2026): toppen har bare
 faglæreren – ingen teller for gjorte lekser. **Krysset er større og rødt**

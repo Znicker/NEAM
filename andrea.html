@@ -298,6 +298,32 @@ body{
 .rutenett > .kort{ min-width:0; }
 .sku-rad.naer .hu-innen{ color:var(--handling-endre); }
 .sku-rad.ferdig .hu-innen{ color:var(--handling-ny); }
+/* Proeve denne uka: roed ramme med en lysere bue som gaar rundt, og et
+   svakt roedt skjaer utenfor. Vinkelen er en registrert egenskap, saa den
+   kan animeres; masken lar bare kanten vaere synlig. Uten bevegelse
+   (prefers-reduced-motion) staar rammen stille. */
+@property --sku-vinkel{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
+.sku-rad.denne-uka{
+  position:relative;
+  box-shadow:0 0 10px color-mix(in srgb, var(--danger) 35%, transparent);
+}
+.sku-rad.denne-uka::after{
+  content:''; position:absolute; inset:-2px; border-radius:13px; padding:2.5px;
+  pointer-events:none;
+  background:conic-gradient(from var(--sku-vinkel),
+    var(--danger) 0deg,
+    color-mix(in srgb, var(--danger) 25%, #fff) 60deg,
+    var(--danger) 120deg,
+    var(--danger) 180deg,
+    color-mix(in srgb, var(--danger) 25%, #fff) 240deg,
+    var(--danger) 300deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude;
+  animation:skuRoter 2.6s linear infinite;
+}
+.sku-rad.denne-uka .hu-innen{ color:var(--danger); }
+@keyframes skuRoter{ to{ --sku-vinkel:360deg; } }
+@media (prefers-reduced-motion:reduce){ .sku-rad.denne-uka::after{ animation:none; } }
 
 /* ---------- Spillene ----------
    Snarveien til spillene, nederst i hoeyrekolonnen. Den tar bare
@@ -5632,8 +5658,9 @@ window.neamBakgrunn = async function(){
     + (TRINN ? '«' + TRINN + '. klasse» på ukeplanen er det samme som ' + TRINN + '. trinn. ' : '')
     + 'Skjermen har tre visninger i venstre kolonne: DAG (avtalene hennes og '
     + 'familiens den dagen), UKE (sju rader, én per dag) og FAG (lekser og '
-    + 'frister samlet per fag). Til høyre står Påminnelser i dag og '
-    + 'Påminnelser denne uken, som Magne, Nina og Andrea selv kan skrive i.\n\n'
+    + 'frister samlet per fag). Under avtalene i Dag står ukas LEKSER. Til '
+    + 'høyre står PÅMINNELSER - dagens og ukas i samme boks, som Magne, Nina og '
+    + 'Andrea selv kan skrive i - og PRØVER, alle kommende prøver fra fagene.\n\n'
     + 'DØGNET SKIFTER KLOKKA 20. Etter det viser skjermen morgendagen.\n\n'
     + 'FAGENE HENNES er: ' + fagNavn.join(', ') + '. På arkene fra skolen kan '
     + 'noen stå med andre navn: «Matte» er Matematikk, «Krle» er KRLE, «Gym» er '
@@ -5683,19 +5710,31 @@ window.neamBakgrunn = async function(){
     + 'som leksene - da ser hun leksene og målene i ett panel og godkjenner '
     + 'alt på én gang. sett_laeringsmaal er bare for når hun ber om ett '
     + 'bestemt mål i klartekst.\n\n'
-    + 'EN LEKSE MED FRIST VISER SEG AV SEG SELV under «Påminnelser i dag» på '
-    + 'dagen fristen går ut - huset henter den fra faget. Legg derfor ALDRI inn '
-    + 'en påminnelse om en lekse du allerede har lagt fram; da står den samme '
-    + 'saken to steder, og de to blir uenige første gang hun huker av den ene.\n\n'
+    + 'LEKSER OG PRØVER VISER SEG AV SEG SELV på skjermen - huset henter dem fra '
+    + 'fagene. Legg derfor ALDRI inn en påminnelse om en lekse eller en prøve; da '
+    + 'står den samme saken to steder, og de to blir uenige første gang noe endres.\n\n'
+    + 'PRØVER ER IKKE BESKJEDER (Magne, 23. november 2026). Alt som er en prøve - '
+    + 'test, gloseprøve, kapittelprøve, heldagsprøve, tentamen, nasjonal prøve, '
+    + 'muntlig framføring eller innlevering med dato - legges inn med legg_til_prove '
+    + 'på faget det gjelder, aldri som påminnelse. Faget leser du ut av teksten: '
+    + '«Heldagsprøve engelsk» er Engelsk, «gloseprøve i spansk» er Spansk, nasjonal '
+    + 'prøve i lesing er Norsk. Bare når faget virkelig ikke går å lese ut, spør du.\n\n'
+    + 'BLIR DU BEDT OM Å FINNE ELLER RYDDE PRØVER, gjør du hele jobben selv: les '
+    + 'les_prover, les_paaminnelser og les_kalender (kalender «Andrea», fra i dag '
+    + 'og to måneder fram), og legg inn hver prøve som står i påminnelsene eller '
+    + 'kalenderen men mangler i les_prover - uten å spørre om hver enkelt først; '
+    + 'hvert kall blir lagt fram for godkjenning uansett. Hopp over dem som har '
+    + 'vært. Si etterpå hvilke du la inn, og hvilke påminnelser som nå står dobbelt '
+    + '- slett dem bare hvis du får ja.\n\n'
     + 'BESKJEDER SOM IKKE ER LEKSER går til legg_til_paaminnelse, ikke til '
     + 'foreslaa_lekser. Regelen er enkel:\n'
     + '  - Hører beskjeden til et FAG og er noe som skal gjøres: det er en lekse.\n'
     + '  - Har den en DATO men hører ikke til et fag - turdag, gymtøy på tirsdag, '
     + 'ta med matpakke, frist for et skjema: legg_til_paaminnelse MED dato. Den '
-    + 'havner under «Påminnelser i dag» på den dagen.\n'
+    + 'står i Påminnelser på den dagen.\n'
     + '  - Har den ingen dato - «husk innesko denne uka», «foreldremøte kommer»: '
     + 'legg_til_paaminnelse UTEN dato, men MED uke-argumentet satt til uka planen '
-    + 'gjelder. Den havner under «Påminnelser denne uken» i den uka. Utelater du '
+    + 'gjelder. Den havner i Påminnelser hele den uka, merket «Uke». Utelater du '
     + 'uke, havner den i uka skjermen tilfeldigvis står på - og leser du en plan '
     + 'for neste uke, er beskjeden borte samme kveld.\n'
     + 'Si etterpå hvilke beskjeder du la inn og hvor de havnet, så hun kan rette '
@@ -5718,8 +5757,9 @@ window.neamBakgrunn = async function(){
     + 'regne det om selv - og er du i tvil om hvilken måned eller hvilken uke, '
     + 'send den heller UTEN frist og si fra at den mangler. En feil frist er verre '
     + 'enn ingen: den ser riktig ut.\n\n'
-    + 'DU HAR INGEN KALENDERVERKTØY. Blir du spurt hva som skjer en dag, si at du '
-    + 'ikke kan lese avtalene og vis til Dag- eller Uke-visningen.\n\n'
+    + 'KALENDEREN LESER DU MED les_kalender - bruk kalender «Andrea» for hennes '
+    + 'egne avtaler, eller utelat den for hele familien. Endre avtaler kan du ikke '
+    + 'herfra.\n\n'
     + 'DU SNAKKER MED EN JENTE I ' + (TRINN ? TRINN + '. KLASSE' : 'BARNESKOLEN')
     + ' - eller med Magne eller Nina som '
     + 'hjelper henne. Hold det kort, vennlig og konkret, med enkle ord og korte '
@@ -6698,12 +6738,17 @@ function skoleProverHtml(){
     return p.dato && p.dato >= iDag;
   }).sort(function(a, b){ return a.dato.localeCompare(b.dato); });
   if(!prover.length) return '<div class="tom">Ingen prøver lagt inn.</div>';
+  /* Proevene som er DENNE uka (til og med soendag) faar en roed ramme som
+     gaar rundt - «som pågående effekter i WoW» (Magne, 23. november 2026). */
+  const m0 = ukeStart(idag0());
+  const ukeSlutt = datoNokkel(new Date(m0.getFullYear(), m0.getMonth(), m0.getDate() + 6));
   return prover.map(function(p){
     const fag = fagNavnAv(p.fagId);
     const dager = Math.round((datoFraTekst(p.dato) - idag0()) / 86400000);
     const om = dager >= 7 ? ' · om ' + dager + ' d' : '';
     return skoleRad((fag ? fag + ': ' : '') + String(p.type || 'Prøve'),
-                    skoleMerke(p.dato) + om, p.fagId, dager <= 1 ? 'naer' : '');
+                    skoleMerke(p.dato) + om, p.fagId,
+                    (dager <= 1 ? 'naer' : '') + (p.dato <= ukeSlutt ? ' denne-uka' : ''));
   }).join('');
 }
 
@@ -7177,7 +7222,7 @@ async function fagUtfor(navn, arg){
     return { antall: liste.length, paaminnelser: liste.map(function(m){
       return { id:m.id, tekst:m.overskrift, utdypning:m.tekst || null,
                dato:m.frist || null,
-               hvor: m.omfang === 'uke' ? 'Påminnelser denne uken' : 'Påminnelser i dag',
+               hvor: m.omfang === 'uke' ? 'Påminnelser, hele uka' : 'Påminnelser, denne dagen',
                gjelder:m.gjelder, ferdig:!!m.ferdig };
     })};
   }
