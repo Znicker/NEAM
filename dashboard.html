@@ -99,36 +99,6 @@ body{
 .til-idag:active{transform:scale(.97)}
 .til-idag[hidden]{display:none}
 
-/* Stedsnavnet hoerer til vaeret, ikke til klokka. */
-.vaer-sted{
-  font-family:'Archivo',sans-serif;font-size:var(--t-stor);font-weight:700;
-  color:var(--ink-soft);flex-shrink:0;letter-spacing:.01em;
-  display:flex;align-items:center;gap:6px;
-}
-/* Naala foelger skriftstoerrelsen, saa den holder proporsjonen i alle tre modus. */
-.sted-ikon{width:.8em;height:.8em;flex-shrink:0;opacity:.75}
-.sted-ikon[hidden]{display:none}
-
-/* Vaerstripe under toppraden: naa, noekkeltall, seks timer og fire dager.
-   Det er god plass i bredden, saa alt staar framme uten aa maatte trykkes fram. */
-/* Vaeret staar i toppraden, mellom overskriften og klokka. Der er hoeyden
-   knapp, saa timesvarslet er kuttet og dagene beholdt. */
-.vaer-stripe{
-  display:flex;align-items:center;gap:18px;flex-shrink:1;min-width:0;
-  margin-left:auto;margin-right:auto;
-}
-.vt-naa{display:flex;align-items:center;gap:12px;flex-shrink:0}
-.vt-ikon{font-size:var(--t-ikon);line-height:1}
-.vt-naa-tall{display:flex;flex-direction:column;line-height:1.15}
-.vt-grad{font-size:var(--t-stor);font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.vt-tekst{font-size:var(--t-meta);color:var(--ink-soft);font-weight:600}
-/* Foeles som + vind staar under gradene, ikke i egen kolonne. Kolonnen
-   var skjult under 1150px, saa paa iPad var opplysningen borte. */
-.vt-vind{
-  margin-top:2px;font-size:var(--t-etikett);color:var(--ink-soft);
-  font-weight:600;white-space:nowrap;
-}
-.vt-pil{width:1.1em;height:1.1em;vertical-align:-.18em;margin-right:1px}
 /* ---------- Sjoetemperaturen ----------
    Samme felt som paa Emma dash. Tidspunktet er ikke pynt: et tall uten
    alder kan vaere fra i gaar eller fra i fjor, og forskjellen synes ikke
@@ -141,36 +111,7 @@ body{
 .vt-sjo.gammel .vt-sjo-grad{ color:var(--ink-soft); }
 .vt-sjo.gammel .vt-sjo-meta{ color:var(--danger); }
 
-.vt-meta{
-  display:flex;flex-direction:column;gap:2px;flex-shrink:0;
-  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft);
-}
-.vt-rad{display:flex;gap:2px;flex-shrink:0}
-/* Timevinduet. Sveip flytter det seks timer om gangen. */
-.vt-timer{
-  display:flex;flex-direction:column;align-items:flex-start;gap:1px;
-  padding-left:16px;border-left:1px solid var(--line);
-  cursor:grab;user-select:none;
-}
-.vt-merke{
-  font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);letter-spacing:.1em;
-  text-transform:uppercase;color:var(--ink-soft);opacity:.7;padding-left:3px;
-}
-.vaer-stripe{cursor:grab}
-.vt-d{
-  display:flex;flex-direction:column;align-items:center;gap:0;
-  min-width:42px;padding:0 3px;
-}
-.vt-kl{font-family:'IBM Plex Mono',monospace;font-size:var(--t-etikett);color:var(--ink-soft)}
-.vt-ingen{font-size:var(--t-meta);color:var(--ink-soft);font-style:italic}
-.vt-ik{font-size:var(--t-brod);line-height:1.25}
-.vt-gr{font-size:var(--t-meta);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
-.vt-min{color:var(--ink-soft);font-weight:600;margin-left:3px}
-
-@media(max-width:1150px){ .vt-meta{display:none} }
 @media(max-width:900px){
-  .vaer-stripe{gap:12px;margin:0}
-  .vt-timer{display:none}
   .hoyre > .kort:last-child{flex:1}
 }
 
@@ -670,44 +611,6 @@ input,select,textarea{font-size:16px}
 }
 .hu-boble[hidden]{display:none}
 
-/* Vaerboblen. Samme mekanikk som huskeboblen, men bredere: den skal
-   romme et doegn i timer pluss langtidsvarselet. */
-.vaer-boble{
-  position:fixed;z-index:61;
-  width:min(92vw,680px);max-height:80vh;overflow-y:auto;overscroll-behavior:contain;
-  background:var(--paper);border:1px solid var(--line);border-radius:16px;
-  padding:16px 18px 14px;box-shadow:0 18px 44px rgba(44,62,80,.28);
-}
-.vaer-boble[hidden]{display:none}
-/* Bil paa tunet: bildet dekker tre firedeler av skjermen, krysset lukker. */
-.bv-bak{position:fixed;inset:0;z-index:80;background:rgba(44,62,80,.45)}
-.bv-bak[hidden]{display:none}
-.bv-kort{
-  position:fixed;z-index:81;left:12.5vw;top:12.5vh;width:75vw;height:75vh;
-  background:var(--paper);border:1px solid var(--line);border-radius:16px;
-  padding:12px 14px 14px;box-shadow:0 18px 44px rgba(44,62,80,.28);
-  display:flex;flex-direction:column;gap:10px;
-}
-.bv-kort[hidden]{display:none}
-.bv-bilde{flex:1;min-height:0;width:100%;height:auto;object-fit:contain;border-radius:10px}
-.vb-tittel{font-size:var(--t-stor);font-weight:700;padding-right:26px;text-transform:capitalize}
-.vb-sammendrag{font-size:var(--t-meta);color:var(--ink-soft);font-weight:600;margin-top:2px}
-.vb-bolk{
-  font-size:var(--t-etikett);font-weight:700;text-transform:uppercase;letter-spacing:.1em;
-  color:var(--ink);margin:16px 0 6px;
-}
-.vb-tabell{width:100%;border-collapse:collapse;font-size:var(--t-meta)}
-.vb-tabell td{padding:4px 2px;border-bottom:1px solid var(--line);white-space:nowrap}
-.vb-tabell tr:last-child td{border-bottom:none}
-.vb-kl{font-family:'IBM Plex Mono',monospace;color:var(--ink-soft)}
-.vb-ik{font-size:var(--t-brod)}
-.vb-gr{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
-.vb-regn{color:var(--aksent);font-variant-numeric:tabular-nums;text-align:right}
-.vb-vind{color:var(--ink-soft);font-variant-numeric:tabular-nums;text-align:right}
-.vb-dag td{padding:6px 2px}
-.vb-dagnavn{font-weight:700;text-transform:capitalize}
-.vb-tom{color:var(--ink-soft)}
-.vaer-stripe .vt-naa{cursor:pointer}
 .hub-lukk{
   position:absolute;top:8px;right:10px;border:none;background:transparent;
   color:var(--ink-soft);font-size:var(--t-pil);line-height:1;cursor:pointer;padding:2px 4px;
@@ -1080,11 +983,6 @@ select.hu-felt{
        og klokka aapner alarmene og timerne. -->
   <header class="ntp" id="neamTopp" data-ikon="kjokken-dash" data-navn="Kjøkken dash"></header>
 
-  <div class="hu-boble-bak" id="vaerBobleBak" hidden onclick="lukkVaerBoble()"></div>
-  <div class="vaer-boble" id="vaerBoble" hidden>
-    <button class="hub-lukk" onclick="lukkVaerBoble()" aria-label="Lukk">×</button>
-    <div id="vaerBobleInn"></div>
-  </div>
 
   <div class="bv-bak" id="bvBak" hidden onclick="bvLukk()"></div>
   <div class="bv-kort" id="bvKort" hidden role="dialog" aria-label="Bil på tunet">
@@ -1282,12 +1180,7 @@ const $ = function(id){ return document.getElementById(id); };
 
 /* Stedsnavnet skrives ett sted, saa naala foelger med av seg selv.
    Uten sted (feilmelding) skal naala vekk - ellers peker den paa ingenting. */
-function settSted(navn, harSted){
-  const s = $('vaerSted'); if(s) s.textContent = navn;
-  const i = $('stedIkon');  if(i) i.hidden = !harSted;
-}
 
-const STED = { navn:'Arendal', lat:58.4614, lon:8.7724 };
 
 /* CFG og AUTH_BASE er slettet 13. september 2026. De hoerte til
    innloggingen denne sida hadde selv; naa eier forsiden den, og disse sto
@@ -1957,7 +1850,6 @@ function apneAvtale(e){
   avtaleAapen = true;
   lukkHuskeSkjema();
   lukkHuskeBoble();
-  lukkVaerBoble();
 
   const merke = $('avMerke');
   merke.hidden = !e;
@@ -2293,55 +2185,6 @@ const WMO = {
 function vkode(c){ return WMO[c] || ['🌡️','—']; }
 function rund(v){ return Math.round(v); }
 
-/* Posisjon: iPaden staar stille, saa vi spoer enheten én gang og
-   husker svaret. Da slipper vi bade tillatelsesdialog hver gang og
-   unoedig batteribruk. Uten tillatelse faller vi tilbake til Arendal. */
-let posisjon = { lat: STED.lat, lon: STED.lon, navn: STED.navn, presis: false };
-
-function lesLagretPosisjon(){
-  try{
-    const raw = localStorage.getItem('fh_pos');
-    if(!raw) return false;
-    const p = JSON.parse(raw);
-    if(typeof p.lat === 'number' && typeof p.lon === 'number'){
-      posisjon = { lat:p.lat, lon:p.lon, navn:p.navn || 'Din posisjon', presis:true };
-      return true;
-    }
-  }catch(e){}
-  return false;
-}
-
-async function finnPosisjon(){
-  if(lesLagretPosisjon()) return;
-  if(!navigator.geolocation) return;
-  try{
-    const p = await new Promise(function(ok, nei){
-      navigator.geolocation.getCurrentPosition(ok, nei, {
-        enableHighAccuracy:false, timeout:8000, maximumAge:86400000
-      });
-    });
-    posisjon = {
-      lat: Math.round(p.coords.latitude  * 10000) / 10000,
-      lon: Math.round(p.coords.longitude * 10000) / 10000,
-      navn: 'Din posisjon',
-      presis: true
-    };
-    /* Prøv å sette et stedsnavn — feiler det, står «Din posisjon». */
-    try{
-      const g = await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client'
-        + '?latitude=' + posisjon.lat + '&longitude=' + posisjon.lon + '&localityLanguage=no');
-      if(g.ok){
-        const gd = await g.json();
-        const navn = gd.locality || gd.city || gd.principalSubdivision;
-        if(navn) posisjon.navn = navn;
-      }
-    }catch(e){}
-    try{ localStorage.setItem('fh_pos', JSON.stringify(posisjon)); }catch(e){}
-  }catch(e){
-    /* Avslaatt eller tidsavbrudd — Arendal duger. */
-  }
-}
-
 /* ---------- Sjoetemperaturen ved Floedevigen ----------
    Gjennom /api/sjo (functions/api/sjo.js). Hentes ved oppstart og hver
    gang skjermen vekkes - se Emma dash for hele begrunnelsen. */
@@ -2397,61 +2240,6 @@ async function lastSjo(){
     + '</span>';
 }
 
-async function hentVaer(){
-  const url = 'https://api.open-meteo.com/v1/forecast'
-    + '?latitude=' + posisjon.lat + '&longitude=' + posisjon.lon
-    + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m'
-    + '&hourly=temperature_2m,apparent_temperature,weather_code,precipitation,precipitation_probability,wind_speed_10m,wind_direction_10m'
-    + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_direction_10m_dominant,sunrise,sunset'
-    + '&timezone=Europe%2FOslo&forecast_days=5';
-  const r = await fetch(url);
-  if(!r.ok) throw new Error('HTTP ' + r.status);
-  settSted(posisjon.navn, true);
-  return r.json();
-}
-
-/* Vaeret foelger dagen man ser paa. Sveip hvor som helst - ogsaa i
-   vaerstripa - flytter hele skjermen til samme dag. Meldingen rekker fem
-   doegn; utenfor det staar stripa tom. */
-let vaerSiste = null;
-/* Timevinduet flyttes uavhengig av dagen. Nullstilles naar dagen byttes,
-   ellers ville man staatt igjen med et vindu fra i gaar. */
-let timeOffset = 0;
-const VINDU = 6;
-
-function tegnVaer(d){
-  vaerSiste = d;
-  tegnVaerStripe();
-}
-
-/* Foerste time som skal vises: naa-timen i dag, ellers morgenen den dagen. */
-function vaerStart(){
-  if(!vaerSiste) return -1;
-  const t = vaerSiste.hourly.time;
-  if(viserIdag()){
-    const naa = new Date();
-    const i = t.findIndex(function(x){ return new Date(x) > naa; });
-    return i < 0 ? 0 : i;
-  }
-  const mal = datoNokkel(dagenViser());
-  const i = t.findIndex(function(x){ return x.slice(0, 10) === mal && x.slice(11, 13) === '08'; });
-  if(i >= 0) return i;
-  return t.findIndex(function(x){ return x.slice(0, 10) === mal; });
-}
-
-/* Vindretning oppgis meteorologisk: gradene sier hvor vinden kommer FRA.
-   Pila skal vise hvor den blaaser MOT, altsaa retning + 180. En pil leses
-   raskere paa avstand enn "NOe", og trenger ingen forklaring. */
-function vindPil(grader){
-  if(grader === null || grader === undefined) return '';
-  const v = (Number(grader) + 180) % 360;
-  return '<svg class="vt-pil" viewBox="0 0 24 24" aria-hidden="true" '
-    + 'style="transform:rotate(' + v + 'deg)">'
-    + '<path d="M12 3 L12 21 M12 3 L7 9 M12 3 L17 9" fill="none" '
-    + 'stroke="currentColor" stroke-width="2.4" stroke-linecap="round" '
-    + 'stroke-linejoin="round"/></svg>';
-}
-
 /* Vaeret staar i den felles topplinja fra 8. november 2026 (felles-topp.js),
    med vaerboblen. Den foelger dagen dashet viser - ogsaa skiftet klokka 20 -
    gjennom window.ntpVaerDag. Kallene hit (byttDag og de andre) blir
@@ -2461,101 +2249,6 @@ function tegnVaerStripe(){
 }
 window.ntpVaerDag = function(){ return dagenViser(); };
 
-/* ---------- Vaerboble ----------
-   Trykk paa gradene aapner et fyldigere varsel for DEN dagen skjermen
-   staar paa: hele doegnet time for time, og langtidsvarselet under.
-   Lukkes som huskeboblen - kryss, trykk utenfor, Escape, sveip, hvile. */
-let vaerBobleAapen = false;
-
-function vekslVaerBoble(ev){
-  if(ev) ev.stopPropagation();
-  if(vaerBobleAapen){ lukkVaerBoble(); return; }
-  const d = vaerSiste;
-  if(!d) return;
-
-  const dato = datoNokkel(dagenViser());
-  const dagIdx = d.daily.time.indexOf(dato);
-
-  const navn = dagenViser().toLocaleDateString('no-NO',
-    {weekday:'long', day:'numeric', month:'long'});
-
-  let topp = '<div class="vb-tittel">' + esc(navn) + '</div>';
-  if(dagIdx >= 0){
-    const iv = vkode(d.daily.weather_code[dagIdx]);
-    const sol = (s) => s ? String(s).slice(11, 16) : '';
-    topp += '<div class="vb-sammendrag">' + esc(iv[1])
-      + ' · ' + rund(d.daily.temperature_2m_min[dagIdx]) + '° til '
-      + rund(d.daily.temperature_2m_max[dagIdx]) + '°'
-      + ' · ' + vindPil(d.daily.wind_direction_10m_dominant[dagIdx])
-      + rund(d.daily.wind_speed_10m_max[dagIdx]) + ' km/t'
-      + (d.daily.sunrise ? ' · sol ' + sol(d.daily.sunrise[dagIdx])
-          + '–' + sol(d.daily.sunset[dagIdx]) : '')
-      + '</div>';
-  }
-
-  /* Doegnet time for time. Hver tredje time - 24 rader blir en vegg. */
-  let rader = '';
-  const h = d.hourly;
-  for(let i = 0; i < h.time.length; i++){
-    if(h.time[i].slice(0, 10) !== dato) continue;
-    const time = Number(h.time[i].slice(11, 13));
-    if(time % 3 !== 0) continue;
-    const mm = h.precipitation ? h.precipitation[i] : 0;
-    rader += '<tr>'
-      + '<td class="vb-kl">' + h.time[i].slice(11, 16) + '</td>'
-      + '<td class="vb-ik">' + vkode(h.weather_code[i])[0] + '</td>'
-      + '<td class="vb-gr">' + rund(h.temperature_2m[i]) + '°</td>'
-      + '<td class="vb-regn">' + (mm > 0.05 ? mm.toFixed(1).replace('.', ',') + ' mm' : '') + '</td>'
-      + '<td class="vb-vind">' + vindPil(h.wind_direction_10m[i])
-      +   rund(h.wind_speed_10m[i]) + '</td>'
-      + '</tr>';
-  }
-  const doegn = rader
-    ? '<div class="vb-bolk">Time for time</div><table class="vb-tabell">' + rader + '</table>'
-    : '<div class="vb-bolk">Time for time</div><div class="vb-tom">Ingen timevarsel så langt fram.</div>';
-
-  /* Langtidsvarselet - alle doegnene meldingen rekker. */
-  let dager = '';
-  for(let i = 0; i < d.daily.time.length; i++){
-    const dt = new Date(d.daily.time[i] + 'T12:00:00');
-    const mm = d.daily.precipitation_sum[i];
-    dager += '<tr class="vb-dag' + (d.daily.time[i] === dato ? ' na' : '') + '">'
-      + '<td class="vb-dagnavn">' + esc(dt.toLocaleDateString('no-NO', {weekday:'short', day:'numeric'})) + '</td>'
-      + '<td class="vb-ik">' + vkode(d.daily.weather_code[i])[0] + '</td>'
-      + '<td class="vb-gr">' + rund(d.daily.temperature_2m_min[i]) + '° / '
-      +   rund(d.daily.temperature_2m_max[i]) + '°</td>'
-      + '<td class="vb-regn">' + (mm > 0.05 ? mm.toFixed(1).replace('.', ',') + ' mm' : '') + '</td>'
-      + '<td class="vb-vind">' + vindPil(d.daily.wind_direction_10m_dominant[i])
-      +   rund(d.daily.wind_speed_10m_max[i]) + '</td>'
-      + '</tr>';
-  }
-
-  $('vaerBobleInn').innerHTML = topp + doegn
-    + '<div class="vb-bolk">Langtidsvarsel</div>'
-    + '<table class="vb-tabell">' + dager + '</table>';
-
-  const b = $('vaerBoble');
-  b.hidden = false;
-  $('vaerBobleBak').hidden = false;
-  vaerBobleAapen = true;
-
-  /* Ankre under vaerstripa, men hold boblen innenfor skjermen. */
-  const r = $('vaerStripe').getBoundingClientRect();
-  const bb = b.getBoundingClientRect();
-  const marg = 12;
-  let venstre = r.left + r.width/2 - bb.width/2;
-  venstre = Math.max(marg, Math.min(venstre, innerWidth - bb.width - marg));
-  let t = r.bottom + 10;
-  t = Math.max(marg, Math.min(t, innerHeight - bb.height - marg));
-  b.style.left = Math.round(venstre) + 'px';
-  b.style.top  = Math.round(t) + 'px';
-}
-
-function lukkVaerBoble(){
-  vaerBobleAapen = false;
-  if($('vaerBoble')) $('vaerBoble').hidden = true;
-  if($('vaerBobleBak')) $('vaerBobleBak').hidden = true;
-}
 
 /* ============================================================
    Dagens middag
@@ -3605,7 +3298,6 @@ function visTilIdag(){
 function tilbakeTilStandard(){
   lukkDetalj();
   lukkHuskeBoble();
-  lukkVaerBoble();
   lukkHuskeSkjema();
   const flyttet = (dagOffset !== 0);
   const byttet  = (visning !== 'dag');
@@ -3725,7 +3417,6 @@ function kobleLukking(){
   document.addEventListener('pointerdown', function(ev){
     const t = ev.target;
     if(huBobleId && !t.closest('.hu-boble') && !t.closest('.hu-rad')) lukkHuskeBoble();
-    if(vaerBobleAapen && !t.closest('.vaer-boble') && !t.closest('.vt-naa')) lukkVaerBoble();
     if($('detalj') && !$('detalj').hidden && !skjemaAapent()
        && !t.closest('#detalj') && !t.closest('.plan-rad')
        && !t.closest('#avtaleBoks') && !t.closest('#huskeBoks')
@@ -3744,8 +3435,6 @@ function byttDag(steg){
   /* Uke blar en uke om gangen, Dag én dag. Samme pil, samme sveip - det
      som flyttes er det man ser. */
   dagOffset += steg * (visning === 'dag' ? 1 : 7);
-  timeOffset = 0;              /* ny dag - vis dagens eget vindu */
-  lukkVaerBoble();             /* boblen gjaldt dagen man forlot */
   if(dagOffset < -180) dagOffset = -180;   /* en grense, saa man ikke blar seg bort */
   if(dagOffset >  180) dagOffset =  180;
   tegnVisning();
@@ -3758,17 +3447,6 @@ function kobleSveip(){
     const el = $(id);
     if(el && el.closest('.kort')) sveipPaa(el.closest('.kort'), byttDag);
   });
-  /* Vaerstripa: startet beroeringen inne i timevinduet, flyttes timene.
-     Ellers flyttes dagen, som paa resten av skjermen. */
-  sveipPaa($('vaerStripe'), byttDag, function(mal){
-    return mal && mal.closest && mal.closest('.vt-timer') ? flyttTimer : null;
-  });
-}
-
-/* Seks timer om gangen, samme vindu som vises. Dagen roeres ikke. */
-function flyttTimer(steg){
-  timeOffset += steg * VINDU;
-  tegnVaerStripe();
 }
 
 function sveipPaa(kort, handling, velgHandling){
@@ -3838,12 +3516,6 @@ async function oppdaterAlt(manuelt){
 
   const jobber = [
     kalenderJobb,
-    hentVaer().then(tegnVaer).catch(function(e){
-      /* Vaeret bor i toppstripa naa. Feiler det, skjuler vi stripa i
-         stedet for aa la den staa med gamle tall. */
-      if($('vaerStripe')) $('vaerStripe').hidden = true;
-      settSted('været utilgjengelig', false);
-    }),
     hentMiddag().then(tegnMiddag).catch(function(e){
       $('middag').innerHTML = '<div class="tom feil">Kunne ikke hente matplanen.</div>';
     }),
@@ -4702,7 +4374,6 @@ function bvLukk(){
     return;
   }
 
-  lesLagretPosisjon();
   await hentFarger();
   /* Navnet vises ikke i toppen - siden heter det den heter. Men det huskes,
      for merknadsskjemaet foreslaar fornavnet under "Skrevet av". */
@@ -4715,14 +4386,6 @@ function bvLukk(){
   try{ await oppdaterAlt(false); }
   catch(e){ console.error('Første oppdatering feilet:', e); }
 
-  /* Spoer om posisjon foerst naar skjermen staar der — da kommer
-     tillatelsesdialogen oppaa noe ferdig, ikke en tom side. Skjer bare
-     én gang; svaret huskes. */
-  if(!posisjon.presis){
-    finnPosisjon().then(function(){
-      if(posisjon.presis) hentVaer().then(tegnVaer).catch(function(){});
-    });
-  }
 
   kobleSveip();
   kobleLukking();
@@ -4776,7 +4439,6 @@ document.addEventListener('keydown', function(e){
   if(avtaleAapen){ lukkAvtale(); return; }
   if(huskeSkjema){ lukkHuskeSkjema(); return; }
   if(huBobleId) lukkHuskeBoble();
-  if(vaerBobleAapen) lukkVaerBoble();
   if($('detalj') && !$('detalj').hidden) lukkDetalj();
 });
 

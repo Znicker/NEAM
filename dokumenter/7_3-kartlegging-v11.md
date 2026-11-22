@@ -1678,6 +1678,24 @@ oppdatert.»
   Magne. **Ikke
   sett mot ekte /api/yr på neam.no før push.**
 
+
+**22. november, kveld: dashenes gamle vær er fjernet** (`dashboard.html`,
+`emma.html`, `andrea.html` – bare slettede linjer, ingen `?v=`). Magne
+spurte hva «dashenes egen værvisning» var, og sa ja til å fjerne den. Det
+var koden fra før toppen ble felles (8. november): `STED` (Arendal),
+`posisjon`/`finnPosisjon`/`lesLagretPosisjon`, `hentVaer` mot open-meteo,
+`tegnVaer`, timevinduet (`timeOffset`, `VINDU`, `flyttTimer`, sveipet på
+`#vaerStripe` som ikke fantes), `vindPil`, `settSted`, dashens egen
+værboble (`vekslVaerBoble`, `lukkVaerBoble` og kallene, `#vaerBoble` i
+HTML) og CSS-en for stripa, stedet og boblen. Den hentet vær fra open-meteo
+ved hver oppdatering uten å vise det. **Står igjen med vilje:**
+`tegnVaerStripe()` og `window.ntpVaerDag` (toppen følger dagen dashet
+viser), og dashenes gamle sjødel (`lastSjo`, `.vt-sjo`) – den henter
+ingenting, fordi `#vtSjo` ikke finnes, men ble ikke bedt fjernet. Posisjonen
+spørres nå bare av toppen (`ntpFinnPos`). Testet lokalt: dagbytte, tilbake
+til standard, sveip, lukking, Escape og oppdatering på alle tre, uten feil
+i konsollen og uten kall til open-meteo.
+
 **22. november: varsel om «Ikke lest» i innboksen** (`okonomi.html` og
 `functions/api/bank/[[sti]].js`). Magne fant en fil i Dropbox-mappa «Ikke
 lest» og: «Vi må ha en advarsel under innboks at noe ligger der og velge
