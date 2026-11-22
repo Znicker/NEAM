@@ -857,6 +857,90 @@ body{
 }
 .fagvis-notat textarea:focus{ outline:2px solid var(--aksent); outline-offset:1px; }
 
+/* ---------- Fagvinduet i to kolonner (22. november 2026) ----------
+   Magne: «Fagsiden kan også deles opp i to kolonner. Prøver på høyre
+   siden og lekser på venstre. Leksene får egne uker med læringsmål og
+   lekser/oppgaver og prøver. Gjerne i egen ramme. Nyeste øverst.» Og:
+   «Er litt tamt» - stort merke og teller i toppen, stempel naar uka er
+   gjort, haken spretter, stoerre skrift og mindre luft.
+
+   Denne uka (fagDag()) har tykk ramme i aksentfargen; de andre tynn graa.
+   Alle ukene staar, nyeste oeverst - det er ett skoleaar per fag. */
+.fagvis-boks .av-tittel{ align-items:center; gap:18px; margin-bottom:12px; flex-wrap:wrap; }
+.fagvis-boks .fagvis-bilde{ width:118px; }
+/* fagVisNavn er en span i .av-tittel - den maa selv legge merke, navn og
+   teller paa rad. Telleren skyves helt til hoeyre. */
+#fagVisNavn{ display:flex; align-items:center; gap:18px; flex:1; min-width:0; flex-wrap:wrap; }
+.fv-teller{ margin-left:auto; }
+.fv-hode{ flex:1; min-width:200px; }
+.fv-navn{ display:block; font-size:calc(var(--t-stor) * 1.5); line-height:1.1; }
+.fv-hode .fagvis-meta{ padding:6px 0 0; font-weight:400; }
+.fv-teller{ text-align:right; flex-shrink:0; line-height:1.1; }
+.fv-teller b{ display:block; font-size:calc(var(--t-stor) * 1.5); font-variant-numeric:tabular-nums; }
+.fv-teller span{
+  display:block; margin-top:4px; font-size:var(--t-etikett); font-weight:700;
+  letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft);
+}
+.fv-teller.alt b{ color:var(--handling-ny); }
+#fagVisMeta[hidden]{ display:none; }
+
+.fv-kolonner{
+  display:grid; grid-template-columns:minmax(0, 1.55fr) minmax(0, 1fr);
+  gap:18px; align-items:start;
+}
+.fv-uke{
+  position:relative; border:1px solid var(--line); border-radius:14px;
+  padding:12px 14px 10px; margin-bottom:10px; background:var(--paper);
+}
+.fv-uke.naa{ border:2.5px solid var(--aksent); padding:11px 13px 9px; }
+.fv-uke-topp{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; padding-right:4px; }
+.fv-uke-navn{ font-size:var(--t-stor); font-weight:700; }
+.fv-uke-dato{ font-size:var(--t-meta); color:var(--ink-soft); }
+.fv-uke-status{
+  margin-left:auto; font-size:var(--t-etikett); font-weight:700; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink-soft);
+}
+.fv-uke.naa .fv-uke-status{ color:var(--aksent); }
+.fv-under{
+  font-family:'Archivo',sans-serif; font-size:var(--t-etikett); font-weight:700;
+  text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft);
+  margin:10px 0 2px; display:flex; align-items:baseline; gap:10px;
+}
+.fv-maal-tekst{ font-size:var(--t-brod); line-height:1.45; color:var(--ink-soft); margin-top:2px; }
+.fv-uke .fagvis-maal textarea{ margin-top:4px; font-size:calc(var(--t-brod) * 1.05); }
+.fv-uke .lekse-linje{ margin-top:8px; }
+.fagvis-boks .lekse-tekst{ font-size:calc(var(--t-brod) * 1.08); line-height:1.4; }
+.fv-uke .prove-linje{ border-bottom:none; padding:6px 0 2px; }
+/* Stempelet naar alt i uka er gjort: samme gummistempel som paa
+   fagkortene, men i hjoernet av ramma og ikke over et merke. */
+.fv-uke .fag-stempel{
+  left:auto; right:12px; top:8px; transform:rotate(-10deg);
+  font-size:var(--t-meta); padding:3px 9px; border-width:2.5px; max-width:none;
+}
+.fv-uke.gjort .fv-uke-status{ visibility:hidden; }
+
+.fv-side .fagvis-bolk h4{ font-size:var(--t-meta); }
+.fv-side .prove-linje{ display:block; padding:9px 0; }
+.fv-prove-topp{ display:flex; align-items:baseline; gap:10px; }
+.fv-prove-topp .prove-type{ font-weight:700; }
+.fv-prove-dato{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:2px; }
+.fv-prove-dato.naer{ color:var(--handling-endre); font-weight:700; }
+.prove-linje.forbi .prove-type{ font-weight:400; color:var(--ink-soft); }
+.fv-side .fagvis-notat{ margin-top:18px; }
+
+/* Haken spretter naar hun krysser av - saa det kjennes som noe skjedde. */
+@keyframes fvSprett{
+  0%{ transform:scale(1); } 35%{ transform:scale(1.45); } 65%{ transform:scale(.9); } 100%{ transform:scale(1); }
+}
+.lekse-hake.sprett{ animation:fvSprett .42s ease-out; }
+@media (prefers-reduced-motion:reduce){ .lekse-hake.sprett{ animation:none; } }
+
+@media(max-width:700px){
+  .fv-kolonner{ grid-template-columns:1fr; }
+  .fagvis-boks .fagvis-bilde{ width:84px; }
+  .fv-navn, .fv-teller b{ font-size:calc(var(--t-stor) * 1.2); }
+}
+
 .lim-hjelp{font-size:var(--t-meta);color:var(--ink-soft);line-height:1.5;margin-bottom:10px}
 .lim-omr{
   min-height:200px;width:100%;
@@ -4107,7 +4191,13 @@ async function maalLagre(){
   }
 }
 
+/* Leksa som nettopp ble huket av - tegnFagVis() lar haken dens sprette
+   én gang. */
+let fvSprett = null;
+
 async function vekslLekse(id){
+  const l0 = fagData && fagData.lekser.find(function(x){ return x.id === id; });
+  fvSprett = (l0 && !l0.ferdig) ? id : null;
   try{
     await endreFag(function(d){
       d.lekser = d.lekser.map(function(l){
@@ -4147,92 +4237,165 @@ function tegnFagVis(){
   const f = fagAv(fagVisId);
   if(!f){ lukkFagVis(); return; }
 
-  $('fagVisNavn').innerHTML = fagMerkeHtml(f.navn, 'fagvis-bilde', '')
-    + '<span>' + esc(f.navn) + '</span>';
+  const ukeN = ukeNokkel(fagDag());
+  const lekser = fagData.lekser.filter(function(l){ return l.fagId === f.id; });
+  const prover = fagData.prover.filter(function(p){ return p.fagId === f.id; });
 
+  /* ---- Toppen: stort merke, navn, laerer og dager, teller for uka ---- */
   const meta = [];
   if(f.laerer) meta.push('<span>Faglærer: <b>' + esc(f.laerer) + '</b></span>');
   if(f.dager.length) meta.push('<span>Ukedager: <b>' + esc(dagerTekst(f.dager)) + '</b></span>');
-  $('fagVisMeta').innerHTML = meta.join('')
-    || '<span class="fagvis-tom">Faglærer og ukedager er ikke lagt inn.</span>';
+  const denne = lekser.filter(function(l){ return l.frist && ukeAv(l.frist) === ukeN; });
+  const gjort = denne.filter(function(l){ return l.ferdig; }).length;
+  const ukeNr = isoUke(fagDag()).uke;
+  $('fagVisNavn').innerHTML = fagMerkeHtml(f.navn, 'fagvis-bilde', '')
+    + '<div class="fv-hode"><span class="fv-navn">' + esc(f.navn) + '</span>'
+    +   '<div class="fagvis-meta">' + (meta.join('')
+          || '<span class="fagvis-tom">Faglærer og ukedager er ikke lagt inn.</span>') + '</div>'
+    + '</div>'
+    + '<div class="fv-teller' + (denne.length && gjort === denne.length ? ' alt' : '') + '">'
+    +   (denne.length
+          ? '<b>' + gjort + ' av ' + denne.length + '</b><span>lekser gjort · uke ' + ukeNr + '</span>'
+          : '<b>–</b><span>ingen lekser uke ' + ukeNr + '</span>')
+    + '</div>';
+  $('fagVisMeta').innerHTML = '';
+  $('fagVisMeta').hidden = true;
 
-  const lekser = fagData.lekser.filter(function(l){ return l.fagId === f.id; })
-    .sort(function(a, b){
+  /* ---- Venstre: én ramme per uke, nyeste oeverst ----
+     Ukene er alle som har en lekse, en proeve eller et laeringsmaal, og
+     alltid denne uka (der laeringsmaalet skrives). Lekser uten frist
+     hoerer ikke til noen uke og faar sin egen ramme oeverst. */
+  const uker = {};
+  uker[ukeN] = true;
+  lekser.forEach(function(l){ if(l.frist) uker[ukeAv(l.frist)] = true; });
+  prover.forEach(function(p){ if(p.dato) uker[ukeAv(p.dato)] = true; });
+  Object.keys(f.maal || {}).forEach(function(u){ if(String(f.maal[u] || '').trim()) uker[u] = true; });
+
+  function lekseHtml(l){
+    const fr   = fristTekst(l.frist);
+    const hast = lekseHast(l);
+    const avTekst = l.av
+      ? (l.av + (l.nar ? ' ' + l.nar : '') + (l.laget ? ' ' + datoKort(datoFraTekst(l.laget)) : ''))
+      : '';
+    const sprett = (fvSprett === l.id && l.ferdig) ? ' sprett' : '';
+    return '<div class="lekse-linje' + (l.ferdig ? ' ferdig' : '') + (hast ? ' ' + hast : '') + '">'
+      + '<button class="lekse-hake' + sprett + '" onclick="vekslLekse(\'' + esc(l.id) + '\')" '
+      +   'aria-label="' + (l.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
+      + '<div class="lekse-tekst">'
+      +   '<span onclick="redigerLekse(\'' + esc(l.id) + '\')">' + esc(l.tekst) + '</span>'
+      +   (avTekst ? '<div class="lekse-av">Lagt inn av ' + esc(avTekst) + '</div>' : '')
+      +   bilderHtml(l)
+      + '</div>'
+      + (fr.tekst ? '<span class="lekse-frist ' + hast + '">' + esc(fr.tekst) + '</span>' : '')
+      + '</div>';
+  }
+  function sorter(liste){
+    return liste.slice().sort(function(a, b){
       if(!!a.ferdig !== !!b.ferdig) return a.ferdig ? 1 : -1;
       return fristSort(a, b);
     });
+  }
 
-  /* Proever sorteres med den nyeste OEVERST: de som har vaert er de man
-     ser etter karakteren paa, og de som kommer staar det uansett et merke
-     om paa kortet ute i fellesvisningen. */
-  const prover = fagData.prover.filter(function(p){ return p.fagId === f.id; })
-    .sort(function(a, b){ return (b.dato || '').localeCompare(a.dato || ''); });
+  let venstre = '';
+  const utenFrist = lekser.filter(function(l){ return !l.frist; });
+  if(utenFrist.length){
+    venstre += '<div class="fv-uke"><div class="fv-uke-topp"><span class="fv-uke-navn">Uten frist</span></div>'
+      + sorter(utenFrist).map(lekseHtml).join('') + '</div>';
+  }
 
-  /* Laeringsmaalet oeverst: det er rammen resten staar i. To linjer hoeyt
-     - er det lengre enn det, er det ikke lenger et maal for uka. */
-  const ukeN = ukeNokkel(fagDag());
-  let ut = '<div class="fagvis-bolk fagvis-maal">'
-      + '<h4>Læringsmål · ' + esc(ukeNavn().toLowerCase())
-      +   ' <span class="notat-status" id="maalStatus"></span></h4>'
-      + '<textarea id="fagMaal" rows="2" data-uke="' + esc(ukeN) + '"'
-      + ' placeholder="Hva skal hun kunne når uka er omme?"'
-      + ' oninput="maalEndret(); voksFelt(this)" onblur="maalLagre()"></textarea>'
+  Object.keys(uker).sort().reverse().forEach(function(u){
+    const mandag = fvUkeMandag(u);
+    const sondag = new Date(mandag.getFullYear(), mandag.getMonth(), mandag.getDate() + 6);
+    const dato = mandag.getMonth() === sondag.getMonth()
+      ? mandag.getDate() + '.–' + sondag.getDate() + '. ' + MND[sondag.getMonth()]
+      : mandag.getDate() + '. ' + MND[mandag.getMonth()].slice(0, 3) + '–' + sondag.getDate() + '. ' + MND[sondag.getMonth()].slice(0, 3);
+    const ls = sorter(lekser.filter(function(l){ return l.frist && ukeAv(l.frist) === u; }));
+    const ps = prover.filter(function(p){ return p.dato && ukeAv(p.dato) === u; })
+      .sort(function(a, b){ return a.dato.localeCompare(b.dato); });
+    const ferdige = ls.filter(function(l){ return l.ferdig; }).length;
+    const alt = ls.length > 0 && ferdige === ls.length;
+    const naa = u === ukeN;
+    const maal = String((f.maal && f.maal[u]) || '').trim();
+
+    let r = '<div class="fv-uke' + (naa ? ' naa' : '') + (alt ? ' gjort' : '') + '">'
+      + (alt ? '<span class="fag-stempel ferdig">Ferdig</span>' : '')
+      + '<div class="fv-uke-topp">'
+      +   '<span class="fv-uke-navn">Uke ' + Number(u.slice(-2)) + '</span>'
+      +   '<span class="fv-uke-dato">' + esc(dato) + '</span>'
+      +   '<span class="fv-uke-status">' + (naa ? 'Denne uka'
+             : ls.length ? ferdige + ' av ' + ls.length + ' gjort' : '') + '</span>'
       + '</div>';
+    /* Laeringsmaalet skrives bare for denne uka - feltet lagrer seg selv
+       (maalLagre). De andre ukene viser det som tekst. */
+    if(naa){
+      r += '<div class="fagvis-maal"><div class="fv-under">Læringsmål'
+        +   ' <span class="notat-status" id="maalStatus"></span></div>'
+        + '<textarea id="fagMaal" rows="2" data-uke="' + esc(ukeN) + '"'
+        + ' placeholder="Hva skal hun kunne når uka er omme?"'
+        + ' oninput="maalEndret(); voksFelt(this)" onblur="maalLagre()"></textarea></div>';
+    }else if(maal){
+      r += '<div class="fv-under">Læringsmål</div><div class="fv-maal-tekst">' + esc(maal) + '</div>';
+    }
+    if(ls.length){
+      r += '<div class="fv-under">Lekser</div>' + ls.map(lekseHtml).join('');
+    }else if(naa){
+      r += '<div class="fv-under">Lekser</div><div class="fagvis-tom">Ingen lekser denne uka.</div>';
+    }
+    if(ps.length){
+      r += '<div class="fv-under">Prøve</div>' + ps.map(function(p){
+        const d = datoFraTekst(p.dato);
+        return '<div class="prove-linje" onclick="redigerProve(\'' + esc(p.id) + '\')">'
+          + '<span class="prove-type">' + esc(p.type) + ' · ' + esc(UKEDAGER[ukedagNr(d)] + ' ' + d.getDate() + '. ' + MND[d.getMonth()]) + '</span>'
+          + '<span class="prove-karakter">' + esc(p.karakter) + '</span></div>';
+      }).join('');
+    }
+    venstre += r + '</div>';
+  });
 
-  ut += '<div class="fagvis-bolk"><h4>Lekser og frister</h4>';
-  if(!lekser.length){
-    ut += '<div class="fagvis-tom">Ingen lekser lagt inn.</div>';
-  }else{
-    lekser.forEach(function(l){
-      const fr   = fristTekst(l.frist);
-      const hast = lekseHast(l);
-      const avTekst = l.av
-        ? (l.av + (l.nar ? ' ' + l.nar : '') + (l.laget ? ' ' + datoKort(datoFraTekst(l.laget)) : ''))
-        : '';
-      ut += '<div class="lekse-linje' + (l.ferdig ? ' ferdig' : '')
-        +   (hast ? ' ' + hast : '') + '">'
-        + '<button class="lekse-hake" onclick="vekslLekse(\'' + esc(l.id) + '\')" '
-        +   'aria-label="' + (l.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
-        + '<div class="lekse-tekst">'
-        +   '<span onclick="redigerLekse(\'' + esc(l.id) + '\')">' + esc(l.tekst) + '</span>'
-        +   (avTekst ? '<div class="lekse-av">Lagt inn av ' + esc(avTekst) + '</div>' : '')
-        +   bilderHtml(l)
-        + '</div>'
-        + (fr.tekst ? '<span class="lekse-frist ' + hast + '">' + esc(fr.tekst) + '</span>' : '')
-        + '</div>';
-    });
+  /* ---- Hoeyre: proevene, de som kommer oeverst ---- */
+  const iDag = datoNokkel(idag0());
+  const kommer = prover.filter(function(p){ return !p.dato || p.dato >= iDag; })
+    .sort(function(a, b){ return (a.dato || '9999').localeCompare(b.dato || '9999'); });
+  const forbi = prover.filter(function(p){ return p.dato && p.dato < iDag; })
+    .sort(function(a, b){ return b.dato.localeCompare(a.dato); });
+
+  function proveHtml(p, harVaert){
+    let dato = 'Uten dato';
+    let naer = false;
+    if(p.dato){
+      const dager = Math.round((datoFraTekst(p.dato) - idag0()) / 86400000);
+      const fr = fristFullt(p.dato);
+      dato = harVaert ? fr.tekst.replace(/^Gikk ut /, '') : fr.tekst + (dager >= 2 ? ' · om ' + dager + ' dager' : '');
+      dato = dato.charAt(0).toUpperCase() + dato.slice(1);
+      naer = !harVaert && dager < 7;
+    }
+    return '<div class="prove-linje' + (harVaert ? ' forbi' : '') + '" onclick="redigerProve(\'' + esc(p.id) + '\')">'
+      + '<div class="fv-prove-topp"><span class="prove-type">' + esc(p.type) + '</span>'
+      +   '<span class="prove-karakter">' + esc(p.karakter) + '</span></div>'
+      + '<div class="fv-prove-dato' + (naer ? ' naer' : '') + '">' + esc(dato) + '</div>'
+      + (p.av ? '<span class="lekse-av">Lagt inn av ' + esc(p.av) + '</span>' : '')
+      + '</div>';
   }
-  ut += '</div>';
 
-  ut += '<div class="fagvis-bolk"><h4>Prøver</h4>';
-  if(!prover.length){
-    ut += '<div class="fagvis-tom">Ingen prøver lagt inn.</div>';
-  }else{
-    prover.forEach(function(p){
-      const d = p.dato ? datoFraTekst(p.dato) : null;
-      const naer = d && d >= idag0() && (d - idag0()) < 7 * 86400000;
-      const dato = d ? (d.getDate() + '. ' + MND[d.getMonth()].slice(0, 3)) : 'uten dato';
-      ut += '<div class="prove-linje" onclick="redigerProve(\'' + esc(p.id) + '\')">'
-        + '<span class="prove-type">' + esc(p.type)
-        +   (p.av ? '<span class="lekse-av">Lagt inn av ' + esc(p.av) + '</span>' : '')
-        + '</span>'
-        + '<span class="prove-dato' + (naer ? ' naer' : '') + '">' + esc(dato) + '</span>'
-        + '<span class="prove-karakter">' + esc(p.karakter) + '</span>'
-        + '</div>';
-    });
-  }
-  ut += '</div>';
-
+  let hoyre = '<div class="fagvis-bolk"><h4>Prøver</h4>';
+  if(!prover.length) hoyre += '<div class="fagvis-tom">Ingen prøver lagt inn.</div>';
+  hoyre += kommer.map(function(p){ return proveHtml(p, false); }).join('')
+         + forbi.map(function(p){ return proveHtml(p, true); }).join('')
+         + '</div>';
   /* Notatfeltet bygges som markup her, men verdien settes ETTER at
      innerHTML er skrevet - en value i en HTML-streng maa unnslippes, og
      et notat med anfoerselstegn i ville brutt taggen. */
-  ut += '<div class="fagvis-notat">'
+  hoyre += '<div class="fagvis-notat">'
       + '<h4>Notater <span class="notat-status" id="notatStatus"></span></h4>'
       + '<textarea id="fagNotat" placeholder="Skriv rett inn her — det lagres av seg selv."'
       + ' oninput="notatEndret(); voksFelt(this, 520)" onblur="notatLagre()"></textarea>'
       + '</div>';
 
-  $('fagVisKropp').innerHTML = ut;
+  $('fagVisKropp').innerHTML = '<div class="fv-kolonner">'
+    + '<div class="fv-uker">' + venstre + '</div>'
+    + '<div class="fv-side">' + hoyre + '</div>'
+    + '</div>';
+  fvSprett = null;
   $('fagMaal').value  = (f.maal && f.maal[ukeN]) || '';
   $('fagNotat').value = f.notat || '';
   /* Hoeyden settes etter innholdet naar vinduet aapnes, ikke bare mens
@@ -4241,6 +4404,14 @@ function tegnFagVis(){
   voksFelt($('fagMaal'));
   voksFelt($('fagNotat'), 520);
   tegnLekseBilder($('fagVisKropp'));
+}
+
+/* Mandagen i en ISO-uke («2026-W48»). 4. januar ligger alltid i uke 1. */
+function fvUkeMandag(nokkel){
+  const m = /^(\d{4})-W(\d{2})$/.exec(String(nokkel || ''));
+  if(!m) return idag0();
+  const jan4 = new Date(+m[1], 0, 4);
+  return new Date(+m[1], 0, 4 - ukedagNr(jan4) + (+m[2] - 1) * 7);
 }
 
 /* ---------------- Skjemaet ----------------

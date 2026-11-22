@@ -1317,6 +1317,17 @@ grønt). Kalenderen tar høyden den trenger (høyst 55 %), skoleuka resten.
 Lekser står **ikke** lenger i «Påminnelser i dag» – ett sted for skole.
 Ingen hake: trykk åpner faget. Teksten kuttes etter tre linjer.
 
+**Fagvinduet i to kolonner** (fra 22. november 2026): toppen har stort
+merke, navn med lærer og dager, og en teller til høyre («0 av 1 – lekser
+gjort uke 48», grønn når alt er gjort). Venstre: **én ramme per uke,
+nyeste øverst, alle ukene i skoleåret** – læringsmål, lekser og ukas
+prøve. **Denne uka har tykk ramme i aksentfargen**, de andre tynn grå; bare
+denne ukas læringsmål kan skrives i. Er alle ukas lekser gjort, får ramma
+et grønt «Ferdig»-stempel i hjørnet. Høyre: prøvene (kommende øverst med
+«om N dager», så de som har vært) og notater. Haken spretter én gang når
+en lekse krysses av (av ved `prefers-reduced-motion`). En kolonne under
+700 px.
+
 **Fristen skrives fullt ut** («Mandag 7. september») på egen linje over
 teksten; teksten har hele bredden. Ukedager på fag skrives fullt ut. Korte
 former beholdes bare der sju står på rad (ukesvisningen) og i merkelapper.

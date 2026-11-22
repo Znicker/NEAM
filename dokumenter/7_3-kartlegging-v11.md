@@ -1772,6 +1772,23 @@ skjermen går tilbake til Dag av seg selv.
   gloseprøve 20.11 sto bare inne i leksteksten («Øv til gloseprøven»), og
   ville ikke kommet i Prøver-blokka.
 
+**22. november, natt: fagvinduet i to kolonner** (`emma.html`,
+`andrea.html` – like endringer). Magne: «Fagsiden kan også deles opp i to
+kolonner. Prøver på høyre siden og lekser på venstre. Leksene får egne
+uker med læringsmål og lekser/oppgaver og prøver. Gjerne i egen ramme.
+Nyeste øverst … Er litt tamt.» Valgt av Magne: aksentramme på denne uka;
+stort merke og teller, stempel når uka er gjort, haken spretter, større
+skrift og mindre luft; alle ukene (ett skoleår per fag).
+- `tegnFagVis()` skrevet om. Ukene er alle med lekse, prøve eller
+  læringsmål, pluss denne uka (`fagDag()`). Lekser uten frist får egen
+  ramme øverst. `fvUkeMandag()` gir datoene i rammetittelen.
+- `#fagVisMeta` skjules – lærer og dager står i toppen sammen med navnet.
+  `#fagVisNavn` er flex (den er en span i `.av-tittel`).
+- Spretten: `vekslLekse()` setter `fvSprett` når en lekse krysses AV (ikke
+  ved angring); neste tegning gir haken klassen `sprett`, så nullstilles den.
+- Testet på neam.no med Spansk (ti uker, åtte med stempel), uten å skrive
+  noe.
+
 ### Åpne tråder
 
 **Fra 22. november 2026, kveld – små, ingen haster:**
