@@ -949,12 +949,41 @@ select.hu-felt{
 }
 .jul-kort{max-width:600px}
 .jul-tittel{margin:0 0 14px;font-size:var(--t-meta);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
-.jul-lys{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-bottom:16px}
-.jul-ett{display:flex;flex-direction:column}
-.jul-ett.borte{opacity:.55}
-.jul-navnrad{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.jul-navn{font-size:var(--t-brod);font-weight:700;color:var(--ink)}
-.jul-ute{margin-top:10px;font-size:var(--t-meta);color:var(--ink-soft);font-weight:600}
+/* Menyen (Magne, 22. november 2026): lysene som kort oeverst - trykk
+   velger, valgt er --aksent-lys med --aksent kant (designsystemet: «valgt»).
+   Hvert kort har fargen naa, av/paa og Varmhvit (#FFE059, Magnes farge).
+   Under kortene ett hjul, og de valgte foelger det. */
+.jul-lys{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:12px}
+.jul-ett{
+  display:flex;flex-direction:column;gap:10px;padding:12px 14px;border-radius:14px;cursor:pointer;
+  background:var(--boks-mild);border:2px solid var(--boks-kant);-webkit-tap-highlight-color:transparent;
+}
+.jul-ett.valgt{background:var(--aksent-lys);border-color:var(--aksent)}
+.jul-ett.borte{opacity:.55;cursor:default}
+.jul-navnrad{display:flex;align-items:center;gap:10px}
+.jul-velg{
+  flex:none;width:22px;height:22px;border-radius:50%;box-sizing:border-box;
+  border:2px solid var(--ink-soft);background:var(--paper);position:relative;
+}
+.jul-ett.valgt .jul-velg{background:var(--aksent);border-color:var(--aksent)}
+.jul-ett.valgt .jul-velg::after{
+  content:'';position:absolute;left:6px;top:2px;width:5px;height:10px;
+  border:solid #FFFFFF;border-width:0 2.5px 2.5px 0;transform:rotate(45deg);
+}
+.jul-navn{flex:1;min-width:0;font-size:var(--t-brod);font-weight:700;color:var(--ink)}
+.jul-farge{flex:none;width:26px;height:26px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.18)}
+.jul-farge.av{opacity:.35}
+.jul-varm{
+  align-self:flex-start;border:none;border-radius:999px;padding:8px 18px;cursor:pointer;
+  background:#FFE059;color:var(--ink);font-family:inherit;font-size:var(--t-meta);font-weight:700;
+  box-shadow:0 0 0 1px rgba(0,0,0,.1);
+}
+.jul-varm:active{transform:scale(.97)}
+.jul-ute{font-size:var(--t-meta);color:var(--ink-soft);font-weight:600}
+.jul-hint{margin:4px 0 0;text-align:center;font-size:var(--t-meta);color:var(--ink-soft);font-weight:600}
+.jul-hjul{margin:10px auto 14px}
+.jul-hjul.tomt{opacity:.35;cursor:default}
+.jul-hjul .hsk-hjul-merke[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -3914,6 +3943,9 @@ const JUL_LYS = [
   { id:'6fc4423e-3a7e-49fc-8b65-9597c7059578', navn:'Terrasse' }
 ];
 const JUL_HOLD_MS = 600;
+/* «Varmhvit» er #FFE059 (Magne, 22. november 2026), som tone og metning
+   slik Homey vil ha dem: hsv(49°, 65 %, 100 %). */
+const JUL_VARM = { h:0.136, s:0.651 };
 let julEnh = {};          /* id -> { ok, paa, h, s, modus } fra Homey */
 let julDrar = false;      /* fingeren ligger i et fargehjul - ikke tegn paa nytt */
 
@@ -4032,6 +4064,9 @@ function julBygg(){
   m.hidden = true;
   m.innerHTML = '<div class="dlg-kort jul-kort" role="dialog" aria-label="Julelys ute">'
     + '<h2 class="jul-tittel">Julelys ute</h2><div class="jul-lys" id="julLys"></div>'
+    + '<p class="jul-hint" id="julHint"></p>'
+    + '<div class="hsk-hjul jul-hjul" id="julHjul" role="img" aria-label="Fargehjul for de valgte lysene">'
+    +   '<span class="hsk-hjul-merke"></span></div>'
     + '<div class="dlg-rad"><button type="button" class="dlg-knapp nei" data-jul-lukk>Lukk</button></div></div>';
   m.addEventListener('click', function(ev){
     if(ev.target === m || ev.target.closest('[data-jul-lukk]')){ julLukk(); return; }
@@ -4041,13 +4076,35 @@ function julBygg(){
       const t = julEnh[id];
       if(!t || !t.ok) return;
       julSett(id, [['onoff', !t.paa]]).then(function(){ setTimeout(jstHent, 1500); });
+      return;
+    }
+    const varm = ev.target.closest('[data-jul-varm]');
+    if(varm){
+      const id = varm.getAttribute('data-jul-varm');
+      if(julEnh[id] && julEnh[id].ok) julSettFarge(id, JUL_VARM);
+      return;
+    }
+    /* Trykk ellers paa kortet velger det - eller tar det ut. */
+    const kort = ev.target.closest('[data-jul-kort]');
+    if(kort){
+      const id = kort.getAttribute('data-jul-kort');
+      if(!julEnh[id] || !julEnh[id].ok) return;
+      const valgt = julValgte();
+      if(valgt.has(id)) valgt.delete(id); else valgt.add(id);
+      julMenyTegn();
     }
   });
-  /* Fargehjulet: merket foelger fingeren, fargen sendes naar den slippes. */
+  m.addEventListener('keydown', function(ev){
+    if((ev.key === 'Enter' || ev.key === ' ') && ev.target.hasAttribute && ev.target.hasAttribute('data-jul-kort')){
+      ev.preventDefault(); ev.target.click();
+    }
+  });
+  /* Fargehjulet: merket foelger fingeren, fargen sendes til alle de valgte
+     naar fingeren slippes. */
   let hjul = null;
   m.addEventListener('pointerdown', function(ev){
-    const h = ev.target.closest && ev.target.closest('.hsk-hjul');
-    if(!h || !julEnh[h.getAttribute('data-jul-hjul')] || !julEnh[h.getAttribute('data-jul-hjul')].ok) return;
+    const h = ev.target.closest && ev.target.closest('#julHjul');
+    if(!h || !julValgteOk().length) return;
     ev.preventDefault();
     hjul = h; julDrar = true;
     try{ h.setPointerCapture(ev.pointerId); }catch(e){}
@@ -4057,7 +4114,9 @@ function julBygg(){
   const slipp = function(ev, send){
     if(!hjul) return;
     const h = hjul; hjul = null; julDrar = false;
-    if(send) julSettFarge(h.getAttribute('data-jul-hjul'), hskHjulLes(h, ev));
+    if(!send) return;
+    const f = hskHjulLes(h, ev);
+    julValgteOk().forEach(function(id){ julSettFarge(id, f); });
   };
   m.addEventListener('pointerup', function(ev){ slipp(ev, true); });
   m.addEventListener('pointercancel', function(ev){ slipp(ev, false); });
@@ -4065,23 +4124,61 @@ function julBygg(){
   return m;
 }
 
+/* Hvilke lys hjulet styrer. Alle som svarer er valgt naar menyen
+   aapnes foerste gang; etterpaa husker sida valget til den lastes paa nytt. */
+let julValg = null;
+function julValgte(){
+  if(!julValg) julValg = new Set(julKjente().map(function(l){ return l.id; }));
+  return julValg;
+}
+function julValgteOk(){
+  const v = julValgte();
+  return JUL_LYS.filter(function(l){ return v.has(l.id) && julEnh[l.id] && julEnh[l.id].ok; })
+                .map(function(l){ return l.id; });
+}
+
 function julMenyTegn(){
   const boks = $('julLys');
   if(!boks) return;
+  if(!julValg && julKjente().length) julValgte();
+  const valgt = julValg || new Set();
   boks.innerHTML = JUL_LYS.map(function(l){
     const t = julEnh[l.id];
     if(!t || !t.ok){
-      return '<div class="jul-ett borte"><div class="jul-navnrad"><span class="jul-navn">' + l.navn + '</span></div>'
+      return '<div class="jul-ett borte"><div class="jul-navnrad"><span class="jul-velg" aria-hidden="true"></span>'
+        + '<span class="jul-navn">' + l.navn + '</span></div>'
         + '<div class="jul-ute">' + (t ? 'Uten kontakt' : 'Henter …') + '</div></div>';
     }
-    const p = hskHjulPunkt(t.h, t.s);
-    return '<div class="jul-ett"><div class="jul-navnrad"><span class="jul-navn">' + l.navn + '</span>'
-      + '<button type="button" role="switch" class="hsk-bryter" data-jul-paa="' + l.id + '" aria-checked="' + t.paa + '"'
-      + ' aria-label="' + l.navn + ' av/på"><span></span></button></div>'
-      + '<div class="hsk-hjul" data-jul-hjul="' + l.id + '" role="img" aria-label="Fargehjul for ' + l.navn + '">'
-      +   '<span class="hsk-hjul-merke" style="left:' + p.x + '%;top:' + p.y + '%;background:' + hskFargeCss(t.h, t.s) + '"></span>'
-      + '</div></div>';
+    const er = valgt.has(l.id);
+    return '<div class="jul-ett' + (er ? ' valgt' : '') + '" data-jul-kort="' + l.id + '" role="checkbox" aria-checked="' + er + '"'
+      + ' aria-label="Velg ' + l.navn + '" tabindex="0">'
+      + '<div class="jul-navnrad"><span class="jul-velg" aria-hidden="true"></span>'
+      +   '<span class="jul-navn">' + l.navn + '</span>'
+      +   '<span class="jul-farge' + (t.paa ? '' : ' av') + '" style="background:' + hskFargeCss(t.h, t.s) + '"'
+      +     ' title="' + (t.paa ? 'Fargen nå' : 'Av') + '"></span>'
+      +   '<button type="button" role="switch" class="hsk-bryter" data-jul-paa="' + l.id + '" aria-checked="' + t.paa + '"'
+      +     ' aria-label="' + l.navn + ' av/på"><span></span></button></div>'
+      + '<button type="button" class="jul-varm" data-jul-varm="' + l.id + '">Varmhvit</button>'
+      + '</div>';
   }).join('');
+  /* Hjulet viser fargen til det foerste valgte lyset. */
+  const ider = julValgteOk();
+  const hjul = $('julHjul'), hint = $('julHint');
+  if(hjul){
+    hjul.classList.toggle('tomt', !ider.length);
+    const merke = hjul.querySelector('.hsk-hjul-merke');
+    const t = ider.length ? julEnh[ider[0]] : null;
+    merke.hidden = !t;
+    if(t){
+      const p = hskHjulPunkt(t.h, t.s);
+      merke.style.left = p.x + '%'; merke.style.top = p.y + '%'; merke.style.background = hskFargeCss(t.h, t.s);
+    }
+  }
+  if(hint){
+    const navn = JUL_LYS.filter(function(l){ return ider.indexOf(l.id) !== -1; }).map(function(l){ return l.navn; });
+    hint.textContent = !navn.length ? 'Trykk på et lys for å velge det.'
+      : 'Hjulet styrer ' + (navn.length > 1 ? navn.slice(0, -1).join(', ') + ' og ' + navn[navn.length - 1] : navn[0]) + '.';
+  }
 }
 
 function julApne(){

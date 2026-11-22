@@ -1116,6 +1116,10 @@ toppen på Kjøkken dash har et langt trykk (0,6 sek) som åpner menyen med
 lysene og fargehjulet. Den står i toppen, langt fra tommelknappene, så
 hånden blander dem ikke. Menyen åpnes mens fingeren ligger på, og klikket
 etterpå slår ikke lysene av. `aria-label` sier «hold for farger».
+Menyen: ett kort per lys øverst (trykk velger, «valgt» som ellers:
+`--aksent-lys` og `--aksent`), med fargen nå, av/på og en **Varmhvit**-
+knapp i **#FFE059** – Magnes farge, bare her. Under kortene ett fargehjul
+som alle valgte følger.
 
 ### Fast til høyre på PC (fra 6. november 2026)
 

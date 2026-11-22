@@ -1452,6 +1452,18 @@ hvilke lys og hvilke farger. Dette er Twinkly-lysene i Homey».
   mulig å se i Chrome på PC – må sjekkes på iPaden.
 - Etter push: garasjen virker, **Julelys Terrasse er uten kontakt** i
   Homey (svarte om morgenen). Twinkly-koblingen, ikke Neam.
+- **Samme dag: menyen gjort om** (bare `dashboard.html`). Magne: «Gjør det
+  mer intuitivt å merke og velge farger på tvers … en meny med navn på
+  Twinkly-enhetene øverst, med nåværende farge og en varmhvit knapp under
+  hver enhet #FFE059. Samt en velger. De som er valgt følger endringen på
+  hjulet.» Nå: ett kort per lys øverst – trykk på kortet velger det
+  (`--aksent-lys` med `--aksent` kant og hake), med fargen nå, av/på og
+  **Varmhvit** (#FFE059, sendt som tone 0,136 og metning 0,651 i
+  `JUL_VARM`). Under kortene **ett hjul**; alle valgte får fargen når
+  fingeren slippes, og en linje sier hvilke («Hjulet styrer Garasje og
+  Terrasse.»). Alle som svarer er valgt første gang; valget huskes til
+  sida lastes på nytt. Varmhvit gjelder bare sitt eget kort. Testet
+  lokalt med oppdiktede lys, også på telefonbredde.
 
 ### Åpne tråder
 
