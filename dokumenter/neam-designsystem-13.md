@@ -2737,6 +2737,12 @@ eventuelle ekstra innemoduler).
 minutter uten bruk går fellesenheten tilbake til Kjøkken dash fra hvilken
 som helst side (`felles-neam.js`). Andre innlogginger merker ingenting.
 
+**Rammen rundt pågående matlaging i toppen** (fra 23. november 2026) er
+den samme som rundt dagens påminnelser: hel blå (`--aksent`) med to
+lysere buer som går rundt på 2,6 s, og et svakt blått skjær. Den følger
+ikonet tett – en avrundet firkant med 4 px ramme, bildet fyller resten. Økonomi-
+ikonet ved siden av har fortsatt ingen ring.
+
 **Datoer slås opp, de regnes ikke** (fra 23. november 2026). Hver samtale
 får en datotabell – ukedag og ISO-dato for denne uka og fem til
 (`neamDatoTabell()` i `felles-neam.js`). Neam skal slå opp ukedager der, og

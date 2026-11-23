@@ -109,16 +109,36 @@ button.ntp-iu:focus-visible, .ntp-iu-knapp:focus-visible{ outline:3px solid var(
   position:relative; width:78px; height:78px; border-radius:50%;
   display:grid; place-items:center; box-shadow:inset 0 0 0 4px var(--line);
 }
+/* Rammen som paaminnelsene paa dashene (Magne, 23. november 2026: «Ved
+   pågående matlaging kan du endre roterende ring til lik den vi har ved
+   påminnelser» - og «kan den ikke følge ikonet helt tett?»). Ikonet er en
+   avrundet firkant, saa rammen er det ogsaa: tett rundt bildet, hel blaa
+   med to lysere buer som gaar rundt, og et svakt blaatt skjaer. Det er
+   fargen som gaar rundt (en registrert vinkel), ikke rammen som snurrer -
+   en firkant som snurrer, ville sett ut som den vaklet. */
+@property --ntp-mat-vinkel{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
 .ntp-mat-ikon::before{
-  content:''; position:absolute; inset:0; border-radius:50%;
-  background:conic-gradient(var(--aksent) 0 28%, transparent 28% 100%);
-  -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));
-          mask:radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));
-  animation:ntp-mat-snurr 1.6s linear infinite;
+  content:''; position:absolute; inset:0; border-radius:inherit; padding:4px;
+  pointer-events:none;
+  background:conic-gradient(from var(--ntp-mat-vinkel),
+    var(--aksent) 0deg, color-mix(in srgb, var(--aksent) 25%, #fff) 60deg,
+    var(--aksent) 120deg, var(--aksent) 180deg,
+    color-mix(in srgb, var(--aksent) 25%, #fff) 240deg, var(--aksent) 300deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude;
+  animation:ntp-mat-ring 2.6s linear infinite;
 }
-@keyframes ntp-mat-snurr{ to{ transform:rotate(360deg); } }
+@keyframes ntp-mat-ring{ to{ --ntp-mat-vinkel:360deg; } }
+.ntp-mat:not(.ntp-ok) .ntp-mat-ikon{
+  border-radius:20%;
+  box-shadow:0 0 10px color-mix(in srgb, var(--aksent) 35%, transparent);
+}
 /* Stoerre enn timerne, med ringen rundt (Magne, 8. november 2026). */
 .ntp-mat-ikon img{ width:58px; height:58px; object-fit:contain; display:block; }
+/* Bildet fyller rammen: 4 px ring rundt, i alle stoerrelsene. */
+.ntp-matrad .ntp-mat:not(.ntp-ok) .ntp-mat-ikon img{
+  width:calc(100% - 8px); height:calc(100% - 8px); border-radius:16%;
+}
 .ntp-mat b{ font-size:var(--t-etikett); font-weight:700; font-variant-numeric:tabular-nums; line-height:1.1; }
 /* Rettens navn, kort: et langt navn kuttes med … i stedet for aa gjoere
    toppen bredere. Hele navnet staar i title. */

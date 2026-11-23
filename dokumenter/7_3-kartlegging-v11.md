@@ -176,7 +176,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 ?v=92`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=30`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
-`felles-topp.js ?v=15`, `felles-topp.css ?v=16`;
+`felles-topp.js ?v=15`, `felles-topp.css ?v=17`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
@@ -199,7 +199,7 @@ gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–96; neam.css til og
 med 91; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
-hus `?v=1–29`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–14, topp.css 1–15**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+hus `?v=1–29`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–14, topp.css 1–16**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -2172,6 +2172,15 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
 - **Statuslinja:** 12 andre sider har fortsatt `theme-color #F5F5F5`
   (spillene, Kalender, Neamow, Sikkerhet). Magne: «ser greit ut over alt
   nå» – derfor ikke rørt.
+- **Matlagingsringen i toppen** er nå lik påminnelsesrammen (hel blå ring
+  med lysere buer som går rundt, blått skjær) – `felles-topp.css ?v=17`
+  (Magne: «Ved pågående matlaging kan du endre roterende ring til lik den
+  vi har ved påminnelser»). Og tett rundt ikonet («kan den ikke følge
+  ikonet helt tett?»): ikonet er en avrundet firkant, så rammen er det
+  også (`border-radius:20%`), og bildet fyller rammen med 4 px ring
+  rundt. Fargen går rundt (`@property --ntp-mat-vinkel`), rammen står
+  stille. Den gamle `ntp-mat-snurr` er fjernet. Testet med en testrett i
+  toppen på neam.no.
 - **Påminnelsene som nå står dobbelt** (heldagsprøvene og gloseprøven lå
   som påminnelser før Neam la dem inn som prøver) – Neam skal si fra og
   slette bare med ja.
