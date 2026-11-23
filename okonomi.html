@@ -3646,13 +3646,15 @@ button.ok-dr-rad{ cursor:pointer; }
   }, true);
   /* Neam leser ett dokument og svarer med det som staar paa det. */
   var OK_SF_INSTRUKS = 'Les denne norske kortfakturaen eller samlefakturaen. Svar BARE med JSON på formen\n'
-    + '{"utsteder":"…","dato":"ÅÅÅÅ-MM-DD","skyldig":0,"minstebelop":0,"handler":[{"dato":"ÅÅÅÅ-MM-DD","navn":"…","belop":0}]}\n\n'
+    + '{"utsteder":"…","dato":"ÅÅÅÅ-MM-DD","skyldig":0,"minstebelop":0,"handler":[{"dato":"ÅÅÅÅ-MM-DD","navn":"…","belop":0,"kortholder":"…"}],"innbetalinger":[{"dato":"ÅÅÅÅ-MM-DD","belop":0}]}\n\n'
     + 'Regler:\n'
     + '- "utsteder" er den som sender fakturaen, f.eks. "Coop Mastercard". "dato" er forfallsdatoen.\n'
     + '- "skyldig" er totalt skyldig beløp og "minstebelop" er minimumsbeløpet å betale, om de står der. De er bare til informasjon.\n'
     + '- "handler" er hvert kjøp på fakturaen, med kjøpsdatoen, stedet slik det står, og beløpet i kroner med punktum som desimaltegn.\n'
     + '- En refusjon eller kreditering blir en handel med negativt beløp. Renter og gebyr blir egne handler.\n'
+    + '- "kortholder" er navnet som står ved kjøpet eller over en gruppe kjøp (f.eks. ekstrakort), slik det står. Står det ikke noe navn, la den være tom.\n'
     + '- Ta ikke med innbetalinger, tidligere saldo eller summer som handler.\n'
+    + '- "innbetalinger" er hver innbetaling til kortet (betaling av kortregningen), med dato og beløpet som positivt tall. Tom liste hvis det ikke står noen.\n'
     + '- Klarer du ikke å lese et tall sikkert, sett det til null. Gjett aldri.';
   /* Dagens dato til Neam, saa «I dag» i et skjermbilde fra DNB-appen blir en
      dato (Magne, 14. november 2026: «neam forstå at i dag, betyr dagens dato
@@ -4069,8 +4071,8 @@ button.ok-dr-rad{ cursor:pointer; }
      til hvilke kvitteringer som allerede ligger inne og ligner på dato og
      sum». Handelene uten kvittering kan foeres som egne med kategori; resten
      blir i samlefakturaen, som er en vanlig foert post. */
-  function okSfVindu(sf, forslag, fraInnboks, naer){
-    naer = naer || [];
+  function okSfVindu(sf, forslag, fraInnboks, naer, katF, innbet){
+    naer = naer || []; katF = katF || []; innbet = innbet || [];
     var e = function(id){ return document.getElementById(id); };
     return new Promise(function(ferdig){
       var handler = (sf.handler || []).filter(function(x){ return x && /^\d{4}-\d{2}-\d{2}$/.test(String(x.dato || '')) && Number(x.belop); });
@@ -4088,9 +4090,10 @@ button.ok-dr-rad{ cursor:pointer; }
       kb.appendChild(hovedKat);
       var rader = [], liste = e('ok-sf-linjer'); liste.innerHTML = '';
       handler.forEach(function(x, i){
-        var b = Number(x.belop), f = forslag[i];
-        var r = okEl('div', 'ok-kv-linje', '<span>' + okVask(x.navn || 'Handel') + ' <span class="ok-meta">' + okVask(okKort.format(new Date(x.dato + 'T12:00:00'))) + '</span></span><b>' + okKr0.format(b) + '</b>');
-        var valg = { koble:null, kat:null };
+        var b = Number(x.belop), f = forslag[i], kf = !f && b > 0 ? katF[i] : null;
+        var hint = [x.kortholder || '', kf ? OK_SF_KILDE[kf.kilde] || '' : ''].filter(Boolean).join(' · ');
+        var r = okEl('div', 'ok-kv-linje', '<span>' + okVask(x.navn || 'Handel') + ' <span class="ok-meta">' + okVask(okKort.format(new Date(x.dato + 'T12:00:00'))) + (hint ? ' · ' + okVask(hint) : '') + '</span></span><b>' + okKr0.format(b) + '</b>');
+        var valg = { koble:null, kat:null, katStart:'' };
         if(f){
           var lab = okEl('label', 'ok-kv-kryss', '<span>Kvittering finnes: ' + okVask(f.sted) + ', ' + okVask(okKort.format(new Date(f.dato)))
             + (Math.abs(Math.abs(f.belop) - b) >= 0.005 ? ', ' + okVask(okKr0.format(Math.abs(f.belop))) + ' kr' : '') + '</span>');
@@ -4106,13 +4109,28 @@ button.ok-dr-rad{ cursor:pointer; }
             nl.style.gridColumn = '1 / -1'; r.appendChild(nl); valg.naer = nc;
             nc.addEventListener('change', tegn);
           }
-          var s = okKatVelg('ok-sf-l-' + i, '', 'Mangler kvittering – blir i samlefakturaen', 'Kategori for ' + (x.navn || 'handelen'));
-          s.addEventListener('change', tegn); r.appendChild(s); valg.kat = s;
+          var s = okKatVelg('ok-sf-l-' + i, kf ? kf.kategori : '', 'Mangler kvittering – blir i samlefakturaen', 'Kategori for ' + (x.navn || 'handelen'));
+          s.addEventListener('change', tegn); r.appendChild(s); valg.kat = s; valg.katStart = s.value;
         } else {
           var m = okEl('span', 'ok-meta', 'Refusjon – blir i samlefakturaen'); m.style.gridColumn = '1 / -1'; r.appendChild(m);
         }
         rader.push(valg); liste.appendChild(r);
       });
+      /* Innbetalingene til kortet: avstemt mot regnskapet, ikke foert her
+         (overfoeringen fra banken er posten). */
+      if(innbet.length){
+        liste.appendChild(okEl('span', 'ok-etikett', 'Innbetalinger til kortet – avstemt mot regnskapet'));
+        innbet.forEach(function(x){
+          var t = x.treff;
+          var r = okEl('div', 'ok-kv-linje', '<span>Innbetaling <span class="ok-meta">' + okVask(okKort.format(new Date(x.dato + 'T12:00:00'))) + '</span></span><b>' + okKr0.format(x.belop) + '</b>');
+          var m = okEl('span', t ? 'ok-meta' : 'ok-kilde mangler', t
+            ? 'Finnes i regnskapet: ' + okVask((t.sted || 'overføring') + (t.konto ? ' fra ' + t.konto : '') + ', ' + okKort.format(new Date(t.dato)))
+              + (t.status === 'ny' ? ' – venter i innboksen' : t.kategori ? ' – ' + okVask(okNeamKat(t.kategori)) : '')
+            : 'Ikke funnet i regnskapet – sjekk at overføringen fra banken er kommet inn');
+          m.style.gridColumn = '1 / -1'; r.appendChild(m);
+          liste.appendChild(r);
+        });
+      }
       function tegn(){
         var total = okKvTall(e('ok-sf-sum').value), egne = 0, med = 0, mangler = 0;
         handler.forEach(function(x, i){
@@ -4143,7 +4161,7 @@ button.ok-dr-rad{ cursor:pointer; }
       var sporsmaal = false;
       var avbryt = function(){
         var endret = e('ok-sf-navn').value !== navnStart || e('ok-sf-dato').value !== datoStart || e('ok-sf-sum').value !== sumStart || !!hovedKat.value
-          || rader.some(function(v){ return (v.koble && !v.koble.checked) || (v.naer && v.naer.checked) || (v.kat && v.kat.value); });
+          || rader.some(function(v){ return (v.koble && !v.koble.checked) || (v.naer && v.naer.checked) || (v.kat && v.kat.value !== v.katStart); });
         if(!endret){ ut(null); return; }
         if(sporsmaal) return;
         sporsmaal = true;
@@ -4160,7 +4178,7 @@ button.ok-dr-rad{ cursor:pointer; }
         if(!(total > 0)){ feil('Skriv summen som et tall.'); return; }
         if(!hovedKat.value){ feil('Velg kategori for det som blir i samlefakturaen.'); return; }
         ut({ utsteder:navn, dato:dato, total:Math.round(total * 100) / 100, skyldig:skyldig, minste:minste, kategori:hovedKat.value,
-          linjer:handler.map(function(x){ return { dato:x.dato, navn:x.navn, belop:Number(x.belop) }; }),
+          linjer:handler.map(function(x){ return { dato:x.dato, navn:x.navn, belop:Number(x.belop), kortholder:x.kortholder || '' }; }),
           valg:rader.map(function(v, i){ return v.koble && v.koble.checked ? { post:forslag[i].id } : v.naer && v.naer.checked ? { post:naer[i].id, manuell:true } : v.kat && v.kat.value ? { kategori:v.kat.value } : {}; }) });
       };
       document.addEventListener('keydown', tast);
@@ -4168,6 +4186,32 @@ button.ok-dr-rad{ cursor:pointer; }
       okTreFokus(e('ok-sf-navn'));
     });
   }
+  /* Kategorien for handlene ingen regel kjente (23. november 2026): Neam
+     foreslaar i én runde. Drivstoff er alt sortert etter kortholderen
+     (samleKategori i bank-funksjonen). Gir { nr: { kategori, kilde:'ai' } }. */
+  async function okSfNeamKat(handler, nr){
+    var kats = okKategorier.filter(function(k){ return !/^(Inntekter|Sparing|Utenfor budsjett)\b/.test(k); });
+    if(!nr.length || !kats.length) return {};
+    try{
+      var liste = nr.map(function(i){ return { nr:i, sted:handler[i].navn, belop:Number(handler[i].belop) }; });
+      var r = await fetch('/api/claude', { method:'POST', credentials:'same-origin', headers:{ 'Content-Type':'application/json' },
+        body:JSON.stringify({ model:OK_MODELL, max_tokens:3000,
+          system:'Du fører et norsk husholdningsregnskap og svarer bare med JSON.',
+          messages:[{ role:'user', content:
+            'Her er kjøp fra en norsk kortfaktura (beløp i kroner). Foreslå kategori for hvert kjøp. Velg bare blant disse kategoriene:\n' + kats.join('\n')
+            + '\n\nKjøpene:\n' + JSON.stringify(liste)
+            + '\n\nSvar BARE med JSON: {"kategorier":[{"nr":0,"kategori":"…"}]}\n'
+            + 'Hopp over kjøp der du ikke er rimelig sikker – da velger brukeren selv.' }] }) });
+      var d = await r.json();
+      if(d.error) return {};
+      var tekst = (d.content || []).filter(function(c){ return c.type === 'text'; }).map(function(c){ return c.text; }).join('');
+      var svar = JSON.parse(tekst.slice(tekst.indexOf('{'), tekst.lastIndexOf('}') + 1));
+      var ut = {};
+      (svar.kategorier || []).forEach(function(k){ if(nr.indexOf(k.nr) !== -1 && kats.indexOf(k.kategori) !== -1) ut[k.nr] = { kategori:k.kategori, kilde:'ai' }; });
+      return ut;
+    }catch(e){ return {}; }
+  }
+  var OK_SF_KILDE = { drivstoff:'drivstoff etter kortholder', laert:'Neam husker', ord:'kjent navn', ai:'Neams forslag' };
   /* Vinduet og lagringen. fil: det som ble lest (fra knappen); venterId:
      samlefakturaen i innboksen. Gir 'lagret', 'avbrutt', 'vanlig' eller 'ingen'. */
   async function okSfFlyt(sf, fil, venterId){
@@ -4175,10 +4219,18 @@ button.ok-dr-rad{ cursor:pointer; }
     var handler = (sf.handler || []).filter(function(x){ return x && /^\d{4}-\d{2}-\d{2}$/.test(String(x.dato || '')) && Number(x.belop); });
     if(!handler.length){ status.textContent = 'Neam fant ingen handler på samlefakturaen.' + (venterId ? ' Den blir liggende i innboksen.' : ''); return 'ingen'; }
     sf.handler = handler;
-    var fs = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'samle-forslag', linjer:handler }) });
+    var fs = await okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ hva:'samle-forslag', linjer:handler, innbetalinger:sf.innbetalinger || [] }) });
     if(!fs.ok){ status.textContent = 'Samlefakturaen ble ikke lagt inn: ' + fs.feil; return 'ingen'; }
+    /* Kategoriene: regel foerst (fs.kategorier), saa Neam for resten. */
+    var katF = (fs.kategorier || []).slice();
+    var igjen = handler.map(function(x, i){ return i; }).filter(function(i){ return !(fs.forslag || [])[i] && Number(handler[i].belop) > 0 && !katF[i]; });
+    if(igjen.length){
+      status.textContent = 'Neam sorterer ' + igjen.length + (igjen.length === 1 ? ' kjøp' : ' kjøp') + ' …';
+      var ai = await okSfNeamKat(handler, igjen);
+      igjen.forEach(function(i){ if(ai[i]) katF[i] = ai[i]; });
+    }
     status.textContent = '';
-    var valgt = await okSfVindu(sf, fs.forslag || [], !!venterId, fs.naer || []);
+    var valgt = await okSfVindu(sf, fs.forslag || [], !!venterId, fs.naer || [], katF, fs.innbetalinger || []);
     if(valgt && valgt.vanlig){ await okSfVanlig(venterId); return 'vanlig'; }
     if(!valgt){ status.textContent = venterId ? 'Samlefakturaen blir liggende i innboksen.' : ''; return 'avbrutt'; }
     valgt.hva = 'samle-ny';

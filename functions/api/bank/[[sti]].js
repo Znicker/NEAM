@@ -2170,10 +2170,31 @@ function kortKoble(poster, p, kort){
   return true;
 }
 function samleLinjer(kilde){
-  return [].concat(kilde || []).slice(0, 300).map(l => ({
-    dato: String(l && l.dato || ''), navn: String(l && l.navn || '').trim().slice(0, 120) || 'Handel',
-    belop: Math.round((Number(l && l.belop) || 0) * 100) / 100
-  })).filter(l => /^\d{4}-\d{2}-\d{2}$/.test(l.dato) && l.belop);
+  return [].concat(kilde || []).slice(0, 300).map(l => {
+    const ut = { dato: String(l && l.dato || ''), navn: String(l && l.navn || '').trim().slice(0, 120) || 'Handel',
+      belop: Math.round((Number(l && l.belop) || 0) * 100) / 100 };
+    const kh = String(l && l.kortholder || '').trim().slice(0, 60);
+    if(kh) ut.kortholder = kh;
+    return ut;
+  }).filter(l => /^\d{4}-\d{2}-\d{2}$/.test(l.dato) && l.belop);
+}
+/* Sortering av handlene paa en kortfaktura (Magne, 23. november 2026:
+   «legge til oversikt over transaksjoner på coop kortet og at dette
+   sorteres ut over mat, bensin og parkering mm» - «Det vil stå nina sitt
+   navn på de bensinføringene som er til suzuki. resten er phev. Det vil
+   stå navn på hennes dagligvare også, disse føres som vanlig»).
+   Drivstoff avgjoeres av kortholderen, ikke av stasjonen - derfor laeres
+   ikke stasjonene fra samlefakturaen (samleEgen). Resten: det Neam har
+   laert, saa kjente navn (foreslaa). Sida spoer Neam om det som staar igjen. */
+const DRIVSTOFF = /CIRCLE ?K|\bESSO\b|\bSHELL\b|UNO-?X|\bYX\b|\bST1\b|\bBEST STASJON|\bTANKEN\b|AUTOMAT ?1|\bDRIVSTOFF/i;
+const SUZUKI_KORTHOLDER = /\bNINA\b/i;
+function samleKategori(l, laert, omdopt, kategorier){
+  let f;
+  if(DRIVSTOFF.test(l.navn)){
+    const k = SUZUKI_KORTHOLDER.test(l.kortholder || '') ? 'Bil · Utgifter Suzuki' : 'Bil · Utgifter PHEV';
+    f = { kategori:(omdopt && omdopt[k]) || k, kilde:'drivstoff' };
+  } else f = foreslaa({ motpart:l.navn, tekst:'' }, laert, omdopt);
+  return f.kategori && kategorier.indexOf(f.kategori) !== -1 ? f : null;
 }
 function samleLik(q, l){
   return l.belop > 0 && q.belop < 0 && Math.abs(Math.abs(q.belop) - l.belop) <= SAMLE_KRONER + 0.005 && bankdagerMellom(q.dato, l.dato) <= SAMLE_DAGER;
@@ -2272,15 +2293,36 @@ async function samleForslag(env, kropp){
     if(best.dekketAv) grunn.push('slått sammen med en kvittering');
     return { id:best.id, sted:best.motpart || best.tekst || '', dato:best.dato, belop:best.belop, status:best.status, grunn:grunn.join(', '), kanKobles:samleLedig(best) };
   });
-  return svar({ ok:true, forslag:forslag, naer:naer });
+  /* Kategorien for handlene uten kvittering (samleKategori). */
+  const laert = await lesJson(env, LAERT_NOKKEL, {}), omdopt = await lesOmdopt(env), kategorier = await alleKategorier(env);
+  const kat = linjer.map((l, i) => forslag[i] || !(l.belop > 0) ? null : samleKategori(l, laert, omdopt, kategorier));
+  /* Innbetalingene til kortet (Magne, 23. november 2026: «det vil også stå
+     innbetaling til kort på denne listen. denne kan avstemmes mot
+     regnskapet forøvrig. den skal jo ligge inne»). De foeres ikke her -
+     overfoeringen fra banken er alt en post. Vi finner den: penger ut fra
+     banken, samme beloep paa krona, hoeyst fem bankdager mellom. */
+  const kn = await lesJson(env, KONTONAVN_NOKKEL, {}), brukt = {};
+  const bankUt = Object.keys(poster).map(id => poster[id]).filter(q => !q.fra && q.belop < 0 && q.status !== 'stroket' && q.status !== 'sammenslatt');
+  const innbetalinger = [].concat(kropp.innbetalinger || []).slice(0, 20).map(x => {
+    const dato = String(x && x.dato || ''), belop = Math.round(Math.abs(Number(x && x.belop) || 0) * 100) / 100;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(dato) || !belop) return null;
+    const q = bankUt.filter(b => !brukt[b.id] && Math.abs(Math.abs(b.belop) - belop) <= 1.005 && bankdagerMellom(b.dato, dato) <= 5)
+      .sort((a, b) => Math.abs(Math.abs(a.belop) - belop) - Math.abs(Math.abs(b.belop) - belop) || dagerMellom(a.dato, dato) - dagerMellom(b.dato, dato))[0];
+    if(q) brukt[q.id] = true;
+    return { dato, belop, treff: q ? { id:q.id, sted:q.motpart || q.tekst || '', dato:q.dato, belop:q.belop, kategori:q.kategori || '', status:q.status,
+      konto:kn[q.konto] || q.kontoNavn || '' } : null };
+  }).filter(Boolean);
+  return svar({ ok:true, forslag:forslag, naer:naer, kategorier:kat, innbetalinger:innbetalinger });
 }
 async function samleEgen(s, l, nr, kategori, epost, poster, laert){
   const id = 'samledel:' + b64url(await crypto.subtle.digest('SHA-256', tekstTilBytes([s.id, nr, l.dato, l.belop.toFixed(2)].join('|')))).slice(0, 18);
   const naa = new Date().toISOString();
   poster[id] = { id:id, fra:'foto', forHand:true, manuell:true, samleDel:true, konto:'foto', kontoNavn:'Fra ' + s.motpart, dato:l.dato, belop:-l.belop, tekst:'',
     motpart:l.navn, harKvittering:false, status:'godkjent', kategori:kategori, kilde:'manuell', behandlet:naa, av:epost, lagtInnAv:epost, lagtInn:naa, samleId:s.id };
+  if(l.kortholder) poster[id].kortholder = l.kortholder;
+  /* Drivstoff laeres ikke: bilen avgjoeres av kortholderen (samleKategori). */
   const n = motpartNokkel(poster[id]);
-  if(n) laert[n] = kategori;
+  if(n && !DRIVSTOFF.test(l.navn)) laert[n] = kategori;
   l.post = id;
 }
 async function samleNy(env, kropp, epost){

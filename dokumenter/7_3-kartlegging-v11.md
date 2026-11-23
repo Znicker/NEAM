@@ -2336,6 +2336,32 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   `ikke_bokfort_ennaa` og `avvik_mot_banken`. **Testet** i node med hele
   `innboks()` over flere hentinger og falske banksvar (alle tilfellene
   over, pluss reservasjon til en regning). Ikke testet mot DNB ennå.
+- **Kortfakturaen sorteres av seg selv** (bank-funksjonen og
+  `okonomi.html`, 23. november; Magne: «legge til oversikt over
+  transaksjoner på coop kortet og at dette sorteres ut over mat, bensin og
+  parkering mm» – «Det vil stå nina sitt navn på de bensinføringene som er
+  til suzuki. resten er phev. Det vil stå navn på hennes dagligvare også,
+  disse føres som vanlig»). Samlefakturaen fantes (14. november), men hver
+  handel måtte få kategori for hånd. Nå: leseren (`OK_SF_INSTRUKS`) tar
+  med `kortholder` per handel. `samle-forslag` gir `kategorier` per handel
+  uten kvittering (`samleKategori`): drivstoff (`DRIVSTOFF`: Circle K,
+  Esso, Shell, Uno-X, YX, St1, Best stasjon, Tanken, Automat 1) →
+  Suzuki når kortholderen er Nina (`SUZUKI_KORTHOLDER`), ellers PHEV;
+  resten fra det Neam har lært og kjente navn. Det som står igjen, foreslår
+  Neam i én runde (`okSfNeamKat`, ikke inntekter/sparing/utenfor
+  budsjett). Vinduet viser velgerne ferdig utfylt, med kortholder og
+  kilde («drivstoff etter kortholder», «Neam husker», «kjent navn»,
+  «Neams forslag»). Avbryt spør bare hvis noe er endret fra forslaget.
+  Drivstoff læres ikke per stasjon fra samlefakturaen; egne poster får
+  `kortholder`. **Innbetalingene til kortet** (Magne: «det vil også stå
+  innbetaling til kort på denne listen. denne kan avstemmes mot
+  regnskapet forøvrig. den skal jo ligge inne»): leseren gir dem som
+  `innbetalinger` (ikke handler). `samle-forslag` finner overføringen i
+  banken – penger ut fra en felleskonto, samme beløp innen 1 kr, høyst
+  5 bankdager – og vinduet viser «Finnes i regnskapet: … – Utenfor
+  budsjett › Nedbetaling av kortgjeld» eller «Ikke funnet i
+  regnskapet». De føres ikke. **Testet** i node (forslag, lagring og
+  avstemming). Vinduet er ikke prøvd med en ekte Coop-faktura.
 - **Mindre ikoner når flere står ved klokka** (`felles-topp.css ?v=18`,
   alle 18 sidene; Magne: «blir ikonene mindre for å få plass?»). Før ble
   bare flere retter mindre (`.flere`). Nå får alle ikonene ved klokka,
