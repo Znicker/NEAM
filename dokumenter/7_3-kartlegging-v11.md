@@ -182,7 +182,8 @@ alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
 `functions/api/` med `hent.js`, `sandnes.js`, `sjo.js`, `claude.js`,
 `data.js`, `ms.js`, `homey.js`, `roborock.js`, `turn.js`, `pin.js`,
-`yr.js` (fra 22. november) og `bank/[[sti]].js`.
+`yr.js` (fra 22. november), `bilarkiv.js` (fra 23. november) og
+`bank/[[sti]].js`.
 Bildeversjoner: **`IKON_V=2`** (i `felles-neam.js`) for ikonene i
 `bilder/ikoner/` og `bilder/ikoner/sikkerhet/` – sidene som lenker dem
 direkte, skriver `?v=2` selv. `?v=1` gjaldt ikonene fra 27. oktober og er
@@ -2387,6 +2388,29 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
 - **Spotify i Neam:** fjernkontroll med søk via Spotify Web API, lyden på
   en Spotify Connect-høyttaler (anbefalt Sonos). Venter på høyttaler og
   en utviklerapp hos Spotify.
+
+**Fra 23. november 2026, formiddag – bilvakt og Økonomi, må prøves på ekte**
+(commitene `355088b`, `20cb841`, `0dc69f4`, `cdf4bad`, `af6b16f`,
+`88f2aa2`, `4c1a693`, `c5e9a2b`; bare `felles-topp.css` fikk nytt nummer,
+`?v=18`):
+- **iPaden på kjøkkenet varslet ikke** da søppelbilen kom (telefonen
+  gjorde det). Last iPaden på nytt én gang, og les
+  `/api/data?key=bilvakt-logg:ipad` etter neste bevegelse. Tapo så bilen
+  09:01:35, telefonen viste den i løpet av 09:02 – hvor tiden går, er
+  ikke avklart (Homey sent, eller telefonen sov).
+- **Søppelbilen** neste mandag: ble påminnelsen huket av, og står
+  «Søppelbilen var her kl. …» bak trykk?
+- **Bilarkivet** er tomt til neste bil: kommer bilen i arkivet, og kommer
+  ringen ved klokka når ingen lukker varselet på fem minutter?
+- **Pinkoden for Økonomi på iPaden** er ikke prøvd.
+- **Reservert med forbehold:** første ekte bokføring fra DNB (+50 til
+  Strømkonto og +2 500 til Regninger lå reservert 23. november) – blir
+  forbeholdet borte av seg selv?
+- **Coop-kortet:** første ekte oversikt – leses kortholderen på
+  drivstoffradene, og finnes innbetalingen i regnskapet?
+- **Mobiloverføringene og lønna:** Magne strøk alle åtte postene som ble
+  lagt tilbake i innboksen, også overføringene 12. og 15. oktober
+  (43 500 og 27 700). Spurt om de skal telles som inntekt – ikke besvart.
 
 **Twinkly-effekter i julelysmenyen – venter på Magne (22. november 2026).**
 Magne legger inn effekter fra galleriet på lysene selv i Twinkly-appen
