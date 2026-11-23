@@ -729,6 +729,7 @@ button.ok-kjop-rad:hover{ background:var(--aksent-lys); }
 .ok-fersk::before{ content:''; width:8px; height:8px; border-radius:50%; background:var(--handling-ny); flex:none; }
 .ok-fersk.gammel::before{ background:var(--handling-endre); }
 .ok-fersk.stopp::before{ background:var(--danger); }
+.ok-reservert{ margin-right:8px; font-weight:400; white-space:nowrap; }
 .ok-formue-tall{ font-size:var(--t-display); font-weight:700; line-height:1; letter-spacing:-.02em; }
 .ok-formue-tall small{ font-size:var(--t-stor); font-weight:600; color:var(--ink-soft); margin-left:6px; letter-spacing:0; }
 .ok-endring{ margin:4px 0 0; font-size:var(--t-meta); font-weight:700; color:var(--handling-ny); }
@@ -1849,7 +1850,7 @@ button.ok-dr-rad{ cursor:pointer; }
       });
       document.getElementById('ok-innboks-meta').textContent = 'Fra ' + okKort.format(new Date(r.fra)) + ' · hentet kl. '
         + okKlokke.format(new Date(r.hentet)) + (r.advarsel ? ' · ' + r.advarsel + ' – viser forrige henting' : '');
-      okForfalte = (r.fakturaer || []).filter(function(p){ return okForfalt(p.dato); });
+      okForfalte = (r.fakturaer || []).filter(function(p){ return okForfalt(p.dato) && !okReservert(p); });
       okFakUten = (r.fakturaer || []).filter(function(p){ return !p.kategori && !okForfalt(p.dato); });
       okTegnInnboks();
       okTegnFakturaer();
@@ -1928,9 +1929,14 @@ button.ok-dr-rad{ cursor:pointer; }
      transaksjonen»). */
   function okStjerneKommer(){ return '<span class="ok-fr-utrop kommer" title="Forfaller – ikke betalt ennå" role="img" aria-label="Forfaller – ikke betalt ennå"><svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><path d="M6 1.4v9.2M2 3.7l8 4.6M2 8.3l8-4.6" stroke="#fff" stroke-width="1.9" stroke-linecap="round" fill="none"/></svg></span>'; }
   function okUtropForfalt(){ return '<span class="ok-fr-utrop forfalt" title="Forfalt – ikke funnet på regningskontoen">!</span>'; }
+  /* Reservert i banken (23. november 2026): trekket for regningen er
+     reservert hos DNB, men ikke bokfoert. Ikke forfalt - kobles naar
+     trekket bokfoeres. Oransje som «Kan være gamle tall» (Magne valgte). */
+  function okReservert(p){ return !!(p && p.reservert); }
+  function okMerkeReservert(){ return '<span class="ok-fersk gammel ok-reservert" title="Trekket er reservert i banken – kobles når det bokføres">Reservert i banken</span>'; }
   /* Har en kategori (post eller linje) en forfalt regning i perioden? */
   function okForfaltI(c, k){
-    return okMnd.forfall.some(function(f){ return c.ms.indexOf(f.mnd) !== -1 && okForfalt(f.dato) && (f.kategori === k || String(f.kategori).indexOf(k + ' · ') === 0); });
+    return okMnd.forfall.some(function(f){ return c.ms.indexOf(f.mnd) !== -1 && okForfalt(f.dato) && !okReservert(f) && (f.kategori === k || String(f.kategori).indexOf(k + ' · ') === 0); });
   }
   function okInnboksAntall(){ return okPoster.length + (okFakUten ? okFakUten.length : 0) + (okForfalte ? okForfalte.length : 0); }
   function okTegnForfalte(){
@@ -5316,7 +5322,7 @@ button.ok-dr-rad{ cursor:pointer; }
       kommende:!!p.kommende, betaltFra:p.betaltFra, merke:p.merke, overstyrt:p.overstyrt, harKvittering:p.status !== 'venter' && !p.avsluttet && p.harKvittering, harFil:p.harFil, filType:p.filType,
       status:p.status, venter:p.status === 'venter', deler:p.deler, avsluttet:p.avsluttet, forbN:p.forbN || (p.forb || []).length,
       vedN:p.vedN != null ? p.vedN : (p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:p.iSamle != null ? p.iSamle : !!(p.samleId || p.fra === 'samle'),
-      samleSpor:p.samleSporsmaal || null, samleStatus:p.samleStatus || null };
+      samleSpor:p.samleSporsmaal || null, samleStatus:p.samleStatus || null, reservert:p.status === 'venter' && p.reservert || null };
   }
   ['ok-al-konto', 'ok-al-kat', 'ok-al-merke', 'ok-al-type'].forEach(function(id){
     var d = document.getElementById(id);
@@ -6690,11 +6696,11 @@ button.ok-dr-rad{ cursor:pointer; }
     ffListe.forEach(function(f){
       /* Fakturaen aapnes som de andre foeringene (8. november 2026, Magne: «jeg
          ønsker at alle transaksjoner åpner seg slik som kvitteringer gjør»). */
-      var ff = { id:f.id, dato:f.dato, tekst:f.motpart || 'Faktura', belop:f.belop, kategori:f.kategori, harFil:f.harFil, filType:f.filType, kilde:'Faktura', venter:true };
+      var ff = { id:f.id, dato:f.dato, tekst:f.motpart || 'Faktura', belop:f.belop, kategori:f.kategori, harFil:f.harFil, filType:f.filType, kilde:'Faktura', venter:true, reservert:f.reservert || null };
       okRgForAv[f.id] = ff;
-      var ffo = okForfalt(f.dato);
+      var ffo = okForfalt(f.dato) && !okReservert(f);
       var rf = okEl('div', 'ok-under-rad ok-rg-for forfaller',
-        '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.motpart || 'Faktura') + '<span class="ok-meta">' + (ffo ? 'Forfalt – ikke funnet på regningskontoen' : 'Forfaller – ikke betalt ennå') + (f.harFil ? ' · PDF vedlagt' : '') + '</span></span><b>' + (ffo ? okUtropForfalt() : okStjerneKommer()) + okKr0.format(f.belop) + '</b>');
+        '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.motpart || 'Faktura') + '<span class="ok-meta">' + (okReservert(f) ? 'Reservert i banken – kobles når trekket bokføres' : ffo ? 'Forfalt – ikke funnet på regningskontoen' : 'Forfaller – ikke betalt ennå') + (f.harFil ? ' · PDF vedlagt' : '') + '</span></span><b>' + (ffo ? okUtropForfalt() : okReservert(f) ? okMerkeReservert() : okStjerneKommer()) + okKr0.format(f.belop) + '</b>');
       rf.dataset.f = f.id; rf.tabIndex = 0; rf.setAttribute('role', 'button');
       rf.setAttribute('aria-label', (f.motpart || 'Faktura') + ', forfaller ' + okKort.format(new Date(f.dato)) + ', ' + okKr0.format(f.belop) + ' kr. Trykk for detaljene.');
       rf.addEventListener('click', function(){ okForVindu(ff, rf); });
@@ -6724,11 +6730,11 @@ button.ok-dr-rad{ cursor:pointer; }
   /* medKat: kontoutskriften - kategorien og statusen staar i meta-linja. */
   function okRgForRad(f, medKat){
     okRgForAv[f.id] = f;
-    var forfalt = f.venter && okForfalt(f.dato);
-    var status = f.status === 'ny' ? (f.iInnboks ? '' : 'venter i innboksen') : f.status === 'stroket' ? (OK_AVSLUTTET[f.avsluttet] || 'strøket').toLowerCase() : forfalt ? 'forfalt – ikke funnet på regningskontoen' : f.venter ? 'forfaller – ikke betalt ennå' : '';
+    var forfalt = f.venter && okForfalt(f.dato) && !okReservert(f);
+    var status = f.status === 'ny' ? (f.iInnboks ? '' : 'venter i innboksen') : f.status === 'stroket' ? (OK_AVSLUTTET[f.avsluttet] || 'strøket').toLowerCase() : forfalt ? 'forfalt – ikke funnet på regningskontoen' : f.venter && okReservert(f) ? 'reservert i banken – kobles når trekket bokføres' : f.venter ? 'forfaller – ikke betalt ennå' : '';
     var meta = [medKat ? f.kategori || (f.kommende ? '' : 'Uten kategori') : '', f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''), f.del ? 'del av kvitteringen' : '', f.deler ? 'fordelt på ' + f.deler : '', f.mer, f.merke && okMerkeAv(f.merke) ? 'merke ' + okMerkeFullNavn(f.merke) : '', f.samleSpor && f.status === 'ny' ? 'kan høre til samlefakturaen fra ' + f.samleSpor.samleNavn : '', f.betales ? 'betales ' + okKort.format(new Date(f.betales)) : '', status].filter(Boolean).join(' · ');
     var rad = okEl('div', 'ok-under-rad ok-rg-for' + (f.status === 'stroket' ? ' ute' : '') + (f.venter ? ' forfaller' : ''),
-      '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.tekst || 'Uten tekst') + okForbPluss(f) + okRadSymboler(f) + '<span class="ok-meta">' + okVask(meta) + '</span></span><b>' + (forfalt ? okUtropForfalt() : f.venter ? okStjerneKommer() : '') + (f.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret – ikke den banken viser">!</span>' : '') + okKr0.format(f.belop) + '</b>');
+      '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.tekst || 'Uten tekst') + okForbPluss(f) + okRadSymboler(f) + '<span class="ok-meta">' + okVask(meta) + '</span></span><b>' + (forfalt ? okUtropForfalt() : f.venter && okReservert(f) ? okMerkeReservert() : f.venter ? okStjerneKommer() : '') + (f.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret – ikke den banken viser">!</span>' : '') + okKr0.format(f.belop) + '</b>');
     rad.dataset.f = f.id; rad.tabIndex = 0; rad.setAttribute('role', 'button');
     rad.setAttribute('aria-label', (f.tekst || 'Føring') + (forfalt ? ', forfalt og ikke betalt' : '') + ', ' + okKort.format(new Date(f.dato)) + ', ' + okKr0.format(f.belop) + ' kr. Trykk for detaljene.');
     rad.addEventListener('click', function(){ okForVindu(f, rad); });
@@ -6825,8 +6831,8 @@ button.ok-dr-rad{ cursor:pointer; }
     document.getElementById('ok-fr-kilde').textContent = okFrKilde(p);
     document.getElementById('ok-fr-tittel').textContent = p.motpart || p.tekst || 'Uten tekst';
     document.getElementById('ok-fr-meta').textContent = okDato.format(new Date(p.dato));
-    var frForfalt = p.status === 'venter' && okForfalt(p.dato);
-    document.getElementById('ok-fr-belop').innerHTML = (frForfalt ? okUtropForfalt() : '') + (p.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret">!</span>' : '') + okVask(okFrKr(p.belop));
+    var frForfalt = p.status === 'venter' && okForfalt(p.dato) && !okReservert(p);
+    document.getElementById('ok-fr-belop').innerHTML = (frForfalt ? okUtropForfalt() : p.status === 'venter' && okReservert(p) ? okMerkeReservert() : '') + (p.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret">!</span>' : '') + okVask(okFrKr(p.belop));
     var inn = document.getElementById('ok-fr-innhold'); inn.innerHTML = '';
     /* Infoen og kvitteringen til venstre, vedleggene til hoeyre (Magne, 8.
        november 2026: «Jeg ønsker å se vedlegg og kvitteringsdetaljer,
@@ -8359,6 +8365,8 @@ button.ok-dr-rad{ cursor:pointer; }
       description: 'Søker i alle transaksjonene fra nullpunktet (Transaksjoner › Alle): bank, Trumf, kvitteringer og '
                  + 'fakturaer, med status (ny = i innboksen, godkjent, stroket, venter = faktura som venter på trekket). '
                  + 'Søket treffer navn, banktekst, kategori og kilde, eller et beløp. Gir id-ene endre_okonomi_foringer tar. '
+                 + 'En regning som venter med reservert_i_banken: trekket er reservert hos DNB, men ikke bokført. Den er '
+                 + 'ikke forfalt, og den kobles av seg selv når trekket bokføres - ikke prøv å koble eller avstemme den. '
                  + 'Bare på Økonomi-sida.',
       input_schema: { type:'object', properties:{
         sok: { type:'string', description:'Ord eller beløp, f.eks. «tibber» eller «3035».' },
@@ -8670,6 +8678,7 @@ button.ok-dr-rad{ cursor:pointer; }
         transaksjoner:treff.slice(0, maks).map(function(x){
           return { id:x.id, dato:x.dato, sted:x.motpart || x.tekst || '', tekst:x.motpart && x.tekst !== x.motpart ? x.tekst : undefined, belop:x.belop,
             kategori:x.kategori || null, status:x.status, kilde:kilde(x), fort_automatisk:x.auto || undefined,
+            reservert_i_banken:x.reservert ? { dato:x.reservert.dato, belop:x.reservert.belop, konto:x.reservert.kontoNavn } : undefined,
             vedlegg:x.harFil ? (x.filType === 'application/pdf' ? 'pdf' : 'bilde') : x.harKvittering ? 'varelinjer' : undefined };
         }) };
     }

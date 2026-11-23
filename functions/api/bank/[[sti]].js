@@ -1327,6 +1327,43 @@ async function finnOppgjor(env, okt, roller, poster, fra, fersk, psu){
   return endret;
 }
 
+/* Reservert i banken (Magne, 23. november 2026: «nå forsøker den å avstemme
+   en forfalt, men lykkes ikke for den er reservert»). En regning som venter,
+   faar `reservert` naar et reservert trekk paa en felleskonto passer -
+   samme beloep- og datoregel som avstemmingen (avstemAvstand). Den regnes da
+   ikke som forfalt. Koblingen skjer fortsatt foerst naar trekket er
+   bokfoert (synkFakturaer). Forsvinner reservasjonen, fjernes merket - men
+   bare naar banken svarte for kontoen den laa paa. DNB sender reservasjonene
+   uten dato; da regnes de som i dag. */
+function merkReservert(poster, res, sjekket){
+  let endret = false;
+  const idag = new Date().toISOString().slice(0, 10);
+  const brukt = new Set();
+  const ventende = Object.keys(poster).map(id => poster[id]).filter(p => p.faktura === true && p.status === 'venter' && !p.dekketAv)
+    .sort((a, b) => String(a.dato).localeCompare(String(b.dato)));
+  for(const p of ventende){
+    let best = -1, bestA = Infinity;
+    res.forEach((t, i) => {
+      if(brukt.has(i) || !(t.belop < 0)) return;
+      const td = t.dato || idag;
+      const avvik = Math.min.apply(null, avstemBelop(p).map(b => Math.abs(b + t.belop)));
+      if(avvik > SAMLE_KRONER + 0.005) return;
+      const d = (Date.parse(td) - Date.parse(p.dato)) / 86400000;
+      if(!(d >= -10 && (d <= 5 || bankdagerMellom(p.dato, td) <= 3))) return;
+      const a = avvik * 10 + Math.abs(d);
+      if(a < bestA){ bestA = a; best = i; }
+    });
+    const foer = JSON.stringify(p.reservert || null);
+    if(best !== -1){
+      brukt.add(best);
+      const t = res[best];
+      p.reservert = { dato:t.dato, belop:t.belop, konto:t.konto, kontoNavn:t.kontoNavn };
+    } else if(p.reservert && sjekket.has(p.reservert.konto)) delete p.reservert;
+    if(foer !== JSON.stringify(p.reservert || null)) endret = true;
+  }
+  return endret;
+}
+
 async function innboks(env, okt, fersk, psu){
   const roller = await lesRoller(env);
   const felles = okt.kontoer.filter(k => roller[k.uid] === 'felles');
@@ -1342,15 +1379,19 @@ async function innboks(env, okt, fersk, psu){
   /* Id-er DNB har gitt samme trekk paa nytt (se sammeTrekk). */
   const alias = {};
   for(const id of Object.keys(poster)) for(const a of poster[id].bankIder || []) alias[a] = id;
+  /* Reserverte trekk og kontoene banken svarte for (merkReservert). */
+  const reservasjoner = [], sjekket = new Set();
   for(const k of felles){
     const r = await hentTransaksjoner(env, k.uid, fra, fersk, psu);
     if(!r.ok){ advarsel = r.feil; continue; }
     hentet = Math.min(hentet, r.hentet);
     if(r.advarsel) advarsel = r.advarsel;
+    sjekket.add(k.uid);
     const iBanken = new Set(r.liste.map(x => x.id)), brukt = {};
     for(const t of r.liste){
-      /* Bare bokfoerte. En reservasjon kan endre beloep eller forsvinne. */
-      if(t.status && t.status !== 'BOOK') continue;
+      /* Bare bokfoerte. En reservasjon kan endre beloep eller forsvinne -
+         den brukes bare til aa merke regninger som venter (merkReservert). */
+      if(t.status && t.status !== 'BOOK'){ reservasjoner.push(Object.assign({ konto:k.uid, kontoNavn:k.navn }, t)); continue; }
       if(poster[t.id] || alias[t.id]) continue;
       if(lagdId(t.id)){
         const gammel = Object.keys(poster).map(x => poster[x]).filter(p => !p.fra && p.konto === k.uid && lagdId(p.id)
@@ -1420,6 +1461,7 @@ async function innboks(env, okt, fersk, psu){
   }
   /* Fakturaer som venter, legges ved trekket naar det er kommet. */
   if(await synkFakturaer(env, poster)) nye++;
+  if(merkReservert(poster, reservasjoner, sjekket)) oppdatert = true;
   if(await finnOppgjor(env, okt, roller, poster, fra, fersk, psu)) oppdatert = true;
   /* «Spoer bare naar den er usikker» (Magne, 29. oktober). En post Neam
      kjenner - samme motpart foert foer, eller et kjent navn - foeres med en
@@ -1544,7 +1586,8 @@ async function varsler(env, okt){
      altsaa er trekket ikke funnet paa regningskontoen (synkFakturaer). */
   const iDag = new Date().toISOString().slice(0, 10);
   const ventende = Object.keys(poster).map(id => poster[id]).filter(p => p.status === 'venter' && p.faktura && !p.dekketAv);
-  const forfalt = ventende.filter(p => String(p.dato) < iDag).length;
+  /* Reservert i banken regnes ikke som forfalt (merkReservert). */
+  const forfalt = ventende.filter(p => String(p.dato) < iDag && !p.reservert).length;
   const fakUten = ventende.filter(p => !p.kategori && String(p.dato) >= iDag).length;
   const tf = await lesJson(env, TRUMF_FEIL_NOKKEL, null);
   const sist = await lesJson(env, SIST_HENTET_NOKKEL, null);
@@ -1727,7 +1770,7 @@ async function regnskapAar(env){
     if(p.status === 'venter' && p.faktura && kategorier.indexOf(p.kategori) !== -1 && p.kategori.indexOf('Inntekter') !== 0){
       const fDeler = p.deler && p.deler.length ? p.deler : [{ kategori:p.kategori, belop:p.belop }];
       for(const d of fDeler) forfaller.push({ id:p.id, mnd:String(p.dato).slice(0, 7), dato:p.dato, kategori:d.kategori, belop:Math.round(-d.belop * 100) / 100, motpart:p.motpart || p.tekst || '',
-        harFil:!!p.harFil, filType:p.filType || '' });
+        harFil:!!p.harFil, filType:p.filType || '', reservert:p.reservert || null });
       continue;
     }
     if(p.status !== 'godkjent') continue;
@@ -2484,7 +2527,8 @@ async function allePoster(env){
       deler:p.deler && p.deler.length > 1 ? p.deler.length : 0,
       harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, harFil:!!p.harFil, filType:p.filType || '',
       overstyrt:!!p.overstyrt, merke:p.merke || '', avsluttet:p.avsluttet || '', forbN:forbindelser(p, poster).length,
-      vedN:(p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:!!(p.samleId || p.kommendeId || p.fra === 'samle'), samleStatus:samleStatus(p, poster), kommende:!!p.kommende });
+      vedN:(p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:!!(p.samleId || p.kommendeId || p.fra === 'samle'), samleStatus:samleStatus(p, poster), kommende:!!p.kommende,
+      reservert:p.status === 'venter' && p.reservert ? p.reservert : null });
   }
   ut.sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
   return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', poster:ut });

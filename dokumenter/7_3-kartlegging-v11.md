@@ -2212,6 +2212,21 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   ingen `?v=`-endring). Økta gjelder `/api/bank` fra alle sider på
   fellesskjermen mens den varer – som før 21. november. **Ikke testet på
   iPaden** – bare syntaks; PC-en er sys@ og får aldri tastaturet.
+- **Reservert i banken** (23. november; Magne: «nå forsøker den å avstemme
+  en forfalt, men lykkes ikke for den er reservert»). DNB sender
+  reservasjoner (`PDNG`) – uten dato – og innboksen hoppet over dem. Nå
+  samles de fra felleskontoene, og `merkReservert()` gir en regning som
+  venter `reservert:{dato, belop, konto, kontoNavn}` når et reservert trekk
+  passer (samme beløp- og datoregel som `avstemAvstand`; uten dato = i dag).
+  Merket fjernes når reservasjonen er borte og banken svarte for kontoen.
+  Koblingen skjer fortsatt først ved bokføring (`synkFakturaer`). Regnes
+  ikke som forfalt: varselet, «Forfalte regninger» og det røde «!» i
+  Regnskap og vinduet. I stedet oransje **«Reservert i banken»**
+  (`.ok-fersk.gammel.ok-reservert`, Magne valgte). Neam:
+  `les_okonomi_transaksjoner` gir `reservert_i_banken`, og beskrivelsen
+  sier at den ikke skal kobles eller avstemmes. Feltet følger med i
+  `alle-poster` og `forfaller`. Testet: matchingen lokalt mot dagens data
+  (Fremtind 114 kr på Regninger ble merket, Arendal kommune ikke).
 - **Påminnelsene som nå står dobbelt** (heldagsprøvene og gloseprøven lå
   som påminnelser før Neam la dem inn som prøver) – Neam skal si fra og
   slette bare med ja.
