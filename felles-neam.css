@@ -1894,3 +1894,25 @@
 .neam-laas-tid:active{ transform:scale(.98); background:var(--boks-mild); }
 .neam-laas-kort .dlg-rad, .neam-pin-varsel .dlg-rad{ justify-content:center; }
 .neam-pin-varsel .neam-pin-tittel{ margin:8px 0 22px; }
+
+/* ============================================================
+   Lukkekrysset - stort og roedt paa alle sidene
+   ------------------------------------------------------------
+   Magne, 23. november 2026: «Det røde krysset for å komme ut kan bli
+   universell på sidene.» Alle krysset som lukker et vindu, et kort
+   eller en boble - sidenes egne og fellesfilenes. !important fordi hver
+   side tegner sitt eget kryss i sin egen stil, og den lastes etter
+   denne fila. Rundingene (kalenderens dialog, Sikkerhets ark) blir
+   store nok til det stoerre krysset.
+   ============================================================ */
+.hub-lukk, .detalj-lukk, .ntp-vb-lukk, .neam-lukk, .naering-lukk,
+.lukk-stor, .ark-lukk, .dlg-x{
+  color:var(--danger) !important;
+  font-weight:700 !important;
+  font-size:calc(var(--t-pil, 20px) * 1.7) !important;
+  line-height:1 !important;
+}
+.dlg-x, .ark-lukk{
+  width:44px !important; height:44px !important;
+  display:inline-flex; align-items:center; justify-content:center; padding:0;
+}

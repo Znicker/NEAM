@@ -1964,6 +1964,28 @@ dashen hennes.
   leselekse åpnet kortet med «Til Andrea dash»; tilbake i Dag kom middagen
   og Endre tilbake. **Neams bakgrunnstekst på kjøkkenet nevner ikke den
   nye fanen** – ikke rørt.
+
+**23. november: rødt kryss overalt, «Utført», påminnelser til høyre**
+(`felles-neam.css ?v=92` på alle 18 sidene, `emma.html`, `andrea.html`,
+`dashboard.html`). Magne: «Det røde krysset for å komme ut kan bli
+universell på sidene. I stedet for avhuk på lekser lag grønn knapp med
+utført. Punktene kan også stå på høyre side når de trykkes i dashboardet
+og ha utført knapp der også.» Valgt: alle lukkekryss på alle sider;
+påminnelser til høyre på alle tre dashene; Utført i fagvinduet og i
+lekse-kortet (ikke på kjøkkenet).
+- Krysset: én regel nederst i `felles-neam.css` for de åtte klassene som
+  lukker noe (inventert med grep; `ok-ut`, `row-rm`, `ved-fjern` o.l.
+  fjerner ting og er ikke med).
+- `vekslHuskeBoble()` viser nå påminnelsen i `#detalj` (navnet er
+  beholdt, så radene er urørt); `huDetaljId`, `huMerkValgt()`,
+  `huskeUtfort()`; `detaljEndre()` sender «Endre» til `rediger()`.
+  Kjøkkenets Endre-knapp går nå via `detaljEndre()` også. Klikk på
+  `.hu-rad` (og `.lv-rad` på kjøkkenet) lukker ikke kortet først.
+- Fagvinduet: `.lekse-hake` er byttet med `.lekse-utfort` til høyre i
+  raden; lekse-kortet har «Utført» ved «Gå til faget» (`skoleUtfort()`,
+  `skoleRad()` tar `ferdig`).
+- Testet på neam.no: påminnelseskortet med grønn Utført og det røde,
+  større krysset. Selve avhukingen er ikke trykket (ville skrevet).
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke

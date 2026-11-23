@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="/felles-rot.css?v=6">
 <link rel="stylesheet" href="/felles-filviser.css?v=2">
 <link rel="stylesheet" href="/felles-dialog.css?v=1">
-<link rel="stylesheet" href="/felles-neam.css?v=91">
+<link rel="stylesheet" href="/felles-neam.css?v=92">
 <link rel="stylesheet" href="/felles-topp.css?v=16">
 <style>
   /* Sidespesifikke variabler. Palett og typeskala ligger i
@@ -310,7 +310,7 @@ body{
 }
 .sku-fakta{ font-size:var(--t-meta); color:var(--ink-soft); margin-top:4px; }
 .sku-fakta span{ font-weight:700; color:var(--ink); }
-.sku-detalj-fot{ display:flex; justify-content:flex-end; margin-top:14px; }
+.sku-detalj-fot{ display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
 /* Blaa: «alt annet» i knappeklassene - den gaar et sted, den endrer ikke. */
 .sku-gaa{
   border:none; color:#FFFFFF; background:var(--aksent);
@@ -1038,8 +1038,30 @@ body{
 @keyframes fvSprett{
   0%{ transform:scale(1); } 35%{ transform:scale(1.45); } 65%{ transform:scale(.9); } 100%{ transform:scale(1); }
 }
-.lekse-hake.sprett{ animation:fvSprett .42s ease-out; }
-@media (prefers-reduced-motion:reduce){ .lekse-hake.sprett{ animation:none; } }
+.lekse-hake.sprett, .lekse-utfort.sprett{ animation:fvSprett .42s ease-out; }
+@media (prefers-reduced-motion:reduce){ .lekse-hake.sprett, .lekse-utfort.sprett{ animation:none; } }
+/* «Utført» paa leksene i fagvinduet og i lekse-kortet: groenn som Lagre,
+   fordi groent betyr gjort. «Angre» er noeytral. */
+.lekse-utfort{
+  flex-shrink:0; align-self:center; border:1px solid var(--handling-ny);
+  background:var(--handling-ny); color:#FFFFFF;
+  font-family:'Archivo',sans-serif; font-weight:700; font-size:var(--t-etikett);
+  letter-spacing:.06em; text-transform:uppercase; line-height:1.2;
+  padding:6px 13px; border-radius:999px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.lekse-utfort.gjort{ background:var(--paper); color:var(--ink); border-color:var(--line); }
+.lekse-linje.ferdig .lekse-utfort{ opacity:1; }
+/* Paaminnelsen som vises i hoeyre kolonne (23. november 2026). */
+.hu-rad.valgt{ outline:2px solid rgba(44,62,80,.45); outline-offset:-2px; }
+.hu-utfort-fot{ display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
+/* Angre er noeytral, som Avbryt (designsystemet, «Avbryt-regelen»). */
+.hu-angre{
+  border:1px solid var(--line); background:var(--paper); color:var(--ink);
+  font-family:'Archivo',sans-serif; font-weight:700; font-size:var(--t-etikett);
+  letter-spacing:.06em; text-transform:uppercase; line-height:1.2;
+  padding:7px 15px; border-radius:999px; cursor:pointer;
+}
+
 
 @media(max-width:700px){
   .fv-kolonner{ grid-template-columns:1fr; }
@@ -2525,6 +2547,7 @@ function visDetalj(i){
   const e = dagensAvtaler[i];
   if(!e) return;
   detaljIndeks = i;
+  huDetaljId = null; huMerkValgt();
   /* En lekse eller proeve kan ha staatt i kortet - den er ikke valgt lenger. */
   skoleDetaljId = null;
   Array.from(document.querySelectorAll('.sku-rad.valgt'))
@@ -2575,6 +2598,8 @@ function visDetalj(i){
 
 function lukkDetalj(){
   detaljIndeks = null;
+  huDetaljId = null;
+  huMerkValgt();
   skoleDetaljId = null;
   Array.from(document.querySelectorAll('.sku-rad.valgt'))
     .forEach(function(r){ r.classList.remove('valgt'); });
@@ -4442,15 +4467,17 @@ function tegnFagVis(){
       ? (l.av + (l.nar ? ' ' + l.nar : '') + (l.laget ? ' ' + datoKort(datoFraTekst(l.laget)) : ''))
       : '';
     const sprett = (fvSprett === l.id && l.ferdig) ? ' sprett' : '';
+    /* Groenn «Utført» i stedet for haken (Magne, 23. november 2026);
+       naar den er trykket, staar «Angre» der, noeytral. */
     return '<div class="lekse-linje' + (l.ferdig ? ' ferdig' : '') + (hast ? ' ' + hast : '') + '">'
-      + '<button class="lekse-hake' + sprett + '" onclick="vekslLekse(\'' + esc(l.id) + '\')" '
-      +   'aria-label="' + (l.ferdig ? 'Angre' : 'Ferdig') + '">✓</button>'
       + '<div class="lekse-tekst">'
       +   '<span onclick="redigerLekse(\'' + esc(l.id) + '\')">' + esc(l.tekst) + '</span>'
       +   (avTekst ? '<div class="lekse-av">Lagt inn av ' + esc(avTekst) + '</div>' : '')
       +   bilderHtml(l)
       + '</div>'
       + (fr.tekst ? '<span class="lekse-frist ' + hast + '">' + esc(fr.tekst) + '</span>' : '')
+      + '<button class="lekse-utfort' + (l.ferdig ? ' gjort' : '') + sprett + '"'
+      +   ' onclick="vekslLekse(\'' + esc(l.id) + '\')">' + (l.ferdig ? 'Angre' : 'Utført') + '</button>'
       + '</div>';
   }
   function sorter(liste){
@@ -5294,56 +5321,70 @@ async function vekslFerdig(id){
    Trykk paa samme rad igjen lukker. Trykk utenfor lukker. Escape lukker. */
 let huBobleId = null;
 
+/* Et trykk paa en paaminnelse viser den i HOEYRE KOLONNE, som avtalene,
+   leksene og proevene - ikke lenger i en boble ved raden (Magne,
+   23. november 2026: «Punktene kan også stå på høyre side når de
+   trykkes i dashboardet og ha utført knapp der også»). Navnet er beholdt
+   saa radene og alt som kaller den, er urørt. Groenn «Utført» huker av;
+   «Angre utført» setter den tilbake. «Endre» i kortet aapner skjemaet. */
+let huDetaljId = null;
+
 function vekslHuskeBoble(id, ev){
   if(ev) ev.stopPropagation();
-  if(huBobleId === id){ lukkHuskeBoble(); return; }
+  if(huDetaljId === id && !$('detalj').hidden){ lukkDetalj(); return; }
   const m = (huskeliste || []).find(function(x){ return x.id === id; });
   if(!m) return;
+  lukkHuskeBoble();
 
   const farge = huskeFarge(m.gjelder);
   /* Ukemerknader har en ukedag, dagens merknader en dato. */
   const frist = !m.frist ? ''
     : (m.omfang === 'uke'
-        ? 'innen ' + UKEDAGER[ukedagNr(datoFraTekst(m.frist))]
-        : 'frist ' + new Date(m.frist + 'T12:00:00').toLocaleDateString('no-NO',
+        ? 'Innen ' + UKEDAGER[ukedagNr(datoFraTekst(m.frist))]
+        : new Date(m.frist + 'T12:00:00').toLocaleDateString('no-NO',
             {weekday:'long', day:'numeric', month:'long'}));
-  $('huBobleInn').innerHTML =
-      '<div class="hub-tittel">' + esc(m.overskrift || '') + '</div>'
+
+  detaljIndeks = null;
+  skoleDetaljId = null;
+  Array.from(document.querySelectorAll('.plan-rad.valgt, .sku-rad.valgt, [data-avtale].valgt'))
+    .forEach(function(r){ r.classList.remove('valgt'); });
+  const merke = $('detaljMerke');
+  if(merke){
+    merke.textContent = String(m.gjelder || 'Familie').charAt(0).toUpperCase();
+    merke.style.background = farge;
+    merke.title = m.gjelder || 'Familie';
+  }
+  const kort = $('detalj');
+  kort.style.background = tett(farge, .16);
+  kort.style.boxShadow = 'inset 0 0 0 1px ' + dus(farge, .34) + ', 0 2px 14px rgba(0,0,0,.06)';
+  $('detaljInn').innerHTML =
+      '<div class="detalj-tittel">' + esc(m.overskrift || '') + '</div>'
+    + (frist ? '<div class="detalj-tid">' + esc(frist.charAt(0).toUpperCase() + frist.slice(1)) + '</div>' : '')
     + ((m.tekst || '').trim()
-        ? '<div class="hub-tekst">' + esc(m.tekst) + '</div>'
-        : '<div class="hub-tekst tom">Ingen utfyllende tekst.</div>')
-    + '<div class="hub-meta">'
-    +   '<span class="hub-prikk" style="background:' + esc(farge) + '"></span>'
-    +   esc(m.gjelder || 'Familie')
-    +   (frist ? ' · ' + esc(frist) : '')
-    +   (m.ferdig ? ' · ferdig' : '')
-    +   (m.av ? ' · skrevet av ' + esc(m.av) : '')
-    + '</div>'
-    /* Endre og Slett hoerer hjemme HER: boblen er allerede svaret paa
-       «hvilken merknad», og da trenger knappene ingen egen peker. */
-    + '<div class="hub-knapper">'
-    +   '<button class="knapp-endre" onclick="rediger(\'' + esc(m.id) + '\')">Endre</button>'
-    + '</div>';
+        ? '<div class="detalj-notat">' + esc(m.tekst) + '</div>'
+        : '<div class="detalj-notat tom">Ingen utfyllende tekst.</div>')
+    + '<div class="detalj-linje"><span>Gjelder</span>' + esc(m.gjelder || 'Familie') + '</div>'
+    + (m.av ? '<div class="detalj-linje"><span>Skrevet av</span>' + esc(m.av) + '</div>' : '')
+    + '<div class="hu-utfort-fot"><button type="button" class="' + (m.ferdig ? 'hu-angre' : 'knapp-gronn') + '"'
+    +   ' onclick="huskeUtfort(\'' + esc(m.id) + '\')">' + (m.ferdig ? 'Angre utført' : 'Utført') + '</button></div>';
+  kort.hidden = false;
+  HOYRE_KORT.forEach(function(k){ if($(k)) $(k).hidden = true; });
+  settBredde();
+  huDetaljId = id;
+  huMerkValgt();
+  visTilIdag();
+}
 
-  const b = $('huBoble');
-  b.style.background  = tett(farge, .14);
-  b.style.borderColor = tett(farge, .42);
-  b.hidden = false;
-  $('huBobleBak').hidden = false;
-  huBobleId = id;
+function huMerkValgt(){
+  Array.from(document.querySelectorAll('.hu-rad[data-id]')).forEach(function(r){
+    r.classList.toggle('valgt', !!huDetaljId && r.dataset.id === huDetaljId);
+  });
+}
 
-  /* Ankre boblen ved raden, men hold den innenfor skjermen. */
-  const rad = document.querySelector('.hu-rad[data-id="' + id + '"]');
-  const r = rad ? rad.getBoundingClientRect() : null;
-  const bb = b.getBoundingClientRect();
-  const marg = 12;
-  let venstre = r ? (r.left - bb.width - 14) : (innerWidth/2 - bb.width/2);
-  if(venstre < marg) venstre = r ? Math.min(r.right + 14, innerWidth - bb.width - marg) : marg;
-  venstre = Math.max(marg, Math.min(venstre, innerWidth - bb.width - marg));
-  let topp = r ? (r.top - 6) : (innerHeight/2 - bb.height/2);
-  topp = Math.max(marg, Math.min(topp, innerHeight - bb.height - marg));
-  b.style.left = Math.round(venstre) + 'px';
-  b.style.top  = Math.round(topp) + 'px';
+async function huskeUtfort(id){
+  await vekslFerdig(id);
+  /* Kortet tegnes paa nytt med den nye tilstanden - knappen bytter navn. */
+  if(huDetaljId === id){ huDetaljId = null; vekslHuskeBoble(id); }
 }
 
 function lukkHuskeBoble(){
@@ -6773,9 +6814,9 @@ function tegnSkoleuke(){
 const skoleInnhold = {};       /* rad-id -> { fagId, detalj } */
 let skoleDetaljId = null;      /* «l:<id>» eller «p:<id>», eller null */
 
-function skoleRad(tittel, merke, fagId, klasse, id, detalj){
+function skoleRad(tittel, merke, fagId, klasse, id, detalj, ferdig){
   const farge = huskeFarge(EIER);
-  skoleInnhold[id] = { fagId: fagId, detalj: detalj };
+  skoleInnhold[id] = { fagId: fagId, detalj: detalj, ferdig: !!ferdig };
   return '<div class="hu-linje' + (klasse.indexOf('ferdig') !== -1 ? ' ferdig' : '') + '">'
     + '<div class="hu-rad sku-rad ' + klasse + (skoleDetaljId === id ? ' valgt' : '') + '"'
     +   ' data-sku="' + esc(id) + '" style="' + fyll(farge) + '"'
@@ -6792,6 +6833,7 @@ function skoleDetalj(id){
   const inn = skoleInnhold[id];
   if(!inn) return;
   detaljIndeks = null;
+  huDetaljId = null; huMerkValgt();
   skoleDetaljId = id;
   const erProve = id.charAt(0) === 'p';
   const farge = huskeFarge(EIER);
@@ -6811,8 +6853,10 @@ function skoleDetalj(id){
       '<div class="detalj-tittel">' + esc(fagNavnAv(inn.fagId) || (erProve ? 'Prøve' : 'Lekse')) + '</div>'
     + '<div class="detalj-tid">' + (erProve ? 'Prøve' : 'Lekse') + '</div>'
     + inn.detalj
-    + '<div class="sku-detalj-fot"><button type="button" class="sku-gaa" onclick="skoleTilFag()">'
-    +   'Gå til faget</button></div>';
+    + '<div class="sku-detalj-fot">'
+    +   (erProve ? '' : '<button type="button" class="lekse-utfort' + (inn.ferdig ? ' gjort' : '') + '"'
+    +     ' onclick="skoleUtfort()">' + (inn.ferdig ? 'Angre' : 'Utført') + '</button>')
+    +   '<button type="button" class="sku-gaa" onclick="skoleTilFag()">Gå til faget</button></div>';
   kort.hidden = false;
   HOYRE_KORT.forEach(function(k){ if($(k)) $(k).hidden = true; });
   settBredde();
@@ -6825,6 +6869,16 @@ function skoleDetalj(id){
   visTilIdag();
 }
 
+/* «Utført» i lekse-kortet: samme som i fagvinduet, og kortet tegnes paa
+   nytt med den nye tilstanden. */
+async function skoleUtfort(){
+  const id = skoleDetaljId;
+  if(!id || id.charAt(0) !== 'l') return;
+  await vekslLekse(id.slice(2));
+  skoleDetaljId = null;
+  skoleDetalj(id);
+}
+
 function skoleTilFag(){
   const inn = skoleInnhold[skoleDetaljId];
   lukkDetalj();
@@ -6833,6 +6887,7 @@ function skoleTilFag(){
 
 /* «Endre» i detaljkortet: avtalen, eller leksa/proeven som staar der. */
 function detaljEndre(){
+  if(huDetaljId){ rediger(huDetaljId); return; }
   if(skoleDetaljId){
     const id = skoleDetaljId.slice(2);
     if(skoleDetaljId.charAt(0) === 'p') redigerProve(id); else redigerLekse(id);
@@ -6929,7 +6984,7 @@ function skoleukeHtml(){
       return skoleRad((fag ? fag + ': ' : '') + l.tekst,
                       l.ferdig ? 'Ferdig' : skoleMerke(l.frist), l.fagId,
                       (l.ferdig ? 'ferdig' : '') + (hast ? ' ' + hast : ''),
-                      'l:' + l.id, detalj);
+                      'l:' + l.id, detalj, l.ferdig);
     }).join('');
   }
   return ut + '</div>';
@@ -7637,7 +7692,7 @@ function kobleLukking(){
     const t = ev.target;
     if(huBobleId && !t.closest('.hu-boble') && !t.closest('.hu-rad')) lukkHuskeBoble();
     if($('detalj') && !$('detalj').hidden && !skjemaAapent()
-       && !t.closest('#detalj') && !t.closest('.plan-rad') && !t.closest('.sku-rad')
+       && !t.closest('#detalj') && !t.closest('.plan-rad') && !t.closest('.sku-rad') && !t.closest('.hu-rad')
        && !t.closest('#avtaleBoks') && !t.closest('#huskeBoks')
        && !t.closest('#filviser')) lukkDetalj();
   });

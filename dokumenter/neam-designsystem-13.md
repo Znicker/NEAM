@@ -2694,6 +2694,20 @@ filer.
 *Skrevet 13. september 2026, da verktøyene ble flyttet fra sidene til
 fellesfiler.*
 
+**Lukkekrysset er stort og rødt på alle sidene** (fra 23. november 2026):
+`.hub-lukk`, `.detalj-lukk`, `.ntp-vb-lukk`, `.neam-lukk`, `.naering-lukk`,
+`.lukk-stor`, `.ark-lukk`, `.dlg-x` får `--danger` og 1,7 × `--t-pil` fra
+`felles-neam.css` (med `!important`, fordi sidene tegner sitt eget kryss
+etterpå). Rundingene i Kalender og Sikkerhet er 44 px. Rødt betyr ellers
+«slett» – her er det Magnes valg for «kom deg ut».
+
+**Utført er en grønn knapp** (fra 23. november 2026): lekser i fagvinduet
+og i lekse-kortet, og påminnelser i kortet i høyre kolonne, har en grønn
+«Utført» i stedet for (eller i tillegg til) haken. Når den er trykket,
+står en nøytral «Angre» der. Påminnelser vises i høyre kolonne ved trykk
+på alle tre dashene, som avtalene – boblen ved raden er borte; «Endre» i
+kortet åpner skjemaet.
+
 **Datoer slås opp, de regnes ikke** (fra 23. november 2026). Hver samtale
 får en datotabell – ukedag og ISO-dato for denne uka og fem til
 (`neamDatoTabell()` i `felles-neam.js`). Neam skal slå opp ukedager der, og
