@@ -965,9 +965,28 @@ function motpartNokkel(p){
   const raa = (p.motpart || String(p.tekst || '').split(/\s+/).slice(0, 3).join(' ')).toUpperCase();
   return raa.replace(/[0-9*#.,:/\\-]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
+/* Overfoeringer uten avsender (Magne, 23. november 2026: «Den kontoen er
+   jo min, ikke nina sin. Slike føringer kan komme opp i innboks, der de må
+   skrives inn med forklaring og tillegges en post»). DNB skriver bare
+   «Kontoregulering, Mobil Overføring» - samme tekst uansett hvem som
+   sendte og hvilken vei pengene gikk. Neam hadde laert den som «Inntekter
+   · Nina» og foerte alle slike som hennes inntekt. Slike poster faar
+   aldri forslag (verken laert eller noekkelord), foeres aldri
+   automatisk, laeres ikke av, og kan ikke godkjennes fra innboksen uten
+   et notat som sier hva overfoeringen gjaldt. */
+const UTEN_AVSENDER = /^(KONTOREGULERING )?(MOBIL|MOBILBANK|NETTBANK) ?OVERFØRING$/;
+/* Hele teksten, ikke bare de tre foerste ordene: «Mobil Overføring til
+   Nina» sier hvem. Men noekkelen den faar (motpartNokkel), er den samme
+   generelle - derfor laeres og brukes aldri en slik noekkel (taus). */
+function utenAvsender(p){
+  if(!p || p.fra || p.motpart) return false;
+  return UTEN_AVSENDER.test(String(p.tekst || '').toUpperCase().replace(/[0-9*#.,:/\\-]+/g, ' ').replace(/\s+/g, ' ').trim());
+}
+function tausNokkel(n){ return UTEN_AVSENDER.test(n || ''); }
 function foreslaa(p, laert, omdopt){
+  if(utenAvsender(p)) return { kategori:'', kilde:'' };
   const n = motpartNokkel(p);
-  if(n && laert[n]) return { kategori:laert[n], kilde:'laert' };
+  if(n && laert[n] && !tausNokkel(n)) return { kategori:laert[n], kilde:'laert' };
   const tekst = (p.motpart + ' ' + p.tekst).toUpperCase();
   /* Noekkelordene peker paa de faste navnene - har posten faatt nytt navn, brukes det. */
   for(const [re, kat] of NOKKELORD) if(re.test(tekst)) return { kategori:(omdopt && omdopt[kat]) || kat, kilde:'ord' };
@@ -1180,6 +1199,23 @@ async function fakturaInnboks(env, kropp){
 function bankFinnes(p, iBanken){ return iBanken.has(p.id) || (p.bankIder || []).some(i => iBanken.has(i)); }
 function sammeTrekk(a, b){ return Math.abs(a.belop - b.belop) < 0.005 && bankdagerMellom(a.dato, b.dato) <= 3; }
 function lagdId(id){ return /^h[\w-]{10,}$/.test(String(id || '')); }
+/* Ligner et nytt banktrekk - eller penger inn - noe som alt er godkjent
+   og lagt inn for haand, fra bilde eller fra Trumf? Da er det mulig dobbel
+   og skal avklares i innboksen (Magne, 6. november 2026 for kjoep; 23.
+   november 2026 ogsaa for penger inn: «den doble lønna er vel også noe som
+   bør avklares i innboksen om det er to like summer?» - lønna lagt inn fra
+   bilde 14. november og fra banken 16. november ble telt begge). Samme
+   fortegn, samme beloep og hoeyst tre bankdager mellom (erLik). */
+function lignerFoert(poster, ny){
+  if(ny.fra || ny.dekketAv || !ny.belop) return null;
+  for(const id of Object.keys(poster)){
+    const kv = poster[id];
+    if(!kv.fra || kv.status !== 'godkjent' || kv.bankId || Math.sign(kv.belop) !== Math.sign(ny.belop) || !erLik(ny, kv)) continue;
+    return { id:kv.id, sted:kv.motpart || kv.tekst || '', dato:kv.dato, belop:kv.belop,
+      kilde:kv.fra === 'trumf' ? 'Trumf-kvittering' : kv.forHand ? (kv.utlegg || (kv.belop > 0 ? 'innbetaling ført for hånd' : 'kjøp lagt inn for hånd')) : 'kvittering fra bilde', varer:null };
+  }
+  return null;
+}
 function kobleKvittering(poster, kv){
   if(kv.bankId || kv.mulDobbel) return;
   for(const id of Object.keys(poster)){
@@ -1412,7 +1448,7 @@ async function innboks(env, okt, fersk, psu){
       /* Kom kvitteringen foer banktrekket, kobles de naa. */
       for(const id of Object.keys(poster)){
         const kv = poster[id];
-        if(kv.fra && kv.status === 'ny' && !kv.bankId && !kv.mulDobbel && !ny.dekketAv && ny.belop < 0 && erLik(ny, kv)){
+        if(kv.fra && kv.status === 'ny' && !kv.bankId && !kv.mulDobbel && !ny.dekketAv && (ny.belop < 0 || (ny.belop > 0 && kv.belop > 0)) && erLik(ny, kv)){
           ny.dekketAv = kv.id; kv.bankId = ny.id; kv.bankKonto = ny.kontoNavn;
         }
       }
@@ -1421,15 +1457,8 @@ async function innboks(env, okt, fersk, psu){
          slaas sammen stille. Banktrekket merkes som mulig dobbel, foeres
          aldri av seg selv og staar stroeket til noen tar det med (Magne,
          6. november 2026). Uten dette ble kjoepet telt to ganger. */
-      if(!ny.dekketAv && ny.belop < 0){
-        for(const id of Object.keys(poster)){
-          const kv = poster[id];
-          if(!kv.fra || kv.status !== 'godkjent' || kv.bankId || !erLik(ny, kv)) continue;
-          ny.lignerPaa = { id:kv.id, sted:kv.motpart || kv.tekst || '', dato:kv.dato, belop:kv.belop,
-            kilde:kv.fra === 'trumf' ? 'Trumf-kvittering' : kv.forHand ? (kv.utlegg || 'kjøp lagt inn for hånd') : 'kvittering fra bilde', varer:null };
-          break;
-        }
-      }
+      const lf = lignerFoert(poster, ny);
+      if(lf) ny.lignerPaa = lf;
       nye++;
     }
   }
@@ -1519,6 +1548,7 @@ async function innboks(env, okt, fersk, psu){
   const kn = await lesJson(env, KONTONAVN_NOKKEL, {});
   const medNavn = p => {
     const ut = Object.assign({}, p, { forb:forbindelser(p, poster) });
+    if(utenAvsender(p)) ut.utenAvsender = true;
     if(kn[p.konto]) ut.kontoNavn = kn[p.konto];
     if(p.bankId && poster[p.bankId] && kn[poster[p.bankId].konto]) ut.bankKonto = kn[poster[p.bankId].konto];
     return ut;
@@ -1559,10 +1589,10 @@ async function lagreForslag(env, kropp){
     if(!f.kategori || kategorier.indexOf(f.kategori) === -1) continue;
     if(p.kategori && p.kilde !== 'ai-usikker') continue;   /* et menneskes eller en regels valg vinner */
     p.kategori = f.kategori;
-    if(f.sikker && !p.mulDobbel && !p.lignerPaa && !p.manuell && !p.samleSporsmaal){
+    if(f.sikker && !utenAvsender(p) && !p.mulDobbel && !p.lignerPaa && !p.manuell && !p.samleSporsmaal){
       p.kilde = 'ai'; autoFoer(poster, p, naa); foert++;
       const n = motpartNokkel(p);
-      if(n) laert[n] = f.kategori;
+      if(n && !tausNokkel(n)) laert[n] = f.kategori;
     } else p.kilde = 'ai-usikker';
   }
   await env.FAMILIE_KV.put(POST_NOKKEL, JSON.stringify(poster));
@@ -2848,6 +2878,10 @@ async function godkjenn(env, kropp, epost){
     const p = poster[g && g.id];
     if(!p) return svar({ ok:false, feil:'Ukjent post' });
     if(kategorier.indexOf(g.kategori) === -1) return svar({ ok:false, feil:'Ukjent kategori: ' + g.kategori });
+    /* Fra innboksen: en overfoering uten avsender trenger en forklaring (utenAvsender). */
+    if(p.status === 'ny' && utenAvsender(p) && !String(g.notat || p.notat || '').trim()){
+      return svar({ ok:false, feil:'Skriv i notatet hva overføringen gjaldt – banken sier ikke hvem den er fra.' });
+    }
     Object.assign(p, { status:'godkjent', kategori:g.kategori, behandlet:naa, av:epost });
     delete p.deler;
     if(g.linjer && Object.keys(g.linjer).some(i => g.linjer[i] && kategorier.indexOf(g.linjer[i]) === -1)){
@@ -2861,7 +2895,7 @@ async function godkjenn(env, kropp, epost){
     /* Banktrekket kvitteringen dekker, foelger med - det skal ikke telles. */
     if(p.bankId && poster[p.bankId]) Object.assign(poster[p.bankId], { status:'sammenslatt', behandlet:naa, av:epost });
     const n = motpartNokkel(p);
-    if(n) laert[n] = g.kategori;
+    if(n && !tausNokkel(n)) laert[n] = g.kategori;
     ok.push(p.id);
   }
   for(const id of [].concat(kropp.strok || [])){
@@ -3416,6 +3450,11 @@ async function angre(env, kropp){
     /* En automatisk foert post som angres, foeres aldri automatisk igjen. */
     if(p.auto){ p.manuell = true; delete p.auto; }
     p.status = 'ny'; delete p.behandlet; delete p.av; delete p.deler; delete p.slaattInn; n++;
+    /* En overfoering uten avsender skal forklares paa nytt - den gamle
+       kategorien kom gjerne fra en regel som ikke visste hvem (utenAvsender). */
+    if(utenAvsender(p)){ delete p.kategori; delete p.kilde; }
+    /* Tilbake i innboksen: ligner den noe som alt er foert, skal det avklares der. */
+    if(!p.lignerPaa){ const lf = lignerFoert(poster, p); if(lf) p.lignerPaa = lf; }
     if(p.samleId && poster[p.samleId]) samleRest(poster, poster[p.samleId]);
     /* Banktrekket som ble slaatt sammen, gaar tilbake til «dekket». Ble
        kvitteringen stroeket, mistet den koblingen; da kobles den paa nytt,

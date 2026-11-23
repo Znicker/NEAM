@@ -2287,6 +2287,31 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   endepunktet i node med en falsk KV (lagring, dobbel, feil type,
   bilde, TTL, kvittering), arket og ringen lokalt med falske data.
   **Ikke testet med ekte bil.**
+- **Overføringer uten avsender til innboksen** (bank-funksjonen og
+  `okonomi.html`, 23. november; Magne: «Den kontoen er jo min, ikke nina
+  sin. Slike føringer kan komme opp i innboks, der de må skrives inn med
+  forklaring og tillegges en post»). Funnet: Neam hadde lært
+  «KONTOREGULERING MOBIL OVERFØRING → Inntekter · Nina» – DNBs tekst er
+  den samme uansett hvem og hvilken vei – og førte alle mobiloverføringer
+  på Regninger (Magnes konto) automatisk som Ninas inntekt, også penger ut
+  og en flytting Regninger → Strømkonto. Nå: `utenAvsender(p)` (hele
+  bankteksten er bare «(Kontoregulering,) Mobil/Mobilbank/Nettbank
+  Overføring», uten motpart) gir aldri forslag (verken lært eller
+  nøkkelord), føres aldri automatisk (heller ikke av Neams «sikker»), og
+  kan ikke godkjennes fra innboksen uten **notat** (serveren svarer feil;
+  innboksen viser «Overføring uten avsender – skriv i Notat …», og
+  Godkjenn i vinduet stopper). En generell nøkkel (`tausNokkel`) læres
+  aldri og brukes aldri – den gamle Nina-regelen ligger i KV, men er død.
+  Angres en slik post, mister den kategorien. Også funnet: **lønna i
+  november telles to ganger** (70 000 lagt inn for hånd fra bilde 14.
+  nov. + 70 000 fra banken 16. nov.). Årsak: et nytt banktrekk ble bare
+  sammenlignet med det som var lagt inn for hånd når pengene gikk **ut**.
+  Magne: «den doble lønna er vel også noe som bør avklares i innboksen om
+  det er to like summer?» Nå gjelder det begge veier (`lignerFoert`:
+  samme fortegn, samme beløp, høyst tre bankdager): banken merkes
+  `lignerPaa` («Mulig dobbel … innbetaling ført for hånd»), føres aldri
+  av seg selv og avklares i innboksen. En post som angres tilbake til
+  innboksen, sjekkes på samme måte. Testet i node mot lønnstilfellet.
 - **Mindre ikoner når flere står ved klokka** (`felles-topp.css ?v=18`,
   alle 18 sidene; Magne: «blir ikonene mindre for å få plass?»). Før ble
   bare flere retter mindre (`.flere`). Nå får alle ikonene ved klokka,

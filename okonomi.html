@@ -1812,7 +1812,10 @@ button.ok-dr-rad{ cursor:pointer; }
   var okKr0 = new Intl.NumberFormat('nb-NO', { minimumFractionDigits:2, maximumFractionDigits:2 });
   var okKort = new Intl.DateTimeFormat('nb-NO', { day:'numeric', month:'short' });
 
-  function okPostKlar(p){ return !p.ute && !!p.kategori && !p.samleVenter; }
+  /* En overfoering uten avsender trenger et notat foer den kan godkjennes
+     (23. november 2026, se utenAvsender i bank-funksjonen). */
+  function okManglerForklaring(p){ return !!p.utenAvsender && !String(p.notat || '').trim(); }
+  function okPostKlar(p){ return !p.ute && !!p.kategori && !p.samleVenter && !okManglerForklaring(p); }
   /* Samme regel som motpartNokkel() i bank-funksjonen. */
   function okMotpart(p){
     var raa = (p.motpart || String(p.tekst || '').split(/\s+/).slice(0, 3).join(' ')).toUpperCase();
@@ -2270,11 +2273,12 @@ button.ok-dr-rad{ cursor:pointer; }
       : p.lignerPaa ? 'Mulig dobbel: ' + okLignerTekst(p.lignerPaa) + ' Strøket til du tar den med.'
       : p.ute ? 'Føres ikke'
       : p.oppgjor ? 'Tilbakebetaling til ' + p.oppgjor.navn + ' – går av på det felles skylder. Velg en annen kategori eller stryk den hvis det ikke er det.'
+      : okManglerForklaring(p) ? 'Overføring uten avsender – skriv i Notat hva den gjaldt, og velg kategori'
       : !p.kategori ? 'Trenger kategori – blir liggende til den har en'
       : p.kilde === 'ai-usikker' ? 'Neam er usikker – sjekk at kategorien stemmer'
       : p.kilde === 'laert' ? 'Forslag: samme som sist'
       : p.kilde === 'ord' ? 'Forslag fra Neam' : '';
-    return { tekst:tekst, varsel:(!p.kategori && !p.ute) || p.mulDobbel || p.lignerPaa || (p.kilde === 'ai-usikker' && !p.ute) };
+    return { tekst:tekst, varsel:(!p.kategori && !p.ute) || p.mulDobbel || p.lignerPaa || (p.kilde === 'ai-usikker' && !p.ute) || (okManglerForklaring(p) && !p.ute) };
   }
   /* Forbindelser (Magne, 9. november 2026): «alle transaksjoner som har noe
      med hverandre å gjøre linkes, så man ser dem når man trykker på en
@@ -7359,10 +7363,12 @@ button.ok-dr-rad{ cursor:pointer; }
           var s = samle(); if(!s) return;
           var kat = nyKat();
           if(!kat){ visFeil('Velg kategori.'); return; }
+          if(ib.utenAvsender && !notat.value.trim()){ visFeil('Skriv i Notat hva overføringen gjaldt – banken sier ikke hvem den er fra.', notat); return; }
           ibGod.disabled = true;
           (s.noe ? okHent('/api/bank', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(s.endre) }) : Promise.resolve({ ok:true })).then(function(r){
             if(!r.ok){ visFeil('Ble ikke lagret: ' + r.feil); ibGod.disabled = false; return; }
             if(s.endre.belop != null) ib.belop = s.endre.belop;
+            if(s.endre.notat != null) ib.notat = s.endre.notat;
             okSettKategori(ib, kat);
             okSendGodkjenning([ib], [], function(r2){ if(r2.ok){ okRgFor = {}; okMnd.kjop = {}; okLukkFor(true); } else ibGod.disabled = false; });
           });
