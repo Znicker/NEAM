@@ -1315,6 +1315,11 @@ body{
     left:0; transform:none; padding:16px 14px 12px;
   }
   .avtale-boks.fagvis-boks, .forslag-boks{ height:var(--dlg-hoyde, 92dvh); min-height:0; }
+  /* Taket paa 56vh lenger ned gjelder skjemaene (tastaturet tar resten).
+     Fagvinduet og godkjenningspanelet skal fylle skjermen - uten denne
+     stoppet de midt paa (Magne, 23. november 2026: «Fagsiden er kuttet i
+     to på mobil»). To klasser, saa den vinner uansett rekkefoelge. */
+  .avtale-boks.fagvis-boks, .avtale-boks.forslag-boks{ max-height:var(--dlg-hoyde, 92dvh); }
   .fagvis-bilde{ width:96px; }
   .fagvis-boks .av-tittel{ font-size:var(--t-stor); }
 
@@ -1329,6 +1334,19 @@ body{
    skjemafelt saa iOS ikke zoomer inn naar man trykker i dem. */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
+/* Dashen staar FAST paa alt bredere enn telefon (Magne, 23. november 2026:
+   «Samtlige dash er fadet i toppen» og «skjermen sitter ikke skikkelig
+   fast»). overflow-x paa html over gjoer html til et rullefelt, saa iPaden
+   kunne dra og sprette sida - og saa snart den rullet en piksel, la
+   toppen toningen sin bak seg (.ntp-rullet). Samme retting som Kjoekken
+   dash. Under 700 px ruller sida med vilje, se mobilblokka. */
+@media(min-width:701px){
+  html, body{ overflow:hidden; overscroll-behavior:none; }
+  /* Og toppens toning slaas av: den hoerer til sider som ruller. Blir
+     sida likevel dyttet litt (tastaturet paa iPad), skal toppen ikke
+     legge en grå skygge over dashen (Magne: «Hva med faden?»). */
+  .ntp.ntp-rullet{ background:none; box-shadow:none; }
+}
 body{touch-action:manipulation}
 input,select,textarea{font-size:16px}
 

@@ -2074,6 +2074,22 @@ rullefelt (overflow-y blir auto), så iPaden kunne dra og sprette, og ved
 `html, body{overflow:hidden; overscroll-behavior:none}` over 700 px.
 Telefonen ruller som før (sjekket: 390 px rullet fortsatt). **Emma og
 Andrea dash har den samme gamle regelen** – ikke rørt.
+
+**23. november: fagvinduet fyller telefonen** (`emma.html`, `andrea.html`).
+Magne: «Fagsiden er kuttet i to på mobil.» Mobilblokka ga fagvinduet
+`height:var(--dlg-hoyde, 92dvh)`, men regelen `.avtale-boks{max-height:56vh}`
+under 640 px (ment for skjemaene, tastaturet tar resten) kappet det til
+473 px på en 844 px høy telefon. Ny regel med to klasser
+(`.avtale-boks.fagvis-boks, .avtale-boks.forslag-boks`) setter
+`max-height` til samme som høyden – også godkjenningspanelet, som hadde
+samme feil. Målt i en 390×844-ramme på neam.no: 473 → 828 px.
+Samme lås som kjøkkenet også på Emma og Andrea dash (Magne: «Det var
+samme med A og E sine dash. Samtlige dash er fadet i toppen»):
+`html, body{overflow:hidden; overscroll-behavior:none}` over 700 px.
+Og toppens toning (`.ntp.ntp-rullet`, bakgrunn og skygge fra
+`felles-topp.css`) er slått av på alle tre dashene over 700 px (Magne:
+«Hva med faden?») – den hører til sider som ruller, og iPaden kan dytte
+sida litt når tastaturet åpnes.
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke

@@ -616,6 +616,10 @@ html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
    ruller sida med vilje, se mobilblokka. */
 @media(min-width:701px){
   html, body{ overflow:hidden; overscroll-behavior:none; }
+  /* Og toppens toning slaas av: den hoerer til sider som ruller. Blir
+     sida likevel dyttet litt (tastaturet paa iPad), skal toppen ikke
+     legge en grå skygge over dashen (Magne: «Hva med faden?»). */
+  .ntp.ntp-rullet{ background:none; box-shadow:none; }
 }
 body{touch-action:manipulation}
 input,select,textarea{font-size:16px}
