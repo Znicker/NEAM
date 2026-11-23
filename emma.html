@@ -5557,7 +5557,7 @@ function tegnHuskeInner(){
     {boks: 'huskeIdag',
      treff: mine.filter(function(m){
        return (m.omfang !== 'uke' && m.frist === dag)
-           || (m.omfang === 'uke' && ukeAv(m.frist) === uke);
+           || (m.omfang === 'uke' && ukeAv(m.frist) === uke && (!m.til || dag <= m.til));
      })}
   ];
 
@@ -5799,7 +5799,8 @@ window.neamBakgrunn = async function(){
     + 'står i Påminnelser på den dagen.\n'
     + '  - Har den ingen dato - «husk innesko denne uka», «foreldremøte kommer»: '
     + 'legg_til_paaminnelse UTEN dato, men MED uke-argumentet satt til uka planen '
-    + 'gjelder. Den havner i Påminnelser hele den uka, merket «Uke». Utelater du '
+    + 'gjelder. Den står i Påminnelser fra mandag (søndag kveld) til og med fredag '
+    + 'den uka, merket «Uke». Utelater du '
     + 'uke, havner den i uka skjermen tilfeldigvis står på - og leser du en plan '
     + 'for neste uke, er beskjeden borte samme kveld.\n'
     + 'Si etterpå hvilke beskjeder du la inn og hvor de havnet, så hun kan rette '
@@ -7502,8 +7503,13 @@ async function fagUtfor(navn, arg){
        en plan, sier Neam hvilken uke det er, og den gaar foran. */
     const omfang = dato ? 'dag' : 'uke';
     const man = arg.uke ? mandagIUke(arg.uke) : ukeStart(dagenViser());
+    /* En ukepaaminnelse fra Neam her er skole, og skoleuka er mandag-fredag
+       (Magne, 23. november 2026: «skal de starte på mandag (søn 20.00) og
+       stoppe på fredag»). Fristen er fredagen, og til sier at den ikke skal
+       vises loerdag og soendag. Mandagen kommer av seg selv: skjermen viser
+       morgendagen fra klokka 20 soendag. */
     const frist = dato || datoNokkel(
-        new Date(man.getFullYear(), man.getMonth(), man.getDate() + 6));
+        new Date(man.getFullYear(), man.getMonth(), man.getDate() + 4));
 
     const gjelder = String(arg.gjelder || '').trim() || EIER;
     const ny = {
@@ -7516,11 +7522,12 @@ async function fagUtfor(navn, arg){
       gjelder: gjelder,
       av: 'Neam'
     };
+    if(omfang === 'uke') ny.til = frist;
     await endreHuske(function(liste){ return liste.concat([ny]); });
     return { lagt:{ tekst:tekst, gjelder:gjelder, dato:dato || null,
                     uke: omfang === 'uke' ? isoUke(man).uke : undefined,
                     hvor: omfang === 'uke'
-                            ? 'Påminnelser i uke ' + isoUke(man).uke
+                            ? 'Påminnelser i uke ' + isoUke(man).uke + ', mandag til og med fredag'
                             : 'Påminnelser i dag' } };
   }
 

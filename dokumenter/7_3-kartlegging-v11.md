@@ -1986,6 +1986,19 @@ lekse-kortet (ikke på kjøkkenet).
   `skoleRad()` tar `ferdig`).
 - Testet på neam.no: påminnelseskortet med grønn Utført og det røde,
   større krysset. Selve avhukingen er ikke trykket (ville skrevet).
+- **Feil i samme commit (`8d75391`):** `git add -A -- '*.html'` tok med
+  den usporede `dokumenter/ikon-sammenligning.html` (ikon-sammenligningen
+  fra 7. november, ikke denne øktas). Lagt fram for Magne.
+
+**23. november: skoleukas påminnelser mandag–fredag** (`emma.html`,
+`andrea.html`, `dashboard.html`). Magne: «Når Neam legger inn
+skolerelevante ukespåminnelser skal de starte på mandag (søn 20.00) og
+stoppe på fredag.» `legg_til_paaminnelse` uten dato på jentenes dasher
+setter fristen til fredag og et nytt felt **`til`** (fredag). Alle tre
+dashene (og Lekser-fanen) viser en ukepåminnelse bare til og med `til`;
+uten `til` som før. Mandag fra søndag kl. 20 kommer av døgnskiftet.
+`til` overlever redigering (`lagreHuske()` bruker `Object.assign`).
+Påminnelser Neam alt har lagt inn (frist søndag) er ikke endret.
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke

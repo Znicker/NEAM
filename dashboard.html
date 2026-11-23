@@ -2973,7 +2973,9 @@ function tegnHuskeInner(){
     {omfang: 'dag', boks: 'huskeIdag',
      treff: liste.filter(function(m){ return m.omfang !== 'uke' && m.frist === dag; })},
     {omfang: 'uke', boks: 'huskeUken',
-     treff: liste.filter(function(m){ return m.omfang === 'uke' && ukeAv(m.frist) === uke; })}
+     /* til: siste dag den skal vises (skoleukas fredag fra Neam, 23. november
+        2026). Uten til staar den hele uka, som foer. */
+     treff: liste.filter(function(m){ return m.omfang === 'uke' && ukeAv(m.frist) === uke && (!m.til || dag <= m.til); })}
   ];
 
   /* Barnas lekser med frist paa denne dagen, lagt til i «i dag»-boksen.
@@ -3450,7 +3452,8 @@ function lvTegn(){
     const mine = (huskeliste || []).filter(function(m){
       const hvem = String(m.gjelder || '').trim();
       if(!LV_BARN_DASH[hvem]) return false;
-      return (m.omfang !== 'uke' && m.frist === dag) || (m.omfang === 'uke' && ukeAv(m.frist) === uke);
+      return (m.omfang !== 'uke' && m.frist === dag)
+          || (m.omfang === 'uke' && ukeAv(m.frist) === uke && (!m.til || dag <= m.til));
     }).sort(function(a, b){
       if(!!a.ferdig !== !!b.ferdig) return a.ferdig ? 1 : -1;
       if((a.omfang === 'uke') !== (b.omfang === 'uke')) return a.omfang === 'uke' ? 1 : -1;

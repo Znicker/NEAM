@@ -2708,6 +2708,12 @@ står en nøytral «Angre» der. Påminnelser vises i høyre kolonne ved trykk
 på alle tre dashene, som avtalene – boblen ved raden er borte; «Endre» i
 kortet åpner skjemaet.
 
+**Skoleukas påminnelser går mandag–fredag** (fra 23. november 2026): en
+ukepåminnelse Neam legger inn på Emma eller Andrea dash får fristen fredag
+og feltet `til` = fredag, og vises fra mandag (søndag kl. 20, når skjermen
+går over til mandag) til og med fredag. Alle dashene skjuler en
+ukepåminnelse etter `til`; uten `til` står den hele uka som før.
+
 **Datoer slås opp, de regnes ikke** (fra 23. november 2026). Hver samtale
 får en datotabell – ukedag og ISO-dato for denne uka og fem til
 (`neamDatoTabell()` i `felles-neam.js`). Neam skal slå opp ukedager der, og
