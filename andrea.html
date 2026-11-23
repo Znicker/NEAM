@@ -440,6 +440,20 @@ body{
   -webkit-tap-highlight-color:transparent;
 }
 .vis-knapp.aktiv{background:var(--aksent);color:#FFFFFF}
+/* Lesetimeren (Magne, 23. november 2026): til hoeyre for bytteren, samme
+   pilleform som «Tilbake til i dag» i samme rad. Lekseikonet foran. Mens
+   den gaar: aksentfargen, som den valgte visningen. */
+.lesetid-knapp{
+  flex-shrink:0;align-self:center;display:inline-flex;align-items:center;gap:6px;
+  border:1px solid var(--line);background:transparent;color:var(--ink-soft);
+  font-family:'Archivo',sans-serif;font-size:var(--t-etikett);font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 13px 3px 4px;border-radius:999px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.lesetid-knapp img{ width:26px; height:26px; object-fit:contain; display:block; }
+.lesetid-knapp.gaar{ background:var(--aksent); border-color:var(--aksent); color:#FFFFFF; }
+.lesetid-knapp:active{ transform:scale(.97); }
 
 /* ---------- Ukesvisning ----------
    Sju doegnsoeyler, samme form som kalenderappens ukeplan. Radene med én
@@ -1933,6 +1947,10 @@ select.hu-felt{
           <button class="vis-knapp" data-vis="uke" onclick="settVisning('uke')">Uke</button>
           <button class="vis-knapp" data-vis="fag" onclick="settVisning('fag')">Fag</button>
         </span>
+        <button class="lesetid-knapp" id="lesetidKnapp" type="button" onclick="lesetidTrykk()">
+          <img src="/bilder/ikoner/lekse.png?v=2" alt="" width="512" height="505">
+          <span id="lesetidKnappTekst">Lesing</span>
+        </button>
         <span class="dag-piler" id="dagPiler">
           <button class="dag-pil" onclick="byttDag(-1)" aria-label="Forrige">&#8249;</button>
           <button class="dag-pil" onclick="byttDag(1)" aria-label="Neste">&#8250;</button>
@@ -3181,6 +3199,80 @@ async function lagreAvtale(){
 let visning = 'dag';
 
 const VIS_BOKS = { dag:'plan', uke:'uke', fag:'fag' };
+
+/* ============================================================
+   Lesetimeren (Magne, 23. november 2026: «Kan du lage en lesetimer på
+   Andrea sin dash. Til høyre for fagknappen. Samme funksjon som
+   matlagingstimer med ikon og roterende blått ved klokken»).
+
+   Knappen starter den. Mens den gaar, staar lekseikonet ved klokka med
+   den blaa ringen og tiden under, i samme form som matlagingen
+   (.ntp-mat i felles-topp.css). Trykk paa ikonet eller knappen: hvor
+   lenge hun har lest, og Fortsett eller Stopp. Ingenting lagres utover
+   timeren selv, og den gjelder bare denne enheten (localStorage, som
+   matlagingen) - den overlever at sida lastes paa nytt.
+   ============================================================ */
+const LESETID_NOKKEL = 'neam-lesetimer';
+const LESETID_IKON = '/bilder/ikoner/lekse.png?v=2';
+let lesetidTikker = null;
+
+function lesetidStart(){
+  try{ const t = Number(localStorage.getItem(LESETID_NOKKEL)); return t > 0 ? t : 0; }catch(e){ return 0; }
+}
+function lesetidVarighet(ms){
+  const s = Math.max(0, Math.round(ms / 1000));
+  const t = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sek = s % 60;
+  const to = function(n){ return (n < 10 ? '0' : '') + n; };
+  return t ? t + ':' + to(m) + ':' + to(sek) : m + ':' + to(sek);
+}
+
+function lesetidTegn(){
+  const start = lesetidStart();
+  const knapp = $('lesetidKnapp');
+  if(knapp){
+    knapp.classList.toggle('gaar', !!start);
+    $('lesetidKnappTekst').textContent = start ? 'Leser ' + lesetidVarighet(Date.now() - start) : 'Lesing';
+    knapp.setAttribute('aria-label', start ? 'Lesetimeren går – trykk for å stoppe' : 'Start lesetimer');
+  }
+  let rad = $('lesetidRad');
+  if(!rad && start){
+    const ok = $('ntpOk');
+    if(ok){                    /* toppen er ikke bygget ennaa - neste tikk */
+      rad = document.createElement('div');
+      rad.className = 'ntp-matrad';
+      rad.id = 'lesetidRad';
+      const navn = 'Lesing – trykk for å se tiden eller stoppe';
+      rad.innerHTML = '<a class="ntp-mat" href="#" title="' + esc(navn) + '" aria-label="' + esc(navn) + '">'
+        + '<span class="ntp-mat-ikon"><img src="' + LESETID_IKON + '" alt="" width="512" height="505"></span>'
+        + '<span class="ntp-mat-navn">Lesing</span><b id="lesetidTid"></b></a>';
+      rad.querySelector('a').addEventListener('click', function(e){ e.preventDefault(); lesetidTrykk(); });
+      ok.insertAdjacentElement('afterend', rad);
+    }
+  }
+  if(rad){
+    rad.hidden = !start;
+    if(start) $('lesetidTid').textContent = lesetidVarighet(Date.now() - start);
+  }
+  if(start && !lesetidTikker) lesetidTikker = setInterval(lesetidTegn, 1000);
+  if(!start && lesetidTikker){ clearInterval(lesetidTikker); lesetidTikker = null; }
+}
+
+async function lesetidTrykk(){
+  const start = lesetidStart();
+  if(!start){
+    try{ localStorage.setItem(LESETID_NOKKEL, String(Date.now())); }catch(e){}
+    lesetidTegn();
+    return;
+  }
+  const stopp = await bekreft('Du har lest i ' + lesetidVarighet(Date.now() - start) + '.',
+                              { neiTekst:'Fortsett', jaTekst:'Stopp' });
+  if(!stopp) return;
+  try{ localStorage.removeItem(LESETID_NOKKEL); }catch(e){}
+  lesetidTegn();
+}
+
+window.addEventListener('storage', function(e){ if(e.key === LESETID_NOKKEL) lesetidTegn(); });
+lesetidTegn();
 
 function settVisning(ny){
   if(!VIS_BOKS[ny] || visning === ny) return;

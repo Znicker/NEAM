@@ -2288,6 +2288,18 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   pågår og er under 20 s gammel (`BV_OPPSTART_MS`). Simulert med
   11:02–11:09: rundene kom 11:02, 11:04, 11:06 og 11:08, og bilen ble sett 11:08:33.
   Ingen nye runder etterpå.
+- **Lesetimer på Andrea dash** (`andrea.html`, 23. november; Magne: «Til
+  høyre for fagknappen. Samme funksjon som matlagingstimer med ikon og
+  roterende blått ved klokken»). Pilleknappen `#lesetidKnapp`, med
+  lekseikonet og teksten «Lesing», står til høyre for Dag/Uke/Fag. Den har samme form som «Tilbake til i
+  dag», og aksentfarge med «Leser 12:34» mens timeren går. Ved klokka
+  står lekseikonet med matlagingens ring (`.ntp-matrad`/`.ntp-mat`
+  fra `felles-topp.css`, satt inn etter `#ntpOk` som bilarkivets ring)
+  og tiden under. Trykk på ikonet eller knappen gir «Du har lest i …»
+  med Fortsett / Stopp (`bekreft`). Magne valgte lekse.png (ikke et
+  nytt ikon). Ingenting lagres, og timeren gjelder bare enheten
+  (`localStorage` `neam-lesetimer`, starttiden). Den vises bare på
+  Andrea dash, ikke på de andre sidene som matlagingen.
 - **Bilarkivet** (23. november; Magne: «jeg tenker også at vi må ha et
   lite arkiv her … når det kommer bil ha bildet oppe i fem minutter.
   dersom ingen rører det og utkvitterer det legger det seg ned. men
@@ -2428,6 +2440,8 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
 - **Bilvakta med runder** (`666a247` og commiten etter): fanges en bil som
   kjører ut mens noen alt er på tunet? Hold øye med antall tester i
   loggen. Taket er 300 per skjerm og døgn.
+- **Lesetimeren på Andreas iPad**: kommer knappen og ikonet ved klokka,
+  og overlever den at sida lastes på nytt?
 - **Søppelbilen** neste mandag: ble påminnelsen huket av, og står
   «Søppelbilen var her kl. …» bak trykk?
 - **Bilarkivet** er tomt til neste bil: kommer bilen i arkivet, og kommer
