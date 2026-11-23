@@ -2717,6 +2717,10 @@ og feltet `til` = fredag, og vises fra mandag (søndag kl. 20, når skjermen
 går over til mandag) til og med fredag. Alle dashene skjuler en
 ukepåminnelse etter `til`; uten `til` står den hele uka som før.
 
+**Inne og Ute i toppen er hver sin knapp** (fra 23. november 2026): et trykk
+på Ute viser bare uteenheten, et trykk på Inne bare inneenheten (og
+eventuelle ekstra innemoduler).
+
 **Datoer slås opp, de regnes ikke** (fra 23. november 2026). Hver samtale
 får en datotabell – ukedag og ISO-dato for denne uka og fem til
 (`neamDatoTabell()` i `felles-neam.js`). Neam skal slå opp ukedager der, og

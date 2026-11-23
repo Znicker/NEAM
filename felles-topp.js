@@ -345,11 +345,14 @@ function ntpIuDel(navn, m){
     gammel = m.borte || (!isNaN(naar) && Date.now() - naar > NTP_IU_GAMMEL);
   }
   if(m && m.f && typeof m.f.value === 'number') fukt = Math.round(m.f.value) + ' %';
-  return '<span class="ntp-iu' + (gammel ? ' gammel' : '') + '">'
+  /* Hver sin knapp (Magne, 23. november 2026: «Når jeg trykker utetemp er
+     det kun ute-data jeg vil ha, samme med inne-temp»). */
+  return '<button type="button" class="ntp-iu ntp-maaler' + (gammel ? ' gammel' : '') + '"'
+    + ' data-rolle="' + navn + '" aria-label="' + navn + ': ' + grad + ' – trykk for måleren">'
     + '<span class="ntp-iu-navn">' + navn + '</span>'
     + '<span class="ntp-iu-grad">' + grad + '</span>'
     + '<span class="ntp-iu-fukt">' + (fukt || '&nbsp;') + '</span>'
-    + '</span>';
+    + '</button>';
 }
 
 /* Toppens felt mellom navnet og klokka: Inne og Ute, sjoeen og yr.no.
@@ -369,13 +372,15 @@ function ntpVaerTegn(){
       + '<span class="ntp-iu-fukt">' + ntpEsc(sym[1]) + '</span></button>';
   }
   el.innerHTML =
-      '<button type="button" class="ntp-vaer-naa ntp-iu-knapp" aria-label="Inne og ute – trykk for målerne">'
+      '<span class="ntp-vaer-naa ntp-iu-knapp">'
     +   ntpIuDel('Inne', iu.inne) + ntpIuDel('Ute', iu.ute)
-    + '</button>'
+    + '</span>'
     + '<button type="button" class="ntp-iu ntp-sjo" id="ntpSjo"></button>'
     + yr;
   el.hidden = false;
-  el.querySelector('.ntp-iu-knapp').addEventListener('click', ntpNetatmoBoble);
+  Array.from(el.querySelectorAll('.ntp-maaler')).forEach(function(b){
+    b.addEventListener('click', function(ev){ ntpNetatmoBoble(ev, b.dataset.rolle); });
+  });
   el.querySelector('#ntpSjo').addEventListener('click', ntpSjoBoble);
   const y = el.querySelector('.ntp-yr');
   if(y) y.addEventListener('click', ntpVaerBoble);
@@ -545,11 +550,19 @@ const NTP_NETATMO_NAVN = {
   measure_temperature:'Temperatur', measure_humidity:'Luftfuktighet', measure_co2:'CO₂',
   measure_noise:'Lyd', measure_pressure:'Lufttrykk', measure_battery:'Batteri', alarm_battery:'Lavt batteri'
 };
-function ntpNetatmoBoble(ev){
+/* rolle: 'Ute' viser bare uteenheten, 'Inne' hovedenheten og eventuelle
+   ekstra innemoduler. Uten rolle: alle, som foer. */
+function ntpNetatmoBoble(ev, rolle){
   if(ev) ev.stopPropagation();
-  if(!ntpNetatmo.length){ ntpBoble('<div class="ntp-vb-tittel">Målerne</div><div class="ntp-vb-tom">Fikk ikke kontakt med Netatmo i Homey.</div>', 'Målerne'); return; }
-  let html = '<div class="ntp-vb-tittel">Målerne</div><div class="ntp-vb-sammendrag">Netatmo, gjennom Homey</div>';
-  ntpNetatmo.forEach(function(m){
+  const valgte = ntpNetatmo.filter(function(m){
+    if(rolle === 'Ute') return m.rolle === 'Ute';
+    if(rolle === 'Inne') return m.rolle !== 'Ute';
+    return true;
+  });
+  const tittel = rolle ? ('Måleren ' + rolle.toLowerCase()) : 'Målerne';
+  if(!valgte.length){ ntpBoble('<div class="ntp-vb-tittel">' + tittel + '</div><div class="ntp-vb-tom">Fikk ikke kontakt med Netatmo i Homey.</div>', tittel); return; }
+  let html = '<div class="ntp-vb-tittel">' + tittel + '</div><div class="ntp-vb-sammendrag">Netatmo, gjennom Homey</div>';
+  valgte.forEach(function(m){
     const o = m.d.capabilitiesObj || {};
     let rader = '';
     Object.keys(NTP_NETATMO_NAVN).forEach(function(k){
@@ -565,7 +578,7 @@ function ntpNetatmoBoble(ev){
     html += '<div class="ntp-vb-bolk">' + ntpEsc(m.rolle) + (m.d.available === false ? ' – uten kontakt' : '') + '</div>'
       + (rader ? '<table class="ntp-vb-tabell">' + rader + '</table>' : '<div class="ntp-vb-tom">Ingen målinger.</div>');
   });
-  ntpBoble(html, 'Målerne inne og ute');
+  ntpBoble(html, tittel);
 }
 
 /* ---------- Sjoetemperaturen ----------

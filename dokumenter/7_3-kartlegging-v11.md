@@ -158,10 +158,10 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-tale.js` (tale ut og inn).
 
 **Siste leverte versjoner:** `felles-neam.js ?v=96`, `felles-neam.css
-?v=91`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
+?v=92`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=30`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
-`felles-topp.js ?v=14`, `felles-topp.css ?v=16`;
+`felles-topp.js ?v=15`, `felles-topp.css ?v=16`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
@@ -183,8 +183,8 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet;
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–95; neam.css til og
-med 90; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
-hus `?v=1–29`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–13, topp.css 1–15**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+med 91; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
+hus `?v=1–29`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–14, topp.css 1–15**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -2015,6 +2015,13 @@ Toning i lange lister også på kjøkkenet (Magne: «Fader du litt for lange
 lister på kjøkken også»): samme `kortToning()`/`.mer-under` som på Emma
 dash, på `#plan`, `#lekserVis`, `#huskeIdag`, `#huskeUken`, `#barnHuske`
 og `#barnProver`; kalles fra `tegnPlan()`, `tegnHuskeInner()` og `lvTegn()`.
+
+**23. november: Inne og Ute hver for seg** (`felles-topp.js ?v=15`, alle 18
+sidene). Magne: «Når jeg trykker utetemp er det kun ute-data jeg vil ha,
+samme med inne-temp.» Inne og Ute er nå to knapper (`.ntp-maaler`,
+`data-rolle`) i stedet for én; `ntpNetatmoBoble(ev, rolle)` viser bare
+uteenheten for Ute, og hovedenheten (pluss eventuelle ekstra innemoduler)
+for Inne. Testet på neam.no: Ute viste bare Ute.
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke
