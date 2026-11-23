@@ -2346,7 +2346,9 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   med `kortholder` per handel. `samle-forslag` gir `kategorier` per handel
   uten kvittering (`samleKategori`): drivstoff (`DRIVSTOFF`: Circle K,
   Esso, Shell, Uno-X, YX, St1, Best stasjon, Tanken, Automat 1) →
-  Suzuki når kortholderen er Nina (`SUZUKI_KORTHOLDER`), ellers PHEV;
+  Suzuki når kortholderen er Nina (`SUZUKI_KORTHOLDER`), ellers PHEV –
+  på underposten «Drivstoff Suzuki»/«Drivstoff PHEV» når budsjettet har
+  den (det har det), ellers på bilen;
   resten fra det Neam har lært og kjente navn. Det som står igjen, foreslår
   Neam i én runde (`okSfNeamKat`, ikke inntekter/sparing/utenfor
   budsjett). Vinduet viser velgerne ferdig utfylt, med kortholder og

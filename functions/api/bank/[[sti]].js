@@ -2191,8 +2191,11 @@ const SUZUKI_KORTHOLDER = /\bNINA\b/i;
 function samleKategori(l, laert, omdopt, kategorier){
   let f;
   if(DRIVSTOFF.test(l.navn)){
-    const k = SUZUKI_KORTHOLDER.test(l.kortholder || '') ? 'Bil · Utgifter Suzuki' : 'Bil · Utgifter PHEV';
-    f = { kategori:(omdopt && omdopt[k]) || k, kilde:'drivstoff' };
+    const bil = SUZUKI_KORTHOLDER.test(l.kortholder || '') ? 'Suzuki' : 'PHEV';
+    const k = (omdopt && omdopt['Bil · Utgifter ' + bil]) || 'Bil · Utgifter ' + bil;
+    /* Underposten for drivstoff naar budsjettet har den («Drivstoff Suzuki»). */
+    const under = kategorier.filter(x => x.indexOf(k + ' · ') === 0 && /drivstoff/i.test(x))[0];
+    f = { kategori:under || k, kilde:'drivstoff' };
   } else f = foreslaa({ motpart:l.navn, tekst:'' }, laert, omdopt);
   return f.kategori && kategorier.indexOf(f.kategori) !== -1 ? f : null;
 }
