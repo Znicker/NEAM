@@ -1362,7 +1362,9 @@ tar fargen fra `--ring`, så de to deler én regel.
 leksene, påminnelsene og prøvene får en 40 px toning nederst
 (`.mer-under`, en `mask-image`) så lenge det finnes mer å rulle til, og
 den forsvinner ved bunnen. Rullefeltene er skjult, så uten den så man ikke
-at lista fortsatte. Aldri på telefon – der ruller sida.
+at lista fortsatte. Aldri på telefon – der ruller sida. Fra samme dag også
+på Kjøkken dash: avtalene, Lekser-fanen, begge påminnelsesboksene og
+jentenes påminnelser og prøver.
 
 **Karakterer velges fra en liste – bare på Emma dash** (fra 23. november
 2026; Andrea går på barneskolen og får ikke karakterer, så feltet er

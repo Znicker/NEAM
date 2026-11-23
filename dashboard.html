@@ -240,6 +240,11 @@ body{
   padding:7px 15px; border-radius:999px; cursor:pointer; -webkit-tap-highlight-color:transparent;
 }
 .lv-gaa:active{ filter:brightness(.9); }
+/* Toning nederst i lister som har mer (kortToning()). */
+.mer-under{
+  -webkit-mask-image:linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+          mask-image:linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+}
 /* Paaminnelsen som vises i hoeyre kolonne (23. november 2026). */
 .hu-rad.valgt{ outline:2px solid rgba(44,62,80,.45); outline-offset:-2px; }
 .hu-utfort-fot{ display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
@@ -1674,7 +1679,30 @@ function tegnPlan(res){
   }
 
   rullTilNaa(boks);
+  kortToning();
 }
+
+/* Toning nederst naar en liste har mer under seg - samme som paa Emma og
+   Andrea dash (Magne, 23. november 2026: «Fader du litt for lange lister
+   på kjøkken også»). Rullefeltene er skjult, saa uten den saa man ikke at
+   lista fortsatte. Forsvinner naar man har rullet til bunnen; aldri paa
+   telefon, der ruller sida. */
+const KORT_TONING = ['plan', 'lekserVis', 'huskeIdag', 'huskeUken', 'barnHuske', 'barnProver'];
+function kortToning(){
+  KORT_TONING.forEach(function(id){
+    const el = $(id);
+    if(!el) return;
+    if(!el.dataset.toning){
+      el.dataset.toning = '1';
+      el.addEventListener('scroll', function(){ kortToningEn(el); }, { passive:true });
+    }
+    kortToningEn(el);
+  });
+}
+function kortToningEn(el){
+  el.classList.toggle('mer-under', el.scrollTop + el.clientHeight < el.scrollHeight - 4);
+}
+window.addEventListener('resize', function(){ kortToning(); });
 
 /* Det som er unnagjort skal ikke ta plassen til det som gjenstaar. Passerte
    avtaler blir staaende - de ruller bare opp av seg selv, saa neste avtale
@@ -3020,6 +3048,7 @@ function tegnHuskeInner(){
   /* Lekser-fanen henter alt sitt herfra og fra barnFag - de samme
      veiene som tegner boksene, tegner den. */
   if(visning === 'lekser') lvTegn();
+  kortToning();
 }
 
 /* ---------------- Middagsnotat ----------------
@@ -3463,6 +3492,7 @@ function lvTegn(){
                                            : '<div class="tom">Ingenting notert ennå.</div>';
   }
   lvHoyre();
+  kortToning();
 }
 
 /* Et trykk paa en lekse eller proeve: hoeyre kolonne, som en avtale. */

@@ -2009,6 +2009,12 @@ stedet for Gå til Emma dash: Gå til fag på Emma dash»). Den går til
 `/emma.html#fag=<id>` (eller Andrea), og `lastFag()` på dashene åpner
 faget når fagene er lastet og fjerner lenken med `history.replaceState`.
 Ikke testet før den er ute – dashene på neam.no har ikke koden ennå.
+(Testet etter push: `emma.html#fag=<Engelsk>` åpnet Engelsk, og lenken
+var borte fra adressen etterpå.)
+Toning i lange lister også på kjøkkenet (Magne: «Fader du litt for lange
+lister på kjøkken også»): samme `kortToning()`/`.mer-under` som på Emma
+dash, på `#plan`, `#lekserVis`, `#huskeIdag`, `#huskeUken`, `#barnHuske`
+og `#barnProver`; kalles fra `tegnPlan()`, `tegnHuskeInner()` og `lvTegn()`.
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke
