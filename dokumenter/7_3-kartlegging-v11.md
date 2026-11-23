@@ -2274,6 +2274,20 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   ser bilen. Fem minutter gåing på tunet: 13 tester, ca. 5 øre i minuttet.
   **Det siste NEI-paret** lagres i `bilarkiv:nei` (ett par, TTL ett døgn,
   overskrives) og leses med `/api/bilarkiv?nei=info|0|1`.
+- **Bevegelse som står på, og oppstart midt i en bevegelse**
+  (`dashboard.html`, 23. november; Magne: «Nå kjørte jeg ut av garasjen
+  og bort. Ingen reaksjon»). iPaden var i live (11:12:04), men Homey
+  meldte `alarm_motion` på uavbrutt fra 11:02:01 til 11:09:00 mens han var
+  på tunet. Uten ny `lastUpdated` så bilvakta ingen ny bevegelse da bilen
+  kjørte ut. Nå begynner en ny runde etter pausen også når bevegelsen
+  bare står på. Unntaket er når en bil alt er funnet i samme bevegelse
+  (`bvBilTid`), så en bil som blir stående, ikke varsles om igjen. Tak:
+  300 tester per skjerm og døgn (`BV_DOGN_MAKS`); når det er nådd, står
+  det i loggen. Telefonen lastet dashen 11:08:50, midt i bevegelsen, og det
+  første svaret ble bare utgangspunkt. Nå teller en bevegelse som
+  pågår og er under 20 s gammel (`BV_OPPSTART_MS`). Simulert med
+  11:02–11:09: rundene kom 11:02, 11:04, 11:06 og 11:08, og bilen ble sett 11:08:33.
+  Ingen nye runder etterpå.
 - **Bilarkivet** (23. november; Magne: «jeg tenker også at vi må ha et
   lite arkiv her … når det kommer bil ha bildet oppe i fem minutter.
   dersom ingen rører det og utkvitterer det legger det seg ned. men
@@ -2411,6 +2425,9 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   `/api/data?key=bilvakt-logg:ipad` etter neste bevegelse. Tapo så bilen
   09:01:35, telefonen viste den i løpet av 09:02 – hvor tiden går, er
   ikke avklart (Homey sent, eller telefonen sov).
+- **Bilvakta med runder** (`666a247` og commiten etter): fanges en bil som
+  kjører ut mens noen alt er på tunet? Hold øye med antall tester i
+  loggen. Taket er 300 per skjerm og døgn.
 - **Søppelbilen** neste mandag: ble påminnelsen huket av, og står
   «Søppelbilen var her kl. …» bak trykk?
 - **Bilarkivet** er tomt til neste bil: kommer bilen i arkivet, og kommer

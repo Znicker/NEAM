@@ -4715,6 +4715,17 @@ const BV_PAUSE_MS = 60 * 1000;   /* pausen etter en runde - eller etter en bil *
    pausen. Stopper bevegelsen, er runden over uten pause. */
 const BV_RUNDE_MS = 15 * 1000;
 const BV_RUNDE_MAKS = 5;
+const BV_OPPSTART_MS = 20 * 1000;   /* en bevegelse som paagaar naar sida lastes */
+/* Bevegelse som staar paa (Magne, 23. november 2026: «Nå kjørte jeg ut av
+   garasjen og bort. Ingen reaksjon»). Homey meldte bevegelse uavbrutt fra
+   11:02:01 til 11:09:00 mens han var paa tunet - bilen som kjoerte ut ga
+   ikke noe nytt signal. Naa begynner en ny runde etter pausen ogsaa naar
+   bevegelsen bare staar paa - men ikke etter en bil i samme bevegelse
+   (bvBilTid), saa en bil som blir staaende ikke varsles om og om igjen.
+   BV_DOGN_MAKS er taket per skjerm og doegn, mot et kamera som henger. */
+const BV_DOGN_MAKS = 300;
+let bvBilTid = null;             /* bevegelsen (lastUpdated) der siste bil ble funnet */
+let bvDogn = { dato:'', tester:0 };
 let bvRunde = null;              /* { tester, sist } - runden som paagaar */
 const BV_STUN = [{ urls:'stun:stun.l.google.com:19302' }];
 let bvForrige = null;            /* { verdi, tid } fra forrige svar */
@@ -4798,11 +4809,18 @@ async function bvSjekk(){
   /* Tidsstempelet fanger ogsaa en bevegelse som kom og gikk mellom to
      spoersmaal: er det nytt, og verdien var av sist, har den vaert paa.
      Uten tidsstempel teller bare overgangen fra av til paa. Det foerste
-     svaret er bare utgangspunktet. */
+     svaret er utgangspunktet - men en bevegelse som paagaar og er nyere
+     enn BV_OPPSTART_MS, teller (Magne, 23. november 2026: telefonen
+     lastet dashen 11:08:50 mens han kjoerte ut, og bevegelsen ble aldri
+     testet). */
   const f = bvForrige;
   bvForrige = naa;
-  if(!f) return;
-  const ny = (naa.tid && f.tid)
+  let ny;
+  if(!f){
+    const nt = typeof naa.tid === 'number' ? naa.tid : Date.parse(naa.tid || '');
+    ny = naa.verdi && nt > 0 && Date.now() - nt < BV_OPPSTART_MS;
+    if(!ny) return;
+  } else ny = (naa.tid && f.tid)
     ? (naa.tid !== f.tid && (naa.verdi || !f.verdi))
     : (naa.verdi && !f.verdi);
   const tNaa = Date.now();
@@ -4811,9 +4829,21 @@ async function bvSjekk(){
   if(bvRunde){
     if(!(ny || naa.verdi) || tNaa - bvRunde.sist < BV_RUNDE_MS) return;
   } else {
-    if(!ny) return;
-    if(tNaa - bvSist < BV_PAUSE_MS){ bvNoter('bevegelse - i pausen etter forrige runde'); return; }
+    const staar = !ny && naa.verdi && naa.tid !== bvBilTid;
+    if(!ny && !staar) return;
+    if(tNaa - bvSist < BV_PAUSE_MS){
+      if(ny) bvNoter('bevegelse - i pausen etter forrige runde');
+      return;
+    }
     bvRunde = { tester:0, sist:0 };
+    if(staar) bvNoter('bevegelsen står fortsatt på - ny runde');
+  }
+  const idag = new Date().toDateString();
+  if(bvDogn.dato !== idag) bvDogn = { dato:idag, tester:0 };
+  if(bvDogn.tester >= BV_DOGN_MAKS){
+    if(bvDogn.tester === BV_DOGN_MAKS){ bvDogn.tester++; bvNoter('døgntaket på ' + BV_DOGN_MAKS + ' tester er nådd - ingen flere i dag'); }
+    bvRunde = null;
+    return;
   }
 
   const video = d.videos && d.videos[0];
@@ -4822,13 +4852,14 @@ async function bvSjekk(){
 
   bvOpptatt = true;
   const tStart = Date.now();
-  bvRunde.tester++; bvRunde.sist = tStart;
+  bvRunde.tester++; bvRunde.sist = tStart; bvDogn.tester++;
   bvNoter('bevegelse - kobler til kameraet (test ' + bvRunde.tester + ' av ' + BV_RUNDE_MAKS + ')');
   try{
     const bilder = await bvToBilder(videoId);
     bvNoter('to bilder tatt etter ' + Math.round((Date.now() - tStart) / 1000) + ' s');
     const hva = await bvErBil(bilder);
     if(hva){
+      bvBilTid = naa.tid;
       bvVis(bilder[0]);
       bvArkiver(bilder, hva === 'soppel', naa.tid);
     } else bvLagreNei(bilder);
