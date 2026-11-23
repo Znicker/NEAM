@@ -1393,11 +1393,89 @@ function merkReservert(poster, res, sjekket){
     if(best !== -1){
       brukt.add(best);
       const t = res[best];
+      t.tilFaktura = true;   /* blir ikke egen post (forbehold) */
       p.reservert = { dato:t.dato, belop:t.belop, konto:t.konto, kontoNavn:t.kontoNavn };
     } else if(p.reservert && sjekket.has(p.reservert.konto)) delete p.reservert;
     if(foer !== JSON.stringify(p.reservert || null)) endret = true;
   }
   return endret;
+}
+
+/* ---------- Reservert i banken som egen post (23. november 2026) ----------
+   Magne: «Kan man heller ikke føre de, med et lite forbehold og så sjekkes
+   det etter ett par dager og gir melding ved avvik». DNB reserverer ogsaa
+   overfoeringer mellom egne kontoer og bokfoerer dem senere. Et reservert
+   trekk paa en felleskonto blir derfor en vanlig post i innboksen med
+   `forbehold: { sett, belop, borteFra? }` - den kan foeres og telles med en
+   gang. Unntak: en reservasjon som passer en regning som venter
+   (merkReservert), blir ikke egen post.
+   - Bokfoeres samme beloep paa samme konto innen FORBEHOLD_VINDU bankdager,
+     blir posten den bokfoerte (bokfor): forbeholdet tas bort, datoen blir
+     bokfoeringsdatoen.
+   - Bokfoeres et annet beloep (innen FORBEHOLD_ANDEL av det reserverte),
+     faar posten avvik 'belop' og gaar tilbake til innboksen; det bokfoerte
+     kommer som ny post.
+   - Er reservasjonen borte uten bokfoering i FORBEHOLD_BORTE bankdager:
+     avvik 'borte', tilbake til innboksen.
+   - Fortsatt bare reservert etter FORBEHOLD_LENGE bankdager: avvik 'lenge',
+     bare en melding.
+   Avvikene staar i varselet paa Status og i innboksen. */
+const FORBEHOLD_VINDU = 7, FORBEHOLD_BORTE = 2, FORBEHOLD_LENGE = 5, FORBEHOLD_ANDEL = 0.3;
+function krTekst(v){ return (Math.round(Number(v) * 100) / 100).toLocaleString('nb-NO', { minimumFractionDigits:2, maximumFractionDigits:2 }) + ' kr'; }
+/* En post med forbehold som det bokfoerte trekket t kan vaere: samme konto,
+   samme fortegn, ikke lenger i banken under sin egen id. annet: et annet
+   beloep (avvik), ellers samme. Naermeste beloep vinner. */
+function finnForbehold(poster, konto, t, iBanken, brukt, annet){
+  let best = null, bestA = Infinity;
+  const td = t.dato || new Date().toISOString().slice(0, 10);
+  for(const id of Object.keys(poster)){
+    const p = poster[id];
+    if(!p.forbehold || p.konto !== konto || brukt[p.id] || bankFinnes(p, iBanken)) continue;
+    if(p.status === 'stroket' || p.status === 'sammenslatt') continue;
+    if(Math.sign(p.forbehold.belop) !== Math.sign(t.belop)) continue;
+    if(bankdagerMellom(p.forbehold.sett, td) > FORBEHOLD_VINDU) continue;
+    const avvik = Math.abs(p.forbehold.belop - t.belop);
+    if(annet ? (avvik < 0.005 || avvik > Math.abs(p.forbehold.belop) * FORBEHOLD_ANDEL) : avvik >= 0.005) continue;
+    if(avvik < bestA){ bestA = avvik; best = p; }
+  }
+  return best;
+}
+/* Reservasjonen er bokfoert: posten er naa det bokfoerte trekket. */
+function bokfor(p, t){
+  if(t.dato){ if(p.datoBank) p.datoBank = t.dato; else p.dato = t.dato; }
+  if(t.motpart && !p.motpart) p.motpart = t.motpart;
+  if(String(t.tekst || '').length > String(p.tekst || '').length) p.tekst = t.tekst;
+  p.reservertFra = p.forbehold.sett;
+  delete p.forbehold;
+  if(p.forbeholdAvvik && p.forbeholdAvvik.type !== 'belop') delete p.forbeholdAvvik;
+}
+/* Avvik som maa avklares: tilbake i innboksen, og aldri foert av seg selv igjen. */
+function forbeholdTilInnboks(p){
+  if(p.status !== 'godkjent') return;
+  p.status = 'ny'; delete p.behandlet; delete p.av;
+  if(p.auto){ delete p.auto; p.manuell = true; }
+}
+/* En ny post fra et banktrekk - bokfoert eller reservert. */
+function nyBankPost(poster, t, k, laert, omdopt){
+  const f = foreslaa(t, laert, omdopt);
+  const ny = { id:t.id, konto:k.uid, kontoNavn:k.navn, dato:t.dato, belop:t.belop, tekst:t.tekst, motpart:t.motpart,
+    status:'ny', kategori:f.kategori, kilde:f.kilde };
+  poster[t.id] = ny;
+  /* Kom kvitteringen foer banktrekket, kobles de naa. */
+  for(const id of Object.keys(poster)){
+    const kv = poster[id];
+    if(kv.fra && kv.status === 'ny' && !kv.bankId && !kv.mulDobbel && !ny.dekketAv && (ny.belop < 0 || (ny.belop > 0 && kv.belop > 0)) && erLik(ny, kv)){
+      ny.dekketAv = kv.id; kv.bankId = ny.id; kv.bankKonto = ny.kontoNavn;
+    }
+  }
+  /* Var kvitteringen alt godkjent - ofte foert automatisk, fordi Trumf
+     kommer samme dag og banktrekket en dag eller to etter - kan de ikke
+     slaas sammen stille. Banktrekket merkes som mulig dobbel, foeres
+     aldri av seg selv og staar stroeket til noen tar det med (Magne,
+     6. november 2026). Uten dette ble kjoepet telt to ganger. */
+  const lf = lignerFoert(poster, ny);
+  if(lf) ny.lignerPaa = lf;
+  return ny;
 }
 
 async function innboks(env, okt, fersk, psu){
@@ -1416,7 +1494,7 @@ async function innboks(env, okt, fersk, psu){
   const alias = {};
   for(const id of Object.keys(poster)) for(const a of poster[id].bankIder || []) alias[a] = id;
   /* Reserverte trekk og kontoene banken svarte for (merkReservert). */
-  const reservasjoner = [], sjekket = new Set();
+  const reservasjoner = [], sjekket = new Set(), iBankenAv = {};
   for(const k of felles){
     const r = await hentTransaksjoner(env, k.uid, fra, fersk, psu);
     if(!r.ok){ advarsel = r.feil; continue; }
@@ -1424,11 +1502,26 @@ async function innboks(env, okt, fersk, psu){
     if(r.advarsel) advarsel = r.advarsel;
     sjekket.add(k.uid);
     const iBanken = new Set(r.liste.map(x => x.id)), brukt = {};
+    iBankenAv[k.uid] = iBanken;
     for(const t of r.liste){
-      /* Bare bokfoerte. En reservasjon kan endre beloep eller forsvinne -
-         den brukes bare til aa merke regninger som venter (merkReservert). */
-      if(t.status && t.status !== 'BOOK'){ reservasjoner.push(Object.assign({ konto:k.uid, kontoNavn:k.navn }, t)); continue; }
-      if(poster[t.id] || alias[t.id]) continue;
+      /* Reservert: blir post med forbehold etter merkReservert (under).
+         Er den alt en post, staar den der og er ikke med til fakturaene. */
+      if(t.status && t.status !== 'BOOK'){
+        if(!poster[t.id] && !alias[t.id]) reservasjoner.push(Object.assign({ konto:k.uid, kontoNavn:k.navn }, t));
+        continue;
+      }
+      /* Bokfoert under samme id som reservasjonen (DNB ga den dato foer). */
+      if(poster[t.id]){ if(poster[t.id].forbehold){ bokfor(poster[t.id], t); oppdatert = true; } continue; }
+      if(alias[t.id]){ const a = poster[alias[t.id]]; if(a && a.forbehold){ bokfor(a, t); oppdatert = true; } continue; }
+      /* Bokfoert under ny id: samme beloep -> samme post. */
+      const res = finnForbehold(poster, k.uid, t, iBanken, brukt, false);
+      if(res){
+        brukt[res.id] = true; alias[t.id] = res.id;
+        (res.bankIder = res.bankIder || []).push(t.id);
+        bokfor(res, t);
+        oppdatert = true;
+        continue;
+      }
       if(lagdId(t.id)){
         const gammel = Object.keys(poster).map(x => poster[x]).filter(p => !p.fra && p.konto === k.uid && lagdId(p.id)
           && p.status !== 'sammenslatt' && !brukt[p.id] && sammeTrekk(p, t) && !bankFinnes(p, iBanken))[0];
@@ -1441,24 +1534,16 @@ async function innboks(env, okt, fersk, psu){
           continue;
         }
       }
-      const f = foreslaa(t, laert, omdopt);
-      const ny = { id:t.id, konto:k.uid, kontoNavn:k.navn, dato:t.dato, belop:t.belop, tekst:t.tekst, motpart:t.motpart,
-        status:'ny', kategori:f.kategori, kilde:f.kilde };
-      poster[t.id] = ny;
-      /* Kom kvitteringen foer banktrekket, kobles de naa. */
-      for(const id of Object.keys(poster)){
-        const kv = poster[id];
-        if(kv.fra && kv.status === 'ny' && !kv.bankId && !kv.mulDobbel && !ny.dekketAv && (ny.belop < 0 || (ny.belop > 0 && kv.belop > 0)) && erLik(ny, kv)){
-          ny.dekketAv = kv.id; kv.bankId = ny.id; kv.bankKonto = ny.kontoNavn;
-        }
+      nyBankPost(poster, t, k, laert, omdopt);
+      /* Bokfoert med et annet beloep enn reservasjonen: den reserverte
+         maa avklares (forbehold). */
+      const avv = finnForbehold(poster, k.uid, t, iBanken, brukt, true);
+      if(avv){
+        brukt[avv.id] = true;
+        avv.forbeholdAvvik = { type:'belop', bokfort:t.belop, nyId:t.id,
+          tekst:'Reservert ' + krTekst(avv.forbehold.belop) + ', men bokført ' + krTekst(t.belop) + ' – den bokførte ligger i innboksen. Stryk denne eller rett beløpet.' };
+        forbeholdTilInnboks(avv);
       }
-      /* Var kvitteringen alt godkjent - ofte foert automatisk, fordi Trumf
-         kommer samme dag og banktrekket en dag eller to etter - kan de ikke
-         slaas sammen stille. Banktrekket merkes som mulig dobbel, foeres
-         aldri av seg selv og staar stroeket til noen tar det med (Magne,
-         6. november 2026). Uten dette ble kjoepet telt to ganger. */
-      const lf = lignerFoert(poster, ny);
-      if(lf) ny.lignerPaa = lf;
       nye++;
     }
   }
@@ -1491,6 +1576,46 @@ async function innboks(env, okt, fersk, psu){
   /* Fakturaer som venter, legges ved trekket naar det er kommet. */
   if(await synkFakturaer(env, poster)) nye++;
   if(merkReservert(poster, reservasjoner, sjekket)) oppdatert = true;
+  /* Reservasjonene som ikke hoerer til en regning, blir poster med forbehold. */
+  {
+    const idag = new Date().toISOString().slice(0, 10), bruktRes = {};
+    for(const t of reservasjoner){
+      if(t.tilFaktura) continue;
+      const k = { uid:t.konto, navn:t.kontoNavn };
+      /* DNB ga reservasjonen ny id (dato eller tekst endret): samme post. */
+      const gammel = finnForbehold(poster, t.konto, t, iBankenAv[t.konto] || new Set(), bruktRes, false);
+      if(gammel){
+        bruktRes[gammel.id] = true; alias[t.id] = gammel.id;
+        (gammel.bankIder = gammel.bankIder || []).push(t.id);
+        oppdatert = true;
+        continue;
+      }
+      const ny = nyBankPost(poster, Object.assign({}, t, { dato:t.dato || idag }), k, laert, omdopt);
+      ny.forbehold = { sett:idag, belop:t.belop };
+      nye++;
+    }
+    /* Sjekken: borte, eller fortsatt reservert for lenge. Bare kontoene
+       banken svarte for i dag. */
+    for(const id of Object.keys(poster)){
+      const p = poster[id];
+      if(!p.forbehold || !sjekket.has(p.konto) || p.status === 'stroket' || p.status === 'sammenslatt') continue;
+      if(p.forbeholdAvvik && p.forbeholdAvvik.type === 'belop') continue;
+      if(bankFinnes(p, iBankenAv[p.konto] || new Set())){
+        if(p.forbehold.borteFra){ delete p.forbehold.borteFra; oppdatert = true; }
+        if(!p.forbeholdAvvik && bankdagerMellom(p.forbehold.sett, idag) >= FORBEHOLD_LENGE){
+          p.forbeholdAvvik = { type:'lenge', tekst:'Fortsatt bare reservert i banken etter ' + FORBEHOLD_LENGE + ' bankdager.' };
+          oppdatert = true;
+        }
+        continue;
+      }
+      if(!p.forbehold.borteFra){ p.forbehold.borteFra = idag; oppdatert = true; continue; }
+      if(bankdagerMellom(p.forbehold.borteFra, idag) >= FORBEHOLD_BORTE && !(p.forbeholdAvvik && p.forbeholdAvvik.type === 'borte')){
+        p.forbeholdAvvik = { type:'borte', tekst:'Reservert ' + krTekst(p.forbehold.belop) + ' i banken, men aldri bokført – reservasjonen er borte. Stryk den eller behold den.' };
+        forbeholdTilInnboks(p);
+        oppdatert = true;
+      }
+    }
+  }
   if(await finnOppgjor(env, okt, roller, poster, fra, fersk, psu)) oppdatert = true;
   /* «Spoer bare naar den er usikker» (Magne, 29. oktober). En post Neam
      kjenner - samme motpart foert foer, eller et kjent navn - foeres med en
@@ -1621,8 +1746,11 @@ async function varsler(env, okt){
   const fakUten = ventende.filter(p => !p.kategori && (String(p.dato) >= iDag || p.reservert)).length;
   const tf = await lesJson(env, TRUMF_FEIL_NOKKEL, null);
   const sist = await lesJson(env, SIST_HENTET_NOKKEL, null);
+  /* Reservasjoner som ikke ble bokfoert som ventet (forbehold). */
+  const resAvvik = Object.keys(poster).map(id => poster[id]).filter(p => p.forbeholdAvvik && p.status !== 'stroket' && p.status !== 'sammenslatt').length;
   const ut = [];
-  if(venter.length || fakUten || forfalt) ut.push({ type:'innboks', tekst:[
+  if(venter.length || fakUten || forfalt || resAvvik) ut.push({ type:'innboks', tekst:[
+    resAvvik ? resAvvik + (resAvvik === 1 ? ' reservert transaksjon' : ' reserverte transaksjoner') + ' ble ikke bokført som ventet' : '',
     forfalt ? forfalt + (forfalt === 1 ? ' regning har forfalt' : ' regninger har forfalt') + ' uten å være betalt' : '',
     venter.length ? venter.length + (venter.length === 1 ? ' post venter' : ' poster venter') + ' på godkjenning' + (uten ? ', ' + uten + ' uten kategori' : '') : '',
     fakUten ? fakUten + (fakUten === 1 ? ' faktura' : ' fakturaer') + ' uten kategori' : ''].filter(Boolean).join(' · ') });
@@ -1934,6 +2062,7 @@ async function foringer(env, mnd, kat, eksakt){
         kategori:d.kategori, del:deler.length > 1, harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false,
         harFil:!!p.harFil, filType:p.filType || '', overstyrt:!!p.overstyrt, merke:p.merke || '', forbN:forbindelser(p, poster).length,
         vedN:(p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:!!(p.samleId || p.kommendeId || p.fra === 'samle'), samleStatus:samleStatus(p, poster),
+        forbehold:!!p.forbehold, forbeholdAvvik:p.forbeholdAvvik ? p.forbeholdAvvik.tekst : '',
         belop: Math.round((d.kategori.indexOf('Inntekter') === 0 ? d.belop : -d.belop) * 100) / 100 });
     }
   }
@@ -2292,6 +2421,7 @@ async function postDetaljer(env, id){
     behandlet:p.behandlet || '', av:p.av ? masker(p.av) : '', deler:(p.deler || []).map(d => ({ kategori:d.kategori, belop:d.belop })),
     harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, vedlegg:vedleggListe(p), forb:forbindelser(p, poster),
     samleVenter:!!p.samleVenter, tvil:!!p.tvil, limt:p.samleVenter ? p.limt || '' : '', sfLest:p.samleVenter ? p.sfLest || null : null,
+    forbehold:!!p.forbehold, forbeholdAvvik:p.forbeholdAvvik ? p.forbeholdAvvik.tekst : '',
     samleSporsmaal:p.samleSporsmaal || null, dobbelFaktura:samleDobbel(p, poster),
     samleId:p.samleId || '', samleNavn:p.samleId && poster[p.samleId] ? poster[p.samleId].motpart || '' : '',
     kommende:!!p.kommende, kommendeId:p.kommendeId || '', kommendeNavn:p.kommendeId && poster[p.kommendeId] ? poster[p.kommendeId].motpart || '' : '',
@@ -2558,7 +2688,8 @@ async function allePoster(env){
       harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, harFil:!!p.harFil, filType:p.filType || '',
       overstyrt:!!p.overstyrt, merke:p.merke || '', avsluttet:p.avsluttet || '', forbN:forbindelser(p, poster).length,
       vedN:(p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:!!(p.samleId || p.kommendeId || p.fra === 'samle'), samleStatus:samleStatus(p, poster), kommende:!!p.kommende,
-      reservert:p.status === 'venter' && p.reservert ? Object.assign({}, p.reservert, { kontoNavn:kn[p.reservert.konto] || p.reservert.kontoNavn }) : null });
+      reservert:p.status === 'venter' && p.reservert ? Object.assign({}, p.reservert, { kontoNavn:kn[p.reservert.konto] || p.reservert.kontoNavn }) : null,
+      forbehold:!!p.forbehold, forbeholdAvvik:p.forbeholdAvvik ? p.forbeholdAvvik.tekst : '' });
   }
   ut.sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
   return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', poster:ut });
@@ -2883,6 +3014,8 @@ async function godkjenn(env, kropp, epost){
       return svar({ ok:false, feil:'Skriv i notatet hva overføringen gjaldt – banken sier ikke hvem den er fra.' });
     }
     Object.assign(p, { status:'godkjent', kategori:g.kategori, behandlet:naa, av:epost });
+    /* Et avvik paa en reservasjon er avklart naar posten godkjennes igjen. */
+    if(p.forbeholdAvvik && p.forbeholdAvvik.type !== 'lenge'){ delete p.forbeholdAvvik; delete p.forbehold; }
     delete p.deler;
     if(g.linjer && Object.keys(g.linjer).some(i => g.linjer[i] && kategorier.indexOf(g.linjer[i]) === -1)){
       return svar({ ok:false, feil:'Ukjent kategori på en vare' });

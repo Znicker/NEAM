@@ -2312,6 +2312,30 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   `lignerPaa` («Mulig dobbel … innbetaling ført for hånd»), føres aldri
   av seg selv og avklares i innboksen. En post som angres tilbake til
   innboksen, sjekkes på samme måte. Testet i node mot lønnstilfellet.
+- **Reservert i banken kan føres – med forbehold** (bank-funksjonen og
+  `okonomi.html`, 23. november; Magne: «Kan man heller ikke føre de, med
+  et lite forbehold og så sjekkes det etter ett par dager og gir melding
+  ved avvik»). Bakgrunn: en overføring Forbrukskonto → Strømkonto sto
+  etter 5 min bare som `PDNG` hos DNB, og kontoutskriften viser bare
+  bokførte. DNB reserverer også overføringer mellom egne kontoer.
+  Nå: en reservasjon på en felleskonto som ikke passer en regning som
+  venter (`merkReservert` merker `tilFaktura`), blir en vanlig post i
+  innboksen med `forbehold:{ sett, belop, borteFra? }`. Den kan føres og
+  telles med en gang, også av regler. Oransje «Reservert i banken» på
+  raden og i vinduet. Bokføres samme beløp på samme konto innen 7
+  bankdager (`finnForbehold`), blir posten den bokførte (`bokfor`:
+  forbeholdet bort, datoen = bokføringsdatoen, `reservertFra`). Det
+  gjelder også når DNB gir reservasjonen ny id underveis (alias via
+  `bankIder`), og når bokføringen får samme id. **Avvik**
+  (`forbeholdAvvik`): annet beløp (innen 30 %) → `belop`, den bokførte
+  kommer som ny post; borte uten bokføring i 2 bankdager → `borte`;
+  fortsatt reservert etter 5 bankdager → `lenge` (bare melding). `belop`
+  og `borte` legger posten tilbake i innboksen (aldri automatisk igjen).
+  Varselet: «N reserverte transaksjoner ble ikke bokført som ventet».
+  Godkjennes en post med avvik igjen, er avviket avklart. Neam ser
+  `ikke_bokfort_ennaa` og `avvik_mot_banken`. **Testet** i node med hele
+  `innboks()` over flere hentinger og falske banksvar (alle tilfellene
+  over, pluss reservasjon til en regning). Ikke testet mot DNB ennå.
 - **Mindre ikoner når flere står ved klokka** (`felles-topp.css ?v=18`,
   alle 18 sidene; Magne: «blir ikonene mindre for å få plass?»). Før ble
   bare flere retter mindre (`.flere`). Nå får alle ikonene ved klokka,

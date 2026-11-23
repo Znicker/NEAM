@@ -1937,6 +1937,10 @@ button.ok-dr-rad{ cursor:pointer; }
      reservert hos DNB, men ikke bokfoert. Ikke forfalt - kobles naar
      trekket bokfoeres. Oransje som «Kan være gamle tall» (Magne valgte). */
   function okReservert(p){ return !!(p && p.reservert); }
+  /* En post som bare er reservert i banken, ikke bokfoert (forbehold i
+     bank-funksjonen, 23. november 2026): den telles, med samme merke. Avviket
+     kommer som tekst - fra innboksen som objekt, ellers som streng. */
+  function okForbeholdAvvik(p){ var a = p && p.forbeholdAvvik; return a ? (a.tekst || String(a)) : ''; }
   function okMerkeReservert(){ return '<span class="ok-fersk gammel ok-reservert" title="Trekket er reservert i banken – kobles når det bokføres">Reservert i banken</span>'; }
   /* Har en kategori (post eller linje) en forfalt regning i perioden? */
   function okForfaltI(c, k){
@@ -2272,13 +2276,14 @@ button.ok-dr-rad{ cursor:pointer; }
     var tekst = p.mulDobbel ? 'Mulig dobbel: et banktrekk med samme beløp fra ' + (p.bankKonto || 'banken') + ' er alt godkjent. Strøket til du tar den med.'
       : p.lignerPaa ? 'Mulig dobbel: ' + okLignerTekst(p.lignerPaa) + ' Strøket til du tar den med.'
       : p.ute ? 'Føres ikke'
+      : okForbeholdAvvik(p) ? okForbeholdAvvik(p)
       : p.oppgjor ? 'Tilbakebetaling til ' + p.oppgjor.navn + ' – går av på det felles skylder. Velg en annen kategori eller stryk den hvis det ikke er det.'
       : okManglerForklaring(p) ? 'Overføring uten avsender – skriv i Notat hva den gjaldt, og velg kategori'
       : !p.kategori ? 'Trenger kategori – blir liggende til den har en'
       : p.kilde === 'ai-usikker' ? 'Neam er usikker – sjekk at kategorien stemmer'
       : p.kilde === 'laert' ? 'Forslag: samme som sist'
       : p.kilde === 'ord' ? 'Forslag fra Neam' : '';
-    return { tekst:tekst, varsel:(!p.kategori && !p.ute) || p.mulDobbel || p.lignerPaa || (p.kilde === 'ai-usikker' && !p.ute) || (okManglerForklaring(p) && !p.ute) };
+    return { tekst:tekst, varsel:(!p.kategori && !p.ute) || p.mulDobbel || p.lignerPaa || (p.kilde === 'ai-usikker' && !p.ute) || (okManglerForklaring(p) && !p.ute) || (!!okForbeholdAvvik(p) && !p.ute) };
   }
   /* Forbindelser (Magne, 9. november 2026): «alle transaksjoner som har noe
      med hverandre å gjøre linkes, så man ser dem når man trykker på en
@@ -5327,7 +5332,8 @@ button.ok-dr-rad{ cursor:pointer; }
       kommende:!!p.kommende, betaltFra:p.betaltFra, merke:p.merke, overstyrt:p.overstyrt, harKvittering:p.status !== 'venter' && !p.avsluttet && p.harKvittering, harFil:p.harFil, filType:p.filType,
       status:p.status, venter:p.status === 'venter', deler:p.deler, avsluttet:p.avsluttet, forbN:p.forbN || (p.forb || []).length,
       vedN:p.vedN != null ? p.vedN : (p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:p.iSamle != null ? p.iSamle : !!(p.samleId || p.fra === 'samle'),
-      samleSpor:p.samleSporsmaal || null, samleStatus:p.samleStatus || null, reservert:p.status === 'venter' && p.reservert || null };
+      samleSpor:p.samleSporsmaal || null, samleStatus:p.samleStatus || null, reservert:p.status === 'venter' && p.reservert || null,
+      forbehold:!!p.forbehold, forbeholdAvvik:okForbeholdAvvik(p) };
   }
   ['ok-al-konto', 'ok-al-kat', 'ok-al-merke', 'ok-al-type'].forEach(function(id){
     var d = document.getElementById(id);
@@ -6737,9 +6743,11 @@ button.ok-dr-rad{ cursor:pointer; }
     okRgForAv[f.id] = f;
     var forfalt = f.venter && okForfalt(f.dato) && !okReservert(f);
     var status = f.status === 'ny' ? (f.iInnboks ? '' : 'venter i innboksen') : f.status === 'stroket' ? (OK_AVSLUTTET[f.avsluttet] || 'strøket').toLowerCase() : forfalt ? 'forfalt – ikke funnet på regningskontoen' : f.venter && okReservert(f) ? 'reservert i banken – kobles når trekket bokføres' : f.venter ? 'forfaller – ikke betalt ennå' : '';
+    var fbh = f.forbehold && !f.venter && f.status !== 'stroket';
+    if(fbh) status = [status, f.forbeholdAvvik ? f.forbeholdAvvik : 'reservert i banken – ikke bokført ennå'].filter(Boolean).join(' · ');
     var meta = [medKat ? f.kategori || (f.kommende ? '' : 'Uten kategori') : '', f.kilde + (f.betaltFra ? ', betalt fra ' + f.betaltFra : ''), f.del ? 'del av kvitteringen' : '', f.deler ? 'fordelt på ' + f.deler : '', f.mer, f.merke && okMerkeAv(f.merke) ? 'merke ' + okMerkeFullNavn(f.merke) : '', f.samleSpor && f.status === 'ny' ? 'kan høre til samlefakturaen fra ' + f.samleSpor.samleNavn : '', f.betales ? 'betales ' + okKort.format(new Date(f.betales)) : '', status].filter(Boolean).join(' · ');
     var rad = okEl('div', 'ok-under-rad ok-rg-for' + (f.status === 'stroket' ? ' ute' : '') + (f.venter ? ' forfaller' : ''),
-      '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.tekst || 'Uten tekst') + okForbPluss(f) + okRadSymboler(f) + '<span class="ok-meta">' + okVask(meta) + '</span></span><b>' + (forfalt ? okUtropForfalt() : f.venter && okReservert(f) ? okMerkeReservert() : f.venter ? okStjerneKommer() : '') + (f.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret – ikke den banken viser">!</span>' : '') + okKr0.format(f.belop) + '</b>');
+      '<span><span class="ok-dato">' + okVask(okKort.format(new Date(f.dato))) + '</span>' + okVask(f.tekst || 'Uten tekst') + okForbPluss(f) + okRadSymboler(f) + '<span class="ok-meta">' + okVask(meta) + '</span></span><b>' + (forfalt ? okUtropForfalt() : f.venter && okReservert(f) ? okMerkeReservert() : f.venter ? okStjerneKommer() : fbh ? okMerkeReservert() : '') + (f.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret – ikke den banken viser">!</span>' : '') + okKr0.format(f.belop) + '</b>');
     rad.dataset.f = f.id; rad.tabIndex = 0; rad.setAttribute('role', 'button');
     rad.setAttribute('aria-label', (f.tekst || 'Føring') + (forfalt ? ', forfalt og ikke betalt' : '') + ', ' + okKort.format(new Date(f.dato)) + ', ' + okKr0.format(f.belop) + ' kr. Trykk for detaljene.');
     rad.addEventListener('click', function(){ okForVindu(f, rad); });
@@ -6837,7 +6845,7 @@ button.ok-dr-rad{ cursor:pointer; }
     document.getElementById('ok-fr-tittel').textContent = p.motpart || p.tekst || 'Uten tekst';
     document.getElementById('ok-fr-meta').textContent = okDato.format(new Date(p.dato));
     var frForfalt = p.status === 'venter' && okForfalt(p.dato) && !okReservert(p);
-    document.getElementById('ok-fr-belop').innerHTML = (frForfalt ? okUtropForfalt() : p.status === 'venter' && okReservert(p) ? okMerkeReservert() : '') + (p.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret">!</span>' : '') + okVask(okFrKr(p.belop));
+    document.getElementById('ok-fr-belop').innerHTML = (frForfalt ? okUtropForfalt() : p.status === 'venter' && okReservert(p) ? okMerkeReservert() : p.forbehold && p.status !== 'stroket' ? okMerkeReservert() : '') + (p.overstyrt ? '<span class="ok-fr-utrop" title="Summen er endret">!</span>' : '') + okVask(okFrKr(p.belop));
     var inn = document.getElementById('ok-fr-innhold'); inn.innerHTML = '';
     /* Infoen og kvitteringen til venstre, vedleggene til hoeyre (Magne, 8.
        november 2026: «Jeg ønsker å se vedlegg og kvitteringsdetaljer,
@@ -8686,6 +8694,7 @@ button.ok-dr-rad{ cursor:pointer; }
           return { id:x.id, dato:x.dato, sted:x.motpart || x.tekst || '', tekst:x.motpart && x.tekst !== x.motpart ? x.tekst : undefined, belop:x.belop,
             kategori:x.kategori || null, status:x.status, kilde:kilde(x), fort_automatisk:x.auto || undefined,
             reservert_i_banken:x.reservert ? { dato:x.reservert.dato, belop:x.reservert.belop, konto:x.reservert.kontoNavn } : undefined,
+            ikke_bokfort_ennaa:x.forbehold || undefined, avvik_mot_banken:x.forbeholdAvvik || undefined,
             vedlegg:x.harFil ? (x.filType === 'application/pdf' ? 'pdf' : 'bilde') : x.harKvittering ? 'varelinjer' : undefined };
         }) };
     }
