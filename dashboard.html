@@ -3486,7 +3486,7 @@ function lvDetalj(id){
   kort.style.boxShadow = 'inset 0 0 0 1px ' + dus(farge, .34) + ', 0 2px 14px rgba(0,0,0,.06)';
   /* Endre hoerer til avtalene. En lekse endres paa dashen hennes. */
   const endre = kort.querySelector('.knapp-endre');
-  if(endre) endre.style.display = 'none';
+  if(endre) endre.style.visibility = 'hidden';   /* holder plassen, saa krysset blir til hoeyre */
   $('detaljInn').innerHTML =
       '<div class="detalj-tittel">' + esc(inn.fag || (inn.erProve ? 'Prøve' : 'Lekse')) + '</div>'
     + '<div class="detalj-tid">' + (inn.erProve ? 'Prøve' : 'Lekse') + ' · ' + esc(inn.barn) + '</div>'
@@ -3515,7 +3515,7 @@ function lvVelg(id){
   });
   if(!id){
     const endre = $('detalj') && $('detalj').querySelector('.knapp-endre');
-    if(endre) endre.style.display = '';
+    if(endre) endre.style.visibility = '';
   }
 }
 

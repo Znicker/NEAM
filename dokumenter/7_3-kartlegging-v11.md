@@ -1999,6 +1999,11 @@ dashene (og Lekser-fanen) viser en ukepåminnelse bare til og med `til`;
 uten `til` som før. Mandag fra søndag kl. 20 kommer av døgnskiftet.
 `til` overlever redigering (`lagreHuske()` bruker `Object.assign`).
 Påminnelser Neam alt har lagt inn (frist søndag) er ikke endret.
+Rettet samme dag: i lekse-kortet på kjøkkenet sto det røde krysset helt
+til venstre – «Endre» ble skjult med `display:none`, og det var den som
+dyttet krysset til høyre (`margin-left:auto`). Nå `visibility:hidden`, så
+plassen holdes. Målt på neam.no: krysset 588 px fra høyre kant før, 20 px
+etter.
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke
