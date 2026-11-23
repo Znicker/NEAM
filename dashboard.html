@@ -198,6 +198,8 @@ body{
 #lekserVis .plan-meta{ margin-top:0; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 #lekserVis .plan-rad.valgt{ box-shadow:inset 0 0 0 2px rgba(44,62,80,.45); }
 .lv-filter{ margin:0 0 10px; }
+/* Jentenes lekser i Paaminnelser: én linje (23. november 2026). */
+.hu-rad.hu-lekse .hu-tittel{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .lv-tittel{
   font-size:var(--t-meta);font-weight:700;text-transform:uppercase;letter-spacing:.1em;
   color:var(--ink);margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--line);
@@ -2724,6 +2726,13 @@ function datoIUken(basisdato, nr){
 /* En lekse tegnet som en paaminnelse. Ingen hake og ingen blyant - den
    hoerer hjemme paa Emma dash. Merket «lekse» sier hvorfor den ser litt
    annerledes ut enn naboen. */
+/* De foerste ordene av en tekst, med «…» hvis det var mer. */
+function huKortTekst(tekst, ord){
+  const deler = String(tekst || '').trim().split(/\s+/).filter(Boolean);
+  const kort = deler.slice(0, ord).join(' ').replace(/[.,:;!?]+$/, '');
+  return deler.length > ord ? kort + ' …' : kort;
+}
+
 function lekseRadIHuske(m){
   return '<div class="hu-linje uten-hake' + (m.ferdig ? ' ferdig' : '') + '">'
     +   '<div class="hu-rad hu-lekse" style="' + fyll(huskeFarge(m.gjelder)) + '">'
@@ -3032,7 +3041,10 @@ function tegnHuskeInner(){
         id: 'lekse:' + b.navn.toLowerCase() + ':' + l.id,
         lekse: true,
         gjelder: b.navn,
-        overskrift: fagNavn(b.navn, l.fagId) + ': ' + String(l.tekst || ''),
+        /* Kort: faget og de tre foerste ordene (Magne, 23. november 2026:
+           «bare med fagnavn og et par-tre ord, på en linje»). Hele leksa
+           staar i Lekser-fanen og paa dashen hennes. */
+        overskrift: fagNavn(b.navn, l.fagId) + ': ' + huKortTekst(l.tekst, 3),
         tekst: '',
         frist: l.frist,
         omfang: 'dag',

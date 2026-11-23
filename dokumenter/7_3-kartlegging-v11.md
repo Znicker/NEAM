@@ -2059,6 +2059,10 @@ forkortelse. CSS-reglene som pekte på middagen som `:last-child`, peker nå
 på `.kort-middag`. `HOYRE_KORT`, `KORT_TONING` og `lvHoyre()` ryddet.
 Testet på neam.no: Middag øverst, fire rader i Påminnelser (MAN, LEKSE,
 UKE, UKE).
+Jentenes lekser i Påminnelser er nå korte (Magne: «trenger kun en kort
+overskrift – bare med fagnavn og et par-tre ord, på en linje»): «Fag: tre
+første ord …» (`huKortTekst()`), og raden er én linje med «…» hvis den
+likevel blir for lang.
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke
