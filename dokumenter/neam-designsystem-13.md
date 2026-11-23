@@ -720,6 +720,12 @@ Avvik fra den felles toppen på en side er et nytt valg – spør.
 Fila het `dashboard.html` og gjør det fortsatt – bare det synlige navnet er
 endret, så snarveier og bokmerker holder.
 
+**Høyre kolonne** (fra 23. november 2026): **Middag øverst**, så **én boks
+«Påminnelser»** med dagens og ukas (ukas merket «Uke», dagens med
+dagforkortelsen, dagens først) – samme som på Emma og Andrea dash.
+Middagen tar bare høyden den trenger (`.hoyre > .kort.kort-middag`),
+påminnelsene resten.
+
 **Fanen Lekser** (fra 23. november 2026), til høyre for Dag og Uke: Emma
 dash sitt oppsett med begge jentene flettet inn. Venstre: Emma og Andreas
 egne avtaler den dagen (én linje), så «Lekser · uke N» for begge i én

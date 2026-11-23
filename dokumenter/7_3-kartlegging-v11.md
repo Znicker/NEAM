@@ -2048,6 +2048,17 @@ og vet ikke hvem som er logget inn, så enheten husker det i localStorage
 også Kjøkken dash – er innom. Sjekkes hvert 15. sekund, ikke når fanen er
 skjult. **Ikke testet:** PC-en er logget inn som sys@, så den går aldri
 hjem; må prøves på kjøkkenskjermen.
+
+**23. november: middag øverst, påminnelsene slått sammen på kjøkkenet**
+(`dashboard.html`). Magne: «Vi flytter middag til toppen av den kolonnen.
+Slå sammen påminnelser også på kjøkken.» `#kortMiddag` står nå først i
+`.hoyre`; `#kortUken`/`#huskeUken`/`#ukeMerke` er borte, og
+`tegnHuskeInner()` har én gruppe (dagens + ukas + jentenes lekser med
+frist i dag), dagens først. `huskeRad()` merker «Uke» eller dagens
+forkortelse. CSS-reglene som pekte på middagen som `:last-child`, peker nå
+på `.kort-middag`. `HOYRE_KORT`, `KORT_TONING` og `lvHoyre()` ryddet.
+Testet på neam.no: Middag øverst, fire rader i Påminnelser (MAN, LEKSE,
+UKE, UKE).
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke

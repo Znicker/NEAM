@@ -112,7 +112,7 @@ body{
 .vt-sjo.gammel .vt-sjo-meta{ color:var(--danger); }
 
 @media(max-width:900px){
-  .hoyre > .kort:last-child{flex:1}
+  .hoyre > .kort.kort-middag{flex:1}
 }
 
 /* Vaeret i toppraden, mellom overskriften og klokka. Full melding
@@ -138,7 +138,7 @@ body{
 .hoyre > .kort{flex:1 1 0;min-height:0}
 /* Middagen er en rad med lite bilde - bare saa hoey som innholdet, slik at
    resthoeyden gaar til Merknader og Denne uken. */
-.hoyre > .kort:last-child{flex:0 0 auto}        /* middagen: en fjerdedel */
+.hoyre > .kort.kort-middag{flex:0 0 auto}       /* middagen: bare saa hoey som innholdet */
 /* Uke tar hele bredden, som paa Emma dash (2. november 2026). Detaljkortet
    bor i hoeyrekolonnen, saa aapner man en avtale fra uka, kommer kolonnen
    tilbake - settBredde() styrer begge deler fra ett sted. */
@@ -1229,16 +1229,17 @@ select.hu-felt{
         <div class="kort-kropp" id="detaljInn"></div>
       </div>
 
-      <div class="kort" id="kortMerknader">
-        <div class="kort-tittel"><span>Påminnelser i dag</span></div>
-        <div class="kort-kropp" id="huskeIdag">
-          <div class="tom">Ingenting notert ennå.</div>
+      <!-- Middagen oeverst i kolonnen (Magne, 23. november 2026: «Vi flytter
+           middag til toppen av den kolonnen»). -->
+      <div class="kort kort-middag" id="kortMiddag">
+        <div class="kort-kropp" id="middag">
+          <div class="tom">Henter …</div>
         </div>
       </div>
 
-      <div class="kort" id="kortUken">
-        <div class="kort-tittel"><span>Påminnelser denne uken</span><span class="kort-uke" id="ukeMerke"></span></div>
-        <div class="kort-kropp" id="huskeUken">
+      <div class="kort" id="kortMerknader">
+        <div class="kort-tittel"><span>Påminnelser</span></div>
+        <div class="kort-kropp" id="huskeIdag">
           <div class="tom">Ingenting notert ennå.</div>
         </div>
       </div>
@@ -1258,11 +1259,6 @@ select.hu-felt{
         </div>
       </div>
 
-      <div class="kort kort-middag" id="kortMiddag">
-        <div class="kort-kropp" id="middag">
-          <div class="tom">Henter …</div>
-        </div>
-      </div>
 
     </div>
   </div>
@@ -1691,7 +1687,7 @@ function tegnPlan(res){
    på kjøkken også»). Rullefeltene er skjult, saa uten den saa man ikke at
    lista fortsatte. Forsvinner naar man har rullet til bunnen; aldri paa
    telefon, der ruller sida. */
-const KORT_TONING = ['plan', 'lekserVis', 'huskeIdag', 'huskeUken', 'barnHuske', 'barnProver'];
+const KORT_TONING = ['plan', 'lekserVis', 'huskeIdag', 'barnHuske', 'barnProver'];
 function kortToning(){
   KORT_TONING.forEach(function(id){
     const el = $(id);
@@ -1723,7 +1719,7 @@ function rullTilNaa(boks){
 /* Avtalen tar over hele hoeyrekolonnen i stedet for aa legge seg som en
    boble oppaa. Da kan notatet vaere langt uten aa dekke planen man leser
    det ut fra. */
-const HOYRE_KORT = ['kortMerknader', 'kortUken', 'kortMiddag', 'kortBarnHuske', 'kortBarnProver'];
+const HOYRE_KORT = ['kortMerknader', 'kortMiddag', 'kortBarnHuske', 'kortBarnProver'];
 
 let detaljIndeks = null;
 
@@ -2762,7 +2758,7 @@ function huskeRad(m){
     +     initial(m.gjelder, huskeFarge(m.gjelder))
     +     '<span class="hu-tittel">' + esc(m.overskrift || '') + '</span>'
     +     (harTekst ? '<span class="hu-pil">›</span>' : '')
-    +     (uke ? '<span class="hu-innen">' + esc(UKEDAG_KORT[ukedagNr(datoFraTekst(m.frist))]) + '</span>' : '')
+    +     '<span class="hu-innen">' + (uke ? 'Uke' : esc(UKEDAG_KORT[ukedagNr(datoFraTekst(m.frist))])) + '</span>'
     +     '<div class="hu-verkt">'
     +       '<button class="hu-knapp hu-endre" onclick="event.stopPropagation(); rediger(\'' + esc(m.id) + '\')" '
     +         'aria-label="Endre">✎</button>'
@@ -3007,15 +3003,17 @@ function tegnHuskeInner(){
   /* Hvilken uke boksen viser. «Denne uken» er tvetydig saa snart man kan
      bla - og paa kjoekkendashen skifter doegnet klokka 20, saa en fredag
      kveld staar den alt paa loerdagen. */
-  if($('ukeMerke')) $('ukeMerke').textContent = 'uke ' + isoUke(dagenViser()).uke;
-
+  /* Dagens og ukas paaminnelser i samme boks, som paa Emma og Andrea dash
+     (Magne, 23. november 2026: «Slå sammen påminnelser også på
+     kjøkken»). Ukas er merket «Uke», dagens med forkortelsen for dagen.
+     til: siste dag en ukepaaminnelse skal vises (skoleukas fredag fra
+     Neam); uten til staar den hele uka. */
   const grupper = [
-    {omfang: 'dag', boks: 'huskeIdag',
-     treff: liste.filter(function(m){ return m.omfang !== 'uke' && m.frist === dag; })},
-    {omfang: 'uke', boks: 'huskeUken',
-     /* til: siste dag den skal vises (skoleukas fredag fra Neam, 23. november
-        2026). Uten til staar den hele uka, som foer. */
-     treff: liste.filter(function(m){ return m.omfang === 'uke' && ukeAv(m.frist) === uke && (!m.til || dag <= m.til); })}
+    {boks: 'huskeIdag',
+     treff: liste.filter(function(m){
+       return (m.omfang !== 'uke' && m.frist === dag)
+           || (m.omfang === 'uke' && ukeAv(m.frist) === uke && (!m.til || dag <= m.til));
+     })}
   ];
 
   /* Barnas lekser med frist paa denne dagen, lagt til i «i dag»-boksen.
@@ -3049,6 +3047,7 @@ function tegnHuskeInner(){
        ut uken saa man ser at de er unnagjort. */
     g.treff.sort(function(a, b){
       if(!!a.ferdig !== !!b.ferdig) return a.ferdig ? 1 : -1;
+      if((a.omfang === 'uke') !== (b.omfang === 'uke')) return a.omfang === 'uke' ? 1 : -1;
       return (a.frist || '').localeCompare(b.frist || '');
     });
     const boks = $(g.boks);
@@ -3330,7 +3329,7 @@ async function tegnLekserPaaNytt(){
 function lvHoyre(){
   if($('detalj') && !$('detalj').hidden) return;
   const lekser = visning === 'lekser';
-  ['kortMerknader', 'kortUken', 'kortMiddag'].forEach(function(id){ if($(id)) $(id).hidden = lekser; });
+  ['kortMerknader', 'kortMiddag'].forEach(function(id){ if($(id)) $(id).hidden = lekser; });
   ['kortBarnHuske', 'kortBarnProver'].forEach(function(id){ if($(id)) $(id).hidden = !lekser; });
 }
 
