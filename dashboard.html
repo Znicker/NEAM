@@ -208,11 +208,14 @@ body{
 .lv-rad.ferdig .hu-innen{ color:var(--handling-ny); }
 .lv-rad.valgt{ outline:2px solid rgba(44,62,80,.45); outline-offset:-2px; }
 @property --lv-vinkel{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
-.lv-rad.denne-uka{
-  position:relative; --ring:var(--danger);
+.lv-rad.denne-uka{ --ring:var(--danger); }
+/* Dagens paaminnelser fra klokka 20 dagen foer til de er huket av. */
+.hu-rad.ring-blaa{ --ring:var(--aksent); }
+.lv-rad.denne-uka, .hu-rad.ring-blaa{
+  position:relative;
   box-shadow:0 0 10px color-mix(in srgb, var(--ring) 35%, transparent);
 }
-.lv-rad.denne-uka::after{
+.lv-rad.denne-uka::after, .hu-rad.ring-blaa::after{
   content:''; position:absolute; inset:-2px; border-radius:13px; padding:2.5px;
   pointer-events:none;
   background:conic-gradient(from var(--lv-vinkel),
@@ -225,7 +228,7 @@ body{
 }
 .lv-rad.denne-uka .hu-innen{ color:var(--danger); }
 @keyframes lvRoter{ to{ --lv-vinkel:360deg; } }
-@media (prefers-reduced-motion:reduce){ .lv-rad.denne-uka::after{ animation:none; } }
+@media (prefers-reduced-motion:reduce){ .lv-rad.denne-uka::after, .hu-rad.ring-blaa::after{ animation:none; } }
 #detaljInn .lv-beskrivelse{
   margin-top:12px; font-size:var(--t-brod); line-height:1.45; white-space:pre-wrap; overflow-wrap:anywhere;
 }
@@ -2741,10 +2744,18 @@ function huskeRad(m){
   const uke = m.omfang === 'uke';
   const ferdig = !!m.ferdig;
   const harTekst = !!(m.tekst || '').trim();
+  /* Blaa ramme som gaar rundt: en dagspaaminnelse som ikke er huket av,
+     fra klokka 20 dagen foer - samme som paa Emma og Andrea dash (Magne,
+     23. november 2026: «over alt, også kjøkken»). */
+  let ring = false;
+  if(!uke && !ferdig && m.frist){
+    const fr = datoFraTekst(m.frist);
+    ring = new Date() >= new Date(fr.getFullYear(), fr.getMonth(), fr.getDate() - 1, 20);
+  }
   /* Bare overskriften staar i lista - plassen er knapp. Resten kommer i
      boblen ved trykk. Haken ligger utenfor boksen, til hoeyre. */
   return '<div class="hu-linje' + (ferdig ? ' ferdig' : '') + '">'
-    +   '<div class="hu-rad" data-id="' + esc(m.id) + '"'
+    +   '<div class="hu-rad' + (ring ? ' ring-blaa' : '') + '" data-id="' + esc(m.id) + '"'
     +     ' style="' + fyll(huskeFarge(m.gjelder)) + '"'
     +     ' onclick="vekslHuskeBoble(\'' + esc(m.id) + '\', event)">'
     +     initial(m.gjelder, huskeFarge(m.gjelder))

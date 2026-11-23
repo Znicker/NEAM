@@ -1355,7 +1355,9 @@ pågående effekter i WoW». `@property --sku-vinkel` + `conic-gradient` med
 maske, så bare kanten vises; står stille ved `prefers-reduced-motion`.
 Rødt betyr ellers «slett» – her er det Magnes valg for «dette er nå».
 **Dagens påminnelser** får samme ramme **i blått** (`--aksent`) fra klokka
-20 dagen før og til de er huket av; ukas påminnelser får den ikke. Rammen
+20 dagen før og til de er huket av; ukas påminnelser får den ikke. Fra
+samme dag også på Kjøkken dash, i begge påminnelsesboksene og i
+Lekser-fanen. Rammen
 tar fargen fra `--ring`, så de to deler én regel.
 
 **Toning nederst i lister som har mer** (fra 23. november 2026): avtalene,

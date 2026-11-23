@@ -2022,6 +2022,12 @@ samme med inne-temp.» Inne og Ute er nå to knapper (`.ntp-maaler`,
 `data-rolle`) i stedet for én; `ntpNetatmoBoble(ev, rolle)` viser bare
 uteenheten for Ute, og hovedenheten (pluss eventuelle ekstra innemoduler)
 for Inne. Testet på neam.no: Ute viste bare Ute.
+
+**23. november: blå ramme på dagens påminnelser også på kjøkkenet**
+(`dashboard.html`). Magne: «påminnelser samme dag kan få blå sirkulerende
+ramme over alt, også kjøkken.» `huskeRad()` setter `.ring-blaa` som på
+Emma dash; CSS-en deler regel med prøverammen i Lekser-fanen via `--ring`.
+Testet på neam.no: «Hent matavfall …» fikk rammen, og den gikk rundt.
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke
