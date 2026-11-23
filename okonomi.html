@@ -1596,6 +1596,34 @@ button.ok-dr-rad{ cursor:pointer; }
       .then(function(r){ return r.json(); })
       .catch(function(){ return { ok:false, feil:'Fikk ikke kontakt med Neam' }; });
   }
+  /* Som okHent, men gir opp etter ms - for de ferske hentingene fra banken,
+     som kan bruke et halvt minutt eller mer (23. november 2026). */
+  function okHentFrist(sti, ms){
+    var c = new AbortController();
+    var t = setTimeout(function(){ c.abort(); }, ms);
+    return fetch(sti, { credentials:'same-origin', cache:'no-store', signal:c.signal })
+      .then(function(r){ return r.json(); })
+      .catch(function(e){
+        return { ok:false, feil: e && e.name === 'AbortError' ? 'Banken svarte ikke på ett minutt' : 'Fikk ikke kontakt med Neam' };
+      })
+      .finally(function(){ clearTimeout(t); });
+  }
+  /* Merket ved tallene mens de ferske er paa vei, eller naar de ikke kom
+     (Magne, 23. november 2026: «da må det være synlig at det kan være gamle
+     tall»). Samme prikker som kildene under Oppsett: oransje er eldre enn
+     ventet, roedt er feilet. */
+  var OK_FERSK_VENTER = 'Kan være gamle tall – henter ferske fra banken …';
+  function okFerskMerke(el, tekst, klasse){
+    if(!el) return;
+    var gml = el.querySelector('.ok-fersk-merke');
+    if(gml) gml.remove();
+    if(!tekst) return;
+    var m = document.createElement('span');
+    m.className = 'ok-fersk ok-fersk-merke ' + klasse;
+    m.textContent = tekst;
+    el.appendChild(document.createTextNode(' '));
+    el.appendChild(m);
+  }
 
   function okVisStatus(s){
     var boks = document.getElementById('ok-status'), meta = document.getElementById('ok-status-meta');
@@ -1791,12 +1819,19 @@ button.ok-dr-rad{ cursor:pointer; }
   }
 
   /* fersk: hent fra banken og Trumf naa, ikke fra bufferen (aapning og Oppdater). */
-  function okLastInnboks(fersk){
+  /* stille: det som staar, blir staaende mens de ferske hentes, med et
+     merke om at tallene kan vaere gamle (aapning og Oppdater, 23. november
+     2026 - foer sto hele sida paa «Henter …» saa lenge banken brukte). */
+  function okLastInnboks(fersk, stille){
     var kort = document.getElementById('ok-innboks-kort');
     kort.hidden = false;
-    document.getElementById('ok-innboks').innerHTML = '<p class="ok-meta">Henter transaksjonene …</p>';
-    return okHent('/api/bank?hva=innboks' + (fersk ? '&fersk=1' : '')).then(function(r){
+    var meta0 = document.getElementById('ok-innboks-meta');
+    if(stille) okFerskMerke(meta0, OK_FERSK_VENTER, 'gammel');
+    else document.getElementById('ok-innboks').innerHTML = '<p class="ok-meta">Henter transaksjonene …</p>';
+    var sti = '/api/bank?hva=innboks' + (fersk ? '&fersk=1' : '');
+    return (fersk ? okHentFrist(sti, 60000) : okHent(sti)).then(function(r){
       var boks = document.getElementById('ok-innboks');
+      if(!r.ok && stille){ okFerskMerke(meta0, 'Kan være gamle tall – ' + (r.feil || 'banken svarte ikke'), 'stopp'); return; }
       if(!r.ok){ boks.innerHTML = '<p class="ok-melding feil">' + okVask(r.feil) + '</p>'; document.getElementById('ok-bunn').hidden = true; return; }
       okKategorier = r.kategorier || [];
       if(!r.kontoer && !r.trumf && !(r.poster || []).length){
@@ -8094,10 +8129,14 @@ button.ok-dr-rad{ cursor:pointer; }
     meta.textContent = forTekst;
   }
 
-  function okKontoerLast(fersk){
+  function okKontoerLast(fersk, stille){
     document.getElementById('ok-kontoer-kort').hidden = false;
-    document.getElementById('ok-kontoer').innerHTML = '<p class="ok-meta">Henter kontoene fra DNB …</p>';
-    return okHent('/api/bank?hva=kontoer' + (fersk ? '&fersk=1' : '')).then(function(r){
+    var meta0 = document.getElementById('ok-hentet');
+    if(stille) okFerskMerke(meta0, OK_FERSK_VENTER, 'gammel');
+    else document.getElementById('ok-kontoer').innerHTML = '<p class="ok-meta">Henter kontoene fra DNB …</p>';
+    var sti = '/api/bank?hva=kontoer' + (fersk ? '&fersk=1' : '');
+    return (fersk ? okHentFrist(sti, 60000) : okHent(sti)).then(function(r){
+      if(!r.ok && stille){ okFerskMerke(meta0, 'Kan være gamle tall – ' + (r.feil || 'banken svarte ikke'), 'stopp'); return; }
       if(!r.ok){ document.getElementById('ok-kontoer').innerHTML = '<p class="ok-melding feil">' + okVask(r.feil) + '</p>'; return; }
       okKontoer = r.kontoer || [];
       okSt.dnb = r.hentet; okKilderLast();
@@ -8120,8 +8159,17 @@ button.ok-dr-rad{ cursor:pointer; }
   function okOppdater(){
     okOppdaterer = true;
     /* Innboksen henter Trumf ferskt selv; statusen etterpaa tar det fra bufferen. */
+    /* Bufferen foerst - den svarer med en gang - og saa de ferske stille,
+       med merket «Kan være gamle tall» til de er kommet. Staar tallene alt
+       paa skjermen (Oppdater), hoppes bufferen over. */
+    var harInnboks = okPoster.length > 0 || !!document.querySelector('#ok-innboks .ok-post');
+    var harKontoer = okKontoer.length > 0;
     var arbeid = okDnbKoblet
-      ? [okLastInnboks(true).then(function(){ return okTrumfStatus(false); }), okKontoerLast(true)]
+      ? [(harInnboks ? Promise.resolve() : okLastInnboks(false))
+           .then(function(){ return okLastInnboks(true, true); })
+           .then(function(){ return okTrumfStatus(false); }),
+         (harKontoer ? Promise.resolve() : okKontoerLast(false))
+           .then(function(){ return okKontoerLast(true, true); })]
       : [okTrumfStatus(true)];
     if(okPersoner.indexOf(okAktiv) !== -1) arbeid.push(okPeLast(okAktiv, true));
     return Promise.all(arbeid).then(function(){ return okDbStatus(); }).then(function(){ return okDbImport(); }).then(function(){

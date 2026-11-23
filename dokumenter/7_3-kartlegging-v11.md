@@ -2181,6 +2181,23 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   rundt. Fargen går rundt (`@property --ntp-mat-vinkel`), rammen står
   stille. Den gamle `ntp-mat-snurr` er fjernet. Testet med en testrett i
   toppen på neam.no.
+- **Økonomi viser bufferen først** (`okonomi.html`, 23. november). Magne:
+  «Økonomisiden står og venter i alle faner» – «Henter …» sto fortsatt.
+  Målt: `?hva=innboks&fersk=1` brukte 15–30 s mot banken (uten `fersk`
+  0,2 s); ingen feil i konsollen, og verken sida eller bank-funksjonen
+  var endret i dag. Nå: `okOppdater()` henter innboks og kontoer fra
+  bufferen først, så de ferske «stille» (`okLastInnboks(true, true)`,
+  `okKontoerLast(true, true)`) med merket **«Kan være gamle tall – henter
+  ferske fra banken …»** (oransje `.ok-fersk.gammel`) til de er kommet;
+  `okHentFrist()` gir opp etter 60 s, og da blir merket rødt med feilen
+  og tallene står. **Ikke testet i nettleseren** – skriptet ligger i en
+  IIFE og kan ikke byttes ut utenfra; bare syntaks og gjennomgang.
+  **Fanene som «hang» (Regnskap, Budsjett, Resultat, Lån, Verdier):** bare
+  på iPaden – den er felles@, og `/api/bank` slipper bare inn sys@ og
+  magne@ (`INNGANG`, `PIN_PAA = false`, Magne 21. november). Sperra
+  virker; fanene viser bare «Henter …» i stedet for å si det. På telefon
+  og PC svarer de med en gang. Ikke rørt – ett mulig grep er en tydelig
+  melding på fellesskjermen.
 - **Påminnelsene som nå står dobbelt** (heldagsprøvene og gloseprøven lå
   som påminnelser før Neam la dem inn som prøver) – Neam skal si fra og
   slette bare med ja.
