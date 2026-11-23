@@ -454,6 +454,13 @@ body{
 .lesetid-knapp img{ width:26px; height:26px; object-fit:contain; display:block; }
 .lesetid-knapp.gaar{ background:var(--aksent); border-color:var(--aksent); color:#FFFFFF; }
 .lesetid-knapp:active{ transform:scale(.97); }
+/* Ferdig: applausen stor (Magne: «applaus-emoji, stor størrelse»). */
+.lesetid-ferdig{ text-align:center; }
+.lesetid-applaus{ font-size:min(160px, 34vw); line-height:1.1; animation:lesetid-hopp .9s ease-in-out 3; }
+.lesetid-ferdig-tittel{ font-size:var(--t-stor); font-weight:800; color:var(--ink); margin:6px 0 2px; }
+.lesetid-ferdig .dlg-rad{ justify-content:center; }
+@keyframes lesetid-hopp{ 50%{ transform:scale(1.15); } }
+@media (prefers-reduced-motion:reduce){ .lesetid-applaus{ animation:none; } }
 
 /* ---------- Ukesvisning ----------
    Sju doegnsoeyler, samme form som kalenderappens ukeplan. Radene med én
@@ -3203,21 +3210,34 @@ const VIS_BOKS = { dag:'plan', uke:'uke', fag:'fag' };
 /* ============================================================
    Lesetimeren (Magne, 23. november 2026: «Kan du lage en lesetimer på
    Andrea sin dash. Til høyre for fagknappen. Samme funksjon som
-   matlagingstimer med ikon og roterende blått ved klokken»).
+   matlagingstimer med ikon og roterende blått ved klokken»). Samme
+   kveld: «Skal være nedtelling. Må kunne velge tid og så start. Når det
+   er ferdig en hyggelig lyd og applaus-emoji, stor størrelse».
 
-   Knappen starter den. Mens den gaar, staar lekseikonet ved klokka med
-   den blaa ringen og tiden under, i samme form som matlagingen
-   (.ntp-mat i felles-topp.css). Trykk paa ikonet eller knappen: hvor
-   lenge hun har lest, og Fortsett eller Stopp. Ingenting lagres utover
-   timeren selv, og den gjelder bare denne enheten (localStorage, som
-   matlagingen) - den overlever at sida lastes paa nytt.
+   Knappen aapner valget av tid (raske valg og minutter, som timerne ved
+   klokka - .ntp-tm-* i felles-topp.css) og Start. Mens den gaar, staar
+   lekseikonet ved klokka med den blaa ringen og tiden som er igjen
+   under, i samme form som matlagingen (.ntp-mat). Trykk paa ikonet
+   eller knappen: hvor lenge det er igjen, og Fortsett eller Stopp. Naar
+   tiden er ute: en lys, glad tonerekke og 👏 i stor stoerrelse.
+
+   Ingenting lagres utover timeren selv, og den gjelder bare denne
+   enheten (localStorage, som matlagingen) - den overlever at sida lastes
+   paa nytt. Er den ferdig mens sida var borte, vises applausen naar sida
+   kommer tilbake (uten lyd: iPad spiller ikke lyd foer et trykk).
    ============================================================ */
 const LESETID_NOKKEL = 'neam-lesetimer';
 const LESETID_IKON = '/bilder/ikoner/lekse.png?v=2';
+const LESETID_RASKE = [10, 15, 20, 30, 45];
 let lesetidTikker = null;
+let lesetidLyd = null;           /* AudioContext - vekkes av Start-trykket */
 
-function lesetidStart(){
-  try{ const t = Number(localStorage.getItem(LESETID_NOKKEL)); return t > 0 ? t : 0; }catch(e){ return 0; }
+/* { slutt, lengde } - eller null. */
+function lesetidLes(){
+  try{
+    const t = JSON.parse(localStorage.getItem(LESETID_NOKKEL) || 'null');
+    return (t && t.slutt > 0 && t.lengde > 0) ? t : null;
+  }catch(e){ return null; }
 }
 function lesetidVarighet(ms){
   const s = Math.max(0, Math.round(ms / 1000));
@@ -3225,17 +3245,23 @@ function lesetidVarighet(ms){
   const to = function(n){ return (n < 10 ? '0' : '') + n; };
   return t ? t + ':' + to(m) + ':' + to(sek) : m + ':' + to(sek);
 }
+function lesetidMinutter(ms){
+  const m = Math.round(ms / 60000);
+  return m === 1 ? '1 minutt' : m + ' minutter';
+}
 
 function lesetidTegn(){
-  const start = lesetidStart();
+  const t = lesetidLes();
+  if(t && t.slutt <= Date.now()){ lesetidFerdig(t); return; }
+  const igjen = t ? lesetidVarighet(t.slutt - Date.now()) : '';
   const knapp = $('lesetidKnapp');
   if(knapp){
-    knapp.classList.toggle('gaar', !!start);
-    $('lesetidKnappTekst').textContent = start ? 'Leser ' + lesetidVarighet(Date.now() - start) : 'Lesing';
-    knapp.setAttribute('aria-label', start ? 'Lesetimeren går – trykk for å stoppe' : 'Start lesetimer');
+    knapp.classList.toggle('gaar', !!t);
+    $('lesetidKnappTekst').textContent = t ? 'Lesing ' + igjen : 'Lesing';
+    knapp.setAttribute('aria-label', t ? 'Lesetimeren går – ' + igjen + ' igjen' : 'Start lesetimer');
   }
   let rad = $('lesetidRad');
-  if(!rad && start){
+  if(!rad && t){
     const ok = $('ntpOk');
     if(ok){                    /* toppen er ikke bygget ennaa - neste tikk */
       rad = document.createElement('div');
@@ -3250,25 +3276,122 @@ function lesetidTegn(){
     }
   }
   if(rad){
-    rad.hidden = !start;
-    if(start) $('lesetidTid').textContent = lesetidVarighet(Date.now() - start);
+    rad.hidden = !t;
+    if(t) $('lesetidTid').textContent = igjen;
   }
-  if(start && !lesetidTikker) lesetidTikker = setInterval(lesetidTegn, 1000);
-  if(!start && lesetidTikker){ clearInterval(lesetidTikker); lesetidTikker = null; }
+  if(t && !lesetidTikker) lesetidTikker = setInterval(lesetidTegn, 1000);
+  if(!t && lesetidTikker){ clearInterval(lesetidTikker); lesetidTikker = null; }
 }
 
 async function lesetidTrykk(){
-  const start = lesetidStart();
-  if(!start){
-    try{ localStorage.setItem(LESETID_NOKKEL, String(Date.now())); }catch(e){}
-    lesetidTegn();
-    return;
-  }
-  const stopp = await bekreft('Du har lest i ' + lesetidVarighet(Date.now() - start) + '.',
+  lesetidVekkLyd();
+  const t = lesetidLes();
+  if(!t){ lesetidVelg(); return; }
+  const stopp = await bekreft('Det er ' + lesetidVarighet(t.slutt - Date.now()) + ' igjen av lesingen.',
                               { neiTekst:'Fortsett', jaTekst:'Stopp' });
   if(!stopp) return;
   try{ localStorage.removeItem(LESETID_NOKKEL); }catch(e){}
   lesetidTegn();
+}
+
+/* Valget av tid: raske valg, eller minuttene skrevet inn. */
+function lesetidVelg(){
+  let bak = $('lesetidVelgBak');
+  if(!bak){
+    bak = document.createElement('div');
+    bak.id = 'lesetidVelgBak';
+    bak.className = 'dlg-bak';
+    bak.innerHTML = '<div class="dlg-kort ntp-tm-kort" role="dialog" aria-modal="true" aria-label="Lesetimer">'
+      + '<div class="ntp-tm-tittel">Lesetimer</div>'
+      + '<div class="ntp-tm-felt">Hvor lenge'
+      +   '<div class="ntp-tm-hms"><label><input type="number" id="lesetidMin" min="1" max="180" inputmode="numeric" value="20"> min</label></div>'
+      +   '<div class="ntp-tm-raske">' + LESETID_RASKE.map(function(m){
+            return '<button type="button" class="ntp-tm-rask" data-min="' + m + '">' + m + ' min</button>';
+          }).join('') + '</div>'
+      + '</div>'
+      + '<p class="ntp-tm-feil" id="lesetidFeil" hidden></p>'
+      + '<div class="dlg-rad">'
+      +   '<button type="button" class="dlg-knapp nei" data-gjor="avbryt">Avbryt</button>'
+      +   '<button type="button" class="dlg-knapp ja" data-gjor="start">Start</button>'
+      + '</div></div>';
+    document.body.appendChild(bak);
+    bak.addEventListener('click', function(e){
+      if(e.target === bak){ bak.hidden = true; return; }
+      const rask = e.target.closest('.ntp-tm-rask');
+      if(rask){ $('lesetidMin').value = rask.dataset.min; return; }
+      const b = e.target.closest('[data-gjor]');
+      if(!b) return;
+      if(b.dataset.gjor === 'avbryt'){ bak.hidden = true; return; }
+      const min = Math.round(Number($('lesetidMin').value) || 0);
+      if(min < 1 || min > 180){
+        $('lesetidFeil').textContent = 'Velg mellom 1 og 180 minutter.';
+        $('lesetidFeil').hidden = false;
+        return;
+      }
+      lesetidVekkLyd();
+      const lengde = min * 60000;
+      try{ localStorage.setItem(LESETID_NOKKEL, JSON.stringify({ slutt: Date.now() + lengde, lengde: lengde })); }catch(e){}
+      bak.hidden = true;
+      lesetidTegn();
+    });
+  }
+  $('lesetidFeil').hidden = true;
+  bak.hidden = false;
+}
+
+/* Ferdig: lyden og applausen, og timeren er borte. */
+function lesetidFerdig(t){
+  try{ localStorage.removeItem(LESETID_NOKKEL); }catch(e){}
+  lesetidTegn();
+  let bak = $('lesetidFerdigBak');
+  if(!bak){
+    bak = document.createElement('div');
+    bak.id = 'lesetidFerdigBak';
+    bak.className = 'dlg-bak';
+    bak.innerHTML = '<div class="dlg-kort lesetid-ferdig" role="alertdialog" aria-modal="true">'
+      + '<div class="lesetid-applaus" aria-hidden="true">👏</div>'
+      + '<p class="lesetid-ferdig-tittel">Bra lest!</p>'
+      + '<p class="dlg-tekst" id="lesetidFerdigTekst"></p>'
+      + '<div class="dlg-rad"><button type="button" class="dlg-knapp ja">OK</button></div></div>';
+    document.body.appendChild(bak);
+    bak.addEventListener('click', function(e){
+      if(e.target === bak || e.target.closest('.dlg-knapp')) bak.hidden = true;
+    });
+  }
+  $('lesetidFerdigTekst').textContent = 'Du har lest i ' + lesetidMinutter(t.lengde) + '.';
+  bak.hidden = false;
+  lesetidSpill();
+}
+
+/* iPad spiller ikke lyd foer et trykk har vekket den. */
+function lesetidVekkLyd(){
+  try{
+    if(!lesetidLyd){
+      const K = window.AudioContext || window.webkitAudioContext;
+      if(K) lesetidLyd = new K();
+    }
+    if(lesetidLyd && lesetidLyd.state === 'suspended') lesetidLyd.resume();
+  }catch(e){}
+}
+/* En lys tonerekke opp (C-E-G-C) og en akkord til slutt, to ganger -
+   mykt inn og ut, ikke pipet fra timerne. */
+function lesetidSpill(){
+  const k = lesetidLyd;
+  if(!k || k.state !== 'running') return;
+  try{
+    const tone = function(frekv, start, lengde, styrke){
+      const o = k.createOscillator(), g = k.createGain(), s = k.currentTime + start;
+      o.type = 'triangle'; o.frequency.value = frekv;
+      g.gain.setValueAtTime(0.0001, s);
+      g.gain.exponentialRampToValueAtTime(styrke, s + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, s + lengde);
+      o.connect(g); g.connect(k.destination); o.start(s); o.stop(s + lengde + 0.05);
+    };
+    [0, 2.2].forEach(function(r){
+      [523.25, 659.25, 783.99, 1046.5].forEach(function(f, i){ tone(f, r + i * 0.14, 0.5, 0.25); });
+      [523.25, 659.25, 783.99, 1046.5].forEach(function(f){ tone(f, r + 0.62, 1.4, 0.12); });
+    });
+  }catch(e){}
 }
 
 window.addEventListener('storage', function(e){ if(e.key === LESETID_NOKKEL) lesetidTegn(); });

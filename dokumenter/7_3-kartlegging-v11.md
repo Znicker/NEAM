@@ -2295,11 +2295,22 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   dag», og aksentfarge med «Leser 12:34» mens timeren går. Ved klokka
   står lekseikonet med matlagingens ring (`.ntp-matrad`/`.ntp-mat`
   fra `felles-topp.css`, satt inn etter `#ntpOk` som bilarkivets ring)
-  og tiden under. Trykk på ikonet eller knappen gir «Du har lest i …»
-  med Fortsett / Stopp (`bekreft`). Magne valgte lekse.png (ikke et
-  nytt ikon). Ingenting lagres, og timeren gjelder bare enheten
-  (`localStorage` `neam-lesetimer`, starttiden). Den vises bare på
-  Andrea dash, ikke på de andre sidene som matlagingen.
+  og tiden under. Magne valgte lekse.png (ikke et nytt ikon).
+  **Samme kveld ble den en nedtelling** (Magne: «Skal være nedtelling. Må
+  kunne velge tid og så start. Når det er ferdig en hyggelig lyd og
+  applaus-emoji, stor størrelse»). Knappen åpner «Lesetimer» med
+  minutter og de raske valgene 10, 15, 20, 30 og 45 min. Klassene
+  `.ntp-tm-*` er de samme som i timerne ved klokka, og knappene er Avbryt og Start. Mens
+  timeren går, står tiden som er igjen ved klokka og på knappen
+  («Lesing 14:59»). Trykk gir «Det er … igjen» med Fortsett / Stopp.
+  Når tiden er ute, kommer 👏 i stor størrelse (`.lesetid-applaus`,
+  hopper tre ganger) med «Bra lest! Du har lest i 15 minutter.» og OK.
+  Samtidig spilles en lys tonerekke C–E–G–C med en akkord, to ganger
+  (`lesetidSpill`, egen AudioContext vekket av Start-trykket).
+  Ingenting lagres, og timeren gjelder bare enheten (`localStorage`
+  `neam-lesetimer`, `{slutt, lengde}`). Ble den ferdig mens sida var
+  borte, vises applausen når sida kommer tilbake, men uten lyd. Den vises
+  bare på Andrea dash, ikke på de andre sidene slik matlagingen gjør.
 - **Bilarkivet** (23. november; Magne: «jeg tenker også at vi må ha et
   lite arkiv her … når det kommer bil ha bildet oppe i fem minutter.
   dersom ingen rører det og utkvitterer det legger det seg ned. men
@@ -2440,8 +2451,8 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
 - **Bilvakta med runder** (`666a247` og commiten etter): fanges en bil som
   kjører ut mens noen alt er på tunet? Hold øye med antall tester i
   loggen. Taket er 300 per skjerm og døgn.
-- **Lesetimeren på Andreas iPad**: kommer knappen og ikonet ved klokka,
-  og overlever den at sida lastes på nytt?
+- **Lesetimeren på Andreas iPad**: kommer lyden når tiden er ute (iPad
+  i lydløs-modus kan stoppe den), og overlever den at sida lastes på nytt?
 - **Søppelbilen** neste mandag: ble påminnelsen huket av, og står
   «Søppelbilen var her kl. …» bak trykk?
 - **Bilarkivet** er tomt til neste bil: kommer bilen i arkivet, og kommer
