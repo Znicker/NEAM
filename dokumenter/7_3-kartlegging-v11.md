@@ -2288,6 +2288,26 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   pågår og er under 20 s gammel (`BV_OPPSTART_MS`). Simulert med
   11:02–11:09: rundene kom 11:02, 11:04, 11:06 og 11:08, og bilen ble sett 11:08:33.
   Ingen nye runder etterpå.
+- **Strømmen: bildene fra før Homey melder** (`dashboard.html`, 23.
+  november; Magne: «Jeg kom hjem nå. Jeg kjører rett i garasjen. Det tar
+  ca to sekunder»). iPaden testet 15:28:10, og bildene kom 15:28:15. Da var
+  bilen inne. Fra bevegelse til bilde går det minst 5 s: Homey melder,
+  dashen spør hvert 3. sekund, og tilkoblingen tar 3–5 s. **Prøve først:**
+  kamerastrømmen sto åpen i en time fra Chrome på PC-en. Det ga ingen brudd,
+  14–15 bilder/s og 142 MB, bare på hjemmenettet (host/host). Homey
+  svarte på alle 60 målingene, med 0,66 s i snitt og høyst 1,6 s. **Nå:** Kjøkken dash holder
+  strømmen åpen så lenge sida er synlig (`bvStromStart`). Ett bilde i
+  sekundet går til en buffer på ti lerreter (`BV_STROM_RUTER`), og de
+  kodes til JPEG først når de trengs. Ved bevegelse tar `bvStromBilder`
+  tre bilder: rett før Homeys tidsstempel, midt mellom og det nyeste.
+  Haiku svarer «JA 2» (nummeret på bildet der kjøretøyet synes best), og
+  det bildet vises og arkiveres sammen med naboen. Vern: forbindelsen
+  må være lokal (`bvStromVei`, host/prflx på begge sider). Ellers lukkes
+  den, og den gamle måten brukes (en telefon på mobilnett ville ellers dratt
+  ~400 MB i timen). Faller strømmen ut (ingen nye ruter på 15 s), kobles
+  den til på nytt med økende ventetid (30 s, så dobbelt opp til 5 min).
+  Skjult side lukker strømmen. Hver test koster litt mer: tre bilder i stedet
+  for to.
 - **Lesetimer på Andrea dash** (`andrea.html`, 23. november; Magne: «Til
   høyre for fagknappen. Samme funksjon som matlagingstimer med ikon og
   roterende blått ved klokken»). Pilleknappen `#lesetidKnapp`, med
@@ -2451,6 +2471,9 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
 - **Bilvakta med runder** (`666a247` og commiten etter): fanges en bil som
   kjører ut mens noen alt er på tunet? Hold øye med antall tester i
   loggen. Taket er 300 per skjerm og døgn.
+- **Strømmen på iPaden (Safari)**: prøven gikk i Chrome på PC-en. Står det
+  «strømmen fra kameraet er åpen» i `bilvakt-logg:ipad`, holder den over
+  tid, og fanges en bil som kjører rett i garasjen?
 - **Lesetimeren på Andreas iPad**: kommer lyden når tiden er ute (iPad
   i lydløs-modus kan stoppe den), og overlever den at sida lastes på nytt?
 - **Søppelbilen** neste mandag: ble påminnelsen huket av, og står

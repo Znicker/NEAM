@@ -4805,6 +4805,9 @@ async function bvSjekk(){
   const o = d && d.capabilitiesObj && d.capabilitiesObj.alarm_motion;
   if(!o) return;
   const naa = { verdi: !!o.value, tid: o.lastUpdated || null };
+  /* Strommen trenger kameraets video - den kommer med det foerste svaret. */
+  const vId = d.videos && d.videos[0] && d.videos[0].videoObj && d.videos[0].videoObj.id;
+  if(vId && vId !== bvStromVideo){ bvStromVideo = vId; bvStromStart(); }
 
   /* Tidsstempelet fanger ogsaa en bevegelse som kom og gikk mellom to
      spoersmaal: er det nytt, og verdien var av sist, har den vaert paa.
@@ -4853,16 +4856,31 @@ async function bvSjekk(){
   bvOpptatt = true;
   const tStart = Date.now();
   bvRunde.tester++; bvRunde.sist = tStart; bvDogn.tester++;
-  bvNoter('bevegelse - kobler til kameraet (test ' + bvRunde.tester + ' av ' + BV_RUNDE_MAKS + ')');
   try{
-    const bilder = await bvToBilder(videoId);
-    bvNoter('to bilder tatt etter ' + Math.round((Date.now() - tStart) / 1000) + ' s');
-    const hva = await bvErBil(bilder);
+    /* Fra strommen naar den er aapen: bildene fra rundt bevegelsen, ogsaa
+       fra foer Homey rakk aa melde den. Ellers den gamle maaten. */
+    const m = ny ? (typeof naa.tid === 'number' ? naa.tid : Date.parse(naa.tid || '')) : 0;
+    let bilder = bvStromBilder(m);
+    if(bilder){
+      bvNoter('bevegelse - test ' + bvRunde.tester + ' av ' + BV_RUNDE_MAKS + ', ' + bilder.length
+        + ' bilder fra strømmen (' + bilder.map(function(b){ return Math.round((b.t - tStart) / 1000) + ' s'; }).join(', ') + ')');
+    } else {
+      bvNoter('bevegelse - kobler til kameraet (test ' + bvRunde.tester + ' av ' + BV_RUNDE_MAKS + ')');
+      const to = await bvToBilder(videoId);
+      bilder = [{ url:to[0], t:Date.now() - 1000 }, { url:to[1], t:Date.now() }];
+      bvNoter('to bilder tatt etter ' + Math.round((Date.now() - tStart) / 1000) + ' s');
+    }
+    const svar = await bvErBil(bilder);
+    const hva = svar.hva;
     if(hva){
       bvBilTid = naa.tid;
-      bvVis(bilder[0]);
-      bvArkiver(bilder, hva === 'soppel', naa.tid);
-    } else bvLagreNei(bilder);
+      /* Bildet der Haiku saa kjoeretoeyet best, og naboen - arkivet tar to. */
+      const b = svar.beste;
+      const nabo = b + 1 < bilder.length ? b + 1 : b - 1;
+      const to = [bilder[b].url].concat(nabo >= 0 && nabo !== b ? [bilder[nabo].url] : []);
+      bvVis(to[0]);
+      bvArkiver(to, hva === 'soppel', naa.tid);
+    } else bvLagreNei([bilder[0].url, bilder[bilder.length - 1].url]);
     /* En bil, eller runden er brukt opp: pausen begynner. */
     if(hva || bvRunde.tester >= BV_RUNDE_MAKS){ bvRunde = null; bvSist = Date.now(); }
     if(hva === 'soppel') await bvSoppelbil();
@@ -4935,35 +4953,212 @@ function bvTaBilde(el){
   return c.toDataURL('image/jpeg', 0.8);
 }
 
+/* ============================================================
+   Strommen (Magne, 23. november 2026: «Jeg kom hjem nå. Jeg kjører rett
+   i garasjen. Det tar ca to sekunder»). Fra bevegelse til bilde gikk det
+   minst fem sekunder: Homey melder, dashen spoer hvert tredje sekund, og
+   tilkoblingen til kameraet tar 3-5 s. Da var bilen i garasjen.
+
+   Naa staar strommen fra kameraet aapen saa lenge sida er synlig, og et
+   bilde i sekundet ligger i en buffer (de siste BV_STROM_RUTER). Ved
+   bevegelse tas tre bilder fra bufferen: fra rett foer Homeys tidsstempel
+   paa bevegelsen, midt mellom, og det nyeste. Proeven 23. november (en
+   time fra PC-en): ingen brudd, 15 bilder/s, Homey svarte like raskt
+   som foer (0,66 s i snitt). Det gaar bare paa hjemmenettet, ca. 1 Mbit/s.
+
+   Bare paa hjemmenettet: er forbindelsen ikke lokal (en telefon ute paa
+   mobilnett), lukkes den, og den gamle maaten brukes - ellers ville
+   telefonen dratt ~400 MB i timen. Falt strommen ut (ingen nye ruter i
+   BV_STROM_STILLE_MS), kobles den til paa nytt, med lengre ventetid for
+   hvert mislykte forsoek. Skjult side: strommen lukkes.
+
+   Bildene kodes til JPEG foerst naar de trengs - bufferen er lerreter.
+   ============================================================ */
+const BV_STROM_RUTE_MS = 1000;
+const BV_STROM_RUTER = 10;
+const BV_STROM_SJEKK_MS = 10 * 1000;
+const BV_STROM_STILLE_MS = 15 * 1000;
+let bvStrom = null;              /* { pc, el, buffer:[{ t, c }], sistTid, sistFram, timer } */
+let bvStromVideo = null;
+let bvStromKobler = false;
+let bvStromUte = false;          /* ikke hjemmenettet - ikke proev igjen paa denne lastingen */
+let bvStromNeste = 0;
+let bvStromVent = 0;
+
+async function bvStromStart(){
+  if(bvStrom || bvStromKobler || bvStromUte || !bvStromVideo || document.hidden) return;
+  if(Date.now() < bvStromNeste) return;
+  bvStromKobler = true;
+  const pc = new RTCPeerConnection({ iceServers: BV_STUN });
+  const el = document.createElement('video');
+  el.muted = true; el.playsInline = true; el.autoplay = true;
+  el.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none';
+  document.body.appendChild(el);
+  try{
+    pc.addTransceiver('video', { direction:'recvonly' });
+    pc.addTransceiver('audio', { direction:'recvonly' });
+    pc.createDataChannel('neam');
+    pc.ontrack = function(ev){
+      if(!ev.streams[0] || el.srcObject === ev.streams[0]) return;
+      el.srcObject = ev.streams[0];
+      el.play().catch(function(){});
+    };
+    await pc.setLocalDescription(await pc.createOffer());
+    await new Promise(function(ok){
+      if(pc.iceGatheringState === 'complete') return ok();
+      const tid = setTimeout(ok, 3000);
+      pc.onicegatheringstatechange = function(){
+        if(pc.iceGatheringState === 'complete'){ clearTimeout(tid); ok(); }
+      };
+    });
+    const svar = await post({ hva:'tilbud', video:bvStromVideo, sdp: pc.localDescription.sdp });
+    if(!svar.ok) throw new Error('fikk ikke bilde: ' + svar.feil);
+    await pc.setRemoteDescription({ type:'answer', sdp: svar.sdp });
+    const frist = Date.now() + 15000;
+    while(!(el.readyState >= 2 && el.videoWidth > 0)){
+      if(Date.now() > frist) throw new Error('kameraet ga ikke bilde i tide');
+      await bvVent(200);
+    }
+    const vei = await bvStromVei(pc);
+    if(vei !== 'lokal'){
+      bvStromUte = true;
+      throw new Error('ikke på hjemmenettet (' + vei + ') - tar bilder ved bevegelse i stedet');
+    }
+    bvStrom = { pc:pc, el:el, buffer:[], sistTid:-1, sistFram:Date.now() };
+    bvStrom.timer = setInterval(bvStromRute, BV_STROM_RUTE_MS);
+    bvStromVent = 0;
+    bvNoter('strømmen fra kameraet er åpen');
+  }catch(err){
+    try{ pc.close(); }catch(e){}
+    el.srcObject = null;
+    el.remove();
+    if(!bvStromUte){
+      bvStromVent = Math.min(bvStromVent ? bvStromVent * 2 : 30000, 5 * 60000);
+      bvStromNeste = Date.now() + bvStromVent;
+    }
+    bvNoter('strømmen: ' + (err && err.message));
+  }finally{
+    bvStromKobler = false;
+  }
+}
+
+/* 'lokal' naar begge ender er adresser paa nettet her (host/prflx), ellers
+   typen som ble brukt. Kan det ikke avgjoeres: 'ukjent' - og da ingen strom. */
+async function bvStromVei(pc){
+  try{
+    const st = await pc.getStats();
+    let parId = null, par = null;
+    const kand = {};
+    st.forEach(function(x){
+      if(x.type === 'transport' && x.selectedCandidatePairId) parId = x.selectedCandidatePairId;
+      if(x.type === 'local-candidate' || x.type === 'remote-candidate') kand[x.id] = x.candidateType;
+    });
+    st.forEach(function(x){
+      if(x.type !== 'candidate-pair') return;
+      if(parId ? x.id === parId : (x.nominated && x.state === 'succeeded')) par = x;
+    });
+    if(!par) return 'ukjent';
+    const a = kand[par.localCandidateId], b = kand[par.remoteCandidateId];
+    if(!a || !b) return 'ukjent';
+    return (/host|prflx/.test(a) && /host|prflx/.test(b)) ? 'lokal' : a + '/' + b;
+  }catch(e){ return 'ukjent'; }
+}
+
+function bvStromRute(){
+  const s = bvStrom;
+  if(!s) return;
+  const el = s.el;
+  if(!(el.readyState >= 2 && el.videoWidth > 0)) return;
+  if(el.currentTime === s.sistTid) return;      /* ingen ny rute siden sist */
+  s.sistTid = el.currentTime;
+  s.sistFram = Date.now();
+  const c = s.buffer.length >= BV_STROM_RUTER ? s.buffer.shift().c : document.createElement('canvas');
+  const skala = Math.min(1, 1024 / el.videoWidth);
+  const w = Math.round(el.videoWidth * skala), h = Math.round(el.videoHeight * skala);
+  if(c.width !== w) c.width = w;
+  if(c.height !== h) c.height = h;
+  c.getContext('2d').drawImage(el, 0, 0, w, h);
+  s.buffer.push({ t: Date.now(), c: c });
+}
+
+function bvStromStopp(grunn){
+  const s = bvStrom;
+  if(!s) return;
+  bvStrom = null;
+  clearInterval(s.timer);
+  try{ s.pc.close(); }catch(e){}
+  s.el.srcObject = null;
+  s.el.remove();
+  if(grunn) bvNoter(grunn);
+}
+
+function bvStromVakt(){
+  if(document.hidden) return;
+  if(bvStrom){
+    const st = bvStrom.pc.connectionState;
+    if(st === 'failed' || st === 'closed' || Date.now() - bvStrom.sistFram > BV_STROM_STILLE_MS){
+      bvStromStopp('strømmen falt ut (' + st + ') - kobler til på nytt');
+    }
+  }
+  if(!bvStrom) bvStromStart();
+}
+
+/* Tre bilder fra bufferen, eldste foerst: rett foer bevegelsen (m,
+   Homeys tidsstempel), midt mellom, og det nyeste. Uten m (en runde som
+   fortsetter): de siste fem sekundene. null naar strommen ikke er klar. */
+function bvStromBilder(m){
+  const s = bvStrom;
+  if(!s || s.buffer.length < 3 || Date.now() - s.sistFram > 3000) return null;
+  const nyest = s.buffer[s.buffer.length - 1];
+  const naa = nyest.t;
+  if(!(m > 0) || m > naa) m = naa - 4000;
+  m = Math.min(m, naa - 2000);
+  const fra = Math.max(m - 1000, s.buffer[0].t);
+  const finn = function(t){
+    return s.buffer.reduce(function(b, x){ return Math.abs(x.t - t) < Math.abs(b.t - t) ? x : b; }, s.buffer[0]);
+  };
+  const valgt = [];
+  [finn(fra), finn((fra + naa) / 2), nyest].forEach(function(x){ if(valgt.indexOf(x) === -1) valgt.push(x); });
+  return valgt.map(function(x){ return { t:x.t, url:x.c.toDataURL('image/jpeg', 0.8) }; });
+}
+
+/* bilder: [{ url, t }], eldste foerst - to (den gamle maaten) eller tre
+   (fra strommen). Gir { hva:'soppel'|'bil'|'', beste: indeksen til bildet
+   der kjoeretoeyet synes best }. */
 async function bvErBil(bilder){
   function bilde(url){
     return { type:'image', source:{ type:'base64', media_type:'image/jpeg',
                                     data: url.slice(url.indexOf(',') + 1) } };
   }
+  const innhold = [];
+  bilder.forEach(function(b, i){
+    const etter = Math.round((b.t - bilder[0].t) / 1000);
+    innhold.push({ type:'text', text:'Bilde ' + (i + 1) + (i ? ', tatt ' + etter + ' s etter bilde 1:' : ':') });
+    innhold.push(bilde(b.url));
+  });
+  innhold.push({ type:'text', text:'Dette er ' + (bilder.length === 3 ? 'tre' : 'to') + ' stillbilder fra '
+    + 'overvåkingskameraet på tunet foran et hus, tatt rundt det øyeblikket kameraet merket '
+    + 'bevegelse. Kommer det en bil eller et annet kjøretøy på minst ett av bildene – altså et '
+    + 'kjøretøy som kjører, står med lysene på, eller som noen går inn i eller ut av? Biler som '
+    + 'bare står parkert stille teller ikke. Er kjøretøyet en søppelbil (renovasjonsbil), svar '
+    + 'SØPPELBIL. Svar JA, SØPPELBIL eller NEI. Ved JA eller SØPPELBIL: skriv også nummeret på '
+    + 'bildet der kjøretøyet synes best, for eksempel «JA 2».' });
   const r = await fetch('/api/claude', {
     method:'POST', headers:{ 'Content-Type':'application/json' },
     body: JSON.stringify({
-      model: NEAM_MODELLER[0].id,       /* Haiku: raskt og billig, ett ord svar */
+      model: NEAM_MODELLER[0].id,       /* Haiku: raskt og billig, kort svar */
       max_tokens: 10,
-      messages: [{ role:'user', content: [
-        { type:'text', text:'Bilde 1:' }, bilde(bilder[0]),
-        { type:'text', text:'Bilde 2, tatt ett sekund senere:' }, bilde(bilder[1]),
-        { type:'text', text:'Dette er to stillbilder fra overvåkingskameraet på tunet '
-          + 'foran et hus, tatt rett etter at kameraet merket bevegelse. Kommer det en '
-          + 'bil eller et annet kjøretøy – altså et kjøretøy som kjører, står med lysene '
-          + 'på, eller som noen går inn i eller ut av? Biler som bare står parkert stille '
-          + 'teller ikke. Er kjøretøyet en søppelbil (renovasjonsbil), svar SØPPELBIL. '
-          + 'Svar med ett ord: JA, SØPPELBIL eller NEI.' }
-      ]}]
+      messages: [{ role:'user', content: innhold }]
     })
   });
   const d = JSON.parse(await r.text());
   if(!r.ok || d.type === 'error') throw new Error((d.error && d.error.message) || ('HTTP ' + r.status));
   const svar = (d.content || []).map(function(b){ return b.type === 'text' ? b.text : ''; }).join('');
   bvNoter('Haiku svarte: ' + svar.trim());
-  /* 'soppel', 'bil' eller '' (NEI). */
-  if(/^\s*S(Ø|OE|O)PPELBIL/i.test(svar)) return 'soppel';
-  return /^\s*JA\b/i.test(svar) ? 'bil' : '';
+  const nr = Number((svar.match(/\d/) || [])[0]);
+  const beste = nr >= 1 && nr <= bilder.length ? nr - 1 : 0;
+  if(/^\s*S(Ø|OE|O)PPELBIL/i.test(svar)) return { hva:'soppel', beste:beste };
+  return { hva: /^\s*JA\b/i.test(svar) ? 'bil' : '', beste:beste };
 }
 
 /* Soeppelbilen paa tunet: dagens paaminnelse om avfall («Hent matavfall,
@@ -5210,6 +5405,11 @@ async function bvRingSjekk(){
   bvLoggStart();
   setInterval(bvSjekk, BV_SJEKK_MS);
   bvSjekk();
+  /* Strommen - se «Strommen» over. Startes av bvSjekk naar videoen er kjent. */
+  setInterval(bvStromVakt, BV_STROM_SJEKK_MS);
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden) bvStromStopp(null); else bvStromStart();
+  });
   /* Ringen ved klokka - se «Bilarkivet» over. */
   bvRingSjekk();
   setInterval(bvRingSjekk, BV_RING_SJEKK_MS);
