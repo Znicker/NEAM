@@ -1982,12 +1982,52 @@ function neamHvemStaar(){
 /* Tale og skriving i Neam holder skjermen vaaken (Magne, 8. november
    2026). Kalles fra neamSend og fra tastetrykk. */
 function neamPinVaaken(){
+  neamHjemVaaken();                /* tale og skriving i Neam teller ogsaa */
   if(!neamErKjokken() || neamPinSover(Date.now())) return;
   neamPinSistTrykk = Date.now();
   neamPinLagre();
   if(neamPinPerson && Date.now() - neamPinPinget > 60000) neamPinPing();
 }
 window.addEventListener('keydown', function(){ if(!neamPinAapen) neamPinVaaken(); }, true);
+
+/* ---- Kjoekkenskjermen gaar hjem etter hvilen ----
+   Magne, 23. november 2026: «Etter 3 min uten bruk kan kjøkken gå tilbake
+   til egen hub uansett.» Fellesenheten gaar tilbake til Kjoekken dash
+   etter tre minutter uten trykk, tastetrykk, rulling eller tale i Neam -
+   fra hvilken side som helst (Emma dash via «Gå til faget», Kalender,
+   spillene ...). Kjoekken dash selv gaar til standard paa egen haand
+   (tilbakeTilStandard()).
+
+   Spillsidene laster ikke felles-skriv.js og kan ikke se hvem som er
+   logget inn. Enheten husker derfor at den er fellesenheten
+   (localStorage, per enhet) hver gang en side som VET det, er innom -
+   og glemmer det like fort naar noen andre logger inn. */
+const NEAM_HJEM_SIDE = '/dashboard.html';
+const NEAM_HJEM_MS = 3 * 60 * 1000;
+const NEAM_HJEM_LAGER = 'neam-fellesenhet';
+let neamHjemSist = Date.now();
+function neamHjemVaaken(){ neamHjemSist = Date.now(); }
+function neamHjemEnhet(){
+  if(typeof skrivMeg !== 'undefined' && skrivMeg){
+    const ja = NEAM_FELLES.indexOf(skrivMeg) !== -1;
+    try{ localStorage.setItem(NEAM_HJEM_LAGER, ja ? '1' : '0'); }catch(e){}
+    return ja;
+  }
+  try{ return localStorage.getItem(NEAM_HJEM_LAGER) === '1'; }catch(e){ return false; }
+}
+['pointerdown', 'keydown', 'wheel', 'touchmove'].forEach(function(t){
+  window.addEventListener(t, neamHjemVaaken, { capture:true, passive:true });
+});
+setInterval(function(){
+  /* Foerst: husk om dette er fellesenheten - ogsaa paa Kjoekken dash, saa
+     spillsidene vet det selv om man gaar rett dit derfra. */
+  const enhet = neamHjemEnhet();
+  if(document.hidden || !enhet) return;
+  const side = location.pathname.replace(/\.html$/, '');
+  if(side === '/dashboard') return;
+  if(Date.now() - neamHjemSist < NEAM_HJEM_MS) return;
+  location.href = NEAM_HJEM_SIDE;
+}, 15000);
 /* Det som kan brukes uten kode (Magne, 8. november 2026: «kalender/uke,
    været, klokken og julestjernen uten å oppgi kode»). Et trykk her mens
    skjermen sover, gaar rett gjennom: ingen tastatur, og skjermen vekkes

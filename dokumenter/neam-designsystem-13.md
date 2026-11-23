@@ -2727,6 +2727,10 @@ ukepåminnelse etter `til`; uten `til` står den hele uka som før.
 på Ute viser bare uteenheten, et trykk på Inne bare inneenheten (og
 eventuelle ekstra innemoduler).
 
+**Kjøkkenskjermen går hjem av seg selv** (fra 23. november 2026): etter tre
+minutter uten bruk går fellesenheten tilbake til Kjøkken dash fra hvilken
+som helst side (`felles-neam.js`). Andre innlogginger merker ingenting.
+
 **Datoer slås opp, de regnes ikke** (fra 23. november 2026). Hver samtale
 får en datotabell – ukedag og ISO-dato for denne uka og fem til
 (`neamDatoTabell()` i `felles-neam.js`). Neam skal slå opp ukedager der, og

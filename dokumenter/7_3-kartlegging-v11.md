@@ -157,7 +157,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 `felles-ms.js` (Microsoft-token for sider uten egen innlogging),
 `felles-tale.js` (tale ut og inn).
 
-**Siste leverte versjoner:** `felles-neam.js ?v=96`, `felles-neam.css
+**Siste leverte versjoner:** `felles-neam.js ?v=97`, `felles-neam.css
 ?v=92`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=30`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
@@ -182,7 +182,7 @@ spillbildene `?v=1` (robot, stjerne, batteri – logoene er byttet;
 `MERKE_V=2`, `KNAPP_V=4` og `SIK_MERKE_V=1` står igjen i koden, men
 gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
-**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–95; neam.css til og
+**Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–96; neam.css til og
 med 91; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
 hus `?v=1–29`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–14, topp.css 1–15**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
@@ -2036,6 +2036,18 @@ avtaler, lekser, prøver og påminnelser, og tittelen på påminnelsesboksen
 følger (`#barnHuskeTittel`). `tilbakeTilStandard()` setter tilbake til
 begge. Testet på neam.no: Begge 7+3 lekser, 4 prøver, 3 avtaler; Andrea
 3 lekser, 0 prøver, 1 avtale, tittel «Påminnelser – Andrea».
+
+**23. november: kjøkkenskjermen går hjem etter tre minutter**
+(`felles-neam.js ?v=97`, alle 18 sidene). Magne: «Etter 3 min uten bruk
+kan kjøkken gå tilbake til egen hub uansett.» Fellesenheten (felles@ /
+kitchen@) går til `/dashboard.html` fra hvilken som helst annen side etter
+tre minutter uten trykk, tastetrykk, rulling eller tale/skriving i Neam
+(`neamPinVaaken()` teller med). Spillsidene laster ikke `felles-skriv.js`
+og vet ikke hvem som er logget inn, så enheten husker det i localStorage
+(**ny nøkkel `neam-fellesenhet`**, '1'/'0') hver gang en side som vet det –
+også Kjøkken dash – er innom. Sjekkes hvert 15. sekund, ikke når fanen er
+skjult. **Ikke testet:** PC-en er logget inn som sys@, så den går aldri
+hjem; må prøves på kjøkkenskjermen.
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke
