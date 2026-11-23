@@ -2028,6 +2028,14 @@ for Inne. Testet på neam.no: Ute viste bare Ute.
 ramme over alt, også kjøkken.» `huskeRad()` setter `.ring-blaa` som på
 Emma dash; CSS-en deler regel med prøverammen i Lekser-fanen via `--ring`.
 Testet på neam.no: «Hent matavfall …» fikk rammen, og den gikk rundt.
+
+**23. november: Begge · Emma · Andrea i Lekser-fanen** (`dashboard.html`).
+Magne lurte på én leksefane per jente; valgt i stedet ett valg øverst i
+fanen. `lvBarn` (null = begge), `lvVelgBarn()`; `lvTegn()` filtrerer
+avtaler, lekser, prøver og påminnelser, og tittelen på påminnelsesboksen
+følger (`#barnHuskeTittel`). `tilbakeTilStandard()` setter tilbake til
+begge. Testet på neam.no: Begge 7+3 lekser, 4 prøver, 3 avtaler; Andrea
+3 lekser, 0 prøver, 1 avtale, tittel «Påminnelser – Andrea».
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke

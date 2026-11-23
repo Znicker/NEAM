@@ -197,6 +197,7 @@ body{
 #lekserVis .plan-tittel{ flex-shrink:0; max-width:70%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 #lekserVis .plan-meta{ margin-top:0; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 #lekserVis .plan-rad.valgt{ box-shadow:inset 0 0 0 2px rgba(44,62,80,.45); }
+.lv-filter{ margin:0 0 10px; }
 .lv-tittel{
   font-size:var(--t-meta);font-weight:700;text-transform:uppercase;letter-spacing:.1em;
   color:var(--ink);margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--line);
@@ -1245,7 +1246,7 @@ select.hu-felt{
       <!-- Bare i Lekser: jentenes paaminnelser og proevene deres. Middagen
            og husets paaminnelser viker saa lenge (lvHoyre()). -->
       <div class="kort" id="kortBarnHuske" hidden>
-        <div class="kort-tittel"><span>Påminnelser – Emma og Andrea</span></div>
+        <div class="kort-tittel"><span id="barnHuskeTittel">Påminnelser – Emma og Andrea</span></div>
         <div class="kort-kropp" id="barnHuske">
           <div class="tom">Ingenting notert ennå.</div>
         </div>
@@ -3294,6 +3295,16 @@ const VIS_BOKS = { dag:'plan', uke:'uke', lekser:'lekserVis' };
 const LV_BARN_DASH = { Emma:'/emma.html', Andrea:'/andrea.html' };
 const lvInnhold = {};          /* rad-id -> { barn, fagId, detalj, erProve } */
 let lvDetaljId = null;
+/* Hvilken av jentene fanen viser: null er begge (Magne, 23. november 2026 -
+   én fane med et valg øverst i stedet for én fane per jente). Går tilbake
+   til begge når skjermen hviler (tilbakeTilStandard()). */
+let lvBarn = null;
+
+function lvVelgBarn(navn){
+  lvBarn = navn || null;
+  lukkDetalj();
+  lvTegn();
+}
 
 async function tegnLekserPaaNytt(){
   const mitt = ++tegneNr;
@@ -3394,8 +3405,16 @@ function lvTegn(){
   const idag = viserIdag();
   const naa = idag ? new Date() : new Date(8640000000000000);
   const avtaler = dagensAvtaler.map(function(e, i){ return { e:e, i:i }; })
-    .filter(function(x){ return LV_BARN_DASH[x.e.kalender]; });
-  let ut = avtaler.length ? avtaler.map(function(x){
+    .filter(function(x){ return LV_BARN_DASH[x.e.kalender] && (!lvBarn || x.e.kalender === lvBarn); });
+  const hvem = lvBarn || 'Emma og Andrea';
+  /* Valget oeverst: Begge · Emma · Andrea, i samme drakt som Dag/Uke/Lekser. */
+  let ut = '<div class="lv-filter"><span class="vis-bytt" role="group" aria-label="Hvem">'
+    + [[null, 'Begge']].concat(BARN.map(function(b){ return [b.navn, b.navn]; })).map(function(v){
+        return '<button class="vis-knapp' + (lvBarn === v[0] ? ' aktiv' : '') + '"'
+          + ' onclick="lvVelgBarn(' + (v[0] ? '\'' + v[0] + '\'' : 'null') + ')">' + v[1] + '</button>';
+      }).join('')
+    + '</span></div>';
+  ut += avtaler.length ? avtaler.map(function(x){
     const e = x.e;
     const forbi = idag && !e.heleDagen && e.slutt < naa;
     return '<div class="plan-rad' + (forbi ? ' forbi' : '') + (detaljIndeks === x.i ? ' valgt' : '') + '"'
@@ -3411,7 +3430,7 @@ function lvTegn(){
       +   (e.sted ? '<div class="plan-meta">' + esc(e.sted) + '</div>' : '')
       + '</div>'
       + '</div>';
-  }).join('') : '<div class="tom">Ingen avtaler for Emma og Andrea denne dagen.</div>';
+  }).join('') : '<div class="tom">Ingen avtaler for ' + hvem + ' denne dagen.</div>';
 
   /* ---- Leksene, begge jentene i én liste ---- */
   const start = lvUkeStart();
@@ -3420,6 +3439,7 @@ function lvTegn(){
   const naaUke = uStart === datoNokkel(ukeStart(idag0())) || dagOffset === 0;
   const lekser = [];
   BARN.forEach(function(b){
+    if(lvBarn && b.navn !== lvBarn) return;
     const d = barnFag[b.navn];
     if(!d) return;
     (d.lekser || []).forEach(function(l){
@@ -3458,6 +3478,7 @@ function lvTegn(){
   const ukeSlutt = datoNokkel(new Date(m0.getFullYear(), m0.getMonth(), m0.getDate() + 6));
   const prover = [];
   BARN.forEach(function(b){
+    if(lvBarn && b.navn !== lvBarn) return;
     const d = barnFag[b.navn];
     if(!d) return;
     (d.prover || []).forEach(function(p){
@@ -3491,7 +3512,7 @@ function lvTegn(){
     const uke = ukeNokkel(dagenViser());
     const mine = (huskeliste || []).filter(function(m){
       const hvem = String(m.gjelder || '').trim();
-      if(!LV_BARN_DASH[hvem]) return false;
+      if(!LV_BARN_DASH[hvem] || (lvBarn && hvem !== lvBarn)) return false;
       return (m.omfang !== 'uke' && m.frist === dag)
           || (m.omfang === 'uke' && ukeAv(m.frist) === uke && (!m.til || dag <= m.til));
     }).sort(function(a, b){
@@ -3499,6 +3520,7 @@ function lvTegn(){
       if((a.omfang === 'uke') !== (b.omfang === 'uke')) return a.omfang === 'uke' ? 1 : -1;
       return (a.frist || '').localeCompare(b.frist || '');
     });
+    if($('barnHuskeTittel')) $('barnHuskeTittel').textContent = 'Påminnelser – ' + (lvBarn || 'Emma og Andrea');
     $('barnHuske').innerHTML = mine.length ? mine.map(huskeRad).join('')
                                            : '<div class="tom">Ingenting notert ennå.</div>';
   }
@@ -3760,6 +3782,7 @@ function visTilIdag(){
   if(b) b.hidden = (dagOffset === 0);
 }
 function tilbakeTilStandard(){
+  lvBarn = null;                   /* Lekser-fanen viser begge igjen */
   lukkDetalj();
   lukkHuskeBoble();
   lukkHuskeSkjema();

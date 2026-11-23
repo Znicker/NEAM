@@ -730,7 +730,11 @@ fanen står. Et trykk på en lekse eller prøve viser den i høyre kolonne
 med en blå knapp **«Gå til faget»**, som åpner Emma eller Andrea dash med
 fagvinduet for det faget oppe (lenken `#fag=<id>`) – kjøkkenet er
 fortsatt en oppslagstavle, så ingen hake og ingen Endre (knappen skjules).
-Blar dager som Dag. Navnene i koden har `lv-` foran.
+Blar dager som Dag. Navnene i koden har `lv-` foran. **Øverst i fanen et
+valg Begge · Emma · Andrea** (samme drakt som Dag/Uke/Lekser) som viser
+én av jentene – avtaler, lekser, påminnelser og prøver; tilbake til Begge
+når skjermen hviler. Én fane med et valg, ikke én fane per jente: rekka
+holdes kort, og standard er oversikten over begge.
 
 **Ikonet og navnet øverst:** sidas ikon på 84 px og sidenavnet ved
 siden av (`.merke-navn`, i ikonstilen). Fram til 27. oktober 2026 sto bare
