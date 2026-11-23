@@ -2256,6 +2256,37 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   feil, de siste 40, og `sist` høyst hvert tiende minutt. Les fra PC-en:
   `/api/data?key=bilvakt-logg:ipad`. Obs: med to dasher åpne kjøres og
   betales Haiku-testen to ganger.
+  **Første målte tid:** Tapo oppdaget bilen 09:01:35, telefonen viste
+  bildet i løpet av 09:02 (bare minuttet er lagret) – 25–85 s, mot ca.
+  5–8 s for vår del av kjeden. Enten fikk Homey bevegelsen sent, eller
+  telefonen sov. Ikke avklart.
+- **Bilarkivet** (23. november; Magne: «jeg tenker også at vi må ha et
+  lite arkiv her … når det kommer bil ha bildet oppe i fem minutter.
+  dersom ingen rører det og utkvitterer det legger det seg ned. men
+  ikonet for neam sikkerhet dukker opp på siden av klokken med en
+  sirkulerende rød ramme rundt seg»). **Nytt endepunkt
+  `functions/api/bilarkiv.js`**: begge stillbildene lagres som
+  `bilarkiv:bilde:<id>:<0|1>` med TTL på 32 dager, lista i
+  `bilarkiv:liste` (31 dager). Begge ligger **utenfor `fh:`** med vilje,
+  så `/api/data` ikke deler ut bildene. Samme Homey-bevegelse eller en
+  bil innen 45 s regnes som samme bil, så to dasher gir ikke to oppføringer.
+  **Kjøkken dash:** varselet legger seg selv etter fem minutter
+  (`BV_VARSEL_MS`); lukker noen det (kryss, bakteppe, Escape), er bilen
+  kvittert ut. Står en bil ukvittert lenger enn varselet, kommer
+  **bilarkiv-ikonet** (ny fil `bilder/ikoner/bilarkiv.png`: bil, kamera
+  og grønn hake, fra Magne) med **rød ring** ved klokka (`#bvRing`, samme
+  form som matlagingen, `--danger`). Valgt av Magne: bare Kjøkken dash
+  (derfor ligger koden i `dashboard.html`, ikke i `felles-topp.js`),
+  samme ikon ved klokka og på knappen. Alle kjøkkenskjermer spør hvert
+  minutt. Trykk går til `/sikkerhet.html#biler`. **Neam Sikkerhet:** knappen
+  «Biler på tunet» står under kameraet som en enhet, med siste tid under.
+  Arkivet åpnes i enhetsarket (bredere, `.bil-ark`): de to siste bilene
+  med begge bildene (Magne: «kan vise fire bilder»), så alle bilene den
+  siste måneden med dato, klokkeslett og Bil/Søppelbil. Trykk på en rad
+  viser bildene. Å åpne arkivet kvitterer ut alle bilene. **Testet:**
+  endepunktet i node med en falsk KV (lagring, dobbel, feil type,
+  bilde, TTL, kvittering), arket og ringen lokalt med falske data.
+  **Ikke testet med ekte bil.**
 - **Påminnelsene som nå står dobbelt** (heldagsprøvene og gloseprøven lå
   som påminnelser før Neam la dem inn som prøver) – Neam skal si fra og
   slette bare med ja.

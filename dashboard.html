@@ -716,6 +716,16 @@ input,select,textarea{font-size:16px}
 }
 .bv-kort[hidden]{display:none}
 .bv-bilde{flex:1;min-height:0;width:100%;height:auto;object-fit:contain;border-radius:10px}
+/* Bilarkivet ved klokka (Magne, 23. november 2026): en bil ingen kvitterte
+   ut. Samme form og ring som matlagingen i toppen (felles-topp.css), i
+   roedt som proeverammen paa dashene. */
+.bv-ringrad .ntp-mat-ikon::before{
+  background:conic-gradient(from var(--ntp-mat-vinkel),
+    var(--danger) 0deg, color-mix(in srgb, var(--danger) 25%, #fff) 60deg,
+    var(--danger) 120deg, var(--danger) 180deg,
+    color-mix(in srgb, var(--danger) 25%, #fff) 240deg, var(--danger) 300deg);
+}
+.bv-ringrad .ntp-mat .ntp-mat-ikon{ box-shadow:0 0 10px color-mix(in srgb, var(--danger) 35%, transparent); }
 .hub-lukk{
   position:absolute;top:8px;right:10px;border:none;background:transparent;
   color:var(--ink-soft);font-size:var(--t-pil);line-height:1;cursor:pointer;padding:2px 4px;
@@ -4670,8 +4680,11 @@ function julLukk(){ const m = $('julBak'); if(m) m.hidden = true; julDrar = fals
    3. Claude ser paa de to bildene og svarer JA eller NEI. To bilder,
       fordi en bil som staar parkert paa tunet ellers ville gitt JA
       hver gang en katt gikk forbi.
-   4. JA: det FOERSTE bildet dekker tre firedeler av skjermen til noen
-      lukker det. Det andre viser ofte bare garasjeporten.
+   4. JA: det FOERSTE bildet dekker tre firedeler av skjermen. Lukker
+      noen det, er bilen kvittert ut. Ellers legger det seg selv etter
+      fem minutter, og Sikkerhet-ikonet staar med roed ring ved klokka til
+      noen aapner arkivet (se «Bilarkivet» under). Begge bildene lagres i
+      arkivet i Neam Sikkerhet (functions/api/bilarkiv.js).
    5. SOEPPELBIL (Magne, 23. november 2026: «vanlig varsel og at
       påminnelsen om renovasjon på mandager blir utført, men en liten
       tekst som sier når søppelbilen var der»): samme varsel, og dagens
@@ -4797,7 +4810,10 @@ async function bvSjekk(){
     const bilder = await bvToBilder(videoId);
     bvNoter('to bilder tatt etter ' + Math.round((Date.now() - bvSist) / 1000) + ' s');
     const hva = await bvErBil(bilder);
-    if(hva) bvVis(bilder[0]);
+    if(hva){
+      bvVis(bilder[0]);
+      bvArkiver(bilder, hva === 'soppel', naa.tid);
+    }
     if(hva === 'soppel') await bvSoppelbil();
   }catch(err){
     console.warn('Bilvakt:', err && err.message);
@@ -4946,14 +4962,97 @@ function bvVis(url){
   $('bvBilde').src = url;
   $('bvBak').hidden = false;
   $('bvKort').hidden = false;
+  bvRingTegn(false);
+  clearTimeout(bvVarselTimer);
+  bvVarselTimer = setTimeout(function(){ bvLukk(true); }, BV_VARSEL_MS);
 }
 
 function bvAapen(){ return !$('bvKort').hidden; }
 
-function bvLukk(){
+/* selv: varselet la seg ned etter fem minutter uten at noen roerte det -
+   da er bilen ikke kvittert ut, og ringen ved klokka tar over. Ellers
+   (krysset, bakteppet, Escape) er bilen sett. */
+function bvLukk(selv){
+  clearTimeout(bvVarselTimer);
   $('bvKort').hidden = true;
   $('bvBak').hidden = true;
   $('bvBilde').removeAttribute('src');
+  if(selv === true){ bvNoter('varselet la seg ned uten kvittering'); bvRingSjekk(); return; }
+  bvNoter('varselet lukket - kvittert ut');
+  bvKvitter();
+}
+
+/* ============================================================
+   Bilarkivet
+   ------------------------------------------------------------
+   Magne, 23. november 2026: «når det kommer bil ha bildet oppe i fem
+   minutter. dersom ingen rører det og utkvitterer det legger det seg
+   ned. men ikonet for neam sikkerhet dukker opp på siden av klokken med
+   en sirkulerende rød ramme rundt seg. når man trykker på den kommer man
+   til neam sikkerhet som viser» bilene. Bare paa Kjoekken dash (Magne
+   valgte), og med bilarkiv-ikonet (bil, kamera og groenn hake).
+
+   Begge bildene sendes til /api/bilarkiv, som ogsaa kjenner igjen samme
+   bil fra to skjermer. Ringen staar naar en bil i arkivet er ukvittert
+   og eldre enn varselet - da har varselet lagt seg ned paa alle
+   skjermene. Den forsvinner naar noen lukker varselet eller aapner
+   arkivet i Sikkerhet; alle kjoekkenskjermene spoer hvert minutt.
+   ============================================================ */
+const BV_VARSEL_MS = 5 * 60 * 1000;
+const BV_RING_SJEKK_MS = 60 * 1000;
+const BV_ARKIV_IKON = '/bilder/ikoner/bilarkiv.png?v=1';
+let bvVarselTimer = null;
+let bvArkivLagres = Promise.resolve();
+
+function bvArkiver(bilder, soppel, bevegelse){
+  bvArkivLagres = fetch('/api/bilarkiv', {
+    method:'POST', headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({ hva:'lagre', bilder:bilder, soppel:!!soppel, bevegelse:bevegelse || '' })
+  }).then(function(r){ return r.json(); }).then(function(d){
+    bvNoter(d.ok ? (d.dobbel ? 'arkiv: samme bil som en annen skjerm' : 'arkiv: lagret') : 'arkiv: ' + d.feil);
+  }).catch(function(e){ bvNoter('arkiv: ' + (e && e.message)); });
+  return bvArkivLagres;
+}
+
+function bvKvitter(){
+  bvRingTegn(false);
+  /* Etter lagringen: ellers kunne en rask lukking kvittere foer bilen
+     laa i arkivet. */
+  bvArkivLagres.then(function(){
+    return fetch('/api/bilarkiv', { method:'POST', headers:{ 'Content-Type':'application/json' },
+                                    body: JSON.stringify({ hva:'kvitter' }) });
+  }).catch(function(){});
+}
+
+function bvRingTegn(vis){
+  let rad = $('bvRing');
+  if(!rad){
+    if(!vis) return;
+    const ok = $('ntpOk');
+    if(!ok) return;           /* toppen er ikke bygget ennaa - neste sjekk */
+    rad = document.createElement('div');
+    rad.className = 'ntp-matrad bv-ringrad';
+    rad.id = 'bvRing';
+    const navn = 'Bil på tunet – ikke sett. Trykk for å se bildene i Sikkerhet';
+    rad.innerHTML = '<a class="ntp-mat" href="/sikkerhet.html#biler" title="' + esc(navn) + '" aria-label="' + esc(navn) + '">'
+      + '<span class="ntp-mat-ikon"><img src="' + BV_ARKIV_IKON + '" alt="" width="512" height="512"></span>'
+      + '<span class="ntp-mat-navn">Bil</span></a>';
+    ok.insertAdjacentElement('afterend', rad);
+  }
+  rad.hidden = !vis;
+}
+
+async function bvRingSjekk(){
+  if(document.hidden) return;
+  try{
+    const d = await fetch('/api/bilarkiv', { cache:'no-store' }).then(function(r){ return r.json(); });
+    if(!d.ok) return;
+    const naa = Date.now();
+    /* Litt slingring: arkivets tid er satt et par sekunder etter at
+       varselet kom opp. */
+    const vis = (d.liste || []).some(function(x){ return !x.kvittert && naa - x.tid >= BV_VARSEL_MS - 30000; });
+    bvRingTegn(vis && !bvAapen());
+  }catch(e){}
 }
 
 /* ============================================================
@@ -5053,6 +5152,9 @@ function bvLukk(){
   bvLoggStart();
   setInterval(bvSjekk, BV_SJEKK_MS);
   bvSjekk();
+  /* Ringen ved klokka - se «Bilarkivet» over. */
+  bvRingSjekk();
+  setInterval(bvRingSjekk, BV_RING_SJEKK_MS);
 
   /* Julestjernene og julelysene ved vaeret - se «Julestjernene i stua» og
      «Julelysene ute» over. jstHent henter for begge. */

@@ -212,6 +212,29 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
 .handling:disabled{ opacity:.5; }
 .ingen-handling{ font-size:var(--t-meta); color:var(--ink-soft); font-weight:600; margin:0; }
 
+/* ---------- Bilarkivet (23. november 2026) ----------
+   Knappen staar under kameraet som en enhet (Magne valgte), og arkivet
+   aapnes i samme ark som enhetene - bare bredere, for bildene. */
+.bil-ark{ max-width:760px; }
+.bil-bolk{ margin:4px 0 10px; font-size:var(--t-meta); font-weight:700;
+           text-transform:uppercase; letter-spacing:.1em; color:var(--ink-soft); }
+.bil-siste{ display:grid; gap:14px; margin-bottom:18px; }
+.bil-tid{ font-size:var(--t-brod); font-weight:700; margin-bottom:6px; }
+.bil-tid span{ font-size:var(--t-meta); font-weight:600; color:var(--ink-soft); margin-left:6px; }
+.bil-par{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.bil-par img{ width:100%; height:auto; aspect-ratio:16/9; object-fit:cover; display:block;
+              border-radius:10px; background:#1A1D21; }
+.bil-liste{ list-style:none; margin:0; padding:0; display:grid; gap:1px;
+            background:var(--line); border-radius:12px; overflow:hidden; }
+.bil-liste li{ background:var(--boks-mild); }
+.bil-linje{
+  width:100%; display:flex; justify-content:space-between; gap:14px; align-items:baseline;
+  padding:11px 14px; background:none; border:none; text-align:left;
+  font-size:var(--t-brod); font-weight:600;
+}
+.bil-linje .verdi{ font-weight:700; font-variant-numeric:tabular-nums; }
+.bil-liste .bil-par{ padding:0 14px 12px; }
+
 /* ---------- Porten ---------- */
 .port{
   margin:auto; text-align:center; background:var(--paper); border-radius:var(--radius);
@@ -251,6 +274,15 @@ button:focus-visible, a:focus-visible{ outline:3px solid var(--aksent); outline-
   </section>
 
   <div class="kameraer" id="kameraer"></div>
+
+  <!-- Bilarkivet: bilene bilvakta paa Kjoekken dash har sett. -->
+  <div class="enheter">
+    <button class="enhet" id="bilKnapp" type="button">
+      <img class="ikon-flis" src="/bilder/ikoner/bilarkiv.png?v=1" alt="" width="512" height="512">
+      <span class="ikon-navn enhet-navn">Biler på tunet</span>
+      <span class="enhet-under" id="bilSist" hidden></span>
+    </button>
+  </div>
 
   <p class="bolk-tittel" id="bolkTittel" hidden>Huset</p>
   <div class="enheter" id="enheter"></div>
@@ -587,6 +619,99 @@ async function sett(id, kap, nyVerdi, knapp){
 }
 
 /* ============================================================
+   Bilarkivet
+   ------------------------------------------------------------
+   Magne, 23. november 2026: Neam Sikkerhet «viser de to siste bildene
+   og klokkeslett, samt en liste over alle bilder de siste måneden med
+   dato og klokkeslett» - og begge bildene av hver av de to siste bilene
+   («kan vise fire bilder»). Bildene tar bilvakta paa Kjoekken dash;
+   lista og bildene ligger i /api/bilarkiv. Aa aapne arkivet er aa ha
+   sett bilene: da kvitteres de ut, og den roede ringen ved klokka paa
+   Kjoekken dash blir borte.
+   ============================================================ */
+function bilUrl(x, n){ return '/api/bilarkiv?bilde=' + encodeURIComponent(x.id) + '&n=' + n; }
+function bilNaar(tid){
+  const d = new Date(tid), i = new Date();
+  const kl = d.toLocaleTimeString('nb-NO', { hour:'2-digit', minute:'2-digit' });
+  const dag0 = new Date(i.getFullYear(), i.getMonth(), i.getDate()).getTime();
+  if(tid >= dag0) return 'I dag kl. ' + kl;
+  if(tid >= dag0 - 864e5) return 'I går kl. ' + kl;
+  const dato = d.toLocaleDateString('nb-NO', { weekday:'short', day:'numeric', month:'short' });
+  return dato.charAt(0).toUpperCase() + dato.slice(1) + ' kl. ' + kl;
+}
+function bilPar(x){
+  let h = '<div class="bil-par">';
+  for(let n = 0; n < (x.bilder || 1); n++){
+    h += '<img src="' + bilUrl(x, n) + '" alt="Bilde ' + (n + 1) + ' fra kameraet på tunet" width="1024" height="576" loading="lazy">';
+  }
+  return h + '</div>';
+}
+
+async function bilHent(){
+  try{
+    const d = await fetch('/api/bilarkiv', { cache:'no-store' }).then(function(r){ return r.json(); });
+    return d.ok ? (d.liste || []) : null;
+  }catch(e){ return null; }
+}
+async function bilSistTegn(){
+  const l = await bilHent();
+  const el = $('bilSist');
+  if(!l || !l.length){ el.hidden = true; return; }
+  el.textContent = bilNaar(l[0].tid);
+  el.hidden = false;
+}
+
+async function aapneBiler(){
+  if(aapen) return;
+  aapen = 'biler';
+  let h = '<div class="ark-bak" id="arkBak"><div class="ark bil-ark" role="dialog" aria-modal="true">'
+    + '<div class="ark-topp">'
+    +   '<img class="ikon-flis" src="/bilder/ikoner/bilarkiv.png?v=1" alt="" width="512" height="512">'
+    +   '<div><div class="ark-navn">Biler på tunet</div>'
+    +   '<div class="ark-sted">Den siste måneden</div></div>'
+    +   '<button class="ark-lukk" id="arkLukk" aria-label="Lukk">&times;</button>'
+    + '</div><div id="bilInnhold"><p class="ingen-handling">Henter …</p></div></div></div>';
+  document.body.insertAdjacentHTML('beforeend', h);
+  $('arkLukk').onclick = lukkEnhet;
+  $('arkBak').onclick = function(ev){ if(ev.target === $('arkBak')) lukkEnhet(); };
+
+  /* Sett: ringen ved klokka paa Kjoekken dash forsvinner. */
+  fetch('/api/bilarkiv', { method:'POST', headers:{ 'Content-Type':'application/json' },
+                           body: JSON.stringify({ hva:'kvitter' }) }).catch(function(){});
+
+  const l = await bilHent();
+  const inn = $('bilInnhold');
+  if(!inn) return;
+  if(!l){ inn.innerHTML = '<div class="feil">Fikk ikke hentet bilarkivet.</div>'; return; }
+  if(!l.length){ inn.innerHTML = '<p class="ingen-handling">Ingen biler den siste måneden.</p>'; return; }
+  const merke = function(x){ return x.soppel ? '<span>Søppelbil</span>' : ''; };
+  let t = '<p class="bil-bolk">Siste biler</p><div class="bil-siste">'
+    + l.slice(0, 2).map(function(x){
+        return '<div><div class="bil-tid">' + esc(bilNaar(x.tid)) + merke(x) + '</div>' + bilPar(x) + '</div>';
+      }).join('')
+    + '</div>';
+  if(l.length > 2){
+    t += '<p class="bil-bolk">Alle biler</p><ul class="bil-liste">'
+      + l.slice(2).map(function(x){
+          return '<li><button class="bil-linje" type="button" data-bil="' + esc(x.id) + '">'
+            + '<span>' + esc(bilNaar(x.tid)) + '</span>'
+            + '<span class="verdi">' + (x.soppel ? 'Søppelbil' : 'Bil') + '</span></button></li>';
+        }).join('')
+      + '</ul>';
+  }
+  inn.innerHTML = t;
+  /* Trykk paa en bil i lista viser begge bildene under den. */
+  inn.querySelectorAll('[data-bil]').forEach(function(b){
+    b.onclick = function(){
+      const li = b.parentNode, finnes = li.querySelector('.bil-par');
+      if(finnes){ finnes.remove(); return; }
+      const x = l.filter(function(y){ return y.id === b.dataset.bil; })[0];
+      if(x) li.insertAdjacentHTML('beforeend', bilPar(x));
+    };
+  });
+}
+
+/* ============================================================
    Henting og oppfriskning
    ============================================================ */
 let henter = false;
@@ -851,6 +976,13 @@ document.addEventListener('keydown', function(ev){
 });
 
 $('koble').onclick = godkjenn;
+$('bilKnapp').onclick = aapneBiler;
+bilSistTegn();
+/* Fra ringen ved klokka paa Kjoekken dash: rett til arkivet. */
+if(location.hash === '#biler'){
+  history.replaceState({}, '', location.pathname);
+  aapneBiler();
+}
 
 /* Skjermen sover: stopp stroemmene. En videostroem i en fane ingen ser
    paa koster baade batteri og baandbredde. */
