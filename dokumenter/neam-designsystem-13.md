@@ -727,7 +727,8 @@ liste, hver rad i barnets farge og initial. Høyre: «Påminnelser – Emma og
 Andrea» (dag og uke i én boks) og «Prøver» for begge, med rød roterende
 ramme på prøver denne uka; husets påminnelser og middagen viker så lenge
 fanen står. Et trykk på en lekse eller prøve viser den i høyre kolonne
-med en blå knapp **«Til Emma dash»/«Til Andrea dash»** – kjøkkenet er
+med en blå knapp **«Gå til faget»**, som åpner Emma eller Andrea dash med
+fagvinduet for det faget oppe (lenken `#fag=<id>`) – kjøkkenet er
 fortsatt en oppslagstavle, så ingen hake og ingen Endre (knappen skjules).
 Blar dager som Dag. Navnene i koden har `lv-` foran.
 

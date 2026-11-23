@@ -3409,7 +3409,7 @@ function lvTegn(){
                  l.ferdig ? 'Ferdig' : lvMerke(l.frist),
                  (l.ferdig ? 'ferdig' : '') + (hast ? ' ' + hast : ''),
                  'l:' + x.barn + ':' + l.id,
-                 { barn:x.barn, fag:fag, erProve:false, detalj:detalj });
+                 { barn:x.barn, fag:fag, fagId:l.fagId, erProve:false, detalj:detalj });
   }).join('') : '<div class="tom">Ingen lekser denne uka.</div>';
   boks.innerHTML = ut;
 
@@ -3441,7 +3441,7 @@ function lvTegn(){
                    lvMerke(p.dato) + (dager >= 7 ? ' · om ' + dager + ' d' : ''),
                    (dager <= 1 ? 'naer' : '') + (p.dato <= ukeSlutt ? ' denne-uka' : ''),
                    'p:' + x.barn + ':' + p.id,
-                   { barn:x.barn, fag:fag, erProve:true, detalj:detalj });
+                   { barn:x.barn, fag:fag, fagId:p.fagId, erProve:true, detalj:detalj });
     }).join('') : '<div class="tom">Ingen prøver lagt inn.</div>';
   }
 
@@ -3492,7 +3492,10 @@ function lvDetalj(id){
     + '<div class="detalj-tid">' + (inn.erProve ? 'Prøve' : 'Lekse') + ' · ' + esc(inn.barn) + '</div>'
     + inn.detalj
     + '<div class="lv-fot"><button type="button" class="lv-gaa"'
-    +   ' onclick="location.href=\'' + LV_BARN_DASH[inn.barn] + '\'">Til ' + esc(inn.barn) + ' dash</button></div>';
+    /* «Gå til faget» aapner dashen hennes med fagvinduet oppe (Magne,
+       23. november 2026) - dashen leser #fag=<id> naar fagene er lastet. */
+    +   ' onclick="location.href=\'' + LV_BARN_DASH[inn.barn] + '#fag=' + encodeURIComponent(inn.fagId || '') + '\'">'
+    +   'Gå til faget</button></div>';
   kort.hidden = false;
   HOYRE_KORT.forEach(function(k){ if($(k)) $(k).hidden = true; });
   settBredde();

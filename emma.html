@@ -3505,6 +3505,15 @@ async function lastFag(){
   if(visning === 'fag') tegnFag();
   tegnHuske();
   if(fagVisId) tegnFagVis();
+  /* Lenke fra kjoekkenet: #fag=<id> aapner det faget (Magne, 23. november
+     2026: «Gå til fag på Emma dash»). Lenken fjernes etterpaa, saa en ny
+     innlasting ikke aapner faget igjen. */
+  const lenke = /^#fag=(.+)$/.exec(location.hash || '');
+  if(lenke){
+    const id = decodeURIComponent(lenke[1]);
+    try{ history.replaceState(null, '', location.pathname + location.search); }catch(e){}
+    if(fagAv(id)) apneFagVis(id);
+  }
 }
 
 /* ============================================================
