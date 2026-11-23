@@ -2226,7 +2226,11 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   `les_okonomi_transaksjoner` gir `reservert_i_banken`, og beskrivelsen
   sier at den ikke skal kobles eller avstemmes. Feltet følger med i
   `alle-poster` og `forfaller`. Testet: matchingen lokalt mot dagens data
-  (Fremtind 114 kr på Regninger ble merket, Arendal kommune ikke).
+  (Fremtind 114 kr på Regninger ble merket, Arendal kommune ikke), og
+  live etter pushen. Rettet etterpå: en reservert regning **uten
+  kategori** falt ut av innboksen (den sto bare under de forfalte) – nå
+  ligger den under fakturaer uten kategori, med merket; og Neam får
+  kontoens eget navn (`kn`), ikke DNBs.
 - **Påminnelsene som nå står dobbelt** (heldagsprøvene og gloseprøven lå
   som påminnelser før Neam la dem inn som prøver) – Neam skal si fra og
   slette bare med ja.

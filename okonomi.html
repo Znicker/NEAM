@@ -1851,7 +1851,8 @@ button.ok-dr-rad{ cursor:pointer; }
       document.getElementById('ok-innboks-meta').textContent = 'Fra ' + okKort.format(new Date(r.fra)) + ' · hentet kl. '
         + okKlokke.format(new Date(r.hentet)) + (r.advarsel ? ' · ' + r.advarsel + ' – viser forrige henting' : '');
       okForfalte = (r.fakturaer || []).filter(function(p){ return okForfalt(p.dato) && !okReservert(p); });
-      okFakUten = (r.fakturaer || []).filter(function(p){ return !p.kategori && !okForfalt(p.dato); });
+      /* Reservert i banken og uten kategori: her, ikke under de forfalte. */
+      okFakUten = (r.fakturaer || []).filter(function(p){ return !p.kategori && (!okForfalt(p.dato) || okReservert(p)); });
       okTegnInnboks();
       okTegnFakturaer();
       if(okAl.poster) okAlLast();

@@ -1588,7 +1588,7 @@ async function varsler(env, okt){
   const ventende = Object.keys(poster).map(id => poster[id]).filter(p => p.status === 'venter' && p.faktura && !p.dekketAv);
   /* Reservert i banken regnes ikke som forfalt (merkReservert). */
   const forfalt = ventende.filter(p => String(p.dato) < iDag && !p.reservert).length;
-  const fakUten = ventende.filter(p => !p.kategori && String(p.dato) >= iDag).length;
+  const fakUten = ventende.filter(p => !p.kategori && (String(p.dato) >= iDag || p.reservert)).length;
   const tf = await lesJson(env, TRUMF_FEIL_NOKKEL, null);
   const sist = await lesJson(env, SIST_HENTET_NOKKEL, null);
   const ut = [];
@@ -2528,7 +2528,7 @@ async function allePoster(env){
       harKvittering:(!!p.fra || !!p.harLinjer) && p.harKvittering !== false, harFil:!!p.harFil, filType:p.filType || '',
       overstyrt:!!p.overstyrt, merke:p.merke || '', avsluttet:p.avsluttet || '', forbN:forbindelser(p, poster).length,
       vedN:(p.harFil ? 1 : 0) + (p.vedlegg || []).length, iSamle:!!(p.samleId || p.kommendeId || p.fra === 'samle'), samleStatus:samleStatus(p, poster), kommende:!!p.kommende,
-      reservert:p.status === 'venter' && p.reservert ? p.reservert : null });
+      reservert:p.status === 'venter' && p.reservert ? Object.assign({}, p.reservert, { kontoNavn:kn[p.reservert.konto] || p.reservert.kontoNavn }) : null });
   }
   ut.sort((a, b) => String(b.dato).localeCompare(String(a.dato)));
   return svar({ ok:true, fra:(await env.FAMILIE_KV.get(FRA_NOKKEL)) || '', poster:ut });
