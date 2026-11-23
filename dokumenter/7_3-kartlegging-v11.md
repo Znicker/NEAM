@@ -2063,6 +2063,17 @@ Jentenes lekser i Påminnelser er nå korte (Magne: «trenger kun en kort
 overskrift – bare med fagnavn og et par-tre ord, på en linje»): «Fag: tre
 første ord …» (`huKortTekst()`), og raden er én linje med «…» hvis den
 likevel blir for lang.
+
+**23. november: kjøkkenskjermen står fast** (`dashboard.html`). Magne:
+«Dash er fadet helt i toppen. Og skjermen sitter ikke skikkelig fast.»
+Ikke gjenskapt her – i alle iPad-størrelsene (iframe på neam.no) var sida
+like høy som skjermen. Men begge symptomene er sida som ruller: den gamle
+regelen `html,body{overflow-x:hidden}` (august) gjør `html` til et
+rullefelt (overflow-y blir auto), så iPaden kunne dra og sprette, og ved
+`scrollY > 4` legger toppen toningen sin (`.ntp-rullet`). Nå
+`html, body{overflow:hidden; overscroll-behavior:none}` over 700 px.
+Telefonen ruller som før (sjekket: 390 px rullet fortsatt). **Emma og
+Andrea dash har den samme gamle regelen** – ikke rørt.
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke

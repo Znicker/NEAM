@@ -608,6 +608,15 @@ a.middag:active{opacity:.72}
    skjemafelt saa iOS ikke zoomer inn naar man trykker i dem. */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none}
+/* Kjoekkenskjermen staar FAST paa alt bredere enn telefon (Magne,
+   23. november 2026: «Dash er fadet helt i toppen. Og skjermen sitter ikke
+   skikkelig fast»). overflow-x paa html over gjoer html til et rullefelt,
+   saa iPaden kunne dra og sprette sida - og saa snart den rullet en
+   piksel, la toppen toningen sin bak seg (.ntp-rullet). Under 700 px
+   ruller sida med vilje, se mobilblokka. */
+@media(min-width:701px){
+  html, body{ overflow:hidden; overscroll-behavior:none; }
+}
 body{touch-action:manipulation}
 input,select,textarea{font-size:16px}
 
