@@ -176,7 +176,7 @@ kalender, navigasjon), `felles-hus.js` (Homey: dør, kamera, røykvarslere),
 ?v=92`, `felles-tale.js ?v=5`, `felles-skriv.js ?v=16`, `felles-lesalt.js
 ?v=16`, `felles-hus.js ?v=30`, `felles-ms.js ?v=2`, `felles-data.js ?v=5`,
 `felles-graph.js ?v=3`, `felles-rot.css ?v=6`, `felles-knapper.css ?v=1`,
-`felles-topp.js ?v=15`, `felles-topp.css ?v=17`;
+`felles-topp.js ?v=15`, `felles-topp.css ?v=18`;
 alle ni sidene pluss `neamow.html`, `andrea-matte.html`, `andrea-diktat.html`,
 `andrea-klokke.html`, `emma-grunnstoff.html`, `kort.html`, spillsida
 `andrea-spill.html` og den skjulte `okonomi.html`; `functions/_middleware.js`,
@@ -199,7 +199,7 @@ gjaldt de gamle merkene, som ikke lenger lenkes fra noen side.
 
 **Brente numre – gjenbruk aldri:** neam.js 24–26 og 29–96; neam.css til og
 med 91; data.js 1–4; rot.css 2–5; knapper `?v=1`; **lesalt 1–15, skriv 1–15,
-hus `?v=1–29`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–14, topp.css 1–16**, og ikonene `?v=1` (se over). (1. november: hus 13–16
+hus `?v=1–29`, ms `?v=1`, tale 1–4, graph 1–2, topp 1–14, topp.css 1–17**, og ikonene `?v=1` (se over). (1. november: hus 13–16
 og 18–20 og neam.css 67–72 er Rommene, hus 17 er Neamows hagebilde.
 2. november: **hus 21 og neam.css 73 ble aldri levert** – en annen økt
 committet `dashboard.html` (`2532426`) med versjonsløftet fra arbeidstreet
@@ -2287,6 +2287,14 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   endepunktet i node med en falsk KV (lagring, dobbel, feil type,
   bilde, TTL, kvittering), arket og ringen lokalt med falske data.
   **Ikke testet med ekte bil.**
+- **Mindre ikoner når flere står ved klokka** (`felles-topp.css ?v=18`,
+  alle 18 sidene; Magne: «blir ikonene mindre for å få plass?»). Før ble
+  bare flere retter mindre (`.flere`). Nå får alle ikonene ved klokka,
+  uansett type (matlaging, Økonomi, bilarkivet), samme mindre størrelse
+  når to eller flere rader vises: 58 px, og 44 px under 700 px
+  (`.ntp:has(.ntp-matrad:not([hidden]) ~ .ntp-matrad:not([hidden]))`).
+  Testet lokalt: ett ikon 78 px, to 58 px; på telefon 54 → 44 px, uten
+  sideveis rulling.
 - **Påminnelsene som nå står dobbelt** (heldagsprøvene og gloseprøven lå
   som påminnelser før Neam la dem inn som prøver) – Neam skal si fra og
   slette bare med ja.

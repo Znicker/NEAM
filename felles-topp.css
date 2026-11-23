@@ -154,6 +154,13 @@ button.ntp-iu:focus-visible, .ntp-iu-knapp:focus-visible{ outline:3px solid var(
 .ntp-ok .ntp-mat-ikon::before{ display:none; }
 .ntp-ok-prikk{ position:absolute; top:3px; right:3px; width:16px; height:16px; border-radius:50%; background:var(--danger); box-shadow:0 0 0 3px var(--paper); }
 .ntp-matrad:not([hidden]) ~ .ntp-okrad{ margin-left:10px; }
+/* Flere ikoner ved klokka, av hvilken som helst type - matlaging, Oekonomi,
+   bilarkivet paa Kjoekken dash (Magne, 23. november 2026: «blir ikonene
+   mindre for å få plass?»): alle faar samme mindre stoerrelse som flere
+   retter (.flere over). Regelen ser bare paa radene som vises. */
+.ntp:has(.ntp-matrad:not([hidden]) ~ .ntp-matrad:not([hidden])) .ntp-mat-ikon{ width:58px; height:58px; }
+.ntp:has(.ntp-matrad:not([hidden]) ~ .ntp-matrad:not([hidden])) .ntp-ok .ntp-mat-ikon img{ width:42px; height:42px; }
+.ntp:has(.ntp-matrad:not([hidden]) ~ .ntp-matrad:not([hidden])) .ntp-mat-navn{ max-width:76px; }
 
 /* Uten vaer staar klokka likevel helt til hoeyre. Trykk paa den aapner
    alarmene og timerne. */
@@ -314,6 +321,10 @@ th.ntp-yr-del{ font-size:var(--t-etikett); }
   .ntp-matrad.flere .ntp-mat-ikon img{ width:32px; height:32px; }
   .ntp-mat-ikon{ width:54px; height:54px; }
   .ntp-mat-ikon img{ width:40px; height:40px; }
+  /* Flere ikoner ved klokka - som .flere over. */
+  .ntp:has(.ntp-matrad:not([hidden]) ~ .ntp-matrad:not([hidden])) .ntp-mat-ikon{ width:44px; height:44px; }
+  .ntp:has(.ntp-matrad:not([hidden]) ~ .ntp-matrad:not([hidden])) .ntp-ok .ntp-mat-ikon img{ width:32px; height:32px; }
+  .ntp:has(.ntp-matrad:not([hidden]) ~ .ntp-matrad:not([hidden])) .ntp-mat-navn{ max-width:58px; }
   .ntp-tid{ font-size:var(--t-stor); }
   .ntp-dato{ font-size:var(--t-meta); margin-top:2px; }
   .ntp-timere{ margin-left:auto; grid-template-rows:repeat(3, auto); gap:2px 8px; }
