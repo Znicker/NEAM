@@ -2231,6 +2231,21 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   kategori** falt ut av innboksen (den sto bare under de forfalte) – nå
   ligger den under fakturaer uten kategori, med merket; og Neam får
   kontoens eget navn (`kn`), ikke DNBs.
+- **Bilvakta kjenner igjen søppelbilen** (`dashboard.html`, 23. november;
+  Magne: «vanlig varsel og at påminnelsen om renovasjon på mandager blir
+  utført, men en liten tekst som sier når søppelbilen var der»). Haiku
+  svarer nå JA, SØPPELBIL eller NEI (`max_tokens` 5 → 10). Begge gir det
+  vanlige «Bil på tunet»-varselet. Ved SØPPELBIL huker `bvSoppelbil()`
+  av dagens dagspåminnelse med «avfall» eller «renovasjon» i overskriften
+  (Neams «Hent matavfall, …» hver mandag). Tidene samles i det nye feltet
+  `soppelbil` på påminnelsen. Linjen «Søppelbilen var her kl. 07:42 og
+  11:15» bygges på nytt i `tekst` – i teksten bak trykk, ikke i raden
+  (Magne valgte). Den vises derfor av seg selv på alle dashene og i Neam.
+  En ny melding innen 15 min (`BV_SOPPEL_SAMME_MIN`) regnes som samme
+  bil. Uten påminnelse den dagen kommer bare varselet. **Ikke testet på
+  ekte søppelbil**; tekstlinjen og svartolkningen er testet lokalt, men
+  ikke avhukingen (den ville skrevet til huskelista). Usikkert om to
+  stillbilder er nok til å skille søppelbilen.
 - **Påminnelsene som nå står dobbelt** (heldagsprøvene og gloseprøven lå
   som påminnelser før Neam la dem inn som prøver) – Neam skal si fra og
   slette bare med ja.

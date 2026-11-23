@@ -4672,6 +4672,11 @@ function julLukk(){ const m = $('julBak'); if(m) m.hidden = true; julDrar = fals
       hver gang en katt gikk forbi.
    4. JA: det FOERSTE bildet dekker tre firedeler av skjermen til noen
       lukker det. Det andre viser ofte bare garasjeporten.
+   5. SOEPPELBIL (Magne, 23. november 2026: «vanlig varsel og at
+      påminnelsen om renovasjon på mandager blir utført, men en liten
+      tekst som sier når søppelbilen var der»): samme varsel, og dagens
+      paaminnelse om avfall hukes av med klokkeslettet i teksten - se
+      bvSoppelbil().
 
    Takten (22. november 2026): bilene kjoerer ofte rett inn i garasjen
    og er ute av bildet etter 5-10 sekunder. Med ti sekunder kom bildene
@@ -4732,7 +4737,9 @@ async function bvSjekk(){
   bvSist = Date.now();
   try{
     const bilder = await bvToBilder(videoId);
-    if(await bvErBil(bilder)) bvVis(bilder[0]);
+    const hva = await bvErBil(bilder);
+    if(hva) bvVis(bilder[0]);
+    if(hva === 'soppel') await bvSoppelbil();
   }catch(err){
     console.warn('Bilvakt:', err && err.message);
   }finally{
@@ -4810,7 +4817,7 @@ async function bvErBil(bilder){
     method:'POST', headers:{ 'Content-Type':'application/json' },
     body: JSON.stringify({
       model: NEAM_MODELLER[0].id,       /* Haiku: raskt og billig, ett ord svar */
-      max_tokens: 5,
+      max_tokens: 10,
       messages: [{ role:'user', content: [
         { type:'text', text:'Bilde 1:' }, bilde(bilder[0]),
         { type:'text', text:'Bilde 2, tatt ett sekund senere:' }, bilde(bilder[1]),
@@ -4818,14 +4825,53 @@ async function bvErBil(bilder){
           + 'foran et hus, tatt rett etter at kameraet merket bevegelse. Kommer det en '
           + 'bil eller et annet kjøretøy – altså et kjøretøy som kjører, står med lysene '
           + 'på, eller som noen går inn i eller ut av? Biler som bare står parkert stille '
-          + 'teller ikke. Svar med ett ord: JA eller NEI.' }
+          + 'teller ikke. Er kjøretøyet en søppelbil (renovasjonsbil), svar SØPPELBIL. '
+          + 'Svar med ett ord: JA, SØPPELBIL eller NEI.' }
       ]}]
     })
   });
   const d = JSON.parse(await r.text());
   if(!r.ok || d.type === 'error') throw new Error((d.error && d.error.message) || ('HTTP ' + r.status));
   const svar = (d.content || []).map(function(b){ return b.type === 'text' ? b.text : ''; }).join('');
-  return /^\s*JA\b/i.test(svar);
+  /* 'soppel', 'bil' eller '' (NEI). */
+  if(/^\s*S(Ø|OE|O)PPELBIL/i.test(svar)) return 'soppel';
+  return /^\s*JA\b/i.test(svar) ? 'bil' : '';
+}
+
+/* Soeppelbilen paa tunet: dagens paaminnelse om avfall («Hent matavfall,
+   ...» fra Neam hver mandag) hukes av, og klokkeslettet staar i teksten
+   bak trykk (Magne valgte det framfor en ny linje i raden - da kommer det
+   av seg selv paa alle dashene og i Neam). Noen dager kommer to biler:
+   tidene samles i feltet `soppelbil`, og linjen i teksten bygges paa nytt
+   fra dem. En ny melding innen BV_SOPPEL_SAMME_MIN etter forrige regnes
+   som samme bil. Ingen paaminnelse i dag: bare det vanlige varselet. */
+const BV_SOPPEL_SAMME_MIN = 15;
+const BV_SOPPEL_LINJE = 'Søppelbilen var her kl. ';
+
+function bvSoppelTekst(tekst, tider){
+  const linjer = String(tekst || '').split('\n').filter(function(l){ return l.indexOf(BV_SOPPEL_LINJE) !== 0; });
+  const t = tider.length > 1 ? tider.slice(0, -1).join(', ') + ' og ' + tider[tider.length - 1] : tider[0];
+  return linjer.concat([BV_SOPPEL_LINJE + t]).join('\n').trim();
+}
+
+async function bvSoppelbil(){
+  const n = new Date();
+  const dag = datoNokkel(idag0());
+  const kl = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0');
+  const min = function(k){ const b = String(k).split(':'); return (+b[0]) * 60 + (+b[1]); };
+  try{
+    await endreHuske(function(liste){
+      return liste.map(function(m){
+        if(m.omfang === 'uke' || m.frist !== dag || !/avfall|renovasjon/i.test(m.overskrift || '')) return m;
+        const tider = Array.isArray(m.soppelbil) ? m.soppelbil.slice() : [];
+        const sist = tider[tider.length - 1];
+        if(!sist || min(kl) - min(sist) >= BV_SOPPEL_SAMME_MIN) tider.push(kl);
+        return Object.assign({}, m, { ferdig:true, soppelbil:tider, tekst:bvSoppelTekst(m.tekst, tider) });
+      });
+    });
+  }catch(e){
+    console.warn('Bilvakt: fikk ikke huket av påminnelsen om avfall:', e && e.message);
+  }
 }
 
 function bvVis(url){
