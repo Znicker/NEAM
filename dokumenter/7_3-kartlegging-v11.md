@@ -2090,6 +2090,14 @@ Og toppens toning (`.ntp.ntp-rullet`, bakgrunn og skygge fra
 `felles-topp.css`) er slått av på alle tre dashene over 700 px (Magne:
 «Hva med faden?») – den hører til sider som ruller, og iPaden kan dytte
 sida litt når tastaturet åpnes.
+Toningen var der fortsatt (Magne: «hele topplinjen er disig i toppen»),
+og den nye koden var bekreftet ute – så det var ikke `.ntp-rullet`.
+Sannsynlig årsak: `<meta name="theme-color" content="#F5F5F5">` på
+dashene, den kalde grå fra den gamle paletten. iPaden farger
+statuslinja/verktøylinja med den over en varm kremfarget side
+(`#F6F1E7`). Forsiden hadde fått `#F6F1E7`, dashene ikke. Rettet på de
+tre dashene. **12 andre sider har fortsatt `#F5F5F5`** (spillene,
+Kalender, Neamow, Sikkerhet) – ikke rørt. Ikke bekreftet på iPaden ennå.
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke
