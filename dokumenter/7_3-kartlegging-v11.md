@@ -2246,6 +2246,16 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   ekte søppelbil**; tekstlinjen og svartolkningen er testet lokalt, men
   ikke avhukingen (den ville skrevet til huskelista). Usikkert om to
   stillbilder er nok til å skille søppelbilen.
+  **Første søppelbil:** telefonen (på Kjøkken dash) varslet og huket av;
+  iPaden på kjøkkenet gjorde ingenting, og feilen sto bare i iPadens
+  konsoll. Mistanker: to skjermer vil ha kamerastrømmen samtidig, iPaden
+  får ikke tatt stillbilde (aldri bekreftet), eller gammel side oppe.
+  **Logg lagt inn:** hver skjerm skriver til `bilvakt-logg:<enhet>` i
+  `/api/data` (`fh:`-prefikset; enhet = ipad, iphone, windows …) – sida
+  startet, skjult/synlig, bevegelse, bilder tatt, Haikus svar, avhuking og
+  feil, de siste 40, og `sist` høyst hvert tiende minutt. Les fra PC-en:
+  `/api/data?key=bilvakt-logg:ipad`. Obs: med to dasher åpne kjøres og
+  betales Haiku-testen to ganger.
 - **Påminnelsene som nå står dobbelt** (heldagsprøvene og gloseprøven lå
   som påminnelser før Neam la dem inn som prøver) – Neam skal si fra og
   slette bare med ja.

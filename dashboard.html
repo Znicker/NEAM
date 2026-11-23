@@ -4700,14 +4700,70 @@ let bvOpptatt = false;
 let bvSist = 0;
 let bvMeldt = false;
 
+/* Logg (Magne, 23. november 2026): soeppelbilen kom, telefonen paa
+   Kjoekken dash varslet og huket av, iPaden gjorde ingenting - og feilene
+   sto bare i iPadens konsoll. Hver skjerm skriver nå hva bilvakta gjorde
+   til `bilvakt-logg:<enhet>` i /api/data (fh:-prefikset), saa det kan
+   leses fra PC-en. Én noekkel per type enhet (ipad, iphone, ...) - ellers
+   ville to skjermer skrevet over hverandre. De siste BV_LOGG_MAKS
+   hendelsene, og `sist` (naar sida sist var i live og synlig) oppdateres
+   hoeyst hvert tiende minutt. Aldri bilder, tilbud eller tokener. */
+const BV_LOGG_MAKS = 40;
+const BV_LOGG_LIVE_MS = 10 * 60 * 1000;
+const BV_ENHET = (function(){
+  const ua = navigator.userAgent || '';
+  if(/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'ipad';
+  if(/iPhone/.test(ua)) return 'iphone';
+  if(/Android/.test(ua)) return 'android';
+  if(/Windows/.test(ua)) return 'windows';
+  if(/Macintosh/.test(ua)) return 'mac';
+  return 'annet';
+})();
+let bvLogg = null;               /* { enhet, start, sist, hendelser:[{t, h}] } */
+let bvLoggSkrevet = 0;
+
+function bvLoggSkriv(){
+  if(!bvLogg) return;
+  bvLoggSkrevet = Date.now();
+  bvLogg.sist = new Date().toISOString();
+  fetch('/api/data?key=' + encodeURIComponent('bilvakt-logg:' + BV_ENHET), {
+    method:'PUT', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(bvLogg)
+  }).catch(function(){});
+}
+
+function bvNoter(hendelse){
+  if(!bvLogg) return;
+  bvLogg.hendelser.push({ t: new Date().toISOString(), h: String(hendelse).slice(0, 200) });
+  if(bvLogg.hendelser.length > BV_LOGG_MAKS) bvLogg.hendelser = bvLogg.hendelser.slice(-BV_LOGG_MAKS);
+  bvLoggSkriv();
+}
+
+async function bvLoggStart(){
+  let gml = null;
+  try{
+    const r = await fetch('/api/data?key=' + encodeURIComponent('bilvakt-logg:' + BV_ENHET), { cache:'no-store' });
+    gml = (await r.json()).value;
+  }catch(e){}
+  bvLogg = { enhet: BV_ENHET, start: new Date().toISOString(), sist: null,
+             hendelser: (gml && Array.isArray(gml.hendelser)) ? gml.hendelser : [] };
+  bvNoter('sida startet (' + (BV_KAMERA ? 'kamera funnet' : 'INGEN kamera i VISES') + ')');
+  document.addEventListener('visibilitychange', function(){
+    bvNoter(document.hidden ? 'skjult' : 'synlig igjen');
+  });
+}
+
 async function bvSjekk(){
   if(document.hidden || bvOpptatt || !BV_KAMERA) return;
+  if(bvLogg && Date.now() - bvLoggSkrevet > BV_LOGG_LIVE_MS) bvLoggSkriv();
   let e;
   try{ e = await api('?hva=enheter'); }catch(err){ return; }
   if(!e || !e.ok){
     /* Én gang, ikke hvert tiende sekund. Er Homey ikke godkjent for
        denne innloggingen, er det sikkerhetssida som kobler til. */
-    if(!bvMeldt) console.warn('Bilvakt: fikk ikke kontakt med Homey:', e && e.feil);
+    if(!bvMeldt){
+      console.warn('Bilvakt: fikk ikke kontakt med Homey:', e && e.feil);
+      bvNoter('fikk ikke kontakt med Homey: ' + (e && e.feil));
+    }
     bvMeldt = true;
     return;
   }
@@ -4727,21 +4783,25 @@ async function bvSjekk(){
   const ny = (naa.tid && f.tid)
     ? (naa.tid !== f.tid && (naa.verdi || !f.verdi))
     : (naa.verdi && !f.verdi);
-  if(!ny || Date.now() - bvSist < BV_PAUSE_MS) return;
+  if(!ny) return;
+  if(Date.now() - bvSist < BV_PAUSE_MS){ bvNoter('bevegelse - i pausen etter forrige test'); return; }
 
   const video = d.videos && d.videos[0];
   const videoId = video && video.videoObj && video.videoObj.id;
-  if(!videoId) return;
+  if(!videoId){ bvNoter('bevegelse - men kameraet har ingen video'); return; }
 
   bvOpptatt = true;
   bvSist = Date.now();
+  bvNoter('bevegelse - kobler til kameraet');
   try{
     const bilder = await bvToBilder(videoId);
+    bvNoter('to bilder tatt etter ' + Math.round((Date.now() - bvSist) / 1000) + ' s');
     const hva = await bvErBil(bilder);
     if(hva) bvVis(bilder[0]);
     if(hva === 'soppel') await bvSoppelbil();
   }catch(err){
     console.warn('Bilvakt:', err && err.message);
+    bvNoter('feil: ' + (err && err.message));
   }finally{
     bvOpptatt = false;
   }
@@ -4833,6 +4893,7 @@ async function bvErBil(bilder){
   const d = JSON.parse(await r.text());
   if(!r.ok || d.type === 'error') throw new Error((d.error && d.error.message) || ('HTTP ' + r.status));
   const svar = (d.content || []).map(function(b){ return b.type === 'text' ? b.text : ''; }).join('');
+  bvNoter('Haiku svarte: ' + svar.trim());
   /* 'soppel', 'bil' eller '' (NEI). */
   if(/^\s*S(Ø|OE|O)PPELBIL/i.test(svar)) return 'soppel';
   return /^\s*JA\b/i.test(svar) ? 'bil' : '';
@@ -4859,18 +4920,22 @@ async function bvSoppelbil(){
   const dag = datoNokkel(idag0());
   const kl = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0');
   const min = function(k){ const b = String(k).split(':'); return (+b[0]) * 60 + (+b[1]); };
+  let funnet = 0;
   try{
     await endreHuske(function(liste){
       return liste.map(function(m){
         if(m.omfang === 'uke' || m.frist !== dag || !/avfall|renovasjon/i.test(m.overskrift || '')) return m;
+        funnet++;
         const tider = Array.isArray(m.soppelbil) ? m.soppelbil.slice() : [];
         const sist = tider[tider.length - 1];
         if(!sist || min(kl) - min(sist) >= BV_SOPPEL_SAMME_MIN) tider.push(kl);
         return Object.assign({}, m, { ferdig:true, soppelbil:tider, tekst:bvSoppelTekst(m.tekst, tider) });
       });
     });
+    bvNoter(funnet ? 'påminnelsen om avfall huket av kl. ' + kl : 'søppelbil, men ingen påminnelse om avfall i dag');
   }catch(e){
     console.warn('Bilvakt: fikk ikke huket av påminnelsen om avfall:', e && e.message);
+    bvNoter('fikk ikke huket av påminnelsen om avfall: ' + (e && e.message));
   }
 }
 
@@ -4985,6 +5050,7 @@ function bvLukk(){
   setInterval(speilBarnFag, 3000);
 
   /* Bil paa tunet - se «Bilvakt» over. */
+  bvLoggStart();
   setInterval(bvSjekk, BV_SJEKK_MS);
   bvSjekk();
 
