@@ -4706,7 +4706,16 @@ function julLukk(){ const m = $('julBak'); if(m) m.hidden = true; julDrar = fals
    ============================================================ */
 const BV_KAMERA = (VISES.find(function(v){ return v.art === 'kamera'; }) || {}).id;
 const BV_SJEKK_MS = 3 * 1000;
-const BV_PAUSE_MS = 60 * 1000;   /* minst saa lenge mellom to tester */
+const BV_PAUSE_MS = 60 * 1000;   /* pausen etter en runde - eller etter en bil */
+/* Rundene (Magne, 23. november 2026: «Registrerte ikke min bil nå» - «Nå
+   gikk jeg til bilen satt meg inn og kjørte ut av garasjen»). Foerste
+   test saa ham gaa (riktig NEI), og bilen kom ut i ett-minuttspausen
+   etterpaa. Naa: saa lenge kameraet melder bevegelse, testes det hvert
+   BV_RUNDE_MS, hoeyst BV_RUNDE_MAKS ganger. En bil, eller fem NEI, gir
+   pausen. Stopper bevegelsen, er runden over uten pause. */
+const BV_RUNDE_MS = 15 * 1000;
+const BV_RUNDE_MAKS = 5;
+let bvRunde = null;              /* { tester, sist } - runden som paagaar */
 const BV_STUN = [{ urls:'stun:stun.l.google.com:19302' }];
 let bvForrige = null;            /* { verdi, tid } fra forrige svar */
 let bvOpptatt = false;
@@ -4796,24 +4805,35 @@ async function bvSjekk(){
   const ny = (naa.tid && f.tid)
     ? (naa.tid !== f.tid && (naa.verdi || !f.verdi))
     : (naa.verdi && !f.verdi);
-  if(!ny) return;
-  if(Date.now() - bvSist < BV_PAUSE_MS){ bvNoter('bevegelse - i pausen etter forrige test'); return; }
+  const tNaa = Date.now();
+  /* Runden er over naar det har vaert stille lenger enn mellom to tester. */
+  if(bvRunde && !naa.verdi && !ny && tNaa - bvRunde.sist > BV_RUNDE_MS * 2) bvRunde = null;
+  if(bvRunde){
+    if(!(ny || naa.verdi) || tNaa - bvRunde.sist < BV_RUNDE_MS) return;
+  } else {
+    if(!ny) return;
+    if(tNaa - bvSist < BV_PAUSE_MS){ bvNoter('bevegelse - i pausen etter forrige runde'); return; }
+    bvRunde = { tester:0, sist:0 };
+  }
 
   const video = d.videos && d.videos[0];
   const videoId = video && video.videoObj && video.videoObj.id;
   if(!videoId){ bvNoter('bevegelse - men kameraet har ingen video'); return; }
 
   bvOpptatt = true;
-  bvSist = Date.now();
-  bvNoter('bevegelse - kobler til kameraet');
+  const tStart = Date.now();
+  bvRunde.tester++; bvRunde.sist = tStart;
+  bvNoter('bevegelse - kobler til kameraet (test ' + bvRunde.tester + ' av ' + BV_RUNDE_MAKS + ')');
   try{
     const bilder = await bvToBilder(videoId);
-    bvNoter('to bilder tatt etter ' + Math.round((Date.now() - bvSist) / 1000) + ' s');
+    bvNoter('to bilder tatt etter ' + Math.round((Date.now() - tStart) / 1000) + ' s');
     const hva = await bvErBil(bilder);
     if(hva){
       bvVis(bilder[0]);
       bvArkiver(bilder, hva === 'soppel', naa.tid);
-    }
+    } else bvLagreNei(bilder);
+    /* En bil, eller runden er brukt opp: pausen begynner. */
+    if(hva || bvRunde.tester >= BV_RUNDE_MAKS){ bvRunde = null; bvSist = Date.now(); }
     if(hva === 'soppel') await bvSoppelbil();
   }catch(err){
     console.warn('Bilvakt:', err && err.message);
@@ -5012,6 +5032,13 @@ function bvArkiver(bilder, soppel, bevegelse){
     bvNoter(d.ok ? (d.dobbel ? 'arkiv: samme bil som en annen skjerm' : 'arkiv: lagret') : 'arkiv: ' + d.feil);
   }).catch(function(e){ bvNoter('arkiv: ' + (e && e.message)); });
   return bvArkivLagres;
+}
+
+/* Det siste NEI-paret, i et doegn - saa det kan sees hva Haiku saa
+   (bilarkiv.js, «nei»). Overskrives hver gang; ett par til enhver tid. */
+function bvLagreNei(bilder){
+  fetch('/api/bilarkiv', { method:'POST', headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({ hva:'nei', bilder:bilder }) }).catch(function(){});
 }
 
 function bvKvitter(){

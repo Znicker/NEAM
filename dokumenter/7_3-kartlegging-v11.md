@@ -2261,6 +2261,19 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   bildet i løpet av 09:02 (bare minuttet er lagret) – 25–85 s, mot ca.
   5–8 s for vår del av kjeden. Enten fikk Homey bevegelsen sent, eller
   telefonen sov. Ikke avklart.
+- **Bilvakta tester i runder** (`dashboard.html`, 23. november; Magne:
+  «Registrerte ikke min bil nå» – «Nå gikk jeg til bilen satt meg inn og
+  kjørte ut av garasjen»). Loggen fra iPaden: bevegelse 11:01:06, bilder
+  etter 3 s, Haiku NEI (han gikk mot garasjen), og seks nye bevegelser
+  11:01:15–11:02:03 hoppet over i ett-minuttspausen. Da pausen var over,
+  sto bilen stille, og kameraet meldte ikke noe nytt. Nå: så lenge
+  kameraet melder bevegelse, testes det hvert 15. sekund (`BV_RUNDE_MS`),
+  høyst fem ganger (`BV_RUNDE_MAKS`). En bil, eller fem NEI, gir pausen
+  (`BV_PAUSE_MS`). Stilt i over 30 s: runden er over uten pause.
+  Simulert med dagens hendelser: tester 11:01:06, :21 og :36 – den siste
+  ser bilen. Fem minutter gåing på tunet: 13 tester, ca. 5 øre i minuttet.
+  **Det siste NEI-paret** lagres i `bilarkiv:nei` (ett par, TTL ett døgn,
+  overskrives) og leses med `/api/bilarkiv?nei=info|0|1`.
 - **Bilarkivet** (23. november; Magne: «jeg tenker også at vi må ha et
   lite arkiv her … når det kommer bil ha bildet oppe i fem minutter.
   dersom ingen rører det og utkvitterer det legger det seg ned. men

@@ -16,6 +16,14 @@
      POST /api/bilarkiv { hva:'lagre', bilder:[dataUrl, dataUrl], soppel, bevegelse }
                                               -> { ok, id, dobbel }
      POST /api/bilarkiv { hva:'kvitter' }     -> { ok }   alle bilene er sett
+     POST /api/bilarkiv { hva:'nei', bilder } -> { ok }   det siste NEI-paret (bilvakta)
+     GET  /api/bilarkiv?nei=info              -> { ok, tid }
+     GET  /api/bilarkiv?nei=<0|1>             -> image/jpeg
+
+   NEI-PARET (23. november 2026)
+   Bilvakta lagrer de to bildene fra siste test der Haiku svarte NEI, saa
+   en bil som ikke ble funnet kan sees i ettertid. Ett par, overskrives
+   hver gang, og KV sletter det selv etter et doegn.
 
    SAMME BIL TO GANGER
    Hver aapen Kjoekken dash kjoerer sin egen bilvakt. Samme bevegelse
@@ -44,6 +52,8 @@ const VARER_S = 32 * 24 * 3600;
 const DOBBEL_MS = 45 * 1000;
 const MAKS_BILDE = 1.5 * 1024 * 1024;   /* base64-tegn per bilde */
 const JPEG = 'data:image/jpeg;base64,';
+const NEI = 'bilarkiv:nei';
+const NEI_S = 24 * 3600;
 
 function svar(obj){
   return new Response(JSON.stringify(obj), { status:200,
@@ -65,6 +75,18 @@ function fersk(liste){
 export async function onRequestGet({ request, env }){
   if(!env.FAMILIE_KV) return svar({ ok:false, feil:'KV ikke bundet (FAMILIE_KV mangler)' });
   const url = new URL(request.url);
+  const nei = url.searchParams.get('nei');
+  if(nei){
+    let p = null;
+    try{ p = JSON.parse(await env.FAMILIE_KV.get(NEI) || 'null'); }catch(e){}
+    if(!p) return svar({ ok:false, feil:'Ingen NEI-bilder siste døgn' });
+    if(nei === 'info') return svar({ ok:true, tid:p.tid, bilder:(p.bilder || []).length });
+    const b64 = (p.bilder || [])[nei === '1' ? 1 : 0];
+    if(!b64) return svar({ ok:false, feil:'Bildet finnes ikke' });
+    const bin = atob(b64), u8 = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    return new Response(u8, { status:200, headers:{ 'Content-Type':'image/jpeg', 'Cache-Control':'no-store' } });
+  }
   const id = url.searchParams.get('bilde');
   if(id){
     const n = url.searchParams.get('n') === '1' ? 1 : 0;
@@ -97,6 +119,15 @@ export async function onRequestPost({ request, env }){
         return Object.assign({}, x, { kvittert:true });
       })));
     }
+    return svar({ ok:true });
+  }
+
+  if(hva === 'nei'){
+    const bilder = (Array.isArray(k.bilder) ? k.bilder : []).slice(0, 2).filter(function(b){
+      return typeof b === 'string' && b.indexOf(JPEG) === 0 && b.length - JPEG.length <= MAKS_BILDE;
+    }).map(function(b){ return b.slice(JPEG.length); });
+    if(!bilder.length) return svar({ ok:false, feil:'Ingen bilder' });
+    await env.FAMILIE_KV.put(NEI, JSON.stringify({ tid:Date.now(), bilder }), { expirationTtl: NEI_S });
     return svar({ ok:true });
   }
 
