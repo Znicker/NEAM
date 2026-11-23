@@ -182,6 +182,65 @@ body{
 }
 .vis-knapp.aktiv{background:var(--aksent);color:#FFFFFF}
 
+/* ---------- Lekser (23. november 2026) ----------
+   Samme oppsett som Emma dash: avtalene paa én linje, leksene som rader
+   i barnets farge, hastestripe, roed roterende ramme paa proever denne
+   uka. Navnene har lv- foran - de er kopier av Emma dash sine, og
+   kjoekkenet skal ikke kollidere med noe i fellesfilene. */
+.rutenett > .kort{ min-width:0; }
+#lekserVis .plan-rad{ align-items:center; padding:7px 11px; margin-bottom:5px; }
+#lekserVis .plan-tid{ width:auto; white-space:nowrap; padding-top:0; }
+#lekserVis .plan-til{ display:inline; font-size:inherit; font-weight:600; }
+#lekserVis .plan-til::before{ content:'–'; }
+#lekserVis .plan-rad .ini{ margin-top:0; }
+#lekserVis .plan-inn{ display:flex; align-items:baseline; gap:10px; min-width:0; }
+#lekserVis .plan-tittel{ flex-shrink:0; max-width:70%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#lekserVis .plan-meta{ margin-top:0; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#lekserVis .plan-rad.valgt{ box-shadow:inset 0 0 0 2px rgba(44,62,80,.45); }
+.lv-tittel{
+  font-size:var(--t-meta);font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--ink);margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--line);
+}
+.lv-rad .hu-tittel{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lv-rad.gul{ box-shadow:inset 3px 0 0 var(--handling-endre); }
+.lv-rad.rod{ box-shadow:inset 3px 0 0 var(--danger); }
+.lv-rad.naer .hu-innen{ color:var(--handling-endre); }
+.lv-rad.ferdig .hu-innen{ color:var(--handling-ny); }
+.lv-rad.valgt{ outline:2px solid rgba(44,62,80,.45); outline-offset:-2px; }
+@property --lv-vinkel{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
+.lv-rad.denne-uka{
+  position:relative; --ring:var(--danger);
+  box-shadow:0 0 10px color-mix(in srgb, var(--ring) 35%, transparent);
+}
+.lv-rad.denne-uka::after{
+  content:''; position:absolute; inset:-2px; border-radius:13px; padding:2.5px;
+  pointer-events:none;
+  background:conic-gradient(from var(--lv-vinkel),
+    var(--ring) 0deg, color-mix(in srgb, var(--ring) 25%, #fff) 60deg,
+    var(--ring) 120deg, var(--ring) 180deg,
+    color-mix(in srgb, var(--ring) 25%, #fff) 240deg, var(--ring) 300deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude;
+  animation:lvRoter 2.6s linear infinite;
+}
+.lv-rad.denne-uka .hu-innen{ color:var(--danger); }
+@keyframes lvRoter{ to{ --lv-vinkel:360deg; } }
+@media (prefers-reduced-motion:reduce){ .lv-rad.denne-uka::after{ animation:none; } }
+#detaljInn .lv-beskrivelse{
+  margin-top:12px; font-size:var(--t-brod); line-height:1.45; white-space:pre-wrap; overflow-wrap:anywhere;
+}
+#detaljInn .lv-fakta{ font-size:var(--t-brod); margin-top:8px; color:var(--ink-soft); }
+#detaljInn .lv-fakta span{ font-weight:700; color:var(--ink); }
+.lv-fot{ display:flex; justify-content:flex-end; margin-top:14px; }
+/* Blaa: «alt annet» i knappeklassene - den gaar et sted, den endrer ikke. */
+.lv-gaa{
+  border:none; color:#FFFFFF; background:var(--aksent);
+  font-family:'Archivo',sans-serif; font-weight:700; font-size:var(--t-etikett);
+  letter-spacing:.06em; text-transform:uppercase; line-height:1.2;
+  padding:7px 15px; border-radius:999px; cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.lv-gaa:active{ filter:brightness(.9); }
+
 /* ---------- Ukesvisning ----------
    Sju doegnsoeyler, kopiert fra Emma dash (som igjen har kalenderens
    klassenavn: .uke-head, .pu-kol, .pu-ev). Ingen valgt dag, ingen
@@ -1114,6 +1173,7 @@ select.hu-felt{
         <span class="vis-bytt" id="visBytt" role="group" aria-label="Visning">
           <button class="vis-knapp aktiv" data-vis="dag" onclick="settVisning('dag')">Dag</button>
           <button class="vis-knapp" data-vis="uke" onclick="settVisning('uke')">Uke</button>
+          <button class="vis-knapp" data-vis="lekser" onclick="settVisning('lekser')">Lekser</button>
         </span>
         <button class="til-idag" id="tilIdag" onclick="tilbakeTilStandard()" hidden>
           Tilbake til i dag
@@ -1127,6 +1187,10 @@ select.hu-felt{
         <div class="tom">Henter …</div>
       </div>
       <div class="kort-kropp" id="uke" hidden>
+        <div class="tom">Henter …</div>
+      </div>
+      <!-- Lekser: jentenes avtaler og lekser - se «Lekser» i skriptet. -->
+      <div class="kort-kropp" id="lekserVis" hidden>
         <div class="tom">Henter …</div>
       </div>
       <!-- «Legg til avtale i kalenderen» sto her til 11. oktober. Den
@@ -1156,6 +1220,21 @@ select.hu-felt{
         <div class="kort-tittel"><span>Påminnelser denne uken</span><span class="kort-uke" id="ukeMerke"></span></div>
         <div class="kort-kropp" id="huskeUken">
           <div class="tom">Ingenting notert ennå.</div>
+        </div>
+      </div>
+
+      <!-- Bare i Lekser: jentenes paaminnelser og proevene deres. Middagen
+           og husets paaminnelser viker saa lenge (lvHoyre()). -->
+      <div class="kort" id="kortBarnHuske" hidden>
+        <div class="kort-tittel"><span>Påminnelser – Emma og Andrea</span></div>
+        <div class="kort-kropp" id="barnHuske">
+          <div class="tom">Ingenting notert ennå.</div>
+        </div>
+      </div>
+      <div class="kort" id="kortBarnProver" hidden>
+        <div class="kort-tittel"><span>Prøver</span></div>
+        <div class="kort-kropp" id="barnProver">
+          <div class="tom">Henter …</div>
         </div>
       </div>
 
@@ -1601,7 +1680,7 @@ function rullTilNaa(boks){
 /* Avtalen tar over hele hoeyrekolonnen i stedet for aa legge seg som en
    boble oppaa. Da kan notatet vaere langt uten aa dekke planen man leser
    det ut fra. */
-const HOYRE_KORT = ['kortMerknader', 'kortUken', 'kortMiddag'];
+const HOYRE_KORT = ['kortMerknader', 'kortUken', 'kortMiddag', 'kortBarnHuske', 'kortBarnProver'];
 
 let detaljIndeks = null;
 
@@ -1611,6 +1690,7 @@ function visDetalj(i){
   const e = dagensAvtaler[i];
   if(!e) return;
   detaljIndeks = i;
+  lvVelg(null);                    /* en lekse kan ha staatt i kortet */
 
   const tid = e.heleDagen ? 'Hele dagen' : kl(e.start) + '–' + kl(e.slutt);
 
@@ -1647,9 +1727,14 @@ function visDetalj(i){
   HOYRE_KORT.forEach(function(id){ if($(id)) $(id).hidden = true; });
   settBredde();                    /* kolonnen maa fram for aa vise kortet */
 
-  /* Marker raden som er valgt, saa det er tydelig hva kolonnen viser. */
-  Array.from(document.querySelectorAll('.plan-rad')).forEach(function(r, n){
+  /* Marker raden som er valgt, saa det er tydelig hva kolonnen viser.
+     #plan teller radene; Lekser-visningen viser bare noen av avtalene og
+     baerer derfor plassen i data-avtale. */
+  Array.from(document.querySelectorAll('#plan .plan-rad')).forEach(function(r, n){
     r.classList.toggle('valgt', n === i);
+  });
+  Array.from(document.querySelectorAll('#lekserVis [data-avtale]')).forEach(function(r){
+    r.classList.toggle('valgt', parseInt(r.dataset.avtale, 10) === i);
   });
   Array.from(document.querySelectorAll('.pu-ev[data-avtale]')).forEach(function(r){
     r.classList.toggle('valgt', parseInt(r.dataset.avtale, 10) === i);
@@ -1665,6 +1750,8 @@ function lukkDetalj(){
     $('detalj').style.boxShadow = '';
   }
   HOYRE_KORT.forEach(function(id){ if($(id)) $(id).hidden = false; });
+  lvHoyre();
+  lvVelg(null);
   settBredde();
   Array.from(document.querySelectorAll('.plan-rad.valgt, .pu-ev.valgt'))
     .forEach(function(r){ r.classList.remove('valgt'); });
@@ -2422,7 +2509,8 @@ async function hentBarnFag(nokkel){
   if(!v || typeof v !== 'object') return { fag:[], lekser:[] };
   return {
     fag:    Array.isArray(v.fag)    ? v.fag    : [],
-    lekser: Array.isArray(v.lekser) ? v.lekser : []
+    lekser: Array.isArray(v.lekser) ? v.lekser : [],
+    prover: Array.isArray(v.prover) ? v.prover : []      /* til Lekser-fanen */
   };
 }
 
@@ -2900,6 +2988,9 @@ function tegnHuskeInner(){
       ? g.treff.map(huskeRad).join('')
       : '<div class="tom">Ingenting notert ennå.</div>';
   });
+  /* Lekser-fanen henter alt sitt herfra og fra barnFag - de samme
+     veiene som tegner boksene, tegner den. */
+  if(visning === 'lekser') lvTegn();
 }
 
 /* ---------------- Middagsnotat ----------------
@@ -3114,7 +3205,282 @@ async function tegnPlanPaaNytt(){
    to uker fram naar man gaar tilbake til Dag. Pilene og sveipen
    flytter én dag i Dag og én uke i Uke - se byttDag().
    ============================================================ */
-const VIS_BOKS = { dag:'plan', uke:'uke' };
+const VIS_BOKS = { dag:'plan', uke:'uke', lekser:'lekserVis' };
+
+/* ============================================================
+   Lekser - jentenes skole paa kjoekkenet
+   ------------------------------------------------------------
+   Magne, 23. november 2026: «På kjøkkendash kan vi ha en fane til
+   høyre for uke som heter lekser. Her kan man bytte til oppsettet til
+   emma, men flette inn andrea og emma sine avtaler og lekser og
+   prøver.» Valgt av Magne: bare Emma og Andreas egne avtaler; til
+   hoeyre paaminnelsene deres og proevene, middagen viker; et trykk paa
+   en lekse eller proeve viser den i hoeyre kolonne med en knapp til
+   dashen hennes.
+
+   Kjoekkenet er fortsatt en oppslagstavle: ingen hake og ingen
+   endring herfra - det gjoeres paa dashen hennes, der faget staar.
+   Uka og utvalget er det samme som paa Emma dash (skoleukeHtml()).
+   ============================================================ */
+const LV_BARN_DASH = { Emma:'/emma.html', Andrea:'/andrea.html' };
+const lvInnhold = {};          /* rad-id -> { barn, fagId, detalj, erProve } */
+let lvDetaljId = null;
+
+async function tegnLekserPaaNytt(){
+  const mitt = ++tegneNr;
+  lukkDetalj();
+  settDagsTitler();
+  tegnHuske();
+  tegnVaerStripe();
+  $('lekserVis').innerHTML = '<div class="tom">Henter …</div>';
+  try{
+    const r = await hentPlan();
+    if(mitt !== tegneNr) return;          /* overhalt av en nyere sveip */
+    dagensAvtaler = r.avtaler || [];
+    lvTegn();
+  }catch(e){
+    if(mitt !== tegneNr) return;
+    $('lekserVis').innerHTML = planFeil(e);
+  }
+}
+
+/* Hvilke kort som staar i hoeyre kolonne. Detaljkortet skjuler alle
+   (visDetalj); ellers bytter Lekser ut husets paaminnelser og middagen
+   med jentenes paaminnelser og proever. */
+function lvHoyre(){
+  if($('detalj') && !$('detalj').hidden) return;
+  const lekser = visning === 'lekser';
+  ['kortMerknader', 'kortUken', 'kortMiddag'].forEach(function(id){ if($(id)) $(id).hidden = lekser; });
+  ['kortBarnHuske', 'kortBarnProver'].forEach(function(id){ if($(id)) $(id).hidden = !lekser; });
+}
+
+/* Mandagen i uka leksene gjelder: fra fredag 18 uka som kommer, som Fag
+   paa Emma dash - men bare naar man ikke har bladd. */
+function lvUkeStart(){
+  if(dagOffset !== 0) return ukeStart(dagenViser());
+  const naa = new Date();
+  const dag = ukedagNr(naa);
+  const helg = (dag === 4 && naa.getHours() >= 18) || dag === 5 || dag === 6;
+  const m = ukeStart(idag0());
+  return new Date(m.getFullYear(), m.getMonth(), m.getDate() + (helg ? 7 : 0));
+}
+
+/* Hastegraden - samme regel som lekseHast() paa Emma dash. */
+function lvHast(l){
+  if(!l || l.ferdig || !l.frist) return '';
+  const frist = datoFraTekst(l.frist);
+  const naa = idag0();
+  if(frist < naa) return 'rod';
+  const laget = l.laget ? datoFraTekst(l.laget) : new Date(frist.getTime() - 7 * 86400000);
+  const total = Math.max(frist - laget, 86400000);
+  const andel = (frist - naa) / total;
+  if(andel <= 0.15) return 'rod';
+  if(andel <= 0.50) return 'gul';
+  return '';
+}
+
+function lvMerke(dato){
+  if(!dato) return '';
+  const d = datoFraTekst(dato);
+  const dager = Math.round((d - idag0()) / 86400000);
+  if(dager === 0) return 'I dag';
+  if(dager === 1) return 'I morgen';
+  if(dager > 1 && dager < 7) return UKEDAG_KORT[ukedagNr(d)];
+  return UKEDAG_KORT[ukedagNr(d)] + ' ' + d.getDate() + '. ' + MND[d.getMonth()].slice(0, 3);
+}
+function lvDatoFull(dato){
+  if(!dato) return '';
+  const d = datoFraTekst(dato);
+  return UKEDAGER[ukedagNr(d)] + ' ' + d.getDate() + '. ' + MND[d.getMonth()];
+}
+
+function lvFakta(par){
+  return par.filter(function(x){ return x[1]; }).map(function(x){
+    return '<div class="lv-fakta"><span>' + esc(x[0]) + '</span> ' + esc(x[1]) + '</div>';
+  }).join('');
+}
+
+function lvRad(barn, tittel, merke, klasse, id, innhold){
+  const farge = huskeFarge(barn);
+  lvInnhold[id] = innhold;
+  return '<div class="hu-linje' + (klasse.indexOf('ferdig') !== -1 ? ' ferdig' : '') + '">'
+    + '<div class="hu-rad lv-rad ' + klasse + (lvDetaljId === id ? ' valgt' : '') + '"'
+    +   ' data-lv="' + esc(id) + '" style="' + fyll(farge) + '"'
+    +   ' onclick="lvDetalj(\'' + esc(id) + '\')" role="button" tabindex="0">'
+    +   initial(barn, farge)
+    +   '<span class="hu-tittel">' + esc(tittel) + '</span>'
+    +   (merke ? '<span class="hu-innen">' + esc(merke) + '</span>' : '')
+    + '</div>'
+    + '</div>';
+}
+
+/* Tegner hele fanen: avtalene og leksene til venstre, paaminnelsene og
+   proevene til hoeyre. Kalles etter hentPlan() og fra tegnHuskeInner(). */
+function lvTegn(){
+  const boks = $('lekserVis');
+  if(!boks) return;
+  const iDag = datoNokkel(idag0());
+
+  /* ---- Avtalene, bare jentenes ---- */
+  const idag = viserIdag();
+  const naa = idag ? new Date() : new Date(8640000000000000);
+  const avtaler = dagensAvtaler.map(function(e, i){ return { e:e, i:i }; })
+    .filter(function(x){ return LV_BARN_DASH[x.e.kalender]; });
+  let ut = avtaler.length ? avtaler.map(function(x){
+    const e = x.e;
+    const forbi = idag && !e.heleDagen && e.slutt < naa;
+    return '<div class="plan-rad' + (forbi ? ' forbi' : '') + (detaljIndeks === x.i ? ' valgt' : '') + '"'
+      + ' style="' + fyll(e.farge) + '" data-avtale="' + x.i + '"'
+      + ' onclick="visDetalj(' + x.i + ')" role="button" tabindex="0">'
+      + '<div class="plan-tid' + (e.heleDagen ? ' hel' : '') + '">'
+      +   (e.heleDagen ? 'Hele dagen'
+            : esc(kl(e.start)) + '<span class="plan-til">' + esc(kl(e.slutt)) + '</span>')
+      + '</div>'
+      + initial(e.kalender, e.farge)
+      + '<div class="plan-inn">'
+      +   '<div class="plan-tittel">' + esc(e.tittel) + '</div>'
+      +   (e.sted ? '<div class="plan-meta">' + esc(e.sted) + '</div>' : '')
+      + '</div>'
+      + '</div>';
+  }).join('') : '<div class="tom">Ingen avtaler for Emma og Andrea denne dagen.</div>';
+
+  /* ---- Leksene, begge jentene i én liste ---- */
+  const start = lvUkeStart();
+  const uStart = datoNokkel(start);
+  const uSlutt = datoNokkel(new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6));
+  const naaUke = uStart === datoNokkel(ukeStart(idag0())) || dagOffset === 0;
+  const lekser = [];
+  BARN.forEach(function(b){
+    const d = barnFag[b.navn];
+    if(!d) return;
+    (d.lekser || []).forEach(function(l){
+      if(!l) return;
+      const med = !l.frist
+        || (l.frist >= uStart && l.frist <= uSlutt)
+        || (naaUke && !l.ferdig && l.frist < iDag);
+      if(med) lekser.push({ barn:b.navn, l:l });
+    });
+  });
+  lekser.sort(function(a, b){
+    if(!!a.l.ferdig !== !!b.l.ferdig) return a.l.ferdig ? 1 : -1;
+    return (a.l.frist || '9999-99-99').localeCompare(b.l.frist || '9999-99-99');
+  });
+  ut += '<div class="lv-tittel">Lekser · uke ' + isoUke(start).uke + '</div>';
+  ut += lekser.length ? lekser.map(function(x){
+    const l = x.l;
+    const fag = fagNavn(x.barn, l.fagId);
+    const hast = lvHast(l);
+    const detalj = '<div class="lv-beskrivelse">' + esc(l.tekst || '') + '</div>'
+      + lvFakta([
+          ['Frist:', l.frist ? lvDatoFull(l.frist) : 'ingen'],
+          ['Status:', l.ferdig ? 'Ferdig' : ''],
+          ['Lagt inn av', l.av || '']
+        ]);
+    return lvRad(x.barn, (fag ? fag + ': ' : '') + String(l.tekst || ''),
+                 l.ferdig ? 'Ferdig' : lvMerke(l.frist),
+                 (l.ferdig ? 'ferdig' : '') + (hast ? ' ' + hast : ''),
+                 'l:' + x.barn + ':' + l.id,
+                 { barn:x.barn, fag:fag, erProve:false, detalj:detalj });
+  }).join('') : '<div class="tom">Ingen lekser denne uka.</div>';
+  boks.innerHTML = ut;
+
+  /* ---- Proevene, begge jentene ---- */
+  const m0 = ukeStart(idag0());
+  const ukeSlutt = datoNokkel(new Date(m0.getFullYear(), m0.getMonth(), m0.getDate() + 6));
+  const prover = [];
+  BARN.forEach(function(b){
+    const d = barnFag[b.navn];
+    if(!d) return;
+    (d.prover || []).forEach(function(p){
+      if(p && p.dato && p.dato >= iDag) prover.push({ barn:b.navn, p:p });
+    });
+  });
+  prover.sort(function(a, b){ return a.p.dato.localeCompare(b.p.dato); });
+  if($('barnProver')){
+    $('barnProver').innerHTML = prover.length ? prover.map(function(x){
+      const p = x.p;
+      const fag = fagNavn(x.barn, p.fagId);
+      const dager = Math.round((datoFraTekst(p.dato) - idag0()) / 86400000);
+      const detalj = '<div class="lv-beskrivelse">' + esc(p.type || 'Prøve') + '</div>'
+        + lvFakta([
+            ['Dato:', lvDatoFull(p.dato) + (dager >= 2 ? ' – om ' + dager + ' dager' : '')],
+            ['Karakter:', p.karakter || ''],
+            ['Kommentar:', p.kommentar || ''],
+            ['Lagt inn av', p.av || '']
+          ]);
+      return lvRad(x.barn, (fag ? fag + ': ' : '') + String(p.type || 'Prøve'),
+                   lvMerke(p.dato) + (dager >= 7 ? ' · om ' + dager + ' d' : ''),
+                   (dager <= 1 ? 'naer' : '') + (p.dato <= ukeSlutt ? ' denne-uka' : ''),
+                   'p:' + x.barn + ':' + p.id,
+                   { barn:x.barn, fag:fag, erProve:true, detalj:detalj });
+    }).join('') : '<div class="tom">Ingen prøver lagt inn.</div>';
+  }
+
+  /* ---- Jentenes paaminnelser: dagens og ukas i én boks ---- */
+  if($('barnHuske')){
+    const dag = datoNokkel(dagenViser());
+    const uke = ukeNokkel(dagenViser());
+    const mine = (huskeliste || []).filter(function(m){
+      const hvem = String(m.gjelder || '').trim();
+      if(!LV_BARN_DASH[hvem]) return false;
+      return (m.omfang !== 'uke' && m.frist === dag) || (m.omfang === 'uke' && ukeAv(m.frist) === uke);
+    }).sort(function(a, b){
+      if(!!a.ferdig !== !!b.ferdig) return a.ferdig ? 1 : -1;
+      if((a.omfang === 'uke') !== (b.omfang === 'uke')) return a.omfang === 'uke' ? 1 : -1;
+      return (a.frist || '').localeCompare(b.frist || '');
+    });
+    $('barnHuske').innerHTML = mine.length ? mine.map(huskeRad).join('')
+                                           : '<div class="tom">Ingenting notert ennå.</div>';
+  }
+  lvHoyre();
+}
+
+/* Et trykk paa en lekse eller proeve: hoeyre kolonne, som en avtale. */
+function lvDetalj(id){
+  if(lvDetaljId === id && !$('detalj').hidden){ lukkDetalj(); return; }
+  const inn = lvInnhold[id];
+  if(!inn) return;
+  detaljIndeks = null;
+  Array.from(document.querySelectorAll('.plan-rad.valgt, .pu-ev.valgt'))
+    .forEach(function(r){ r.classList.remove('valgt'); });
+  const farge = huskeFarge(inn.barn);
+  const merke = $('detaljMerke');
+  if(merke){
+    merke.textContent = inn.barn.charAt(0).toUpperCase();
+    merke.style.background = farge;
+    merke.title = inn.barn;
+  }
+  const kort = $('detalj');
+  kort.style.background = tett(farge, .16);
+  kort.style.boxShadow = 'inset 0 0 0 1px ' + dus(farge, .34) + ', 0 2px 14px rgba(0,0,0,.06)';
+  /* Endre hoerer til avtalene. En lekse endres paa dashen hennes. */
+  const endre = kort.querySelector('.knapp-endre');
+  if(endre) endre.style.display = 'none';
+  $('detaljInn').innerHTML =
+      '<div class="detalj-tittel">' + esc(inn.fag || (inn.erProve ? 'Prøve' : 'Lekse')) + '</div>'
+    + '<div class="detalj-tid">' + (inn.erProve ? 'Prøve' : 'Lekse') + ' · ' + esc(inn.barn) + '</div>'
+    + inn.detalj
+    + '<div class="lv-fot"><button type="button" class="lv-gaa"'
+    +   ' onclick="location.href=\'' + LV_BARN_DASH[inn.barn] + '\'">Til ' + esc(inn.barn) + ' dash</button></div>';
+  kort.hidden = false;
+  HOYRE_KORT.forEach(function(k){ if($(k)) $(k).hidden = true; });
+  settBredde();
+  lvVelg(id);
+  visTilIdag();
+}
+
+/* Hvilken lekse- eller proeverad som er valgt (null = ingen). Gir ogsaa
+   Endre-knappen tilbake naar kortet ikke lenger viser en lekse. */
+function lvVelg(id){
+  lvDetaljId = id;
+  Array.from(document.querySelectorAll('.lv-rad[data-lv]')).forEach(function(r){
+    r.classList.toggle('valgt', r.dataset.lv === id);
+  });
+  if(!id){
+    const endre = $('detalj') && $('detalj').querySelector('.knapp-endre');
+    if(endre) endre.style.display = '';
+  }
+}
 
 function settVisning(ny){
   if(!VIS_BOKS[ny] || visning === ny) return;
@@ -3141,13 +3507,14 @@ function settBredde(){
   const r = $('rutenett');
   const d = $('detalj');
   if(!r) return;
-  r.classList.toggle('bred', visning !== 'dag' && (!d || d.hidden));
+  r.classList.toggle('bred', visning === 'uke' && (!d || d.hidden));
 }
 
 /* Tegner den visningen som staar. Kalles av dagbytte, doegnskifte,
    lagring og visningsbytte - ingen av dem trenger aa vite hvilken. */
 function tegnVisning(){
   if(visning === 'uke') return tegnUkePaaNytt();
+  if(visning === 'lekser') return tegnLekserPaaNytt();
   return tegnPlanPaaNytt();
 }
 
@@ -3450,7 +3817,7 @@ function kobleHvile(){
 function byttDag(steg){
   /* Uke blar en uke om gangen, Dag én dag. Samme pil, samme sveip - det
      som flyttes er det man ser. */
-  dagOffset += steg * (visning === 'dag' ? 1 : 7);
+  dagOffset += steg * (visning === 'uke' ? 7 : 1);   /* Lekser blar dager, som Dag */
   if(dagOffset < -180) dagOffset = -180;   /* en grense, saa man ikke blar seg bort */
   if(dagOffset >  180) dagOffset =  180;
   tegnVisning();

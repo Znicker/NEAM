@@ -720,6 +720,17 @@ Avvik fra den felles toppen på en side er et nytt valg – spør.
 Fila het `dashboard.html` og gjør det fortsatt – bare det synlige navnet er
 endret, så snarveier og bokmerker holder.
 
+**Fanen Lekser** (fra 23. november 2026), til høyre for Dag og Uke: Emma
+dash sitt oppsett med begge jentene flettet inn. Venstre: Emma og Andreas
+egne avtaler den dagen (én linje), så «Lekser · uke N» for begge i én
+liste, hver rad i barnets farge og initial. Høyre: «Påminnelser – Emma og
+Andrea» (dag og uke i én boks) og «Prøver» for begge, med rød roterende
+ramme på prøver denne uka; husets påminnelser og middagen viker så lenge
+fanen står. Et trykk på en lekse eller prøve viser den i høyre kolonne
+med en blå knapp **«Til Emma dash»/«Til Andrea dash»** – kjøkkenet er
+fortsatt en oppslagstavle, så ingen hake og ingen Endre (knappen skjules).
+Blar dager som Dag. Navnene i koden har `lv-` foran.
+
 **Ikonet og navnet øverst:** sidas ikon på 84 px og sidenavnet ved
 siden av (`.merke-navn`, i ikonstilen). Fram til 27. oktober 2026 sto bare
 merkelappen der, med navnet malt inn. Navnet på den innloggede står ikke

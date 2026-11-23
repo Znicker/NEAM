@@ -1940,6 +1940,30 @@ lukker ikke når det er en skolerad som trykkes (`.sku-rad` i
 `kobleLukking()`). Utfoldingen (`skoleAapen`, `skoleVeksl()`, `.sku-post`,
 `.sku-detalj`) er fjernet. Testet på neam.no: åpne, lukke med nytt trykk,
 «Gå til faget».
+
+**23. november: Lekser-fanen på Kjøkken dash** (`dashboard.html`). Magne:
+«På kjøkkendash kan vi ha en fane til høyre for uke som heter lekser. Her
+kan man bytte til oppsettet til emma, men flette inn andrea og emma sine
+avtaler og lekser og prøver.» Valgt: bare jentenes egne avtaler; til høyre
+deres påminnelser og prøvene, middagen viker; knappen i kortet åpner
+dashen hennes.
+- `VIS_BOKS.lekser = 'lekserVis'`; `tegnLekserPaaNytt()` henter dagen
+  (`hentPlan()`) og `lvTegn()` tegner avtaler, lekser, prøver og
+  påminnelser. `tegnHuskeInner()` kaller `lvTegn()` når fanen står, så
+  speilingen av `barnFag` og huskelista tegner den også.
+- `hentBarnFag()` tar nå med `prover`. `lvHoyre()` bytter kortene i høyre
+  kolonne etter visning; `HOYRE_KORT` har de to nye.
+- `visDetalj()` merker valgt avtale med `data-avtale` i Lekser (radene der
+  er et utvalg, så plassen i DOM-en stemmer ikke); `lvDetalj()` /
+  `lvVelg()` for lekser og prøver, Endre skjules og kommer tilbake.
+- `settBredde()`: bare Uke går i full bredde nå; `byttDag()`: Lekser blar
+  dager.
+- `.rutenett > .kort{min-width:0}` lagt inn også her.
+- Testet på neam.no ved å legge koden oppå sida: 3 avtaler, 10 lekser (7
+  Emma, 3 Andrea), 4 prøver, 2 påminnelser, middagen skjult; Andreas
+  leselekse åpnet kortet med «Til Andrea dash»; tilbake i Dag kom middagen
+  og Endre tilbake. **Neams bakgrunnstekst på kjøkkenet nevner ikke den
+  nye fanen** – ikke rørt.
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke
