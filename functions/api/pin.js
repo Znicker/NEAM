@@ -56,7 +56,9 @@ const PERSONER = [
 const KODER = 'pin:koder';
 const FEIL = 'pin:feil';
 const MAKS_FEIL = 5;
-const LAAS_MS = 60 * 1000;
+/* En time (Magne, 23. november 2026: «Feil pinkode 5 ganger stenger i en
+   time» - koden aapner Oekonomi paa fellesskjermen). Var ett minutt. */
+const LAAS_MS = 60 * 60 * 1000;
 const OKT = 'pin:okt:';
 const OKT_KAKE = 'neam_pin';
 /* Tre minutter som paa skjermen, pluss ett for pingen som gaar hvert minutt. */

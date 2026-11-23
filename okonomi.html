@@ -8929,7 +8929,45 @@ button.ok-dr-rad{ cursor:pointer; }
 
   okVarslerLast();
 
+  /* Pinkoden paa fellesskjermen (Magne, 23. november 2026: «Vi åpner den
+     siden for meg med pin»). Bare denne sida spoer - resten av pinkodene
+     er fortsatt av (NEAM_PIN_PAA i felles-neam.js). Riktig kode gir en oekt
+     paa serveren (functions/api/pin.js), og bank-funksjonen slipper inn
+     bare Magnes (PIN_TILGANG der). Trykk holder oekta i live (hoeyst hvert
+     minutt), og den glemmes naar sida forlates - ogsaa naar kjoekkenet gaar
+     hjem etter tre minutter. Ellers er den ute etter fire minutter uten
+     trykk. */
+  var okPinPinget = 0, okPinToken = null, okPinPaa = false;
+  function okPinVaaken(){
+    if(!okPinPaa || !neamErKjokken() || Date.now() - okPinPinget < 60000) return;
+    okPinPinget = Date.now();
+    neamPinKall('POST', { hva:'vaaken' });
+    if(typeof gyldigToken === 'function') gyldigToken().then(function(t){ okPinToken = t; }, function(){});
+  }
+  document.addEventListener('pointerdown', okPinVaaken, true);
+  document.addEventListener('keydown', okPinVaaken, true);
+  window.addEventListener('pagehide', function(){
+    if(!okPinPaa || !okPinToken) return;
+    fetch('/api/pin', { method:'POST', keepalive:true, body:JSON.stringify({ hva:'glem' }),
+                        headers:{ Authorization:'Bearer ' + okPinToken, 'Content-Type':'application/json' } }).catch(function(){});
+  });
+  function okPinInn(feil){
+    neamPinTast({ tittel:'Tast koden din for Økonomi', venstre:'Avbryt', feil:feil || '' }).then(function(kode){
+      if(kode === null){ neamPinLukk(); location.replace('/'); return; }
+      neamPinKall('POST', { hva:'sjekk', kode:kode }).then(function(r){
+        if(!r.ok){ okPinInn(r.laast ? 'For mange feil. Stengt i ' + Math.ceil(r.laast / 60) + ' min.' : (r.feil || 'Feil kode')); return; }
+        if(r.hvem !== 'magne'){ neamPinKall('POST', { hva:'glem' }); okPinInn('Økonomien er bare åpnet for Magne.'); return; }
+        neamPinLukk();
+        location.reload();
+      });
+    });
+  }
+
   okHent('/api/bank?hva=status').then(function(s){
+    if(!s.ok && s.pin && typeof neamPinTast === 'function'){ okVisStatus(s); okPinInn(); return; }
+    /* Inne: paa fellesskjermen holdes oekta i live (okPinVaaken sjekker
+       at det er fellesskjermen). */
+    if(s.ok && typeof neamErKjokken === 'function'){ okPinPaa = true; setTimeout(okPinVaaken, 3000); }
     if(!okVisStatus(s)){
       if(s.ok && !s.koblet){ okSt.dnb = false; okKilderLast(); }
       okOppdater();

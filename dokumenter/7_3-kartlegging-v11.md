@@ -2196,8 +2196,22 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
   på iPaden – den er felles@, og `/api/bank` slipper bare inn sys@ og
   magne@ (`INNGANG`, `PIN_PAA = false`, Magne 21. november). Sperra
   virker; fanene viser bare «Henter …» i stedet for å si det. På telefon
-  og PC svarer de med en gang. Ikke rørt – ett mulig grep er en tydelig
-  melding på fellesskjermen.
+  og PC svarer de med en gang.
+- **Økonomi med pinkode på fellesskjermen, bare for Magne** (23. november;
+  Magne: «Vi åpner den siden for meg med pin»). I bank-funksjonen:
+  `PIN_PAA = true`, `PIN_TILGANG = { magne }` (Nina ute, som i `INNGANG`),
+  og `voksen()` svarer fellesenheten uten økt med `pin:true`. Økonomi-sida
+  viser da tastaturet (`neamPinTast`) – Avbryt går til forsiden, andres
+  kode får «Økonomien er bare åpnet for Magne» og økta glemmes. Riktig
+  kode laster sida på nytt. Inne holdes økta i live med `vaaken` (trykk,
+  høyst hvert minutt) og glemmes ved `pagehide` (også når kjøkkenet går
+  hjem etter tre minutter); ellers er den ute etter fire minutter uten
+  trykk. **Fem feil koder stenger i en time** (`LAAS_MS` i `pin.js`, var
+  ett minutt; Magne: «Feil pinkode 5 ganger stenger i en time»). sys@
+  får aldri tastaturet. **Resten av pinkodene er fortsatt av** (`NEAM_PIN_PAA = false`,
+  ingen `?v=`-endring). Økta gjelder `/api/bank` fra alle sider på
+  fellesskjermen mens den varer – som før 21. november. **Ikke testet på
+  iPaden** – bare syntaks; PC-en er sys@ og får aldri tastaturet.
 - **Påminnelsene som nå står dobbelt** (heldagsprøvene og gloseprøven lå
   som påminnelser før Neam la dem inn som prøver) – Neam skal si fra og
   slette bare med ja.
