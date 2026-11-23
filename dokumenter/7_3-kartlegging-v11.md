@@ -1,5 +1,20 @@
 # 7.3 – kartlegging, revidert (v11)
 
+*Ført à jour 23. november 2026 (resten av natta): Kjøkken dash har fått
+fanen **Lekser** (Emma og Andreas avtaler, lekser, påminnelser og prøver,
+med valget Begge · Emma · Andrea og «Gå til faget» til dashen hennes),
+middagen øverst i høyre kolonne og påminnelsene i én boks. Alle tre
+dashene: lekser, prøver og påminnelser vises i høyre kolonne ved trykk,
+med grønn «Utført»; blå roterende ramme på dagens påminnelser; toning i
+lange lister; sida står fast på iPad (ingen rulling, sprett eller toning
+i toppen) og statuslinja har sidens kremfarge – bekreftet på iPaden. Emma
+har tallkarakterer 1–6 med pluss og minus og fjes; prøver har kommentar.
+Det røde, store lukkekrysset gjelder alle sider (`felles-neam.css ?v=92`),
+Inne og Ute i toppen er hver sin knapp (`felles-topp.js ?v=15`), og
+kjøkkenskjermen går hjem til Kjøkken dash etter tre minutter uten bruk
+(`felles-neam.js ?v=97`). Neams ukepåminnelser på skoledashene gjelder
+mandag–fredag (nytt felt `til`). Detaljene står i toppblokka under
+23. november.*
 *Ført à jour 23. november 2026 (natt og morgen): Emma og Andrea dash er
 bygget om for skolen – avtalene på én linje, leksene som rader under
 kalenderen, påminnelsene i én boks og prøvene der ukas påminnelser sto,
@@ -2097,7 +2112,8 @@ dashene, den kalde grå fra den gamle paletten. iPaden farger
 statuslinja/verktøylinja med den over en varm kremfarget side
 (`#F6F1E7`). Forsiden hadde fått `#F6F1E7`, dashene ikke. Rettet på de
 tre dashene. **12 andre sider har fortsatt `#F5F5F5`** (spillene,
-Kalender, Neamow, Sikkerhet) – ikke rørt. Ikke bekreftet på iPaden ennå.
+Kalender, Neamow, Sikkerhet) – ikke rørt. **Bekreftet på iPaden** (Magne:
+«Bra nå», og «ser greit ut over alt nå»).
 - `KARAKTERER`, `karakterRens()` (Neams verktøy godtar bare disse, store
   og små bokstaver likt), `karakterVelger()` (nedtrekk i skjemaet; en
   gammel karakter utenfor lista legges til som eget valg så den ikke
@@ -2144,21 +2160,26 @@ pc» fikk den ikke. **Kjøkken dash har ikke rammen** – ikke rørt.
 
 **Fra 23. november 2026 – skoledashene, ikke testet mot ekte bruk:**
 - **Ukenotatene i fagvinduet** – visningen er testet, lagringen er ikke.
-  Skriv en linje, lukk, åpne igjen.
-- **Spretten i haken** når en lekse krysses av – animasjonen er på plass,
-  selve trykket er ikke prøvd (det ville skrevet til dataene).
-- **Neam og datotabellen** – Emmas Mock exam lå på lørdag 28.11 da
-  tabellen kom; Magne svarer Neam «torsdag 26.». Se om Neam regner riktig
-  heretter.
+  Skriv en linje, lukk, åpne igjen. Det samme gjelder **kommentar på
+  prøver** og **karakterene** (skjemaet er testet, ikke en lagring).
+- **«Utført»** på lekser (fagvinduet og lekse-kortet) og på påminnelser
+  (kortet i høyre kolonne), og spretten – ingen av dem er trykket, det
+  ville skrevet til dataene.
+- **Kjøkkenskjermen går hjem etter tre minutter** – kan ikke prøves fra
+  PC-en (sys@); må sees på kjøkkenet.
+- **Neam og datotabellen** – Mock exam er flyttet til torsdag 26.11. Se
+  om Neam regner riktig heretter.
+- **Statuslinja:** 12 andre sider har fortsatt `theme-color #F5F5F5`
+  (spillene, Kalender, Neamow, Sikkerhet). Magne: «ser greit ut over alt
+  nå» – derfor ikke rørt.
 - **Påminnelsene som nå står dobbelt** (heldagsprøvene og gloseprøven lå
   som påminnelser før Neam la dem inn som prøver) – Neam skal si fra og
   slette bare med ja.
 - **Modellen på jentenes skjermer** står på Haiku; Magne bytter til Sonnet
   med knappen i samtalen (Sonnet er allerede standard der ingen har valgt).
-- **Kjøkken dash** har fortsatt to påminnelsesbokser, avtaler på to linjer
-  og ingen ringer – med vilje ikke rørt. Fokusrammen som ble klippet i
-  skjemaene (`.av-skjema`), er rettet på alle tre dashene 23. november
-  (`padding:4px; margin:-4px`).
+- **Kjøkken dash:** Dag-fanen har fortsatt avtaler på to linjer (Lekser-
+  fanen har én linje) – ikke rørt. Neams bakgrunnstekst på kjøkkenet
+  nevner ikke Lekser-fanen.
 - **Steketermometer i Neam:** venter på kjøp. Meater Pro XL (Wi-Fi i
   basen, offisiell sky-API) er anbefalt for «alt på iPaden»; Inkbird
   IBT-2X/4XS + ESP32 (ESPHome → Homey) er den billige veien. Pinne med
